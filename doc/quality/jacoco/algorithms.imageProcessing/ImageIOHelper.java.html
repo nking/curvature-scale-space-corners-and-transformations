@@ -1,16 +1,20 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageIOHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageIOHelper.java</span></div><h1>ImageIOHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageIOHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageIOHelper.java</span></div><h1>ImageIOHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
+import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 
@@ -18,47 +22,116 @@ import javax.imageio.ImageIO;
  *
  * @author nichole
  */
-<span class="nc" id="L21">public class ImageIOHelper {</span>
+<span class="nc" id="L25">public class ImageIOHelper {</span>
     
     public static Image readImage(String filePath) throws Exception {
      
-<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L26">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L30">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
         }
                 
         try {
-<span class="fc" id="L30">            File file = new File(filePath);</span>
-<span class="pc bpc" id="L31" title="1 of 2 branches missed.">            if (!file.exists()) {</span>
-<span class="nc" id="L32">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+<span class="nc" id="L34">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L36">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
             }
             
-<span class="fc" id="L35">            BufferedImage img = ImageIO.read(file);</span>
+<span class="nc" id="L39">            BufferedImage img = ImageIO.read(file);</span>
             
             //System.out.println(&quot;imageType=&quot; + img.getType());
             
-<span class="fc" id="L39">            int h = img.getHeight();</span>
-<span class="fc" id="L40">            int w = img.getWidth();</span>
+<span class="nc" id="L43">            int h = img.getHeight();</span>
+<span class="nc" id="L44">            int w = img.getWidth();</span>
             
-<span class="fc" id="L42">            Image image = new Image(w, h);</span>
-<span class="fc bfc" id="L43" title="All 2 branches covered.">            for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">                for (int j = 0; j &lt; h; j++) {</span>
-                    
-<span class="fc" id="L46">                    int rgb = img.getRGB(i, j);</span>
-                                        
-<span class="fc" id="L48">                    int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L49">                    int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L50">                    int b = rgb &amp; 0xFF;</span>
-                    
-<span class="fc" id="L52">                    image.setRGB(i, j, r, g, b);</span>
-                }
-            }
+<span class="nc" id="L46">            Image image = new Image(w, h);</span>
             
-<span class="fc" id="L56">            return image;</span>
+<span class="nc" id="L48">            convertImage(img, image);</span>
             
-<span class="nc" id="L58">        } catch (IOException e) {</span>
+<span class="nc" id="L50">            return image;</span>
+            
+<span class="nc" id="L52">        } catch (IOException e) {</span>
         }
         
-<span class="nc" id="L61">        return null;</span>
+<span class="nc" id="L55">        return null;</span>
+    }
+    
+    public static ImageExt readImageExt(String filePath) throws Exception {
+     
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L61">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+        }
+                
+        try {
+<span class="nc" id="L65">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L67">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+            }
+            
+<span class="nc" id="L70">            BufferedImage bufferedInput = ImageIO.read(file);</span>
+            
+            //System.out.println(&quot;imageType=&quot; + img.getType());
+            
+<span class="nc" id="L74">            int h = bufferedInput.getHeight();</span>
+<span class="nc" id="L75">            int w = bufferedInput.getWidth();</span>
+            
+<span class="nc" id="L77">            ImageExt image = new ImageExt(w, h);</span>
+            
+<span class="nc" id="L79">            convertImage(bufferedInput, image);</span>
+            
+<span class="nc" id="L81">            return image;</span>
+            
+<span class="nc" id="L83">        } catch (IOException e) {</span>
+        }
+        
+<span class="nc" id="L86">        return null;</span>
+    }
+    
+    private static void convertImage(BufferedImage fromImage, Image toImage) 
+        throws Exception {
+     
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (fromImage == null) {</span>
+<span class="nc" id="L93">            return;</span>
+        }
+                
+<span class="nc" id="L96">        int h = fromImage.getHeight();</span>
+<span class="nc" id="L97">        int w = fromImage.getWidth();</span>
+
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">            for (int j = 0; j &lt; h; j++) {</span>
+
+                //TYPE_INT_ARGB) and default sRGB colorspace
+<span class="nc" id="L103">                int rgb = fromImage.getRGB(i, j);</span>
+
+<span class="nc" id="L105">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="nc" id="L106">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="nc" id="L107">                int b = rgb &amp; 0xFF;</span>
+
+<span class="nc" id="L109">                toImage.setRGB(i, j, r, g, b);</span>
+            }
+        }
+<span class="nc" id="L112">    }</span>
+    
+    public static ImageExt convertImage(GreyscaleImage fromImage) {
+     
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (fromImage == null) {</span>
+<span class="nc" id="L117">            return null;</span>
+        }
+        
+<span class="nc" id="L120">        int h = fromImage.getHeight();</span>
+<span class="nc" id="L121">        int w = fromImage.getWidth();</span>
+
+<span class="nc" id="L123">        ImageExt toImage = new ImageExt(w, h);</span>
+                
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            for (int j = 0; j &lt; h; j++) {</span>
+                
+<span class="nc" id="L128">                int v = fromImage.getValue(i, j);</span>
+
+<span class="nc" id="L130">                toImage.setRGB(i, j, v, v, v);</span>
+            }
+        }
+        
+<span class="nc" id="L134">        return toImage;</span>
     }
     
     /**
@@ -70,47 +143,47 @@ import javax.imageio.ImageIO;
     public static GreyscaleImage readImageAsGrayScaleG(String filePath) 
         throws Exception {
      
-<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L74">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L147">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
         }
                 
         try {
-<span class="fc" id="L78">            File file = new File(filePath);</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">            if (!file.exists()) {</span>
-<span class="nc" id="L80">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+<span class="nc" id="L151">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L153">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
             }
             
-<span class="fc" id="L83">            BufferedImage img = ImageIO.read(file);</span>
+<span class="nc" id="L156">            BufferedImage img = ImageIO.read(file);</span>
             
-<span class="fc" id="L85">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
-<span class="fc" id="L86">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
+<span class="nc" id="L158">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
+<span class="nc" id="L159">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
             try {
-<span class="fc" id="L88">                BufferedImage image2 = op.filter(img, null);</span>
-<span class="fc" id="L89">                img = image2;</span>
-<span class="fc" id="L90">            } catch (NullPointerException e) {</span>
+<span class="nc" id="L161">                BufferedImage image2 = op.filter(img, null);</span>
+<span class="nc" id="L162">                img = image2;</span>
+<span class="nc" id="L163">            } catch (NullPointerException e) {</span>
                 // if type is custom, the source color space destination is not defined.
-<span class="fc" id="L92">            }       </span>
-<span class="fc" id="L93">            int h = img.getHeight();</span>
-<span class="fc" id="L94">            int w = img.getWidth();</span>
+<span class="nc" id="L165">            }       </span>
+<span class="nc" id="L166">            int h = img.getHeight();</span>
+<span class="nc" id="L167">            int w = img.getWidth();</span>
             
-<span class="fc" id="L96">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">            for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">                for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L169">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
                     
-<span class="fc" id="L100">                    int rgb = img.getRGB(i, j);</span>
+<span class="nc" id="L173">                    int rgb = img.getRGB(i, j);</span>
                                         
-<span class="fc" id="L102">                    int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="nc" id="L175">                    int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
                     
-<span class="fc" id="L104">                    image.setValue(i, j, g);</span>
+<span class="nc" id="L177">                    image.setValue(i, j, g);</span>
                 }
             }
             
-<span class="fc" id="L108">            return image;</span>
+<span class="nc" id="L181">            return image;</span>
             
-<span class="nc" id="L110">        } catch (IOException e) {</span>
+<span class="nc" id="L183">        } catch (IOException e) {</span>
         }
         
-<span class="nc" id="L113">        return null;</span>
+<span class="nc" id="L186">        return null;</span>
     }
     
     /**
@@ -124,47 +197,47 @@ import javax.imageio.ImageIO;
     public static GreyscaleImage readImageAsGrayScaleR(String filePath) 
         throws Exception {
      
-<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L128">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L201">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
         }
                 
         try {
-<span class="nc" id="L132">            File file = new File(filePath);</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (!file.exists()) {</span>
-<span class="nc" id="L134">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+<span class="nc" id="L205">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L207">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
             }
             
-<span class="nc" id="L137">            BufferedImage img = ImageIO.read(file);</span>
+<span class="nc" id="L210">            BufferedImage img = ImageIO.read(file);</span>
                        
-<span class="nc" id="L139">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
-<span class="nc" id="L140">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
+<span class="nc" id="L212">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
+<span class="nc" id="L213">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
             try {
-<span class="nc" id="L142">                BufferedImage image2 = op.filter(img, null);</span>
-<span class="nc" id="L143">                img = image2;</span>
-<span class="nc" id="L144">            } catch (NullPointerException e) {</span>
+<span class="nc" id="L215">                BufferedImage image2 = op.filter(img, null);</span>
+<span class="nc" id="L216">                img = image2;</span>
+<span class="nc" id="L217">            } catch (NullPointerException e) {</span>
                 // if type is custom, the source color space destination is not defined.
-<span class="nc" id="L146">            }       </span>
-<span class="nc" id="L147">            int h = img.getHeight();</span>
-<span class="nc" id="L148">            int w = img.getWidth();</span>
+<span class="nc" id="L219">            }       </span>
+<span class="nc" id="L220">            int h = img.getHeight();</span>
+<span class="nc" id="L221">            int w = img.getWidth();</span>
             
-<span class="nc" id="L150">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L223">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
                     
-<span class="nc" id="L154">                    int rgb = img.getRGB(i, j);</span>
+<span class="nc" id="L227">                    int rgb = img.getRGB(i, j);</span>
                                         
-<span class="nc" id="L156">                    int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="nc" id="L229">                    int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
                     
-<span class="nc" id="L158">                    image.setValue(i, j, r);</span>
+<span class="nc" id="L231">                    image.setValue(i, j, r);</span>
                 }
             }
             
-<span class="nc" id="L162">            return image;</span>
+<span class="nc" id="L235">            return image;</span>
             
-<span class="nc" id="L164">        } catch (IOException e) {</span>
+<span class="nc" id="L237">        } catch (IOException e) {</span>
         }
         
-<span class="nc" id="L167">        return null;</span>
+<span class="nc" id="L240">        return null;</span>
     }
     
     /**
@@ -178,48 +251,48 @@ import javax.imageio.ImageIO;
     public static GreyscaleImage readImageAsGrayScaleB(String filePath) 
         throws Exception {
      
-<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L182">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L255">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
         }
                 
         try {
-<span class="nc" id="L186">            File file = new File(filePath);</span>
-<span class="nc bnc" id="L187" title="All 2 branches missed.">            if (!file.exists()) {</span>
-<span class="nc" id="L188">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+<span class="nc" id="L259">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L261">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
             }
             
-<span class="nc" id="L191">            BufferedImage img = ImageIO.read(file);</span>
+<span class="nc" id="L264">            BufferedImage img = ImageIO.read(file);</span>
                        
-<span class="nc" id="L193">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
-<span class="nc" id="L194">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
+<span class="nc" id="L266">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
+<span class="nc" id="L267">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
             try {
-<span class="nc" id="L196">                BufferedImage image2 = op.filter(img, null);</span>
-<span class="nc" id="L197">                img = image2;</span>
-<span class="nc" id="L198">            } catch (NullPointerException e) {</span>
+<span class="nc" id="L269">                BufferedImage image2 = op.filter(img, null);</span>
+<span class="nc" id="L270">                img = image2;</span>
+<span class="nc" id="L271">            } catch (NullPointerException e) {</span>
                 // if type is custom, the source color space destination is not defined.
-<span class="nc" id="L200">            }       </span>
-<span class="nc" id="L201">            int h = img.getHeight();</span>
-<span class="nc" id="L202">            int w = img.getWidth();</span>
+<span class="nc" id="L273">            }       </span>
+<span class="nc" id="L274">            int h = img.getHeight();</span>
+<span class="nc" id="L275">            int w = img.getWidth();</span>
             
-<span class="nc" id="L204">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
-<span class="nc bnc" id="L205" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L277">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
                     
-<span class="nc" id="L208">                    int rgb = img.getRGB(i, j);</span>
+<span class="nc" id="L281">                    int rgb = img.getRGB(i, j);</span>
                                         
-<span class="nc" id="L210">                    int b = rgb &amp; 0xFF;</span>
+<span class="nc" id="L283">                    int b = rgb &amp; 0xFF;</span>
                     
-<span class="nc" id="L212">                    image.setValue(i, j, b);</span>
+<span class="nc" id="L285">                    image.setValue(i, j, b);</span>
                 }
             }
             
-<span class="nc" id="L216">            return image;</span>
+<span class="nc" id="L289">            return image;</span>
             
-<span class="nc" id="L218">        } catch (IOException e) {</span>
-<span class="nc" id="L219">            Logger.getLogger(ImageIOHelper.class.getName()).severe(e.getMessage());</span>
+<span class="nc" id="L291">        } catch (IOException e) {</span>
+<span class="nc" id="L292">            Logger.getLogger(ImageIOHelper.class.getName()).severe(e.getMessage());</span>
         }
         
-<span class="nc" id="L222">        return null;</span>
+<span class="nc" id="L295">        return null;</span>
     }
     
     /**
@@ -232,49 +305,96 @@ import javax.imageio.ImageIO;
     public static Image readImageAsGrayScale(String filePath) 
         throws Exception {
      
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L236">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L309">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
         }
                 
         try {
-<span class="fc" id="L240">            File file = new File(filePath);</span>
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">            if (!file.exists()) {</span>
-<span class="nc" id="L242">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+<span class="nc" id="L313">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L315">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
             }
             
-<span class="fc" id="L245">            BufferedImage img = ImageIO.read(file);</span>
+<span class="nc" id="L318">            BufferedImage img = ImageIO.read(file);</span>
                         
-<span class="fc" id="L247">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
-<span class="fc" id="L248">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
+<span class="nc" id="L320">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
+<span class="nc" id="L321">            ColorConvertOp op = new ColorConvertOp(cs, null);</span>
             try {
-<span class="fc" id="L250">                BufferedImage image2 = op.filter(img, null);</span>
-<span class="fc" id="L251">                img = image2;</span>
-<span class="nc" id="L252">            } catch (NullPointerException e) {</span>
+<span class="nc" id="L323">                BufferedImage image2 = op.filter(img, null);</span>
+<span class="nc" id="L324">                img = image2;</span>
+<span class="nc" id="L325">            } catch (NullPointerException e) {</span>
                 // if type is custom, the source color space destination is not defined.
-<span class="fc" id="L254">            }       </span>
-<span class="fc" id="L255">            int h = img.getHeight();</span>
-<span class="fc" id="L256">            int w = img.getWidth();</span>
+<span class="nc" id="L327">            }       </span>
+<span class="nc" id="L328">            int h = img.getHeight();</span>
+<span class="nc" id="L329">            int w = img.getWidth();</span>
             
-<span class="fc" id="L258">            Image image = new Image(w, h);</span>
-<span class="fc bfc" id="L259" title="All 2 branches covered.">            for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L260" title="All 2 branches covered.">                for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L331">            Image image = new Image(w, h);</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
                     
-<span class="fc" id="L262">                    int rgb = img.getRGB(i, j);</span>
+<span class="nc" id="L335">                    int rgb = img.getRGB(i, j);</span>
                                         
-<span class="fc" id="L264">                    int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L265">                    int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L266">                    int b = rgb &amp; 0xFF;         </span>
+<span class="nc" id="L337">                    int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="nc" id="L338">                    int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="nc" id="L339">                    int b = rgb &amp; 0xFF;         </span>
                     
-<span class="fc" id="L268">                    image.setRGB(i, j, r, g, b);</span>
+<span class="nc" id="L341">                    image.setRGB(i, j, r, g, b);</span>
                 }
             }
             
-<span class="fc" id="L272">            return image;</span>
+<span class="nc" id="L345">            return image;</span>
             
-<span class="nc" id="L274">        } catch (IOException e) {</span>
+<span class="nc" id="L347">        } catch (IOException e) {</span>
         }
         
-<span class="nc" id="L277">        return null;</span>
+<span class="nc" id="L350">        return null;</span>
+    }
+    
+    /**
+     * read image at filePath into a greyscale image with assumptions that pixel
+     * value '0' is '0' and anything else gets stored in output as a '1'.
+     * 
+     * @param filePath
+     * @return
+     * @throws Exception 
+     */
+    public static GreyscaleImage readImageAsBinary(String filePath) 
+        throws Exception {
+     
+<span class="nc bnc" id="L364" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L365">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+        }
+                
+        try {
+<span class="nc" id="L369">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L371">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+            }
+            
+<span class="nc" id="L374">            BufferedImage img = ImageIO.read(file);</span>
+                 
+<span class="nc" id="L376">            int h = img.getHeight();</span>
+<span class="nc" id="L377">            int w = img.getWidth();</span>
+           
+<span class="nc" id="L379">            Raster raster = img.getData();</span>
+            
+<span class="nc" id="L381">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
+            
+<span class="nc" id="L383">            int[] data = null;</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L386">                    data = raster.getPixel(i, j, data);</span>
+<span class="nc" id="L387">                    int value = data[0];</span>
+<span class="nc" id="L388">                    image.setValue(i, j, value);</span>
+                }
+            }
+            
+<span class="nc" id="L392">            return image;</span>
+            
+<span class="nc" id="L394">        } catch (IOException e) {</span>
+        }
+        
+<span class="nc" id="L397">        return null;</span>
     }
     
     /**
@@ -285,117 +405,117 @@ import javax.imageio.ImageIO;
      */
     public static GreyscaleImage readImageAsGrayScaleAvgRGB(String filePath) throws Exception {
      
-<span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L289">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L409">            throw new IllegalStateException(&quot;filePath cannot be null&quot;);</span>
         }
                 
         try {
-<span class="fc" id="L293">            File file = new File(filePath);</span>
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if (!file.exists()) {</span>
-<span class="nc" id="L295">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
+<span class="nc" id="L413">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">            if (!file.exists()) {</span>
+<span class="nc" id="L415">                throw new IllegalStateException(filePath + &quot; does not exist&quot;);</span>
             }
             
-<span class="fc" id="L298">            BufferedImage img = ImageIO.read(file);</span>
+<span class="nc" id="L418">            BufferedImage img = ImageIO.read(file);</span>
             
-<span class="fc" id="L300">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
-<span class="fc" id="L301">            ColorConvertOp op = new ColorConvertOp(cs, null);  </span>
+<span class="nc" id="L420">            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  </span>
+<span class="nc" id="L421">            ColorConvertOp op = new ColorConvertOp(cs, null);  </span>
             try {
-<span class="fc" id="L303">                BufferedImage image2 = op.filter(img, null);</span>
-<span class="fc" id="L304">                img = image2;</span>
-<span class="nc" id="L305">            } catch (NullPointerException e) {</span>
+<span class="nc" id="L423">                BufferedImage image2 = op.filter(img, null);</span>
+<span class="nc" id="L424">                img = image2;</span>
+<span class="nc" id="L425">            } catch (NullPointerException e) {</span>
                 // if type is custom, the source color space destination is not defined.
-<span class="fc" id="L307">            }</span>
+<span class="nc" id="L427">            }</span>
                         
-<span class="fc" id="L309">            int h = img.getHeight();</span>
-<span class="fc" id="L310">            int w = img.getWidth();</span>
+<span class="nc" id="L429">            int h = img.getHeight();</span>
+<span class="nc" id="L430">            int w = img.getWidth();</span>
             
-<span class="fc" id="L312">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
-<span class="fc bfc" id="L313" title="All 2 branches covered.">            for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L314" title="All 2 branches covered.">                for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L432">            GreyscaleImage image = new GreyscaleImage(w, h);</span>
+<span class="nc bnc" id="L433" title="All 2 branches missed.">            for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">                for (int j = 0; j &lt; h; j++) {</span>
                     
-<span class="fc" id="L316">                    int rgb = img.getRGB(i, j);</span>
+<span class="nc" id="L436">                    int rgb = img.getRGB(i, j);</span>
                                         
-<span class="fc" id="L318">                    int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L319">                    int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L320">                    int b = rgb &amp; 0xFF;</span>
-<span class="fc" id="L321">                    float v = (r + g + b)/3.f;</span>
+<span class="nc" id="L438">                    int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="nc" id="L439">                    int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="nc" id="L440">                    int b = rgb &amp; 0xFF;</span>
+<span class="nc" id="L441">                    float v = (r + g + b)/3.f;</span>
                     
-<span class="fc" id="L323">                    image.setValue(i, j, (int)v);</span>
+<span class="nc" id="L443">                    image.setValue(i, j, (int)v);</span>
                 }
             }
             
-<span class="fc" id="L327">            return image;</span>
+<span class="nc" id="L447">            return image;</span>
             
-<span class="nc" id="L329">        } catch (IOException e) {</span>
+<span class="nc" id="L449">        } catch (IOException e) {</span>
         }
         
-<span class="nc" id="L332">        return null;</span>
+<span class="nc" id="L452">        return null;</span>
     }
     
     public static void writeOutputImage(String filePath, Image data) 
         throws IOException {
         
-<span class="fc" id="L338">        writeOutputImage(filePath, data,  BufferedImage.TYPE_INT_RGB);       </span>
-<span class="fc" id="L339">    }</span>
+<span class="nc" id="L458">        writeOutputImage(filePath, data,  BufferedImage.TYPE_INT_RGB);       </span>
+<span class="nc" id="L459">    }</span>
     
     public static void writeOutputImage(String filePath, Image data, 
         final int imageType) throws IOException {
                 
-<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        if (data == null) {</span>
-<span class="nc" id="L345">            return;</span>
+<span class="nc bnc" id="L464" title="All 2 branches missed.">        if (data == null) {</span>
+<span class="nc" id="L465">            return;</span>
         }
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L348">            throw new IllegalArgumentException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L468">            throw new IllegalArgumentException(&quot;filePath cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L351">        int w = data.getWidth();</span>
+<span class="nc" id="L471">        int w = data.getWidth();</span>
         
-<span class="fc" id="L353">        int h = data.getHeight();</span>
+<span class="nc" id="L473">        int h = data.getHeight();</span>
         
-<span class="fc" id="L355">        BufferedImage outputImage = new BufferedImage(w, h, </span>
+<span class="nc" id="L475">        BufferedImage outputImage = new BufferedImage(w, h, </span>
             BufferedImage.TYPE_INT_RGB);
         
-<span class="fc bfc" id="L358" title="All 2 branches covered.">        for (int i = 0; i &lt; w; i++) {</span>
-<span class="fc bfc" id="L359" title="All 2 branches covered.">            for (int j = 0; j &lt; h; j++) {</span>
-<span class="fc" id="L360">                int rgbValue = data.getRGB(i, j);</span>
-<span class="fc" id="L361">                outputImage.setRGB(i, j, rgbValue);</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">            for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc" id="L480">                int rgbValue = data.getRGB(i, j);</span>
+<span class="nc" id="L481">                outputImage.setRGB(i, j, rgbValue);</span>
             }
         }
         
-<span class="fc" id="L365">        ImageIO.write(outputImage, &quot;PNG&quot;, new File(filePath));</span>
-<span class="fc" id="L366">    }</span>
+<span class="nc" id="L485">        ImageIO.write(outputImage, &quot;PNG&quot;, new File(filePath));</span>
+<span class="nc" id="L486">    }</span>
     
     public static void writeOutputImage(String filePath, GreyscaleImage data) 
         throws IOException {
                 
-<span class="pc bpc" id="L371" title="1 of 2 branches missed.">        if (data == null) {</span>
-<span class="nc" id="L372">            return;</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">        if (data == null) {</span>
+<span class="nc" id="L492">            return;</span>
         }
-<span class="pc bpc" id="L374" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L375">            throw new IllegalArgumentException(&quot;filePath cannot be null&quot;);</span>
+<span class="nc bnc" id="L494" title="All 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L495">            throw new IllegalArgumentException(&quot;filePath cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L378">        int w = data.getWidth();</span>
+<span class="nc" id="L498">        int w = data.getWidth();</span>
         
-<span class="fc" id="L380">        int h = data.getHeight();</span>
+<span class="nc" id="L500">        int h = data.getHeight();</span>
         
-<span class="fc" id="L382">        BufferedImage outputImage = new BufferedImage(w, h, </span>
+<span class="nc" id="L502">        BufferedImage outputImage = new BufferedImage(w, h, </span>
             BufferedImage.TYPE_BYTE_GRAY);
         
-<span class="fc" id="L385">        WritableRaster raster = outputImage.getRaster();</span>
+<span class="nc" id="L505">        WritableRaster raster = outputImage.getRaster();</span>
         
-<span class="fc bfc" id="L387" title="All 2 branches covered.">        for (int i = 0; i &lt; w; i++) {</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">        for (int i = 0; i &lt; w; i++) {</span>
             
-<span class="fc bfc" id="L389" title="All 2 branches covered.">            for (int j = 0; j &lt; h; j++) {</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">            for (int j = 0; j &lt; h; j++) {</span>
                 
-<span class="fc" id="L391">                int value = data.getValue(i, j);</span>
+<span class="nc" id="L511">                int value = data.getValue(i, j);</span>
                 
-<span class="fc" id="L393">                raster.setSample(i, j, 0, value);</span>
+<span class="nc" id="L513">                raster.setSample(i, j, 0, value);</span>
             }
         }
         
-<span class="fc" id="L397">        ImageIO.write(outputImage, &quot;PNG&quot;, new File(filePath));</span>
-<span class="fc" id="L398">    }</span>
+<span class="nc" id="L517">        ImageIO.write(outputImage, &quot;PNG&quot;, new File(filePath));</span>
+<span class="nc" id="L518">    }</span>
     
     /**
      * draw the edges over input and mark the corners.  The edges are drawn
@@ -414,21 +534,21 @@ import javax.imageio.ImageIO;
         PairIntArray corners, String fileName, int width, int height) throws 
         IOException {
                 
-<span class="nc bnc" id="L417" title="All 6 branches missed.">        if (edges == null || input == null || corners == null) {</span>
-<span class="nc" id="L418">            return;</span>
+<span class="nc bnc" id="L537" title="All 6 branches missed.">        if (edges == null || input == null || corners == null) {</span>
+<span class="nc" id="L538">            return;</span>
         }
-<span class="nc bnc" id="L420" title="All 2 branches missed.">        if (fileName == null) {</span>
-<span class="nc" id="L421">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        if (fileName == null) {</span>
+<span class="nc" id="L541">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L424">        addAlternatingColorCurvesToImage(edges, fileName, false, input);</span>
+<span class="nc" id="L544">        addAlternatingColorCurvesToImage(edges, fileName, false, input);</span>
                 
-<span class="nc" id="L426">        addCurveToImage(corners, input, 1, 255, 0, 0);</span>
+<span class="nc" id="L546">        addCurveToImage(corners, input, 1, 255, 0, 0);</span>
         
-<span class="nc" id="L428">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L548">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
        
-<span class="nc" id="L430">        ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + fileName, input);</span>
-<span class="nc" id="L431">    }</span>
+<span class="nc" id="L550">        ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + fileName, input);</span>
+<span class="nc" id="L551">    }</span>
     
     /**
      * draw the edge over the image using the given rgb colors and the size
@@ -444,31 +564,260 @@ import javax.imageio.ImageIO;
     public static void addCurveToImage(PairIntArray edge, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="pc bpc" id="L447" title="2 of 4 branches missed.">        if (edge == null || input == null) {</span>
-<span class="nc" id="L448">            return;</span>
+<span class="nc bnc" id="L567" title="All 4 branches missed.">        if (edge == null || input == null) {</span>
+<span class="nc" id="L568">            return;</span>
         }
         
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
-<span class="fc" id="L452">            int x = edge.getX(i);</span>
-<span class="fc" id="L453">            int y = edge.getY(i);</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
+<span class="nc" id="L572">            int x = edge.getX(i);</span>
+<span class="nc" id="L573">            int y = edge.getY(i);</span>
             
-<span class="fc bfc" id="L455" title="All 2 branches covered.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
                 
-<span class="fc" id="L457">                float xx = x + dx;</span>
+<span class="nc" id="L577">                float xx = x + dx;</span>
                 
-<span class="pc bpc" id="L459" title="1 of 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
-<span class="fc bfc" id="L460" title="All 2 branches covered.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
-<span class="fc" id="L461">                        dy++) {</span>
+<span class="nc bnc" id="L579" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L581">                        dy++) {</span>
                         
-<span class="fc" id="L463">                        float yy = y + dy;</span>
-<span class="pc bpc" id="L464" title="1 of 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
-<span class="fc" id="L465">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L583">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L584" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L585">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                         }
                     }
                 }
             }
         }
-<span class="fc" id="L471">    }</span>
+<span class="nc" id="L591">    }</span>
+    
+    /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
+     * @param xVertexes
+     * @param yVertexes
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void drawLinesInImage(int[] xVertexes, int[] yVertexes, 
+        Image input, int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+<span class="nc bnc" id="L608" title="All 6 branches missed.">        if (xVertexes == null || yVertexes == null || input == null) {</span>
+<span class="nc" id="L609">            return;</span>
+        }
+<span class="nc bnc" id="L611" title="All 2 branches missed.">        if (xVertexes.length != yVertexes.length) {</span>
+<span class="nc" id="L612">            return;</span>
+        }
+        
+<span class="nc bnc" id="L615" title="All 2 branches missed.">        for (int i = 0; i &lt; (xVertexes.length - 1); i++) {</span>
+            
+<span class="nc" id="L617">            int x1 = xVertexes[i];</span>
+<span class="nc" id="L618">            int y1 = yVertexes[i];</span>
+            
+<span class="nc" id="L620">            int x2 = xVertexes[i + 1];</span>
+<span class="nc" id="L621">            int y2 = yVertexes[i + 1];</span>
+            
+<span class="nc bnc" id="L623" title="All 2 branches missed.">            if (x2 &lt; x1) {</span>
+<span class="nc" id="L624">                int swap = x1;</span>
+<span class="nc" id="L625">                x1 = x2;</span>
+<span class="nc" id="L626">                x2 = swap;</span>
+<span class="nc" id="L627">                swap = y1;</span>
+<span class="nc" id="L628">                y1 = y2;</span>
+<span class="nc" id="L629">                y2 = swap;</span>
+            }
+            
+<span class="nc" id="L632">            int dx0 = x2 - x1;</span>
+<span class="nc" id="L633">            int dy0 = y2 - y1;</span>
+<span class="nc" id="L634">            int nLine = (int)Math.ceil(Math.sqrt(dx0*dx0 + dy0*dy0));</span>
+<span class="nc bnc" id="L635" title="All 6 branches missed.">            if (nLine == 1 &amp;&amp; (dx0 &gt; 0 || dy0 &gt; 0)) {</span>
+<span class="nc" id="L636">                nLine = 2;</span>
+            }
+<span class="nc" id="L638">int z = 1;          </span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nLine; ++ii) {</span>
+            
+                int x, y;
+                
+<span class="nc bnc" id="L643" title="All 2 branches missed.">                if (dx0 == 0) {</span>
+<span class="nc" id="L644">                    x = x1;</span>
+<span class="nc" id="L645">                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));</span>
+<span class="nc bnc" id="L646" title="All 2 branches missed.">                } else if (dy0 == 0) {</span>
+<span class="nc" id="L647">                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));</span>
+<span class="nc" id="L648">                    y = y1;</span>
+                } else {
+<span class="nc" id="L650">                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));</span>
+<span class="nc" id="L651">                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));</span>
+                }                
+<span class="nc" id="L653">int z1 = 1;            </span>
+<span class="nc bnc" id="L654" title="All 2 branches missed.">                for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+
+<span class="nc" id="L656">                    float xx = x + dx;</span>
+
+<span class="nc bnc" id="L658" title="All 4 branches missed.">                    if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">                        for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L660">                            dy++) {</span>
+
+<span class="nc" id="L662">                            float yy = y + dy;</span>
+<span class="nc bnc" id="L663" title="All 4 branches missed.">                            if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L664">                                input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+                            }
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L671">    }</span>
+    
+    /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
+     * @param xVertexes
+     * @param yVertexes
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addCurveToImage(int[] xVertexes, int[] yVertexes, 
+        Image input, int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+<span class="nc bnc" id="L688" title="All 6 branches missed.">        if (xVertexes == null || yVertexes == null || input == null) {</span>
+<span class="nc" id="L689">            return;</span>
+        }
+<span class="nc bnc" id="L691" title="All 2 branches missed.">        if (xVertexes.length != yVertexes.length) {</span>
+<span class="nc" id="L692">            return;</span>
+        }
+        
+<span class="nc bnc" id="L695" title="All 2 branches missed.">        for (int i = 0; i &lt; xVertexes.length; i++) {</span>
+            
+<span class="nc" id="L697">            int x = xVertexes[i];</span>
+<span class="nc" id="L698">            int y = yVertexes[i];</span>
+            
+<span class="nc bnc" id="L700" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+
+<span class="nc" id="L702">                float xx = x + dx;</span>
+
+<span class="nc bnc" id="L704" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L705" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L706">                        dy++) {</span>
+
+<span class="nc" id="L708">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L709" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L710">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L716">    }</span>
+    
+    /**
+     * draw the edge over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param edge
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addCurveToImage(PairFloatArray edge, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+<span class="nc bnc" id="L732" title="All 4 branches missed.">        if (edge == null || input == null) {</span>
+<span class="nc" id="L733">            return;</span>
+        }
+        
+<span class="nc bnc" id="L736" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
+<span class="nc" id="L737">            int x = Math.round(edge.getX(i));</span>
+<span class="nc" id="L738">            int y = Math.round(edge.getY(i));</span>
+            
+<span class="nc bnc" id="L740" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+                
+<span class="nc" id="L742">                int xx = x + dx;</span>
+                
+<span class="nc bnc" id="L744" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L745" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L746">                        dy++) {</span>
+                        
+<span class="nc" id="L748">                        int yy = y + dy;</span>
+<span class="nc bnc" id="L749" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L750">                            input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L756">    }</span>
+    
+    /**
+     * draw the point over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param x of point
+     * @param y of point
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addPointToImage(int x, int y, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+<span class="nc bnc" id="L773" title="All 2 branches missed.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+
+<span class="nc" id="L775">            int xx = x + dx;</span>
+
+<span class="nc bnc" id="L777" title="All 4 branches missed.">            if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L778" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L779">                    dy++) {</span>
+
+<span class="nc" id="L781">                    int yy = y + dy;</span>
+<span class="nc bnc" id="L782" title="All 4 branches missed.">                    if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L783">                        input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L788">    }</span>
+    
+    /**
+     * draw the point over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param x of point
+     * @param y of point
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addPointToImage(float x, float y, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+<span class="nc bnc" id="L805" title="All 2 branches missed.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+
+<span class="nc" id="L807">            int xx = Math.round(x + dx);</span>
+
+<span class="nc bnc" id="L809" title="All 4 branches missed.">            if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L811">                    dy++) {</span>
+
+<span class="nc" id="L813">                    int yy = Math.round(y + dy);</span>
+<span class="nc bnc" id="L814" title="All 4 branches missed.">                    if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L815">                        input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L820">    }</span>
     
     /**
      * draw the edge over the image using the given rgb colors and the size
@@ -487,168 +836,316 @@ import javax.imageio.ImageIO;
         final int nPointsInEdge, Image input, int nExtraForDot, int rClr, 
         int gClr, int bClr) {
         
-<span class="nc bnc" id="L490" title="All 4 branches missed.">        if (edgeX == null || edgeY == null) {</span>
-<span class="nc" id="L491">            return;</span>
+<span class="nc bnc" id="L839" title="All 4 branches missed.">        if (edgeX == null || edgeY == null) {</span>
+<span class="nc" id="L840">            return;</span>
         }
-<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (edgeX.length != edgeY.length) {</span>
-<span class="nc" id="L494">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L842" title="All 2 branches missed.">        if (edgeX.length != edgeY.length) {</span>
+<span class="nc" id="L843">            throw new IllegalArgumentException(</span>
                 &quot;edgeX and edgeY should be same length&quot;);
         }
         
-<span class="nc bnc" id="L498" title="All 2 branches missed.">        for (int i = 0; i &lt; nPointsInEdge; i++) {</span>
+<span class="nc bnc" id="L847" title="All 2 branches missed.">        for (int i = 0; i &lt; nPointsInEdge; i++) {</span>
             
-<span class="nc" id="L500">            int x = edgeX[i];</span>
-<span class="nc" id="L501">            int y = edgeY[i];</span>
+<span class="nc" id="L849">            int x = edgeX[i];</span>
+<span class="nc" id="L850">            int y = edgeY[i];</span>
             
-<span class="nc bnc" id="L503" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc bnc" id="L852" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
                 
-<span class="nc" id="L505">                float xx = x + dx;</span>
+<span class="nc" id="L854">                float xx = x + dx;</span>
                 
-<span class="nc bnc" id="L507" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
-<span class="nc bnc" id="L508" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
-<span class="nc" id="L509">                        dy++) {</span>
+<span class="nc bnc" id="L856" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L857" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L858">                        dy++) {</span>
                         
-<span class="nc" id="L511">                        float yy = y + dy;</span>
-<span class="nc bnc" id="L512" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
-<span class="nc" id="L513">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L860">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L861" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L862">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                         }
                     }
                 }
             }
         }
-<span class="nc" id="L519">    }</span>
+<span class="nc" id="L868">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         PairIntArray[] curves, String fileName, boolean writeImage, 
         Image input) throws IOException {
         
-<span class="nc bnc" id="L525" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L526">            return;</span>
+<span class="nc bnc" id="L874" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L875">            return;</span>
         }
-<span class="nc bnc" id="L528" title="All 2 branches missed.">        if (fileName == null) {</span>
-<span class="nc" id="L529">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
-        }
-        
-<span class="nc" id="L532">        List&lt;PairIntArray&gt; c = new ArrayList&lt;PairIntArray&gt;();</span>
-        
-<span class="nc bnc" id="L534" title="All 2 branches missed.">        for (PairIntArray a : curves) {</span>
-<span class="nc" id="L535">            c.add(a);</span>
+<span class="nc bnc" id="L877" title="All 2 branches missed.">        if (fileName == null) {</span>
+<span class="nc" id="L878">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L538">        addAlternatingColorCurvesToImage(c, fileName, writeImage, input);</span>
-<span class="nc" id="L539">    }</span>
+<span class="nc" id="L881">        List&lt;PairIntArray&gt; c = new ArrayList&lt;PairIntArray&gt;();</span>
+        
+<span class="nc bnc" id="L883" title="All 2 branches missed.">        for (PairIntArray a : curves) {</span>
+<span class="nc" id="L884">            c.add(a);</span>
+        }
+        
+<span class="nc" id="L887">        addAlternatingColorCurvesToImage(c, fileName, writeImage, input);</span>
+<span class="nc" id="L888">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, Image input) throws IOException {
         
-<span class="pc bpc" id="L544" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L545">            return;</span>
+<span class="nc bnc" id="L893" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L894">            return;</span>
         }
         
-<span class="fc" id="L548">        addAlternatingColorCurvesToImage(</span>
-            curves.toArray(new PairIntArray[curves.size()]),
+<span class="nc" id="L897">        addAlternatingColorCurvesToImage(</span>
+<span class="nc" id="L898">            curves.toArray(new PairIntArray[curves.size()]),</span>
             input);
-<span class="fc" id="L551">    }</span>
+<span class="nc" id="L900">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         PairIntArray[] curves, Image input) throws IOException {
         
-<span class="pc bpc" id="L556" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L557">            return;</span>
+<span class="nc bnc" id="L905" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L906">            return;</span>
         }
         
-<span class="fc" id="L560">        int clr = 0;</span>
+<span class="nc" id="L909">        int clr = 0;</span>
         
-<span class="fc bfc" id="L562" title="All 2 branches covered.">        for (int i = 0; i &lt; curves.length; i++) {</span>
-<span class="fc" id="L563">            PairIntArray edge = curves[i];</span>
-<span class="fc bfc" id="L564" title="All 2 branches covered.">            if (clr &gt; 5) {</span>
-<span class="fc" id="L565">                clr = 0;</span>
+<span class="nc bnc" id="L911" title="All 2 branches missed.">        for (int i = 0; i &lt; curves.length; i++) {</span>
+<span class="nc" id="L912">            PairIntArray edge = curves[i];</span>
+<span class="nc bnc" id="L913" title="All 2 branches missed.">            if (clr &gt; 5) {</span>
+<span class="nc" id="L914">                clr = 0;</span>
             }
-<span class="fc" id="L567">            int c = Color.BLUE.getRGB();</span>
-<span class="fc bfc" id="L568" title="All 6 branches covered.">            switch(clr) {</span>
+<span class="nc" id="L916">            int c = Color.BLUE.getRGB();</span>
+<span class="nc bnc" id="L917" title="All 6 branches missed.">            switch(clr) {</span>
                 case 1:
-<span class="fc" id="L570">                    c = Color.PINK.getRGB();</span>
-<span class="fc" id="L571">                    break;</span>
+<span class="nc" id="L919">                    c = Color.PINK.getRGB();</span>
+<span class="nc" id="L920">                    break;</span>
                 case 2:
-<span class="fc" id="L573">                    c = Color.GREEN.getRGB();</span>
-<span class="fc" id="L574">                    break;</span>
+<span class="nc" id="L922">                    c = Color.GREEN.getRGB();</span>
+<span class="nc" id="L923">                    break;</span>
                 case 3:
-<span class="fc" id="L576">                    c = Color.RED.getRGB();</span>
-<span class="fc" id="L577">                    break;</span>
+<span class="nc" id="L925">                    c = Color.RED.getRGB();</span>
+<span class="nc" id="L926">                    break;</span>
                 case 4:
-<span class="fc" id="L579">                    c = Color.CYAN.getRGB();</span>
-<span class="fc" id="L580">                    break;</span>
+<span class="nc" id="L928">                    c = Color.CYAN.getRGB();</span>
+<span class="nc" id="L929">                    break;</span>
                 case 5:
-<span class="fc" id="L582">                    c = Color.MAGENTA.getRGB();</span>
-<span class="fc" id="L583">                    break;</span>
+<span class="nc" id="L931">                    c = Color.MAGENTA.getRGB();</span>
+<span class="nc" id="L932">                    break;</span>
                 default:
                     break;
             }
-<span class="fc bfc" id="L587" title="All 2 branches covered.">            for (int ii = 0; ii &lt; edge.getN(); ii++) {</span>
+<span class="nc bnc" id="L936" title="All 2 branches missed.">            for (int ii = 0; ii &lt; edge.getN(); ii++) {</span>
                 
-<span class="fc" id="L589">                int col = edge.getX(ii);</span>
-<span class="fc" id="L590">                int row = edge.getY(ii);</span>
+<span class="nc" id="L938">                int col = edge.getX(ii);</span>
+<span class="nc" id="L939">                int row = edge.getY(ii);</span>
                 
-<span class="pc bpc" id="L592" title="4 of 8 branches missed.">                if ((col &gt; -1) &amp;&amp; (col &lt; input.getWidth()) &amp;&amp;</span>
-                    (row &gt; -1) &amp;&amp; (row &lt; input.getHeight())) {
+<span class="nc bnc" id="L941" title="All 6 branches missed.">                if ((col &gt; -1) &amp;&amp; (col &lt; input.getWidth()) &amp;&amp;</span>
+<span class="nc bnc" id="L942" title="All 2 branches missed.">                    (row &gt; -1) &amp;&amp; (row &lt; input.getHeight())) {</span>
                 
-<span class="fc" id="L595">                    input.setRGB(col, row, c);</span>
+<span class="nc" id="L944">                    input.setRGB(col, row, c);</span>
                 }
             }
-<span class="fc" id="L598">            clr++;</span>
+<span class="nc" id="L947">            clr++;</span>
         }
-<span class="fc" id="L600">    }</span>
+<span class="nc" id="L949">    }</span>
+    
+    public static void addAlternatingColorPointSetsToImage(
+        List&lt;Set&lt;PairInt&gt;&gt; pointSets, int xOffset, int yOffset, Image input) 
+        throws IOException {
+        
+<span class="nc bnc" id="L955" title="All 4 branches missed.">        if (pointSets == null || input == null) {</span>
+<span class="nc" id="L956">            return;</span>
+        }
+        
+<span class="nc" id="L959">        int clr = 0;</span>
+        
+<span class="nc bnc" id="L961" title="All 2 branches missed.">        for (int i = 0; i &lt; pointSets.size(); i++) {</span>
+<span class="nc" id="L962">            Set&lt;PairInt&gt; points = pointSets.get(i);</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">            if (clr &gt; 5) {</span>
+<span class="nc" id="L964">                clr = 0;</span>
+            }
+<span class="nc" id="L966">            int c = Color.BLUE.getRGB();</span>
+<span class="nc bnc" id="L967" title="All 6 branches missed.">            switch(clr) {</span>
+                case 1:
+<span class="nc" id="L969">                    c = Color.PINK.getRGB();</span>
+<span class="nc" id="L970">                    break;</span>
+                case 2:
+<span class="nc" id="L972">                    c = Color.GREEN.getRGB();</span>
+<span class="nc" id="L973">                    break;</span>
+                case 3:
+<span class="nc" id="L975">                    c = Color.RED.getRGB();</span>
+<span class="nc" id="L976">                    break;</span>
+                case 4:
+<span class="nc" id="L978">                    c = Color.CYAN.getRGB();</span>
+<span class="nc" id="L979">                    break;</span>
+                case 5:
+<span class="nc" id="L981">                    c = Color.MAGENTA.getRGB();</span>
+<span class="nc" id="L982">                    break;</span>
+                default:
+                    break;
+            }
+<span class="nc bnc" id="L986" title="All 2 branches missed.">            for (PairInt p : points) {</span>
+                
+<span class="nc" id="L988">                int col = p.getX() + xOffset;</span>
+<span class="nc" id="L989">                int row = p.getY() + yOffset;</span>
+                
+<span class="nc bnc" id="L991" title="All 6 branches missed.">                if ((col &gt; -1) &amp;&amp; (col &lt; input.getWidth()) &amp;&amp;</span>
+<span class="nc bnc" id="L992" title="All 2 branches missed.">                    (row &gt; -1) &amp;&amp; (row &lt; input.getHeight())) {</span>
+                
+<span class="nc" id="L994">                    input.setRGB(col, row, c);</span>
+                }
+<span class="nc" id="L996">            }</span>
+<span class="nc" id="L997">            clr++;</span>
+        }
+<span class="nc" id="L999">    }</span>
+    
+    public static void addToImage(Set&lt;PairInt&gt; points, int xOffsetToApply, 
+        int yOffsetToApply, Image input) throws IOException {
+        
+<span class="nc bnc" id="L1004" title="All 4 branches missed.">        if (points == null || input == null) {</span>
+<span class="nc" id="L1005">            return;</span>
+        }
+        
+<span class="nc" id="L1008">        int c = Color.BLUE.getRGB();</span>
+          
+<span class="nc bnc" id="L1010" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+
+<span class="nc" id="L1012">            int col = p.getX() + xOffsetToApply;</span>
+<span class="nc" id="L1013">            int row = p.getY() + yOffsetToApply;</span>
+
+<span class="nc bnc" id="L1015" title="All 6 branches missed.">            if ((col &gt; -1) &amp;&amp; (col &lt; input.getWidth()) &amp;&amp;</span>
+<span class="nc bnc" id="L1016" title="All 2 branches missed.">                (row &gt; -1) &amp;&amp; (row &lt; input.getHeight())) {</span>
+
+<span class="nc" id="L1018">                input.setRGB(col, row, c);</span>
+            }
+<span class="nc" id="L1020">        }</span>
+<span class="nc" id="L1021">    }</span>
+    
+    public static void addToImage(Set&lt;PairInt&gt; points, int xOffsetToApply, 
+        int yOffsetToApply, Image input, int rClr, int gClr, int bClr) throws 
+        IOException {
+        
+<span class="nc bnc" id="L1027" title="All 4 branches missed.">        if (points == null || input == null) {</span>
+<span class="nc" id="L1028">            return;</span>
+        }
+                  
+<span class="nc bnc" id="L1031" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+
+<span class="nc" id="L1033">            int col = p.getX() + xOffsetToApply;</span>
+<span class="nc" id="L1034">            int row = p.getY() + yOffsetToApply;</span>
+
+<span class="nc bnc" id="L1036" title="All 6 branches missed.">            if ((col &gt; -1) &amp;&amp; (col &lt; input.getWidth()) &amp;&amp;</span>
+<span class="nc bnc" id="L1037" title="All 2 branches missed.">                (row &gt; -1) &amp;&amp; (row &lt; input.getHeight())) {</span>
+
+<span class="nc" id="L1039">                input.setRGB(col, row, rClr, gClr, bClr);</span>
+            }
+<span class="nc" id="L1041">        }</span>
+<span class="nc" id="L1042">    }</span>
 
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, String fileName, boolean writeImage, 
         Image input) throws IOException {
         
-<span class="nc bnc" id="L606" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L607">            return;</span>
+<span class="nc bnc" id="L1048" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1049">            return;</span>
         }
-<span class="nc bnc" id="L609" title="All 2 branches missed.">        if (fileName == null) {</span>
-<span class="nc" id="L610">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
+<span class="nc bnc" id="L1051" title="All 2 branches missed.">        if (fileName == null) {</span>
+<span class="nc" id="L1052">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L613">        addAlternatingColorCurvesToImage(curves, input);</span>
+<span class="nc" id="L1055">        addAlternatingColorCurvesToImage(curves, input);</span>
        
-<span class="nc bnc" id="L615" title="All 2 branches missed.">        if (!writeImage) {</span>
-<span class="nc" id="L616">            return;</span>
+<span class="nc bnc" id="L1057" title="All 2 branches missed.">        if (!writeImage) {</span>
+<span class="nc" id="L1058">            return;</span>
         }
         
         try {
-<span class="nc" id="L620">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="nc" id="L621">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + fileName, input);</span>
-<span class="nc" id="L622">        } catch (IOException ex) {</span>
-<span class="nc" id="L623">            Logger.getLogger(ImageIOHelper.class.getName()).severe(</span>
-                &quot;ERROR: l446&quot; + ex.getMessage());
-<span class="nc" id="L625">        }</span>
-<span class="nc" id="L626">    }</span>
+<span class="nc" id="L1062">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L1063">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + fileName, input);</span>
+<span class="nc" id="L1064">        } catch (IOException ex) {</span>
+<span class="nc" id="L1065">            Logger.getLogger(ImageIOHelper.class.getName()).severe(</span>
+<span class="nc" id="L1066">                &quot;ERROR: l446&quot; + ex.getMessage());</span>
+<span class="nc" id="L1067">        }</span>
+<span class="nc" id="L1068">    }</span>
 
     public static void addCurveToImage(ScaleSpaceCurve curve, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L631" title="All 4 branches missed.">        if (curve == null || input == null) {</span>
-<span class="nc" id="L632">            return;</span>
+<span class="nc bnc" id="L1073" title="All 4 branches missed.">        if (curve == null || input == null) {</span>
+<span class="nc" id="L1074">            return;</span>
         }
         
-<span class="nc bnc" id="L635" title="All 2 branches missed.">        for (int i = 0; i &lt; curve.getSize(); i++) {</span>
-<span class="nc" id="L636">            int x = (int) curve.getX(i);</span>
-<span class="nc" id="L637">            int y = (int) curve.getY(i);</span>
+<span class="nc bnc" id="L1077" title="All 2 branches missed.">        for (int i = 0; i &lt; curve.getSize(); i++) {</span>
+<span class="nc" id="L1078">            int x = (int) curve.getX(i);</span>
+<span class="nc" id="L1079">            int y = (int) curve.getY(i);</span>
             
-<span class="nc bnc" id="L639" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L640">                float xx = x + dx;</span>
-<span class="nc bnc" id="L641" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
-<span class="nc bnc" id="L642" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); dy++) {</span>
-<span class="nc" id="L643">                        float yy = y + dy;</span>
-<span class="nc bnc" id="L644" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
-<span class="nc" id="L645">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+<span class="nc bnc" id="L1081" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L1082">                float xx = x + dx;</span>
+<span class="nc bnc" id="L1083" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L1084" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); dy++) {</span>
+<span class="nc" id="L1085">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L1086" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L1087">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                         }
                     }
                 }
             }
         }
-<span class="nc" id="L651">    }</span>
+<span class="nc" id="L1093">    }</span>
+
+    public static void addToImage(float[] xP, float[] yP, 
+        int xOffsetToApply, int yOffsetToApply, Image input,
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+<span class="nc bnc" id="L1099" title="All 6 branches missed.">        if (xP == null || yP == null || input == null) {</span>
+<span class="nc" id="L1100">            return;</span>
+        }
+        
+<span class="nc bnc" id="L1103" title="All 2 branches missed.">        for (int i = 0; i &lt; xP.length; i++) {</span>
+            
+<span class="nc" id="L1105">            int x = Math.round(xP[i]) + xOffsetToApply;</span>
+            
+<span class="nc" id="L1107">            int y = Math.round(yP[i]) + yOffsetToApply;</span>
+            
+<span class="nc bnc" id="L1109" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L1110">                float xx = x + dx;</span>
+<span class="nc bnc" id="L1111" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L1112" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); dy++) {</span>
+<span class="nc" id="L1113">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L1114" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L1115">                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L1121">    }</span>
     
+    public static void addToImage(int[] xP, int[] yP, 
+        int xOffsetToApply, int yOffsetToApply, Image input,
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+<span class="nc bnc" id="L1127" title="All 6 branches missed.">        if (xP == null || yP == null || input == null) {</span>
+<span class="nc" id="L1128">            return;</span>
+        }
+        
+<span class="nc bnc" id="L1131" title="All 2 branches missed.">        for (int i = 0; i &lt; xP.length; i++) {</span>
+            
+<span class="nc" id="L1133">            int x = xP[i] + xOffsetToApply;</span>
+            
+<span class="nc" id="L1135">            int y = yP[i] + yOffsetToApply;</span>
+            
+<span class="nc bnc" id="L1137" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L1138">                int xx = x + dx;</span>
+<span class="nc bnc" id="L1139" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L1140" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); dy++) {</span>
+<span class="nc" id="L1141">                        int yy = y + dy;</span>
+<span class="nc bnc" id="L1142" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L1143">                            input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L1149">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

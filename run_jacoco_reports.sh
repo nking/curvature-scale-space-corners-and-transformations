@@ -21,7 +21,7 @@ jarFiles3=$ANT_HOME/lib/ant.jar:~/.m2/repository/cglib/cglib-nodep/2.1_3/cglib-n
 classPath=$emmaJar:$jarFiles3
 
 logLevel="INFO"
-echo "make a logging.properties with level=${logLevel}"
+echo "making a logging.properties with level=${logLevel}"
 rm bin/logging.properties
 
 clsPath=.:${cwd}/bin/classes:bin/classes:$classPath

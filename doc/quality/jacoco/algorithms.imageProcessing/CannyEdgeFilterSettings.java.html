@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CannyEdgeFilterSettings.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CannyEdgeFilterSettings.java</span></div><h1>CannyEdgeFilterSettings.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="nc" id="L7">public class CannyEdgeFilterSettings {</span>
+    
+<span class="nc" id="L9">    private boolean useOutdoorMode = false;</span>
+    
+<span class="nc" id="L11">    private boolean doNotNormalizeByHistogram = false;</span>
+    
+<span class="nc" id="L13">    private boolean useLineDrawingMode = false;</span>
+    
+<span class="nc" id="L15">    private boolean overrideHighThreshold = false;</span>
+    
+<span class="nc" id="L17">    private int[] shrinkToSize = null;</span>
+    
+    /**
+     * field only used if overrideHighThreshold is true.
+     */
+<span class="nc" id="L22">    private float highThreshold = 0.0f;</span>
+    
+    public void setOverrideHighThreshold(float value) {
+        
+<span class="nc" id="L26">        overrideHighThreshold = true;</span>
+        
+<span class="nc" id="L28">        highThreshold = value;</span>
+<span class="nc" id="L29">    }</span>
+    
+    public boolean getOverrideHighThreshold() {
+<span class="nc" id="L32">        return overrideHighThreshold;</span>
+    }
+
+    public void setUseOutdoorMode() {
+<span class="nc" id="L36">        this.useOutdoorMode = true;</span>
+<span class="nc" id="L37">    }</span>
+
+    public void setDoNotNormalizeByHistogram() {
+<span class="nc" id="L40">        this.doNotNormalizeByHistogram = true;</span>
+<span class="nc" id="L41">    }</span>
+
+    public void setUseLineDrawingMode() {
+<span class="nc" id="L44">        this.useLineDrawingMode = true;</span>
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * @return the highThreshold
+     */
+    public float getHighThreshold() {
+<span class="nc" id="L51">        return highThreshold;</span>
+    }
+    
+    public boolean getUseOutdoorMode() {
+<span class="nc" id="L55">        return useOutdoorMode;</span>
+    }
+    
+    public boolean getDoNotNormalizeByHistogram() {
+<span class="nc" id="L59">        return doNotNormalizeByHistogram;</span>
+    }
+    
+    public boolean getUseLineDrawingMode() {
+<span class="nc" id="L63">        return useLineDrawingMode;</span>
+    }
+    
+    public void setShrinkToSize(int xOffset, int yOffset, int width, int height) {
+<span class="nc" id="L67">        shrinkToSize = new int[]{xOffset, yOffset, width, height};</span>
+<span class="nc" id="L68">    }</span>
+    
+    public int[] getShrinkToSize() {
+<span class="nc" id="L71">        return shrinkToSize;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

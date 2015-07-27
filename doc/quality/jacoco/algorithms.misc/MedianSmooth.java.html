@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MedianSmooth.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">MedianSmooth.java</span></div><h1>MedianSmooth.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+
+import algorithms.util.PairIntArray;
+import java.util.Arrays;
+
+/**
+ * class to calculate a running median of the k previous points of curveY.
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L11">public class MedianSmooth {</span>
+    
+    /**
+     * calculate a running median of the k previous points of curveY.
+     * runtime complexity is O(k) + O(N*lg_2(k)) at most.
+     * @param curveY
+     * @param kPoints
+     * @return 
+     */
+    public int[] calculate(int[] curveY, int kPoints) {
+        
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        if (curveY == null) {</span>
+<span class="fc" id="L23">            throw new IllegalArgumentException(&quot;curveY cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (curveY.length &lt; kPoints) {</span>
+<span class="fc" id="L26">            throw new IllegalArgumentException(</span>
+            &quot;curveY.length must be equal to or greater than kPoints&quot;);
+        }
+        
+<span class="fc" id="L30">        int[] medians = new int[curveY.length - kPoints + 1];</span>
+        
+<span class="fc" id="L32">        SortedVector sVec = new SortedVector(kPoints);</span>
+        
+        // add the first k-1 to the list container
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (int i = 0; i &lt; (kPoints - 1); i++) {</span>
+<span class="fc" id="L36">            sVec.append(curveY[i]);</span>
+        }
+        //O(k) + + (N)*lg2(k)
+        int median;
+        
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = (kPoints - 1); i &lt; curveY.length; i++) {</span>
+          
+            // add the kth item to the list: O(log_2(k)) + &lt; O(k)
+            // the list state is sorted at the end of the method.
+<span class="fc" id="L45">            sVec.insertIntoOpenSlot(curveY[i]);</span>
+            
+            //O(1)
+<span class="fc" id="L48">            median = sVec.getMedian();</span>
+            
+<span class="fc" id="L50">            int idx = i - kPoints + 1;</span>
+                        
+            // remove the x[i - k + 1] item from sorted list : O(log_2(k))
+<span class="fc" id="L53">            sVec.remove(curveY[idx]);</span>
+            
+<span class="fc" id="L55">            medians[idx] = median;</span>
+        }
+        
+<span class="fc" id="L58">        return medians;</span>
+    }
+    
+    /**
+     * calculate a running median of the k previous points of curve.
+     * runtime complexity is O(N*k) at most.
+     * @param curve
+     * @param kPoints
+     * @return 
+     */
+    public PairIntArray calculate(PairIntArray curve, int kPoints) {
+        
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (curve == null) {</span>
+<span class="fc" id="L71">            throw new IllegalArgumentException(&quot;curve cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (curve.getN() &lt; kPoints) {</span>
+<span class="fc" id="L74">            throw new IllegalArgumentException(</span>
+            &quot;curve length must be equal to or greater than kPoints&quot;);
+        }
+        
+<span class="fc" id="L78">        PairIntArray medians = new PairIntArray(curve.getN() - kPoints + 1);</span>
+        
+<span class="fc" id="L80">        SortedVector sVec = new SortedVector(kPoints);</span>
+        
+<span class="fc" id="L82">        long xSum = 0;</span>
+        
+        // add the first k-1 to the list container
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; (kPoints - 1); ++i) {</span>
+            
+<span class="fc" id="L87">            sVec.append(curve.getY(i));</span>
+            
+<span class="fc" id="L89">            xSum += curve.getX(i);</span>
+        }
+        
+        int median;
+        
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (int i = (kPoints - 1); i &lt; curve.getN(); ++i) {</span>
+          
+            // add the kth item to the list: O(log_2(k)) + &lt; O(k)
+            // the list state is sorted at the end of the method.
+<span class="fc" id="L98">            sVec.insertIntoOpenSlot(curve.getY(i));</span>
+            
+            //O(1)
+<span class="fc" id="L101">            median = sVec.getMedian();</span>
+            
+<span class="fc" id="L103">            int idx = i - kPoints + 1;</span>
+                        
+            // remove the x[i - k + 1] item from sorted list : O(log_2(k))
+<span class="fc" id="L106">            sVec.remove(curve.getY(idx));</span>
+            
+            //TODO: can be improved if know that the points are evenly sampled
+<span class="fc" id="L109">            xSum += curve.getX(i);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            if (idx &gt; 0) {</span>
+<span class="fc" id="L111">                xSum -= curve.getX(idx - 1);</span>
+            }
+            
+<span class="fc" id="L114">            medians.add((int)(xSum/kPoints), median);</span>
+        }
+        
+<span class="fc" id="L117">        return medians;</span>
+    }
+    
+    /**
+     * a fixed size list that keeps the contents sorted after the capacity is
+     * reached.  points are added one at a time and removed one at a time.
+     */
+<span class="fc" id="L124">    static class SortedVector {</span>
+        
+        protected final int[] a;
+        
+        protected int n;
+        
+        protected int availSlot;
+        
+        protected boolean sorted;
+        
+<span class="fc" id="L134">        public SortedVector(int size) {</span>
+            
+<span class="fc" id="L136">            a = new int[size];</span>
+            
+<span class="fc" id="L138">            n = 0;</span>
+            
+<span class="fc" id="L140">            availSlot = -1;</span>
+            
+<span class="fc" id="L142">            sorted = false;</span>
+<span class="fc" id="L143">        }</span>
+        
+        /**
+         * append item value onto the end of the list.  Note that if the item
+         * is added to the last slot, the list is immediately sorted into 
+         * ascending numerical order
+         * afterwards as a side effect to keep the logic in the other
+         * methods consistent.
+         * runtime is usually O(1), but if append is used for the last item,
+         * there is a sort adding O(N*log_2(N)).
+         * For best use, append(v) the first size-1 items and thereafter use
+         * insertIntoOpenSlot(v).
+         * 
+         * @param value 
+         */
+        public void append(int value) {
+            
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            if (n == (a.length)) {</span>
+<span class="fc" id="L161">                throw new IllegalArgumentException(</span>
+                    &quot;there must be an empty slot in order to append.&quot; +
+                    &quot; remove and item then try insert again or construct larger list.&quot;);
+            }
+            
+<span class="fc" id="L166">            a[n] = value;</span>
+            
+<span class="fc" id="L168">            n++;</span>
+            
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if (n == a.length) {</span>
+                
+<span class="fc" id="L172">                Arrays.sort(a);</span>
+                
+<span class="fc" id="L174">                sorted = true;</span>
+            }
+<span class="fc" id="L176">        }</span>
+        
+        /**
+         * Insert the value into the list while maintaining the sorted state
+         * of the list.  Note that if there is not exactly one available slot
+         * in the list, an IllegalArgumentException will be thrown.
+         * runtime is usually O(log_2(N)) + less than O(N), but once per class lifetime
+         * the sort may occur here adding O(N*log_2(N)).
+         * @param value 
+         */
+        public void insertIntoOpenSlot(int value) {
+            
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">            if (n != (a.length - 1)) {</span>
+<span class="nc" id="L189">                throw new IllegalArgumentException(</span>
+                &quot;the method is meant to be used when there is only one avail slot&quot;);
+            }
+            
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            if (!sorted) {</span>
+                // this can happen if the user used &quot;size - 1&quot; append()s followed
+                // by insertIntoOpenSlot.  It's only needed once for lifetime
+                // of object.
+                
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">                if (availSlot != -1) {</span>
+<span class="nc" id="L199">                    throw new IllegalArgumentException(</span>
+                        &quot;Error in the algorithm... should have been sorted already&quot;);
+                }
+                
+<span class="fc" id="L203">                a[n] = value;</span>
+                
+<span class="fc" id="L205">                n++;</span>
+                
+<span class="fc" id="L207">                Arrays.sort(a);</span>
+                
+<span class="fc" id="L209">                sorted = true;</span>
+                
+<span class="fc" id="L211">                return;</span>
+            }
+           
+<span class="fc" id="L214">            int insIdx = Arrays.binarySearch(a, value);</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            if (insIdx &lt; 0) {</span>
+<span class="fc" id="L216">                insIdx *= -1;</span>
+<span class="fc" id="L217">                insIdx--;</span>
+            }
+            
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (insIdx == availSlot) {</span>
+                
+<span class="fc" id="L222">                a[availSlot] = value;</span>
+                
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            } else if (insIdx &lt; availSlot) {</span>
+                
+                // move all items from insIdx to availSlot down by 1
+<span class="fc bfc" id="L227" title="All 2 branches covered.">                for (int i = (availSlot - 1); i &gt;= insIdx; i--) {</span>
+<span class="fc" id="L228">                    a[i + 1] = a[i];</span>
+                }
+                
+<span class="fc" id="L231">                a[insIdx] = value;</span>
+                
+            } else {
+              
+<span class="fc" id="L235">                int end = insIdx - 1;</span>
+
+                // move items up from availSlot +1 to insIdx - 1
+                // then insert value into insIdx - 1
+<span class="fc bfc" id="L239" title="All 2 branches covered.">                for (int i = availSlot; i &lt; end; i++) {</span>
+<span class="fc" id="L240">                    a[i] = a[i + 1];</span>
+                }
+                
+<span class="fc" id="L243">                a[insIdx - 1] = value;</span>
+            }
+            
+<span class="fc" id="L246">            n++;</span>
+            
+<span class="fc" id="L248">            availSlot = -1;           </span>
+<span class="fc" id="L249">        }</span>
+
+        /**
+         * remove the item from the full list of items.  Note that this will
+         * throw an IllegalArgumentException if the list is not full.
+         * runtime is O(log_2(N))
+         * @param value
+         */
+        public void remove(int value) {
+            
+<span class="fc bfc" id="L259" title="All 2 branches covered.">            if (n != a.length) {</span>
+<span class="fc" id="L260">                throw new IllegalArgumentException(</span>
+                &quot;the method is meant to be used only on a full list&quot;);
+            }
+            
+<span class="fc" id="L264">            int rmIdx = Arrays.binarySearch(a, value);</span>
+            
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">            if (rmIdx &lt; 0) {</span>
+<span class="nc" id="L267">                throw new IllegalArgumentException(&quot;could not find item in list&quot;);</span>
+            }
+            
+<span class="fc" id="L270">            availSlot = rmIdx;</span>
+            
+            // to keep the list in a state where the next binary search works,
+            // set the empty slot value to the proceeding value or max integer.
+<span class="fc bfc" id="L274" title="All 2 branches covered.">            if (availSlot == (a.length - 1)) {</span>
+<span class="fc" id="L275">                a[availSlot] = Integer.MAX_VALUE;</span>
+            } else {
+<span class="fc" id="L277">                a[availSlot] = a[availSlot + 1];</span>
+            }
+            
+<span class="fc" id="L280">            n--;</span>
+<span class="fc" id="L281">        }</span>
+        
+        /**
+         * remove the item from the full list of items.  Note that this will
+         * throw an IllegalArgumentException if the list is not full.
+         * runtime is O(1)
+         * @return median
+         */
+         public int getMedian() {
+             
+<span class="fc bfc" id="L291" title="All 2 branches covered.">            if (n != a.length) {</span>
+<span class="fc" id="L292">                throw new IllegalArgumentException(</span>
+                &quot;the method is meant to be used only on a full list&quot;);
+            }
+        
+<span class="fc bfc" id="L296" title="All 2 branches covered.">            int midIdx = ((n &amp; 1) == 1) ? n/2 : (n - 1)/2;</span>
+            
+<span class="fc" id="L298">            return a[midIdx];</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

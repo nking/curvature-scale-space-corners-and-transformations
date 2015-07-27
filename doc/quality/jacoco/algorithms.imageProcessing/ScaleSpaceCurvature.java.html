@@ -1,13 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScaleSpaceCurvature.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ScaleSpaceCurvature.java</span></div><h1>ScaleSpaceCurvature.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScaleSpaceCurvature.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ScaleSpaceCurvature.java</span></div><h1>ScaleSpaceCurvature.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.ScatterPointPlotterPNG;
+import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  *
  * @author nichole
  */
-<span class="fc" id="L10">public class ScaleSpaceCurvature {</span>
+<span class="fc" id="L14">public class ScaleSpaceCurvature {</span>
+    
+<span class="fc" id="L16">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
     /**
      * compute scale space metrics of curve, given sigma
@@ -25,11 +31,11 @@ import algorithms.util.PairIntArrayWithColor;
     public ScaleSpaceCurve computeCurvature(PairIntArray curve, 
         SIGMA kernelSigma, float resultingSigma) {
         
-<span class="fc" id="L28">        float[] gFirstDeriv = Gaussian1DFirstDeriv.getKernel(kernelSigma);</span>
+<span class="fc" id="L34">        float[] gFirstDeriv = Gaussian1DFirstDeriv.getKernel(kernelSigma);</span>
 
-<span class="fc" id="L30">        float[] gSecondDeriv = Gaussian1DSecondDeriv.getKernel(kernelSigma);</span>
+<span class="fc" id="L36">        float[] gSecondDeriv = Gaussian1DSecondDeriv.getKernel(kernelSigma);</span>
  
-<span class="fc" id="L32">        return computeCurvature(curve, resultingSigma, gFirstDeriv, </span>
+<span class="fc" id="L38">        return computeCurvature(curve, resultingSigma, gFirstDeriv, </span>
             gSecondDeriv);
     }
     
@@ -49,11 +55,11 @@ import algorithms.util.PairIntArrayWithColor;
     public ScaleSpaceCurve computeCurvature(PairIntArray curve, 
         float kernelSigma, float resultingSigma) {
         
-<span class="fc" id="L52">        float[] gFirstDeriv = Gaussian1DFirstDeriv.getKernel(kernelSigma);</span>
+<span class="nc" id="L58">        float[] gFirstDeriv = Gaussian1DFirstDeriv.getKernel(kernelSigma);</span>
 
-<span class="fc" id="L54">        float[] gSecondDeriv = Gaussian1DSecondDeriv.getKernel(kernelSigma);</span>
+<span class="nc" id="L60">        float[] gSecondDeriv = Gaussian1DSecondDeriv.getKernel(kernelSigma);</span>
  
-<span class="fc" id="L56">        return computeCurvature(curve, resultingSigma, gFirstDeriv, </span>
+<span class="nc" id="L62">        return computeCurvature(curve, resultingSigma, gFirstDeriv, </span>
             gSecondDeriv);
     }
     
@@ -71,12 +77,12 @@ import algorithms.util.PairIntArrayWithColor;
     public ScaleSpaceCurve computeCurvature(PairIntArray curve, 
         float resultingSigma, float[] gFirstDeriv, float[] gSecondDeriv) {
 
-<span class="fc" id="L74">        int n = curve.getN();</span>
+<span class="fc" id="L80">        int n = curve.getN();</span>
 
-<span class="fc bfc" id="L76" title="All 4 branches covered.">        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)</span>
-            &amp;&amp; (((PairIntArrayWithColor) curve).getColor() == 1);
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)</span>
+<span class="pc bnc" id="L83" title="All 2 branches missed.">            &amp;&amp; (((PairIntArrayWithColor) curve).getColor() == 1);</span>
 
-<span class="fc" id="L79">        ScaleSpaceCurve scaleSpaceCurve = new ScaleSpaceCurve(resultingSigma,</span>
+<span class="fc" id="L85">        ScaleSpaceCurve scaleSpaceCurve = new ScaleSpaceCurve(resultingSigma,</span>
             curve, isClosedCurved);
 
         /*
@@ -85,67 +91,106 @@ import algorithms.util.PairIntArrayWithColor;
                                      (X^2(t,o~) + Y^2(t,o~))^1.5
         */
  
-<span class="fc" id="L88">        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();</span>
+<span class="fc" id="L94">        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();</span>
 
-<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
 
-<span class="fc" id="L92">            double xFirstDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
+<span class="fc" id="L98">            double xFirstDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
                 curve, i, gFirstDeriv, true);
             
-<span class="fc" id="L95">            double yFirstDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
+<span class="fc" id="L101">            double yFirstDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
                 curve, i, gFirstDeriv, false);
             
-<span class="fc" id="L98">            double xSecondDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
+<span class="fc" id="L104">            double xSecondDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
                 curve, i, gSecondDeriv, true);
             
-<span class="fc" id="L101">            double ySecondDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
+<span class="fc" id="L107">            double ySecondDerivInteg = kernel1DHelper.convolvePointWithKernel(</span>
                 curve, i, gSecondDeriv, false);
     
-<span class="fc" id="L104">            double denominator = Math.pow(</span>
+<span class="fc" id="L110">            double denominator = Math.pow(</span>
                 ((xFirstDerivInteg * xFirstDerivInteg) +
                 (yFirstDerivInteg * yFirstDerivInteg)), 1.5);
             
-<span class="fc" id="L108">            double numerator = ((xFirstDerivInteg * ySecondDerivInteg) -</span>
+<span class="fc" id="L114">            double numerator = ((xFirstDerivInteg * ySecondDerivInteg) -</span>
                 (yFirstDerivInteg * xSecondDerivInteg));
             
-<span class="pc bpc" id="L111" title="3 of 4 branches missed.">            double curvature = (denominator == 0)  ? </span>
+<span class="pc bpc" id="L117" title="3 of 4 branches missed.">            double curvature = (denominator == 0)  ? </span>
                 (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
                 : numerator / denominator;
            
-<span class="fc" id="L115">            scaleSpaceCurve.setK(i, (float)curvature);</span>
-                     
-            // set the zeros in curvature
-<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (i &gt; 0) {</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">                if (isZeroCrossing(scaleSpaceCurve.getK(i-1), </span>
-                    scaleSpaceCurve.getK(i))) {
-                    
-<span class="fc" id="L122">                    float p = (float)i/(float)curve.getN();</span>
-                    
-                    //System.out.println(&quot;sigma=&quot; + resultingSigma 
-                    //    + &quot; t=&quot; + p);
-<span class="fc" id="L126">                    scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));</span>
-                }
-            }
+<span class="fc" id="L121">            scaleSpaceCurve.setK(i, (float)curvature);</span>
+            
         }
+        
+<span class="fc" id="L125">        calculateZeroCrossings(scaleSpaceCurve, curve);</span>
 
-<span class="fc" id="L131">        scaleSpaceCurve.compressKIsZeroIdx();</span>
-
-<span class="fc" id="L133">        return scaleSpaceCurve;</span>
+<span class="fc" id="L127">        return scaleSpaceCurve;</span>
     }
      
     private boolean isZeroCrossing(float kPrev, float k) {
-<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (k &lt;= 0) {</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">            if (kPrev &gt;= 0) {</span>
-<span class="fc" id="L139">                return true;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (k &lt;= 0) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (kPrev &gt;= 0) {</span>
+<span class="fc" id="L133">                return true;</span>
             }
         }
-<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (k &gt;= 0) {</span>
-<span class="fc bfc" id="L143" title="All 2 branches covered.">            if (kPrev &lt;= 0) {</span>
-<span class="fc" id="L144">                return true;</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        if (k &gt;= 0) {</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (kPrev &lt;= 0) {</span>
+<span class="fc" id="L138">                return true;</span>
             }
         }
-<span class="fc" id="L147">        return false;</span>
+<span class="fc" id="L141">        return false;</span>
     }
-    
+
+    private void calculateZeroCrossings(ScaleSpaceCurve scaleSpaceCurve,
+        PairIntArray curve) {
+
+        /*
+        // find the points where the curvature changes from + to -, but
+        // discard such changes when they are noise.
+        float[] x = new float[scaleSpaceCurve.getK().length];
+        float[] y = new float[x.length];
+        for (int i = 0; i &lt; x.length; i++) {
+            x[i] = i;
+            y[i] = scaleSpaceCurve.getK(i);
+        }
+        float yMin = 1.2f*MiscMath.findMin(y);
+        float yMax = 1.2f*MiscMath.findMax(y);
+        try {
+            String time = Long.toString((long)Math.floor(
+                System.currentTimeMillis()));
+            time = time.substring(4, time.length());
+            int fileNumber = Long.valueOf(time).intValue();
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, x[x.length - 1], yMin, yMax,
+                x, y, &quot;curvature&quot;, &quot;t&quot;, &quot;k&quot;);
+            plotter.writeFile(fileNumber);
+
+            StringBuilder sb = new StringBuilder(fileNumber + &quot; coords:&quot;);
+            for (int i = 0; i &lt; curve.getN(); i++) {
+                sb.append(String.format(&quot;t=%d (%d,%d)\n&quot;, i, curve.getX(i), curve.getY(i)));
+            }
+            log.info(sb.toString());
+            
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        }
+        */
+
+        //TODO: adjust this to avoid noise
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = 1; i &lt; scaleSpaceCurve.getK().length; ++i) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),</span>
+<span class="fc" id="L182">                scaleSpaceCurve.getK(i))) {</span>
+
+                //float p = (float)i/(float)curve.getN();
+                //System.out.println(&quot;sigma=&quot; + resultingSigma 
+                //    + &quot; t=&quot; + p);
+<span class="fc" id="L187">                scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));</span>
+            }
+        }
+
+<span class="fc" id="L191">        scaleSpaceCurve.compressKIsZeroIdx();</span>
+
+<span class="fc" id="L193">    }</span>
+
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

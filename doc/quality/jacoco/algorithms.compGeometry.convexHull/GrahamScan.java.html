@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GrahamScan.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.convexHull</a> &gt; <span class="el_source">GrahamScan.java</span></div><h1>GrahamScan.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.convexHull;
+
+import algorithms.compGeometry.LinesAndAngles;
+import algorithms.MultiArrayMergeSort;
+import java.util.Arrays;
+
+/**
+ * adapted from 
+ * https://code.google.com/p/two-point-correlation/source/browse/src/test/java/algorithms/compGeometry/convexHull/
+ * under MIT License (MIT), Nichole King 2013
+ * 
+  &lt;pre&gt;
+  Solves the Convex Hull problem w/ a stack S of candidate points.
+ 
+  Given a set of Q points returns the vertices of the ConvexHull(Q) in counterclockwise
+  order.   a convex hull is the smallest convex polygon that will include all points in Q.
+ 
+  Graham's Scan runs in O(n lg n).
+    (in contrast to Jarvis's March which runs in O(nh) where h is the number of
+    vertices in the convex hull.)
+  Will adjust this after estimates...
+ 
+  Both use a technique called 'rotational sweep' to process vertices in the order
+  of the polar angles they form with a reference vertex.
+ 
+  constructed from pseudo-code in Cormen et al. &quot;Introduction to Algorithms
+ &lt;/pre&gt;
+ 
+ * @author nichole
+ */
+public class GrahamScan {
+
+<span class="fc" id="L33">    protected XYStack points = null;</span>
+
+<span class="fc" id="L35">    protected float[] xHull = null;</span>
+<span class="fc" id="L36">    protected float[] yHull = null;</span>
+
+<span class="fc" id="L38">	public GrahamScan() {</span>
+<span class="fc" id="L39">	}</span>
+
+    /**
+     * find the convex hull of the given (x, y) points.  Note that the resulting
+     * hull points have the same first point as last point.
+     * 
+     * @param x
+     * @param y
+     * @throws GrahamScanTooFewPointsException 
+     */
+    public void computeHull(float[] x, float[] y) throws GrahamScanTooFewPointsException {
+
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (x == null) {</span>
+<span class="fc" id="L52">	    	throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L54" title="All 2 branches covered.">	    if (y == null) {</span>
+<span class="fc" id="L55">	    	throw new IllegalArgumentException(&quot;y cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L57" title="All 2 branches covered.">	    if (x.length != y.length) {</span>
+<span class="fc" id="L58">	    	throw new IllegalArgumentException(&quot;x must have the same number of items as y&quot;);</span>
+        }
+<span class="fc bfc" id="L60" title="All 2 branches covered.">	    if (x.length &lt; 3) {</span>
+<span class="fc" id="L61">	        throw new IllegalArgumentException(&quot;x must have at least 3 items&quot;);</span>
+        }
+
+        /*
+         * Q is a stack of candidate points which have been pushed once onto the stack
+         * and removed if they are not vertices of the stack.
+         *
+         * when complete, the stack S contains the vertices of the hull in counterclockwise order.
+         *
+         * Q &gt; 3
+         *
+         * 1 -- let p0 be the point in Q w/ min y-coordinate, or leftmost point of a tie
+         * 2 -- let &lt;p1, p2, ... pm&gt; be the remaining points in Q.
+         *      sorted by polar angle in counter clockwise order around p0.
+         *      ** if more than one point has the same angle, remove all but the one that is furthest from p0. **
+         * 3 -- push p0 onto S
+         * 4 -- push p1 onto S
+         * 5 -- push p2 onto S
+         * 6 -- for i=3 to m
+         * 7 --     do while the angle formed by points NEXT-TO-TOP(S), TOP(S), and p_i makes a nonleft turn
+         * 8 --         pop(S)
+         * 9 --     push(S)
+         * 10 -return S
+         */
+
+        // (1) let p0 be the point in Q w/ minimum yCoord,
+        //     or the leftmost point if more than one w/ same minimum yCoord.
+<span class="fc" id="L88">        MultiArrayMergeSort.sortBy1stArgThen2nd(y, x);</span>
+        
+<span class="fc" id="L90">        int p0Index = 0;</span>
+
+        // (2) let &lt;p1, p2, ..., pm&gt; be the remaining points in Q, sorted
+	    //     by polar angle in counterclockwise order around p0
+	    //     (if more than one pt has same angle, keep only the furthest from p0)
+<span class="fc" id="L95">    	int nPointsUsable = PolarAngleMergeSort.sort(x[p0Index], y[p0Index], x, y);</span>
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (nPointsUsable &lt; 3) {</span>
+<span class="fc" id="L98">	        throw new GrahamScanTooFewPointsException(&quot;polar angle sorting has reduced the number of points to less than 3&quot;);</span>
+        }
+        
+<span class="fc" id="L101">        points = new XYStack(nPointsUsable);</span>
+        
+<span class="fc" id="L103">        points.push(x[p0Index], y[p0Index]);</span>
+<span class="fc" id="L104">        points.push(x[1], y[1]);</span>
+<span class="fc" id="L105">        points.push(x[2], y[2]);</span>
+        
+        // for i = 3 to m
+        //    while angle between next-to-top(S), top(S) and p_i makes a nonleft turn
+        //        do pop(S)
+        //    push(pi, S)
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int i = 3; i &lt; nPointsUsable; i++) {</span>
+            
+<span class="fc" id="L113">            float topX = points.peekTopX();</span>
+<span class="fc" id="L114">            float topY = points.peekTopY();</span>
+<span class="fc" id="L115">            float nextToTopX = points.peekNextToTopX();</span>
+<span class="fc" id="L116">            float nextToTopY = points.peekNextToTopY();</span>
+<span class="fc" id="L117">            float xi = x[i];</span>
+<span class="fc" id="L118">            float yi = y[i];</span>
+
+<span class="fc" id="L120">            double direction = LinesAndAngles.direction(</span>
+                nextToTopX, nextToTopY, topX, topY, xi, yi);
+            
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            while (direction &lt;= 0) {</span>
+
+<span class="fc" id="L125">                points.popWithoutReturn();</span>
+                
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">                if (points.getN() &lt; 2) {</span>
+<span class="nc" id="L128">                    break;</span>
+                }
+
+<span class="fc" id="L131">                topX = points.peekTopX();</span>
+<span class="fc" id="L132">                topY = points.peekTopY();</span>
+<span class="fc" id="L133">                nextToTopX = points.peekNextToTopX();</span>
+<span class="fc" id="L134">                nextToTopY = points.peekNextToTopY();</span>
+<span class="fc" id="L135">                xi = x[i];</span>
+<span class="fc" id="L136">                yi = y[i];</span>
+                
+<span class="fc" id="L138">                direction = LinesAndAngles.direction(</span>
+                    nextToTopX, nextToTopY, topX, topY, xi, yi);                
+            }
+
+<span class="fc" id="L142">            points.push(x[i], y[i]);</span>
+        }
+
+<span class="fc" id="L145">        populateHull();</span>
+<span class="fc" id="L146">    }</span>
+
+    public float[] getXHull() {
+<span class="fc" id="L149">        return this.xHull;</span>
+    }
+
+    public float[] getYHull() {
+<span class="fc" id="L153">        return this.yHull;</span>
+    }
+
+    protected void populateHull() throws GrahamScanTooFewPointsException {
+
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        if (points == null) {</span>
+<span class="fc" id="L159">            throw new GrahamScanTooFewPointsException(&quot;Points cannot be null.  Use computeHull first.&quot;);</span>
+        }
+        
+<span class="fc" id="L162">        int n = points.getN() + 1;</span>
+
+<span class="fc" id="L164">        this.xHull = new float[n];</span>
+<span class="fc" id="L165">        this.yHull = new float[n];</span>
+<span class="fc" id="L166">        System.arraycopy(points.getX(), 0, xHull, 0, points.getN());</span>
+<span class="fc" id="L167">        System.arraycopy(points.getY(), 0, yHull, 0, points.getN());</span>
+
+<span class="fc" id="L169">        this.xHull[n-1] = points.getX(0);</span>
+<span class="fc" id="L170">        this.yHull[n-1] = points.getY(0);</span>
+<span class="fc" id="L171">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L175">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (xHull != null) {</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            for (int i = 0; i &lt; xHull.length; ++i) {</span>
+<span class="nc" id="L178">                sb.append(String.format(&quot;(%f,%f) &quot;, xHull[i], yHull[i]));</span>
+            }
+        }
+<span class="nc" id="L181">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

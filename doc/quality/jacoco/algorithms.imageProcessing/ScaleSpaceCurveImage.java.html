@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScaleSpaceCurveImage.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ScaleSpaceCurveImage.java</span></div><h1>ScaleSpaceCurveImage.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScaleSpaceCurveImage.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ScaleSpaceCurveImage.java</span></div><h1>ScaleSpaceCurveImage.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import java.util.Arrays;
 import java.util.logging.Logger;
@@ -23,105 +23,117 @@ public class ScaleSpaceCurveImage {
     
     private final int[][] yCoords;
     
-<span class="fc" id="L26">    private int edgeNumber = -1;</span>
+<span class="nc" id="L26">    private int edgeNumber = -1;</span>
     
-<span class="fc" id="L28">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="nc" id="L28">    private int edgeSize = 0;</span>
     
-<span class="fc" id="L30">    public ScaleSpaceCurveImage(int nSigmaLevels) {</span>
+<span class="nc" id="L30">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="nc" id="L32">    public ScaleSpaceCurveImage(int nSigmaLevels) {</span>
 
-<span class="fc" id="L32">        this.nSigmaLevels = nSigmaLevels;</span>
+<span class="nc" id="L34">        this.nSigmaLevels = nSigmaLevels;</span>
         
-<span class="fc" id="L34">        imageSigmas = new float[nSigmaLevels];</span>
+<span class="nc" id="L36">        imageSigmas = new float[nSigmaLevels];</span>
         
-<span class="fc" id="L36">        scaleSpaceImage = new float[nSigmaLevels][];</span>
+<span class="nc" id="L38">        scaleSpaceImage = new float[nSigmaLevels][];</span>
                 
-<span class="fc" id="L38">        xCoords = new int[nSigmaLevels][];</span>
+<span class="nc" id="L40">        xCoords = new int[nSigmaLevels][];</span>
         
-<span class="fc" id="L40">        yCoords = new int[nSigmaLevels][];</span>
-<span class="fc" id="L41">    }</span>
+<span class="nc" id="L42">        yCoords = new int[nSigmaLevels][];</span>
+<span class="nc" id="L43">    }</span>
     
     public void setEdgeNumber(int number) {
-<span class="fc" id="L44">        edgeNumber = number;</span>
-<span class="fc" id="L45">    }</span>
+<span class="nc" id="L46">        edgeNumber = number;</span>
+<span class="nc" id="L47">    }</span>
+    
+    public void setEdgeSize(int size) {
+<span class="nc" id="L50">        edgeSize = size;</span>
+<span class="nc" id="L51">    }</span>
+    
+    public int getEdgeSize() {
+<span class="nc" id="L54">        return edgeSize;</span>
+    }
     
     public void setRow(int sigmaIndex, float[] scaleFreeZeroCrossings) {
-<span class="pc bpc" id="L48" title="2 of 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
-<span class="nc" id="L49">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
+<span class="nc bnc" id="L58" title="All 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
+<span class="nc" id="L59">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
         }
         
-<span class="fc" id="L52">        scaleSpaceImage[sigmaIndex] = scaleFreeZeroCrossings;</span>
-<span class="fc" id="L53">    }</span>
+<span class="nc" id="L62">        scaleSpaceImage[sigmaIndex] = scaleFreeZeroCrossings;</span>
+<span class="nc" id="L63">    }</span>
     
     public void setXYCoords(int sigmaIndex, int[] theXCoords, int[] theYCoords) {
         
-<span class="pc bpc" id="L57" title="2 of 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
-<span class="nc" id="L58">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
-        }
-        
-<span class="fc" id="L61">        this.xCoords[sigmaIndex] = theXCoords;</span>
-        
-<span class="fc" id="L63">        this.yCoords[sigmaIndex] = theYCoords;</span>
-<span class="fc" id="L64">    }</span>
-    
-    public void setSigma(int sigmaIndex, float sigma) {
-<span class="pc bpc" id="L67" title="2 of 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
+<span class="nc bnc" id="L67" title="All 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
 <span class="nc" id="L68">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
         }
         
-<span class="fc" id="L71">        imageSigmas[sigmaIndex] = sigma;</span>
-<span class="fc" id="L72">    }</span>
+<span class="nc" id="L71">        this.xCoords[sigmaIndex] = theXCoords;</span>
+        
+<span class="nc" id="L73">        this.yCoords[sigmaIndex] = theYCoords;</span>
+<span class="nc" id="L74">    }</span>
+    
+    public void setSigma(int sigmaIndex, float sigma) {
+<span class="nc bnc" id="L77" title="All 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
+<span class="nc" id="L78">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
+        }
+        
+<span class="nc" id="L81">        imageSigmas[sigmaIndex] = sigma;</span>
+<span class="nc" id="L82">    }</span>
     
     public float[] getImageSigmas() {
-<span class="fc" id="L75">        return imageSigmas;</span>
+<span class="nc" id="L85">        return imageSigmas;</span>
     }
     
     public float[][] getScaleSpaceImage() {
-<span class="fc" id="L79">        return scaleSpaceImage;</span>
+<span class="nc" id="L89">        return scaleSpaceImage;</span>
     }
     
     public int getEdgeNumber() {
-<span class="fc" id="L83">        return edgeNumber;</span>
+<span class="nc" id="L93">        return edgeNumber;</span>
     }
     
     public int getXCoord(int sigmaIndex, int tIndex) {
-<span class="pc bpc" id="L87" title="2 of 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
-<span class="nc" id="L88">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
+<span class="nc" id="L98">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
         }
-<span class="pc bpc" id="L90" title="2 of 4 branches missed.">        if (tIndex &lt; 0 || tIndex &gt; (xCoords[sigmaIndex].length - 1)) {</span>
-<span class="nc" id="L91">            throw new IllegalStateException(&quot;tIndex is out of bounds&quot;);</span>
+<span class="nc bnc" id="L100" title="All 4 branches missed.">        if (tIndex &lt; 0 || tIndex &gt; (xCoords[sigmaIndex].length - 1)) {</span>
+<span class="nc" id="L101">            throw new IllegalStateException(&quot;tIndex is out of bounds&quot;);</span>
         }
-<span class="fc" id="L93">        return xCoords[sigmaIndex][tIndex];</span>
+<span class="nc" id="L103">        return xCoords[sigmaIndex][tIndex];</span>
     }
     
     public int getYCoord(int sigmaIndex, int tIndex) {
-<span class="pc bpc" id="L97" title="2 of 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
-<span class="nc" id="L98">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
+<span class="nc bnc" id="L107" title="All 4 branches missed.">        if (sigmaIndex &lt; 0 || sigmaIndex &gt; (nSigmaLevels - 1)) {</span>
+<span class="nc" id="L108">            throw new IllegalStateException(&quot;sigmaIndex is out of bounds&quot;);</span>
         }
-<span class="pc bpc" id="L100" title="2 of 4 branches missed.">        if (tIndex &lt; 0 || tIndex &gt; (yCoords[sigmaIndex].length - 1)) {</span>
-<span class="nc" id="L101">            throw new IllegalStateException(&quot;tIndex is out of bounds&quot;);</span>
+<span class="nc bnc" id="L110" title="All 4 branches missed.">        if (tIndex &lt; 0 || tIndex &gt; (yCoords[sigmaIndex].length - 1)) {</span>
+<span class="nc" id="L111">            throw new IllegalStateException(&quot;tIndex is out of bounds&quot;);</span>
         }
-<span class="fc" id="L103">        return yCoords[sigmaIndex][tIndex];</span>
+<span class="nc" id="L113">        return yCoords[sigmaIndex][tIndex];</span>
     }
    
     public ScaleSpaceCurveImage copy() {
         
-<span class="fc" id="L108">        ScaleSpaceCurveImage c = new ScaleSpaceCurveImage(nSigmaLevels);</span>
+<span class="nc" id="L118">        ScaleSpaceCurveImage c = new ScaleSpaceCurveImage(nSigmaLevels);</span>
         
-<span class="fc" id="L110">        c.setEdgeNumber(edgeNumber);</span>
+<span class="nc" id="L120">        c.setEdgeNumber(edgeNumber);</span>
         
-<span class="fc" id="L112">        System.arraycopy(imageSigmas, 0, c.imageSigmas, 0, imageSigmas.length);</span>
+<span class="nc" id="L122">        c.setEdgeSize(edgeSize);</span>
         
-<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (int j = 0; j &lt; imageSigmas.length; j++) {</span>
+<span class="nc" id="L124">        System.arraycopy(imageSigmas, 0, c.imageSigmas, 0, imageSigmas.length);</span>
+        
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        for (int j = 0; j &lt; imageSigmas.length; j++) {</span>
             
-<span class="fc" id="L116">            int n = scaleSpaceImage[j].length;</span>
+<span class="nc" id="L128">            int n = scaleSpaceImage[j].length;</span>
             
-<span class="fc" id="L118">            c.setRow(j, Arrays.copyOf(scaleSpaceImage[j], n));</span>
+<span class="nc" id="L130">            c.setRow(j, Arrays.copyOf(scaleSpaceImage[j], n));</span>
             
-<span class="fc" id="L120">            c.setXYCoords(j, Arrays.copyOf(xCoords[j], n), </span>
-                Arrays.copyOf(yCoords[j], n));
+<span class="nc" id="L132">            c.setXYCoords(j, Arrays.copyOf(xCoords[j], n), </span>
+<span class="nc" id="L133">                Arrays.copyOf(yCoords[j], n));</span>
         }
         
-<span class="fc" id="L124">        return c;</span>
+<span class="nc" id="L136">        return c;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

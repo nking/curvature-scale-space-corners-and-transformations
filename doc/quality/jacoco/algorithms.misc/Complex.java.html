@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Complex.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">Complex.java</span></div><h1>Complex.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+
+/**
+***********************************************************************
+ *  Compilation:  javac Complex.java
+ *  Execution:    java Complex
+ *
+ * Code is from http://introcs.cs.princeton.edu/java/stdlib/
+ * &quot;An Introduction to Programming in Java&quot;.
+ * 
+ * The code is released under the GNU General Public License, version 3 (GPLv3). 
+ * If you wish to license the code under different terms, please contact our 
+ * publisher to discuss.
+ * 
+ *  Data type for complex numbers.
+ *
+ *  The data type is &quot;immutable&quot; so once you create and initialize
+ *  a Complex object, you cannot change it. The &quot;final&quot; keyword
+ *  when declaring re and im enforces this rule, making it a
+ *  compile-time error to change the .re or .im fields after
+ *  they've been initialized.
+ *
+ *  % java Complex
+ *  a            = 5.0 + 6.0i
+ *  b            = -3.0 + 4.0i
+ *  Re(a)        = 5.0
+ *  Im(a)        = 6.0
+ *  b + a        = 2.0 + 10.0i
+ *  a - b        = 8.0 + 2.0i
+ *  a * b        = -39.0 + 2.0i
+ *  b * a        = -39.0 + 2.0i
+ *  a / b        = 0.36 - 1.52i
+ *  (a / b) * b  = 5.0 + 6.0i
+ *  conj(a)      = 5.0 - 6.0i
+ *  |a|          = 7.810249675906654
+ *  tan(a)       = -6.685231390246571E-6 + 1.0000103108981198i
+ *
+ *************************************************************************/
+
+public class Complex {
+    private final double re;   // the real part
+    private final double im;   // the imaginary part
+
+    // create a new object with the given real and imaginary parts
+<span class="fc" id="L45">    public Complex(double real, double imag) {</span>
+<span class="fc" id="L46">        re = real;</span>
+<span class="fc" id="L47">        im = imag;</span>
+<span class="fc" id="L48">    }</span>
+
+    // return a string representation of the invoking Complex object
+    public String toString() {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if (im == 0) return re + &quot;&quot;;</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (re == 0) return im + &quot;i&quot;;</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (im &lt;  0) return re + &quot; - &quot; + (-im) + &quot;i&quot;;</span>
+<span class="nc" id="L55">        return re + &quot; + &quot; + im + &quot;i&quot;;</span>
+    }
+
+    // return abs/modulus/magnitude and angle/phase/argument
+<span class="nc" id="L59">    public double abs()   { return Math.hypot(re, im); }  // Math.sqrt(re*re + im*im)</span>
+<span class="nc" id="L60">    public double phase() { return Math.atan2(im, re); }  // between -pi and pi</span>
+
+    // return a new Complex object whose value is (this + b)
+    public Complex plus(Complex b) {
+<span class="fc" id="L64">        Complex a = this;             // invoking object</span>
+<span class="fc" id="L65">        double real = a.re + b.re;</span>
+<span class="fc" id="L66">        double imag = a.im + b.im;</span>
+<span class="fc" id="L67">        return new Complex(real, imag);</span>
+    }
+
+    // return a new Complex object whose value is (this - b)
+    public Complex minus(Complex b) {
+<span class="fc" id="L72">        Complex a = this;</span>
+<span class="fc" id="L73">        double real = a.re - b.re;</span>
+<span class="fc" id="L74">        double imag = a.im - b.im;</span>
+<span class="fc" id="L75">        return new Complex(real, imag);</span>
+    }
+
+    // return a new Complex object whose value is (this * b)
+    public Complex times(Complex b) {
+<span class="fc" id="L80">        Complex a = this;</span>
+<span class="fc" id="L81">        double real = a.re * b.re - a.im * b.im;</span>
+<span class="fc" id="L82">        double imag = a.re * b.im + a.im * b.re;</span>
+<span class="fc" id="L83">        return new Complex(real, imag);</span>
+    }
+
+    // scalar multiplication
+    // return a new object whose value is (this * alpha)
+    public Complex times(double alpha) {
+<span class="fc" id="L89">        return new Complex(alpha * re, alpha * im);</span>
+    }
+
+    // return a new Complex object whose value is the conjugate of this
+<span class="nc" id="L93">    public Complex conjugate() {  return new Complex(re, -im); }</span>
+
+    // return a new Complex object whose value is the reciprocal of this
+    public Complex reciprocal() {
+<span class="nc" id="L97">        double scale = re*re + im*im;</span>
+<span class="nc" id="L98">        return new Complex(re / scale, -im / scale);</span>
+    }
+
+    // return the real or imaginary part
+<span class="fc" id="L102">    public double re() { return re; }</span>
+<span class="fc" id="L103">    public double im() { return im; }</span>
+
+    // return a / b
+    public Complex divides(Complex b) {
+<span class="nc" id="L107">        Complex a = this;</span>
+<span class="nc" id="L108">        return a.times(b.reciprocal());</span>
+    }
+
+    // return a new Complex object whose value is the complex exponential of this
+    public Complex exp() {
+<span class="nc" id="L113">        return new Complex(Math.exp(re) * Math.cos(im), Math.exp(re) * Math.sin(im));</span>
+    }
+
+    // return a new Complex object whose value is the complex sine of this
+    public Complex sin() {
+<span class="nc" id="L118">        return new Complex(Math.sin(re) * Math.cosh(im), Math.cos(re) * Math.sinh(im));</span>
+    }
+
+    // return a new Complex object whose value is the complex cosine of this
+    public Complex cos() {
+<span class="nc" id="L123">        return new Complex(Math.cos(re) * Math.cosh(im), -Math.sin(re) * Math.sinh(im));</span>
+    }
+
+    // return a new Complex object whose value is the complex tangent of this
+    public Complex tan() {
+<span class="nc" id="L128">        return sin().divides(cos());</span>
+    }
+    
+    // a static version of plus
+    public static Complex plus(Complex a, Complex b) {
+<span class="nc" id="L133">        double real = a.re + b.re;</span>
+<span class="nc" id="L134">        double imag = a.im + b.im;</span>
+<span class="nc" id="L135">        Complex sum = new Complex(real, imag);</span>
+<span class="nc" id="L136">        return sum;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FFT.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">FFT.java</span></div><h1>FFT.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.Complex;
+import algorithms.misc.MiscMath;
+
+<span class="fc" id="L6">public class FFT {</span>
+
+    // compute the FFT of x[], assuming its length is a power of 2
+    public static Complex[] fft(Complex[] x) {
+        
+<span class="fc" id="L11">        return fft(x, true);</span>
+    }
+
+    /**
+     * FFT from  Cormen et al. pseudocode for iterative FFT w/ an inverse
+     * ability added.  Note that the length of x must be a power of 2.
+     * 
+     * @param x
+     * @param forward run the transform in forward if true, else perform inverse 
+     * transform.
+     * @return 
+     */
+    protected static Complex[] fft(Complex[] x, boolean forward) {
+       
+<span class="pc bpc" id="L25" title="2 of 4 branches missed.">        if (x == null || x.length == 0) {</span>
+<span class="nc" id="L26">            throw new IllegalArgumentException(&quot;xReal cannot be null or empty&quot;);</span>
+        }
+     
+<span class="fc" id="L29">        int n = x.length;</span>
+
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (n == 1) {</span>
+<span class="nc" id="L32">            return x;</span>
+        }
+        
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (!MiscMath.isAPowerOf2(n)) {</span>
+<span class="nc" id="L36">            throw new IllegalArgumentException(&quot;x's length has to be a power of 2&quot;);</span>
+        }
+        
+<span class="fc" id="L39">        Complex[] a = bitReverseCopy(x);</span>
+        
+<span class="fc" id="L41">        double norm = 1./Math.sqrt(n);</span>
+        
+<span class="fc" id="L43">        int end = (int)(Math.log(n)/Math.log(2));</span>
+        
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int s = 1; s &lt;= end; s++) {</span>
+            
+<span class="fc" id="L47">            int m = 1 &lt;&lt; s;</span>
+            
+<span class="fc" id="L49">            double eCoeff = 2. * Math.PI/(double)m;</span>
+            
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            Complex wn = forward ? </span>
+<span class="fc" id="L52">                new Complex(Math.cos(eCoeff), -Math.sin(eCoeff)) :</span>
+<span class="fc" id="L53">                new Complex(Math.cos(eCoeff), Math.sin(eCoeff));</span>
+            
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            for (int k = 0; k &lt; n; k+=m) {</span>
+                
+<span class="fc" id="L57">                Complex w = new Complex(1, 0);</span>
+                
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                for (int j = 0; j &lt; (m/2); j++) {</span>
+                    
+<span class="fc" id="L61">                    Complex t = w.times(a[k + j + (m/2)]);</span>
+                    
+<span class="fc" id="L63">                    Complex u = a[k + j];</span>
+<span class="fc" id="L64">                    a[k + j + (m/2)] = u.minus(t);</span>
+<span class="fc" id="L65">                    a[k + j] = u.plus(t);</span>
+                    
+<span class="fc" id="L67">                    w = w.times(wn);</span>
+                }
+            }
+        }
+        
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L73">            a[i] = a[i].times(norm);</span>
+        }
+        
+        /*
+        bit-reverse-copy(a,A)
+        for s=1 to lg n {
+            m = 2^s
+            wm = exp^(i*2*PI/m)
+            for k=0 to n-1 by m {
+                w=1
+                for j=0 to ((m/2)-1) {
+                    do t=w*A[k + j + (m/2)]
+                    u = A[k + j]
+                    A[k + j] = u + t
+                    A[k + j + (m/2)] = u - t
+                    w = w * wm
+                }
+            }
+        }
+        */
+        
+<span class="fc" id="L94">        return a;</span>
+    }
+    
+    // compute the inverse FFT of x[], assuming its length is a power of 2
+    public static Complex[] ifft(Complex[] x) {
+        
+<span class="nc" id="L100">       return fft(x, false);</span>
+        
+    }
+
+    protected static double[] bitReverseCopy(double[] x) {
+        
+<span class="fc" id="L106">        int n = x.length;</span>
+        
+<span class="fc" id="L108">        int nBits = MiscMath.numberOfBits(n - 1);</span>
+                        
+<span class="fc" id="L110">        double[] r = new double[n];</span>
+        
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int k = 0; k &lt; n; k++) {</span>
+            
+<span class="fc" id="L114">            int idx = MiscMath.bitReverse(k, nBits);</span>
+            
+<span class="fc" id="L116">            r[idx] = x[k];</span>
+        }
+        
+<span class="fc" id="L119">        return r;</span>
+    }
+    
+    protected static double[] bitReverseCopy(int[] x) {
+        
+<span class="fc" id="L124">        int n = x.length;</span>
+        
+<span class="fc" id="L126">        int nBits = MiscMath.numberOfBits(n - 1);</span>
+                        
+<span class="fc" id="L128">        double[] r = new double[n];</span>
+        
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (int k = 0; k &lt; n; k++) {</span>
+            
+<span class="fc" id="L132">            int idx = MiscMath.bitReverse(k, nBits);</span>
+            
+<span class="fc" id="L134">            r[idx] = x[k];</span>
+        }
+        
+<span class="fc" id="L137">        return r;</span>
+    }
+    
+    protected static Complex[] bitReverseCopy(Complex[] x) {
+        
+<span class="fc" id="L142">        int n = x.length;</span>
+        
+<span class="fc" id="L144">        int nBits = MiscMath.numberOfBits(n - 1);</span>
+                        
+<span class="fc" id="L146">        Complex[] r = new Complex[n];</span>
+        
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int k = 0; k &lt; n; k++) {</span>
+            
+<span class="fc" id="L150">            int idx = MiscMath.bitReverse(k, nBits);</span>
+            
+<span class="fc" id="L152">            r[idx] = new Complex(x[k].re(), x[k].im());</span>
+        }
+        
+<span class="fc" id="L155">        return r;</span>
+    }
+    
+    /**
+     * perform FFT on x using the Cormen et al. pseudocode for iterative FFT.
+     * Note that the result cannot be inverted because only the real portion is 
+     * returned and inverse FFT needs the real and complex components.
+     */
+    public double[] fft(int[] x) {
+
+<span class="pc bpc" id="L165" title="2 of 4 branches missed.">        if (x == null || x.length == 0) {</span>
+<span class="nc" id="L166">            throw new IllegalArgumentException(&quot;xReal cannot be null or empty&quot;);</span>
+        }
+     
+<span class="fc" id="L169">        int n = x.length;</span>
+
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (n == 1) {</span>
+<span class="nc" id="L172">            return new double[]{x[0]};</span>
+        }
+        
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (!MiscMath.isAPowerOf2(n)) {</span>
+<span class="nc" id="L176">            throw new IllegalArgumentException(&quot;xReal's length has to be a power of 2&quot;);</span>
+        }
+        
+<span class="fc" id="L179">        double[] a = bitReverseCopy(x);</span>
+        
+<span class="fc" id="L181">        double norm = Math.sqrt(n);</span>
+        
+<span class="fc" id="L183">        int end = (int)(Math.log(n)/Math.log(2));</span>
+        
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        for (int s = 1; s &lt;= end; s++) {</span>
+            
+<span class="fc" id="L187">            int m = 1 &lt;&lt; s;</span>
+            
+<span class="fc" id="L189">            double eCoeff = 2. * Math.PI/(double)m;</span>
+<span class="fc" id="L190">            double wnReal = Math.cos(eCoeff);</span>
+<span class="fc" id="L191">            double wnImag = Math.sin(eCoeff);</span>
+        
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            for (int k = 0; k &lt; n; k+=m) {</span>
+                
+<span class="fc" id="L195">                double wReal = 1;</span>
+<span class="fc" id="L196">                double wImag = 0;</span>
+                
+<span class="fc bfc" id="L198" title="All 2 branches covered.">                for (int j = 0; j &lt; (m/2); j++) {</span>
+                    
+                    //complex multiplication:
+<span class="fc" id="L201">                    double tReal = wReal * a[k + j + (m/2)];</span>
+<span class="fc" id="L202">                    double tImag = wImag * a[k + j + (m/2)];</span>
+<span class="fc" id="L203">                    double tAbs = Math.hypot(tReal, tImag);;</span>
+                    
+<span class="fc" id="L205">                    double u = a[k + j];</span>
+<span class="fc" id="L206">                    a[k + j] = (u + tAbs);</span>
+<span class="fc" id="L207">                    a[k + j + (m/2)] = (u - tAbs);</span>
+                    
+                    //complex multiplication:
+<span class="fc" id="L210">                    wReal = wReal * wnReal - (wImag * wnImag);</span>
+<span class="fc" id="L211">                    wImag = wReal * wnImag + (wImag * wnReal);</span>
+                }
+            }
+        }
+        
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L217">            a[i] /= norm;</span>
+        }
+        
+        /*
+        bit-reverse-copy(a,A)
+        for s=1 to lg n {
+            m = 2^s
+            wm = exp^(i*2*PI/m)
+            for k=0 to n-1 by m {
+                w=1
+                for j=0 to ((m/2)-1) {
+                    do t=w*A[k + j + (m/2)]
+                    u = A[k + j]
+                    A[k + j] = u + t
+                    A[k + j + (m/2)] = u - t
+                    w = w * wm
+                }
+            }
+        }
+        */
+        
+<span class="fc" id="L238">        return a;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

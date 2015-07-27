@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PixelColors.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">PixelColors.java</span></div><h1>PixelColors.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.util.MatrixUtil;
+import java.awt.Color;
+
+/**
+ *
+ * @author nichole
+ */
+public class PixelColors {
+    
+    private final int red;
+    private final int green;
+    private final int blue;
+    
+<span class="nc" id="L16">    private float[] hsb = null;</span>
+    
+<span class="nc" id="L18">    private double[] yuv = null;</span>
+    
+<span class="nc" id="L20">    private float[] cieXY = null;</span>
+    
+<span class="nc" id="L22">    public PixelColors(int r, int g, int b) {</span>
+<span class="nc" id="L23">        this.red = r;</span>
+<span class="nc" id="L24">        this.green = g;</span>
+<span class="nc" id="L25">        this.blue = b;</span>
+<span class="nc" id="L26">    }</span>
+   
+    public int getRed() {
+<span class="nc" id="L29">        return red;</span>
+    }
+    
+    public int getGreen() {
+<span class="nc" id="L33">        return green;</span>
+    }
+    
+    public int getBlue() {
+<span class="nc" id="L37">        return blue;</span>
+    }
+    
+    public float getHue() {
+        
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        if (hsb == null) {</span>
+<span class="nc" id="L43">            hsb = new float[3];</span>
+<span class="nc" id="L44">            Color.RGBtoHSB(red, green, blue, hsb);</span>
+        }
+<span class="nc" id="L46">        return hsb[0];</span>
+    }
+    
+    public float[] getCIEXY() {
+        
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (cieXY == null) {</span>
+<span class="nc" id="L52">            CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L53">            cieXY = cieC.rgbToXYChromaticity(red, green, blue);</span>
+        }
+        
+<span class="nc" id="L56">        return cieXY;</span>
+    }
+    
+    public float getSaturation() {
+        
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (hsb == null) {</span>
+<span class="nc" id="L62">            hsb = new float[3];</span>
+<span class="nc" id="L63">            Color.RGBtoHSB(red, green, blue, hsb);</span>
+        }
+<span class="nc" id="L65">        return hsb[1];</span>
+    }
+    
+    public float getBrightness() {
+        
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (hsb == null) {</span>
+<span class="nc" id="L71">            hsb = new float[3];</span>
+<span class="nc" id="L72">            Color.RGBtoHSB(red, green, blue, hsb);</span>
+        }
+<span class="nc" id="L74">        return hsb[2];</span>
+    }
+    
+    public double calculateContrastToOther(int otherRed, int otherGreen, int otherBlue) {
+        
+<span class="nc" id="L79">        double[][] m = new double[3][];</span>
+<span class="nc" id="L80">        m[0] = new double[]{0.256, 0.504, 0.098};</span>
+<span class="nc" id="L81">        m[1] = new double[]{-0.148, -0.291, 0.439};</span>
+<span class="nc" id="L82">        m[2] = new double[]{0.439, -0.368, -0.072};</span>
+        
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (yuv == null) {</span>
+<span class="nc" id="L85">            yuv = MatrixUtil.multiply(m, new double[]{red, green, blue});</span>
+        }
+        
+<span class="nc" id="L88">        double[] yuvOther = MatrixUtil.multiply(m, new double[]{otherRed, otherGreen, otherBlue});</span>
+        
+<span class="nc" id="L90">        double contrast = (yuv[0] - yuvOther[0])/yuvOther[0];</span>
+        
+<span class="nc" id="L92">        return contrast;</span>
+    }
+    
+    /**
+     * calculate the difference between red, green, and blue of other and this,
+     * added in quadrature.  if the scale is 0-255 inclusive, the maximum
+     * possible value returned will be 441.7 and the minimum will be 0.
+     * @param otherRed
+     * @param otherGreen
+     * @param otherBlue
+     * @return 
+     */
+    public double calculateColorDiffererenceToOther(int otherRed, int otherGreen, int otherBlue) {
+        
+<span class="nc" id="L106">        double rDiff = otherRed - red;</span>
+<span class="nc" id="L107">        double gDiff = otherGreen - green;</span>
+<span class="nc" id="L108">        double bDiff = otherBlue - blue;</span>
+        
+<span class="nc" id="L110">        double dist = Math.sqrt(rDiff*rDiff + gDiff*gDiff + bDiff*bDiff);</span>
+        
+<span class="nc" id="L112">        return dist;</span>
+    }    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

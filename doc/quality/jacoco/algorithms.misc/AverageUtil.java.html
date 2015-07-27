@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AverageUtil.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">AverageUtil.java</span></div><h1>AverageUtil.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+
+import algorithms.util.PairIntArray;
+
+/**
+ * class to calculate a running median of the k previous points of curveY.
+ *
+ * @author nichole
+ */
+<span class="fc" id="L10">public class AverageUtil {</span>
+
+    /**
+     * calculate a running average of size k points of curveY.
+     * runtime complexity is O(N).
+     * @param curveY
+     * @param kPoints
+     * @return
+     */
+    public int[] calculateBoxCarAverage(int[] curveY, final int kPoints) {
+
+<span class="fc bfc" id="L21" title="All 2 branches covered.">        if (curveY == null) {</span>
+<span class="fc" id="L22">            throw new IllegalArgumentException(&quot;curveY cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (curveY.length &lt; kPoints) {</span>
+<span class="fc" id="L25">            throw new IllegalArgumentException(</span>
+            &quot;curveY.length must be equal to or greater than kPoints&quot;);
+        }
+
+<span class="fc" id="L29">        int[] output = new int[curveY.length];</span>
+
+<span class="fc" id="L31">        long sum = 0;</span>
+
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (int i = 0; i &lt; kPoints; ++i) {</span>
+
+<span class="fc" id="L35">            sum += curveY[i];</span>
+
+<span class="fc" id="L37">            output[i] = Math.round((float)sum/(i + 1.f));</span>
+        }
+
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int i = kPoints; i &lt; curveY.length; ++i) {</span>
+
+<span class="fc" id="L42">            int idx = i - kPoints;</span>
+
+<span class="fc" id="L44">            sum += (curveY[i] - curveY[idx]);</span>
+
+<span class="fc" id="L46">            output[i] = Math.round((float)sum/(float)kPoints);</span>
+        }
+        
+<span class="fc" id="L49">        return output;</span>
+    }
+
+    /**
+     * calculate a running average of size k points of curveY.
+     * runtime complexity is O(N).
+     * @param curve
+     * @param kPoints
+     * @return
+     */
+    public PairIntArray calculateBoxCarAverage(PairIntArray curve, final int kPoints) {
+
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (curve == null) {</span>
+<span class="fc" id="L62">            throw new IllegalArgumentException(&quot;curve cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (curve.getN() &lt; kPoints) {</span>
+<span class="fc" id="L65">            throw new IllegalArgumentException(</span>
+            &quot;curve length must be equal to or greater than kPoints&quot;);
+        }
+
+<span class="fc" id="L69">        PairIntArray output = new PairIntArray(curve.getN());</span>
+
+<span class="fc" id="L71">        long sum = 0;</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int i = 0; i &lt; kPoints; ++i) {</span>
+
+<span class="fc" id="L75">            sum += curve.getY(i);</span>
+
+<span class="fc" id="L77">            int y = Math.round((float)sum/(i + 1.f));</span>
+
+<span class="fc" id="L79">            int x = curve.getX(i);</span>
+
+<span class="fc" id="L81">            output.add(x, y);</span>
+        }
+
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = kPoints; i &lt; curve.getN(); ++i) {</span>
+
+<span class="fc" id="L86">            int idx = i - kPoints;</span>
+
+<span class="fc" id="L88">            sum += (curve.getY(i) - curve.getY(idx));</span>
+
+<span class="fc" id="L90">            int y = Math.round((float)sum/(float)kPoints);</span>
+
+<span class="fc" id="L92">            int x = curve.getX(i);</span>
+
+<span class="fc" id="L94">            output.add(x, y);</span>
+
+        }
+
+<span class="fc" id="L98">        return output;</span>
+    }
+
+    /**
+     * bin the curve by making bins of size binSize and averaging the points
+     * within the bins.
+     * runtime complexity is O(N).
+     * @param curveY
+     * @param binSize
+     * @return
+     */
+    public int[] bin(int[] curveY, final int binSize) {
+
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (curveY == null) {</span>
+<span class="nc" id="L112">            throw new IllegalArgumentException(&quot;curveY cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (curveY.length &lt; binSize) {</span>
+<span class="nc" id="L115">            throw new IllegalArgumentException(</span>
+            &quot;curveY.length must be equal to or greater than binSize&quot;);
+        }
+
+<span class="fc" id="L119">        int n = curveY.length;</span>
+
+<span class="fc" id="L121">        int nBins = (int)Math.ceil((float)n/(float)binSize);</span>
+
+<span class="fc" id="L123">        int[] output = new int[nBins];</span>
+
+<span class="fc" id="L125">        long sumY[] = new long[nBins];</span>
+
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+
+<span class="fc" id="L129">            int binNumber = i/binSize;</span>
+
+<span class="fc" id="L131">            sumY[binNumber] += curveY[i];</span>
+        }
+
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
+<span class="fc" id="L135">            output[i] = Math.round(sumY[i]/binSize);</span>
+        }
+
+<span class="fc" id="L138">        return output;</span>
+    }
+
+    public PairIntArray bin(PairIntArray curve, final int binSize) {
+
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (curve == null) {</span>
+<span class="nc" id="L144">            throw new IllegalArgumentException(&quot;curve cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (curve.getN() &lt; binSize) {</span>
+<span class="nc" id="L147">            throw new IllegalArgumentException(</span>
+            &quot;curve length must be equal to or greater than binSize&quot;);
+        }
+
+<span class="nc" id="L151">        int n = curve.getN();</span>
+
+<span class="nc" id="L153">        int nBins = (int)Math.ceil((float)n/(float)binSize);</span>
+
+<span class="nc" id="L155">        PairIntArray output = new PairIntArray(nBins);</span>
+
+<span class="nc" id="L157">        long sumY[] = new long[nBins];</span>
+
+<span class="nc" id="L159">        long sumX[] = new long[nBins];</span>
+
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+
+<span class="nc" id="L163">            int binNumber = i/binSize;</span>
+
+<span class="nc" id="L165">            sumX[binNumber] += curve.getX(i);</span>
+            
+<span class="nc" id="L167">            sumY[binNumber] += curve.getY(i);</span>
+        }
+        
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (int i = 0; i &lt; nBins; ++i) {</span>
+            
+<span class="nc" id="L172">            int x = Math.round(sumX[i]/binSize);</span>
+            
+<span class="nc" id="L174">            int y = Math.round(sumY[i]/binSize);</span>
+            
+<span class="nc" id="L176">            output.add(x, y);</span>
+        }
+
+<span class="nc" id="L179">        return output;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

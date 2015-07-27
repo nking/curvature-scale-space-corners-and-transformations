@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Kernel1DHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Kernel1DHelper.java</span></div><h1>Kernel1DHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Kernel1DHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Kernel1DHelper.java</span></div><h1>Kernel1DHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -31,8 +31,8 @@ import algorithms.util.PairIntArrayWithColor;
 
 <span class="fc" id="L32">        int curveLength = curve.getN();</span>
         
-<span class="fc bfc" id="L34" title="All 4 branches covered.">        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)</span>
-            &amp;&amp; (((PairIntArrayWithColor) curve).getColor() == 1);
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)</span>
+<span class="pc bnc" id="L35" title="All 2 branches missed.">            &amp;&amp; (((PairIntArrayWithColor) curve).getColor() == 1);</span>
             
         /*
         correct for the edges.
@@ -67,7 +67,7 @@ import algorithms.util.PairIntArrayWithColor;
 
 <span class="fc bfc" id="L68" title="All 2 branches covered.">            if (curveIdx &lt; 0) {</span>
                 
-<span class="fc bfc" id="L70" title="All 2 branches covered.">                if (isClosedCurved) {</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                if (isClosedCurved) {</span>
                     // wrap around
                     /*
                     n-4 n-3 n-2 n-1  0   1   2   3   .   .   .  n-1
@@ -75,8 +75,8 @@ import algorithms.util.PairIntArrayWithColor;
                     */
                     // for the rare case when the kernel is so much larger than
                     //   the edge, will need to iterate
-<span class="fc bfc" id="L78" title="All 2 branches covered.">                    while (curveIdx &lt; 0) {</span>
-<span class="fc" id="L79">                        curveIdx = curve.getN() + curveIdx;</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                    while (curveIdx &lt; 0) {</span>
+<span class="nc" id="L79">                        curveIdx = curve.getN() + curveIdx;</span>
                     }
                 } else {
                     //TODO: revisit this for range of kernel sizes vs edge sizes
@@ -87,7 +87,7 @@ import algorithms.util.PairIntArrayWithColor;
                     }
                 }
 <span class="fc bfc" id="L89" title="All 2 branches covered.">            } else if (curveIdx &gt;= (curveLength)) {</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">                if (isClosedCurved) {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                if (isClosedCurved) {</span>
                     // wrap around
                     /*
                     0   1   2   3   .   .   .  n-1  0   1   2   3   4
@@ -95,8 +95,8 @@ import algorithms.util.PairIntArrayWithColor;
                     */
                     // for the rare case when the kernel is so much larger than
                     //   the edge, will need to iterate
-<span class="fc bfc" id="L98" title="All 2 branches covered.">                    while (curveIdx &gt;= (curveLength)) {</span>
-<span class="fc" id="L99">                        curveIdx = curveIdx - curve.getN();</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                    while (curveIdx &gt;= (curveLength)) {</span>
+<span class="nc" id="L99">                        curveIdx = curveIdx - curve.getN();</span>
                     }
                 } else {
                     //TODO: revisit this for range of kernel sizes vs edge sizes
@@ -182,5 +182,82 @@ import algorithms.util.PairIntArrayWithColor;
 
 <span class="fc" id="L183">        return sum;</span>
     }
+    
+    /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true.
+     * @param img
+     * @param col
+     * @param row
+     * @param g
+     * @param calcX
+     * @return double[]{rSum, gSum, bSum]
+     */
+    public double[] convolvePointWithKernel(final Image img, int col, 
+        int row, float[] g, final boolean calcX) {
+
+<span class="nc" id="L198">        int h = g.length &gt;&gt; 1;</span>
+
+<span class="nc" id="L200">        double[] sum = new double[3];        </span>
+
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        int len = calcX ? img.getWidth() : img.getHeight();</span>
+        
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        for (int color = 0; color &lt; 3; color++) {</span>
+                
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+
+<span class="nc" id="L208">                float gg = g[gIdx];</span>
+
+<span class="nc bnc" id="L210" title="All 2 branches missed.">                if (gg == 0) {</span>
+<span class="nc" id="L211">                    continue;</span>
+                }
+
+<span class="nc" id="L214">                int idx = gIdx - h;</span>
+
+<span class="nc bnc" id="L216" title="All 2 branches missed.">                int cIdx = calcX ? (col + idx) : (row + idx);</span>
+
+<span class="nc bnc" id="L218" title="All 2 branches missed.">                if (cIdx &lt; 0) {</span>
+                    // replicate
+<span class="nc" id="L220">                    cIdx = -1*cIdx - 1;</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">                    if (cIdx &gt; (len - 1)) {</span>
+<span class="nc" id="L222">                        cIdx = len - 1;</span>
+                    }
+<span class="nc bnc" id="L224" title="All 2 branches missed.">                } else if (cIdx &gt;= (len)) {</span>
+                    //TODO: revisit this for range of kernel sizes vs edge sizes
+<span class="nc" id="L226">                    int diff = cIdx - len;</span>
+<span class="nc" id="L227">                    cIdx = len - diff - 1;</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">                    if (cIdx &lt; 0) {</span>
+<span class="nc" id="L229">                        cIdx = 0;</span>
+                    }
+                }
+
+                float point;
+
+<span class="nc bnc" id="L235" title="All 2 branches missed.">                if (calcX) {</span>
+                    // keep row constant
+<span class="nc bnc" id="L237" title="All 2 branches missed.">                    if (color == 0) {</span>
+<span class="nc" id="L238">                        point = img.getR(cIdx, row);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                    } else if (color == 1) {</span>
+<span class="nc" id="L240">                        point = img.getG(cIdx, row);</span>
+                    } else {
+<span class="nc" id="L242">                        point = img.getB(cIdx, row);</span>
+                    }
+                } else {
+                    // keep col constant
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                    if (color == 0) {</span>
+<span class="nc" id="L247">                        point = img.getR(col, cIdx);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                    } else if (color == 1) {</span>
+<span class="nc" id="L249">                        point = img.getG(col, cIdx);</span>
+                    } else {
+<span class="nc" id="L251">                        point = img.getB(col, cIdx);</span>
+                    }
+                }
+
+<span class="nc" id="L255">                sum[color] += (point * gg);</span>
+            }
+        }
+        
+<span class="nc" id="L259">        return sum;</span>
+    }
+    
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

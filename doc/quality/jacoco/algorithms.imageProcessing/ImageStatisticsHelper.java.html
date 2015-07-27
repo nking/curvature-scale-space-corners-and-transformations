@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageStatisticsHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageStatisticsHelper.java</span></div><h1>ImageStatisticsHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageStatisticsHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageStatisticsHelper.java</span></div><h1>ImageStatisticsHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.util.Errors;
 import algorithms.misc.Histogram;
@@ -66,9 +66,13 @@ import java.util.Arrays;
      */
     public static float[] getQuartiles(float[] a) {
         
-<span class="fc" id="L69">        float[] c = Arrays.copyOf(a, a.length);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (a.length &lt; 3) {</span>
+<span class="nc" id="L70">            throw new IllegalArgumentException(&quot;a.length must be at least 3&quot;);</span>
+        }
         
-<span class="fc" id="L71">        Arrays.sort(c);</span>
+<span class="fc" id="L73">        float[] c = Arrays.copyOf(a, a.length);</span>
+        
+<span class="fc" id="L75">        Arrays.sort(c);</span>
         
         /*
                       median
@@ -78,13 +82,36 @@ import java.util.Arrays;
                 q1   q2   q3   q4
         */
         
-<span class="fc" id="L81">        int medianIdx = c.length &gt;&gt; 1;</span>
+<span class="fc" id="L85">        int medianIdx = c.length &gt;&gt; 1;</span>
         
-<span class="fc" id="L83">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
+<span class="fc" id="L87">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
         
-<span class="fc" id="L85">        int q34Idx = (c.length + (medianIdx + 1))/2;</span>
+<span class="fc" id="L89">        int q34Idx = (c.length + (medianIdx + 1))/2;</span>
                 
-<span class="fc" id="L87">        return new float[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};</span>
+<span class="fc" id="L91">        return new float[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};</span>
+    }
+    
+    public static int[] getQuartiles(int[] a) {
+        
+<span class="nc" id="L96">        int[] c = Arrays.copyOf(a, a.length);</span>
+        
+<span class="nc" id="L98">        Arrays.sort(c);</span>
+        
+        /*
+                      median
+             min        .         max
+               .        .         .
+               .   |    .    |    .
+                q1   q2   q3   q4
+        */
+        
+<span class="nc" id="L108">        int medianIdx = c.length &gt;&gt; 1;</span>
+        
+<span class="nc" id="L110">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
+        
+<span class="nc" id="L112">        int q34Idx = (c.length + (medianIdx + 1))/2;</span>
+                
+<span class="nc" id="L114">        return new int[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};</span>
     }
    
     /**
@@ -99,9 +126,9 @@ import java.util.Arrays;
     public static ImageStatistics examineImageBorders(final GreyscaleImage input, 
         int borderWidth, boolean useSturges) {
                        
-<span class="fc" id="L102">        float[] values = new float[input.getNPixels()];</span>
+<span class="fc" id="L129">        float[] values = new float[input.getNPixels()];</span>
         
-<span class="fc" id="L104">        int count = 0;</span>
+<span class="fc" id="L131">        int count = 0;</span>
         
         /**
          * | |
@@ -109,57 +136,57 @@ import java.util.Arrays;
          * | |
          * | |
          */
-<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = 0; i &lt; borderWidth; i++) {</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
-<span class="fc" id="L114">                values[count] = input.getValue(i, j);                </span>
-<span class="fc" id="L115">                count++;</span>
-            }
-        }
-        
-        /**
-         * | |        | |
-         * | |        | |
-         * | |        | |
-         * | |        | |
-         */
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (int i = (input.getWidth() - borderWidth); i &lt; input.getWidth(); i++) {</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
-<span class="fc" id="L127">                values[count] = input.getValue(i, j);                </span>
-<span class="fc" id="L128">                count++;</span>
-            }
-        }
-        
-        /**
-         *   _________
-         * | |________| |
-         * | |        | |
-         * | |        | |
-         * | |        | |
-         */
-<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">            for (int j = 0; j &lt; borderWidth; j++) {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int i = 0; i &lt; borderWidth; i++) {</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
 <span class="fc" id="L141">                values[count] = input.getValue(i, j);                </span>
 <span class="fc" id="L142">                count++;</span>
             }
         }
         
         /**
+         * | |        | |
+         * | |        | |
+         * | |        | |
+         * | |        | |
+         */
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = (input.getWidth() - borderWidth); i &lt; input.getWidth(); i++) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
+<span class="fc" id="L154">                values[count] = input.getValue(i, j);                </span>
+<span class="fc" id="L155">                count++;</span>
+            }
+        }
+        
+        /**
+         *   _________
+         * | |________| |
+         * | |        | |
+         * | |        | |
+         * | |        | |
+         */
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            for (int j = 0; j &lt; borderWidth; j++) {</span>
+<span class="fc" id="L168">                values[count] = input.getValue(i, j);                </span>
+<span class="fc" id="L169">                count++;</span>
+            }
+        }
+        
+        /**
          *   _________
          * | |________| |
          * | |        | |
          * | |________| |
          * | |________| |
          */
-<span class="fc bfc" id="L153" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">            for (int j = (input.getHeight() - borderWidth); j &lt; input.getHeight(); j++) {</span>
-<span class="fc" id="L155">                values[count] = input.getValue(i, j);                </span>
-<span class="fc" id="L156">                count++;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            for (int j = (input.getHeight() - borderWidth); j &lt; input.getHeight(); j++) {</span>
+<span class="fc" id="L182">                values[count] = input.getValue(i, j);                </span>
+<span class="fc" id="L183">                count++;</span>
             }
         }
         
-<span class="fc" id="L160">        values = Arrays.copyOf(values, count);</span>
+<span class="fc" id="L187">        values = Arrays.copyOf(values, count);</span>
         
-<span class="fc" id="L162">        return examine(values, useSturges);</span>
+<span class="fc" id="L189">        return examine(values, useSturges);</span>
     }
     
     /**
@@ -173,13 +200,13 @@ import java.util.Arrays;
     public static ImageStatistics examineImage(final GreyscaleImage input, 
         boolean useSturges) {
                        
-<span class="fc" id="L176">        float[] values = new float[input.getNPixels()];</span>
+<span class="fc" id="L203">        float[] values = new float[input.getNPixels()];</span>
         
-<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getValues().length; i++) {</span>
-<span class="fc" id="L179">            values[i] = input.getValues()[i];</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getValues().length; i++) {</span>
+<span class="fc" id="L206">            values[i] = input.getValues()[i];</span>
         }
         
-<span class="fc" id="L182">        return examine(values, useSturges);</span>
+<span class="fc" id="L209">        return examine(values, useSturges);</span>
     }
     
     /**
@@ -192,37 +219,37 @@ import java.util.Arrays;
      */
     public static ImageStatistics examine(float[] pixValues, boolean useSturges) {
         
-<span class="fc" id="L195">        ImageStatistics stats = new ImageStatistics();</span>
+<span class="fc" id="L222">        ImageStatistics stats = new ImageStatistics();</span>
           
-<span class="fc" id="L197">        stats.setMedian(getMedian(pixValues));</span>
+<span class="fc" id="L224">        stats.setMedian(getMedian(pixValues));</span>
         
-<span class="fc" id="L199">        stats.setMean(getMean(pixValues));</span>
+<span class="fc" id="L226">        stats.setMean(getMean(pixValues));</span>
         
-<span class="fc" id="L201">        stats.setMin(MiscMath.findMin(pixValues));</span>
+<span class="fc" id="L228">        stats.setMin(MiscMath.findMin(pixValues));</span>
         
-<span class="fc" id="L203">        stats.setMax(MiscMath.findMax(pixValues));</span>
+<span class="fc" id="L230">        stats.setMax(MiscMath.findMax(pixValues));</span>
         
-<span class="fc" id="L205">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);</span>
+<span class="fc" id="L232">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);</span>
 
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
-            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, 
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
+<span class="pc" id="L235">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, </span>
                 simulatedErrors)
-            : Histogram.createSimpleHistogram(0.0f, 256.0f,
+<span class="fc" id="L237">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
                 10, pixValues, simulatedErrors);
         
         // think we probably want to remove the highest intensity bin, so
         // can think         
-<span class="fc" id="L215">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="fc" id="L242">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="fc" id="L217">        float mode = hist.getXHist()[yMaxIdx];</span>
+<span class="fc" id="L244">        float mode = hist.getXHist()[yMaxIdx];</span>
         
-<span class="fc" id="L219">        stats.setMode(mode);</span>
+<span class="fc" id="L246">        stats.setMode(mode);</span>
         
-<span class="fc" id="L221">        stats.setHistogram(hist);</span>
+<span class="fc" id="L248">        stats.setHistogram(hist);</span>
         
-<span class="fc" id="L223">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValues));</span>
+<span class="fc" id="L250">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValues));</span>
         
-<span class="fc" id="L225">        return stats;</span>
+<span class="fc" id="L252">        return stats;</span>
     }
     
     /**
@@ -240,46 +267,46 @@ import java.util.Arrays;
     public static ImageStatistics examineImageBorders(final GreyscaleImage input,
         boolean useSturges) {
                         
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 5) {</span>
-<span class="nc" id="L244">            return null;</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        if (input.getWidth() &lt; 5) {</span>
+<span class="nc" id="L271">            return null;</span>
         }
         
         // if &lt;= 256x256, use whole image
-<span class="fc bfc" id="L248" title="All 2 branches covered.">        if ((input.getWidth() * input.getHeight()) &lt; 65537) {</span>
-<span class="fc" id="L249">            return examineImage(input, useSturges);</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        if ((input.getWidth() * input.getHeight()) &lt; 65537) {</span>
+<span class="nc" id="L276">            return examineImage(input, useSturges);</span>
         }
         
-<span class="fc" id="L252">        int width = 10;</span>
+<span class="nc" id="L279">        int width = 10;</span>
         
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 20) {</span>
-<span class="nc" id="L255">            width = 1;</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
-<span class="nc" id="L257">            width = 5;</span>
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
-<span class="fc" id="L259">            width = 10;</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">        if (input.getWidth() &lt; 20) {</span>
+<span class="nc" id="L282">            width = 1;</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
+<span class="nc" id="L284">            width = 5;</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
+<span class="nc" id="L286">            width = 10;</span>
         } else {
             // choose 5 percent of image width or a default of 100 pixels?
-<span class="nc" id="L262">            width = 100;</span>
+<span class="nc" id="L289">            width = 100;</span>
         }
         
-<span class="fc" id="L265">        return examineImageBorders(input, width, useSturges);</span>
+<span class="nc" id="L292">        return examineImageBorders(input, width, useSturges);</span>
     }
      
     public static int countPixels(final GreyscaleImage img, int lowValue, 
         int highValue) {
         
-<span class="fc" id="L271">        int c = 0;</span>
+<span class="nc" id="L298">        int c = 0;</span>
         
-<span class="fc bfc" id="L273" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
-<span class="fc bfc" id="L274" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
-<span class="fc" id="L275">                int v = img.getValue(col, row);</span>
-<span class="fc bfc" id="L276" title="All 4 branches covered.">                if ((v &gt;= lowValue) &amp;&amp; (v &lt;= highValue)) {</span>
-<span class="fc" id="L277">                    c++;</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
+<span class="nc" id="L302">                int v = img.getValue(col, row);</span>
+<span class="nc bnc" id="L303" title="All 4 branches missed.">                if ((v &gt;= lowValue) &amp;&amp; (v &lt;= highValue)) {</span>
+<span class="nc" id="L304">                    c++;</span>
                 }
             }
         }
         
-<span class="fc" id="L282">        return c;</span>
+<span class="nc" id="L309">        return c;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

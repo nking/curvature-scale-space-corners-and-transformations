@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ShapeMatcher.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ShapeMatcher.java</span></div><h1>ShapeMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.compGeometry.convexHull.GrahamScan;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.misc.Histogram;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayDescendingComparator;
+import algorithms.util.ResourceFinder;
+import java.awt.Polygon;
+import java.awt.geom.PathIterator;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.Logger;
+
+public class ShapeMatcher {
+
+<span class="nc" id="L23">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="nc" id="L25">    public ShapeMatcher() {</span>
+<span class="nc" id="L26">    }</span>
+
+    /**
+    method to extract general shapes from the images and compare them in order to 
+    match points.  It returns a fit to a rough Euclidean transformation.
+    NOTE that the images may need pre-processing steps before using this.  For example,
+    the Brown &amp; Lowe 200? panoramic images of a mountain need to have the sky masked
+    out of the image first.
+     * @param image1
+     * @param image2
+     * @param outputMatched1
+     * @param outputMatched2
+    */
+    public TransformationPointFit findMatchingShapes(ImageExt image1, ImageExt image2,
+    PairIntArray outputMatched1, PairIntArray outputMatched2) throws 
+        IOException, NoSuchAlgorithmException {
+        
+<span class="nc" id="L43">        GreyscaleImage img1Grey = image1.copyToGreyscale();</span>
+<span class="nc" id="L44">        GreyscaleImage img2Grey = image2.copyToGreyscale();</span>
+        
+<span class="nc" id="L46">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="nc" id="L48">        boolean performBinning = false;</span>
+<span class="nc" id="L49">        int binFactor1 = 1;</span>
+        
+        /*
+        one could start with essentially no limits here and then
+        looks at the distribution of resulting contiguous group
+        sizes to decide the range to keep.
+        For now, choosing limits.
+        */
+<span class="nc" id="L57">        int smallestGroupLimit = 50;</span>
+<span class="nc" id="L58">        int largestGroupLimit = 2000;</span>
+        
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (performBinning) {</span>
+<span class="nc" id="L61">            binFactor1 = (int) Math.ceil(</span>
+<span class="nc" id="L62">                Math.max((float)img1Grey.getWidth()/200.f,</span>
+<span class="nc" id="L63">                (float)img2Grey.getHeight()/200.));</span>
+<span class="nc" id="L64">            smallestGroupLimit /= binFactor1;</span>
+<span class="nc" id="L65">            largestGroupLimit /= binFactor1;</span>
+            
+            // prevent from being smaller than needed for a convex hull
+<span class="nc bnc" id="L68" title="All 2 branches missed.">            if (smallestGroupLimit &lt;= 3) {</span>
+<span class="nc" id="L69">                smallestGroupLimit = 4;</span>
+            }
+<span class="nc" id="L71">            img1Grey = imageProcessor.binImage(img1Grey, binFactor1);</span>
+<span class="nc" id="L72">            img2Grey = imageProcessor.binImage(img2Grey, binFactor1);</span>
+        }
+<span class="nc" id="L74">        imageProcessor.applyImageSegmentation(img1Grey, 3);</span>
+<span class="nc" id="L75">        imageProcessor.applyImageSegmentation(img2Grey, 3);</span>
+           
+<span class="nc" id="L77">        Map&lt;Integer, Integer&gt; freqMap1 = Histogram.createAFrequencyMap(img1Grey);</span>
+<span class="nc" id="L78">        Map&lt;Integer, Integer&gt; freqMap2 = Histogram.createAFrequencyMap(img2Grey);</span>
+        
+<span class="nc" id="L80">        Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap1 </span>
+            = new HashMap&lt;Integer, List&lt;PairIntArray&gt;&gt;();
+<span class="nc" id="L82">        Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap2 </span>
+            = new HashMap&lt;Integer, List&lt;PairIntArray&gt;&gt;();
+        
+<span class="nc" id="L85">        Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls1 = </span>
+            new HashMap&lt;Integer, List&lt;GrahamScan&gt;&gt;();
+<span class="nc" id="L87">        Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls2 = </span>
+            new HashMap&lt;Integer, List&lt;GrahamScan&gt;&gt;();
+        
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        for (int im = 0; im &lt; 2; ++im) {</span>
+            
+<span class="nc" id="L92">            Map&lt;Integer, Integer&gt; freqMap = freqMap1;</span>
+<span class="nc" id="L93">            Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap = contigMap1;</span>
+<span class="nc" id="L94">            Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls = hulls1;</span>
+<span class="nc" id="L95">            GreyscaleImage imgGrey = img1Grey;</span>
+            
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (im == 1) {</span>
+<span class="nc" id="L98">                freqMap = freqMap2;</span>
+<span class="nc" id="L99">                contigMap = contigMap2;</span>
+<span class="nc" id="L100">                hulls = hulls2;</span>
+<span class="nc" id="L101">                imgGrey = img2Grey;</span>
+            }
+<span class="nc" id="L103"> Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
+<span class="nc" id="L104"> int c = 0;</span>
+ 
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            for (Entry&lt;Integer, Integer&gt; entry : freqMap.entrySet()) {</span>
+
+<span class="nc" id="L108">                Integer pixValue = entry.getKey();</span>
+
+<span class="nc" id="L110">                DFSContiguousValueFinder finder = new DFSContiguousValueFinder(</span>
+                    imgGrey);
+<span class="nc" id="L112">                finder.setMinimumNumberInCluster(smallestGroupLimit);</span>
+<span class="nc" id="L113">                finder.findGroups(pixValue.intValue());</span>
+
+<span class="nc" id="L115">                int nGroups = finder.getNumberOfGroups();</span>
+<span class="nc" id="L116">                List&lt;PairIntArray&gt; list = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                for (int i = 0; i &lt; nGroups; i++) {</span>
+<span class="nc" id="L118">                    PairIntArray xy = finder.getXY(i);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                    if (xy.getN() &lt; largestGroupLimit) {</span>
+<span class="nc" id="L120">                        list.add(xy);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">if (c == 0) {</span>
+<span class="nc" id="L122">ImageIOHelper.addCurveToImage(xy, imgW, 0, 255, 0, 0);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">} else if (c == 1) {</span>
+<span class="nc" id="L124">ImageIOHelper.addCurveToImage(xy, imgW, 0, 200, 255, 150);</span>
+} else  {
+<span class="nc" id="L126">ImageIOHelper.addCurveToImage(xy, imgW, 0, 0, 0, 255);</span>
+}
+                    }
+                }
+<span class="nc" id="L130">                Collections.sort(list, new PairIntArrayDescendingComparator());</span>
+
+<span class="nc" id="L132">                contigMap.put(pixValue, list);</span>
+                
+<span class="nc" id="L134">                List&lt;GrahamScan&gt; listHulls = new ArrayList&lt;GrahamScan&gt;();</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">                for (PairIntArray xy : list) {</span>
+<span class="nc" id="L136">                    GrahamScan scan = new GrahamScan();</span>
+                    try {
+<span class="nc" id="L138">                        float[] x = new float[xy.getN()];</span>
+<span class="nc" id="L139">                        float[] y = new float[x.length];</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                        for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L141">                            x[i] = xy.getX(i);</span>
+<span class="nc" id="L142">                            y[i] = xy.getY(i);</span>
+                        }
+
+<span class="nc" id="L145">                        scan.computeHull(x, y);</span>
+
+<span class="nc" id="L147">                        listHulls.add(scan);</span>
+<span class="nc" id="L148">                    } catch (GrahamScanTooFewPointsException e) {</span>
+<span class="nc" id="L149">                        log.severe(e.getMessage());</span>
+<span class="nc" id="L150">                    }                    </span>
+<span class="nc" id="L151">                }</span>
+<span class="nc" id="L152">                hulls.put(pixValue, listHulls);</span>
+<span class="nc" id="L153">c++;</span>
+<span class="nc" id="L154">            }</span>
+ try {
+<span class="nc" id="L156">    String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L157">    ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + im + &quot;.png&quot;, imgW);</span>
+<span class="nc" id="L158">} catch (Exception e) {</span>
+<span class="nc" id="L159">     e.printStackTrace();</span>
+<span class="nc" id="L160">    log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="nc" id="L161">}</span>
+ 
+        }
+        
+<span class="nc" id="L165">        Image img1W = ImageIOHelper.convertImage(img1Grey);</span>
+<span class="nc" id="L166">        Image img2W = ImageIOHelper.convertImage(img2Grey);</span>
+        
+<span class="nc" id="L168">        int c = 0;</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;GrahamScan&gt;&gt; entry : hulls1.entrySet()) {</span>
+<span class="nc" id="L170">            List&lt;GrahamScan&gt; hulls = entry.getValue();</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">            for (GrahamScan hull : hulls) {</span>
+<span class="nc" id="L172">                int[] x = new int[hull.getXHull().length];</span>
+<span class="nc" id="L173">                int[] y = new int[x.length];</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L175">                    x[i] = Math.round(hull.getXHull()[i]);</span>
+<span class="nc" id="L176">                    y[i] = Math.round(hull.getYHull()[i]);                   </span>
+                }
+<span class="nc bnc" id="L178" title="All 2 branches missed.">                if (c == 0) {</span>
+                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 255, 0, 0);
+<span class="nc" id="L180">                    ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 255, 0, 0);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">                } else if (c == 1) {</span>
+                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 0, 255, 0);
+<span class="nc" id="L183">                    ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 0, 255, 0);</span>
+                } else {
+                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 0, 0, 255);
+<span class="nc" id="L186">                    ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 0, 0, 255);</span>
+                }
+<span class="nc" id="L188">            }</span>
+<span class="nc" id="L189">            c++;</span>
+<span class="nc" id="L190">        }</span>
+<span class="nc" id="L191">        c = 0;</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;GrahamScan&gt;&gt; entry : hulls2.entrySet()) {</span>
+<span class="nc" id="L193">            List&lt;GrahamScan&gt; hulls = entry.getValue();</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">            for (GrahamScan hull : hulls) {</span>
+<span class="nc" id="L195">                int[] x = new int[hull.getXHull().length];</span>
+<span class="nc" id="L196">                int[] y = new int[x.length];</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">                for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L198">                    x[i] = Math.round(hull.getXHull()[i]);</span>
+<span class="nc" id="L199">                    y[i] = Math.round(hull.getYHull()[i]);</span>
+                }
+<span class="nc bnc" id="L201" title="All 2 branches missed.">                if (c == 0) {</span>
+                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 255, 0, 0);
+<span class="nc" id="L203">                    ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 255, 0, 0);</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                } else if (c == 1) {</span>
+                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 0, 255, 0);
+<span class="nc" id="L206">                    ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 0, 255, 0);</span>
+                } else {
+                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 0, 0, 255);
+<span class="nc" id="L209">                    ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 0, 0, 255);</span>
+                }
+<span class="nc" id="L211">            }</span>
+<span class="nc" id="L212">            c++;</span>
+<span class="nc" id="L213">        }</span>
+       
+        try {
+<span class="nc" id="L216">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L217">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img1_binned.png&quot;, img1W);</span>
+<span class="nc" id="L218">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img2_binned.png&quot;, img2W);</span>
+<span class="nc" id="L219">        } catch (Exception e) {</span>
+<span class="nc" id="L220">             e.printStackTrace();</span>
+<span class="nc" id="L221">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="nc" id="L222">        }</span>
+<span class="nc" id="L223">        return null;</span>
+        //throw new UnsupportedOperationException(&quot;not yet implemented&quot;);
+    
+        /*
+        -- segmentation by cieXY color into 3 bands
+        -- dfs contiguous find of each of the 3 intensity bands
+           -- convex hull of the groups
+           -- compare the hulls of one image to the hulls of the other image:  
+              -- by area and single pixel intensity?  (the cie xy histogram skipping
+                    algorithm may assign different colors to same feature, so should
+                    probably ignore intensity unless know the images are very similar).
+              -- by shape
+                -- furthest pairs?
+                -- a description of ellipticity?
+                -- points on the hull or centroid matching enough between 
+                   the 2 images to be used like &quot;corners&quot;?
+              -- by an increasing rotation and a fixed rotational range to
+                 only look at hulls that are within the projected beam of the
+                 hull in image1 under consideration?
+                 -- need to store the best for a hull and also the fits as the
+                    rotations are tried, that is, dynamic programming to avoid
+                    repeating calculations.
+                    -- then the best of each hull can be quickly looked up for
+                       the other hulls (i.e. was rotation=20 within top fits
+                       for the neighboring hulls and with consistent translation...)
+                       
+        */
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

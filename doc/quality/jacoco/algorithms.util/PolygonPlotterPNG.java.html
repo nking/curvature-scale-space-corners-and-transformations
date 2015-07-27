@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PolygonPlotterPNG.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">PolygonPlotterPNG.java</span></div><h1>PolygonPlotterPNG.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+import algorithms.misc.MiscMath;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Paint;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartRenderingInfo;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYPolygonAnnotation;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.Range;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+/**
+ *
+ * @author nichole
+ */
+public class PolygonPlotterPNG {
+
+<span class="nc" id="L31">    protected boolean dataMinMaxAreSet = false;</span>
+    
+    protected float minX, maxX, minY, maxY;
+
+<span class="nc" id="L35">    protected int plotWidth = 4000;</span>
+    
+<span class="nc" id="L37">    protected int plotHeight = 4000;</span>
+        
+<span class="nc" id="L39">    protected JFreeChart chart = null;</span>
+    
+<span class="nc" id="L41">    protected int lastColor = 0;</span>
+    
+    public PolygonPlotterPNG(float minX, float maxX, float minY, 
+        float maxY, String plotLabel, String xAxisLabel, String yAxisLabel) 
+<span class="nc" id="L45">        throws FileNotFoundException, IOException {</span>
+
+<span class="nc" id="L47">        this.minX = minX;</span>
+<span class="nc" id="L48">        this.maxX = maxX;</span>
+<span class="nc" id="L49">        this.minY = minY;</span>
+<span class="nc" id="L50">        this.maxY = maxY;</span>
+                
+<span class="nc" id="L52">        dataMinMaxAreSet = true;</span>
+        
+        // ----- create the chart object -----
+<span class="nc" id="L55">        chart = ChartFactory.createScatterPlot(</span>
+            null,
+            plotLabel, null, 
+            new XYSeriesCollection()
+        );
+        
+<span class="nc" id="L61">        Paint bPaint = Color.WHITE;</span>
+        
+<span class="nc" id="L63">        chart.setBackgroundPaint(bPaint);</span>
+        
+<span class="nc" id="L65">        final XYPlot plot = chart.getXYPlot();</span>
+        
+<span class="nc" id="L67">        Range xRange = new Range(minX, maxX);</span>
+<span class="nc" id="L68">        Range yRange = new Range(minY, maxY);</span>
+        
+<span class="nc" id="L70">        NumberAxis yAxis = new NumberAxis(yAxisLabel);</span>
+<span class="nc" id="L71">        NumberAxis xAxis = new NumberAxis(xAxisLabel);</span>
+<span class="nc" id="L72">        xAxis.setRange(xRange, true, false);</span>
+<span class="nc" id="L73">        yAxis.setRange(yRange, true, false);</span>
+        //yAxis.setTickUnit(new NumberTickUnit(1));
+        
+<span class="nc" id="L76">        plot.setDomainAxis(xAxis);</span>
+<span class="nc" id="L77">        plot.setRangeAxis(yAxis);</span>
+        
+<span class="nc" id="L79">        plot.setBackgroundPaint(bPaint);</span>
+<span class="nc" id="L80">        plot.setDomainGridlinePaint(Color.BLACK);</span>
+<span class="nc" id="L81">        plot.setRangeGridlinePaint(Color.BLACK);</span>
+        
+        // in the absence of an X11 environment, may need to set this:
+<span class="nc" id="L84">        System.setProperty(&quot;java.awt.headless&quot;, &quot;true&quot;);</span>
+<span class="nc" id="L85">    }</span>
+
+    public void addPolygon(int[] xPoints, int[] yPoints) {
+
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+        
+<span class="nc" id="L91">        double[] xy = new double[2*n0];</span>
+        
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="nc" id="L94">            xy[2*i] = xPoints[i];</span>
+<span class="nc" id="L95">            xy[2*i + 1] = yPoints[i];</span>
+        }
+        
+<span class="nc" id="L98">        Color clr = chooseNextColor();</span>
+        
+<span class="nc" id="L100">        XYPolygonAnnotation a = new XYPolygonAnnotation(xy, null, null, clr);</span>
+        
+<span class="nc" id="L102">        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) </span>
+<span class="nc" id="L103">            chart.getXYPlot().getRenderer();</span>
+        
+<span class="nc" id="L105">        renderer.addAnnotation(a);</span>
+<span class="nc" id="L106">    }</span>
+    
+    public void addPolygon(float[] xPoints, float[] yPoints) {
+
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+        
+<span class="nc" id="L112">        double[] xy = new double[2*n0];</span>
+        
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="nc" id="L115">            xy[2*i] = xPoints[i];</span>
+<span class="nc" id="L116">            xy[2*i + 1] = yPoints[i];</span>
+        }
+        
+<span class="nc" id="L119">        Color clr = chooseNextColor();</span>
+        
+<span class="nc" id="L121">        XYPolygonAnnotation a = new XYPolygonAnnotation(xy, null, null, clr);</span>
+        
+<span class="nc" id="L123">        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) </span>
+<span class="nc" id="L124">            chart.getXYPlot().getRenderer();</span>
+        
+<span class="nc" id="L126">        renderer.addAnnotation(a);</span>
+<span class="nc" id="L127">    }</span>
+    
+    public void addPolygon(double[] xPoints, double[] yPoints) {
+
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+        
+<span class="nc" id="L133">        double[] xy = new double[2*n0];</span>
+        
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="nc" id="L136">            xy[2*i] = xPoints[i];</span>
+<span class="nc" id="L137">            xy[2*i + 1] = yPoints[i];</span>
+        }
+        
+<span class="nc" id="L140">        Color clr = chooseNextColor();</span>
+        
+<span class="nc" id="L142">        XYPolygonAnnotation a = new XYPolygonAnnotation(xy, </span>
+            new BasicStroke(3f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL), 
+            clr);
+        
+<span class="nc" id="L146">        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) </span>
+<span class="nc" id="L147">            chart.getXYPlot().getRenderer();</span>
+                
+<span class="nc" id="L149">        renderer.addAnnotation(a);</span>
+<span class="nc" id="L150">    }</span>
+    
+    public void addPolygon(double[] xPoints, double[] yPoints, Color clr) {
+
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+        
+<span class="nc" id="L156">        double[] xy = new double[2*n0];</span>
+        
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; ++i) {</span>
+<span class="nc" id="L159">            xy[2*i] = xPoints[i];</span>
+<span class="nc" id="L160">            xy[2*i + 1] = yPoints[i];</span>
+        }
+                
+<span class="nc" id="L163">        XYPolygonAnnotation a = new XYPolygonAnnotation(xy, </span>
+            new BasicStroke(4f), clr);
+        
+<span class="nc" id="L166">        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) </span>
+<span class="nc" id="L167">            chart.getXYPlot().getRenderer();</span>
+                
+<span class="nc" id="L169">        renderer.addAnnotation(a);</span>
+<span class="nc" id="L170">    }</span>
+    
+    private Color chooseNextColor() {
+                
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (lastColor &gt; 5) {</span>
+<span class="nc" id="L175">            lastColor = 0;</span>
+        }
+<span class="nc" id="L177">        Color c = Color.BLACK;</span>
+<span class="nc bnc" id="L178" title="All 10 branches missed.">        switch(lastColor) {</span>
+            case 1:
+<span class="nc" id="L180">                c = Color.PINK;</span>
+<span class="nc" id="L181">                break;</span>
+            case 2:
+<span class="nc" id="L183">                c = Color.GREEN;</span>
+<span class="nc" id="L184">                break;</span>
+            case 3:
+<span class="nc" id="L186">                c = Color.RED;</span>
+<span class="nc" id="L187">                break;</span>
+            case 4:
+<span class="nc" id="L189">                c = Color.CYAN;</span>
+<span class="nc" id="L190">                break;</span>
+            case 5:
+<span class="nc" id="L192">                c = Color.ORANGE;</span>
+<span class="nc" id="L193">                break;</span>
+            case 6:
+<span class="nc" id="L195">                c = Color.DARK_GRAY;</span>
+<span class="nc" id="L196">                break;</span>
+            case 7:
+<span class="nc" id="L198">                c = Color.BLUE;</span>
+<span class="nc" id="L199">                break;</span>
+            case 8:
+<span class="nc" id="L201">                c = Color.LIGHT_GRAY;</span>
+<span class="nc" id="L202">                break;</span>
+            case 9:
+<span class="nc" id="L204">                c = Color.MAGENTA;</span>
+<span class="nc" id="L205">                break;</span>
+            default:
+                break;
+        }            
+<span class="nc" id="L209">        lastColor++;</span>
+<span class="nc" id="L210">        return c;</span>
+    }
+    
+    public String writeFile() throws IOException {
+<span class="nc" id="L214">        return writeToFile(&quot;polygon.png&quot;);</span>
+    }
+
+    public String writeFile(Integer num) throws IOException {
+<span class="nc" id="L218">        return writeToFile( </span>
+<span class="nc" id="L219">            &quot;polygon&quot; + num.toString() +&quot;.png&quot;);</span>
+    }
+
+    protected String writeToFile(String fileName) throws IOException {
+
+<span class="nc" id="L224">        ChartRenderingInfo chartInfo </span>
+            = new ChartRenderingInfo();
+        //    = new ChartRenderingInfo(new StandardEntityCollection());
+        
+<span class="nc" id="L228">        int imageType = BufferedImage.TYPE_INT_ARGB;</span>
+        
+<span class="nc" id="L230">        BufferedImage imgToWrite = chart.createBufferedImage(500, 500, </span>
+            imageType, chartInfo);
+        
+<span class="nc" id="L233">        String filePath = ResourceFinder.getAFilePathInCWD(fileName);</span>
+        
+<span class="nc" id="L235">        File file = new File(filePath);</span>
+        
+<span class="nc" id="L237">        ImageIO.write(imgToWrite, &quot;png&quot;, file);</span>
+        
+<span class="nc" id="L239">        return filePath;        </span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

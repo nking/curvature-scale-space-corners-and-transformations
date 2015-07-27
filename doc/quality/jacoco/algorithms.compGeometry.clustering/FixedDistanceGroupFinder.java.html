@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FixedDistanceGroupFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering</a> &gt; <span class="el_source">FixedDistanceGroupFinder.java</span></div><h1>FixedDistanceGroupFinder.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering;
+
+import algorithms.CountingSort;
+import algorithms.MultiArrayMergeSort;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+public class FixedDistanceGroupFinder {
+
+    protected final boolean[][] visited;
+
+    protected final int[] groupNumber;
+
+<span class="fc" id="L21">    protected final List&lt;Set&lt;Integer&gt;&gt; groupList = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+
+<span class="fc" id="L23">    protected List&lt;Set&lt;Integer&gt;&gt; sortedGroupList = null;</span>
+
+    protected final float[] x;
+
+    protected final float[] y;
+
+<span class="fc" id="L29">    public FixedDistanceGroupFinder(final float[] xPoints, final float[] yPoints) {</span>
+
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (xPoints == null) {</span>
+<span class="nc" id="L32">            throw new IllegalArgumentException(&quot;xPoints cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (yPoints == null) {</span>
+<span class="nc" id="L35">            throw new IllegalArgumentException(&quot;yPoints cannot be null&quot;);</span>
+        }
+
+<span class="fc" id="L38">        int n = xPoints.length;</span>
+
+<span class="fc" id="L40">        visited = new boolean[n][];</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L42">            visited[i] = new boolean[n];</span>
+        }
+
+<span class="fc" id="L45">        groupNumber = new int[n];</span>
+<span class="fc" id="L46">        Arrays.fill(groupNumber, -1);</span>
+
+<span class="fc" id="L48">        x = xPoints;</span>
+
+<span class="fc" id="L50">        y = yPoints;</span>
+
+<span class="fc" id="L52">    }</span>
+
+    public int[] getGroupNumbers() {
+<span class="fc" id="L55">        return groupNumber;</span>
+    }
+
+    /**
+     * get a list of the x,y indexes in each group in a list sorted by 
+     * descending numbers of members (i.e., the largest group membership is 
+     * index 0 of the returned list).
+     * @return
+     */
+    public List&lt;Set&lt;Integer&gt;&gt; getDescendingSortGroupList() {
+        
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (sortedGroupList == null) {</span>
+
+<span class="fc" id="L68">            sortedGroupList = sortGroupList();</span>
+        }
+
+<span class="fc" id="L71">        return sortedGroupList;</span>
+    }
+    
+    public void findGroupsOfPoints(final double maxPointSeparation) {
+        
+<span class="fc" id="L76">        double maxDistSq = maxPointSeparation * maxPointSeparation;</span>
+        
+<span class="fc" id="L78">        java.util.Stack&lt;Integer&gt; stack = new java.util.Stack&lt;Integer&gt;();</span>
+        
+        /*
+        using a stack for the outer loop will increase the runtime complexity
+        for this stage, but leads to un-fractured groups.
+        */
+        
+        //O(N)
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="fc" id="L87">            Integer index = Integer.valueOf(i);</span>
+<span class="fc" id="L88">            stack.add(index);</span>
+        }
+        
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+
+<span class="fc" id="L93">            int uIdx = stack.pop().intValue();</span>
+            
+<span class="fc" id="L95">            float uX = x[uIdx];</span>
+<span class="fc" id="L96">            float uY = y[uIdx];</span>
+            
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            for (int vIdx = 0; vIdx &lt; x.length; ++vIdx) {</span>
+                
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                if (visited[uIdx][vIdx]) {</span>
+<span class="fc" id="L103">                    continue;</span>
+                }
+                
+<span class="fc" id="L106">                visited[uIdx][vIdx] = true;</span>
+<span class="fc" id="L107">                visited[vIdx][uIdx] = true;</span>
+                    
+<span class="fc" id="L109">                float vX = x[vIdx];</span>
+<span class="fc" id="L110">                float vY = y[vIdx];</span>
+                
+<span class="fc" id="L112">                float diffX = uX - vX;</span>
+<span class="fc" id="L113">                float diffY = uY - vY;</span>
+                
+<span class="fc" id="L115">                double distSq = (diffX * diffX) + (diffY * diffY);</span>
+                
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                if (distSq &lt;= maxDistSq) {</span>
+                                        
+<span class="fc" id="L119">                    processPair(uIdx, vIdx);</span>
+                    
+<span class="fc" id="L121">                    stack.add(Integer.valueOf(vIdx));</span>
+                }
+            }
+<span class="fc" id="L124">        }</span>
+<span class="fc" id="L125">    }</span>
+
+    protected void processPair(final int uIdx, final int vIdx) {
+              
+<span class="fc" id="L129">        int groupIdx = groupNumber[uIdx];</span>
+        
+<span class="fc bfc" id="L131" title="All 4 branches covered.">        if ((groupIdx != -1) &amp;&amp; (groupNumber[vIdx] == -1)) {</span>
+                    
+<span class="fc" id="L133">            groupList.get(Integer.valueOf(groupIdx)).add(Integer.valueOf(vIdx));</span>
+            
+<span class="fc" id="L135">            groupNumber[vIdx] = groupIdx;</span>
+                        
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">        } else if ((groupIdx == -1) &amp;&amp; (groupNumber[vIdx] != -1)) {</span>
+
+<span class="nc" id="L139">            groupIdx = groupNumber[vIdx];</span>
+
+<span class="nc" id="L141">            groupList.get(Integer.valueOf(groupIdx)).add(Integer.valueOf(uIdx));</span>
+            
+<span class="nc" id="L143">            groupNumber[uIdx] = groupIdx;</span>
+            
+<span class="pc bpc" id="L145" title="1 of 4 branches missed.">        } else if ((groupIdx == -1) &amp;&amp; (groupNumber[vIdx] == -1)) {</span>
+                        
+<span class="fc" id="L147">            groupIdx = groupList.size();</span>
+            
+<span class="fc" id="L149">            groupNumber[uIdx] = groupIdx;</span>
+            
+<span class="fc" id="L151">            groupNumber[vIdx] = groupIdx;</span>
+            
+<span class="fc" id="L153">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L154">            set.add(Integer.valueOf(uIdx));</span>
+<span class="fc" id="L155">            set.add(Integer.valueOf(vIdx));</span>
+            
+<span class="fc" id="L157">            groupList.add(set);</span>
+                      
+        } 
+<span class="fc" id="L160">    }</span>
+    
+    private List&lt;Set&lt;Integer&gt;&gt; sortGroupList() {
+
+<span class="fc" id="L164">        int[] nMembers = new int[groupList.size()];</span>
+<span class="fc" id="L165">        int[] groupListIndexes = new int[groupList.size()];</span>
+
+<span class="fc" id="L167">        int nMax = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
+
+<span class="fc" id="L170">            groupListIndexes[i] = i;</span>
+
+<span class="fc" id="L172">            nMembers[i] = groupList.get(i).size();</span>
+
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (nMembers[i] &gt; nMax) {</span>
+<span class="fc" id="L175">                nMax = nMembers[i];</span>
+            }
+        }
+
+<span class="pc bpc" id="L179" title="2 of 4 branches missed.">        if ((nMax &gt; groupListIndexes.length) || (nMax &gt; 10000000)) {</span>
+<span class="nc" id="L180">            MultiArrayMergeSort.sortByDecr(nMembers, groupListIndexes);</span>
+        } else {
+<span class="fc" id="L182">            CountingSort.sortByDecr(nMembers, groupListIndexes, nMax);</span>
+        }
+
+<span class="fc" id="L185">        List&lt;Set&lt;Integer&gt;&gt; sorted = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (int idx : groupListIndexes) {</span>
+
+<span class="fc" id="L189">            Set&lt;Integer&gt; set = groupList.get(idx);</span>
+
+<span class="fc" id="L191">            sorted.add(set);</span>
+        }
+
+<span class="fc" id="L194">        return sorted;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

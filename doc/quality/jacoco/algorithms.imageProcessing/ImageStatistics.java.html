@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageStatistics.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageStatistics.java</span></div><h1>ImageStatistics.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageStatistics.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageStatistics.java</span></div><h1>ImageStatistics.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.misc.HistogramHolder;
 import java.util.Arrays;
@@ -134,37 +134,37 @@ public class ImageStatistics {
     
     public String toString() {
         
-<span class="fc" id="L137">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L137">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L139">        sb.append(&quot;min=&quot;).append(Double.toString(min)).append(&quot;\n&quot;);</span>
-<span class="fc" id="L140">        sb.append(&quot;max=&quot;).append(Double.toString(max)).append(&quot;\n&quot;);</span>
-<span class="fc" id="L141">        sb.append(&quot;mean=&quot;).append(Double.toString(mean)).append(&quot;\n&quot;);</span>
-<span class="fc" id="L142">        sb.append(&quot;median=&quot;).append(Double.toString(median)).append(&quot;\n&quot;);</span>
-<span class="fc" id="L143">        sb.append(&quot;mode=&quot;).append(Double.toString(mode)).append(&quot;\n&quot;);</span>
-<span class="fc" id="L144">        sb.append(&quot;quartiles=&quot;);</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (quartiles != null) {</span>
-<span class="fc" id="L146">            sb.append(Arrays.toString(quartiles));</span>
+<span class="nc" id="L139">        sb.append(&quot;min=&quot;).append(Double.toString(min)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L140">        sb.append(&quot;max=&quot;).append(Double.toString(max)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L141">        sb.append(&quot;mean=&quot;).append(Double.toString(mean)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L142">        sb.append(&quot;median=&quot;).append(Double.toString(median)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L143">        sb.append(&quot;mode=&quot;).append(Double.toString(mode)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L144">        sb.append(&quot;quartiles=&quot;);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (quartiles != null) {</span>
+<span class="nc" id="L146">            sb.append(Arrays.toString(quartiles));</span>
         }
-<span class="fc" id="L148">        sb.append(&quot;\n&quot;);</span>
-<span class="fc" id="L149">        sb.append(&quot;histogram=&quot;);</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (histogram != null) {</span>
-<span class="fc" id="L151">            sb.append(histogram.toString()).append(&quot;\n&quot;);</span>
-        }
-        
-<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
-<span class="fc" id="L155">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
+<span class="nc" id="L148">        sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L149">        sb.append(&quot;histogram=&quot;);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (histogram != null) {</span>
+<span class="nc" id="L151">            sb.append(histogram.toString()).append(&quot;\n&quot;);</span>
         }
         
-<span class="fc" id="L158">        return sb.toString();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
+<span class="nc" id="L155">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
+        }
+        
+<span class="nc" id="L158">        return sb.toString();</span>
     }
 
     public void setLowThresholdApplied(double lowThresh) {
-<span class="fc" id="L162">        lowThresholdApplied = lowThresh;</span>
-<span class="fc" id="L163">    }</span>
+<span class="nc" id="L162">        lowThresholdApplied = lowThresh;</span>
+<span class="nc" id="L163">    }</span>
     
     public double getLowThresholdApplied() {
-<span class="fc" id="L166">        return lowThresholdApplied;</span>
+<span class="nc" id="L166">        return lowThresholdApplied;</span>
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

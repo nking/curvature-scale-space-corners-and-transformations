@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SetCompare.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.optimization</a> &gt; <span class="el_source">SetCompare.java</span></div><h1>SetCompare.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.optimization;
+
+import algorithms.util.PairInt;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L10">public class SetCompare {</span>
+ 
+    public SetComparisonResults compare(Set&lt;PairInt&gt; expectedPoints,
+        Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; expectedBorderPoints,
+        Set&lt;PairInt&gt; borderPoints) {
+        
+<span class="fc" id="L16">        int nFound = 0;</span>
+<span class="fc" id="L17">        int nOutside = 0;</span>
+<span class="fc" id="L18">        int nFoundBorder = 0;</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">            if (expectedPoints.contains(p)) {</span>
+<span class="fc" id="L21">                nFound++;</span>
+            } else {
+<span class="nc" id="L23">                nOutside++;</span>
+            }
+<span class="fc bfc" id="L25" title="All 2 branches covered.">            if (expectedBorderPoints.contains(p)) {</span>
+<span class="fc" id="L26">                nFoundBorder++;</span>
+            }
+<span class="fc" id="L28">        }</span>
+
+<span class="fc" id="L30">        SetComparisonResults r = new SetComparisonResults(expectedPoints.size(),</span>
+<span class="fc" id="L31">            nOutside, nFound, expectedBorderPoints.size(), nFoundBorder);</span>
+        
+<span class="fc" id="L33">        return r;</span>
+        
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

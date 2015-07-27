@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ProjectiveFit.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ProjectiveFit.java</span></div><h1>ProjectiveFit.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="nc" id="L7">public class ProjectiveFit {</span>
+   
+<span class="nc" id="L9">    private int numberOfPoints = 0;</span>
+<span class="nc" id="L10">    private double meanDistFromModel = Double.MAX_VALUE;</span>
+<span class="nc" id="L11">    private double stdDevOfMean = Double.MAX_VALUE;</span>
+<span class="nc" id="L12">    private double[][] projection = null;</span>
+<span class="nc" id="L13">    private double tolerance = Double.MAX_VALUE;</span>
+<span class="nc" id="L14">    private Object data = null;</span>
+
+    /**
+     * @return the numberOfPoints
+     */
+    public int getNumberOfPoints() {
+<span class="nc" id="L20">        return numberOfPoints;</span>
+    }
+
+    /**
+     * @param numberOfPoints the numberOfPoints to set
+     */
+    public void setNumberOfPoints(int numberOfPoints) {
+<span class="nc" id="L27">        this.numberOfPoints = numberOfPoints;</span>
+<span class="nc" id="L28">    }</span>
+
+    /**
+     * @return the meanDistFromModel
+     */
+    public double getMeanDistFromModel() {
+<span class="nc" id="L34">        return meanDistFromModel;</span>
+    }
+
+    /**
+     * @param meanDistFromModel the meanDistFromModel to set
+     */
+    public void setMeanDistFromModel(double meanDistFromModel) {
+<span class="nc" id="L41">        this.meanDistFromModel = meanDistFromModel;</span>
+<span class="nc" id="L42">    }</span>
+
+    /**
+     * @return the stdDevOfMean
+     */
+    public double getStdDevOfMean() {
+<span class="nc" id="L48">        return stdDevOfMean;</span>
+    }
+
+    /**
+     * @param stdDevOfMean the stdDevOfMean to set
+     */
+    public void setStdDevOfMean(double stdDevOfMean) {
+<span class="nc" id="L55">        this.stdDevOfMean = stdDevOfMean;</span>
+<span class="nc" id="L56">    }</span>
+
+    /**
+     * @return the projection
+     */
+    public double[][] getProjection() {
+<span class="nc" id="L62">        return projection;</span>
+    }
+
+    /**
+     * @param projection the projection to set
+     */
+    public void setProjection(double[][] projection) {
+<span class="nc" id="L69">        this.projection = projection;</span>
+<span class="nc" id="L70">    }</span>
+
+    /**
+     * @return the tolerance
+     */
+    public double getTolerance() {
+<span class="nc" id="L76">        return tolerance;</span>
+    }
+
+    /**
+     * @param tolerance the tolerance to set
+     */
+    public void setTolerance(double tolerance) {
+<span class="nc" id="L83">        this.tolerance = tolerance;</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * @return the data
+     */
+    public Object getData() {
+<span class="nc" id="L90">        return data;</span>
+    }
+
+    /**
+     * @param data the data to set
+     */
+    public void setData(Object data) {
+<span class="nc" id="L97">        this.data = data;</span>
+<span class="nc" id="L98">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

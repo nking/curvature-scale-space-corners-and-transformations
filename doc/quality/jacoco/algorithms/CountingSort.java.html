@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CountingSort.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">CountingSort.java</span></div><h1>CountingSort.java</h1><pre class="source lang-java linenums">package algorithms;
+
+import algorithms.util.PairInt;
+import java.util.Arrays;
+
+/**
+ * a sort for integers in range 0 to k that has an O(N) runtime at the expense 
+ * of space where N is the maximum of (size of array to be sorted, maximum value in array).
+ * To use this algorithm:
+ *    (1) numbers must be positive.
+ *    (2) the maximum number in the array should probably not be much greater
+ *        than 10,000,000 unless the jvm settings for maximum stack size
+ *        are increased.  An internal long array of size maximum of array values
+ *        is constructed and that consumes memory which also affects
+ *        performance for max &gt; 10,000,000.
+ * 
+ * implemented from Cormen et al. &quot;Introduction to Algorithms&quot;
+ * 
+ * @author nichole
+ */
+<span class="nc" id="L21">public class CountingSort {</span>
+    
+    /**
+     * sort the members of a with values less than max and return as an
+     * ordered array.
+     * 
+     * Note that the numbers have to be positive, so if negative numbers are
+     * in the array, the invoker needs to add a number to bring the values
+     * to &gt;= 0 and then subtract that after the sort.
+     * 
+     * @param a
+     * @param max 
+     * @return  
+     */
+    public static int[] sort(int[] a, int max) {
+
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L38">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (max &lt;= 0) {</span>
+<span class="nc" id="L41">            throw new IllegalArgumentException(&quot;max must be &gt; 0&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L45">            return Arrays.copyOf(a, a.length);</span>
+        }
+        
+<span class="fc" id="L48">        long[] c = new long[max + 1];</span>
+
+        // c holds frequency of each number by index, e.g. c[0] holds the number of 0's in a
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+            
+<span class="fc" id="L53">            int idx = a[i];</span>
+            
+<span class="fc" id="L55">            c[idx]++;</span>
+        }
+                
+        // cumulative sum to end of array c.  the last item in c holds the 
+        // total number of items in 'a' less than or equal to max
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 1; i &lt; c.length; i++) {</span>
+<span class="fc" id="L61">            c[i] = c[i] + c[i - 1];</span>
+        }
+        
+<span class="fc" id="L64">        int[] b = new int[a.length];</span>
+                
+        // use the order imposed by c to write the values of a into b.  c holds
+        // frequency, that is place markers too so that is updated as b is written
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        for (int i = (a.length - 1); i &gt; -1; i--) {</span>
+            
+<span class="fc" id="L70">            int aIdx = a[i];</span>
+                        
+<span class="fc" id="L72">            int cfa = (int)c[aIdx];</span>
+<span class="fc" id="L73">            b[cfa - 1] = aIdx;</span>
+<span class="fc" id="L74">            c[aIdx]--;</span>
+        }
+
+<span class="fc" id="L77">        return b;</span>
+    }
+    
+    /**
+     * sort the members of a with values less than max and apply the same
+     * changes of item position to b.
+     * 
+     * Note that the numbers have to be positive, so if negative numbers are
+     * in the array, the invoker needs to add a number to bring the values
+     * to &gt;= 0 and then subtract that after the sort.
+     * 
+     * @param a
+     * @param b
+     * @param max 
+     */
+    public static void sort(int[] a, int[] b, int max) {
+
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L98">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L101">            throw new IllegalArgumentException(</span>
+            &quot;the lengths of a and b must be the same&quot;);
+        }
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (max &lt;= 0) {</span>
+<span class="nc" id="L105">            throw new IllegalArgumentException(&quot;max must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L108">            return;</span>
+        }
+        
+<span class="fc" id="L111">        long[] c = new long[max + 1];</span>
+
+        // c holds frequency of each number by index, e.g. c[0] holds the number of 0's in a
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+            
+<span class="fc" id="L116">            int idx = a[i];</span>
+            
+<span class="fc" id="L118">            c[idx]++;</span>
+        }
+                
+        // cumulative sum to end of array c.  the last item in c holds the 
+        // total number of items in 'a' less than or equal to max
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        for (int i = 1; i &lt; c.length; i++) {</span>
+<span class="fc" id="L124">            c[i] = c[i] + c[i - 1];</span>
+        }
+        
+<span class="fc" id="L127">        int[] aa = new int[a.length];</span>
+<span class="fc" id="L128">        int[] bb = new int[a.length];</span>
+                
+        // use the order imposed by c to write the values of a into aa.  c holds
+        // frequency, that is place markers too so that is updated as aa is written
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (int i = (a.length - 1); i &gt; -1; i--) {</span>
+            
+<span class="fc" id="L134">            int aIdx = a[i];</span>
+                        
+<span class="fc" id="L136">            int cfa = (int)c[aIdx];</span>
+<span class="fc" id="L137">            aa[cfa - 1] = aIdx;</span>
+<span class="fc" id="L138">            bb[cfa - 1] = b[i];</span>
+<span class="fc" id="L139">            c[aIdx]--;</span>
+        }
+
+<span class="fc" id="L142">        System.arraycopy(aa, 0, a, 0, a.length);</span>
+<span class="fc" id="L143">        System.arraycopy(bb, 0, b, 0, b.length);</span>
+<span class="fc" id="L144">    }</span>
+    
+    /**
+     * apply a descending sort to the members of a with values less than max 
+     * and apply the same changes of item position to b.
+     * 
+     * Note that the numbers have to be positive, so if negative numbers are
+     * in the array, the invoker needs to add a number to bring the values
+     * to &gt;= 0 and then subtract that after the sort.
+     * 
+     * @param a
+     * @param b
+     * @param maxValueInA max value in a 
+     */
+    public static void sortByDecr(int[] a, int[] b, int maxValueInA) {
+
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L161">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L164">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L167">            throw new IllegalArgumentException(</span>
+            &quot;the lengths of a and b must be the same&quot;);
+        }
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (maxValueInA &lt;= 0) {</span>
+<span class="nc" id="L171">            throw new IllegalArgumentException(&quot;max must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L174">            return;</span>
+        }
+        
+<span class="fc" id="L177">        long[] c = new long[maxValueInA + 1];</span>
+
+        // c holds frequency of each number by index, e.g. c[0] holds the number of 0's in a
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+            
+<span class="fc" id="L182">            int idx = a[i];</span>
+            
+<span class="fc" id="L184">            c[idx]++;</span>
+        }
+                
+        // cumulative sum to end of array c.  the last item in c holds the 
+        // total number of items in 'a' less than or equal to max
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        for (int i = 1; i &lt; c.length; i++) {</span>
+<span class="fc" id="L190">            c[i] = c[i] + c[i - 1];</span>
+        }
+        
+<span class="fc" id="L193">        int[] aa = new int[a.length];</span>
+<span class="fc" id="L194">        int[] bb = new int[a.length];</span>
+                
+<span class="fc" id="L196">        int n = a.length;</span>
+        
+        // use the order imposed by c to write the values of a into aa.  c holds
+        // frequency, that is place markers too so that is updated as aa is written
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        for (int i = (n - 1); i &gt; -1; i--) {</span>
+            
+<span class="fc" id="L202">            int aIdx = a[i];</span>
+                        
+<span class="fc" id="L204">            int cfa = (int)c[aIdx];</span>
+            
+<span class="fc" id="L206">            int ii = n - (cfa - 1) - 1;</span>
+            
+<span class="fc" id="L208">            aa[ii] = aIdx;</span>
+<span class="fc" id="L209">            bb[ii] = b[i];</span>
+            
+<span class="fc" id="L211">            c[aIdx]--;</span>
+        }
+
+<span class="fc" id="L214">        System.arraycopy(aa, 0, a, 0, a.length);</span>
+<span class="fc" id="L215">        System.arraycopy(bb, 0, b, 0, b.length);</span>
+<span class="fc" id="L216">    }</span>
+
+    public static void sort(int[] a, Object[] b, int maxA) {
+        
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L221">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L224">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L227">            throw new IllegalArgumentException(</span>
+            &quot;the lengths of a and b must be the same&quot;);
+        }
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        if (maxA &lt;= 0) {</span>
+<span class="nc" id="L231">            throw new IllegalArgumentException(&quot;maxA must be &gt; 0&quot;);</span>
+        }
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L234">            return;</span>
+        }
+        
+<span class="nc" id="L237">        long[] c = new long[maxA + 1];</span>
+
+        // c holds frequency of each number by index, e.g. c[0] holds the number of 0's in a
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+            
+<span class="nc" id="L242">            int idx = a[i];</span>
+            
+<span class="nc" id="L244">            c[idx]++;</span>
+        }
+                
+        // cumulative sum to end of array c.  the last item in c holds the 
+        // total number of items in 'a' less than or equal to max
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        for (int i = 1; i &lt; c.length; i++) {</span>
+<span class="nc" id="L250">            c[i] = c[i] + c[i - 1];</span>
+        }
+        
+<span class="nc" id="L253">        int[] aa = new int[a.length];</span>
+<span class="nc" id="L254">        Object[] bb = new Object[a.length];</span>
+                
+        // use the order imposed by c to write the values of a into aa.  c holds
+        // frequency, that is place markers too so that is updated as aa is written
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        for (int i = (a.length - 1); i &gt; -1; i--) {</span>
+            
+<span class="nc" id="L260">            int aIdx = a[i];</span>
+                        
+<span class="nc" id="L262">            int cfa = (int)c[aIdx];</span>
+<span class="nc" id="L263">            aa[cfa - 1] = aIdx;</span>
+<span class="nc" id="L264">            bb[cfa - 1] = b[i];</span>
+<span class="nc" id="L265">            c[aIdx]--;</span>
+        }
+
+<span class="nc" id="L268">        System.arraycopy(aa, 0, a, 0, a.length);</span>
+<span class="nc" id="L269">        System.arraycopy(bb, 0, b, 0, b.length);</span>
+<span class="nc" id="L270">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

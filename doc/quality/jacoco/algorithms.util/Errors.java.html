@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Errors.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">Errors.java</span></div><h1>Errors.java</h1><pre class="source lang-java linenums">package algorithms.util;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Errors.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">Errors.java</span></div><h1>Errors.java</h1><pre class="source lang-java linenums">package algorithms.util;
 
 /**
  * convenience methods for generating errors used with unit tests.
@@ -8,7 +8,7 @@
 <span class="nc" id="L8">public class Errors {</span>
 
     /**
-     * make assumption that errors are dominated by shot noise and so the noise is sqrt(y[i]).
+     * make assumption that errors are dominated by shot noise and return sqrt(y[i]).
      *
      * @param y
      * @return
@@ -36,34 +36,63 @@
 <span class="fc" id="L36">        return dy;</span>
     }
 
+    /**
+     * make assumption that errors are dominated by shot noise and return sqrt(y[i]).
+     *
+     * @param y
+     * @return
+     */
+    public static double[] populateYErrorsBySqrt(double[] y) {
+
+<span class="nc" id="L47">        double[] dy = new double[y.length];</span>
+
+<span class="nc" id="L49">        double maxError = 0.;</span>
+
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        for (int i = 0; i &lt; dy.length; i++) {</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">            if (y[i] &gt; 0) {</span>
+<span class="nc" id="L53">                dy[i] = (Math.sqrt(y[i]));</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                if (dy[i] &gt; maxError) {</span>
+<span class="nc" id="L55">                    maxError = dy[i];</span>
+                }
+            }
+        }
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        for (int i = 0; i &lt; dy.length; i++) {</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            if (y[i] == 0) {</span>
+<span class="nc" id="L61">                dy[i] = maxError;</span>
+            }
+        }
+
+<span class="nc" id="L65">        return dy;</span>
+    }
+
     public static float[] calculateYErrorsByGaussian(float[] x, float[] y, float sigma, float mu) {
 
         /*                  1
          * p(x) dx = -----------------  exp( -(x - mu)^2/(2sigma^2) ) dx
          *           sigma * sqrt(2pi)
          */
-<span class="nc" id="L45">        float[] erry = new float[y.length];</span>
+<span class="nc" id="L74">        float[] erry = new float[y.length];</span>
 
-<span class="nc" id="L47">        float a = (float) (1.0f/(sigma * Math.sqrt(2.0f*Math.PI)));</span>
+<span class="nc" id="L76">        float a = (float) (1.0f/(sigma * Math.sqrt(2.0f*Math.PI)));</span>
 
-<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (int i = 0; i &lt; erry.length; i++) {</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (int i = 0; i &lt; erry.length; i++) {</span>
 
-<span class="nc" id="L51">            float b = (x[i] - mu)/sigma;</span>
-<span class="nc" id="L52">            b *= b;</span>
+<span class="nc" id="L80">            float b = (x[i] - mu)/sigma;</span>
+<span class="nc" id="L81">            b *= b;</span>
 
-<span class="nc" id="L54">            b *= -1.0f/2.0f;</span>
+<span class="nc" id="L83">            b *= -1.0f/2.0f;</span>
 
             float dx;
-<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (i &lt; (erry.length - 1)) {</span>
-<span class="nc" id="L58">                dx = x[i + 1] - x[i];</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (i &lt; (erry.length - 1)) {</span>
+<span class="nc" id="L87">                dx = x[i + 1] - x[i];</span>
             } else {
-<span class="nc" id="L60">                dx = x[i] - x[i-1];</span>
+<span class="nc" id="L89">                dx = x[i] - x[i-1];</span>
             }
 
-<span class="nc" id="L63">            erry[i] = (float) (a * y[i] * Math.exp(b) * dx);</span>
+<span class="nc" id="L92">            erry[i] = (float) (a * y[i] * Math.exp(b) * dx);</span>
         }
 
-<span class="nc" id="L66">        return erry;</span>
+<span class="nc" id="L95">        return erry;</span>
     }
 
 
@@ -84,28 +113,28 @@
      */
     public static float[] populateXErrorsByPointSeparation(float[] x) {
 
-<span class="nc" id="L87">        float[] errx = new float[x.length];</span>
+<span class="nc" id="L116">        float[] errx = new float[x.length];</span>
 
         // take minimum of nearest neighboring point instead of average of both
-<span class="nc" id="L90">        float xdiffSum = 0;</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        for (int i = 1; i &lt; (errx.length - 1); i++) {</span>
-<span class="nc" id="L92">            float diff0 = x[i] - x[i - 1];</span>
-<span class="nc" id="L93">            float diff1 = x[i+1] - x[i];</span>
+<span class="nc" id="L119">        float xdiffSum = 0;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        for (int i = 1; i &lt; (errx.length - 1); i++) {</span>
+<span class="nc" id="L121">            float diff0 = x[i] - x[i - 1];</span>
+<span class="nc" id="L122">            float diff1 = x[i+1] - x[i];</span>
 
-<span class="nc bnc" id="L95" title="All 2 branches missed.">            float diffMin = (diff0 &lt; diff1) ? diff0 : diff1;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            float diffMin = (diff0 &lt; diff1) ? diff0 : diff1;</span>
 
-<span class="nc" id="L97">            errx[i] = diffMin/2.f;</span>
+<span class="nc" id="L126">            errx[i] = diffMin/2.f;</span>
 
-<span class="nc" id="L99">            xdiffSum += errx[i];</span>
+<span class="nc" id="L128">            xdiffSum += errx[i];</span>
         }
 
         // handle the 2 endpoints:
-<span class="nc" id="L103">        xdiffSum /= (errx.length - 2);</span>
-<span class="nc" id="L104">        errx[0] = xdiffSum;</span>
-<span class="nc" id="L105">        errx[errx.length - 1] = xdiffSum;</span>
+<span class="nc" id="L132">        xdiffSum /= (errx.length - 2);</span>
+<span class="nc" id="L133">        errx[0] = xdiffSum;</span>
+<span class="nc" id="L134">        errx[errx.length - 1] = xdiffSum;</span>
 
-<span class="nc" id="L107">        return errx;</span>
+<span class="nc" id="L136">        return errx;</span>
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

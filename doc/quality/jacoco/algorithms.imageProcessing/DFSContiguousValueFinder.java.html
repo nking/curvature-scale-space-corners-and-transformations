@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DFSContiguousValueFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">DFSContiguousValueFinder.java</span></div><h1>DFSContiguousValueFinder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ * adapted from
+ * https://code.google.com/p/two-point-correlation/source/browse/src/main/java/algorithms/compGeometry/clustering/twopointcorrelation/AbstractGroupFinder.java
+ * and
+ * https://code.google.com/p/two-point-correlation/source/browse/src/main/java/algorithms/compGeometry/clustering/twopointcorrelation/DFSGroupFinder.java
+ * under MIT License (MIT), Nichole King 2013
+ * 
+ * @author nichole
+ */
+public class DFSContiguousValueFinder {
+    
+   /**
+     * an array to hold each group as an item.  each item contains a key which is an index
+     * to arrays indexer.x, indexer.y and this.pointToGroupIndex
+     */
+<span class="fc" id="L28">    protected List&lt;Set&lt;Integer&gt; &gt; groupMembership = new ArrayList&lt;Set&lt;Integer&gt; &gt;();</span>
+    
+<span class="fc" id="L30">    protected List&lt;Boolean&gt; groupIsUnbound = new ArrayList&lt;Boolean&gt;();</span>
+    
+<span class="fc" id="L32">    protected Logger log = null;</span>
+    
+<span class="fc" id="L34">    protected Set&lt;Integer&gt; visited = new HashSet&lt;Integer&gt;();</span>
+    
+    /*
+     * map w/ key holding indexes for a point to the group it belongs to.
+     * note that the point index is relative to indexer.x and indexer.y
+     */
+<span class="fc" id="L40">    protected Map&lt;Integer, Integer&gt; pointToGroupMap = new</span>
+        HashMap&lt;Integer, Integer &gt;();
+    
+<span class="fc" id="L43">    protected int minimumNumberInCluster = 3;</span>
+    
+<span class="fc" id="L45">    protected boolean notValue = false;</span>
+    
+<span class="fc" id="L47">    protected boolean debug = false;</span>
+    
+    protected final GreyscaleImage img;
+    
+<span class="fc" id="L51">    public DFSContiguousValueFinder(final GreyscaleImage input) {</span>
+        
+<span class="fc" id="L53">        this.img = input;</span>
+        
+<span class="fc" id="L55">        this.log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L56">    }</span>
+        
+    public void setMinimumNumberInCluster(int n) {
+<span class="nc" id="L59">        this.minimumNumberInCluster = n;</span>
+<span class="nc" id="L60">    }</span>
+    
+    public void setDebug(boolean setDebugToTrue) {
+<span class="nc" id="L63">        this.debug = setDebugToTrue;</span>
+<span class="nc" id="L64">    }</span>
+       
+    /**
+     * NOTE: to keep the performance reasonable, bin the image so that
+     * the number of pixels is below 87000 pixels.
+     * 
+     * @param pixelValue 
+     */
+    public void findGroups(final int pixelValue) {
+            
+<span class="fc" id="L74">        findClusters(pixelValue);</span>
+        
+<span class="fc" id="L76">        prune();        </span>
+<span class="fc" id="L77">    }</span>
+    
+    /**
+     * NOTE: to keep the performance reasonable, bin the image so that
+     * the number of pixels is below 87000 pixels.
+     * 
+     * @param pixelValue 
+     */
+    public void findGroupsNotThisValue(int pixelValue) {
+     
+<span class="fc" id="L87">        notValue = true;</span>
+                
+<span class="fc" id="L89">        findClusters(pixelValue);</span>
+        
+<span class="fc" id="L91">        prune();        </span>
+<span class="fc" id="L92">    }</span>
+
+    protected void findClusters(final int pixelValue) {
+        
+        // traverse the data by ordered x values 
+        //    so can break when exceed critical distance
+        
+<span class="fc" id="L99">        findClustersIterative(pixelValue);</span>
+        
+<span class="fc" id="L101">    }</span>
+    
+    /**
+     * NOTE: to keep the performance reasonable, the use of jvm stack has to
+     * be reduced.  For default jvm settings, the size of the local array variable
+     * within this method frame should be kept to having fewer that 128k items
+     * in it, therefore the GreyscaleImage should be binned before use to keep
+     * the number of pixels below 128k/1.5 (roughly keep below 87000 pixels).
+     * If all pixels are connected, that limit has to be lowered.
+     * 
+     * @param pixelValue 
+     */
+    protected void findClustersIterative(final int pixelValue) {
+        
+<span class="fc" id="L115">        int width = img.getWidth();</span>
+<span class="fc" id="L116">        int height = img.getHeight();</span>
+        
+<span class="fc" id="L118">        java.util.Stack&lt;Integer&gt; stack = new java.util.Stack&lt;Integer&gt;();</span>
+        
+        //O(N)
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        for (int uIndex = (img.getNPixels() - 1); uIndex &gt; -1; uIndex--) {</span>
+<span class="fc" id="L122">            stack.add(Integer.valueOf(uIndex));</span>
+        }
+        
+<span class="fc" id="L125">        visited.add(stack.peek());</span>
+
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+
+<span class="fc" id="L129">            int uIndex = stack.pop().intValue();</span>
+            
+<span class="fc" id="L131">            Integer uKey = Integer.valueOf(uIndex);</span>
+            
+<span class="fc" id="L133">            int uPixValue = img.getValue(uIndex);</span>
+            
+<span class="fc bfc" id="L135" title="All 8 branches covered.">            if ((notValue &amp;&amp; (uPixValue == pixelValue)) ||</span>
+                (!notValue &amp;&amp; (uPixValue != pixelValue))) {
+                
+<span class="fc" id="L138">                visited.add(uKey);</span>
+                
+<span class="fc" id="L140">                continue;</span>
+            }
+            
+<span class="fc" id="L143">            int uY = uIndex/width;</span>
+<span class="fc" id="L144">            int uX = uIndex - (uY * width);</span>
+
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            for (int vX = (uX - 1); vX &lt;= (uX + 1); vX++) {</span>
+<span class="fc bfc" id="L149" title="All 4 branches covered.">                if ((vX &lt; 0) || (vX &gt; (width - 1))) {</span>
+<span class="fc" id="L150">                    continue;</span>
+                }
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                for (int vY = (uY - 1); vY &lt;= (uY + 1); vY++) {</span>
+<span class="pc bpc" id="L153" title="1 of 4 branches missed.">                    if ((vY &lt; 0) || (vY &gt; (height - 1))) {</span>
+<span class="nc" id="L154">                        continue;</span>
+                    }
+                    
+<span class="fc" id="L157">                    int vIndex = (vY * width) + vX;</span>
+            
+<span class="fc" id="L159">                    Integer vKey = Integer.valueOf(vIndex);</span>
+                 
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                    if (visited.contains(vKey)) {</span>
+<span class="fc" id="L162">                        continue;</span>
+                    }
+                    
+                    //TODO: could consider not allowing diagonal connections
+                    
+<span class="fc" id="L167">                    visited.add(vKey);</span>
+                
+<span class="fc" id="L169">                    int vPixValue = img.getValue(vIndex);</span>
+            
+<span class="fc bfc" id="L171" title="All 8 branches covered.">                    if ((notValue &amp;&amp; (vPixValue == pixelValue)) ||</span>
+                        (!notValue &amp;&amp; (vPixValue != pixelValue))) {
+                        
+<span class="fc" id="L174">                        continue;</span>
+                    }
+                   
+<span class="fc" id="L177">                    processPair(uKey, vKey, false);</span>
+                
+                    // inserting back at the top of the stack assures that the 
+                    // search continues next from an associated point
+<span class="fc" id="L181">                    stack.add(vKey);</span>
+                }
+            }
+<span class="fc" id="L184">        }</span>
+       
+<span class="fc" id="L186">    }</span>
+
+    protected void processPair(Integer uIdx, Integer vIdx, boolean isBeyondBounds) {
+                
+<span class="fc" id="L190">        Integer groupId = pointToGroupMap.get(uIdx);</span>
+        
+<span class="pc bpc" id="L192" title="1 of 4 branches missed.">        if ((groupId != null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
+                    
+<span class="fc" id="L194">            groupMembership.get(groupId).add(vIdx);</span>
+            
+<span class="fc" id="L196">            pointToGroupMap.put(vIdx, groupId);</span>
+                        
+<span class="pc bpc" id="L198" title="2 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) != null)) {</span>
+
+<span class="nc" id="L200">            groupId = pointToGroupMap.get(vIdx);</span>
+
+<span class="nc" id="L202">            groupMembership.get(groupId).add(uIdx);</span>
+            
+<span class="nc" id="L204">            pointToGroupMap.put(uIdx, groupId);</span>
+            
+<span class="pc bpc" id="L206" title="2 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
+                        
+<span class="fc" id="L208">            groupId = Integer.valueOf(groupMembership.size());</span>
+            
+<span class="fc" id="L210">            pointToGroupMap.put(uIdx, groupId);</span>
+            
+<span class="fc" id="L212">            pointToGroupMap.put(vIdx, groupId);</span>
+            
+<span class="fc" id="L214">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L215">            set.add(uIdx);</span>
+<span class="fc" id="L216">            set.add(vIdx);</span>
+            
+<span class="fc" id="L218">            groupMembership.add(set);</span>
+            
+<span class="fc" id="L220">            groupIsUnbound.add(Boolean.FALSE);</span>
+                      
+        }
+        
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        if (isBeyondBounds) {</span>
+<span class="nc" id="L225">            groupIsUnbound.set(groupId, Boolean.TRUE);</span>
+        }
+
+<span class="fc" id="L228">    }</span>
+    
+    protected void process(Integer uIdx, boolean isBeyondBounds) {
+                
+<span class="nc" id="L232">        Integer groupId = pointToGroupMap.get(uIdx);</span>
+        
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        if (groupId == null) {</span>
+                        
+<span class="nc" id="L236">            groupId = Integer.valueOf(groupMembership.size());</span>
+            
+<span class="nc" id="L238">            pointToGroupMap.put(uIdx, groupId);</span>
+            
+<span class="nc" id="L240">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L241">            set.add(uIdx);</span>
+            
+<span class="nc" id="L243">            groupMembership.add(set);</span>
+            
+<span class="nc" id="L245">            groupIsUnbound.add(Boolean.FALSE);</span>
+                      
+        }
+        
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        if (isBeyondBounds) {</span>
+<span class="nc" id="L250">            groupIsUnbound.set(groupId, Boolean.TRUE);</span>
+        }
+
+<span class="nc" id="L253">    }</span>
+            
+    public List&lt;Set&lt;Integer&gt; &gt; getGroupMembershipList() {
+<span class="fc" id="L256">        return groupMembership;</span>
+    }
+
+    public int getNumberOfGroups() {
+<span class="fc" id="L260">        return groupMembership.size();</span>
+    }
+
+    public Map&lt;Integer, Integer&gt; getPointToGroupIndexes() {
+<span class="nc" id="L264">        return pointToGroupMap;</span>
+    }
+    
+    /**
+     * remove groups smaller than minimumNumberInCluster
+     */
+    protected void prune() {
+                
+<span class="fc" id="L272">        log.finest(&quot;number of groups before prune=&quot; + groupMembership.size());</span>
+        
+        //TODO: the data structures used could be written at the expense
+        // of space complexity to reduce changes needed when group number
+        // changes
+        
+        /*
+         * [------] 0
+         * [------] 1 &lt;---- too few
+         * [------] 2
+         */
+
+<span class="fc" id="L284">        log.fine(&quot;PRUNE: nGroups before prune =&quot; + groupMembership.size());</span>
+
+        // iterate backwards so can move items up without conflict with iterator
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        for (int i = (groupMembership.size() - 1); i &gt; -1; i--) {</span>
+            
+<span class="fc" id="L289">            Set&lt;Integer&gt; group = groupMembership.get(i);</span>
+            
+<span class="fc" id="L291">            int count = group.size();</span>
+            
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">            log.finest(&quot;  group &quot; + i + &quot; has &quot; + count </span>
+                + &quot; members before prune (min=&quot; + minimumNumberInCluster + &quot;)&quot; 
+                + &quot;.  doPrune=&quot; +
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">                ((count &lt; minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue())</span>
+                + &quot;   count=&quot; + count + &quot; minimumNumberInCluster=&quot; + minimumNumberInCluster
+<span class="fc" id="L298">                + &quot; isUnbound=&quot; + groupIsUnbound.get(i).booleanValue()</span>
+            );
+            
+<span class="pc bpc" id="L301" title="2 of 4 branches missed.">            if ((count &lt; minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue()) {</span>
+                             
+                // remove this group and move up all groups w/ index &gt; i by one index
+<span class="nc bnc" id="L304" title="All 2 branches missed.">                for (int j = (i + 1); j &lt; groupMembership.size(); j++) {</span>
+                    
+<span class="nc" id="L306">                    int newGroupId = j - 1;</span>
+                                        
+                    // update members in pointToGroupIndex
+<span class="nc" id="L309">                    Set&lt;Integer&gt; latest = groupMembership.get(j);</span>
+                    //
+<span class="nc bnc" id="L311" title="All 2 branches missed.">                    for (Integer p : latest) {</span>
+<span class="nc" id="L312">                        pointToGroupMap.put(p, Integer.valueOf(newGroupId));</span>
+<span class="nc" id="L313">                    }</span>
+                } 
+               
+<span class="nc" id="L316">                Set&lt;Integer&gt; removed = groupMembership.remove(i);</span>
+                
+            }
+        }
+   
+<span class="fc" id="L321">        log.fine(&quot;number of groups after prune=&quot; + groupMembership.size());</span>
+<span class="fc" id="L322">    }</span>
+
+    public int getNumberofGroupMembers(int groupId) {
+        
+<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="nc" id="L327">            return 0;</span>
+        }
+<span class="nc bnc" id="L329" title="All 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L330">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
+<span class="nc" id="L331">            + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
+        }
+                
+<span class="nc" id="L334">        return groupMembership.get(groupId).size();</span>
+    }
+    
+    public PairIntArray getXY(int groupId) {
+        
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">        if (groupMembership.size() == 0) {</span>
+<span class="nc" id="L340">            return new PairIntArray();</span>
+        }
+<span class="pc bpc" id="L342" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L343">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
+<span class="nc" id="L344">            + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
+        }
+        
+<span class="fc" id="L347">        Set&lt;Integer&gt; indexes = getIndexes(groupId);</span>
+        
+<span class="fc" id="L349">        PairIntArray xy = new PairIntArray(indexes.size());</span>
+                
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        for (Integer index : indexes) {</span>
+                        
+<span class="fc" id="L353">            img.getXY(xy, index.intValue());</span>
+<span class="fc" id="L354">        }</span>
+        
+<span class="fc" id="L356">        return xy;</span>
+    }
+    
+    public void getXY(final int groupId, final Set&lt;PairInt&gt; output) {
+        
+<span class="nc bnc" id="L361" title="All 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="nc" id="L362">            return;</span>
+        }
+<span class="nc bnc" id="L364" title="All 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L365">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
+<span class="nc" id="L366">            + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
+        }
+        
+<span class="nc" id="L369">        Set&lt;Integer&gt; indexes = groupMembership.get(groupId);</span>
+
+<span class="nc bnc" id="L371" title="All 2 branches missed.">        for (Integer index : indexes) {</span>
+            
+<span class="nc" id="L373">            int idx = index.intValue();</span>
+            
+<span class="nc" id="L375">            int x = img.getCol(idx);</span>
+<span class="nc" id="L376">            int y = img.getRow(idx);</span>
+            
+<span class="nc" id="L378">            PairInt p = new PairInt(x, y);</span>
+                       
+<span class="nc" id="L380">            output.add(p);</span>
+<span class="nc" id="L381">        }        </span>
+<span class="nc" id="L382">    }</span>
+    
+    public Set&lt;Integer&gt; getIndexes(int groupId) {
+        
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="nc" id="L387">            return new HashSet&lt;Integer&gt;();</span>
+        }
+<span class="pc bpc" id="L389" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L390">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
+<span class="nc" id="L391">            + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
+        }
+               
+<span class="fc" id="L394">        return groupMembership.get(groupId);</span>
+    }
+ 
+    public void findEmbeddedGroupsNotThisValue(int pixelValue, 
+        Map&lt;Integer, PairInt&gt; rowColPerimeter, int[] rowMinMax) {
+        
+<span class="nc" id="L400">        notValue = true;</span>
+               
+<span class="nc" id="L402">        findClustersWithinPerimeter(pixelValue, rowColPerimeter, rowMinMax);</span>
+        
+<span class="nc" id="L404">        prune();</span>
+     
+<span class="nc" id="L406">    }</span>
+
+    private void findClustersWithinPerimeter(int pixelValue, 
+        Map&lt;Integer, PairInt&gt; rowColPerimeter, int[] rowMinMax) {
+        
+<span class="nc" id="L411">        int width = img.getWidth();</span>
+<span class="nc" id="L412">        int height = img.getHeight();</span>
+        
+        /*
+        looking for pixelValue or !pixelValue groups within the region
+        bounded by rowColPerimeter.
+        
+        placing every pixel within the bounds of rowColPerimeter into a stack
+        and using dfs pattern to visit the nodes and determine if they
+        are part of the defined group.
+        */
+        
+<span class="nc" id="L423">        java.util.Stack&lt;Integer&gt; stack = new java.util.Stack&lt;Integer&gt;();</span>
+        
+        //O(N)
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {            </span>
+<span class="nc" id="L427">            PairInt colRange = rowColPerimeter.get(Integer.valueOf(row));</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">            for (int col = colRange.getX(); col &lt;= colRange.getY(); col++) {</span>
+                
+<span class="nc" id="L430">                int uIndex = img.getIndex(col, row);</span>
+               
+<span class="nc" id="L432">                stack.add(Integer.valueOf(uIndex));</span>
+            }
+        }
+        
+<span class="nc" id="L436">        visited.add(stack.peek());</span>
+
+<span class="nc bnc" id="L438" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
+
+<span class="nc" id="L440">            int uIndex = stack.pop().intValue();</span>
+
+<span class="nc" id="L442">            Integer uKey = Integer.valueOf(uIndex);</span>
+
+<span class="nc" id="L444">            int uPixValue = img.getValue(uIndex);</span>
+
+<span class="nc bnc" id="L446" title="All 8 branches missed.">            if ((notValue &amp;&amp; (uPixValue == pixelValue)) ||</span>
+                (!notValue &amp;&amp; (uPixValue != pixelValue))) {
+                
+<span class="nc" id="L449">                visited.add(uKey);</span>
+                
+<span class="nc" id="L451">                continue;</span>
+            }
+            
+            /*
+            note to speed this up a little, have copied out the index to
+            row and col relationship from GreyscaleImage.
+            */            
+<span class="nc" id="L458">            int uY = uIndex/width;</span>
+<span class="nc" id="L459">            int uX = uIndex - (uY * width);</span>
+
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+<span class="nc" id="L463">            boolean foundANeighbor = false;</span>
+         
+<span class="nc bnc" id="L465" title="All 2 branches missed.">            for (int vY = (uY - 1); vY &lt;= (uY + 1); vY++) {</span>
+                
+<span class="nc bnc" id="L467" title="All 4 branches missed.">                if ((vY &lt; 0) || (vY &gt; (height - 1))) {</span>
+<span class="nc" id="L468">                    continue;</span>
+                }
+                
+<span class="nc" id="L471">                PairInt colRange = rowColPerimeter.get(Integer.valueOf(vY));</span>
+                
+<span class="nc bnc" id="L473" title="All 2 branches missed.">                for (int vX = (uX - 1); vX &lt;= (uX + 1); vX++) {</span>
+                                        
+<span class="nc bnc" id="L475" title="All 4 branches missed.">                    if ((vX &lt; 0) || (vX &gt; (width - 1))) {</span>
+<span class="nc" id="L476">                        continue;</span>
+                    }
+                   
+<span class="nc" id="L479">                    int vIndex = (vY * width) + vX;</span>
+                    
+<span class="nc" id="L481">                    Integer vKey = Integer.valueOf(vIndex);</span>
+                    
+<span class="nc bnc" id="L483" title="All 2 branches missed.">                    if (visited.contains(vKey)) {</span>
+<span class="nc" id="L484">                        continue;</span>
+                    }
+                    
+                    //TODO: could consider not allowing diagonal connections
+                    
+<span class="nc" id="L489">                    visited.add(vKey);</span>
+                
+<span class="nc" id="L491">                    int vPixValue = img.getValue(vIndex);</span>
+                    
+<span class="nc bnc" id="L493" title="All 8 branches missed.">                    if ((notValue &amp;&amp; (vPixValue == pixelValue)) ||</span>
+                        (!notValue &amp;&amp; (vPixValue != pixelValue))) {
+                        
+<span class="nc" id="L496">                        continue;</span>
+                    }
+                    
+<span class="nc" id="L499">                    boolean unBounded = false;</span>
+<span class="nc bnc" id="L500" title="All 4 branches missed.">                    if ((vY &lt; rowMinMax[0]) || (vY &gt; rowMinMax[1]) || </span>
+<span class="nc bnc" id="L501" title="All 4 branches missed.">                        (vX &lt; colRange.getX()) || (vX &gt; colRange.getY())) {</span>
+                        
+<span class="nc" id="L503">                        unBounded = true;</span>
+                    }
+
+<span class="nc" id="L506">                    processPair(uIndex, vIndex, unBounded);</span>
+ 
+                    // inserting back at the top of the stack assures that the 
+                    // search continues next from an associated point
+<span class="nc" id="L510">                    stack.add(Integer.valueOf(vIndex));</span>
+                    
+<span class="nc" id="L512">                    foundANeighbor = true;</span>
+                }
+            }
+
+<span class="nc bnc" id="L516" title="All 4 branches missed.">            if (!foundANeighbor &amp;&amp; (minimumNumberInCluster == 1)) {</span>
+                
+<span class="nc" id="L518">                PairInt colRange = rowColPerimeter.get(Integer.valueOf(uY));</span>
+<span class="nc" id="L519">                boolean unBounded = false;</span>
+<span class="nc bnc" id="L520" title="All 4 branches missed.">                if ((uY &lt; rowMinMax[0]) || (uY &gt; rowMinMax[1])</span>
+<span class="nc bnc" id="L521" title="All 4 branches missed.">                    || (uX &lt; colRange.getX()) || (uX &gt; colRange.getY())) {</span>
+<span class="nc" id="L522">                    unBounded = true;</span>
+                }
+
+<span class="nc" id="L525">                process(uIndex, unBounded);</span>
+            }
+<span class="nc" id="L527">        }</span>
+<span class="nc" id="L528">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

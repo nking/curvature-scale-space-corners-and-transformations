@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RangeInt.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">RangeInt.java</span></div><h1>RangeInt.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+/**
+ *
+ * @author nichole
+ */
+public class RangeInt {
+    
+    protected int start;
+    protected int stop;
+    
+<span class="fc" id="L12">    public RangeInt(final int theStart, final int theStop) {</span>
+<span class="fc" id="L13">        start = theStart;</span>
+<span class="fc" id="L14">        stop = theStop;</span>
+<span class="fc" id="L15">    }</span>
+    
+<span class="fc" id="L17">    public RangeInt(final RangeInt r) {</span>
+<span class="fc" id="L18">        this.start = r.getStart();</span>
+<span class="fc" id="L19">        this.stop = r.getStop();</span>
+<span class="fc" id="L20">    }</span>
+    
+    public void setStart(final int theStart) {
+<span class="nc" id="L23">        start = theStart;</span>
+<span class="nc" id="L24">    }</span>
+    
+    public void setStop(final int theStop) {
+<span class="nc" id="L27">        stop = theStop;</span>
+<span class="nc" id="L28">    }</span>
+    
+    public int getStart() {
+<span class="fc" id="L31">        return start;</span>
+    }
+    
+    public int getStop() {
+<span class="fc" id="L35">        return stop;</span>
+    }
+    /**
+     * check that start &gt;= minValue and if not, reset it to minValue, and check
+     * if stop is less than or equal to maxValue and if not, reset it.
+     * @param minValue
+     * @param maxValue 
+     */
+    public void resetBoundsIfNeeded(final int minValue, final int maxValue) {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (start &lt; minValue) {</span>
+<span class="fc" id="L45">            start = minValue;</span>
+        }
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (start &gt; maxValue) {</span>
+<span class="nc" id="L48">            start = maxValue;</span>
+        }
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (stop &lt; minValue) {</span>
+<span class="nc" id="L51">            stop = minValue;</span>
+        }
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (stop &gt; maxValue) {</span>
+<span class="nc" id="L54">            stop = maxValue;</span>
+        }
+<span class="fc" id="L56">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

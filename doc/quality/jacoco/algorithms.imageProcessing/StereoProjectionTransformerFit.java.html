@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>StereoProjectionTransformerFit.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">StereoProjectionTransformerFit.java</span></div><h1>StereoProjectionTransformerFit.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.ejml.simple.SimpleMatrix;
+
+/**
+ *
+ * @author nichole
+ */
+public class StereoProjectionTransformerFit {
+    
+    /**
+     * number of matches within tolerance
+     */
+    private final long nMatches;
+    
+    /**
+     * when value is not Long.MIN_VALUE, it holds the maximum number of points
+     * that were possible to match.  This may not always be populated, so 
+     * check value before using.
+     */
+<span class="nc" id="L23">    private long nMaxMatchable = Long.MIN_VALUE;</span>
+    
+    /**
+     * tolerance in distance of a point from the epipolar line it belongs to
+     */
+    private final double tolerance;
+    
+    /**
+     * the average distance of the points from their epipolar lines
+     */
+    private final double meanDistance;
+    
+    /**
+     * the standard deviation of the points from the average distance
+     */
+    private final double stDevFromMean;
+    
+    private final SimpleMatrix fundamentalMatrix;
+    
+<span class="nc" id="L42">    private List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();</span>
+
+    public StereoProjectionTransformerFit(SimpleMatrix theFundamentalMatrix,
+        long theNumberOfMatches, 
+        double theTolerance, double theAverageDistance, 
+<span class="nc" id="L47">        double theStandardDeviationFromAverage) {</span>
+        
+<span class="nc" id="L49">        fundamentalMatrix = theFundamentalMatrix;</span>
+<span class="nc" id="L50">        nMatches = theNumberOfMatches;</span>
+<span class="nc" id="L51">        tolerance = theTolerance;</span>
+<span class="nc" id="L52">        meanDistance = theAverageDistance;</span>
+<span class="nc" id="L53">        stDevFromMean = theStandardDeviationFromAverage;</span>
+<span class="nc" id="L54">    }</span>
+    
+    public SimpleMatrix getFundamentalMatrix() {
+<span class="nc" id="L57">        return fundamentalMatrix;</span>
+    }
+    
+    /**
+     * @return the nMatches
+     */
+    public long getNMatches() {
+<span class="nc" id="L64">        return nMatches;</span>
+    }
+    
+    /**
+     * @param theNumberOfPossibleMatches
+     */
+    public void setNMaxMatchable(long theNumberOfPossibleMatches) {
+<span class="nc" id="L71">        nMaxMatchable = theNumberOfPossibleMatches;</span>
+<span class="nc" id="L72">    }</span>
+    
+    /**
+     * @return the nMaxMatchable
+     */
+    public long getNMaxMatchable() {
+<span class="nc" id="L78">        return nMaxMatchable;</span>
+    }
+
+    /**
+     * @return the tolerance
+     */
+    public double getTolerance() {
+<span class="nc" id="L85">        return tolerance;</span>
+    }
+
+    /**
+     * @return the avgDistance
+     */
+    public double getMeanDistance() {
+<span class="nc" id="L92">        return meanDistance;</span>
+    }
+
+    /**
+     * @return the stDevFromAvg
+     */
+    public double getStDevFromMean() {
+<span class="nc" id="L99">        return stDevFromMean;</span>
+    }
+
+    /**
+     * compare bestFit to this instance and return true if bestFit is better.
+     * First compares the number of matches, then breaks ties with the
+     * average distance, then breaks ties with the standard deviation from the
+     * average, else returns false.
+     * 
+     * @param bestFit
+     * @return 
+     */
+    public boolean otherIsBetter(StereoProjectionTransformerFit bestFit) {
+        
+        //TODO: consider converting this to compare
+        
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L116">            return false;</span>
+        }
+        
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (bestFit.getNMatches() != nMatches) {</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">            return (bestFit.getNMatches() &gt; nMatches);</span>
+        }
+        
+        // else nMatches are equal
+        
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (bestFit.getMeanDistance() != meanDistance) {</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            return (bestFit.getMeanDistance() &gt; meanDistance);</span>
+        }
+        
+        // else avgDistances are equal
+        
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        if (bestFit.getStDevFromMean() != stDevFromMean) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            return (bestFit.getStDevFromMean() &gt; stDevFromMean);</span>
+        }
+        
+        // else, all params being equal, prefer current
+<span class="nc" id="L136">        return false;</span>
+    }
+
+    public void setInlierIndexes(List&lt;Integer&gt; theInlierIndexes) {
+        
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (theInlierIndexes == null) {</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (!inlierIndexes.isEmpty()) {</span>
+<span class="nc" id="L143">                inlierIndexes.clear();</span>
+            }
+<span class="nc" id="L145">            return;</span>
+        }
+<span class="nc" id="L147">        inlierIndexes = theInlierIndexes;</span>
+<span class="nc" id="L148">    }</span>
+
+    public List&lt;Integer&gt; getInlierIndexes() {
+        
+<span class="nc" id="L152">        return inlierIndexes;</span>
+    }
+    
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L158">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="nc" id="L160">        sb.append(&quot;nMatchedPoints=&quot;).append(Long.toString(nMatches))</span>
+<span class="nc" id="L161">            .append(&quot; nMaxMatchable=&quot;).append(Long.toString(nMaxMatchable))</span>
+<span class="nc" id="L162">            .append(&quot; tolerance=&quot;).append(Double.toString(tolerance))</span>
+<span class="nc" id="L163">            .append(&quot; meanDistFromModel=&quot;).append(Double.toString(meanDistance))</span>
+<span class="nc" id="L164">            .append(&quot; stDevFromMean=&quot;).append(Double.toString(stDevFromMean))</span>
+            ;
+        
+<span class="nc" id="L167">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

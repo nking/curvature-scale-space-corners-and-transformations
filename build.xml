@@ -450,7 +450,7 @@
     </target>
     
     <target name="runEmma" >
-        <echo message="use ./run_jacoco_reports.sh"/>
+        <echo message="define ${JACOCO_HOME} and use ./run_jacoco_reports.sh"/>
     </target>
 
     <target name="runTest" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">

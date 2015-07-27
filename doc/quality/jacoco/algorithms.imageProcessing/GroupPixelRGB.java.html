@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GroupPixelRGB.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GroupPixelRGB.java</span></div><h1>GroupPixelRGB.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairInt;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+public class GroupPixelRGB {
+    
+    protected float avgRed;
+    protected float avgGreen;
+    protected float avgBlue;
+    protected float stdDevRed;
+    protected float stdDevGreen;
+    protected float stdDevBlue;
+    
+    protected float avgColorDiff;
+    protected float stdDevColorDiff;
+    
+    public GroupPixelRGB(final Set&lt;PairInt&gt; points, ImageExt colorImage,
+<span class="nc" id="L23">        int xOffset, int yOffset) {</span>
+        
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L26">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (colorImage == null) {</span>
+<span class="nc" id="L29">            throw new IllegalArgumentException(&quot;colorImage cannot be null&quot;);</span>
+        }
+        
+<span class="nc" id="L32">        calculateColors(points, colorImage, xOffset, yOffset);</span>
+<span class="nc" id="L33">    }</span>
+    
+    protected void calculateColors(final Set&lt;PairInt&gt; points, ImageExt colorImage,
+        int xOffset, int yOffset) {
+        
+<span class="nc" id="L38">        float n = points.size();</span>
+        
+<span class="nc" id="L40">        float sumRed = 0;</span>
+<span class="nc" id="L41">        float sumGreen = 0;</span>
+<span class="nc" id="L42">        float sumBlue = 0;</span>
+        
+<span class="nc" id="L44">        int i = 0;</span>
+        
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+            
+<span class="nc" id="L48">            int x = p.getX() + xOffset;</span>
+<span class="nc" id="L49">            int y = p.getY() + yOffset;</span>
+<span class="nc" id="L50">            int idx = colorImage.getInternalIndex(x, y);</span>
+                        
+<span class="nc" id="L52">            sumRed += colorImage.getR(idx);</span>
+<span class="nc" id="L53">            sumGreen += colorImage.getG(idx);</span>
+<span class="nc" id="L54">            sumBlue += colorImage.getB(idx);</span>
+            
+<span class="nc" id="L56">            i++;</span>
+<span class="nc" id="L57">        }</span>
+        
+<span class="nc" id="L59">        avgRed = sumRed/n;</span>
+<span class="nc" id="L60">        avgGreen = sumGreen/n;</span>
+<span class="nc" id="L61">        avgBlue = sumBlue/n;</span>
+        
+<span class="nc" id="L63">        double sumStdDevRed = 0;</span>
+<span class="nc" id="L64">        double sumStdDevGreen = 0;</span>
+<span class="nc" id="L65">        double sumStdDevBlue = 0;</span>
+<span class="nc" id="L66">        double sumColorDiff = 0;</span>
+        
+<span class="nc" id="L68">        float[] colorDiff = new float[points.size()];</span>
+        
+<span class="nc" id="L70">        i = 0;</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+            
+<span class="nc" id="L73">            int x = p.getX() + xOffset;</span>
+<span class="nc" id="L74">            int y = p.getY() + yOffset;</span>
+<span class="nc" id="L75">            int idx = colorImage.getInternalIndex(x, y);</span>
+            
+<span class="nc" id="L77">            int r = colorImage.getR(idx);</span>
+<span class="nc" id="L78">            int g = colorImage.getG(idx);</span>
+<span class="nc" id="L79">            int b = colorImage.getB(idx);</span>
+            
+<span class="nc" id="L81">            float diffR = r - avgRed;</span>
+<span class="nc" id="L82">            float diffG = g - avgGreen;</span>
+<span class="nc" id="L83">            float diffB = b - avgBlue;</span>
+            
+<span class="nc" id="L85">            sumStdDevRed += (diffR * diffR);</span>
+<span class="nc" id="L86">            sumStdDevGreen += (diffG * diffG);</span>
+<span class="nc" id="L87">            sumStdDevBlue += (diffB * diffB);</span>
+            
+<span class="nc" id="L89">            colorDiff[i] = (float)Math.sqrt(diffR*diffR + diffG*diffG + </span>
+                diffB*diffB);
+<span class="nc" id="L91">            sumColorDiff += colorDiff[i];</span>
+            
+<span class="nc" id="L93">            i++;</span>
+<span class="nc" id="L94">        }</span>
+        
+<span class="nc" id="L96">        avgColorDiff = (float)sumColorDiff/n;</span>
+        
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        stdDevRed = (n &gt; 1) ? </span>
+<span class="nc" id="L99">            (float)Math.sqrt(sumStdDevRed/(n - 1)) : Float.POSITIVE_INFINITY;</span>
+        
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        stdDevGreen = (n &gt; 1) ? </span>
+<span class="nc" id="L102">            (float)Math.sqrt(sumStdDevGreen/(n - 1)) : Float.POSITIVE_INFINITY;</span>
+        
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        stdDevBlue = (n &gt; 1) ? </span>
+<span class="nc" id="L105">            (float)Math.sqrt(sumStdDevBlue/(n - 1)) : Float.POSITIVE_INFINITY;</span>
+        
+<span class="nc" id="L107">        double sumStdDevColorDiff = 0;</span>
+        
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        for (i = 0; i &lt; points.size(); i++) {            </span>
+<span class="nc" id="L110">            float diffColorDiff = colorDiff[i] - avgColorDiff;</span>
+<span class="nc" id="L111">            sumStdDevColorDiff += (diffColorDiff * diffColorDiff);            </span>
+        }
+        
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        stdDevColorDiff = (n &gt; 1) ? </span>
+<span class="nc" id="L115">            (float)Math.sqrt(sumStdDevColorDiff/(n - 1)) : Float.POSITIVE_INFINITY;</span>
+<span class="nc" id="L116">    }</span>
+    
+    public float calcColorDiffToOther(int otherRed, int otherGreen, 
+        int otherBlue) {
+        
+<span class="nc" id="L121">        float rDiff = otherRed - avgRed;</span>
+<span class="nc" id="L122">        float gDiff = otherGreen - avgGreen;</span>
+<span class="nc" id="L123">        float bDiff = otherBlue - avgBlue;</span>
+        
+<span class="nc" id="L125">        float dist = (float)Math.sqrt(rDiff*rDiff + gDiff*gDiff + bDiff*bDiff);</span>
+        
+<span class="nc" id="L127">        return dist;</span>
+    }    
+
+
+    /**
+     * @return the averageColorDifference
+     */
+    public float getAvgColorDiff() {
+<span class="nc" id="L135">        return avgColorDiff;</span>
+    }
+
+    /**
+     * @return the standardDeviationColorDifference
+     */
+    public double getStdDevColorDiff() {
+<span class="nc" id="L142">        return stdDevColorDiff;</span>
+    }
+
+    /**
+     * @return the averageRed
+     */
+    public float getAvgRed() {
+<span class="nc" id="L149">        return avgRed;</span>
+    }
+
+    /**
+     * @return the averageGreen
+     */
+    public float getAvgGreen() {
+<span class="nc" id="L156">        return avgGreen;</span>
+    }
+
+    /**
+     * @return the averageBlue
+     */
+    public float getAvgBlue() {
+<span class="nc" id="L163">        return avgBlue;</span>
+    }
+
+    /**
+     * @return the standardDeviationRed
+     */
+    public double getStdDevRed() {
+<span class="nc" id="L170">        return stdDevRed;</span>
+    }
+
+    /**
+     * @return the standardDeviationGreen
+     */
+    public double getStdDevGreen() {
+<span class="nc" id="L177">        return stdDevGreen;</span>
+    }
+
+    /**
+     * @return the standardDeviationBlue
+     */
+    public double getStdDevBlue() {
+<span class="nc" id="L184">        return stdDevBlue;</span>
+    }
+
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L190">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L191">        sb.append(&quot; avgRed=&quot;).append(avgRed).append(&quot;\n&quot;)</span>
+<span class="nc" id="L192">        .append(&quot; avgGreen=&quot;).append(avgGreen).append(&quot;\n&quot;)</span>
+<span class="nc" id="L193">        .append(&quot; avgBlue=&quot;).append(avgBlue).append(&quot;\n&quot;)</span>
+<span class="nc" id="L194">        .append(&quot; avgColorDiff=&quot;).append(avgColorDiff).append(&quot;\n&quot;)</span>
+<span class="nc" id="L195">        .append(&quot; stdDevRed=&quot;).append(stdDevRed).append(&quot;\n&quot;)</span>
+<span class="nc" id="L196">        .append(&quot; stdDevGreen=&quot;).append(stdDevGreen).append(&quot;\n&quot;)</span>
+<span class="nc" id="L197">        .append(&quot; stdDevBlue=&quot;).append(stdDevBlue).append(&quot;\n&quot;)</span>
+<span class="nc" id="L198">        .append(&quot; stdDevColorDiff=&quot;).append(stdDevColorDiff).append(&quot;\n&quot;)</span>
+        ;
+       
+<span class="nc" id="L201">        return sb.toString();</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

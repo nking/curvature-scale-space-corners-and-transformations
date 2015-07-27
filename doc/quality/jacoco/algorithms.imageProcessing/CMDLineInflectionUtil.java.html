@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMDLineInflectionUtil.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CMDLineInflectionUtil.java</span></div><h1>CMDLineInflectionUtil.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMDLineInflectionUtil.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CMDLineInflectionUtil.java</span></div><h1>CMDLineInflectionUtil.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
 import java.io.BufferedWriter;
@@ -67,8 +67,8 @@ public class CMDLineInflectionUtil {
 <span class="nc bnc" id="L67" title="All 2 branches missed.">            for (int i = 0; i &lt; xy1.getN(); i++) {</span>
                 
 <span class="nc" id="L69">                String line = String.format(&quot;%d\t%d\t\t%d\t%d\t\t%d\t%d&quot;,</span>
-                    xy1.getX(i), xy1.getY(i), 
-                    xy1Tr.getX(i), xy1Tr.getY(i), xy2.getX(i), xy2.getY(i));
+<span class="nc" id="L70">                    xy1.getX(i), xy1.getY(i), </span>
+<span class="nc" id="L71">                    xy1Tr.getX(i), xy1Tr.getY(i), xy2.getX(i), xy2.getY(i));</span>
                 
 <span class="nc" id="L73">                writer.write(line);</span>
                 
@@ -139,7 +139,7 @@ public class CMDLineInflectionUtil {
 <span class="nc" id="L139">                    int y1Tr = edge1Tr.getY(j);</span>
 
 <span class="nc" id="L141">                    String line = String.format(&quot;%d\t%d\t\t%d\t%d&quot;,</span>
-                        x1, y1, x1Tr, y1Tr);
+<span class="nc" id="L142">                        x1, y1, x1Tr, y1Tr);</span>
 
 <span class="nc" id="L144">                    writer.write(line);</span>
 <span class="nc" id="L145">                    writer.write(eol);</span>
@@ -276,8 +276,8 @@ public class CMDLineInflectionUtil {
 <span class="fc bfc" id="L276" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-include_edges&quot;)) {</span>
 <span class="fc" id="L277">                writeImageOutput = true;</span>
 <span class="fc" id="L278">                includeEdgesInImageOutput = true;</span>
-<span class="pc bpc" id="L279" title="1 of 2 branches missed.">            } else if (arg.equalsIgnoreCase(&quot;-input_is_line_drawing&quot;)) {</span>
-<span class="nc" id="L280">                useLineDrawingMode = true;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            } else if (arg.equalsIgnoreCase(&quot;-input_is_line_drawing&quot;)) {</span>
+<span class="fc" id="L280">                useLineDrawingMode = true;</span>
 <span class="pc bpc" id="L281" title="1 of 2 branches missed.">            } else if (arg.equalsIgnoreCase(&quot;-refine_transformations&quot;)) {</span>
 <span class="fc" id="L282">                doRefineTransformations = true;</span>
             }
@@ -292,7 +292,7 @@ public class CMDLineInflectionUtil {
 <span class="nc" id="L292">            System.exit(1);</span>
         }
         
-<span class="nc" id="L295">        CMDLineInflectionUtil cmdLineInvoker = new CMDLineInflectionUtil();</span>
+<span class="fc" id="L295">        CMDLineInflectionUtil cmdLineInvoker = new CMDLineInflectionUtil();</span>
               
 <span class="nc" id="L297">        filePath1 = cmdLineInvoker.checkFilePath(filePath1);</span>
 <span class="nc" id="L298">        filePath2 = cmdLineInvoker.checkFilePath(filePath2);</span>
@@ -302,74 +302,73 @@ public class CMDLineInflectionUtil {
         }
         
 <span class="nc" id="L304">        String imageFileName1 = </span>
-            (new File(filePath1)).toPath().getFileName().toString();
+<span class="nc" id="L305">            (new File(filePath1)).toPath().getFileName().toString();</span>
 <span class="nc" id="L306">        imageFileName1 = imageFileName1.substring(0, imageFileName1.length() -4);</span>
         
 <span class="nc" id="L308">        String imageFileName2 = </span>
-            (new File(filePath2)).toPath().getFileName().toString();
+<span class="nc" id="L309">            (new File(filePath2)).toPath().getFileName().toString();</span>
 <span class="nc" id="L310">        imageFileName2 = imageFileName2.substring(0, imageFileName2.length() -4);</span>
         
-<span class="nc" id="L312">        GreyscaleImage img1 = null;</span>
-<span class="nc" id="L313">        GreyscaleImage img2 = null;</span>
+<span class="nc" id="L312">        ImageExt img1 = null;</span>
+<span class="nc" id="L313">        ImageExt img2 = null;</span>
         try {
-<span class="nc" id="L315">            img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);</span>
-<span class="nc" id="L316">            img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);</span>
+<span class="nc" id="L315">            img1 = ImageIOHelper.readImageExt(filePath1);</span>
+<span class="nc" id="L316">            img2 = ImageIOHelper.readImageExt(filePath2);</span>
             
-<span class="nc" id="L318">            double centroidX1 = img1.getWidth() &gt;&gt; 1;</span>
-<span class="nc" id="L319">            double centroidY1 = img1.getHeight() &gt;&gt; 1;</span>
+            //double centroidX1 = img1.getWidth() &gt;&gt; 1;
+            //double centroidY1 = img1.getHeight() &gt;&gt; 1;
 
-<span class="nc" id="L321">            CurvatureScaleSpaceInflectionMapper mapper = new </span>
+            
+<span class="nc" id="L322">            CurvatureScaleSpaceInflectionMapper mapper = new </span>
                 CurvatureScaleSpaceInflectionMapper(img1, img2);
 
-<span class="nc bnc" id="L324" title="All 2 branches missed.">            if (useLineDrawingMode) {</span>
-<span class="nc" id="L325">                mapper.useLineDrawingLineMode();</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">            if (useLineDrawingMode) {</span>
+<span class="nc" id="L326">                mapper.useLineDrawingLineMode();</span>
             }
             
-<span class="nc bnc" id="L328" title="All 2 branches missed.">            if (doRefineTransformations) {</span>
-<span class="nc" id="L329">                mapper.setToRefineTransformations();</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">            if (doRefineTransformations) {</span>
+<span class="nc" id="L330">                mapper.setToRefineTransformations();</span>
             }
 
-<span class="nc" id="L332">            TransformationParameters transformationParams</span>
-                = mapper.createEuclideanTransformation();
-                
-<span class="nc" id="L335">            List&lt;PairIntArray&gt; edges1 = </span>
-                mapper.getEdges1InOriginalReferenceFrame();
-
-<span class="nc" id="L338">            Transformer transformer = new Transformer();</span>
+<span class="nc" id="L333">             TransformationParameters transformationParams = </span>
+<span class="nc" id="L334">                mapper.createEuclideanTransformation();</span>
             
-<span class="nc" id="L340">            PairIntArray xy1 = mapper.getMatchedXY1();</span>
+<span class="nc" id="L336">            List&lt;PairIntArray&gt; edges1 = </span>
+<span class="nc" id="L337">                mapper.getEdges1InOriginalReferenceFrame();</span>
+
+<span class="nc" id="L339">            Transformer transformer = new Transformer();</span>
+            
+<span class="nc" id="L341">            PairIntArray xy1 = mapper.getMatchedXY1();</span>
             PairIntArray xy1Tr;
-<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (xy1 == null) {</span>
-<span class="nc" id="L343">                xy1 = new PairIntArray();</span>
-<span class="nc" id="L344">                xy1Tr = new PairIntArray();</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">            if (xy1 == null) {</span>
+<span class="nc" id="L344">                xy1 = new PairIntArray();</span>
+<span class="nc" id="L345">                xy1Tr = new PairIntArray();</span>
             } else {
-<span class="nc" id="L346">                xy1Tr = transformer.applyTransformation(</span>
-                    transformationParams, xy1, centroidX1, centroidY1);
+<span class="nc" id="L347">                xy1Tr = transformer.applyTransformation(</span>
+                    transformationParams, xy1);
             }
             
-<span class="nc" id="L350">            PairIntArray xy2 = mapper.getMatchedXY2();</span>
-<span class="nc bnc" id="L351" title="All 2 branches missed.">            if (xy2 == null) {</span>
-<span class="nc" id="L352">                xy2 = new PairIntArray();</span>
+<span class="nc" id="L351">            PairIntArray xy2 = mapper.getMatchedXY2();</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">            if (xy2 == null) {</span>
+<span class="nc" id="L353">                xy2 = new PairIntArray();</span>
             }
           
-<span class="nc" id="L355">            PairIntArray[] edges1Tr = transformer.applyTransformation(</span>
+<span class="nc" id="L356">            PairIntArray[] edges1Tr = transformer.applyTransformation(</span>
                 transformationParams, 
-                edges1.toArray(new PairIntArray[edges1.size()]),
-                centroidX1, centroidY1
-            );
+<span class="nc" id="L358">                edges1.toArray(new PairIntArray[edges1.size()]));</span>
             
-<span class="nc" id="L361">            List&lt;PairIntArray&gt; edges2 = </span>
-                mapper.getEdges2InOriginalReferenceFrame();
+<span class="nc" id="L360">            List&lt;PairIntArray&gt; edges2 = </span>
+<span class="nc" id="L361">                mapper.getEdges2InOriginalReferenceFrame();</span>
             
-<span class="nc bnc" id="L364" title="All 2 branches missed.">            if (writeTextOutput) {</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">            if (writeTextOutput) {</span>
 
-<span class="nc" id="L366">                cmdLineInvoker.writeMatchingPoints(xy1, xy1Tr, xy2,</span>
+<span class="nc" id="L365">                cmdLineInvoker.writeMatchingPoints(xy1, xy1Tr, xy2,</span>
                     transformationParams, imageFileName1, imageFileName2);
 
-<span class="nc" id="L369">                cmdLineInvoker.writeTransformation(transformationParams,</span>
+<span class="nc" id="L368">                cmdLineInvoker.writeTransformation(transformationParams,</span>
                     imageFileName1, imageFileName2);
 
-<span class="nc" id="L372">                cmdLineInvoker.writeEdges(edges1, edges1Tr, </span>
+<span class="nc" id="L371">                cmdLineInvoker.writeEdges(edges1, edges1Tr, </span>
                     imageFileName1, 
                     imageFileName2);
 
@@ -377,96 +376,96 @@ public class CMDLineInflectionUtil {
                 //     transformed_edges.tsv
             }
 
-<span class="nc bnc" id="L380" title="All 2 branches missed.">            if (writeImageOutput) {</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            if (writeImageOutput) {</span>
                  
-<span class="nc" id="L382">                 Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);</span>
+<span class="nc" id="L381">                 Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);</span>
                  
-<span class="nc" id="L384">                 Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);</span>
+<span class="nc" id="L383">                 Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);</span>
                  
                  // improve this by using rotation
-<span class="nc bnc" id="L387" title="All 2 branches missed.">                 int maxWidth = (image2.getWidth() &gt; image1.getWidth()) ?</span>
-                     image2.getWidth() : image1.getWidth();
-<span class="nc bnc" id="L389" title="All 2 branches missed.">                 int maxHeight = (image2.getHeight() &gt; image1.getHeight()) ?</span>
-                     image2.getHeight() : image1.getHeight();
+<span class="nc bnc" id="L386" title="All 2 branches missed.">                 int maxWidth = (image2.getWidth() &gt; image1.getWidth()) ?</span>
+<span class="nc" id="L387">                     image2.getWidth() : image1.getWidth();</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">                 int maxHeight = (image2.getHeight() &gt; image1.getHeight()) ?</span>
+<span class="nc" id="L389">                     image2.getHeight() : image1.getHeight();</span>
                  
-<span class="nc" id="L392">                 Image image1Tr = transformer.applyTransformation(image1, </span>
+<span class="nc" id="L391">                 Image image1Tr = transformer.applyTransformation(image1, </span>
                      transformationParams, maxWidth, maxHeight);
                  
-<span class="nc bnc" id="L395" title="All 2 branches missed.">                 if (includeEdgesInImageOutput) {</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">                 if (includeEdgesInImageOutput) {</span>
                      
-<span class="nc" id="L397">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges1, </span>
+<span class="nc" id="L396">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges1, </span>
                          image1);
                      
-<span class="nc" id="L400">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges1Tr, </span>
+<span class="nc" id="L399">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges1Tr, </span>
                          image1Tr);
                      
-<span class="nc" id="L403">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges2, </span>
+<span class="nc" id="L402">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges2, </span>
                          image2);
                  }
                  
-<span class="nc" id="L407">                 ImageIOHelper.addCurveToImage(xy1, image1, 2, 255, 0, 0);</span>
+<span class="nc" id="L406">                 ImageIOHelper.addCurveToImage(xy1, image1, 2, 255, 0, 0);</span>
                  
-<span class="nc" id="L409">                 ImageIOHelper.addCurveToImage(xy2, image2, 2, 255, 0, 0);</span>
+<span class="nc" id="L408">                 ImageIOHelper.addCurveToImage(xy2, image2, 2, 255, 0, 0);</span>
                  
-<span class="nc" id="L411">                 ImageIOHelper.addCurveToImage(xy1Tr, image1Tr, 2, 255, 0, 0);</span>
+<span class="nc" id="L410">                 ImageIOHelper.addCurveToImage(xy1Tr, image1Tr, 2, 255, 0, 0);</span>
                  
-<span class="nc" id="L413">                 String outFilePath1 = cwd + &quot;inflection_points_&quot; + </span>
+<span class="nc" id="L412">                 String outFilePath1 = cwd + &quot;inflection_points_&quot; + </span>
                      imageFileName1 + &quot;.png&quot;;
                  
-<span class="nc" id="L416">                 ImageIOHelper.writeOutputImage(outFilePath1, image1);</span>
+<span class="nc" id="L415">                 ImageIOHelper.writeOutputImage(outFilePath1, image1);</span>
                  
-<span class="nc" id="L418">                 String outFilePath2 = cwd + &quot;inflection_points_&quot; + </span>
+<span class="nc" id="L417">                 String outFilePath2 = cwd + &quot;inflection_points_&quot; + </span>
                      imageFileName2 + &quot;.png&quot;;
                  
-<span class="nc" id="L421">                 ImageIOHelper.writeOutputImage(outFilePath2, image2);</span>
+<span class="nc" id="L420">                 ImageIOHelper.writeOutputImage(outFilePath2, image2);</span>
                  
-<span class="nc" id="L423">                 String outFilePath1Tr = cwd + &quot;transformed_&quot; + </span>
+<span class="nc" id="L422">                 String outFilePath1Tr = cwd + &quot;transformed_&quot; + </span>
                      imageFileName1 + &quot;.png&quot;;
                  
-<span class="nc" id="L426">                 ImageIOHelper.writeOutputImage(outFilePath1Tr, image1Tr);</span>
+<span class="nc" id="L425">                 ImageIOHelper.writeOutputImage(outFilePath1Tr, image1Tr);</span>
                  
-<span class="nc" id="L428">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath1);</span>
-<span class="nc" id="L429">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath2);</span>
-<span class="nc" id="L430">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath1Tr);</span>
+<span class="nc" id="L427">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath1);</span>
+<span class="nc" id="L428">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath2);</span>
+<span class="nc" id="L429">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath1Tr);</span>
                  
-<span class="nc" id="L432">                 int z = 1;</span>
+<span class="nc" id="L431">                 int z = 1;</span>
              }
 
-<span class="nc" id="L435">        } catch (Exception e) {</span>
-<span class="nc" id="L436">            e.printStackTrace();</span>
-<span class="nc" id="L437">            System.err.println(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="nc" id="L438">            System.exit(1);</span>
-<span class="nc" id="L439">        }</span>
-<span class="nc" id="L440">    }</span>
+<span class="nc" id="L434">        } catch (Exception e) {</span>
+<span class="nc" id="L435">            e.printStackTrace();</span>
+<span class="nc" id="L436">            System.err.println(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="nc" id="L437">            System.exit(1);</span>
+<span class="nc" id="L438">        }</span>
+<span class="nc" id="L439">    }</span>
     
     public static void printUsage() {
                 
-<span class="nc" id="L444">        System.out.println(eol + &quot;Runner to invoke transformation of image1 to&quot;);</span>
-<span class="nc" id="L445">        System.out.println(&quot;reference frame of image 2 via inflection points.&quot;);</span>
-<span class="nc" id="L446">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
-<span class="nc" id="L447">        System.out.println(&quot;  -image1=path_to_image_1&quot;);</span>
-<span class="nc" id="L448">        System.out.println(&quot;  -image2=path_to_image_2&quot;);</span>
-<span class="nc" id="L449">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
-<span class="nc" id="L450">        System.out.println(&quot;  -text_output&quot;);</span>
-<span class="nc" id="L451">        System.out.println(&quot;      writes a file called matching_points.tsv in the&quot;);</span>
-<span class="nc" id="L452">        System.out.println(&quot;      current directory.  Also writes transformation.txt&quot;);</span>
-<span class="nc" id="L453">        System.out.println(&quot;      and transformed_edges.tsv&quot;);</span>
-<span class="nc" id="L454">        System.out.println(&quot;  -mark_image&quot;);</span>
-<span class="nc" id="L455">        System.out.println(&quot;      writes 2 files called matching_points.png in the&quot;);</span>
-<span class="nc" id="L456">        System.out.println(&quot;      current directory. It's the images with &quot;);</span>
-<span class="nc" id="L457">        System.out.println(&quot;      inflection points overplotted.&quot;);</span>
-<span class="nc" id="L458">        System.out.println(&quot;  -include_edges&quot;);</span>
-<span class="nc" id="L459">        System.out.println(&quot;      in the written matching_points.png, includes the&quot;);</span>
-<span class="nc" id="L460">        System.out.println(&quot;      edges in the image.&quot;);</span>
-<span class="nc" id="L461">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
-<span class="nc" id="L462">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
-<span class="nc" id="L463">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
-<span class="nc" id="L464">        System.out.println(&quot;  -refine_transformations&quot;);</span>
-<span class="nc" id="L465">        System.out.println(&quot;      improve the transformations (takes more time).&quot;);</span>
-<span class="nc" id="L466">        System.out.println(eol</span>
+<span class="nc" id="L443">        System.out.println(eol + &quot;Runner to invoke transformation of image1 to&quot;);</span>
+<span class="nc" id="L444">        System.out.println(&quot;reference frame of image 2 via inflection points.&quot;);</span>
+<span class="nc" id="L445">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
+<span class="nc" id="L446">        System.out.println(&quot;  -image1=path_to_image_1&quot;);</span>
+<span class="nc" id="L447">        System.out.println(&quot;  -image2=path_to_image_2&quot;);</span>
+<span class="nc" id="L448">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
+<span class="nc" id="L449">        System.out.println(&quot;  -text_output&quot;);</span>
+<span class="nc" id="L450">        System.out.println(&quot;      writes a file called matching_points.tsv in the&quot;);</span>
+<span class="nc" id="L451">        System.out.println(&quot;      current directory.  Also writes transformation.txt&quot;);</span>
+<span class="nc" id="L452">        System.out.println(&quot;      and transformed_edges.tsv&quot;);</span>
+<span class="nc" id="L453">        System.out.println(&quot;  -mark_image&quot;);</span>
+<span class="nc" id="L454">        System.out.println(&quot;      writes 2 files called matching_points.png in the&quot;);</span>
+<span class="nc" id="L455">        System.out.println(&quot;      current directory. It's the images with &quot;);</span>
+<span class="nc" id="L456">        System.out.println(&quot;      inflection points overplotted.&quot;);</span>
+<span class="nc" id="L457">        System.out.println(&quot;  -include_edges&quot;);</span>
+<span class="nc" id="L458">        System.out.println(&quot;      in the written matching_points.png, includes the&quot;);</span>
+<span class="nc" id="L459">        System.out.println(&quot;      edges in the image.&quot;);</span>
+<span class="nc" id="L460">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
+<span class="nc" id="L461">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
+<span class="nc" id="L462">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
+<span class="nc" id="L463">        System.out.println(&quot;  -refine_transformations&quot;);</span>
+<span class="nc" id="L464">        System.out.println(&quot;      improve the transformations (takes more time).&quot;);</span>
+<span class="nc" id="L465">        System.out.println(eol</span>
             + &quot;Note that default is to create matching_points.tsv in the currect directory&quot;);
-<span class="nc" id="L468">        System.out.println(eol);</span>
-<span class="nc" id="L469">    }</span>
+<span class="nc" id="L467">        System.out.println(eol);</span>
+<span class="nc" id="L468">    }</span>
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

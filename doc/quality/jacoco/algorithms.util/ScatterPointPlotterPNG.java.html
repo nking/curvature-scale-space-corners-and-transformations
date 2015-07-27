@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScatterPointPlotterPNG.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">ScatterPointPlotterPNG.java</span></div><h1>ScatterPointPlotterPNG.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+import algorithms.misc.MiscMath;
+import java.awt.Color;
+import java.awt.Paint;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartRenderingInfo;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.Range;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+/**
+ *
+ * @author nichole
+ */
+public class ScatterPointPlotterPNG {
+
+<span class="nc" id="L28">    protected boolean dataMinMaxAreSet = false;</span>
+    
+    protected float minX, maxX, minY, maxY;
+
+<span class="nc" id="L32">    protected int plotWidth = 4000;</span>
+    
+<span class="nc" id="L34">    protected int plotHeight = 4000;</span>
+    
+<span class="nc" id="L36">    BufferedImage imgToWrite = null;</span>
+    
+    public ScatterPointPlotterPNG(float minX, float maxX, float minY, 
+<span class="nc" id="L39">        float maxY) throws FileNotFoundException, IOException {</span>
+
+<span class="nc" id="L41">        this.minX = minX;</span>
+<span class="nc" id="L42">        this.maxX = maxX;</span>
+<span class="nc" id="L43">        this.minY = minY;</span>
+<span class="nc" id="L44">        this.maxY = maxY;</span>
+<span class="nc" id="L45">    }</span>
+
+<span class="nc" id="L47">    public ScatterPointPlotterPNG() throws FileNotFoundException, IOException {</span>
+
+<span class="nc" id="L49">    }</span>
+
+    public void plot(float minX, float maxX, float minY, float maxY,
+        int[] xPoints, int[] yPoints, String plotLabel,
+        String xAxisLabel, String yAxisLabel) {
+
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+        
+<span class="nc" id="L57">        float[] x0 = new float[n0];</span>
+<span class="nc" id="L58">    	float[] y0 = new float[n0];</span>
+        
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; i++) {</span>
+<span class="nc" id="L61">            x0[i] = xPoints[i];</span>
+<span class="nc" id="L62">            y0[i] = yPoints[i];</span>
+        }
+        
+<span class="nc" id="L65">        plot(minX, maxX, minY, maxY, x0, y0, null, null, plotLabel,</span>
+            xAxisLabel, yAxisLabel);
+<span class="nc" id="L67">    }</span>
+    
+    public void plot(float minX, float maxX, float minY, float maxY,
+        PairIntArray xyPoints, String plotLabel,
+        String xAxisLabel, String yAxisLabel) {
+
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        int n0 = (xyPoints != null) ? xyPoints.getN() : 0;</span>
+        
+<span class="nc" id="L75">        float[] x0 = new float[n0];</span>
+<span class="nc" id="L76">    	float[] y0 = new float[n0];</span>
+        
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; i++) {</span>
+<span class="nc" id="L79">            x0[i] = xyPoints.getX(i);</span>
+<span class="nc" id="L80">            y0[i] = xyPoints.getY(i);</span>
+        }
+        
+<span class="nc" id="L83">        plot(minX, maxX, minY, maxY, x0, y0, null, null, plotLabel,</span>
+            xAxisLabel, yAxisLabel);
+<span class="nc" id="L85">    }</span>
+    
+    public void plot(float minX, float maxX, float minY, float maxY,
+        float[] xPoints, float[] yPoints, String plotLabel,
+        String xAxisLabel, String yAxisLabel) {
+
+<span class="nc" id="L91">        plot(minX, maxX, minY, maxY, xPoints, yPoints, null, null, plotLabel,</span>
+            xAxisLabel, yAxisLabel);
+<span class="nc" id="L93">    }</span>
+
+    public void plot(int[] xPoints, float[] yPoints, String plotLabel,
+        String xAxisLabel, String yAxisLabel) {
+        
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+      
+<span class="nc" id="L100">    	float[] xx = new float[n0];</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        for (int i = 0; i &lt; n0; i++) {</span>
+<span class="nc" id="L102">    		xx[i] = (float)xPoints[i];</span>
+    	}
+        
+<span class="nc" id="L105">    	plot(xx, yPoints, null, null, plotLabel, xAxisLabel, yAxisLabel);</span>
+<span class="nc" id="L106">    }</span>
+
+    public void plot(float[] xPoints, float[] yPoints, String plotLabel,
+        String xAxisLabel, String yAxisLabel) {
+        
+<span class="nc" id="L111">        plot(xPoints, yPoints, null, null, plotLabel, xAxisLabel, yAxisLabel);</span>
+<span class="nc" id="L112">    }</span>
+    
+    public void plot(int[] xPoints, int[] yPoints, String plotLabel,
+        String xAxisLabel, String yAxisLabel) {
+        
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+        
+<span class="nc" id="L119">        float[] x0 = new float[n0];</span>
+<span class="nc" id="L120">    	float[] y0 = new float[n0];</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">    	for (int i = 0; i &lt; n0; i++) {</span>
+<span class="nc" id="L122">    		x0[i] = (float)xPoints[i];</span>
+<span class="nc" id="L123">    		y0[i] = (float)yPoints[i];</span>
+    	}
+        
+<span class="nc" id="L126">        plot(x0, y0, null, null, plotLabel, xAxisLabel, yAxisLabel);</span>
+<span class="nc" id="L127">    }</span>
+    
+    public void plot(float[] xPoints, float[] yPoints, float[] xErrPoints, 
+        float[] yErrPoints, String plotLabel, String xAxisLabel, String yAxisLabel) {
+        
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (!dataMinMaxAreSet) {</span>
+
+<span class="nc" id="L134">            float minX0 = MiscMath.findMin(xPoints);</span>
+<span class="nc" id="L135">            float maxX0 = MiscMath.findMax(xPoints);</span>
+<span class="nc" id="L136">            float minY0 = MiscMath.findMin(yPoints);</span>
+<span class="nc" id="L137">            float maxY0 = MiscMath.findMax(yPoints);</span>
+            
+<span class="nc" id="L139">            plot(minX0, maxX0, minY0, maxY0, xPoints, yPoints, </span>
+                xErrPoints, yErrPoints, plotLabel, xAxisLabel, yAxisLabel);
+            
+<span class="nc" id="L142">        } else {</span>
+            
+<span class="nc" id="L144">            plot(minX, maxX, minY, maxY, xPoints, yPoints, </span>
+                xErrPoints, yErrPoints, plotLabel, xAxisLabel, yAxisLabel);
+        }
+<span class="nc" id="L147">    }</span>
+
+    /**
+     * 
+     * @param xmn
+     * @param xmx
+     * @param ymn
+     * @param ymx
+     * @param xPoints
+     * @param yPoints
+     * @param xErrPoints can be null
+     * @param yErrPoints can be null
+     * @param plotLabel 
+     */
+    public void plot(float xmn, float xmx, float ymn, float ymx,
+        float[] xPoints, float[] yPoints, float[] xErrPoints, float[] yErrPoints,
+        String plotLabel, String xAxisLabel, String yAxisLabel) {
+
+<span class="nc" id="L165">        XYSeriesCollection data = new XYSeriesCollection();</span>
+        
+        //  ===== add points data =====
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        if (xPoints != null) {</span>
+<span class="nc" id="L169">            XYSeries series1 = new XYSeries(&quot;&quot;);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">            for (int i = 0; i &lt; xPoints.length; i++) {</span>
+<span class="nc" id="L171">                series1.add(xPoints[i], yPoints[i]);</span>
+            }
+<span class="nc" id="L173">            data.addSeries(series1);</span>
+        }
+
+<span class="nc" id="L176">        JFreeChart chart = ChartFactory.createScatterPlot(</span>
+            null,
+            plotLabel, null, 
+            (XYDataset)data
+        );
+        
+<span class="nc" id="L182">        Paint bPaint = Color.WHITE;</span>
+        
+<span class="nc" id="L184">        chart.setBackgroundPaint(bPaint);</span>
+        
+<span class="nc" id="L186">        final XYPlot plot = chart.getXYPlot();</span>
+        
+<span class="nc" id="L188">        Range xRange = new Range(xmn, xmx);</span>
+<span class="nc" id="L189">        Range yRange = new Range(ymn, ymx);</span>
+        
+<span class="nc" id="L191">        NumberAxis yAxis = new NumberAxis(yAxisLabel);</span>
+<span class="nc" id="L192">        NumberAxis xAxis = new NumberAxis(xAxisLabel);</span>
+<span class="nc" id="L193">        xAxis.setRange(xRange, true, false);</span>
+<span class="nc" id="L194">        yAxis.setRange(yRange, true, false);</span>
+        //yAxis.setTickUnit(new NumberTickUnit(1));
+        
+<span class="nc" id="L197">        plot.setDomainAxis(xAxis);</span>
+<span class="nc" id="L198">        plot.setRangeAxis(yAxis);</span>
+        
+<span class="nc" id="L200">        plot.setBackgroundPaint(bPaint);</span>
+<span class="nc" id="L201">        plot.setDomainGridlinePaint(Color.BLACK);</span>
+<span class="nc" id="L202">        plot.setRangeGridlinePaint(Color.BLACK);</span>
+        
+<span class="nc" id="L204">        ChartRenderingInfo chartInfo </span>
+            = new ChartRenderingInfo();
+        //    = new ChartRenderingInfo(new StandardEntityCollection());
+        
+<span class="nc" id="L208">        int imageType = BufferedImage.TYPE_INT_ARGB;</span>
+        
+        // in the absence of an X11 environment, may need to set this:
+<span class="nc" id="L211">        System.setProperty(&quot;java.awt.headless&quot;, &quot;true&quot;);</span>
+               
+<span class="nc" id="L213">        imgToWrite = chart.createBufferedImage(500, 500, imageType, chartInfo);</span>
+<span class="nc" id="L214">    }</span>
+
+    public void plot(double[] xPoints, double[] yPoints, String plotLabel) {
+
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        int n0 = (xPoints != null) ? xPoints.length : 0;</span>
+        
+<span class="nc" id="L220">        float[] xx = new float[n0];</span>
+<span class="nc" id="L221">        float[] yy = new float[n0];</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">    	for (int i = 0; i &lt; n0; i++) {</span>
+<span class="nc" id="L223">    		xx[i] = (float)xPoints[i];</span>
+<span class="nc" id="L224">            yy[i] = (float)yPoints[i];</span>
+    	}
+        
+<span class="nc" id="L227">        plot(xx, yy, null, null, plotLabel);</span>
+<span class="nc" id="L228">    }</span>
+
+    public String writeFile() throws IOException {
+<span class="nc" id="L231">        return writeToFile(&quot;points.png&quot;);</span>
+    }
+
+    public String writeFile(Integer num) throws IOException {
+<span class="nc" id="L235">        return writeToFile( </span>
+<span class="nc" id="L236">            &quot;points&quot; + num.toString() +&quot;.png&quot;);</span>
+    }
+
+    protected String writeToFile(String fileName) throws IOException {
+
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        if (imgToWrite == null) {</span>
+<span class="nc" id="L242">            throw new IllegalStateException(&quot;must add plot data first&quot;);</span>
+        }
+        
+<span class="nc" id="L245">        String filePath = ResourceFinder.getAFilePathInCWD(fileName);</span>
+        
+<span class="nc" id="L247">        File file = new File(filePath);</span>
+        
+<span class="nc" id="L249">        ImageIO.write(imgToWrite, &quot;png&quot;, file);</span>
+        
+<span class="nc" id="L251">        return filePath;        </span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>XYStack.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.convexHull</a> &gt; <span class="el_source">XYStack.java</span></div><h1>XYStack.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.convexHull;
+
+import algorithms.util.PairFloatArray;
+import java.util.Arrays;
+
+/**
+ * adapted from 
+ * https://code.google.com/p/two-point-correlation/source/browse/src/test/java/algorithms/compGeometry/convexHull/
+ * under MIT License (MIT), Nichole King 2013
+ * 
+ */
+public class XYStack extends PairFloatArray {
+
+    public XYStack(int capacity) {
+<span class="fc" id="L15">        super(capacity);</span>
+<span class="fc" id="L16">    }</span>
+    
+    public XYStack() {
+<span class="fc" id="L19">        super();</span>
+<span class="fc" id="L20">    }</span>
+
+    /**
+     * push a value onto the stack.
+     * @param xPoint
+     * @param yPoint 
+     */
+    public void push(float xPoint, float yPoint) {
+        /*
+        value is physically at last used position in array
+        */
+        
+<span class="fc" id="L32">        add(xPoint, yPoint);</span>
+<span class="fc" id="L33">    }</span>
+
+    public float peekTopX() {
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (this.n == 0) {</span>
+<span class="fc" id="L37">            return Float.NEGATIVE_INFINITY;</span>
+        }
+<span class="fc" id="L39">        return x[n - 1];</span>
+    }
+
+    public float peekTopY() {
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (this.n == 0) {</span>
+<span class="fc" id="L44">            return Float.NEGATIVE_INFINITY;</span>
+        }
+<span class="fc" id="L46">        return y[n - 1];</span>
+    }
+    public float peekNextToTopX() {
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (this.n &lt; 2) {</span>
+<span class="fc" id="L50">            return Float.NEGATIVE_INFINITY;</span>
+        }
+<span class="fc" id="L52">        return x[n - 2];</span>
+    }
+
+    public float peekNextToTopY() {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (n &lt; 2) {</span>
+<span class="fc" id="L57">            return Float.NEGATIVE_INFINITY;</span>
+        }
+<span class="fc" id="L59">        return y[n - 2];</span>
+    }
+
+    public float[] pop() {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (n == 0) {</span>
+<span class="fc" id="L64">            return null;</span>
+        }
+        
+<span class="fc" id="L67">        float[] a = new float[]{x[n - 1], y[n - 1]};</span>
+        
+<span class="fc" id="L69">        removeRange(n - 1, n - 1);</span>
+        
+<span class="fc" id="L71">        return a;</span>
+    }
+    
+    public void popWithoutReturn() {
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (n == 0) {</span>
+<span class="nc" id="L76">            return;</span>
+        }
+                
+<span class="fc" id="L79">        removeRange(n - 1, n - 1);        </span>
+<span class="fc" id="L80">    }</span>
+
+    public boolean isEmpty() {
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        return (n == 0);</span>
+    }
+
+    public void compressArrays() {
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (n &lt; x.length) {</span>
+<span class="fc" id="L88">            x = Arrays.copyOf(x, n);</span>
+<span class="fc" id="L89">            y = Arrays.copyOf(y, n);</span>
+        }
+<span class="fc" id="L91">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,4 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GreyscaleImage.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GreyscaleImage.java</span></div><h1>GreyscaleImage.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GreyscaleImage.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GreyscaleImage.java</span></div><h1>GreyscaleImage.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.MiscMath;
+import algorithms.util.PairIntArray;
+import java.util.Arrays;
 
 /**
  *
@@ -14,36 +18,81 @@ public class GreyscaleImage {
     
     private int nPixels;
     
+<span class="fc" id="L21">    private int xRelativeOffset = 0;</span>
+    
+<span class="fc" id="L23">    private int yRelativeOffset = 0;</span>
+    
     /**
      * @param theWidth
      * @param theHeight
      */
-<span class="fc" id="L21">    public GreyscaleImage (int theWidth, int theHeight) {</span>
+<span class="fc" id="L29">    public GreyscaleImage (int theWidth, int theHeight) {</span>
         
-<span class="fc" id="L23">        nPixels = theWidth * theHeight;</span>
+<span class="fc" id="L31">        nPixels = theWidth * theHeight;</span>
         
-<span class="fc" id="L25">        width = theWidth;</span>
+<span class="fc" id="L33">        width = theWidth;</span>
         
-<span class="fc" id="L27">        height = theHeight;</span>
+<span class="fc" id="L35">        height = theHeight;</span>
         
-<span class="fc" id="L29">        a = new int[nPixels];</span>
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L37">        a = new int[nPixels];</span>
+<span class="fc" id="L38">    }</span>
+    
+    /**
+     * convenience method to fill image with the value. 
+     * @param value 
+     */
+    public void fill(int value) {
+<span class="fc" id="L45">        Arrays.fill(a, value);</span>
+<span class="fc" id="L46">    }</span>
+    
+    public void multiply(int factor) {
+        
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; i++) {</span>
+<span class="nc" id="L51">            a[i] *= factor;</span>
+        }
+<span class="nc" id="L53">    }</span>
+    
+    public void divide(int number) {
+        
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; i++) {</span>
+<span class="nc" id="L58">            a[i] /= number;</span>
+        }
+<span class="nc" id="L60">    }</span>
+    
+    public void normalizeToMax255() {
+        
+<span class="nc" id="L64">        int max = MiscMath.findMax(a);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (max == 0) {</span>
+<span class="nc" id="L66">            return;</span>
+        }
+<span class="nc" id="L68">        int maxIdx = MiscMath.findYMaxIndex(a);</span>
+<span class="nc" id="L69">        int c = getCol(maxIdx);</span>
+<span class="nc" id="L70">        int r = getRow(maxIdx);</span>
+        
+<span class="nc" id="L72">        double factor = 255./max;</span>
+        
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; i++) {</span>
+<span class="nc" id="L75">            double v = a[i] * factor;</span>
+<span class="nc" id="L76">            a[i] = (int)v;</span>
+        }
+        
+<span class="nc" id="L79">    }</span>
     
     public void setValue(int col, int row, int value) {
         
-<span class="pc bpc" id="L34" title="1 of 4 branches missed.">        if ((col &lt; 0) || (col &gt; (width - 1))) {</span>
-<span class="fc" id="L35">            throw new IllegalArgumentException(&quot;col is out of bounds: col=&quot; </span>
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">        if ((col &lt; 0) || (col &gt; (width - 1))) {</span>
+<span class="fc" id="L84">            throw new IllegalArgumentException(&quot;col is out of bounds: col=&quot; </span>
                 + col + &quot; width=&quot; + width);
         }
-<span class="pc bpc" id="L38" title="1 of 4 branches missed.">        if ((row &lt; 0) || (row &gt; (height - 1))) {</span>
-<span class="fc" id="L39">            throw new IllegalArgumentException(&quot;row is out of bounds: row=&quot; </span>
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">        if ((row &lt; 0) || (row &gt; (height - 1))) {</span>
+<span class="fc" id="L88">            throw new IllegalArgumentException(&quot;row is out of bounds: row=&quot; </span>
                 + row + &quot; height=&quot; + height);
         }
         
-<span class="fc" id="L43">        int idx = (row * width) + col;</span>
+<span class="fc" id="L92">        int idx = (row * width) + col;</span>
         
-<span class="pc bpc" id="L45" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (a.length - 1))) {</span>
-<span class="nc" id="L46">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L94" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (a.length - 1))) {</span>
+<span class="nc" id="L95">            throw new IllegalArgumentException(</span>
                 &quot;col and/or are out of bounds&quot;);
         }
         
@@ -53,101 +102,212 @@ public class GreyscaleImage {
         int bPix = value &amp; 0xFF;
         */
        
-<span class="fc" id="L56">        a[idx] = value;</span>
-<span class="fc" id="L57">    }</span>
+<span class="fc" id="L105">        a[idx] = value;</span>
+<span class="fc" id="L106">    }</span>
+    
+    public void getXY(PairIntArray array, int internalIndex) {
         
-    public int getValue(int col, int row) {
+<span class="pc bpc" id="L110" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L111">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+   
+        // int idx = (row * width) + col;
+        //     idx/w = row  + 0;
+<span class="fc" id="L117">        int row = internalIndex/width;</span>
         
-<span class="pc bpc" id="L61" title="2 of 4 branches missed.">        if ((col &lt; 0) || (col &gt; (width - 1))) {</span>
-<span class="nc" id="L62">            throw new IllegalArgumentException(&quot;col is out of bounds: col=&quot; </span>
+<span class="fc" id="L119">        int col = internalIndex - (row * width);</span>
+        
+<span class="fc" id="L121">        array.add(col, row);</span>
+<span class="fc" id="L122">    }</span>
+    
+    public int getRow(int internalIndex) {
+        
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L127">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+   
+        // int idx = (row * width) + col;
+        //     idx/w = row  + 0;
+<span class="fc" id="L133">        int row = internalIndex/width;</span>
+        
+<span class="fc" id="L135">        return row;</span>
+    }
+    
+    public int getCol(int internalIndex) {
+        
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L141">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+   
+        // int idx = (row * width) + col;
+        //     idx/w = row  + 0;
+<span class="fc" id="L147">        int row = internalIndex/width;</span>
+        
+<span class="fc" id="L149">        int col = internalIndex - (row * width);</span>
+        
+<span class="fc" id="L151">        return col;</span>
+    }
+    
+    public void setValue(int internalIndex, int value) {
+        
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L157">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="fc" id="L161">        a[internalIndex] = value;</span>
+<span class="fc" id="L162">    }</span>
+    
+    public int getValue(int internalIndex) {
+        
+<span class="pc bpc" id="L166" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L167">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="fc" id="L171">        return a[internalIndex];</span>
+    }
+    
+    public int getIndex(int col, int row) {
+        
+<span class="nc bnc" id="L176" title="All 4 branches missed.">        if ((col &lt; 0) || (col &gt; (width - 1))) {</span>
+<span class="nc" id="L177">            throw new IllegalArgumentException(&quot;col is out of bounds: col=&quot; </span>
                 + col + &quot; width=&quot; + width);
         }
-<span class="pc bpc" id="L65" title="2 of 4 branches missed.">        if ((row &lt; 0) || (row &gt; (height - 1))) {</span>
-<span class="nc" id="L66">            throw new IllegalArgumentException(&quot;row is out of bounds: row=&quot; </span>
+<span class="nc bnc" id="L180" title="All 4 branches missed.">        if ((row &lt; 0) || (row &gt; (height - 1))) {</span>
+<span class="nc" id="L181">            throw new IllegalArgumentException(&quot;row is out of bounds: row=&quot; </span>
                 + row + &quot; height=&quot; + height);
         }
         
-<span class="fc" id="L70">        int idx = (row * width) + col;</span>
+<span class="nc" id="L185">        int idx = (row * width) + col;</span>
+        
+<span class="nc" id="L187">        return idx;</span>
+    }
+        
+    public int getValue(int col, int row) {
+        
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">        if ((col &lt; 0) || (col &gt; (width - 1))) {</span>
+<span class="nc" id="L193">            throw new IllegalArgumentException(&quot;col is out of bounds: col=&quot; </span>
+                + col + &quot; width=&quot; + width);
+        }
+<span class="pc bpc" id="L196" title="2 of 4 branches missed.">        if ((row &lt; 0) || (row &gt; (height - 1))) {</span>
+<span class="nc" id="L197">            throw new IllegalArgumentException(&quot;row is out of bounds: row=&quot; </span>
+                + row + &quot; height=&quot; + height);
+        }
+        
+<span class="fc" id="L201">        int idx = (row * width) + col;</span>
        
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (idx &gt; a.length) {</span>
-<span class="nc" id="L73">            throw new IllegalArgumentException(&quot;coords are out of bounds&quot;);</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (idx &gt; a.length) {</span>
+<span class="nc" id="L204">            throw new IllegalArgumentException(&quot;coords are out of bounds&quot;);</span>
         }
         /*
         int rgb = (int)(((r[idx] &amp; 0x0ff) &lt;&lt; 16) 
             | ((g[idx] &amp; 0x0ff) &lt;&lt; 8) | (b[idx] &amp; 0x0ff));
         */
-<span class="fc" id="L79">        return a[idx];</span>
-    }
-    
-    /**
-     * get pixel using the internal index of 0 through width x height pixels.
-     * 
-     * @param internalIndex
-     * @return 
-     */
-    public int getValue(int internalIndex) {
-        
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (internalIndex &gt; a.length) {</span>
-<span class="nc" id="L91">            throw new IllegalArgumentException(&quot;internalIndex is out of bounds&quot;);</span>
-        }
-        
-<span class="fc" id="L94">        return a[internalIndex];</span>
+<span class="fc" id="L210">        return a[idx];</span>
     }
     
     public int[] getValues() {
-<span class="fc" id="L98">        return a;</span>
+<span class="fc" id="L214">        return a;</span>
     }
  
     public int getWidth() {
-<span class="fc" id="L102">        return width;</span>
+<span class="fc" id="L218">        return width;</span>
     }
     
     public int getHeight() {
-<span class="fc" id="L106">        return height;</span>
+<span class="fc" id="L222">        return height;</span>
     }
     
     public GreyscaleImage copyImage() {
        
-<span class="fc" id="L111">        GreyscaleImage img2 = new GreyscaleImage(width, height);</span>
+<span class="fc" id="L227">        GreyscaleImage img2 = createWithDimensions();</span>
+                
+<span class="fc" id="L229">        System.arraycopy(a, 0, img2.a, 0, nPixels);</span>
         
-<span class="fc" id="L113">        System.arraycopy(a, 0, img2.a, 0, nPixels);</span>
+<span class="fc" id="L231">        img2.nPixels = nPixels;</span>
         
-<span class="fc" id="L115">        return img2;</span>
+<span class="fc" id="L233">        return img2;</span>
+    }
+    
+    public GreyscaleImage createWithDimensions() {
+       
+<span class="fc" id="L238">        GreyscaleImage img2 = new GreyscaleImage(width, height);</span>
+                
+<span class="fc" id="L240">        img2.xRelativeOffset = xRelativeOffset;</span>
+<span class="fc" id="L241">        img2.yRelativeOffset = yRelativeOffset;</span>
+        
+<span class="fc" id="L243">        return img2;</span>
     }
     
     public Image copyImageToGreen() {
         
-<span class="fc" id="L120">        Image img2 = new Image(width, height);</span>
+<span class="fc" id="L248">        Image img2 = new Image(width, height);</span>
         
-<span class="fc" id="L122">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
+<span class="fc" id="L250">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
         
-<span class="fc" id="L124">        return img2;</span>
+<span class="fc" id="L252">        return img2;</span>
     }
     
     public void resetTo(final GreyscaleImage copyThis) {
         
-<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (copyThis.nPixels == nPixels) {</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">        if (copyThis.nPixels == nPixels) {</span>
             
-<span class="fc" id="L131">            System.arraycopy(copyThis.a, 0, a, 0, nPixels);</span>
+<span class="fc" id="L259">            System.arraycopy(copyThis.a, 0, a, 0, nPixels);</span>
             
         } else {
             
-<span class="fc" id="L135">            a = copyThis.a;</span>
+<span class="nc" id="L263">            a = copyThis.a;</span>
     
-<span class="fc" id="L137">            width = copyThis.width;</span>
+<span class="nc" id="L265">            width = copyThis.width;</span>
     
-<span class="fc" id="L139">            height = copyThis.height;</span>
+<span class="nc" id="L267">            height = copyThis.height;</span>
     
-<span class="fc" id="L141">            nPixels = copyThis.nPixels;</span>
+<span class="nc" id="L269">            nPixels = copyThis.nPixels;</span>
+            
+<span class="nc" id="L271">            xRelativeOffset = copyThis.xRelativeOffset;</span>
+            
+<span class="nc" id="L273">            yRelativeOffset = copyThis.yRelativeOffset;</span>
         }
         
-<span class="fc" id="L144">    }</span>
+<span class="fc" id="L276">    }</span>
 
     /**
      * @return the nPixels
      */
     public int getNPixels() {
-<span class="fc" id="L150">        return nPixels;</span>
+<span class="fc" id="L282">        return nPixels;</span>
     }
+
+    /**
+     * @return the xRelativeOffset
+     */
+    public int getXRelativeOffset() {
+<span class="fc" id="L289">        return xRelativeOffset;</span>
+    }
+
+    /**
+     * @param xRelativeOffset the xRelativeOffset to set
+     */
+    public void setXRelativeOffset(int xRelativeOffset) {
+<span class="fc" id="L296">        this.xRelativeOffset = xRelativeOffset;</span>
+<span class="fc" id="L297">    }</span>
+
+    /**
+     * @return the yRelativeOffset
+     */
+    public int getYRelativeOffset() {
+<span class="fc" id="L303">        return yRelativeOffset;</span>
+    }
+
+    /**
+     * @param yRelativeOffset the yRelativeOffset to set
+     */
+    public void setYRelativeOffset(int yRelativeOffset) {
+<span class="fc" id="L310">        this.yRelativeOffset = yRelativeOffset;</span>
+<span class="fc" id="L311">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

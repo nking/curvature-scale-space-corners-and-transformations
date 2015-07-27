@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PointPartitioner.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">PointPartitioner.java</span></div><h1>PointPartitioner.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+import algorithms.misc.MiscMath;
+import algorithms.util.PairIntArray;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L16">public class PointPartitioner {</span>
+ 
+    /**
+     * make subsets of size subsetSize out of points by randomly distributing
+     * the points into the subsets.  Note that the last subset will be smaller
+     * than subsetSize if (points.getN() % subsetSize) != 0.
+     * 
+     * @param points
+     * @param subsetSize
+     * @return 
+     */
+    public List&lt;PairIntArray&gt; randomSubsets(PairIntArray points, int subsetSize) {
+        
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L30">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (points.getN() == 0) {</span>
+<span class="nc" id="L34">            return new ArrayList&lt;PairIntArray&gt;();</span>
+        }
+        
+        try {
+<span class="fc" id="L38">            SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="fc" id="L39">            long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L40">            sr.setSeed(seed);</span>
+            
+<span class="fc" id="L42">            int n = (int)Math.ceil((float)points.getN()/(float)subsetSize);</span>
+            
+<span class="fc" id="L44">            List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L46">                output.add(new PairIntArray());</span>
+            }
+            
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            for (int i = 0; i &lt; points.getN(); ++i) {</span>
+                
+<span class="fc" id="L51">                int index = sr.nextInt(n);</span>
+                
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                while (output.get(index).getN() == subsetSize) {</span>
+<span class="nc" id="L54">                    index++;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                    if (index == n) {</span>
+<span class="nc" id="L56">                        index = 0;</span>
+                    }
+                }
+                
+<span class="fc" id="L60">                output.get(index).add(points.getX(i), points.getY(i));</span>
+            }
+            
+<span class="fc" id="L63">            return output;</span>
+        
+<span class="nc" id="L65">        } catch (NoSuchAlgorithmException ex) {</span>
+            
+<span class="nc" id="L67">            throw new RuntimeException(ex);</span>
+        }
+    }
+    
+    public PairIntArray[] partition(PairIntArray points, int nDimensions) {
+        
+<span class="fc" id="L73">        PairIntArray[] partitions = new PairIntArray[nDimensions*nDimensions];</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int i = 0; i &lt; partitions.length; i++) {</span>
+<span class="fc" id="L75">            partitions[i] = new PairIntArray();</span>
+        }
+        
+<span class="fc" id="L78">        int minX = MiscMath.findMin(points.getX());</span>
+<span class="fc" id="L79">        int maxX = MiscMath.findMax(points.getX());</span>
+<span class="fc" id="L80">        int minY = MiscMath.findMin(points.getY());</span>
+<span class="fc" id="L81">        int maxY = MiscMath.findMax(points.getY());</span>
+        
+<span class="fc" id="L83">        float binX = (float)(maxX - minX)/(float)nDimensions;</span>
+<span class="fc" id="L84">        float binY = (float)(maxY - minY)/(float)nDimensions;</span>
+    
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); i++) {</span>
+            
+<span class="fc" id="L88">            int x = points.getX(i);</span>
+<span class="fc" id="L89">            int y = points.getY(i);</span>
+            
+<span class="fc" id="L91">            int col = (int)((x - minX)/binX);</span>
+            
+<span class="fc" id="L93">            int row = (int)((y - minY)/binY);</span>
+            
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            if (col &gt; (nDimensions - 1)) {</span>
+<span class="fc" id="L96">                col = nDimensions - 1;</span>
+            }
+            
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (row &gt; (nDimensions - 1)) {</span>
+<span class="fc" id="L100">                row = nDimensions - 1;</span>
+            }
+            
+<span class="fc" id="L103">            int idx = (row * nDimensions) + col;</span>
+            
+<span class="fc" id="L105">            partitions[idx].add(x, y);</span>
+            
+        }
+        
+<span class="fc" id="L109">        return partitions;</span>
+    }
+    
+    public PairIntArray[] reduceByBinSampling(PairIntArray points, 
+        int nBinsPerDimension, int nPerBin) {
+        
+<span class="fc" id="L115">        PairIntArray[] binnedPoints = partition(points, nBinsPerDimension);</span>
+        
+<span class="fc" id="L117">        PairIntArray reduced = new PairIntArray();</span>
+<span class="fc" id="L118">        PairIntArray remaining = new PairIntArray();</span>
+     
+        try {
+<span class="fc" id="L121">            SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="fc" id="L122">            long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L123">            sr.setSeed(seed);</span>
+            
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            for (PairIntArray binOfPoints : binnedPoints) {</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">                if (binOfPoints.getN() &lt;= nPerBin) {</span>
+<span class="nc" id="L127">                    reduced.addAll(binOfPoints);</span>
+<span class="nc" id="L128">                    continue;  </span>
+                } 
+<span class="fc" id="L130">                Set&lt;Integer&gt; chosen = new HashSet&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">                while (chosen.size() &lt; nPerBin) {</span>
+<span class="fc" id="L132">                    int idx = sr.nextInt(binOfPoints.getN());</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                    while (chosen.contains(Integer.valueOf(idx))) {</span>
+<span class="fc" id="L134">                        idx = sr.nextInt(binOfPoints.getN());</span>
+                    }
+<span class="fc" id="L136">                    reduced.add(binOfPoints.getX(idx), binOfPoints.getY(idx));</span>
+<span class="fc" id="L137">                    chosen.add(Integer.valueOf(idx));</span>
+<span class="fc" id="L138">                }</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                for (int idx = 0; idx &lt; binOfPoints.getN(); ++idx) {</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">                    if (chosen.contains(Integer.valueOf(idx))) {</span>
+<span class="fc" id="L141">                        continue;</span>
+                    }
+<span class="fc" id="L143">                    remaining.add(binOfPoints.getX(idx), binOfPoints.getY(idx));</span>
+                }
+            }
+                   
+<span class="nc" id="L147">        } catch (NoSuchAlgorithmException ex) {</span>
+            
+<span class="nc" id="L149">            throw new RuntimeException(ex);</span>
+<span class="fc" id="L150">        }</span>
+        
+<span class="fc" id="L152">        return new PairIntArray[]{reduced, remaining};</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

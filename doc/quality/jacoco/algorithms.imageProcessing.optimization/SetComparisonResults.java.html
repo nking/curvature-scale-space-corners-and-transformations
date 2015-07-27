@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SetComparisonResults.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.optimization</a> &gt; <span class="el_source">SetComparisonResults.java</span></div><h1>SetComparisonResults.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.optimization;
+
+import java.util.List;
+
+/**
+ *
+ * @author nichole
+ */
+public class SetComparisonResults implements Comparable&lt;SetComparisonResults&gt; {
+
+    protected final int nExpectedPoints;
+    protected final float numberOverrunDivExpectedMatchedPoints;
+    protected final float numberMatchedDivExpected;    
+    protected final int nExpectedBorderPoints;
+    protected final float numberMatchedBorderDivExpected;
+    public final double eps0;
+    
+<span class="pc" id="L18">    private final float eps0Factor = 1000.f;</span>
+    //private final float eps0Factor = 10000.f;
+    
+    public SetComparisonResults(int nExpected, int nOverrun, int nMatched,
+<span class="fc" id="L22">        int nExpectedBorder, int nMatchedBorder) {</span>
+        
+<span class="fc" id="L24">        this.nExpectedPoints = nExpected;</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        this.numberOverrunDivExpectedMatchedPoints = (nExpected &gt; 0) ?</span>
+            (float) nOverrun / (float) nExpected : Float.POSITIVE_INFINITY;
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        this.numberMatchedDivExpected = (nExpected &gt; 0) ? </span>
+            (float) nMatched / (float) nExpected : Float.POSITIVE_INFINITY;
+<span class="fc" id="L29">        this.nExpectedBorderPoints = nExpectedBorder;</span>
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        this.numberMatchedBorderDivExpected = (nExpected &gt; 0) ? </span>
+            (float) nMatchedBorder / (float) nExpectedBorder 
+            : Float.POSITIVE_INFINITY;
+        
+<span class="fc" id="L34">        System.out.println(&quot;eps0 is &quot; </span>
+            + (eps0Factor/(float)nExpectedPoints) + &quot; fraction of total&quot;);
+        
+<span class="fc" id="L37">        this.eps0 = eps0Factor * (1./(double)nExpectedPoints);</span>
+<span class="fc" id="L38">    }</span>
+    
+<span class="pc" id="L40">    private double numberOverrunDivExpectedMatchedPointsStDev = 0;</span>
+<span class="pc" id="L41">    private double numberMatchedDivExpectedStDev = 0;</span>
+<span class="pc" id="L42">    private double numberMatchedBorderDivExpectedStDev = 0;</span>
+<span class="nc" id="L43">    public SetComparisonResults(List&lt;SetComparisonResults&gt; results) {</span>
+        
+<span class="nc" id="L45">        int nTotal = 0;</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L47">            nTotal += result.nExpectedPoints;</span>
+<span class="nc" id="L48">        }</span>
+<span class="nc" id="L49">        this.nExpectedPoints = nTotal;</span>
+        
+<span class="nc" id="L51">        float sumOverrunFraction = 0;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L53">            double fraction = result.numberOverrunDivExpectedMatchedPoints;</span>
+<span class="nc" id="L54">            sumOverrunFraction += fraction;</span>
+<span class="nc" id="L55">        }</span>
+<span class="nc" id="L56">        this.numberOverrunDivExpectedMatchedPoints = </span>
+<span class="nc" id="L57">            sumOverrunFraction/(float)results.size();</span>
+        
+<span class="nc" id="L59">        double sumstdev = 0;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L61">            double fraction = result.numberOverrunDivExpectedMatchedPoints;</span>
+<span class="nc" id="L62">            double diff = fraction - numberOverrunDivExpectedMatchedPoints;</span>
+<span class="nc" id="L63">            sumstdev += (diff * diff);</span>
+<span class="nc" id="L64">        }</span>
+<span class="nc" id="L65">        numberOverrunDivExpectedMatchedPointsStDev = (Math.sqrt(sumstdev/</span>
+<span class="nc" id="L66">            (float)(results.size() - 1.0)));</span>
+        
+        
+<span class="nc" id="L69">        float sumnMatchedFraction = 0;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L71">            double fraction = result.numberMatchedDivExpected;</span>
+<span class="nc" id="L72">            sumnMatchedFraction += fraction;</span>
+<span class="nc" id="L73">        }</span>
+<span class="nc" id="L74">        this.numberMatchedDivExpected = sumnMatchedFraction/(float)results.size();</span>
+        
+<span class="nc" id="L76">        sumstdev = 0;</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L78">            double fraction = result.numberMatchedDivExpected;</span>
+<span class="nc" id="L79">            double diff = fraction - numberMatchedDivExpected;</span>
+<span class="nc" id="L80">            sumstdev += (diff * diff);</span>
+<span class="nc" id="L81">        }</span>
+<span class="nc" id="L82">        this.numberMatchedDivExpectedStDev = (Math.sqrt(sumstdev/</span>
+<span class="nc" id="L83">            (float)(results.size() - 1.0)));</span>
+        
+        
+<span class="nc" id="L86">        nTotal = 0;</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L88">            nTotal += result.nExpectedBorderPoints;</span>
+<span class="nc" id="L89">        }</span>
+<span class="nc" id="L90">        this.nExpectedBorderPoints = nTotal;</span>
+<span class="nc" id="L91">        sumnMatchedFraction = 0;</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L93">            double fraction = result.numberMatchedBorderDivExpected;</span>
+<span class="nc" id="L94">            sumnMatchedFraction += fraction;</span>
+<span class="nc" id="L95">        }</span>
+<span class="nc" id="L96">        this.numberMatchedBorderDivExpected = sumnMatchedFraction/(float)results.size();</span>
+        
+<span class="nc" id="L98">        sumstdev = 0;</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (SetComparisonResults result : results) {</span>
+<span class="nc" id="L100">            double fraction = result.numberMatchedBorderDivExpected;</span>
+<span class="nc" id="L101">            double diff = fraction - numberMatchedDivExpected;</span>
+<span class="nc" id="L102">            sumstdev += (diff * diff);</span>
+<span class="nc" id="L103">        }</span>
+<span class="nc" id="L104">        this.numberMatchedBorderDivExpectedStDev = (Math.sqrt(sumstdev/</span>
+<span class="nc" id="L105">            (float)(results.size() - 1.0)));</span>
+        
+<span class="nc" id="L107">        this.eps0 = eps0Factor * (1./(double)nExpectedPoints);</span>
+<span class="nc" id="L108">    }</span>
+    
+    public SetComparisonResults(List&lt;Integer&gt; nExpected, List&lt;Integer&gt; nOverrun, 
+        List&lt;Integer&gt; nMatched, List&lt;Integer&gt; nExpectedBorder, 
+<span class="nc" id="L112">        List&lt;Integer&gt; nMatchedBorder) {</span>
+        
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (nExpected.size() != nOverrun.size() </span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            || nOverrun.size() != nMatched.size() </span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            || nMatched.size() != nExpectedBorder.size()</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            || nExpectedBorder.size() != nMatchedBorder.size()) {</span>
+<span class="nc" id="L118">            throw new IllegalArgumentException(&quot;lists must be same size&quot;);</span>
+        }
+        
+<span class="nc" id="L121">        int nTotal = 0;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        for (Integer n : nExpected) {</span>
+<span class="nc" id="L123">            nTotal += n.intValue();</span>
+<span class="nc" id="L124">        }</span>
+<span class="nc" id="L125">        this.nExpectedPoints = nTotal;</span>
+        
+<span class="nc" id="L127">        float sumOverrunFraction = 0;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        for (int i = 0; i &lt; nOverrun.size(); i++) {</span>
+<span class="nc" id="L129">            double fraction = (float)nOverrun.get(i)/(float)nExpected.get(i);</span>
+<span class="nc" id="L130">            sumOverrunFraction += fraction;</span>
+        }
+<span class="nc" id="L132">        this.numberOverrunDivExpectedMatchedPoints = sumOverrunFraction/(float)nOverrun.size();</span>
+        
+<span class="nc" id="L134">        float sumnMatchedFraction = 0;</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (int i = 0; i &lt; nMatched.size(); i++) {</span>
+<span class="nc" id="L136">            double fraction = (float)nMatched.get(i)/(float)nExpected.get(i);</span>
+<span class="nc" id="L137">            sumnMatchedFraction += fraction;</span>
+        }
+<span class="nc" id="L139">        this.numberMatchedDivExpected = sumnMatchedFraction/(float)nMatched.size();</span>
+        
+<span class="nc" id="L141">        nTotal = 0;</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        for (Integer n : nExpectedBorder) {</span>
+<span class="nc" id="L143">            nTotal += n.intValue();</span>
+<span class="nc" id="L144">        }</span>
+<span class="nc" id="L145">        this.nExpectedBorderPoints = nTotal;</span>
+        
+<span class="nc" id="L147">        sumnMatchedFraction = 0;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        for (int i = 0; i &lt; nMatchedBorder.size(); i++) {</span>
+<span class="nc" id="L149">            double fraction = (float)nMatchedBorder.get(i)/(float)nExpectedBorder.get(i);</span>
+<span class="nc" id="L150">            sumnMatchedFraction += fraction;</span>
+        }
+<span class="nc" id="L152">        this.numberMatchedBorderDivExpected = </span>
+<span class="nc" id="L153">            sumnMatchedFraction/(float)nMatchedBorder.size();</span>
+        
+        
+<span class="nc" id="L156">        double sumstdev = 0;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        for (int i = 0; i &lt; nOverrun.size(); i++) {</span>
+<span class="nc" id="L158">            double fraction = (float)nOverrun.get(i)/(float)nExpected.get(i);</span>
+<span class="nc" id="L159">            double diff = fraction - numberMatchedBorderDivExpected;</span>
+<span class="nc" id="L160">            sumstdev += (diff * diff);</span>
+        }
+<span class="nc" id="L162">        this.numberOverrunDivExpectedMatchedPointsStDev = (Math.sqrt(sumstdev/</span>
+<span class="nc" id="L163">            (float)(nOverrun.size() - 1.0)));</span>
+        
+<span class="nc" id="L165">        sumstdev = 0;</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        for (int i = 0; i &lt; nMatched.size(); i++) {</span>
+<span class="nc" id="L167">            double fraction = (float)nMatched.get(i)/(float)nExpected.get(i);</span>
+<span class="nc" id="L168">            double diff = fraction - numberMatchedDivExpected;</span>
+<span class="nc" id="L169">            sumstdev += (diff * diff);</span>
+        }
+<span class="nc" id="L171">        this.numberMatchedDivExpectedStDev = (Math.sqrt(sumstdev/</span>
+<span class="nc" id="L172">            (float)(nMatched.size() - 1.0)));</span>
+        
+<span class="nc" id="L174">        sumstdev = 0;</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        for (int i = 0; i &lt; nMatchedBorder.size(); i++) {</span>
+<span class="nc" id="L176">            double fraction = (float)nMatchedBorder.get(i)/(float)nExpectedBorder.get(i);</span>
+<span class="nc" id="L177">            double diff = fraction - numberMatchedBorderDivExpected;</span>
+<span class="nc" id="L178">            sumstdev += (diff * diff);</span>
+        }
+<span class="nc" id="L180">        this.numberMatchedBorderDivExpectedStDev = (Math.sqrt(sumstdev/</span>
+<span class="nc" id="L181">            (float)(nMatchedBorder.size() - 1.0)));</span>
+        
+        
+<span class="nc" id="L184">        this.eps0 = eps0Factor * (1./(double)nExpectedPoints);</span>
+<span class="nc" id="L185">    }</span>
+
+    @Override
+    public boolean equals(Object obj) {
+
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (!(obj instanceof SetComparisonResults)) {</span>
+<span class="nc" id="L191">            return false;</span>
+        }
+<span class="fc" id="L193">        SetComparisonResults other = (SetComparisonResults) obj;</span>
+        
+<span class="fc" id="L195">        double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:</span>
+        
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (Math.abs(numberOverrunDivExpectedMatchedPoints </span>
+            - other.numberOverrunDivExpectedMatchedPoints)
+            &gt; eps0) {
+<span class="nc" id="L200">            return false;</span>
+        }
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        if (Math.abs(numberMatchedBorderDivExpected - other.numberMatchedBorderDivExpected)</span>
+            &gt; eps1) {
+<span class="fc" id="L204">            return false;</span>
+        }
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (Math.abs(numberMatchedDivExpected - other.numberMatchedDivExpected)</span>
+            &gt; eps1) {
+<span class="fc" id="L208">            return false;</span>
+        }
+<span class="fc" id="L210">        return true;</span>
+    }
+
+    /**
+     * Compare this instance's numberOverrunDivExpected, 
+     * numberMatchedBorderDivExpected, numberMatchedDivExpected to other and 
+     * return -1 if this instance has better fields as a result, else 0 if they 
+     * are equal, else +1 if other has better results. The sign convention is 
+     * meant to put the best answers at the top of a list sorted using this 
+     * comparison function, where the default behavior by java framework 
+     * algorithms is to make an ascending sort. 
+     * Best is defined as having the smallest numberOverrunDivExpected and
+     * ties are broken by having the largest numberMatchedBorderDivExpected,
+     * else if there are no overruns and no border points matched, the
+     * instance with the largest numberMatchedDivExpected is the best.
+     *
+     * @param other
+     * @return
+     */
+    @Override
+    public int compareTo(SetComparisonResults other) {
+        
+        //return compareToMaximizeBorderMatches(other);
+        //return compareToMaximizeMatches(other);
+<span class="fc" id="L234">        return compareToMinimizeOverruns(other);</span>
+        //return compareToMinimizeOverruns2(other);
+    }
+    
+    protected int compareToMinimizeOverruns(SetComparisonResults other) {
+        
+        // this one is close, but needs to finish the last approach towards skyline
+        
+<span class="fc" id="L242">        double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:</span>
+        
+<span class="fc" id="L244">        float diff0 = Math.abs(numberOverrunDivExpectedMatchedPoints</span>
+            - other.numberOverrunDivExpectedMatchedPoints);
+
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        if (diff0 &lt;= eps0) {</span>
+
+<span class="fc" id="L249">            float diff1 = Math.abs(numberMatchedBorderDivExpected</span>
+                - other.numberMatchedBorderDivExpected);
+            
+<span class="fc bfc" id="L252" title="All 2 branches covered.">            if (diff1 &lt;= eps1) {</span>
+                
+<span class="fc" id="L254">                float diff2 = Math.abs(numberMatchedDivExpected</span>
+                    - other.numberMatchedDivExpected);
+
+<span class="fc bfc" id="L257" title="All 2 branches covered.">                if (diff2 &lt;= eps1) {</span>
+<span class="fc" id="L258">                    return 0;</span>
+                } else {
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">                    if (numberMatchedDivExpected &lt; other.numberMatchedDivExpected) {</span>
+<span class="fc" id="L261">                        return 1;</span>
+                    } else {
+<span class="nc" id="L263">                        return -1;</span>
+                    }
+                }
+            } else {
+<span class="fc bfc" id="L267" title="All 2 branches covered.">                if (numberMatchedBorderDivExpected &lt; other.numberMatchedBorderDivExpected) {</span>
+<span class="fc" id="L268">                    return 1;</span>
+                } else {
+<span class="fc" id="L270">                    return -1;</span>
+                }
+            }
+            
+        } else {
+<span class="nc bnc" id="L275" title="All 2 branches missed.">            if (numberOverrunDivExpectedMatchedPoints &lt; other.numberOverrunDivExpectedMatchedPoints) {</span>
+<span class="nc" id="L276">                return -1;</span>
+            } else {
+<span class="nc" id="L278">                return 1;</span>
+            }
+        }
+    }
+    
+    protected int compareToMinimizeOverruns2(SetComparisonResults other) {
+        
+        // this one is close, but needs to finish the last approach towards skyline
+        
+<span class="nc" id="L287">        double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:</span>
+        
+<span class="nc" id="L289">        float diff0 = Math.abs(numberOverrunDivExpectedMatchedPoints</span>
+            - other.numberOverrunDivExpectedMatchedPoints);
+
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        if (diff0 &lt;= eps0) {</span>
+            
+            // closest to fraction 1 for matching expected
+            
+<span class="nc" id="L296">            if (Math.abs(numberMatchedDivExpected - 1.0) &lt; </span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">                Math.abs(other.numberMatchedDivExpected - 1.0)) {</span>
+<span class="nc" id="L298">                return -1;</span>
+            } else {
+<span class="nc" id="L300">                return 1;</span>
+            }
+            
+        } else {
+<span class="nc bnc" id="L304" title="All 2 branches missed.">            if (numberOverrunDivExpectedMatchedPoints &lt; other.numberOverrunDivExpectedMatchedPoints) {</span>
+<span class="nc" id="L305">                return -1;</span>
+            } else {
+<span class="nc" id="L307">                return 1;</span>
+            }
+        }
+    }
+
+    protected int compareToMaximizeBorderMatches(SetComparisonResults other) {
+        
+<span class="nc" id="L314">        double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:</span>
+        
+<span class="nc" id="L316">        float diff1 = Math.abs(numberMatchedBorderDivExpected</span>
+                - other.numberMatchedBorderDivExpected);
+            
+<span class="nc bnc" id="L319" title="All 6 branches missed.">        if ((diff1 &lt;= 0 /*eps1*/) || </span>
+            ((numberMatchedBorderDivExpected &lt; eps1) &amp;&amp; 
+            (other.numberMatchedBorderDivExpected &lt; eps1))) {
+
+            // either the number of border matches is equal or both are zero
+<span class="nc" id="L324">            float diff2 = Math.abs(numberMatchedDivExpected</span>
+                - other.numberMatchedDivExpected);
+
+<span class="nc bnc" id="L327" title="All 2 branches missed.">            if (diff2 &lt;= eps1) {</span>
+                
+<span class="nc" id="L329">                float diff0 = Math.abs(numberOverrunDivExpectedMatchedPoints</span>
+                    - other.numberOverrunDivExpectedMatchedPoints);
+                
+<span class="nc bnc" id="L332" title="All 2 branches missed.">                if (diff0 &lt;= eps0) {</span>
+                    
+<span class="nc" id="L334">                    return 0;</span>
+                    
+                } else {
+                    
+                    // minimize the number of overruns
+<span class="nc bnc" id="L339" title="All 2 branches missed.">                    if (numberOverrunDivExpectedMatchedPoints &lt; other.numberOverrunDivExpectedMatchedPoints) {</span>
+<span class="nc" id="L340">                        return -1;</span>
+                    } else {
+<span class="nc" id="L342">                        return 1;</span>
+                    }
+                }
+                                
+            } else {
+                
+<span class="nc bnc" id="L348" title="All 2 branches missed.">                if (numberMatchedDivExpected &lt; other.numberMatchedDivExpected) {</span>
+<span class="nc" id="L349">                    return 1;</span>
+                } else {
+<span class="nc" id="L351">                    return -1;</span>
+                }
+            }
+            
+        } else {
+            
+<span class="nc bnc" id="L357" title="All 2 branches missed.">            if (numberMatchedBorderDivExpected &lt; other.numberMatchedBorderDivExpected) {</span>
+<span class="nc" id="L358">                return 1;</span>
+            } else {
+<span class="nc" id="L360">                return -1;</span>
+            }
+        } 
+    }
+
+    protected int compareToMaximizeMatches(SetComparisonResults other) {
+        
+<span class="nc" id="L367">        double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:</span>
+        
+<span class="nc" id="L369">        float diff0 = Math.abs(numberOverrunDivExpectedMatchedPoints</span>
+            - other.numberOverrunDivExpectedMatchedPoints);
+
+<span class="nc" id="L372">        float diff1 = Math.abs(numberMatchedDivExpected</span>
+            - other.numberMatchedDivExpected);
+        
+<span class="nc bnc" id="L375" title="All 2 branches missed.">        if (diff1 &lt;= eps1) {</span>
+            
+            // the number matched are roughly equal
+
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            if (diff0 &lt;= eps0) {</span>
+                
+                // maximize the number of border points matched
+<span class="nc bnc" id="L382" title="All 2 branches missed.">                if (numberMatchedBorderDivExpected &lt; other.numberMatchedBorderDivExpected) {</span>
+<span class="nc" id="L383">                    return 1;</span>
+                } else {
+<span class="nc" id="L385">                    return -1;</span>
+                }
+                
+            } else {
+                
+                // number of matched were equal, return the one with fewest
+                // overruns
+                
+<span class="nc bnc" id="L393" title="All 2 branches missed.">                if (numberOverrunDivExpectedMatchedPoints &lt; other.numberOverrunDivExpectedMatchedPoints) {</span>
+<span class="nc" id="L394">                    return -1;</span>
+                } else {
+<span class="nc" id="L396">                    return 1;</span>
+                }
+            }
+            
+        } else {
+            
+            // want the largest number of matches closest to the fraction of 1.0
+            
+<span class="nc bnc" id="L404" title="All 4 branches missed.">            if ((numberMatchedDivExpected &lt; 1.0) &amp;&amp; (other.numberMatchedDivExpected &lt; 1.0)) {</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">                if (numberMatchedDivExpected &gt; other.numberMatchedDivExpected) {</span>
+<span class="nc" id="L406">                    return -1;</span>
+                } 
+<span class="nc" id="L408">                return 1;</span>
+<span class="nc bnc" id="L409" title="All 4 branches missed.">            } else if ((numberMatchedDivExpected &lt; 1.0) &amp;&amp; (other.numberMatchedDivExpected &gt; 1.0)) {</span>
+<span class="nc" id="L410">                return -1;</span>
+            }
+            
+<span class="nc" id="L413">            return 1;</span>
+            
+            /*
+            if (Math.abs(numberMatchedDivExpected - 1.0) &lt; 
+                Math.abs(other.numberMatchedDivExpected - 1.0)) {
+                return -1;
+            } else {
+                return 1;
+            }*/
+        } 
+    }
+
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L428">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="nc" id="L430">        sb.append(&quot;nExpectedPoints=&quot;).append(Integer.toString(nExpectedPoints));</span>
+        
+<span class="nc" id="L432">        sb.append(&quot;\n  numberOverrunDivExpectedMatchedPoints=&quot;)</span>
+<span class="nc" id="L433">            .append(Float.toString(numberOverrunDivExpectedMatchedPoints))</span>
+<span class="nc" id="L434">            .append(&quot; (+-&quot;)</span>
+<span class="nc" id="L435">            .append(Double.toString(numberOverrunDivExpectedMatchedPointsStDev))</span>
+<span class="nc" id="L436">            .append(&quot;)&quot;);</span>
+        
+<span class="nc" id="L438">        sb.append(&quot;\n  numberMatchedDivExpected=&quot;)</span>
+<span class="nc" id="L439">            .append(Float.toString(numberMatchedDivExpected))</span>
+<span class="nc" id="L440">            .append(&quot; (+-&quot;)</span>
+<span class="nc" id="L441">            .append(Double.toString(numberMatchedDivExpectedStDev))</span>
+<span class="nc" id="L442">            .append(&quot;)&quot;);</span>
+        
+<span class="nc" id="L444">        sb.append(&quot;\n  nExpectedBorderPoints=&quot;)</span>
+<span class="nc" id="L445">            .append(Integer.toString(nExpectedBorderPoints));</span>
+        
+<span class="nc" id="L447">        sb.append(&quot;\n  numberMatchedBorderDivExpected=&quot;)</span>
+<span class="nc" id="L448">            .append(Float.toString(numberMatchedBorderDivExpected))</span>
+<span class="nc" id="L449">            .append(&quot; (+-&quot;)</span>
+<span class="nc" id="L450">            .append(Double.toString(numberMatchedBorderDivExpectedStDev))</span>
+<span class="nc" id="L451">            .append(&quot;)&quot;);</span>
+        
+<span class="nc" id="L453">        return sb.toString();</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

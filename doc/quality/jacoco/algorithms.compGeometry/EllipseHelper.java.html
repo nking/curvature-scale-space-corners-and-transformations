@@ -1,0 +1,567 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EllipseHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">EllipseHelper.java</span></div><h1>EllipseHelper.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+import algorithms.misc.MiscMath;
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
+import java.util.Set;
+import java.util.logging.Logger;
+import org.ejml.data.DenseMatrix64F;
+import org.ejml.ops.EigenOps;
+import org.ejml.simple.*;
+
+/**
+ * 
+ * @author nichole
+ */
+<span class="nc" id="L19">public class EllipseHelper {</span>
+    
+<span class="nc" id="L21">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     &lt;pre&gt;
+     adapted from:
+        &quot;Fitting of Circles and Ellipses Least Squares Solution&quot; by Gander, 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       currently uses the algebraic, least square ellipse fit
+       
+     The parameters returned can be used as:
+     x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+     y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+     where t range is 0 ≤ t ≤ 2π
+      &lt;/pre&gt;
+     * @param xyPoints
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    public double[] fitEllipseToPoints(PairFloatArray xyPoints) {
+        
+<span class="nc" id="L44">        return fitEllipseToPointsWithAlgLSQ(xyPoints);</span>
+    }
+    
+    /**
+     &lt;pre&gt;
+     adapted from:
+        &quot;Fitting of Circles and Ellipses Least Squares Solution&quot; by Gander, 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       currently uses the algebraic, least square ellipse fit
+       
+     The parameters returned can be used as:
+     x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+     y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+     where t range is 0 ≤ t ≤ 2π
+      &lt;/pre&gt;
+     * @param xyPoints
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    public double[] fitEllipseToPoints(PairIntArray xyPoints) {
+        
+<span class="nc" id="L68">        int nPoints = xyPoints.getN();</span>
+        
+        //x*x, x*y, y*y, x, y, 1
+<span class="nc" id="L71">        SimpleMatrix a = new SimpleMatrix(nPoints, 6);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        for (int row = 0; row &lt; nPoints; row++) {</span>
+<span class="nc" id="L73">            float x = xyPoints.getX(row);</span>
+<span class="nc" id="L74">            float y = xyPoints.getY(row);</span>
+<span class="nc" id="L75">            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);</span>
+        }
+       
+        try {
+            
+<span class="nc" id="L80">            return fitEllipseToPointsWithAlgLSQ(a);</span>
+                        
+<span class="nc" id="L82">        } catch(RuntimeException t) {</span>
+<span class="nc" id="L83">            log.warning(t.getMessage());</span>
+        }
+        
+<span class="nc" id="L86">        return null;</span>
+    }
+    
+    /**
+     &lt;pre&gt;
+     adapted from:
+        &quot;Fitting of Circles and Ellipses Least Squares Solution&quot; by Gander, 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       currently uses the algebraic, least square ellipse fit
+       
+     The parameters returned can be used as:
+     x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+     y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+     where t range is 0 ≤ t ≤ 2π
+      &lt;/pre&gt;
+     * @param xyPoints
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    public double[] fitEllipseToPoints(Set&lt;PairInt&gt; xyPoints) {
+        
+<span class="nc" id="L110">        int nPoints = xyPoints.size();</span>
+        
+        //x*x, x*y, y*y, x, y, 1
+<span class="nc" id="L113">        SimpleMatrix a = new SimpleMatrix(nPoints, 6);</span>
+<span class="nc" id="L114">        int row = 0;</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        for (PairInt p : xyPoints) {</span>
+<span class="nc" id="L116">            float x = p.getX();</span>
+<span class="nc" id="L117">            float y = p.getY();</span>
+<span class="nc" id="L118">            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);</span>
+<span class="nc" id="L119">            row++;</span>
+<span class="nc" id="L120">        }</span>
+       
+        try {
+            
+<span class="nc" id="L124">            return fitEllipseToPointsWithAlgLSQ(a);</span>
+                        
+<span class="nc" id="L126">        } catch(RuntimeException t) {</span>
+<span class="nc" id="L127">            log.warning(t.getMessage());</span>
+        }
+        
+<span class="nc" id="L130">        return null;</span>
+    }
+    
+    /**
+     adapted from:
+        &quot;Fitting of Circles and Ellipses Least Squares Solution&quot; by Gander, 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       algebraic, least square ellipse fit
+      
+     * @param xyPoints
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    protected double[] fitEllipseToPointsWithAlgLSQ(PairFloatArray xyPoints) {
+        
+<span class="nc" id="L148">        int nPoints = xyPoints.getN();</span>
+        
+        //x*x, x*y, y*y, x, y, 1
+<span class="nc" id="L151">        SimpleMatrix a = new SimpleMatrix(nPoints, 6);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        for (int row = 0; row &lt; nPoints; row++) {</span>
+<span class="nc" id="L153">            float x = xyPoints.getX(row);</span>
+<span class="nc" id="L154">            float y = xyPoints.getY(row);</span>
+<span class="nc" id="L155">            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);</span>
+        }
+       
+        try {
+            
+<span class="nc" id="L160">            return fitEllipseToPointsWithAlgLSQ(a);</span>
+                        
+<span class="nc" id="L162">        } catch(RuntimeException t) {</span>
+<span class="nc" id="L163">            log.warning(t.getMessage());</span>
+        }
+        
+<span class="nc" id="L166">        return null;</span>
+    }
+    
+    /**
+     adapted from:
+        &quot;Fitting of Circles and Ellipses Least Squares Solution&quot; by Gander, 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       algebraic, least square ellipse fit
+      
+     NOTE: SimpleMatrix.solve(...) method may throw:
+     *    org.ejml.factory.SingularMatrixException: Solution contains 
+     *    uncountable numbers
+     * 
+     * @param a
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    protected double[] fitEllipseToPointsWithAlgLSQ(SimpleMatrix a) {
+        
+<span class="nc" id="L188">        int nPoints = a.numRows();</span>
+        
+        /*
+        adapted from:
+        &quot;Fitting of Circles and Ellipses Least Squares Solution&quot; by Gander, 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+
+        algebraic, least square ellipse fit
+        
+        this is an adaptation to the code they provide on the ftp site
+        referenced in their paper, algellipse.m
+        
+        input:
+            X: given points Pi = [X(i,1), X(i,2)]
+            W: weight W(i) for the i-th equation
+        
+        fits an ellipse by minimizing the &quot;algebraic distance&quot;
+        in the least squares sense x^T A x + b^T x + c = 0
+        weighting the i-th data by W(i)
+     
+        solves for z, a, b, alpha parameters of the ellipse
+        
+        x^2 + B*x*y + C*y^2 + D*x + E*y + F = 0
+        
+        subject to constraints:  
+            B^2 - 4*C &lt; 0
+        
+            D^2 + E^2
+            ---   --- - F &gt; 0
+             4    4*C
+        */
+   
+<span class="nc" id="L222">        SimpleMatrix s = a.transpose().mult(a);</span>
+       
+        //T = S(1:3,1:3) - S(1:3,4:6)*(S(4:6,4:6)'\S(4:6,1:3));
+        //      0:2, 0:2     0:2,3:5     3:5,3:5     3:5,0:2
+        
+        // S(4:6,4:6) is a reduction of the matrix to S(rows 4 to 6, columns 4 to 6)
+        // ' is transpose
+        // \ is Matrix left division where x = A\B is the solution to the 
+        //          equation xA = B. 
+        //          Matrices A and B must have the same number of rows.
+        
+<span class="nc" id="L233">        SimpleMatrix matrixA = new SimpleMatrix(3, 3);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        for (int row = 3; row &lt;= 5; row++) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="nc" id="L236">                matrixA.set(row-3, col-3, s.get(row, col));</span>
+            }
+        }
+<span class="nc" id="L239">        matrixA = matrixA.transpose();</span>
+        
+<span class="nc" id="L241">        SimpleMatrix matrixB = new SimpleMatrix(3, 3);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        for (int row = 3; row &lt;= 5; row++) {</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">            for (int col = 0; col &lt;= 2; col++) {</span>
+<span class="nc" id="L244">                matrixB.set(row-3, col, s.get(row, col));</span>
+            }
+        }
+        
+        //xA = B.   x is [3x3]
+<span class="nc" id="L249">        SimpleMatrix x = matrixA.solve(matrixB);</span>
+        
+        //T = S(1:3,1:3) - S(1:3,4:6)*(x);
+        //      0:2, 0:2     0:2,3:5   
+        
+<span class="nc" id="L254">        SimpleMatrix matrixC = new SimpleMatrix(3, 3);</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        for (int row = 0; row &lt;= 2; row++) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="nc" id="L257">                matrixC.set(row, col-3, s.get(row, col));</span>
+            }
+        }
+        
+<span class="nc" id="L261">        matrixC = matrixC.mult(x);</span>
+        
+<span class="nc" id="L263">        SimpleMatrix matrixD = new SimpleMatrix(3, 3);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        for (int row = 0; row &lt;= 2; row++) {</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            for (int col = 0; col &lt;= 2; col++) {</span>
+<span class="nc" id="L266">                matrixD.set(row, col, s.get(row, col));</span>
+            }
+        }
+        
+        //T = matrixD - matrixC
+<span class="nc" id="L271">        SimpleMatrix matrixT = matrixD.minus(matrixC);</span>
+        
+        //T = diag([1,2,1])*T;
+<span class="nc" id="L274">        SimpleMatrix diag = new SimpleMatrix(3, 3);</span>
+<span class="nc" id="L275">        diag.set(0, 0, 1);</span>
+<span class="nc" id="L276">        diag.set(1, 1, 2);</span>
+<span class="nc" id="L277">        diag.set(2, 2, 1);</span>
+        
+<span class="nc" id="L279">        matrixT = diag.mult(matrixT);</span>
+        
+        /*
+        [V, D] = eig(T);
+        returns two optional outputs for any of the previous input syntaxes. 
+        D is a diagonal matrix containing the eigenvalues. 
+        V is a matrix whose columns are the corresponding right eigenvectors.
+        */
+<span class="nc" id="L287">        SimpleEVD evd = matrixT.eig();</span>
+        
+        //3X3
+<span class="nc" id="L290">        DenseMatrix64F v = EigenOps.createMatrixV(evd.getEVD());</span>
+        //v.print();
+<span class="nc" id="L292">        SimpleMatrix vMatrix = new SimpleMatrix(v);</span>
+      
+<span class="nc" id="L294">        double emin = 0;</span>
+<span class="nc" id="L295">        int kmin = -1;</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        for (int k = 0; k &lt; 3; k++) {</span>
+<span class="nc" id="L297">            double aa = v.get(0, k);</span>
+<span class="nc" id="L298">            double bb = v.get(1, k);</span>
+<span class="nc" id="L299">            double cc = v.get(2, k);</span>
+<span class="nc" id="L300">            double i0 = aa + cc;</span>
+<span class="nc" id="L301">            double i1 = (aa * cc) - ((bb*bb)/4.);</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (i1 &lt;= 0) {</span>
+                // not an ellipse
+            } else {
+<span class="nc" id="L305">                double val = (i0*i0 - 4*i1)/(i0*i0 - 2*i1);</span>
+<span class="nc bnc" id="L306" title="All 4 branches missed.">                if ((emin == 0) || (val &lt; emin)) {</span>
+<span class="nc" id="L307">                    emin = val;</span>
+<span class="nc" id="L308">                    kmin = k;</span>
+                }
+            }
+        }
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        if (kmin == -1) {</span>
+            // not an ellipse, or my port to java is wrong
+<span class="nc" id="L314">            log.severe(&quot;not an ellipse, or error in my port to java?  need more tests for this&quot;);</span>
+<span class="nc" id="L315">            return null;</span>
+        }
+        
+<span class="nc" id="L318">        SimpleMatrix y1 = vMatrix.extractVector(false, kmin);</span>
+        
+        //-(S(4:6,4:6)')
+<span class="nc" id="L321">        SimpleMatrix numer = new SimpleMatrix(3, 3);</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">        for (int row = 3; row &lt;= 5; row++) {</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="nc" id="L324">                numer.set(row - 3, col - 3, s.get(row, col));</span>
+            }
+        }
+<span class="nc" id="L327">        numer = numer.transpose();</span>
+        
+        //(S(1:3,4:6)'*y1);
+<span class="nc" id="L330">        SimpleMatrix denom = new SimpleMatrix(3, 3);</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">        for (int row = 0; row &lt;= 2; row++) {</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="nc" id="L333">                denom.set(row, col - 3, s.get(row, col));</span>
+            }
+        }
+<span class="nc" id="L336">        denom = denom.transpose();</span>
+<span class="nc" id="L337">        denom = denom.mult(y1);</span>
+        
+        // y2 = -(S(4:6,4:6)')\(S(1:3,4:6)'*y1);
+<span class="nc" id="L340">        SimpleMatrix y2 = numer.solve(denom);</span>
+<span class="nc" id="L341">        y2 = y2.scale(-1);</span>
+        
+        // u  = [y1; y2]; where ';' is matlab notation for row separator
+        // 
+<span class="nc" id="L345">        int nRows = y1.numRows() + y2.numRows();</span>
+<span class="nc" id="L346">        SimpleMatrix uMatrix = new SimpleMatrix(nRows, y1.numCols());</span>
+        
+<span class="nc" id="L348">        int row = 0;</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">        for (int j = 0; j &lt; y1.numRows(); j++) {</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">            for (int col = 0; col &lt; y1.numCols(); col++) {</span>
+<span class="nc" id="L351">                uMatrix.set(row, col, y1.get(j, col));</span>
+            }
+<span class="nc" id="L353">            row++;</span>
+        }
+<span class="nc bnc" id="L355" title="All 2 branches missed.">        for (int j = 0; j &lt; y2.numRows(); j++) {</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">            for (int col = 0; col &lt; y2.numCols(); col++) {</span>
+<span class="nc" id="L357">                uMatrix.set(row, col, y2.get(j, col));</span>
+            }
+<span class="nc" id="L359">            row++;</span>
+        }
+        
+        //get the ellipse parameters from algebraic equation 
+        //    u(0)x^2 + u(1)xy + u(2)y^2 + u(3)x + u(4)y + u(5) = 0.
+        
+<span class="nc" id="L365">        return extractEllipseParams(uMatrix);</span>
+    }
+    
+    /**
+    &lt;pre&gt;
+    adapted from:
+        &quot;Fitting of Circles and Ellipses Least Squares Solution&quot; by Gander, 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        file: ellipse_params.m in compressed archive for 217.*
+       
+     The parameters returned can be used as:
+     x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+     y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+     where t range is 0 ≤ t ≤ 2π
+     &lt;/pre&gt;  
+     * @param u
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    private double[] extractEllipseParams(SimpleMatrix u) {
+        
+<span class="nc bnc" id="L386" title="All 2 branches missed.">        if (u == null) {</span>
+<span class="nc" id="L387">            throw new IllegalArgumentException(&quot;u cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L389" title="All 2 branches missed.">        if (u.numCols() != 1) {</span>
+<span class="nc" id="L390">            throw new IllegalArgumentException(&quot;u must have 1 column only&quot;);</span>
+        }
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (u.numRows() != 6) {</span>
+<span class="nc" id="L393">            throw new IllegalArgumentException(&quot;u must have 6 rows&quot;);</span>
+        }
+        
+<span class="nc" id="L396">        SimpleMatrix a = new SimpleMatrix(2, 2);</span>
+<span class="nc" id="L397">        a.setRow(0, 0, u.get(0, 0), u.get(1, 0)/2.);</span>
+<span class="nc" id="L398">        a.setRow(1, 0, u.get(1, 0)/2., u.get(2, 0));</span>
+        
+<span class="nc" id="L400">        SimpleMatrix bb = new SimpleMatrix(2, 1);</span>
+<span class="nc" id="L401">        bb.set(0, 0, u.get(3, 0));</span>
+<span class="nc" id="L402">        bb.set(1, 0, u.get(4, 0));</span>
+        
+<span class="nc" id="L404">        SimpleMatrix c = new SimpleMatrix(1, 1);</span>
+<span class="nc" id="L405">        c.set(0, 0, u.get(5, 0));</span>
+        
+<span class="nc" id="L407">        SimpleEVD qd = a.eig();</span>
+        
+<span class="nc" id="L409">        DenseMatrix64F q = EigenOps.createMatrixV(qd.getEVD());</span>
+        //q.print();
+        
+<span class="nc" id="L412">        DenseMatrix64F d = EigenOps.createMatrixD(qd.getEVD());</span>
+        //d.print();
+        
+<span class="nc" id="L415">        double det = d.get(0, 0) * d.get(1, 1);</span>
+        
+<span class="nc bnc" id="L417" title="All 2 branches missed.">        if (det &lt;= 0) {</span>
+<span class="nc" id="L418">            log.severe(&quot;error while extracting ellipse parameters&quot;);</span>
+<span class="nc" id="L419">            return null;</span>
+        }
+        
+<span class="nc" id="L422">        SimpleMatrix qMatrix = new SimpleMatrix(q);</span>
+        
+<span class="nc" id="L424">        SimpleMatrix bs = (qMatrix.transpose()).mult(bb);</span>
+        
+<span class="nc" id="L426">        double alpha = Math.atan2(q.get(1, 0), q.get(0, 0));</span>
+        
+<span class="nc" id="L428">        SimpleMatrix numer = new SimpleMatrix(d);</span>
+<span class="nc" id="L429">        numer = numer.scale(-2.);</span>
+<span class="nc" id="L430">        SimpleMatrix zs = numer.solve(bs);</span>
+        
+<span class="nc" id="L432">        SimpleMatrix z = qMatrix.mult(zs);</span>
+        
+<span class="nc" id="L434">        SimpleMatrix h = bs.transpose().mult(zs);</span>
+<span class="nc" id="L435">        h = h.divide(-2.);</span>
+<span class="nc" id="L436">        h = h.minus(c);</span>
+
+<span class="nc" id="L438">        double aParam = Math.sqrt(h.get(0, 0)/d.get(0, 0));</span>
+<span class="nc" id="L439">        double bParam = Math.sqrt(h.get(0, 0)/d.get(1, 1));</span>
+        
+<span class="nc" id="L441">        double z0 = z.get(0, 0);</span>
+<span class="nc" id="L442">        double z1 = z.get(1, 0);</span>
+        
+        /*
+        TODO: check this
+        making a correction for aParam &lt; bParam
+        */
+<span class="nc bnc" id="L448" title="All 2 branches missed.">        if (aParam &lt; bParam) {</span>
+<span class="nc" id="L449">            double swap = aParam;</span>
+<span class="nc" id="L450">            aParam = bParam;</span>
+<span class="nc" id="L451">            bParam = swap;</span>
+<span class="nc" id="L452">            alpha += (Math.PI/2.);</span>
+        }
+        
+<span class="nc" id="L455">        return new double[]{z0, z1, aParam, bParam, alpha};</span>
+    }
+    
+    /**
+     * compute the statistics of the residuals of (xP,yP) from an ellipse 
+     * described by the given parameters.
+    
+     * @param xP
+     * @param yP
+     * @param xCenterParam
+     * @param yCenterParam
+     * @param aParam
+     * @param bParam
+     * @param alphaParam
+     * @return new double[avgResid, stDevResid]
+     */
+    public double[] calculateEllipseResidualStats(float[] xP, float[] yP, 
+        float xCenterParam, float yCenterParam, float aParam, float bParam, 
+        float alphaParam) {
+        
+<span class="nc bnc" id="L475" title="All 2 branches missed.">        if (bParam &gt;= aParam) {</span>
+<span class="nc" id="L476">            throw new IllegalArgumentException(&quot;for an ellipse, a &lt; b&quot;);</span>
+        }
+        
+<span class="nc" id="L479">        double[][] translated = new double[xP.length][];</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        for (int row = 0; row &lt; xP.length; row++) {</span>
+<span class="nc" id="L481">            translated[row] = new double[]{xP[row] - xCenterParam, </span>
+                yP[row] - yCenterParam};
+        }
+  
+<span class="nc" id="L485">        double sine = Math.sin(alphaParam);</span>
+<span class="nc" id="L486">        double cosine = Math.cos(alphaParam);</span>
+        
+<span class="nc" id="L488">        SimpleMatrix q = new SimpleMatrix(2, 2);</span>
+<span class="nc" id="L489">        q.setRow(0, 0, cosine, -1*sine);</span>
+<span class="nc" id="L490">        q.setRow(1, 0, sine, cosine);</span>
+  
+<span class="nc" id="L492">        SimpleMatrix transformed = (new SimpleMatrix(translated)).mult(q);</span>
+                
+        // c^2 = a^2 - b^2 and focii are at (+-c, 0)
+<span class="nc" id="L495">        double c = Math.sqrt(aParam*aParam - bParam*bParam);</span>
+        
+<span class="nc" id="L497">        double[] resid = new double[xP.length];</span>
+                
+<span class="nc bnc" id="L499" title="All 2 branches missed.">        for (int row = 0; row &lt; xP.length; row++) {</span>
+            
+<span class="nc" id="L501">            double xPoint = transformed.get(row, 0);</span>
+<span class="nc" id="L502">            double yPoint = transformed.get(row, 1);</span>
+            
+            /*
+            compute the residual as the difference between 
+            the point to the 2 foci (+-c, 0) and the value 2*a.
+            2*a = dist to F1 + dist to F2 for any point on the ellipse
+            */
+            
+<span class="nc" id="L510">            double diffX1 = xPoint - c;</span>
+<span class="nc" id="L511">            double diffX0 = xPoint - -c;</span>
+                        
+<span class="nc" id="L513">            double distF1 = Math.sqrt(diffX1*diffX1 + yPoint*yPoint);</span>
+            
+<span class="nc" id="L515">            double distF0 = Math.sqrt(diffX0*diffX0 + yPoint*yPoint);</span>
+            
+<span class="nc" id="L517">            double residSum = 2.*aParam - (distF1 + distF0);</span>
+                        
+<span class="nc" id="L519">            resid[row] = residSum;</span>
+        }
+        
+<span class="nc" id="L522">        double[] avgStdDev = MiscMath.getAvgAndStDev(resid);</span>
+                
+<span class="nc" id="L524">        return new double[]{avgStdDev[0], avgStdDev[1]};</span>
+    }
+    
+    public void plotEllipseAndPoints(Set&lt;PairInt&gt; points, 
+        float xCenterParam, float yCenterParam, float aParam, float bParam, 
+        float alphaParam, int xMin, int xMax, int yMin, int yMax,
+        int plotNumber, String plotLabel) throws IOException {
+        
+<span class="nc" id="L532">        float[] ellipseX = new float[360];</span>
+<span class="nc" id="L533">        float[] ellipseY = new float[360];</span>
+<span class="nc" id="L534">        double ca = Math.cos(alphaParam);</span>
+<span class="nc" id="L535">        double sa = Math.sin(alphaParam);</span>
+            
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        for (int angle = 0; angle &lt; 360; angle++) {</span>
+<span class="nc" id="L538">            double theta = ((double)angle) * Math.PI/180.;</span>
+<span class="nc" id="L539">            double ct = Math.cos(theta);</span>
+<span class="nc" id="L540">            double st = Math.sin(theta);</span>
+<span class="nc" id="L541">            double g = xCenterParam + (aParam * ca * ct) - (bParam * sa * st);</span>
+<span class="nc" id="L542">            ellipseX[angle] = (float)g;</span>
+<span class="nc" id="L543">            double h = yCenterParam + (aParam * sa * ct) + (bParam * ca * st);</span>
+<span class="nc" id="L544">            ellipseY[angle] = (float)h;</span>
+        }
+        
+<span class="nc" id="L547">        float[] xp = new float[points.size()];</span>
+<span class="nc" id="L548">        float[] yp = new float[xp.length];</span>
+<span class="nc" id="L549">        int i = 0;</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L551">            xp[i] = p.getX();</span>
+<span class="nc" id="L552">            yp[i] = p.getY();</span>
+<span class="nc" id="L553">            i++;</span>
+<span class="nc" id="L554">        }</span>
+        
+<span class="nc" id="L556">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xMin, xMax, </span>
+            yMin, yMax);
+        
+<span class="nc" id="L559">        plotter.addPlot(xp, yp, ellipseX, ellipseY, plotLabel);</span>
+        
+<span class="nc" id="L561">        String fileName = plotter.writeFile(Integer.valueOf(plotNumber));</span>
+        
+<span class="nc" id="L563">        log.info(&quot;wrote to file: &quot; + fileName);</span>
+<span class="nc" id="L564">    }</span>
+        
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

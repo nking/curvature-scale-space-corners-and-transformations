@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FixedSizeSortedVector.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">FixedSizeSortedVector.java</span></div><h1>FixedSizeSortedVector.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
+/**
+ * a class to hold a fixed number of items of type T which are kept in a sorted
+ * stated.
+ *&lt;pre&gt;
+ * runtime complexity is:
+ *     O(N * (lg_2(k) + smaller than k))
+ * where k is the fixed capacity and N is the number of times add is used.
+ * 
+ * worse case runtime complexity is O(N * (k + lg_2(k)))
+ * best case runtime complexity is O(N * (1 + lg_2(k)))
+ *&lt;/pre&gt;
+ * @author nichole
+ * @param &lt;T&gt; class type to be held and sorted by this class.  It must implement
+ * Comparable.
+ */
+@SuppressWarnings({&quot;unchecked&quot;})
+public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
+
+<span class="fc" id="L24">    protected T[] a = null;</span>
+
+    protected final int size;
+
+    protected int n;
+
+    protected int availSlot;
+
+<span class="fc" id="L32">    public FixedSizeSortedVector(int fixedCapacity, Class&lt;T&gt; classTypeToHold) {</span>
+
+<span class="fc" id="L34">        size = fixedCapacity;</span>
+
+<span class="fc" id="L36">        n = 0;</span>
+
+<span class="fc" id="L38">        availSlot = -1;</span>
+
+<span class="fc" id="L40">        a = (T[]) Array.newInstance(classTypeToHold, size);</span>
+
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * add value to the fixed size sorted list using (T).compareTo to order
+     * the items in the internal list.
+     * 
+     * runtime complexity is O(log_2(capacity) + less than capacity).
+     *
+     * @param value
+     */
+    public void add(T value) {
+
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (value == null) {</span>
+<span class="nc" id="L55">            return;</span>
+        }
+
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (n &lt; a.length) {</span>
+
+<span class="fc" id="L60">            availSlot = n;</span>
+            
+<span class="fc" id="L62">            insertIntoOpenSlot(value);</span>
+            
+        } else {
+
+            // compare to last item in array and return if this is a worse fit
+<span class="fc" id="L67">            int comp = value.compareTo(a[n - 1]);</span>
+
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (comp != -1) {</span>
+<span class="fc" id="L70">                return;</span>
+            }
+
+            // free up the last slot
+<span class="fc" id="L74">            availSlot = n - 1;</span>
+
+<span class="fc" id="L76">            n--;</span>
+
+            // insert value into array at position found by binarySearch
+<span class="fc" id="L79">            insertIntoOpenSlot(value);</span>
+        }
+<span class="fc" id="L81">    }</span>
+
+    /**
+     * Insert the value into the list while maintaining the sorted state
+     * of the list.  
+     * @param value
+     */
+    private void insertIntoOpenSlot(T value) {
+
+<span class="fc" id="L90">        int insIdx = Arrays.binarySearch(a, 0, n, value);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (insIdx &lt; 0) {</span>
+<span class="fc" id="L92">            insIdx *= -1;</span>
+<span class="fc" id="L93">            insIdx--;</span>
+        }
+
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (insIdx == availSlot) {</span>
+
+<span class="fc" id="L98">            a[availSlot] = value;</span>
+
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        } else if (insIdx &lt; availSlot) {</span>
+
+            // move all items from insIdx to availSlot down by 1
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            for (int i = (availSlot - 1); i &gt;= insIdx; i--) {</span>
+<span class="fc" id="L104">                a[i + 1] = a[i];</span>
+            }
+
+<span class="fc" id="L107">            a[insIdx] = value;</span>
+
+        } else {
+
+<span class="nc" id="L111">            int end = insIdx - 1;</span>
+
+            // move items up from availSlot +1 to insIdx - 1
+            // then insert value into insIdx - 1
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            for (int i = availSlot; i &lt; end; i++) {</span>
+<span class="nc" id="L116">                a[i] = a[i + 1];</span>
+            }
+
+<span class="nc" id="L119">            a[insIdx - 1] = value;</span>
+        }
+
+<span class="fc" id="L122">        n++;</span>
+
+<span class="fc" id="L124">        availSlot = -1;</span>
+<span class="fc" id="L125">    }</span>
+
+    /**
+     * get the internal array for the sorted list.  note this is not a copy in
+     * order to keep the use small, so do not edit it and continue to use
+     * the add method.
+     *
+     * runtime complexity is O(1)
+     *
+     * @return
+     */
+    public T[] getArray() {
+
+<span class="fc" id="L138">        return a;</span>
+    }
+    
+    /**
+     * return the number of items in the internal array.  if the array is not
+     * yet filled, the return will be less than the capacity, else will
+     * be the same as the capacity.
+     * @return 
+     */
+    public int getNumberOfItems() {
+<span class="fc" id="L148">        return n;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

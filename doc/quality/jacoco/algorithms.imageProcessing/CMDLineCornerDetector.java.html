@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMDLineCornerDetector.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CMDLineCornerDetector.java</span></div><h1>CMDLineCornerDetector.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMDLineCornerDetector.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CMDLineCornerDetector.java</span></div><h1>CMDLineCornerDetector.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
 import java.io.BufferedWriter;
@@ -66,7 +66,7 @@ public class CMDLineCornerDetector {
 <span class="nc bnc" id="L66" title="All 2 branches missed.">            for (int i = 0; i &lt; corners.getN(); i++) {</span>
                 
 <span class="nc" id="L68">                String line = String.format(&quot;%d\t%d&quot;, corners.getX(i), </span>
-                    corners.getY(i));
+<span class="nc" id="L69">                    corners.getY(i));</span>
 <span class="nc" id="L70">                writer.write(line);</span>
 <span class="nc" id="L71">                writer.write(eol);</span>
                 
@@ -136,7 +136,7 @@ public class CMDLineCornerDetector {
 <span class="nc" id="L136">            System.exit(1);</span>
         }
         
-<span class="nc" id="L139">        CMDLineCornerDetector cmdLineInvoker = new CMDLineCornerDetector();</span>
+<span class="fc" id="L139">        CMDLineCornerDetector cmdLineInvoker = new CMDLineCornerDetector();</span>
               
 <span class="nc" id="L141">        filePath = cmdLineInvoker.checkFilePath(filePath);</span>
        
@@ -146,81 +146,82 @@ public class CMDLineCornerDetector {
         }
         
 <span class="nc" id="L148">        String imageFileName = </span>
-            (new File(filePath)).toPath().getFileName().toString();
+<span class="nc" id="L149">            (new File(filePath)).toPath().getFileName().toString();</span>
 <span class="nc" id="L150">        imageFileName = imageFileName.substring(0, imageFileName.length() -4);</span>
         
-<span class="nc" id="L152">        GreyscaleImage img = null;</span>
+<span class="nc" id="L152">        ImageExt img = null;</span>
         try {
-<span class="nc" id="L154">             img = ImageIOHelper.readImageAsGrayScaleG(filePath);</span>
+<span class="nc" id="L154">             img = ImageIOHelper.readImageExt(filePath);</span>
              
-<span class="nc" id="L156">             CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(img);</span>
+<span class="nc" id="L156">             CurvatureScaleSpaceCornerDetector detector = new </span>
+                 CurvatureScaleSpaceCornerDetector(img);
                
-<span class="nc bnc" id="L158" title="All 2 branches missed.">             if (useLineDrawingMode) {</span>
-<span class="nc" id="L159">                 detector.useLineDrawingMode();</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">             if (useLineDrawingMode) {</span>
+<span class="nc" id="L160">                 detector.useLineDrawingMode();</span>
              }
              
-<span class="nc" id="L162">             detector.findCorners();</span>
+<span class="nc" id="L163">             detector.findCorners();</span>
         
-<span class="nc" id="L164">             PairIntArray corners = </span>
-                 detector.getCornersInOriginalReferenceFrame();
+<span class="nc" id="L165">             PairIntArray corners = </span>
+<span class="nc" id="L166">                 detector.getCornersInOriginalReferenceFrame();</span>
              
-<span class="nc bnc" id="L167" title="All 2 branches missed.">             if (writeTextOutput) {                 </span>
-<span class="nc" id="L168">                 cmdLineInvoker.writeCornersFile(corners, imageFileName);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">             if (writeTextOutput) {                 </span>
+<span class="nc" id="L169">                 cmdLineInvoker.writeCornersFile(corners, imageFileName);</span>
              }
              
-<span class="nc bnc" id="L171" title="All 2 branches missed.">             if (writeImageOutput) {</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">             if (writeImageOutput) {</span>
                  
-<span class="nc" id="L173">                 Image image = ImageIOHelper.readImageAsGrayScale(filePath);</span>
+<span class="nc" id="L174">                 Image image = ImageIOHelper.readImageAsGrayScale(filePath);</span>
                                   
-<span class="nc bnc" id="L175" title="All 2 branches missed.">                 if (includeEdgesInImageOutput) {</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                 if (includeEdgesInImageOutput) {</span>
                      
-<span class="nc" id="L177">                     List&lt;PairIntArray&gt; edges = </span>
-                         detector.getEdgesInOriginalReferenceFrame();
+<span class="nc" id="L178">                     List&lt;PairIntArray&gt; edges = </span>
+<span class="nc" id="L179">                         detector.getEdgesInOriginalReferenceFrame();</span>
                      
-<span class="nc" id="L180">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges, </span>
+<span class="nc" id="L181">                     ImageIOHelper.addAlternatingColorCurvesToImage(edges, </span>
                          image);
                  }
                  
-<span class="nc" id="L184">                 ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);</span>
+<span class="nc" id="L185">                 ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);</span>
                  
-<span class="nc" id="L186">                 String outFilePath = cwd + &quot;corners_&quot; + imageFileName + &quot;.png&quot;;</span>
+<span class="nc" id="L187">                 String outFilePath = cwd + &quot;corners_&quot; + imageFileName + &quot;.png&quot;;</span>
                  
-<span class="nc" id="L188">                 ImageIOHelper.writeOutputImage(outFilePath, image);</span>
+<span class="nc" id="L189">                 ImageIOHelper.writeOutputImage(outFilePath, image);</span>
                  
-<span class="nc" id="L190">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
+<span class="nc" id="L191">                 System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
              }
 
-<span class="nc" id="L193">             System.out.println(eol);</span>
+<span class="nc" id="L194">             System.out.println(eol);</span>
              
-<span class="nc" id="L195">        } catch (Exception e) {</span>
-<span class="nc" id="L196">            System.err.println(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="nc" id="L197">            System.exit(1);</span>
-<span class="nc" id="L198">        }</span>
-<span class="nc" id="L199">    }</span>
+<span class="nc" id="L196">        } catch (Exception e) {</span>
+<span class="nc" id="L197">            System.err.println(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="nc" id="L198">            System.exit(1);</span>
+<span class="nc" id="L199">        }</span>
+<span class="nc" id="L200">    }</span>
     
     public static void printUsage() {
                 
-<span class="nc" id="L203">        System.out.println(eol + &quot;Runner to invoke corner detection within an image.&quot;);</span>
-<span class="nc" id="L204">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
-<span class="nc" id="L205">        System.out.println(&quot;  -image1=path_to_image&quot;);</span>
-<span class="nc" id="L206">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
-<span class="nc" id="L207">        System.out.println(&quot;  -text_output&quot;);</span>
-<span class="nc" id="L208">        System.out.println(&quot;      writes a file called corners.tsv in the&quot;);</span>
-<span class="nc" id="L209">        System.out.println(&quot;      current directory.&quot;);</span>
-<span class="nc" id="L210">        System.out.println(&quot;  -mark_image&quot;);</span>
-<span class="nc" id="L211">        System.out.println(&quot;      writes a file called corners.png in the&quot;);</span>
-<span class="nc" id="L212">        System.out.println(&quot;      current directory. It's the image with&quot;);</span>
-<span class="nc" id="L213">        System.out.println(&quot;      found corners overplotted.&quot;);</span>
-<span class="nc" id="L214">        System.out.println(&quot;  -include_edges&quot;);</span>
-<span class="nc" id="L215">        System.out.println(&quot;      in the written corners.png, includes the&quot;);</span>
-<span class="nc" id="L216">        System.out.println(&quot;      edges in the image.&quot;);</span>
-<span class="nc" id="L217">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
-<span class="nc" id="L218">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
-<span class="nc" id="L219">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
-<span class="nc" id="L220">        System.out.println(eol</span>
+<span class="nc" id="L204">        System.out.println(eol + &quot;Runner to invoke corner detection within an image.&quot;);</span>
+<span class="nc" id="L205">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
+<span class="nc" id="L206">        System.out.println(&quot;  -image1=path_to_image&quot;);</span>
+<span class="nc" id="L207">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
+<span class="nc" id="L208">        System.out.println(&quot;  -text_output&quot;);</span>
+<span class="nc" id="L209">        System.out.println(&quot;      writes a file called corners.tsv in the&quot;);</span>
+<span class="nc" id="L210">        System.out.println(&quot;      current directory.&quot;);</span>
+<span class="nc" id="L211">        System.out.println(&quot;  -mark_image&quot;);</span>
+<span class="nc" id="L212">        System.out.println(&quot;      writes a file called corners.png in the&quot;);</span>
+<span class="nc" id="L213">        System.out.println(&quot;      current directory. It's the image with&quot;);</span>
+<span class="nc" id="L214">        System.out.println(&quot;      found corners overplotted.&quot;);</span>
+<span class="nc" id="L215">        System.out.println(&quot;  -include_edges&quot;);</span>
+<span class="nc" id="L216">        System.out.println(&quot;      in the written corners.png, includes the&quot;);</span>
+<span class="nc" id="L217">        System.out.println(&quot;      edges in the image.&quot;);</span>
+<span class="nc" id="L218">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
+<span class="nc" id="L219">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
+<span class="nc" id="L220">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
+<span class="nc" id="L221">        System.out.println(eol</span>
             + &quot;Note that default is to create corners.tsv in the currect directory&quot;);
-<span class="nc" id="L222">        System.out.println(eol);</span>
-<span class="nc" id="L223">    }</span>
+<span class="nc" id="L223">        System.out.println(eol);</span>
+<span class="nc" id="L224">    }</span>
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

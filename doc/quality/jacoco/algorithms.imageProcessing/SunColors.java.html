@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SunColors.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">SunColors.java</span></div><h1>SunColors.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.compGeometry.PointInPolygon;
+import algorithms.util.ArrayPair;
+import java.awt.Color;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="nc" id="L11">public class SunColors {</span>
+
+<span class="nc" id="L13">    private CIEChromaticity cieC = new CIEChromaticity();</span>
+        
+<span class="nc" id="L15">    private PointInPolygon pInPoly = new PointInPolygon();</span>
+        
+<span class="nc" id="L17">    private ArrayPair yellowBounds = cieC.getYellowPolynomial();</span>
+        
+<span class="nc" id="L19">    private float totRGBLimit = 0.2f * 768.f;</span>
+    
+<span class="nc" id="L21">    private boolean useDarkSkiesLogic = false;</span>
+   
+    public boolean isSunCenterColor(int r, int g, int b) {
+        
+<span class="nc bnc" id="L25" title="All 6 branches missed.">        if ((r &lt; 15) &amp;&amp; (g &lt; 15) &amp;&amp; (b &lt; 15)) {</span>
+<span class="nc" id="L26">            return false;</span>
+        }
+
+<span class="nc" id="L29">        float[] hsb = new float[3];</span>
+<span class="nc" id="L30">        Color.RGBtoHSB(r, g, b, hsb);</span>
+
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (useDarkSkiesLogic) {</span>
+            
+<span class="nc bnc" id="L34" title="All 4 branches missed.">            if ((hsb[1] &gt; 0.1f) &amp;&amp; (hsb[2] &gt; 0.25)) {</span>
+
+<span class="nc" id="L36">                float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);</span>
+                
+<span class="nc bnc" id="L38" title="All 2 branches missed.">                if (pInPoly.isInSimpleCurve(pixCIEXY[0], pixCIEXY[1],</span>
+<span class="nc" id="L39">                    yellowBounds.getX(), yellowBounds.getY(),</span>
+<span class="nc" id="L40">                    yellowBounds.getX().length)) {</span>
+
+<span class="nc" id="L42">                    return true;</span>
+                }
+<span class="nc" id="L44">            }</span>
+            
+        } else {
+            
+<span class="nc bnc" id="L48" title="All 8 branches missed.">            if ((r &gt;= 240) &amp;&amp; (hsb[2] &gt;= 0.87) &amp;&amp; (hsb[1] &lt; .30)</span>
+                &amp;&amp; ((r + g + b) &gt; totRGBLimit)) {
+
+<span class="nc" id="L51">                return true;</span>
+            }
+        }
+        
+<span class="nc" id="L55">        return false;</span>
+    }
+    
+    public boolean isSunCenterColor(ImageExt colorImg, int pixelCol, int pixelRow) {
+        
+<span class="nc" id="L60">        int idx = colorImg.getInternalIndex(pixelCol, pixelRow);</span>
+        
+<span class="nc" id="L62">        return isSunCenterColor(colorImg, idx);</span>
+    }
+    
+    public boolean isSunCenterColor(ImageExt colorImg, int pixelIndex) {
+                
+<span class="nc" id="L67">        float saturation = colorImg.getSaturation(pixelIndex);</span>
+<span class="nc" id="L68">        float brightness = colorImg.getBrightness(pixelIndex);</span>
+        
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (useDarkSkiesLogic) {</span>
+            
+<span class="nc bnc" id="L72" title="All 4 branches missed.">            if ((saturation &gt; 0.1f) &amp;&amp; (brightness &gt; 0.25)) {</span>
+
+<span class="nc" id="L74">                float cieX = colorImg.getCIEX(pixelIndex);</span>
+<span class="nc" id="L75">                float cieY = colorImg.getCIEY(pixelIndex);</span>
+                
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                if (pInPoly.isInSimpleCurve(cieX, cieY, yellowBounds.getX(), </span>
+<span class="nc" id="L78">                    yellowBounds.getY(), yellowBounds.getX().length)) {</span>
+
+<span class="nc" id="L80">                    return true;</span>
+                }
+<span class="nc" id="L82">            }</span>
+            
+        } else {
+            
+<span class="nc" id="L86">            float r = colorImg.getR(pixelIndex);</span>
+<span class="nc" id="L87">            float g = colorImg.getG(pixelIndex);</span>
+<span class="nc" id="L88">            float b = colorImg.getB(pixelIndex);</span>
+            
+<span class="nc bnc" id="L90" title="All 8 branches missed.">            if ((r &gt;= 240) &amp;&amp; (brightness &gt;= 0.87) &amp;&amp; (saturation &lt; .30)</span>
+                &amp;&amp; ((r + g + b) &gt; totRGBLimit)) {
+
+<span class="nc" id="L93">                return true;</span>
+            }
+        }
+        
+<span class="nc" id="L97">        return false;</span>
+    }
+     
+    public void useDarkSkiesLogic() {
+        
+<span class="nc" id="L102">        useDarkSkiesLogic = true;</span>
+<span class="nc" id="L103">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageExt.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageExt.java</span></div><h1>ImageExt.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.util.MatrixUtil;
+import java.awt.Color;
+
+/**
+ * image specialized to hold CIE 1931 xy chromaticity coordinates (colors) 
+ * and HSB colors populated on demand.
+ * 
+ * @author nichole
+ */
+public class ImageExt extends Image {
+    
+    // TODO: consider more compact forms of these numbers.
+    // scaled to integers that are small in range?
+    // or float converted to bit format IEEE 754 could be a small enough
+    // range to use shift and add storage in an integer?  
+    // any change would need to be worth the trade-off in space for increasing
+    // number of steps to get the original number.
+    
+    protected float[] cieX;
+    protected float[] cieY;
+    protected float[] hue;
+    protected float[] saturation;
+    protected float[] brightness;
+    
+    /**
+     * luma is the y of yuv.
+     */
+    protected float[] luma;
+    
+    //TODO: this could be a bit vector instead
+    private boolean[] extPopulated;
+    
+<span class="fc" id="L35">    private int radiusForPopulateOnDemand = 1;</span>
+    
+<span class="fc" id="L37">    static public final double[][] rgbToLumaMatrix = new double[3][];</span>
+    static {
+<span class="fc" id="L39">        rgbToLumaMatrix[0] = new double[]{0.256, 0.504, 0.098};</span>
+<span class="fc" id="L40">        rgbToLumaMatrix[1] = new double[]{-0.148, -0.291, 0.439};</span>
+<span class="fc" id="L41">        rgbToLumaMatrix[2] = new double[]{0.439, -0.368, -0.072};</span>
+<span class="fc" id="L42">    }</span>
+    
+<span class="fc" id="L44">    protected CIEChromaticity cieC = new CIEChromaticity();</span>
+        
+    /**
+     * @param theWidth
+     * @param theHeight
+     */
+    public ImageExt (int theWidth, int theHeight) {
+        
+<span class="fc" id="L52">        super(theWidth, theHeight);</span>
+<span class="fc" id="L53">    }</span>
+    
+    protected void init() {
+        
+<span class="fc" id="L57">        this.cieX = new float[nPixels];</span>
+<span class="fc" id="L58">        this.cieY = new float[nPixels];</span>
+<span class="fc" id="L59">        this.hue = new float[nPixels];</span>
+<span class="fc" id="L60">        this.saturation = new float[nPixels];</span>
+<span class="fc" id="L61">        this.brightness = new float[nPixels];</span>
+<span class="fc" id="L62">        this.luma = new float[nPixels];</span>
+        
+<span class="fc" id="L64">        this.extPopulated = new boolean[nPixels];</span>
+        
+<span class="fc" id="L66">    }</span>
+    
+    /**
+     * set the block radius of other pixel color calculations when a pixel's 
+     * colors are calculated (populated indirectly from a get method when the 
+     * color has not yet been calculated).  In other words, if
+     * radius is 0, only the specified pixel's color will be calculated, else if
+     * radius is 1 for example, the pixel colors of the 8 surrounding neighbors 
+     * will also be calculated.  By default, the instance has a radius of 1.
+     * 
+     * @param radius 
+     */
+    public void setRadiusForPopulateOnDemand(int radius) {
+<span class="fc" id="L79">        this.radiusForPopulateOnDemand = radius;</span>
+<span class="fc" id="L80">    }</span>
+    
+    public float getCIEX(int col, int row) {
+        
+<span class="fc" id="L84">        int idx = getInternalIndex(col, row);</span>
+        
+<span class="fc" id="L86">        return getCIEX(idx);</span>
+    }
+    
+    public float getCIEY(int col, int row) {
+        
+<span class="fc" id="L91">        int idx = getInternalIndex(col, row);</span>
+        
+<span class="fc" id="L93">        return getCIEY(idx);</span>
+    }
+  
+    public float getHue(int col, int row) {
+        
+<span class="fc" id="L98">        int idx = getInternalIndex(col, row);</span>
+        
+<span class="fc" id="L100">        return getHue(idx);</span>
+    }
+    
+    public float getSaturation(int col, int row) {
+        
+<span class="fc" id="L105">        int idx = getInternalIndex(col, row);</span>
+        
+<span class="fc" id="L107">        return getSaturation(idx);</span>
+    }
+    
+    public float getBrightness(int col, int row) {
+        
+<span class="fc" id="L112">        int idx = getInternalIndex(col, row);</span>
+       
+<span class="fc" id="L114">        return getBrightness(idx);</span>
+    }
+    
+    public float getLuma(int col, int row) {
+        
+<span class="fc" id="L119">        int idx = getInternalIndex(col, row);</span>
+       
+<span class="fc" id="L121">        return getLuma(idx);</span>
+    }
+    
+    public float getCIEX(int internalIndex) {
+                
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L127">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (!extPopulated[internalIndex]) {</span>
+<span class="fc" id="L132">            calculateColorIncludingNeighbors(internalIndex, </span>
+                radiusForPopulateOnDemand);
+        }
+       
+<span class="fc" id="L136">        return cieX[internalIndex];</span>
+    }
+    
+    public float getCIEY(int internalIndex) {
+                
+<span class="pc bpc" id="L141" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L142">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (!extPopulated[internalIndex]) {</span>
+<span class="nc" id="L147">            calculateColorIncludingNeighbors(internalIndex, </span>
+                radiusForPopulateOnDemand);
+        }
+       
+<span class="fc" id="L151">        return cieY[internalIndex];</span>
+    }
+    
+    public float getHue(int internalIndex) {
+                
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L157">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (!extPopulated[internalIndex]) {</span>
+<span class="nc" id="L162">            calculateColorIncludingNeighbors(internalIndex, </span>
+                radiusForPopulateOnDemand);
+        }
+       
+<span class="fc" id="L166">        return hue[internalIndex];</span>
+    }
+    
+    public float getSaturation(int internalIndex) {
+                
+<span class="pc bpc" id="L171" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L172">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (!extPopulated[internalIndex]) {</span>
+<span class="nc" id="L177">            calculateColorIncludingNeighbors(internalIndex, </span>
+                radiusForPopulateOnDemand);
+        }
+       
+<span class="fc" id="L181">        return saturation[internalIndex];</span>
+    }
+    
+    public float getBrightness(int internalIndex) {
+                
+<span class="pc bpc" id="L186" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L187">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (!extPopulated[internalIndex]) {</span>
+<span class="nc" id="L192">            calculateColorIncludingNeighbors(internalIndex, </span>
+                radiusForPopulateOnDemand);
+        }
+       
+<span class="fc" id="L196">        return brightness[internalIndex];</span>
+    }
+    
+    public float getLuma(int internalIndex) {
+                
+<span class="pc bpc" id="L201" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L202">            throw new IllegalArgumentException(</span>
+                &quot;internalIndex is out of bounds:&quot;);
+        }
+        
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (!extPopulated[internalIndex]) {</span>
+<span class="nc" id="L207">            calculateColorIncludingNeighbors(internalIndex, </span>
+                radiusForPopulateOnDemand);
+        }
+       
+<span class="fc" id="L211">        return luma[internalIndex];</span>
+    }
+  
+    protected void calculateColor(int idx) {
+        
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        if (extPopulated[idx]) {</span>
+<span class="fc" id="L217">            return;</span>
+        }
+        
+<span class="fc" id="L220">        int rPix = r[idx];</span>
+<span class="fc" id="L221">        int gPix = g[idx];</span>
+<span class="fc" id="L222">        int bPix = b[idx];</span>
+
+<span class="fc" id="L224">        float[] xy = cieC.rgbToXYChromaticity(rPix, gPix, bPix);</span>
+        
+<span class="fc" id="L226">        cieX[idx] = xy[0];</span>
+<span class="fc" id="L227">        cieY[idx] = xy[1];</span>
+        
+<span class="fc" id="L229">        float[] hsb = new float[3];</span>
+<span class="fc" id="L230">        Color.RGBtoHSB(rPix, gPix, bPix, hsb);</span>
+       
+<span class="fc" id="L232">        hue[idx] = hsb[0];</span>
+<span class="fc" id="L233">        saturation[idx] = hsb[1];</span>
+<span class="fc" id="L234">        brightness[idx] = hsb[2];</span>
+        
+<span class="fc" id="L236">        double[] yuv = MatrixUtil.multiply(rgbToLumaMatrix, </span>
+            new double[]{rPix, gPix, bPix});
+        
+<span class="fc" id="L239">        luma[idx] = (float)yuv[0];</span>
+        
+<span class="fc" id="L241">        extPopulated[idx] = true;</span>
+<span class="fc" id="L242">    }</span>
+    
+    public void calculateColorIncludingNeighbors(int idx, int neighborRadius) {
+        
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (neighborRadius == 0) {</span>
+<span class="fc" id="L247">            calculateColor(idx);</span>
+<span class="fc" id="L248">            return;</span>
+        }
+        
+<span class="fc" id="L251">        int col0 = this.getCol(idx);</span>
+<span class="fc" id="L252">        int row0 = this.getRow(idx);</span>
+        
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int col = (col0 - neighborRadius); col &lt;= (col0 + neighborRadius); </span>
+<span class="fc" id="L255">            col++) {</span>
+            
+<span class="fc bfc" id="L257" title="All 4 branches covered.">            if ((col &lt; 0) || (col &gt; (this.width - 1))) {</span>
+<span class="fc" id="L258">                continue;</span>
+            }
+            
+<span class="fc bfc" id="L261" title="All 2 branches covered.">            for (int row = (row0 - neighborRadius); row &lt;= </span>
+<span class="fc" id="L262">                (row0 + neighborRadius); row++) {</span>
+                
+<span class="fc bfc" id="L264" title="All 4 branches covered.">                if ((row &lt; 0) || (row &gt; (this.height - 1))) {</span>
+<span class="fc" id="L265">                    continue;</span>
+                }
+                
+<span class="fc" id="L268">                int index = getInternalIndex(col, row);</span>
+                
+<span class="fc" id="L270">                calculateColor(index);</span>
+            }
+        }
+<span class="fc" id="L273">    }</span>
+  
+    public Image copyImage() {
+       
+<span class="fc" id="L277">        ImageExt img2 = new ImageExt(getWidth(), getHeight());</span>
+        
+<span class="fc" id="L279">        System.arraycopy(r, 0, img2.r, 0, nPixels);</span>
+<span class="fc" id="L280">        System.arraycopy(g, 0, img2.g, 0, nPixels);</span>
+<span class="fc" id="L281">        System.arraycopy(b, 0, img2.b, 0, nPixels);</span>
+        
+<span class="fc" id="L283">        System.arraycopy(cieX, 0, img2.cieX, 0, nPixels);</span>
+<span class="fc" id="L284">        System.arraycopy(cieY, 0, img2.cieY, 0, nPixels);</span>
+<span class="fc" id="L285">        System.arraycopy(hue, 0, img2.hue, 0, nPixels);</span>
+<span class="fc" id="L286">        System.arraycopy(saturation, 0, img2.saturation, 0, nPixels);</span>
+<span class="fc" id="L287">        System.arraycopy(brightness, 0, img2.brightness, 0, nPixels);</span>
+<span class="fc" id="L288">        System.arraycopy(luma, 0, img2.luma, 0, nPixels);</span>
+<span class="fc" id="L289">        System.arraycopy(extPopulated, 0, img2.extPopulated, 0, nPixels);</span>
+       
+<span class="fc" id="L291">        return img2;</span>
+    }
+   
+    public void resetTo(Image copyThis) {
+        
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">        if (copyThis.getNPixels() != nPixels) {</span>
+<span class="nc" id="L297">            throw new IllegalArgumentException(&quot;cannot convert this fixed &quot; </span>
+                + &quot;image size to the size of copyThis&quot;);
+        }
+        
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        if (!(copyThis instanceof ImageExt)) {</span>
+<span class="nc" id="L302">            throw new IllegalArgumentException(</span>
+            &quot;copyThis has to be instance of ImageWithCIE&quot;);
+        }
+        
+<span class="fc" id="L306">        System.arraycopy(copyThis.r, 0, r, 0, nPixels);</span>
+<span class="fc" id="L307">        System.arraycopy(copyThis.g, 0, g, 0, nPixels);</span>
+<span class="fc" id="L308">        System.arraycopy(copyThis.b, 0, b, 0, nPixels);</span>
+        
+<span class="fc" id="L310">        System.arraycopy(((ImageExt)copyThis).cieX, 0, cieX, 0, nPixels);</span>
+<span class="fc" id="L311">        System.arraycopy(((ImageExt)copyThis).cieY, 0, cieY, 0, nPixels);</span>
+<span class="fc" id="L312">        System.arraycopy(((ImageExt)copyThis).hue, 0, hue, 0, nPixels);</span>
+<span class="fc" id="L313">        System.arraycopy(((ImageExt)copyThis).saturation, 0, saturation, 0, </span>
+            nPixels);
+<span class="fc" id="L315">        System.arraycopy(((ImageExt)copyThis).brightness, 0, brightness, 0, </span>
+            nPixels);
+<span class="fc" id="L317">        System.arraycopy(((ImageExt)copyThis).luma, 0, luma, 0, nPixels);</span>
+<span class="fc" id="L318">        System.arraycopy(((ImageExt)copyThis).extPopulated, 0, extPopulated, 0, </span>
+            nPixels);
+<span class="fc" id="L320">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

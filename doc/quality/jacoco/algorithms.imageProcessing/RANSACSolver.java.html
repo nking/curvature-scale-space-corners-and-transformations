@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RANSACSolver.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">RANSACSolver.java</span></div><h1>RANSACSolver.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairFloatArray;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.logging.Logger;
+import org.ejml.simple.SimpleMatrix;
+
+/**
+ * given matched point lists, determine the best epipolar solution using a
+ * 7-point epipolar calculation and random draws of 7 points from the
+ * matched point lists under the assumption that some of the matched points
+ * are not true (correct) matches.
+ *
+ * &lt;pre&gt;
+ * useful reading:
+ * http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
+ * and
+ * http://www.dtic.mil/dtic/tr/fulltext/u2/a460585.pdf
+ * &lt;/pre&gt;
+ *
+ * @author nichole
+ */
+<span class="nc" id="L27">public class RANSACSolver {</span>
+
+<span class="nc" id="L29">    private boolean debug = true;</span>
+
+<span class="nc" id="L31">    private double generalTolerance = 5;</span>
+
+<span class="nc" id="L33">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    /**
+     * calculate the epipolar projection among the given points with the
+     * assumption that some of the points in the matched lists are not
+     * true matches.
+     *
+     * @param matchedLeftXY
+     * @param matchedRightXY
+     * @param outputLeftXY
+     * @param outputRightXY
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    public StereoProjectionTransformerFit calculateEpipolarProjection(
+        PairFloatArray matchedLeftXY, PairFloatArray matchedRightXY,
+        PairFloatArray outputLeftXY, PairFloatArray outputRightXY)
+        throws NoSuchAlgorithmException {
+
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if (matchedLeftXY == null) {</span>
+<span class="nc" id="L53">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (matchedRightXY == null) {</span>
+<span class="nc" id="L56">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (matchedLeftXY.getN() &lt; 7) {</span>
+            // cannot use this algorithm.
+<span class="nc" id="L60">            throw new IllegalArgumentException(</span>
+                &quot;the algorithms require 7 or more points.&quot;
+<span class="nc" id="L62">                + &quot; matchedLeftXY.n=&quot; + matchedLeftXY.getN());</span>
+        }
+
+<span class="nc" id="L65">        SimpleMatrix input1 =</span>
+<span class="nc" id="L66">            StereoProjectionTransformer.rewriteInto3ColumnMatrix(matchedLeftXY);</span>
+
+<span class="nc" id="L68">        SimpleMatrix input2 =</span>
+<span class="nc" id="L69">            StereoProjectionTransformer.rewriteInto3ColumnMatrix(matchedRightXY);</span>
+
+<span class="nc" id="L71">        return calculateEpipolarProjection(input1, input2,</span>
+            outputLeftXY, outputRightXY);
+    }
+
+    /**
+     * calculate the epipolar projection among the given points with the
+     * assumption that some of the points in the matched lists are not
+     * true matches.
+     *
+     * @param matchedLeftXY
+     * @param matchedRightXY
+     * @param outputLeftXY
+     * @param outputRightXY
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    public StereoProjectionTransformerFit calculateEpipolarProjection(
+        SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
+        PairFloatArray outputLeftXY, PairFloatArray outputRightXY)
+        throws NoSuchAlgorithmException {
+
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (matchedLeftXY == null) {</span>
+<span class="nc" id="L93">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (matchedRightXY == null) {</span>
+<span class="nc" id="L96">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (matchedLeftXY.numCols() &lt; 7) {</span>
+            // cannot use this algorithm.
+<span class="nc" id="L100">            throw new IllegalArgumentException(</span>
+                &quot;the algorithms require 7 or more points.&quot;
+<span class="nc" id="L102">                + &quot; matchedLeftXY.n=&quot; + matchedLeftXY.numCols());</span>
+        }
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (matchedLeftXY.numCols() != matchedRightXY.numCols()) {</span>
+<span class="nc" id="L105">            throw new IllegalArgumentException(</span>
+                &quot;matchedLeftXY and right bmust be the same size&quot;);
+        }
+
+        /*
+        -- randomly sample 7 points from nPoints
+        -- calculate the epipolar fundamental matrix from the 7
+        -- evaluate all nPoints against the epipolar projected lines
+           and keep each point which has error &lt; tolerance.
+           those points are a consensus of this model (the fundamental matrix)
+        -- if the number of points in the consensus is &gt; required, exit loop,
+           else repeat (note that each consensus is stored separately for
+           each iteration.  note that the loop is terminated if the number of
+           iterations has exceeded a predetermined maximum.
+        -- after exit from the loop, the largest consensus is used to
+           re-calculate the fundamental matrix as the last result.
+           note that if there aren't enough points in a consensus to
+           calculate the fundamental matrix, the result is null.
+
+           an improvement on the algorithm is to adaptively determine the
+           number of iterations necessary to find a large enough consensus.
+
+        ---------
+        Note, the random selection would ideally draw one combination of n!/(k!*(n-k)!))
+        possible subsets.  That requires an enumeration of each combination findable
+        by an O(1) operation.  Gosper's hack returns the unique subsets in an ordered
+        manner, but a way to access that (i.e. &quot;random access&quot;) would need to be made to have
+        truly uniform random selection.
+
+        Below, am using k draws of random numbers to create a combination of unique indexes
+        from n indexes.  The probability of selecting one unique combination within all
+        possible combinations is 1./(n!/(k!(n-k)!)).  Although that's for a single draw
+        rather than composed of k draws, it's close enough to see that the probability
+        of drawing the same combination is low, so have chosen to allow the possible repeat
+        evaluation of a set of numbers for now but the sort of the 7 numbers to
+        check for unique combination is considered in the calculation below.
+
+        Note, that a non-uniform random selection algorithm could be made by using
+        BigInteger and drawing random numbers between the low value of k bits set to 1 and
+        the high value of n bits with the highest k bits set to 1.
+        Upon each random selection within that range, one could find the next lowest number
+        with k bits set to 1 (find lowest set bit, change it to 0 and set the 2 below it to
+        1 etc to total k set bits).
+        If that bitstring has already been selected randomly, can use Gosper's hack
+        to return the next k=7 bitstring.
+        The universe of numbers drawn from is larger than the total number of
+        possible combinations, so the process is a non-uniform random selection.
+
+        The current implementation of drawing k=7 unique indexes randomly and then sorting
+        their order is 7 random operations * 7 * log_2(7) steps so 7 * 7 * 20 steps for a single
+        iteration of selecting a subset.
+          The BigInteger random suggestion above in contrast would be the
+          BigInteger random operation plus up to 6 set bit operations plus possibly
+          half a dozen bit operations from Gosper's hack if need to
+          select again, so the BigInteger implementation might be useful.
+
+        */
+
+<span class="nc" id="L163">        int nSet = 7;</span>
+
+<span class="nc" id="L165">        int nPoints = matchedLeftXY.numCols();</span>
+
+<span class="nc" id="L167">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="nc" id="L168">        long seed = System.currentTimeMillis();</span>
+<span class="nc" id="L169">        log.info(&quot;SEED=&quot; + seed);</span>
+<span class="nc" id="L170">        sr.setSeed(seed);</span>
+
+<span class="nc" id="L172">        int[] selected = new int[nSet];</span>
+
+<span class="nc" id="L174">        PairFloatArray xy1 = null;</span>
+<span class="nc" id="L175">        PairFloatArray xy2 = null;</span>
+
+<span class="nc" id="L177">        double tolerance = generalTolerance;</span>
+
+        // ====== find matched pairs incremently, and best among only 7 point match ====
+
+<span class="nc" id="L181">        StereoProjectionTransformerFit bestFit = null;</span>
+<span class="nc" id="L182">        List&lt;Integer&gt; inlierIndexes = null;</span>
+
+<span class="nc" id="L184">        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();</span>
+
+        /*
+        could consider a threshold max iteration based upon the image size such
+        as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
+        which uses 0.6% of the maximum image dimension.
+        */
+<span class="nc" id="L191">        int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(</span>
+            nSet);
+
+<span class="nc" id="L194">        float convergence = 0.5f * matchedLeftXY.numCols();</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (convergence &lt; 7) {</span>
+<span class="nc" id="L196">            convergence = 7;</span>
+        }
+
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (nPoints == 7) {</span>
+<span class="nc" id="L200">            nMaxIter = 1;</span>
+        }
+
+<span class="nc" id="L203">        int nIter = 0;</span>
+
+<span class="nc bnc" id="L205" title="All 2 branches missed.">        for (int i = 0; i &lt; nMaxIter; i++) {</span>
+
+<span class="nc" id="L207">            MiscMath.chooseRandomly(sr, selected, nPoints);</span>
+
+<span class="nc" id="L209">            xy1 = new PairFloatArray();</span>
+<span class="nc" id="L210">            xy2 = new PairFloatArray();</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">            for (int j = 0; j &lt; selected.length; j++) {</span>
+<span class="nc" id="L212">                int idx = selected[j];</span>
+<span class="nc" id="L213">                xy1.add(</span>
+<span class="nc" id="L214">                    (float)matchedLeftXY.get(0, idx),</span>
+<span class="nc" id="L215">                    (float)matchedLeftXY.get(1, idx));</span>
+<span class="nc" id="L216">                xy2.add(</span>
+<span class="nc" id="L217">                    (float)matchedRightXY.get(0, idx),</span>
+<span class="nc" id="L218">                    (float)matchedRightXY.get(1, idx));</span>
+            }
+
+<span class="nc" id="L221">            StereoProjectionTransformer spTransformer = new</span>
+                StereoProjectionTransformer();
+
+            // determine matrix from 7 points.
+<span class="nc" id="L225">            List&lt;SimpleMatrix&gt; fms =</span>
+<span class="nc" id="L226">                spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);</span>
+
+<span class="nc bnc" id="L228" title="All 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
+<span class="nc" id="L229">                nIter++;</span>
+<span class="nc" id="L230">                continue;</span>
+            }
+
+<span class="nc" id="L233">            SimpleMatrix fm = fms.get(0);</span>
+
+            // evaluate fit against all points
+<span class="nc" id="L236">            StereoProjectionTransformerFit fit =</span>
+<span class="nc" id="L237">                spTransformer.evaluateFitForAlreadyMatched(</span>
+                fm, matchedLeftXY, matchedRightXY, tolerance);
+
+<span class="nc" id="L240">            List&lt;Integer&gt; indexes = fit.getInlierIndexes();</span>
+
+<span class="nc" id="L242">            nIter++;</span>
+
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            if (fitIsBetter(bestFit, fit)) {</span>
+                
+<span class="nc" id="L246">                bestFit = fit;</span>
+<span class="nc" id="L247">                inlierIndexes = indexes;</span>
+
+                if (false &amp;&amp; hasConverged(bestFit) &amp;&amp; 
+                    (inlierIndexes.size() &gt;= convergence)) {
+                    
+                    break;
+                }
+            }
+        }
+
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L258">            return null;</span>
+        }
+
+        // store inliers in outputLeftXY and outputRightXY and redo the
+        // entire fit using only the inliers to determine the fundamental
+        // matrix.
+<span class="nc" id="L264">        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, inlierIndexes.size());</span>
+<span class="nc" id="L265">        SimpleMatrix inliersRightXY = new SimpleMatrix(3, inlierIndexes.size());</span>
+
+<span class="nc" id="L267">        int count = 0;</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        for (Integer idx : inlierIndexes) {</span>
+<span class="nc" id="L269">            int idxInt = idx.intValue();</span>
+            
+<span class="nc" id="L271">            float x = (float)matchedLeftXY.get(0, idxInt);</span>
+<span class="nc" id="L272">            float y = (float)matchedLeftXY.get(1, idxInt);</span>
+<span class="nc" id="L273">            inliersLeftXY.set(0, count, x);</span>
+<span class="nc" id="L274">            inliersLeftXY.set(1, count, y);</span>
+<span class="nc" id="L275">            inliersLeftXY.set(2, count, 1);</span>
+            
+<span class="nc" id="L277">            x = (float)matchedRightXY.get(0, idxInt);</span>
+<span class="nc" id="L278">            y = (float)matchedRightXY.get(1, idxInt);</span>
+<span class="nc" id="L279">            inliersRightXY.set(0, count, x);</span>
+<span class="nc" id="L280">            inliersRightXY.set(1, count, y);</span>
+<span class="nc" id="L281">            inliersRightXY.set(2, count, 1);</span>
+<span class="nc" id="L282">            count++;</span>
+<span class="nc" id="L283">        }</span>
+
+<span class="nc" id="L285">        StereoProjectionTransformer spTransformer = new</span>
+            StereoProjectionTransformer();
+
+<span class="nc" id="L288">        StereoProjectionTransformerFit finalFit = null;</span>
+
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        if (nPoints == 7) {</span>
+
+<span class="nc" id="L292">            finalFit = bestFit;</span>
+
+        } else {
+
+<span class="nc" id="L296">            SimpleMatrix finalFM = null;</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            if (inliersLeftXY.numCols() == 7) {</span>
+<span class="nc" id="L298">                List&lt;SimpleMatrix&gt; fms =</span>
+<span class="nc" id="L299">                    spTransformer.calculateEpipolarProjectionFor7Points(</span>
+                    inliersLeftXY, inliersRightXY);
+<span class="nc bnc" id="L301" title="All 4 branches missed.">                if (fms == null || fms.isEmpty()) {</span>
+<span class="nc" id="L302">                    return null;</span>
+                }
+<span class="nc" id="L304">                finalFM = fms.get(0);</span>
+<span class="nc" id="L305">            } else {</span>
+<span class="nc" id="L306">                finalFM =</span>
+<span class="nc" id="L307">                    spTransformer.calculateEpipolarProjectionForPerfectlyMatched(</span>
+                    inliersLeftXY, inliersRightXY);
+            }
+
+            //fit against all because the new fit may be slighty different
+<span class="nc" id="L312">            finalFit = spTransformer.evaluateFitForAlreadyMatched(finalFM,</span>
+                matchedLeftXY, matchedRightXY, tolerance);
+
+        }
+        
+<span class="nc bnc" id="L317" title="All 2 branches missed.">        for (Integer idx : finalFit.getInlierIndexes()) {</span>
+<span class="nc" id="L318">            int idxInt = idx.intValue();</span>
+<span class="nc" id="L319">            outputLeftXY.add(</span>
+<span class="nc" id="L320">                (float)matchedLeftXY.get(0, idxInt),</span>
+<span class="nc" id="L321">                (float)matchedLeftXY.get(1, idxInt));</span>
+<span class="nc" id="L322">            outputRightXY.add(</span>
+<span class="nc" id="L323">                (float)matchedRightXY.get(0, idxInt),</span>
+<span class="nc" id="L324">                (float)matchedRightXY.get(1, idxInt));</span>
+<span class="nc" id="L325">        }</span>
+
+<span class="nc" id="L327">        log.info(&quot;nIter=&quot; + nIter);</span>
+
+<span class="nc" id="L329">        log.info(&quot;best fit from 7-point: &quot; + bestFit.toString());</span>
+
+<span class="nc" id="L331">        log.info(&quot;final fit: &quot; + finalFit.toString());</span>
+
+<span class="nc" id="L333">        return finalFit;</span>
+    }
+
+    boolean fitIsBetter(StereoProjectionTransformerFit bestFit,
+        StereoProjectionTransformerFit compareFit) {
+
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        if (compareFit == null) {</span>
+<span class="nc" id="L340">            return false;</span>
+        }
+<span class="nc bnc" id="L342" title="All 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L343">            return true;</span>
+        }
+
+<span class="nc" id="L346">        long nMatches = compareFit.getNMatches();</span>
+
+<span class="nc bnc" id="L348" title="All 2 branches missed.">        if (nMatches &gt; bestFit.getNMatches()) {</span>
+
+<span class="nc" id="L350">            return true;</span>
+
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        } else if (nMatches == bestFit.getNMatches()) {</span>
+
+<span class="nc bnc" id="L354" title="All 2 branches missed.">            if (!Double.isNaN(compareFit.getMeanDistance()) &amp;&amp; (</span>
+<span class="nc" id="L355">                compareFit.getMeanDistance()</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">                &lt; bestFit.getMeanDistance())) {</span>
+
+<span class="nc" id="L358">                return true;</span>
+
+<span class="nc" id="L360">            } else if (compareFit.getMeanDistance()</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">                == bestFit.getMeanDistance()) {</span>
+
+<span class="nc bnc" id="L363" title="All 2 branches missed.">                if (compareFit.getStDevFromMean()&lt; bestFit.getStDevFromMean()) {</span>
+
+<span class="nc" id="L365">                    return true;</span>
+                }
+            }
+        }
+
+<span class="nc" id="L370">        return false;</span>
+    }
+
+    private boolean hasConverged(StereoProjectionTransformerFit bestFit) {
+<span class="nc bnc" id="L374" title="All 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L375">            return false;</span>
+        }
+        
+<span class="nc" id="L378">        double limit = 0.2;</span>
+
+<span class="nc bnc" id="L380" title="All 4 branches missed.">        if ((bestFit.getMeanDistance() &lt; limit) &amp;&amp; bestFit.getStDevFromMean() &lt; limit) {</span>
+<span class="nc" id="L381">            return true;</span>
+        }
+<span class="nc" id="L383">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

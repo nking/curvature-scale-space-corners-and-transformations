@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CIEChromaticity.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CIEChromaticity.java</span></div><h1>CIEChromaticity.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.MiscMath;
+import algorithms.util.ArrayPair;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ *
+ * see http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
+ * and 
+ * http://en.wikipedia.org/wiki/CIE_1931_color_space#mediaviewer/File:CIE1931xy_blank.svg
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L17">public class CIEChromaticity {</span>
+    
+    /**
+     * the offset from (0.35, 0.35) considered &quot;white&quot;
+     */
+    private static final float deltaWhite = 0.0125f;
+    
+    /**
+     * get the bounds of yellow in the CIE 1931 xy chromaticity diagram
+     * as x and y coordinates.  Note that the last and first point are
+     * the same.
+     * 
+     * @return 
+     */
+    public ArrayPair getYellowPolynomial() {
+        /*
+        516, 486
+        488, 512  
+        436, 450
+        327, 340 &lt;=== 346, 360
+        466, 444
+        */
+        
+<span class="nc" id="L40">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.516f, .488f, .436f, .346f, .466f, .516f},
+            new float[]{.486f, .512f, .450f, .360f, .444f, .486f}
+        );
+        
+<span class="nc" id="L45">        return p;</span>
+    }
+    
+    public ArrayPair getGreenThroughYellowGreenPolynomial() {
+        /*
+        0.0125, 0.4827
+        0.3, 0.35
+        0.36,  0.35
+        0.45, 0.55
+        0.2, 0.8
+        0.1, 0.84
+        0.0, 0.8
+        0.0, 0.4827
+        0.0125, 0.4827
+        */
+        
+<span class="nc" id="L61">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.0125f, .3f, .36f, .45f, .2f, .1f, 0.f, 0.f, .0125f},
+            new float[]{.4827f, .35f, .35f, .55f, .8f, .84f, .8f, .4827f, .4827f}
+        );
+        
+<span class="nc" id="L66">        return p;</span>
+    }
+    
+    public ArrayPair getYellowThroughOrangePolynomial() {
+        
+        /*
+        685, 312
+        488, 512
+        435, 454
+                  343, 373
+        342, 344
+        420, 340
+        550, 349
+        */
+        
+<span class="nc" id="L81">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.685f, .488f, .435f, .343f, .342f, .420f, .550f, .685f},
+            new float[]{.312f, .512f, .454f, .373f, .344f, .340f, .349f, .312f}
+        );
+        
+<span class="nc" id="L86">        return p;</span>
+    }
+    
+    public ArrayPair getYellowishGreenThroughYellowGreenPolynomial() {
+        
+<span class="nc" id="L91">        ArrayPair p = new ArrayPair(</span>
+            new float[]{0.18f, 0.45f, 0.45f, 0.32f, 0.31f, 0.18f},
+            new float[]{0.8f,  0.8f, 0.55f, 0.32f,  0.4f,  0.8f}
+        );
+        
+<span class="nc" id="L96">        return p;</span>
+    }
+    
+    public ArrayPair getGreenishYellowThroughOrangePolynomial() {
+        /*
+        685, 312
+        456, 544
+        393, 448
+                  340, 373
+        342, 344
+        420, 340
+        550, 349
+        */
+        
+<span class="nc" id="L110">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.685f, .456f, .39f, .340f, .342f, .420f, .550f, .685f},
+            new float[]{.312f, .544f, .448f, .373f, .344f, .340f, .349f, .312f}
+        );
+        
+<span class="nc" id="L115">        return p;</span>
+    }
+            
+    public ArrayPair getRedThroughPurplishRedPolynomial() {
+        
+        /*
+        690, 310
+        552, 346
+        422, 341    
+        337, 344  339, 326
+        554, 182
+        738, 264
+        */
+        
+<span class="nc" id="L129">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.688f, .552f, .422f, .337f, .339f, .554f, .738f, .688f},
+            new float[]{.313f, .346f, .341f, .344f, .326f, .182f, .264f, .313f}
+        );
+        
+<span class="nc" id="L134">        return p;</span>
+    }
+    
+    public ArrayPair getRedPolynomial() {
+        
+        /*
+        690, 310
+        552, 346
+        422, 341    382, 342
+        
+        527, 291
+        659, 229
+        738, 264
+        */
+        
+<span class="nc" id="L149">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.688f, .552f, .422f, .367f, .527f, .659f, .738f, .688f},
+            new float[]{.313f, .346f, .341f, .342f, .291f, .229f, .264f, .313f}
+        );
+        
+<span class="nc" id="L154">        return p;</span>
+    }
+    
+    public ArrayPair getOrangePolynomial() {
+        
+        /*
+        558, 439 &lt;== 515, 482
+        490, 416 &lt;== 467, 442
+        386, 365 &lt;== 331,341
+        420, 340
+        550, 349
+        687, 314
+        */
+        
+<span class="nc" id="L168">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.515f, .467f, .331f, .420f, .550f, .687f, .515f},
+            new float[]{.482f, .442f, .341f, .340f, .349f, .314f, .482f}
+        );
+        
+<span class="nc" id="L173">        return p;</span>
+    }
+    
+    public ArrayPair getGreenPolynomial() {
+        
+<span class="nc" id="L178">        ArrayPair p = new ArrayPair(</span>
+            new float[]{0.03f, 0.00f,  0.0f,  0.35f, 0.35f, 0.03f},
+            new float[]{0.37f, 0.485f, 0.83f, 0.83f, 0.35f, 0.37f}
+        );
+        
+<span class="nc" id="L183">        return p;</span>
+    }
+    
+    public ArrayPair getPurplePolynomial() {
+        
+        /*
+        
+        including center is larger polygon w/ fewer points:
+        168,   3
+        237, 193
+        300, 324
+        340, 324
+        552, 180
+        
+        */
+        
+<span class="nc" id="L199">        ArrayPair p = new ArrayPair(</span>
+            new float[]{.168f, .237f, .300f, .340f, .552f, .168f},
+            new float[]{0.003f, .193f, .324f, .324f, .180f, .003f}
+        );
+        
+<span class="nc" id="L204">        return p;</span>
+    }
+    
+    /**
+     * convert from CIE XYZ 1931, to CIE XY chromaticity 1931.
+     * 
+     * useful for more information:
+     * http://www.efg2.com/Lab/Graphics/Colors/Chromaticity.htm
+     * http://en.wikipedia.org/wiki/CIE_1931_color_space
+     * http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] rgbToXYChromaticity(int r, int g, int b) {
+        
+<span class="pc bpc" id="L222" title="2 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+            // not really defined on the diagram since chromaticity is color
+            // without intensity.  since all 0's is the lack of all color
+            // will return 0,0, but it's N/A
+<span class="fc" id="L226">            return new float[]{0, 0};</span>
+        }
+        
+<span class="fc" id="L229">        float[] capXYZ = rgbToCIEXYZ(r, g, b);</span>
+        
+<span class="fc" id="L231">        float x = capXYZ[0]/(capXYZ[0] + capXYZ[1] + capXYZ[2]);</span>
+        
+<span class="fc" id="L233">        float y = capXYZ[1]/(capXYZ[0] + capXYZ[1] + capXYZ[2]);</span>
+        
+<span class="fc" id="L235">        return new float[]{x, y};</span>
+    }
+    
+<span class="fc" id="L238">    private float[] cieXYTmpHolder = new float[3];</span>
+    /**
+     * convert from CIE XYZ 1931, to CIE XY chromaticity 1931.
+     * 
+     * useful for more information:
+     * http://www.efg2.com/Lab/Graphics/Colors/Chromaticity.htm
+     * http://en.wikipedia.org/wiki/CIE_1931_color_space
+     * http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @param outputcieXY the float array of length 2 that the output will be 
+     * placed in.
+     */
+    public void rgbToXYChromaticity(int r, int g, int b, float[] outputcieXY) {
+        
+<span class="nc bnc" id="L255" title="All 4 branches missed.">        if (outputcieXY == null || outputcieXY.length != 2) {</span>
+<span class="nc" id="L256">            throw new IllegalArgumentException(&quot;outputcieXY must be length 2&quot;);</span>
+        }
+        
+<span class="nc bnc" id="L259" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+            // not really defined on the diagram since chromaticity is color
+            // without intensity.  since all 0's is the lack of all color
+            // will return 0,0, but it's N/A
+<span class="nc" id="L263">            outputcieXY[0] = 0;</span>
+<span class="nc" id="L264">            outputcieXY[1] = 0;</span>
+<span class="nc" id="L265">            return;</span>
+        }
+        
+<span class="nc" id="L268">        rgbToCIEXYZ(r, g, b, cieXYTmpHolder);</span>
+        
+<span class="nc" id="L270">        float x = cieXYTmpHolder[0]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);</span>
+        
+<span class="nc" id="L272">        float y = cieXYTmpHolder[1]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);</span>
+        
+<span class="nc" id="L274">        outputcieXY[0] = x;</span>
+<span class="nc" id="L275">        outputcieXY[1] = y;</span>
+<span class="nc" id="L276">    }</span>
+    
+    /**
+     * convert rgb to CIE XYZ (1931).
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] rgbToCIEXYZ(int r, int g, int b) {
+        
+        /*        
+            | X |       1     | 0.49     0.31      0.20     |   | R |
+            | Y | = --------- | 0.17697  0.81240   0.01063  | * | G |
+            | Z |    0.17697  | 0.00     0.01      0.99     |   | B |
+        */
+        
+<span class="fc" id="L296">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
+        
+<span class="fc" id="L298">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
+        
+<span class="fc" id="L300">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
+        
+<span class="fc" id="L302">        return new float[]{capX, capY, capZ};</span>
+    }
+
+    /**
+     * convert rgb to CIE XYZ (1931).
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @param outputCIEXYZ output array of length 3 that will be populated with
+     * cieX, cieY and cieZ.
+     */
+    public void rgbToCIEXYZ(int r, int g, int b, float[] outputCIEXYZ) {
+        
+<span class="nc bnc" id="L318" title="All 4 branches missed.">        if (outputCIEXYZ == null || outputCIEXYZ.length != 3) {</span>
+<span class="nc" id="L319">            throw new IllegalArgumentException(&quot;outputCIEXYZ has to be length 3&quot;);</span>
+        }
+        
+        /*        
+            | X |       1     | 0.49     0.31      0.20     |   | R |
+            | Y | = --------- | 0.17697  0.81240   0.01063  | * | G |
+            | Z |    0.17697  | 0.00     0.01      0.99     |   | B |
+        */
+        
+<span class="nc" id="L328">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
+        
+<span class="nc" id="L330">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
+        
+<span class="nc" id="L332">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
+        
+<span class="nc" id="L334">        outputCIEXYZ[0] = capX;</span>
+<span class="nc" id="L335">        outputCIEXYZ[1] = capY;</span>
+<span class="nc" id="L336">        outputCIEXYZ[2] = capZ;</span>
+<span class="nc" id="L337">    }</span>
+
+    /**
+     * convert CIE XYZ (1931) to rgb.
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * @param cieX
+     * @param cieY
+     * @param cieZ
+     * @return 
+     */
+    public int[] cieXYZToRGB(float cieX, float cieY, float cieZ) {
+        
+        /*        
+            | R |   |  0.41847    -0.15866   -0.082835 |   | X |
+            | G | = | -0.091169    0.25243    0.015708 | * | Y |
+            | B |   |  0.00092090 -0.0025498  0.17860  |   | Z |
+        */
+        
+<span class="nc" id="L357">        float capR = (0.41847f * cieX +  -0.15866f * cieY + -0.082835f * cieZ);</span>
+        
+<span class="nc" id="L359">        float capG = (-0.091169f * cieX +  0.25243f * cieY + 0.015708f * cieZ);</span>
+        
+<span class="nc" id="L361">        float capB = (0.00092090f * cieX +  -0.0025498f * cieY + 0.17860f * cieZ);</span>
+        
+<span class="nc" id="L363">        return new int[]{(int)capR, (int)capG, (int)capB};</span>
+    }
+
+    public List&lt;Double&gt; calcAvgAndStdDevXY(int[] r, int[] g, int[] b) {
+        
+<span class="nc" id="L368">        double xSum = 0;</span>
+<span class="nc" id="L369">        double ySum = 0;</span>
+<span class="nc" id="L370">        float[] x = new float[r.length];</span>
+<span class="nc" id="L371">        float[] y = new float[r.length];</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">        for (int i = 0; i &lt; r.length; i++) {</span>
+<span class="nc" id="L373">            float[] xy = rgbToXYChromaticity(r[i], g[i], b[i]);</span>
+<span class="nc" id="L374">            x[i] = xy[0];</span>
+<span class="nc" id="L375">            y[i] = xy[1];</span>
+<span class="nc" id="L376">            xSum += xy[0];</span>
+<span class="nc" id="L377">            ySum += xy[1];</span>
+<span class="nc" id="L378">            i++;</span>
+        }
+<span class="nc" id="L380">        double avgX = xSum/(double)r.length;</span>
+<span class="nc" id="L381">        double avgY = ySum/(double)r.length;</span>
+        
+<span class="nc" id="L383">        xSum = 0;</span>
+<span class="nc" id="L384">        ySum = 0;</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">        for (int i = 0; i &lt; r.length; i++) {</span>
+<span class="nc" id="L386">            double diffX = x[i] - avgX;</span>
+<span class="nc" id="L387">            double diffY = y[i] - avgY;</span>
+<span class="nc" id="L388">            xSum += (diffX * diffX);</span>
+<span class="nc" id="L389">            ySum += (diffY * diffY);</span>
+        }
+<span class="nc" id="L391">        double stDevX = Math.sqrt(xSum/((double)r.length - 1));</span>
+<span class="nc" id="L392">        double stDevY = Math.sqrt(ySum/((double)r.length - 1));</span>
+        
+<span class="nc" id="L394">        List&lt;Double&gt; list = new ArrayList&lt;Double&gt;();</span>
+<span class="nc" id="L395">        list.add(Double.valueOf(avgX));</span>
+<span class="nc" id="L396">        list.add(Double.valueOf(avgY));</span>
+<span class="nc" id="L397">        list.add(Double.valueOf(stDevX));</span>
+<span class="nc" id="L398">        list.add(Double.valueOf(stDevY));</span>
+        
+<span class="nc" id="L400">        return list;</span>
+    }
+    
+    /**
+     * returns roughly whether the CIE (X,Y) coordinate lands within the large
+     * white zone in the center of the diagram.
+     * @param cieX
+     * @param cieY
+     * @return 
+     */
+    public boolean isWhite(float cieX, float cieY) {
+        
+<span class="nc" id="L412">        double diffX = Math.abs(cieX - 0.35);</span>
+        
+<span class="nc" id="L414">        double diffY = Math.abs(cieY - 0.35);</span>
+      
+<span class="nc bnc" id="L416" title="All 4 branches missed.">        return ((diffX &lt; deltaWhite) &amp;&amp; (diffY &lt; deltaWhite));</span>
+    }
+    
+    /**
+     * returns roughly whether the CIE (X,Y) coordinate lands within the large
+     * white zone in the center of the diagram.
+     * @param cieX
+     * @param cieY
+     * @return 
+     */
+    public boolean isCentralWhite(float cieX, float cieY) {
+                       
+<span class="nc bnc" id="L428" title="All 4 branches missed.">        if ((cieX &gt; (0.35f + deltaWhite)) || (cieX &lt; (0.35 - deltaWhite))) {</span>
+<span class="nc" id="L429">            return false;</span>
+        }
+        
+<span class="nc bnc" id="L432" title="All 4 branches missed.">        if ((cieY &gt; (0.35f + deltaWhite)) || (cieY &lt; (0.35 - deltaWhite))) {</span>
+<span class="nc" id="L433">            return false;</span>
+        }
+        
+<span class="nc" id="L436">        return true;</span>
+    }
+    
+    /**
+     * calculate the angle in radians of the point (cieX, cieY) in the 
+     * CIE chromaticity
+     * diagram with respect to an origin of (0.35, 0.35).
+     * Note that one should check for white before using this as the resulting
+     * angle will not be a significant answer if it is.
+     * The angles are
+     * &lt;pre&gt;    90(=pi/2)
+     *            |
+     *            |
+     *   180 ----------- 0
+     *   (=pi)    |
+     *            | 
+     *          270(=3pi/2)
+     * &lt;/pre&gt;
+     * @param cieX
+     * @param cieY
+     * @return the angle in radians of the point (cieX, cieY) with respect to
+     * an origin of (0.35, 0.35). The invoker should check the original r,g,b
+     * for black and white to avoid use here.  A value of -1 is returned for
+     * white.
+     */
+    public double calculateXYTheta(float cieX, float cieY) {
+                        
+<span class="nc bnc" id="L463" title="All 2 branches missed.">        if (cieX == 0.35) {</span>
+<span class="nc bnc" id="L464" title="All 2 branches missed.">            if (cieY &gt; (0.35 + deltaWhite)) {</span>
+<span class="nc" id="L465">                return Math.PI/2.;</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">            } else if (cieY &lt; (0.35 - deltaWhite)) {</span>
+<span class="nc" id="L467">                return 1.5 * Math.PI;</span>
+            } else {
+                // this should have been found as white to avoid use here
+<span class="nc" id="L470">                return -1;</span>
+            }
+        }
+        
+<span class="nc" id="L474">        double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);</span>
+        
+<span class="nc" id="L476">        return theta;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

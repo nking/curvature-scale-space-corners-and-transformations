@@ -1,0 +1,1695 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EdgeExtractorWithJunctions.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EdgeExtractorWithJunctions.java</span></div><h1>EdgeExtractorWithJunctions.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.CountingSort;
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairInt;
+import algorithms.util.PointPairInt;
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.logging.Level;
+
+/**
+ * Edge extractor operates on an image that has already been reduced to 
+ * single pixel width lines and extracts edges from it, attempting to make
+ * the longest edges it can - this specific edge extractor stores and uses
+ * junction information, so is not as fast as EdgeExtractor.java.
+ * 
+ Edge extraction
+    Local Methods:
+        (1) DFS walk through adjacent non-zero pixels to form a sequence of 
+            pixels called an edge.
+          
+        (2) find join points
+        
+        (3) join edges using join points
+        
+        (4) find junction points
+         
+        (5) using the junction points, splice together the edges to improve
+            the edges.  Currently, improve means to make the edges longer
+            (which is good for an image expected to have one contour for 
+             example, and doesn't harm corner finding for non-contour goals).
+         
+        (7) remove edges shorter than a minimum length (this may of may not
+            be currently enabled)
+        
+  @see AbstractEdgeExtractor
+  * 
+ * @author nichole
+ */
+<span class="nc bnc" id="L50" title="All 2 branches missed.">public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {</span>
+    
+<span class="nc" id="L52">    private boolean debug = false;</span>
+    
+    /**
+     * map with key = center of junction pixel coordinates; 
+     * value = set of adjacent pixels when there are more than the preceding 
+     * and next.
+     */
+<span class="nc" id="L59">    private Map&lt;Integer, Set&lt;Integer&gt;&gt; junctionMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+
+    /**
+     * map with key = pixel coordinates of all pixels involved in junctions;
+     * value = PairInt holding index of edge that pixel is located in and
+     * holding the index within that edge of the pixel.
+     * for example, a pixel located in edges(0) at offset=100
+     * would have PairInt(0, 100) as a value.
+     */
+<span class="nc" id="L68">    private Map&lt;Integer, PairInt&gt; junctionLocationMap = new HashMap&lt;Integer, PairInt&gt;();</span>
+
+    /**
+     * NOTE:  input should have a black (empty) background and edges should
+     * have values &gt; 125 counts.  Edges should also have width of 1 and no larger.
+     * 
+     * @param input 
+     */
+    public EdgeExtractorWithJunctions(GreyscaleImage input) {
+        
+<span class="nc" id="L78">        super(input);</span>
+<span class="nc" id="L79">    }</span>
+    
+    /**
+     * NOTE:  input should have a black (empty) background and edges should
+     * have values &gt; 125 counts.  Edges should also have width of 1 and no larger.
+     * The guide image is used to alter the extracted edges back towards the
+     * highest intensity pixels of the guide image.  The guide image is expected
+     * to be the combined X and Y gradient image from earlier processing
+     * stages.
+     * 
+     * @param input
+     * @param anEdgeGuideImage
+     */
+    public EdgeExtractorWithJunctions(GreyscaleImage input, 
+        final GreyscaleImage anEdgeGuideImage) {
+       
+<span class="nc" id="L95">        super(input, anEdgeGuideImage);</span>
+<span class="nc" id="L96">    }</span>
+    
+    /**
+     * get a hashmap of the junctions within the edges, that is the regions
+     * where there are more than 2 adjacent pixels to a pixel.
+     * @return hashmap with key = image pixel indexes, values = set of adjacent
+     * pixels as pixel indexes.
+     */
+    public Map&lt;Integer, Set&lt;Integer&gt; &gt; getJunctionMap() {
+<span class="nc" id="L105">        return junctionMap;</span>
+    }
+    
+    /**
+     * contains information needed to find any of the pixels that are part of 
+     * a junction.
+     * @return hashmap with key = image pixel indexes, values = a PairInt with
+     * x holding the edge index and y holding the offset index of the point 
+     * within the edge.
+     */
+    public Map&lt;Integer, PairInt&gt; getLocatorForJunctionAssociatedPoints() {
+<span class="nc" id="L116">        return junctionLocationMap;</span>
+    }
+    
+    /**
+     * find the edges and return as a list of points.  The method uses a
+     * DFS search through all points in the image with values &gt; 0 to link
+     * adjacent sequential points into edges.
+     * As a side effect, the method also populates
+     * member variables edgeJunctionMap and outputIndexLocatorForJunctionPoints.
+     * 
+     * @return 
+     */
+    @Override
+    public List&lt;PairIntArray&gt; findEdgesIntermediateSteps(List&lt;PairIntArray&gt; edges) {
+        
+<span class="nc" id="L131">        List&lt;PairIntArray&gt; output = edges;</span>
+    
+        //O(N)
+<span class="nc" id="L134">        Map&lt;PairInt, PairInt&gt; joinPoints = findJoinPoints(output);</span>
+        
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L137">            algorithms.misc.MiscDebug.printJoinPoints(joinPoints, output);</span>
+<span class="nc" id="L138">            algorithms.misc.MiscDebug.writeJoinPointsImage(joinPoints, output,</span>
+                img);
+        }
+        
+<span class="nc" id="L142">        log.fine(&quot;edges.size()=&quot; + output.size() + &quot; before join-points&quot;);</span>
+        
+<span class="nc" id="L144">        output = joinOnJoinPoints(joinPoints, output);</span>
+ 
+<span class="nc" id="L146">        log.fine(&quot;edges.size()=&quot; + output.size() + &quot; after join-points&quot;);</span>
+        
+<span class="nc" id="L148">        int nMaxIter = 1;</span>
+<span class="nc" id="L149">        int nIter = 0;</span>
+<span class="nc" id="L150">        int nSplices = 0;</span>
+        
+<span class="nc bnc" id="L152" title="All 6 branches missed.">        while ((nIter == 0) || ((nIter &lt; nMaxIter) &amp;&amp; (nSplices &gt; 0))) {</span>
+        
+<span class="nc" id="L154">            findJunctions(output);</span>
+        
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (output.size() &gt; 10000) {</span>
+<span class="nc" id="L157">            return output;</span>
+        }
+            
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L161">                algorithms.misc.MiscDebug.printJunctions(this.junctionMap, </span>
+                    output, img);
+            }
+            
+            //TODO: could improve thisfor nIter &gt; 0 by only visiting the
+            // edges which had changed (been spliced and fused on previous iter)
+
+<span class="nc" id="L168">            nSplices = spliceEdgesAtJunctionsIfImproves(output);</span>
+            
+<span class="nc" id="L170">            ++nIter;</span>
+        }
+        
+<span class="nc" id="L173">        return output;</span>
+    }
+    
+    /**
+     * Find the join points of edges which are adjacent to one another and to
+     * no other edges.  This method is intended to follow the first creation
+     * of edges from the line thinned edge image to find the unambiguously
+     * connectable edges.  (Note that the method findJunctions(...) is later 
+     * used to find where there are more than 2 adjacent pixels to any pixel.)
+     * 
+     * runtime complexity is O(N).
+     * 
+     * @param edges 
+     * @return hashmap with key = edge index and index within edge of pixel;
+     * value = the adjacent pixel's edge index and index within its edge
+     */
+    protected Map&lt;PairInt, PairInt&gt; findJoinPoints(List&lt;PairIntArray&gt; edges) {
+           
+<span class="nc" id="L191">        int n = edges.size();</span>
+        
+<span class="nc" id="L193">        int w = img.getWidth();</span>
+<span class="nc" id="L194">        int h = img.getHeight();</span>
+        
+        //with key = x, y of point
+        //with value = edge index, index within edge
+<span class="nc" id="L198">        Map&lt;PairInt, PairInt&gt; endPointMap = new HashMap&lt;PairInt, PairInt&gt;(2 * n);</span>
+ 
+        // holds x,y points of first and last points of the edges
+<span class="nc" id="L201">        ArrayDeque&lt;PairInt&gt; endPointQueue = new ArrayDeque&lt;PairInt&gt;(2 * n);</span>
+
+        //with key = edge index, index within edge of one join point 
+        //                 (the join point with the smaller edge number) 
+        //       with value = edge index, index within edge of other join point
+<span class="nc" id="L206">        Set&lt;PointPairInt&gt; theJoinPoints = new HashSet&lt;PointPairInt&gt;(2 * n);</span>
+
+        //with key = edge number
+        //with value = set of the entries in theJoinPoints for which one has a 
+        //first end point in this edge
+<span class="nc" id="L211">        Map&lt;Integer, Set&lt;PointPairInt&gt;&gt; edgeFirstEndPointMap = </span>
+            new HashMap&lt;Integer, Set&lt;PointPairInt&gt;&gt;();
+    
+<span class="nc" id="L214">        Map&lt;Integer, Set&lt;PointPairInt&gt;&gt;  edgeLastEndPointMap = </span>
+            new HashMap&lt;Integer, Set&lt;PointPairInt&gt;&gt; ();
+
+        // 2* O(N_edges)
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        for (int edgeIdx = 0; edgeIdx &lt; n; edgeIdx++) {</span>
+            
+<span class="nc" id="L220">            PairIntArray edge = edges.get(edgeIdx);</span>
+            
+<span class="nc" id="L222">            int nEdge = edge.getN();</span>
+            
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            if (nEdge == 0) {</span>
+<span class="nc" id="L225">                continue;</span>
+            } 
+            
+<span class="nc" id="L228">            PairInt xy = new PairInt(edge.getX(0), edge.getY(0));</span>
+<span class="nc" id="L229">            PairInt loc = new PairInt(edgeIdx, 0);</span>
+            
+<span class="nc" id="L231">            endPointMap.put(xy, loc);</span>
+<span class="nc" id="L232">            endPointQueue.add(xy);</span>
+            
+<span class="nc bnc" id="L234" title="All 2 branches missed.">            if (nEdge == 1) {</span>
+<span class="nc" id="L235">                continue;</span>
+            }
+            
+<span class="nc" id="L238">            xy = new PairInt(edge.getX(nEdge - 1), edge.getY(nEdge - 1));</span>
+<span class="nc" id="L239">            loc = new PairInt(edgeIdx, nEdge - 1);</span>
+            
+<span class="nc" id="L241">            endPointMap.put(xy, loc);</span>
+<span class="nc" id="L242">            endPointQueue.add(xy);</span>
+            
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            if (nEdge == 2) {</span>
+<span class="nc" id="L245">                continue;</span>
+            }
+            
+            // add the second and second to last to endPointMap only
+<span class="nc" id="L249">            xy = new PairInt(edge.getX(1), edge.getY(1));</span>
+<span class="nc" id="L250">            loc = new PairInt(edgeIdx, 1);</span>
+<span class="nc" id="L251">            endPointMap.put(xy, loc);</span>
+            
+<span class="nc bnc" id="L253" title="All 2 branches missed.">            if (nEdge == 3) {</span>
+<span class="nc" id="L254">                continue;</span>
+            }
+            
+<span class="nc" id="L257">            xy = new PairInt(edge.getX(nEdge - 2), edge.getY(nEdge - 2));</span>
+<span class="nc" id="L258">            loc = new PairInt(edgeIdx, nEdge - 2);</span>
+<span class="nc" id="L259">            endPointMap.put(xy, loc);</span>
+        }
+        
+<span class="nc bnc" id="L262" title="All 4 branches missed.">        assert(endPointQueue.size() &gt;= n);</span>
+<span class="nc bnc" id="L263" title="All 4 branches missed.">        assert(endPointMap.size() &gt;= 2*n);</span>
+        
+<span class="nc" id="L265">        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
+<span class="nc" id="L266">        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
+        
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        while (!endPointQueue.isEmpty()) {</span>
+            
+<span class="nc" id="L270">            PairInt uXY = endPointQueue.poll();</span>
+<span class="nc" id="L271">            int uX = uXY.getX();</span>
+<span class="nc" id="L272">            int uY = uXY.getY();</span>
+            
+<span class="nc" id="L274">            PairInt uLoc = endPointMap.get(uXY);</span>
+            
+<span class="nc bnc" id="L276" title="All 4 branches missed.">            assert(uLoc != null);</span>
+            
+<span class="nc" id="L278">            int uEdgeIdx = uLoc.getX();</span>
+            
+<span class="nc" id="L280">            Set&lt;Integer&gt; neighborEdgeNumbers = new HashSet&lt;Integer&gt;();</span>
+
+<span class="nc" id="L282">            PairInt vClosestXY = null;</span>
+<span class="nc" id="L283">            PairInt vClosestLoc = null;</span>
+<span class="nc" id="L284">            int closestDistSq = Integer.MAX_VALUE;</span>
+<span class="nc" id="L285">            int vClosestCanBeReordered = -99;</span>
+            
+<span class="nc bnc" id="L287" title="All 2 branches missed.">            for (int nIdx = 0; nIdx &lt; dxs.length; nIdx++) {</span>
+<span class="nc" id="L288">                int vX = uX + dxs[nIdx];</span>
+<span class="nc" id="L289">                int vY = uY + dys[nIdx];</span>
+<span class="nc bnc" id="L290" title="All 8 branches missed.">                if ((vX &lt; 0) || (vX &gt; (w - 1)) || (vY &lt; 0) || (vY &gt; (h - 1))) {</span>
+<span class="nc" id="L291">                    continue;</span>
+                }
+<span class="nc" id="L293">                PairInt vXY = new PairInt(vX, vY);</span>
+                
+<span class="nc" id="L295">                PairInt vLoc = endPointMap.get(vXY);</span>
+                
+<span class="nc bnc" id="L297" title="All 4 branches missed.">                if ((vLoc == null) || (vLoc.getX() == uEdgeIdx)) {</span>
+<span class="nc" id="L298">                    continue;</span>
+                }
+                                   
+<span class="nc" id="L301">                int vEdgeIdx = vLoc.getX();</span>
+
+<span class="nc" id="L303">                neighborEdgeNumbers.add(Integer.valueOf(vEdgeIdx));</span>
+
+<span class="nc bnc" id="L305" title="All 2 branches missed.">                if (neighborEdgeNumbers.size() &gt; 1) {</span>
+                    // this is a junction, so break and continue at next uXY
+<span class="nc" id="L307">                    break;</span>
+                }
+                    
+<span class="nc" id="L310">                PairIntArray vEdge = edges.get(vEdgeIdx);</span>
+
+<span class="nc" id="L312">                int canBeReordered = canBeReordered(vLoc, vEdge);</span>
+
+<span class="nc bnc" id="L314" title="All 2 branches missed.">                if (canBeReordered == -1) {</span>
+<span class="nc" id="L315">                    continue;</span>
+                }
+
+<span class="nc" id="L318">                int diffX = uX - vX;</span>
+<span class="nc" id="L319">                int diffY = uY - vY;</span>
+<span class="nc" id="L320">                int distSq = (diffX * diffX) + (diffY * diffY);</span>
+
+<span class="nc bnc" id="L322" title="All 6 branches missed.">                if ((distSq &lt; closestDistSq) || ((distSq == closestDistSq) </span>
+                    &amp;&amp; (canBeReordered == 0))) {
+
+<span class="nc" id="L325">                    closestDistSq = distSq;</span>
+<span class="nc" id="L326">                    vClosestLoc = vLoc;</span>
+<span class="nc" id="L327">                    vClosestXY = vXY;</span>
+<span class="nc" id="L328">                    vClosestCanBeReordered = canBeReordered;</span>
+                }
+            }
+           
+<span class="nc bnc" id="L332" title="All 4 branches missed.">            if ((neighborEdgeNumbers.size() != 1) || (vClosestXY == null)) {</span>
+<span class="nc" id="L333">                continue;</span>
+            }
+            
+            // make the smaller edge number as variables '0'
+<span class="nc" id="L337">            PairInt xy0 = uXY;</span>
+<span class="nc" id="L338">            PairInt xy1 = vClosestXY;</span>
+<span class="nc" id="L339">            PairInt loc0 = uLoc;</span>
+<span class="nc" id="L340">            PairInt loc1 = vClosestLoc;</span>
+<span class="nc" id="L341">            boolean smallestEdgeIdxIsV = false;</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (loc0.getX() &gt; loc1.getX()) {</span>
+<span class="nc" id="L343">                PairInt swap = loc0;</span>
+<span class="nc" id="L344">                loc0 = loc1;</span>
+<span class="nc" id="L345">                loc1 = swap;</span>
+<span class="nc" id="L346">                smallestEdgeIdxIsV = true;</span>
+<span class="nc" id="L347">                swap = xy0;</span>
+<span class="nc" id="L348">                xy0 = xy1;</span>
+<span class="nc" id="L349">                xy1 = swap;</span>
+            }
+<span class="nc" id="L351">            int n0 = edges.get(loc0.getX()).getN();</span>
+<span class="nc" id="L352">            int n1 = edges.get(loc1.getX()).getN();</span>
+            
+<span class="nc" id="L354">            theJoinPoints.add(new PointPairInt(loc0, loc1));</span>
+            
+            // add the location points to the edgeFirstEndPointMap and 
+            // edgeLastEndPointMap maps
+<span class="nc bnc" id="L358" title="All 2 branches missed.">            for (int ii = 0; ii &lt; 2; ++ii) {</span>
+<span class="nc" id="L359">                int locX = loc0.getX();</span>
+<span class="nc" id="L360">                int locY = loc0.getY();</span>
+<span class="nc" id="L361">                int nEdge = n0;</span>
+                
+<span class="nc bnc" id="L363" title="All 2 branches missed.">                if (ii == 1) {</span>
+<span class="nc" id="L364">                    locX = loc1.getX();</span>
+<span class="nc" id="L365">                    locY = loc1.getY();</span>
+<span class="nc" id="L366">                    nEdge = n1;</span>
+                }
+                
+<span class="nc bnc" id="L369" title="All 2 branches missed.">                boolean addToFirst = (locY &lt; 2);</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">                boolean addToLast = (locY &gt; (nEdge - 3));</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">                if (nEdge == 2) {</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">                    if (locY == 1) {</span>
+<span class="nc" id="L373">                        addToFirst = false;</span>
+<span class="nc" id="L374">                        addToLast = true;</span>
+                    } else {
+<span class="nc" id="L376">                        addToFirst = true;</span>
+<span class="nc" id="L377">                        addToLast = false;</span>
+                    }
+                }
+            
+<span class="nc bnc" id="L381" title="All 8 branches missed.">                if ((ii == 0) &amp;&amp; smallestEdgeIdxIsV &amp;&amp; (vClosestCanBeReordered == 1) &amp;&amp; (n0 == 3)) {</span>
+<span class="nc" id="L382">                    log.fine(String.format(</span>
+                    &quot;creating a join point for an edge with size 3: xy=(%d,%d) loc=%d:%d&quot;,
+<span class="nc" id="L384">                    vClosestLoc.getX(), vClosestLoc.getY(), vClosestLoc.getX(), </span>
+<span class="nc" id="L385">                    vClosestLoc.getY()));</span>
+                    // an entry is added to both edge maps because we don't know yet
+                    // which to use.
+                }
+
+<span class="nc bnc" id="L390" title="All 2 branches missed.">                if (addToFirst) {</span>
+<span class="nc" id="L391">                    Integer key = Integer.valueOf(locX);</span>
+<span class="nc" id="L392">                    Set&lt;PointPairInt&gt; joinPointSet = edgeFirstEndPointMap.get(key);</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">                    if (joinPointSet == null) {</span>
+<span class="nc" id="L394">                        joinPointSet = new HashSet&lt;PointPairInt&gt;();</span>
+                    }
+<span class="nc" id="L396">                    PointPairInt joinPoint = new PointPairInt(loc0, loc1);</span>
+<span class="nc" id="L397">                    joinPointSet.add(joinPoint);</span>
+<span class="nc" id="L398">                    edgeFirstEndPointMap.put(key, joinPointSet);</span>
+                }
+            
+<span class="nc bnc" id="L401" title="All 2 branches missed.">                if (addToLast) {</span>
+<span class="nc" id="L402">                    Integer key = Integer.valueOf(locX);</span>
+<span class="nc" id="L403">                    Set&lt;PointPairInt&gt; joinPointSet = edgeLastEndPointMap.get(key);</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">                    if (joinPointSet == null) {</span>
+<span class="nc" id="L405">                        joinPointSet = new HashSet&lt;PointPairInt&gt;();</span>
+                    }
+<span class="nc" id="L407">                    PointPairInt joinPoint = new PointPairInt(loc0, loc1);</span>
+<span class="nc" id="L408">                    joinPointSet.add(joinPoint);</span>
+<span class="nc" id="L409">                    edgeLastEndPointMap.put(key, joinPointSet);</span>
+                }
+            }
+<span class="nc" id="L412">        }</span>
+       
+<span class="nc" id="L414">        reduceMultipleEndpointsForEdge(edges, edgeFirstEndPointMap,</span>
+            edgeLastEndPointMap, endPointMap, theJoinPoints);
+
+<span class="nc bnc" id="L417" title="All 2 branches missed.">        if (debug) {</span>
+            // 2 of the same join points for edges of size 3 in which 
+            // the join point is movable to the first or last point in edge.
+            // the next block removes that possibility
+<span class="nc" id="L421">            boolean skipForSize3 = true;</span>
+<span class="nc" id="L422">            algorithms.misc.MiscDebug.assertConsistentJoinPointStructures(edges, </span>
+                edgeFirstEndPointMap, edgeLastEndPointMap, theJoinPoints, 
+                skipForSize3);
+        }        
+        
+        // edges that are size 3 and have join points that are not in the
+        // first or last position, can be moved to either, so keep
+        // track of them to avoid moving to the same position twice
+<span class="nc" id="L430">        Map&lt;PairInt, Set&lt;Integer&gt;&gt; edgeSize3NonEndPoints = new HashMap&lt;PairInt, </span>
+            Set&lt;Integer&gt;&gt;();
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        for (PointPairInt entry : theJoinPoints) {</span>
+<span class="nc" id="L433">            PairInt loc0 = entry.getKey();</span>
+<span class="nc" id="L434">            PairInt loc1 = entry.getValue();            </span>
+<span class="nc" id="L435">            int n0 = edges.get(loc0.getX()).getN();</span>
+<span class="nc" id="L436">            int n1 = edges.get(loc1.getX()).getN();</span>
+<span class="nc bnc" id="L437" title="All 4 branches missed.">            if ((n0 == 3) &amp;&amp; (loc0.getY() == 1)) {</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">                if (!edgeSize3NonEndPoints.containsKey(loc0)) {</span>
+<span class="nc" id="L439">                    edgeSize3NonEndPoints.put(loc0, new HashSet&lt;Integer&gt;());</span>
+                }
+            }
+<span class="nc bnc" id="L442" title="All 4 branches missed.">            if ((n1 == 3) &amp;&amp; (loc1.getY() == 1)) {</span>
+<span class="nc bnc" id="L443" title="All 2 branches missed.">                if (!edgeSize3NonEndPoints.containsKey(loc1)) {</span>
+<span class="nc" id="L444">                    edgeSize3NonEndPoints.put(loc1, new HashSet&lt;Integer&gt;());</span>
+                }
+            }
+<span class="nc" id="L447">        }</span>
+        
+        // 2 * O(N_join_points)
+        // re-order the endpoints which are not first or last position in edge        
+<span class="nc bnc" id="L451" title="All 2 branches missed.">        for (PointPairInt entry : theJoinPoints) {</span>
+<span class="nc" id="L452">            PairInt loc0 = entry.getKey();</span>
+<span class="nc" id="L453">            PairInt loc1 = entry.getValue();</span>
+            
+<span class="nc" id="L455">            PairIntArray edge0 = edges.get(loc0.getX());</span>
+<span class="nc" id="L456">            PairIntArray edge1 = edges.get(loc1.getX());</span>
+            
+<span class="nc" id="L458">            PairInt origLoc0 = new PairInt(loc0.getX(), loc0.getY());</span>
+            
+<span class="nc" id="L460">            int swapIdx = -1; </span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">            if (edgeSize3NonEndPoints.containsKey(loc0)) {</span>
+<span class="nc" id="L462">                swapIdx = 0;</span>
+<span class="nc" id="L463">                Set&lt;Integer&gt; takenPositions = edgeSize3NonEndPoints.get(loc0);</span>
+<span class="nc bnc" id="L464" title="All 2 branches missed.">                if (takenPositions.size() &gt; 1) {</span>
+<span class="nc" id="L465">                    throw new IllegalStateException(</span>
+                        &quot;then are more than 2 join points for the same edge of size 3.&quot; + 
+<span class="nc" id="L467">                        &quot; edge &quot; + loc0.getX() + &quot; xy=(&quot; + edge0.getX(loc0.getY())</span>
+<span class="nc" id="L468">                        + &quot;,&quot; + edge0.getY(loc0.getY()) +&quot;)&quot;);</span>
+                }
+<span class="nc bnc" id="L470" title="All 2 branches missed.">                if (!takenPositions.isEmpty()) {</span>
+<span class="nc" id="L471">                    swapIdx = 2;</span>
+                }
+<span class="nc" id="L473">                takenPositions.add(Integer.valueOf(swapIdx));</span>
+<span class="nc" id="L474">            } else  {</span>
+<span class="nc" id="L475">                int canBeReordered = canBeReordered(loc0, edge0);</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">                if (canBeReordered == 1) {</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">                    if (loc0.getY() &lt; 2) {</span>
+<span class="nc" id="L478">                        swapIdx = 0;</span>
+                    } else {
+<span class="nc" id="L480">                        swapIdx = edge0.getN() - 1;</span>
+                    }
+                }
+            }
+<span class="nc bnc" id="L484" title="All 2 branches missed.">            if (swapIdx &gt; -1) {                </span>
+<span class="nc" id="L485">                int swapX = edge0.getX(swapIdx);</span>
+<span class="nc" id="L486">                int swapY = edge0.getY(swapIdx);</span>
+<span class="nc" id="L487">                edge0.set(swapIdx, edge0.getX(1), edge0.getY(1));</span>
+<span class="nc" id="L488">                edge0.set(1, swapX, swapY);</span>
+<span class="nc" id="L489">                loc0.setY(swapIdx);</span>
+            }
+            
+<span class="nc" id="L492">            swapIdx = -1; </span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">            if (edgeSize3NonEndPoints.containsKey(loc1)) {</span>
+<span class="nc" id="L494">                swapIdx = 0;</span>
+<span class="nc" id="L495">                Set&lt;Integer&gt; takenPositions = edgeSize3NonEndPoints.get(loc1);</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">                if (takenPositions.size() &gt; 1) {</span>
+<span class="nc" id="L497">                    throw new IllegalStateException(</span>
+                        &quot;then are more than 2 join points for the same edge of size 3.&quot; + 
+<span class="nc" id="L499">                        &quot; edge &quot; + loc1.getX() + &quot; xy=(&quot; + edge1.getX(loc1.getY())</span>
+<span class="nc" id="L500">                        + &quot;,&quot; + edge1.getY(loc1.getY()) +&quot;)&quot;);</span>
+                }
+<span class="nc bnc" id="L502" title="All 2 branches missed.">                if (!takenPositions.isEmpty()) {</span>
+<span class="nc" id="L503">                    swapIdx = 2;</span>
+                }
+<span class="nc" id="L505">                takenPositions.add(Integer.valueOf(swapIdx));</span>
+<span class="nc" id="L506">            } else  {</span>
+<span class="nc" id="L507">                int canBeReordered = canBeReordered(loc1, edge1);</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">                if (canBeReordered == 1) {</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">                    if (loc1.getY() &lt; 2) {</span>
+<span class="nc" id="L510">                        swapIdx = 0;</span>
+                    } else {
+<span class="nc" id="L512">                        swapIdx = edge1.getN() - 1;</span>
+                    }
+                }
+            }
+<span class="nc bnc" id="L516" title="All 2 branches missed.">            if (swapIdx &gt; -1) {                </span>
+<span class="nc" id="L517">                int swapX = edge1.getX(swapIdx);</span>
+<span class="nc" id="L518">                int swapY = edge1.getY(swapIdx);</span>
+<span class="nc" id="L519">                edge1.set(swapIdx, edge1.getX(1), edge1.getY(1));</span>
+<span class="nc" id="L520">                edge1.set(1, swapX, swapY);</span>
+<span class="nc" id="L521">                loc1.setY(swapIdx);</span>
+            }
+<span class="nc" id="L523">        }</span>
+ 
+<span class="nc bnc" id="L525" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L526">            boolean skipForSize3 = false;</span>
+<span class="nc" id="L527">            algorithms.misc.MiscDebug.assertConsistentJoinPointStructures(edges, </span>
+                edgeFirstEndPointMap, edgeLastEndPointMap, theJoinPoints, 
+                skipForSize3);
+        }
+        
+<span class="nc" id="L532">        Map&lt;PairInt, PairInt&gt; result = new HashMap&lt;PairInt, PairInt&gt;();</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">        for (PointPairInt entry : theJoinPoints) {</span>
+<span class="nc" id="L534">            PairInt loc0 = entry.getKey();</span>
+<span class="nc" id="L535">            PairInt loc1 = entry.getValue();</span>
+<span class="nc" id="L536">            result.put(loc0, loc1);</span>
+<span class="nc" id="L537">        }</span>
+        
+<span class="nc" id="L539">        return result;       </span>
+    }
+    
+    /**
+     * Iterate over each point looking for its neighbors and noting when
+     * there are more than 2, and store the found junctions as member variables.
+     * 
+     * runtime complexity is O(N)
+     * 
+     * @param edges 
+     */
+    protected void findJunctions(List&lt;PairIntArray&gt; edges) {
+        
+        // key = center of junction pixel coordinates
+        // value = set of adjacent pixels when there are more than the preceding
+        //         and next.
+<span class="nc" id="L555">        Map&lt;Integer, Set&lt;Integer&gt; &gt; theJunctionMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+
+        // key = pixel coordinates of all pixels involved in junctions
+        // value = PairInt holding index of edge that pixel is located in and
+        //         holding the index within that edge of the pixel.
+        //         for example, a pixel located in edges(0) at offset=100
+        //         would have PairInt(0, 100) as a value.
+<span class="nc" id="L562">        Map&lt;Integer, PairInt&gt; theJunctionLocationMap = new HashMap&lt;Integer, PairInt&gt;();</span>
+
+<span class="nc" id="L564">        int n = edges.size();</span>
+        
+        // key = image pixel index, 
+        // value = pairint of edge index, and index within edge
+<span class="nc" id="L568">        Map&lt;Integer, PairInt&gt; pointLocator = new HashMap&lt;Integer, PairInt&gt;();</span>
+        
+        // key = center of junction pixel coordinates
+        // value = number of times this point is a value in the first theJunctionMap
+<span class="nc" id="L572">        Map&lt;Integer, Integer&gt; theJunctionFrequencyMap = new HashMap&lt;Integer, Integer&gt;();</span>
+        
+        // O(N)
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        for (int edgeIdx = 0; edgeIdx &lt; n; edgeIdx++) {</span>
+            
+<span class="nc" id="L577">            PairIntArray edge = edges.get(edgeIdx);</span>
+            
+<span class="nc bnc" id="L579" title="All 2 branches missed.">            for (int uIdx = 0; uIdx &lt; edge.getN(); uIdx++) {</span>
+                
+<span class="nc" id="L581">                int pixIdx = img.getIndex(edge.getX(uIdx), edge.getY(uIdx));</span>
+                
+<span class="nc" id="L583">                pointLocator.put(Integer.valueOf(pixIdx), new PairInt(edgeIdx, </span>
+                    uIdx));
+            }
+        }
+        
+<span class="nc" id="L588">        int w = img.getWidth();</span>
+<span class="nc" id="L589">        int h = img.getHeight();</span>
+        
+<span class="nc" id="L591">        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
+<span class="nc" id="L592">        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
+                
+        // 8 * O(N)
+<span class="nc bnc" id="L595" title="All 2 branches missed.">        for (int edgeIdx = 0; edgeIdx &lt; n; edgeIdx++) {</span>
+            
+<span class="nc" id="L597">            PairIntArray edge = edges.get(edgeIdx);</span>
+            
+<span class="nc bnc" id="L599" title="All 2 branches missed.">            for (int iEdgeIdx = 0; iEdgeIdx &lt; edge.getN(); iEdgeIdx++) {</span>
+                
+<span class="nc" id="L601">                int col = edge.getX(iEdgeIdx);</span>
+<span class="nc" id="L602">                int row = edge.getY(iEdgeIdx);</span>
+                
+<span class="nc" id="L604">                int uIdx = img.getIndex(col, row);</span>
+                
+<span class="nc" id="L606">                Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();</span>
+                                
+<span class="nc bnc" id="L608" title="All 2 branches missed.">                for (int nIdx = 0; nIdx &lt; dxs.length; nIdx++) {</span>
+                    
+<span class="nc" id="L610">                    int x = col + dxs[nIdx];</span>
+<span class="nc" id="L611">                    int y = row + dys[nIdx];</span>
+                    
+<span class="nc bnc" id="L613" title="All 8 branches missed.">                    if ((x &lt; 0) || (x &gt; (w - 1)) || (y &lt; 0) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L614">                        continue;</span>
+                    }
+                    
+<span class="nc" id="L617">                    int vIdx = img.getIndex(x, y);</span>
+                    
+<span class="nc" id="L619">                    PairInt vLoc = pointLocator.get(Integer.valueOf(vIdx));</span>
+                    
+<span class="nc bnc" id="L621" title="All 2 branches missed.">                    if (vLoc != null) {</span>
+<span class="nc" id="L622">                        neighbors.add(vLoc);</span>
+                    }
+                }
+
+<span class="nc bnc" id="L626" title="All 2 branches missed.">                if (neighbors.size() &gt; 2) {</span>
+                    
+<span class="nc" id="L628">                    Set&lt;Integer&gt; indexes = new HashSet&lt;Integer&gt;();</span>
+                                        
+<span class="nc bnc" id="L630" title="All 2 branches missed.">                    for (PairInt p : neighbors) {</span>
+                        
+<span class="nc" id="L632">                        int edge2Idx = p.getX();</span>
+<span class="nc" id="L633">                        int iEdge2Idx = p.getY();</span>
+                        
+<span class="nc" id="L635">                        PairIntArray vEdge = edges.get(edge2Idx);</span>
+                        
+<span class="nc" id="L637">                        int vIdx = img.getIndex(vEdge.getX(iEdge2Idx), </span>
+<span class="nc" id="L638">                            vEdge.getY(iEdge2Idx));</span>
+                        
+<span class="nc" id="L640">                        Integer key = Integer.valueOf(vIdx);</span>
+                        
+<span class="nc" id="L642">                        theJunctionLocationMap.put(key, p);</span>
+                        
+<span class="nc" id="L644">                        indexes.add(key);</span>
+                        
+<span class="nc" id="L646">                        Integer freq = theJunctionFrequencyMap.get(key);</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">                        if (freq == null) {</span>
+<span class="nc" id="L648">                            theJunctionFrequencyMap.put(key, Integer.valueOf(1));</span>
+                        } else {
+<span class="nc" id="L650">                            theJunctionFrequencyMap.put(key, </span>
+<span class="nc" id="L651">                                Integer.valueOf(freq.intValue() + 1));</span>
+                        }
+<span class="nc" id="L653">                    }</span>
+                                        
+<span class="nc" id="L655">                    theJunctionMap.put(Integer.valueOf(uIdx), indexes);</span>
+                    
+<span class="nc" id="L657">                    theJunctionLocationMap.put(Integer.valueOf(uIdx), </span>
+                        new PairInt(edgeIdx, iEdgeIdx));
+                    
+                } 
+                // if (neighbors.size() == 2) is handled in findJoinPoints
+            }
+        }
+        
+        // visit each junction and make sure the real center is the only one
+        // stored
+<span class="nc" id="L667">        Set&lt;Integer&gt; remove = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L668">        Set&lt;Integer&gt; doNotRemove = new HashSet&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L669" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : theJunctionMap.entrySet()) {</span>
+            
+<span class="nc" id="L671">            Integer pixelIndex = entry.getKey();</span>
+            
+<span class="nc" id="L673">            Set&lt;Integer&gt; neighborIndexes = entry.getValue();</span>
+<span class="nc" id="L674">            int nN = neighborIndexes.size();</span>
+            
+<span class="nc" id="L676">            int maxN = Integer.MIN_VALUE;</span>
+            
+<span class="nc bnc" id="L678" title="All 2 branches missed.">            for (Integer pixelIndex2 : neighborIndexes) {</span>
+                
+<span class="nc bnc" id="L680" title="All 2 branches missed.">                if (remove.contains(pixelIndex2)) {</span>
+<span class="nc" id="L681">                    continue;</span>
+                }
+                            
+<span class="nc" id="L684">                Set&lt;Integer&gt; neighborIndexes2 = theJunctionMap.get(pixelIndex2);</span>
+                
+<span class="nc bnc" id="L686" title="All 2 branches missed.">                if (neighborIndexes2 == null) {</span>
+<span class="nc" id="L687">                    continue;</span>
+                }
+                                
+<span class="nc bnc" id="L690" title="All 2 branches missed.">                if (neighborIndexes2.size() &gt; nN) {</span>
+<span class="nc bnc" id="L691" title="All 2 branches missed.">                    if (neighborIndexes2.size() &gt; maxN) {</span>
+<span class="nc" id="L692">                        maxN = neighborIndexes2.size();</span>
+                    }
+                }
+<span class="nc" id="L695">            }</span>
+            
+<span class="nc bnc" id="L697" title="All 2 branches missed.">            if (maxN &gt; Integer.MIN_VALUE) {</span>
+
+<span class="nc bnc" id="L699" title="All 2 branches missed.">                if (!doNotRemove.contains(pixelIndex)) {</span>
+<span class="nc" id="L700">                    remove.add(pixelIndex);</span>
+                }
+                
+            } else {
+<span class="nc" id="L704">                doNotRemove.add(pixelIndex);</span>
+                // remove the neighbors from the junction map
+<span class="nc bnc" id="L706" title="All 2 branches missed.">                for (Integer pixelIndex2 : neighborIndexes) {</span>
+<span class="nc" id="L707">                    int mapFreq2 = theJunctionFrequencyMap.get(pixelIndex2);</span>
+                    
+<span class="nc bnc" id="L709" title="All 4 branches missed.">                    if (!doNotRemove.contains(pixelIndex2) &amp;&amp; (mapFreq2 == 1)) {</span>
+<span class="nc" id="L710">                        remove.add(pixelIndex2);</span>
+                    }
+<span class="nc" id="L712">                }</span>
+            }
+<span class="nc" id="L714">        }</span>
+        
+<span class="nc bnc" id="L716" title="All 2 branches missed.">        for (Integer pixelIndex : remove) {</span>
+<span class="nc" id="L717">            theJunctionMap.remove(pixelIndex);</span>
+<span class="nc" id="L718">        }</span>
+        
+<span class="nc" id="L720">        junctionMap = theJunctionMap;</span>
+<span class="nc" id="L721">        junctionLocationMap = theJunctionLocationMap;</span>
+<span class="nc" id="L722">    }</span>
+    
+    private Map&lt;Integer, PairIntArray&gt; createIndexedMap(List&lt;PairIntArray&gt; edges) {
+        
+<span class="nc" id="L726">        Map&lt;Integer, PairIntArray&gt; output = new HashMap&lt;Integer, PairIntArray&gt;();</span>
+<span class="nc bnc" id="L727" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+<span class="nc" id="L728">            output.put(Integer.valueOf(i), edges.get(i));</span>
+        }
+           
+<span class="nc" id="L731">        return output;</span>
+    }
+    
+    /**
+     * join edges using information in the member variable joinPoints
+     * and update the junction and joinPoint information after the
+     * changes.  Note that the join points must be first or last positions
+     * in an edge in edges.
+     * @param joinPoints map with key = the PairInt with x being the edge index
+     * and y being the index of the first join point within the edge, value =
+     * the PairInt with x being the edge index
+     * and y being the index of the other join point within the edge
+     * @param edges
+     * @return 
+     */
+    protected List&lt;PairIntArray&gt; joinOnJoinPoints(Map&lt;PairInt, PairInt&gt; 
+        joinPoints, List&lt;PairIntArray&gt; edges) {
+        
+        //order the join points by the edge number of the first join point
+        
+<span class="nc" id="L751">        int[] indexes = new int[joinPoints.size()];</span>
+<span class="nc" id="L752">        PairInt[][] edgeJoins = new PairInt[joinPoints.size()][2];</span>
+<span class="nc" id="L753">        int count = 0;</span>
+<span class="nc bnc" id="L754" title="All 2 branches missed.">        for (Entry&lt;PairInt, PairInt&gt; entry : joinPoints.entrySet()) {</span>
+<span class="nc" id="L755">            PairInt loc0 = entry.getKey();</span>
+<span class="nc" id="L756">            PairInt loc1 = entry.getValue();</span>
+<span class="nc" id="L757">            indexes[count] = loc0.getX();</span>
+<span class="nc" id="L758">            edgeJoins[count] = new PairInt[]{loc0, loc1};</span>
+<span class="nc" id="L759">            count++;</span>
+<span class="nc" id="L760">        }</span>
+<span class="nc" id="L761">        QuickSort.sortBy1stArg(indexes, edgeJoins);</span>
+        
+<span class="nc" id="L763">        long nPointsBefore = countPixelsInEdges(edges);</span>
+        
+        // put the edges in a map to remove and search updates faster
+<span class="nc" id="L766">        Map&lt;Integer, PairIntArray&gt; edgesMap = createIndexedMap(edges);</span>
+                
+<span class="nc" id="L768">        int n = edgeJoins.length;</span>
+        
+<span class="nc bnc" id="L770" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; --i) {</span>
+           
+//algorithms.misc.MiscDebug.printJoinPoints(edgeJoins, 0, i, edgesMap);
+           
+<span class="nc" id="L774">            PairInt[] entry = edgeJoins[i];</span>
+
+<span class="nc" id="L776">            PairInt loc0 = entry[0];</span>
+            
+<span class="nc" id="L778">            PairInt loc1 = entry[1];</span>
+            
+            // if they've already been merged
+<span class="nc bnc" id="L781" title="All 2 branches missed.">            if (loc0.getX() == loc1.getX()) {</span>
+<span class="nc" id="L782">                continue;</span>
+            }
+            
+            // the smaller edge index should be loc1 and the larger loc0,
+<span class="nc bnc" id="L786" title="All 2 branches missed.">            if (loc1.getX() &gt; loc0.getX()) {</span>
+<span class="nc" id="L787">                PairInt tmp = loc0;</span>
+<span class="nc" id="L788">                loc0 = loc1;</span>
+<span class="nc" id="L789">                loc1 = tmp;</span>
+            }
+<span class="nc" id="L791">            final int edge0Idx = loc0.getX();</span>
+<span class="nc" id="L792">            final int edge1Idx = loc1.getX();</span>
+            
+            // edge to move
+<span class="nc" id="L795">            int removedEdgeIdx = edge0Idx;</span>
+<span class="nc" id="L796">            PairIntArray edge0 = edgesMap.remove(Integer.valueOf(removedEdgeIdx));</span>
+
+<span class="nc" id="L798">            int n0 = edge0.getN();</span>
+            
+<span class="nc bnc" id="L800" title="All 4 branches missed.">            if ((loc0.getY() != 0) &amp;&amp; (loc0.getY() != (n0 - 1))){</span>
+                /*
+                this can happen if there is an error in the join point algorithm
+                resulting in the same join point to 2 different edges.  an update
+                in the location will eventually be an error in one of them.
+                
+                After more testing, will change this to discard the join point
+                and warn of error.
+                */
+<span class="nc" id="L809">                throw new IllegalStateException(&quot;ERROR in the updates? &quot; + </span>
+<span class="nc" id="L810">                    &quot; loc0=&quot; + edge0Idx + &quot;,&quot; + loc0.getY() + &quot; n=&quot; + n0 +</span>
+                    &quot; i=&quot; + i + &quot; (nedges=&quot; + n + &quot;) to append edge &quot; 
+                    + edge0Idx + &quot; to edge &quot; + edge1Idx);
+            }
+            
+            // join point should be at the beginning, so reverse if not
+<span class="nc bnc" id="L816" title="All 2 branches missed.">            if (loc0.getY() == (n0 - 1)) {</span>
+                
+<span class="nc" id="L818">                edge0.reverse();</span>
+<span class="nc" id="L819">                loc0.setY(0);</span>
+                
+                // everything with smaller index than i in edgeJoins with
+                // edgeIndex==loc0.getX() needs to be updated for this reversal.
+                // idx becomes n-idx-1
+<span class="nc bnc" id="L824" title="All 2 branches missed.">                for (int j = (i - 1); j &gt; -1; --j) {</span>
+<span class="nc" id="L825">                    PairInt[] vEntry = edgeJoins[j];</span>
+<span class="nc bnc" id="L826" title="All 2 branches missed.">                    for (int k = 0; k &lt; 2; k++) {</span>
+<span class="nc" id="L827">                        PairInt vLoc = vEntry[k];</span>
+<span class="nc bnc" id="L828" title="All 2 branches missed.">                        if (vLoc.getX() == edge0Idx) {</span>
+<span class="nc" id="L829">                            int idxRev = n0 - vLoc.getY() - 1;</span>
+<span class="nc" id="L830">                            vLoc.setY(idxRev);</span>
+                        }
+                    }
+                }
+            }
+            // edge to receive new edge
+<span class="nc" id="L836">            PairIntArray edge1 = edgesMap.get(Integer.valueOf(loc1.getX()));</span>
+<span class="nc" id="L837">            int n1 = edge1.getN();</span>
+            // endpoint should be at the end, so reverse if not
+<span class="nc bnc" id="L839" title="All 2 branches missed.">            if (loc1.getY() == 0) {</span>
+                
+<span class="nc" id="L841">                edge1.reverse();</span>
+<span class="nc" id="L842">                loc1.setY(n1 - 1);</span>
+                
+                // everything with smaller index than i in edgeJoins that has
+                // edgeIndex==loc1.getX() needs to be updated for this reversal.
+                // idx becomes n-idx-1
+<span class="nc bnc" id="L847" title="All 2 branches missed.">                for (int j = (i - 1); j &gt; -1; --j) {</span>
+<span class="nc" id="L848">                    PairInt[] vEntry = edgeJoins[j];</span>
+<span class="nc bnc" id="L849" title="All 2 branches missed.">                    for (int k = 0; k &lt; 2; k++) {</span>
+<span class="nc" id="L850">                        PairInt vLoc = vEntry[k];</span>
+<span class="nc bnc" id="L851" title="All 2 branches missed.">                        if (vLoc.getX() == edge1Idx) {</span>
+<span class="nc" id="L852">                            int idxRev = n1 - vLoc.getY() - 1;</span>
+<span class="nc" id="L853">                            vLoc.setY(idxRev);</span>
+                        }
+                    }
+                }
+            }
+            
+<span class="nc" id="L859">            final int indexWithinEdge0 = loc0.getY();</span>
+<span class="nc" id="L860">            final int indexWithinEdge1 = loc1.getY();</span>
+            
+            // --- append edge0 to edge1 ----
+<span class="nc" id="L863">            edge1.addAll(edge0);</span>
+            
+            // for earlier items in array edgeJoins
+            // need to update all edge indexes and indexes within edge.
+            
+            // loc0 got appended to loc1 --&gt; [edge1][edge0]  
+            // points in edge0 need n1 added to them
+            
+            // first, will only update the indexes within the edge for 
+            // edgeIndex == loc0.getX()
+            //     the new offset index = n0 + index
+<span class="nc bnc" id="L874" title="All 2 branches missed.">            for (int j = (i - 1); j &gt; -1; --j) {</span>
+<span class="nc" id="L875">                PairInt[] vEntry = edgeJoins[j];</span>
+<span class="nc bnc" id="L876" title="All 2 branches missed.">                for (int k = 0; k &lt; 2; k++) {</span>
+<span class="nc" id="L877">                    PairInt vLoc = vEntry[k];</span>
+<span class="nc bnc" id="L878" title="All 2 branches missed.">                    if (vLoc.getX() == edge0Idx) {</span>
+<span class="nc" id="L879">                        int idxEdit = vLoc.getY() + n1;</span>
+<span class="nc" id="L880">                        vLoc.setY(idxEdit);</span>
+                    }
+                }
+            }
+            
+            // any edge index &gt; loc0 gets reduced by one, but if == it gets replaced by loc1.getX()
+<span class="nc bnc" id="L886" title="All 2 branches missed.">            for (int j = (i - 1); j &gt; -1; --j) {</span>
+<span class="nc" id="L887">                PairInt[] vEntry = edgeJoins[j];</span>
+<span class="nc bnc" id="L888" title="All 2 branches missed.">                for (int k = 0; k &lt; 2; k++) {</span>
+<span class="nc" id="L889">                    PairInt vLoc = vEntry[k];</span>
+<span class="nc bnc" id="L890" title="All 2 branches missed.">                    if (vLoc.getX() &gt; edge0Idx) {</span>
+<span class="nc" id="L891">                        int editX = vLoc.getX() - 1;</span>
+<span class="nc" id="L892">                        vLoc.setX(editX);</span>
+<span class="nc bnc" id="L893" title="All 2 branches missed.">                    } else if (vLoc.getX() == edge0Idx) {</span>
+<span class="nc" id="L894">                        int editX = edge1Idx;</span>
+<span class="nc" id="L895">                        vLoc.setX(editX);</span>
+                    }
+                }
+            }
+
+            // the output map keeps 0 to loc1.getx(),
+            // but loc0.getX() + 1 gets moved to loc0.getX()
+            //    and on until have reached size() - 1
+<span class="nc bnc" id="L903" title="All 2 branches missed.">            for (int j = (removedEdgeIdx + 1); j &lt;= edgesMap.size(); ++j) {</span>
+<span class="nc" id="L904">                PairIntArray v = edgesMap.remove(Integer.valueOf(j));</span>
+<span class="nc bnc" id="L905" title="All 4 branches missed.">                assert(v != null);</span>
+<span class="nc" id="L906">                edgesMap.put(Integer.valueOf(j - 1), v);</span>
+            }
+       
+        }
+        
+<span class="nc" id="L911">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc bnc" id="L912" title="All 2 branches missed.">        for (int i = 0; i &lt; edgesMap.size(); i++) {</span>
+<span class="nc" id="L913">            Integer key = Integer.valueOf(i);</span>
+<span class="nc" id="L914">            PairIntArray v = edgesMap.get(key);</span>
+<span class="nc bnc" id="L915" title="All 4 branches missed.">            assert(v != null);</span>
+<span class="nc" id="L916">            output.add(v);</span>
+        }
+        
+<span class="nc" id="L919">        return output;</span>
+    }
+    
+    /**
+     * return whether the point can be swapped with the nearest endpoint.
+     * &lt;pre&gt;
+     * returns 
+     *     0: for no need to reorder
+     *     1: for it not being an endpoint but can be re-ordered
+     *     -1: for cannot be re-ordered
+     * &lt;/pre&gt;
+     * @param pointEdgeLocation
+     * @param edge
+     * @return code 
+       &lt;pre&gt; returns 
+           0: for no need to reorder
+           1: for it not being an endpoint but can be re-ordered
+           -1: for cannot be re-ordered,
+       &lt;/pre&gt;
+     */
+    private int canBeReordered(PairInt pointEdgeLocation, PairIntArray edge) {
+        
+<span class="nc" id="L941">        int n = edge.getN();</span>
+        
+<span class="nc bnc" id="L943" title="All 4 branches missed.">        if ((pointEdgeLocation.getY() == 0) || (pointEdgeLocation.getY() == (n - 1))) {</span>
+<span class="nc" id="L944">            return 0;</span>
+        }
+        
+<span class="nc bnc" id="L947" title="All 4 branches missed.">        if ((pointEdgeLocation.getY() &gt; 2) &amp;&amp; (pointEdgeLocation.getY() &lt; (n - 3))) {</span>
+<span class="nc" id="L948">            return -1;</span>
+        }
+        
+<span class="nc" id="L951">        int idxOrig = pointEdgeLocation.getY();</span>
+        
+<span class="nc" id="L953">        int check0Idx = 0;</span>
+<span class="nc" id="L954">        int check1Idx = 2;</span>
+        
+<span class="nc bnc" id="L956" title="All 4 branches missed.">        if ((n &gt; 3) &amp;&amp; (idxOrig == (n - 2))) {</span>
+<span class="nc" id="L957">            check0Idx = n - 3;</span>
+<span class="nc" id="L958">            check1Idx = n - 1;</span>
+        }
+        
+<span class="nc" id="L961">        int diffX = edge.getX(check0Idx) - edge.getX(check1Idx);</span>
+<span class="nc" id="L962">        int diffY = edge.getY(check0Idx) - edge.getY(check1Idx);</span>
+<span class="nc bnc" id="L963" title="All 4 branches missed.">        if ((Math.abs(diffX) &gt; 1) || (Math.abs(diffY) &gt; 1)) {</span>
+<span class="nc" id="L964">            return -1;</span>
+        }
+        
+<span class="nc" id="L967">        return 1;            </span>
+    }
+    
+    /**
+     * If pointEdgeLocation is near the beginning or end of edge, 
+     * swap it with the point that is the endpoint and update the given 
+     * data structures with the updated information.
+     * @param pointEdgeLocation
+     * @param edge
+     * @return 1 for did re-order, 0 for no need to re-order, else -1 for cannot
+     * re-order
+     */
+    private int reorderIfNearEnd(PairInt pointEdgeLocation, 
+        PairIntArray edge,
+        PairInt connectingEdgeLocation, PairIntArray connectingEdge) {
+        
+<span class="nc" id="L983">        int n = edge.getN();</span>
+        
+<span class="nc bnc" id="L985" title="All 4 branches missed.">        if ((pointEdgeLocation.getY() == 0) || (pointEdgeLocation.getY() == (n - 1))) {</span>
+<span class="nc" id="L986">            return 0;</span>
+        }
+        
+        /*
+        looks like max offset from end is 2
+         @ . [....]
+
+         @ .
+         . [....]
+        */
+
+<span class="nc bnc" id="L997" title="All 4 branches missed.">        if ((pointEdgeLocation.getY() &gt; 2) &amp;&amp; (pointEdgeLocation.getY() &lt; (n - 3))) {</span>
+<span class="nc" id="L998">            return 0;</span>
+        }
+                            
+<span class="nc" id="L1001">        int idxOrig = pointEdgeLocation.getY();</span>
+        int idxSwap;
+<span class="nc bnc" id="L1003" title="All 2 branches missed.">        if (idxOrig == 1) {</span>
+<span class="nc" id="L1004">            idxSwap = 0;</span>
+<span class="nc bnc" id="L1005" title="All 2 branches missed.">        } else if (idxOrig == (n - 2)) {</span>
+<span class="nc" id="L1006">            idxSwap = n - 1;</span>
+        } else {            
+            /*
+            can just swap it with first or last point if the swapped point
+            is adjacent to the point right before the point to be swapped,
+            in other words, does not break a connection in the edge
+            */
+<span class="nc bnc" id="L1013" title="All 2 branches missed.">            if (idxOrig == 2) {</span>
+<span class="nc" id="L1014">                idxSwap = 0;</span>
+            } else {
+<span class="nc" id="L1016">                idxSwap = n - 1;</span>
+            }
+<span class="nc" id="L1018">            int prevX = edge.getX(idxOrig - 1);</span>
+<span class="nc" id="L1019">            int prevY = edge.getY(idxOrig - 1);</span>
+<span class="nc" id="L1020">            int endX = edge.getX(0);</span>
+<span class="nc" id="L1021">            int endY = edge.getY(0);</span>
+<span class="nc bnc" id="L1022" title="All 4 branches missed.">            if ((Math.abs(prevX - endX) &gt; 1) || (Math.abs(prevY - endY) &gt; 1)) {</span>
+<span class="nc" id="L1023">                return -1;</span>
+            }
+        }
+        
+        /*
+        if swap position is still adjacent to the connecting point,
+        can complete the change.
+        */
+<span class="nc" id="L1031">        int connectedX = connectingEdge.getX(connectingEdgeLocation.getY());</span>
+<span class="nc" id="L1032">        int connectedY = connectingEdge.getY(connectingEdgeLocation.getY());</span>
+        
+<span class="nc" id="L1034">        int swapX = edge.getX(idxSwap);</span>
+<span class="nc" id="L1035">        int swapY = edge.getY(idxSwap);</span>
+        
+<span class="nc bnc" id="L1037" title="All 4 branches missed.">        if ((Math.abs(connectedX - swapX) &gt; 1) || (Math.abs(connectedY - swapY) &gt; 1)) {</span>
+<span class="nc" id="L1038">            return -1;</span>
+        }
+ 
+<span class="nc" id="L1041">        pointEdgeLocation.setY(idxSwap);</span>
+
+<span class="nc" id="L1043">        return 1;            </span>
+    }
+
+    private int spliceEdgesAtJunctionsIfImproves(List&lt;PairIntArray&gt; edges) {
+                       
+        /*        
+        The main goal is to make better contours.
+        
+        Edges with junctions can sometimes be spliced and rejoined with another
+        junction edge to make a better edge where better edge may be a longer
+        edge or a closed contour useful for determining transformations
+        between images containing the contour.
+        
+        could be used with shape templates...
+        
+        For now, will make a simple algorithm which tries to increase the
+        length of the longest edges in a junction.
+        */
+        
+<span class="nc" id="L1062">        int nSplices = 0;</span>
+        
+        // key = edge index.  
+        // value = pixel indexes.
+        //   the pixel indexes are used to find values in junctionLocatorMap
+        //   to update it as points are moved to and from edges.
+<span class="nc" id="L1068">        Map&lt;Integer, Set&lt;Integer&gt;&gt; theEdgeToPixelIndexMap = </span>
+            new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();
+        
+<span class="nc bnc" id="L1071" title="All 2 branches missed.">        for (Entry&lt;Integer, PairInt&gt; entry : junctionLocationMap.entrySet()) {</span>
+<span class="nc" id="L1072">            Integer pixelIndex = entry.getKey();</span>
+<span class="nc" id="L1073">            PairInt loc = entry.getValue();</span>
+<span class="nc" id="L1074">            Integer edgeIndex = Integer.valueOf(loc.getX());</span>
+            
+<span class="nc" id="L1076">            Set&lt;Integer&gt; pixelIndexes = theEdgeToPixelIndexMap.get(edgeIndex);</span>
+<span class="nc bnc" id="L1077" title="All 2 branches missed.">            if (pixelIndexes == null) {</span>
+<span class="nc" id="L1078">                pixelIndexes = new HashSet&lt;Integer&gt;();</span>
+            }
+<span class="nc" id="L1080">            pixelIndexes.add(pixelIndex);</span>
+<span class="nc" id="L1081">            theEdgeToPixelIndexMap.put(edgeIndex, pixelIndexes);</span>
+<span class="nc" id="L1082">        }</span>
+        
+<span class="nc bnc" id="L1084" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L1085">            algorithms.misc.MiscDebug.assertConsistentEdgeCapacity(</span>
+                theEdgeToPixelIndexMap, junctionLocationMap, junctionMap, 
+                edges);
+        }
+        
+<span class="nc bnc" id="L1090" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : junctionMap.entrySet()) {</span>
+                        
+<span class="nc" id="L1092">            Integer centerPixelIndex = entry.getKey();</span>
+<span class="nc" id="L1093">            PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);</span>
+<span class="nc bnc" id="L1094" title="All 4 branches missed.">            assert(centerLoc != null);</span>
+
+            /*
+            if (debug) {
+                
+                log.info(&quot;processing junction w/ center pixel index=&quot; + centerPixelIndex
+                    + &quot; and loc=&quot; + centerLoc.getX() + &quot;:&quot; + centerLoc.getY());
+
+                String str = algorithms.misc.MiscDebug.printJunctionsToString(
+                    junctionLocationMap, junctionMap, edges, img);
+                log.info(str);
+                
+            }
+            */
+            
+<span class="nc" id="L1109">            Set&lt;Integer&gt; adjIndexes = entry.getValue();</span>
+            
+<span class="nc" id="L1111">            int[] pixIndexes = new int[adjIndexes.size() + 1];</span>
+            
+            // lengths holds the edge up until the junction.  splices the edge
+            // at the junction figuratively and counts number of pixels before
+            // and after splice and keeps the longest.
+<span class="nc" id="L1116">            int[] lengths = new int[pixIndexes.length];</span>
+            
+<span class="nc" id="L1118">            pixIndexes[0] = centerPixelIndex.intValue();</span>
+<span class="nc" id="L1119">            lengths[0] = (new Splice(edges.get(centerLoc.getX())))</span>
+<span class="nc" id="L1120">                .getLengthOfLongestSide(centerLoc.getY());</span>
+            
+<span class="nc" id="L1122">            int maxN = lengths[0];</span>
+<span class="nc" id="L1123">            int maxNPixIdx = pixIndexes[0];</span>
+<span class="nc" id="L1124">            boolean foundAnotherEdge = false;</span>
+            
+<span class="nc" id="L1126">            int count = 1;</span>
+            
+            // for junctions on the same edge, need to count the portions
+            // of their edge which are on oppossite sides of the junction,
+            // so need to track the maxN, then correct the lengths of splice
+            // from same edge afterwards
+            
+<span class="nc bnc" id="L1133" title="All 2 branches missed.">            for (Integer pixIndex : adjIndexes) {</span>
+                
+<span class="nc" id="L1135">                pixIndexes[count] = pixIndex.intValue();</span>
+                
+<span class="nc" id="L1137">                PairInt loc = junctionLocationMap.get(pixIndex);</span>
+            
+<span class="nc bnc" id="L1139" title="All 2 branches missed.">                if ((centerLoc.getX() == loc.getX())) {</span>
+<span class="nc" id="L1140">                    count++;</span>
+<span class="nc" id="L1141">                    continue;</span>
+                }
+                
+<span class="nc" id="L1144">                foundAnotherEdge = true;</span>
+                
+<span class="nc" id="L1146">                Splice splice = new Splice(edges.get(loc.getX()));</span>
+                                                
+<span class="nc" id="L1148">                lengths[count] = splice.getLengthOfLongestSide(loc.getY());</span>
+           
+<span class="nc bnc" id="L1150" title="All 2 branches missed.">                if (lengths[count] &gt; maxN) {</span>
+<span class="nc" id="L1151">                    maxN = lengths[count];</span>
+<span class="nc" id="L1152">                    maxNPixIdx = pixIndex;</span>
+                }
+                
+<span class="nc" id="L1155">                count++;</span>
+<span class="nc" id="L1156">            }</span>
+            
+<span class="nc bnc" id="L1158" title="All 2 branches missed.">            if (!foundAnotherEdge) {</span>
+<span class="nc" id="L1159">                continue;</span>
+            }
+
+            //-- correct the lengths for the junctions from edge maxNEdgeIdx --
+<span class="nc" id="L1163">            PairInt maxNLoc = junctionLocationMap.get(maxNPixIdx);</span>
+<span class="nc" id="L1164">            Splice maxNSplice = new Splice(edges.get(maxNLoc.getX()));</span>
+<span class="nc" id="L1165">            int maxNSpliceOtherSideN = maxNSplice.splice(new int[]{maxNLoc.getY()})[1].getN();</span>
+            // correct the splice lengths if they are from the same edge
+<span class="nc bnc" id="L1167" title="All 2 branches missed.">            for (int ii = 0; ii &lt; count; ++ii) {</span>
+<span class="nc" id="L1168">                int pixIdx = pixIndexes[ii];</span>
+<span class="nc" id="L1169">                PairInt loc = junctionLocationMap.get(pixIdx);</span>
+<span class="nc bnc" id="L1170" title="All 4 branches missed.">                if ((loc.getX() != maxNLoc.getX()) || (pixIdx == maxNPixIdx)) {</span>
+<span class="nc" id="L1171">                    continue;</span>
+                }
+<span class="nc" id="L1173">                lengths[ii] = maxNSpliceOtherSideN;</span>
+            }
+            
+<span class="nc bnc" id="L1176" title="All 4 branches missed.">            if ((maxN &gt; lengths.length) || (maxN &gt; 10000000)) {</span>
+<span class="nc" id="L1177">                MultiArrayMergeSort.sortByDecr(lengths, pixIndexes);</span>
+            } else {
+<span class="nc" id="L1179">                CountingSort.sortByDecr(lengths, pixIndexes, maxN);</span>
+            }
+            
+<span class="nc" id="L1182">            int pixIdx0 = pixIndexes[0];</span>
+            
+<span class="nc" id="L1184">            int pixIdx1 = pixIndexes[1];</span>
+            
+<span class="nc" id="L1186">            PairInt loc0 = junctionLocationMap.get(Integer.valueOf(pixIdx0));</span>
+<span class="nc" id="L1187">            final int edge0Idx = loc0.getX();</span>
+<span class="nc" id="L1188">            final int indexWithinEdge0 = loc0.getY();</span>
+            
+<span class="nc" id="L1190">            PairInt loc1 = junctionLocationMap.get(Integer.valueOf(pixIdx1));</span>
+<span class="nc" id="L1191">            final int edge1Idx = loc1.getX();</span>
+<span class="nc" id="L1192">            final int indexWithinEdge1 = loc1.getY();</span>
+                      
+<span class="nc bnc" id="L1194" title="All 6 branches missed.">            if (edge0Idx != edge1Idx &amp;&amp; (lengths[0] != 0) &amp;&amp; (lengths[1] != 0)) {</span>
+                
+<span class="nc" id="L1196">                Set&lt;Integer&gt; edgePixelIndexes = </span>
+<span class="nc" id="L1197">                    theEdgeToPixelIndexMap.get(Integer.valueOf(edge0Idx));</span>
+<span class="nc bnc" id="L1198" title="All 4 branches missed.">                assert(edgePixelIndexes != null);</span>
+                
+<span class="nc" id="L1200">                int[] splice0Y = new int[]{indexWithinEdge0};</span>
+<span class="nc" id="L1201">                Splice splice0 = new Splice(edges.get(edge0Idx));</span>
+
+<span class="nc" id="L1203">                Map&lt;Integer, PairInt&gt; smallerSpliceLocations0 = new</span>
+                    HashMap&lt;Integer, PairInt&gt;();
+<span class="nc" id="L1205">                Map&lt;Integer, PairInt&gt; largerSpliceLocations0 = new</span>
+                    HashMap&lt;Integer, PairInt&gt;();
+                // splice splice0 into 2 edges and put updated i
+<span class="nc" id="L1208">                PairIntArray[] spliced0 = splice0.splice(splice0Y, </span>
+                    edgePixelIndexes, junctionLocationMap, 
+                    smallerSpliceLocations0, largerSpliceLocations0);
+                
+<span class="nc" id="L1212">                int[] splice1Y = new int[]{indexWithinEdge1};</span>
+<span class="nc" id="L1213">                Splice splice1 = new Splice(edges.get(edge1Idx));  </span>
+                
+<span class="nc" id="L1215">                edgePixelIndexes = </span>
+<span class="nc" id="L1216">                    theEdgeToPixelIndexMap.get(Integer.valueOf(edge1Idx));</span>
+<span class="nc bnc" id="L1217" title="All 4 branches missed.">                assert(edgePixelIndexes != null);</span>
+<span class="nc" id="L1218">                Map&lt;Integer, PairInt&gt; smallerSpliceLocations1 = new</span>
+                    HashMap&lt;Integer, PairInt&gt;();
+<span class="nc" id="L1220">                Map&lt;Integer, PairInt&gt; largerSpliceLocations1 = new</span>
+                    HashMap&lt;Integer, PairInt&gt;();
+<span class="nc" id="L1222">                PairIntArray[] spliced1 = splice1.splice(splice1Y,</span>
+                    edgePixelIndexes, junctionLocationMap, 
+                    smallerSpliceLocations1, largerSpliceLocations1);
+                
+                // if not spliced, continue.
+<span class="nc bnc" id="L1227" title="All 4 branches missed.">                if ((spliced0[0].getN() == 0) || (spliced1[0].getN() == 0)) {</span>
+<span class="nc" id="L1228">                    continue;</span>
+                }
+                
+<span class="nc" id="L1231">                int splice01InsertedIdx = edges.size();</span>
+                
+                // add the smaller part of spliced0 and spliced1 to edges
+<span class="nc" id="L1234">                edges.add(spliced0[1]);</span>
+                
+<span class="nc" id="L1236">                int splice11InsertedIdx = edges.size();</span>
+                
+<span class="nc" id="L1238">                edges.add(spliced1[1]);</span>
+                
+<span class="nc" id="L1240">                int splice00N = spliced0[0].getN();</span>
+<span class="nc" id="L1241">                int splice10N = spliced1[0].getN();</span>
+                
+                // if splice0Y[0] is first point, reverse the edge before append
+<span class="nc bnc" id="L1244" title="All 2 branches missed.">                if (splice0Y[0] == 0) {</span>
+<span class="nc" id="L1245">                    spliced0[0].reverse();</span>
+<span class="nc" id="L1246">                    splice0Y[0] = splice00N - 1;</span>
+                    
+                    // --- update largerSpliceLocations0 to reverse index within edge
+<span class="nc bnc" id="L1249" title="All 2 branches missed.">                    for (Entry&lt;Integer, PairInt&gt; sEntry : largerSpliceLocations0.entrySet()) {</span>
+<span class="nc" id="L1250">                        PairInt sLoc = sEntry.getValue();</span>
+<span class="nc" id="L1251">                        int idxRev = splice00N - sLoc.getY() - 1;</span>
+                        
+<span class="nc" id="L1253">                        sLoc.setY(idxRev);</span>
+<span class="nc bnc" id="L1254" title="All 4 branches missed.">                        assert(idxRev &lt; splice00N);                        </span>
+<span class="nc" id="L1255">                    }</span>
+                }
+                
+                // if splice1Y[0] is not the first point, reverse the edge before append
+<span class="nc bnc" id="L1259" title="All 2 branches missed.">                if (splice1Y[0] != 0) {</span>
+<span class="nc" id="L1260">                    spliced1[0].reverse();</span>
+<span class="nc" id="L1261">                    splice1Y[0] = 0;</span>
+                    
+                    // --- update largerSpliceLocations1 to reverse index within edge
+<span class="nc bnc" id="L1264" title="All 2 branches missed.">                    for (Entry&lt;Integer, PairInt&gt; sEntry : largerSpliceLocations1.entrySet()) {</span>
+<span class="nc" id="L1265">                        PairInt sLoc = sEntry.getValue();</span>
+<span class="nc" id="L1266">                        int idxRev = splice10N - sLoc.getY() - 1;</span>
+                        
+<span class="nc" id="L1268">                        sLoc.setY(idxRev);</span>
+<span class="nc bnc" id="L1269" title="All 4 branches missed.">                        assert(idxRev &lt; splice10N);</span>
+<span class="nc" id="L1270">                    }</span>
+                }
+                
+                // append splice1 to splice0                
+<span class="nc" id="L1274">                spliced0[0].addAll(spliced1[0]);</span>
+                
+<span class="nc" id="L1276">                ++nSplices;</span>
+                
+<span class="nc" id="L1278">                PairIntArray edge0 = edges.get(edge0Idx);</span>
+<span class="nc" id="L1279">                edge0.swapContents(spliced0[0]);</span>
+<span class="nc" id="L1280">                spliced0[0] = null;</span>
+                
+                // --- update location map for information in
+                // --- smallerSpliceLocations0, largerSpliceLocations0 and
+                // --- smallerSpliceLocations1, largerSpliceLocations1
+<span class="nc bnc" id="L1285" title="All 2 branches missed.">                for (Entry&lt;Integer, PairInt&gt; sEntry : largerSpliceLocations0.entrySet()) {</span>
+<span class="nc" id="L1286">                    Integer sPixelIndex = sEntry.getKey();</span>
+<span class="nc" id="L1287">                    PairInt sLoc = sEntry.getValue();</span>
+<span class="nc" id="L1288">                    PairInt loc = junctionLocationMap.get(sPixelIndex);</span>
+<span class="nc bnc" id="L1289" title="All 4 branches missed.">                    assert (loc != null);</span>
+                    
+                    // edge index remains same, but the index within edge may have changed
+<span class="nc" id="L1292">                    loc.setY(sLoc.getY());</span>
+<span class="nc bnc" id="L1293" title="All 4 branches missed.">                    assert(sLoc.getY() &lt; edge0.getN());</span>
+<span class="nc" id="L1294">                }</span>
+<span class="nc bnc" id="L1295" title="All 2 branches missed.">                for (Entry&lt;Integer, PairInt&gt; sEntry : smallerSpliceLocations0.entrySet()) {</span>
+<span class="nc" id="L1296">                    Integer sPixelIndex = sEntry.getKey();</span>
+<span class="nc" id="L1297">                    PairInt sLoc = sEntry.getValue();</span>
+<span class="nc" id="L1298">                    PairInt loc = junctionLocationMap.get(sPixelIndex);</span>
+<span class="nc bnc" id="L1299" title="All 4 branches missed.">                    assert (loc != null);</span>
+                    
+                    // location is new edge with edited index within edge
+<span class="nc" id="L1302">                    loc.setX(splice01InsertedIdx);</span>
+<span class="nc" id="L1303">                    loc.setY(sLoc.getY());</span>
+                    
+                    //-- move item from theEdgeToPixelIndexMap too
+                    //-- remove sPixelIndex from edge loc0.getX() and add it to splice01InsertedIdx
+<span class="nc" id="L1307">                    Set&lt;Integer&gt; sPixelIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(edge0Idx));</span>
+<span class="nc" id="L1308">                    boolean removed = sPixelIndexes.remove(sPixelIndex);</span>
+<span class="nc bnc" id="L1309" title="All 4 branches missed.">                    assert(removed == true);</span>
+                    
+<span class="nc" id="L1311">                    sPixelIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(splice01InsertedIdx));</span>
+<span class="nc bnc" id="L1312" title="All 2 branches missed.">                    if (sPixelIndexes == null) {</span>
+<span class="nc" id="L1313">                        sPixelIndexes = new HashSet&lt;Integer&gt;();</span>
+                    }
+<span class="nc" id="L1315">                    sPixelIndexes.add(sPixelIndex);</span>
+<span class="nc" id="L1316">                    theEdgeToPixelIndexMap.put(Integer.valueOf(splice01InsertedIdx), sPixelIndexes);</span>
+<span class="nc" id="L1317">                }</span>
+<span class="nc bnc" id="L1318" title="All 2 branches missed.">                for (Entry&lt;Integer, PairInt&gt; sEntry : smallerSpliceLocations1.entrySet()) {</span>
+<span class="nc" id="L1319">                    Integer sPixelIndex = sEntry.getKey();</span>
+<span class="nc" id="L1320">                    PairInt sLoc = sEntry.getValue();</span>
+<span class="nc" id="L1321">                    PairInt loc = junctionLocationMap.get(sPixelIndex);</span>
+<span class="nc bnc" id="L1322" title="All 4 branches missed.">                    assert (loc != null);</span>
+                    
+                    // location is new edge with edited index within edge
+<span class="nc" id="L1325">                    loc.setX(splice11InsertedIdx);</span>
+<span class="nc" id="L1326">                    loc.setY(sLoc.getY());</span>
+                    
+                    //-- move item from theEdgeToPixelIndexMap too
+                    //-- remove sPixelIndex from edge loc1.getX() and add it to splice11InsertedIdx
+<span class="nc" id="L1330">                    Set&lt;Integer&gt; sPixelIndexes = </span>
+<span class="nc" id="L1331">                        theEdgeToPixelIndexMap.get(Integer.valueOf(edge1Idx));</span>
+<span class="nc" id="L1332">                    boolean removed = sPixelIndexes.remove(sPixelIndex);</span>
+<span class="nc bnc" id="L1333" title="All 4 branches missed.">                    assert(removed == true);</span>
+<span class="nc" id="L1334">                    theEdgeToPixelIndexMap.put(Integer.valueOf(edge1Idx), sPixelIndexes);</span>
+                    
+<span class="nc" id="L1336">                    sPixelIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(splice11InsertedIdx));</span>
+<span class="nc bnc" id="L1337" title="All 2 branches missed.">                    if (sPixelIndexes == null) {</span>
+<span class="nc" id="L1338">                        sPixelIndexes = new HashSet&lt;Integer&gt;();</span>
+                    }
+<span class="nc" id="L1340">                    sPixelIndexes.add(sPixelIndex);</span>
+<span class="nc" id="L1341">                    theEdgeToPixelIndexMap.put(Integer.valueOf(splice11InsertedIdx), sPixelIndexes);</span>
+<span class="nc" id="L1342">                }</span>
+<span class="nc bnc" id="L1343" title="All 2 branches missed.">                for (Entry&lt;Integer, PairInt&gt; sEntry : largerSpliceLocations1.entrySet()) {</span>
+<span class="nc" id="L1344">                    Integer sPixelIndex = sEntry.getKey();</span>
+<span class="nc" id="L1345">                    PairInt sLoc = sEntry.getValue();</span>
+<span class="nc" id="L1346">                    PairInt loc = junctionLocationMap.get(sPixelIndex);</span>
+<span class="nc bnc" id="L1347" title="All 4 branches missed.">                    assert (loc != null);</span>
+                   
+                    // location after append is loc0.getX() with offset of splice00N
+<span class="nc" id="L1350">                    loc.setX(edge0Idx);</span>
+<span class="nc" id="L1351">                    loc.setY(sLoc.getY() + splice00N);</span>
+<span class="nc bnc" id="L1352" title="All 4 branches missed.">                    assert(loc.getY() &lt; edge0.getN());</span>
+                    
+                    //-- move item from theEdgeToPixelIndexMap too
+                    //-- remove sPixelIndex from edge loc1.getX() and add it to loc0.getX()
+<span class="nc" id="L1356">                    Integer key = Integer.valueOf(edge1Idx);</span>
+<span class="nc" id="L1357">                    Set&lt;Integer&gt; sPixelIndexes = theEdgeToPixelIndexMap.get(key);</span>
+<span class="nc" id="L1358">                    boolean removed = sPixelIndexes.remove(sPixelIndex);</span>
+<span class="nc bnc" id="L1359" title="All 4 branches missed.">                    assert(removed == true);</span>
+<span class="nc" id="L1360">                    theEdgeToPixelIndexMap.put(key, sPixelIndexes);</span>
+                    
+<span class="nc" id="L1362">                    key = Integer.valueOf(edge0Idx);</span>
+<span class="nc" id="L1363">                    sPixelIndexes = theEdgeToPixelIndexMap.get(key);</span>
+<span class="nc bnc" id="L1364" title="All 2 branches missed.">                    if (sPixelIndexes == null) {</span>
+<span class="nc" id="L1365">                        sPixelIndexes = new HashSet&lt;Integer&gt;();</span>
+                    }
+<span class="nc" id="L1367">                    sPixelIndexes.add(sPixelIndex);</span>
+<span class="nc" id="L1368">                    theEdgeToPixelIndexMap.put(key, sPixelIndexes);</span>
+<span class="nc" id="L1369">                }</span>
+                
+                // remove edge1Idx from edges as it's now part of edge edge0Idx
+<span class="nc" id="L1372">                PairIntArray removedEdge = edges.remove(edge1Idx);</span>
+<span class="nc bnc" id="L1373" title="All 4 branches missed.">                assert(removedEdge != null);</span>
+
+<span class="nc bnc" id="L1375" title="All 2 branches missed.">                if (debug) {</span>
+                    // assert that theEdgeToPixelIndexMap does not have any
+                    // entries for the edge that was just removed.
+                    // all entries in theEdgeToPixelIndexMap and the junction
+                    // maps should have been updated above for edge1Idx
+<span class="nc" id="L1380">                    Set&lt;Integer&gt; pixelIndexes = theEdgeToPixelIndexMap.get(edge1Idx);</span>
+<span class="nc bnc" id="L1381" title="All 6 branches missed.">                    assert(pixelIndexes == null || pixelIndexes.isEmpty());</span>
+                }
+
+                // ---- update all entries in junctionLocationMap and pixelIndexes for the removal
+                // ---- there shouldn't be any entries in for loc1.getX() at this point though
+                /*
+                0                0
+                ...             ...
+                49               49
+                50 &lt;-- rm        prev 51, now 50.
+                51 
+                */
+<span class="nc bnc" id="L1393" title="All 2 branches missed.">                for (int eIdx = (edge1Idx + 1); eIdx &lt;= edges.size(); ++eIdx) {</span>
+                                        
+<span class="nc" id="L1395">                    Integer edgeIndex = Integer.valueOf(eIdx);</span>
+                    
+<span class="nc" id="L1397">                    Set&lt;Integer&gt; pixelIndexes = theEdgeToPixelIndexMap.get(edgeIndex);</span>
+                   
+<span class="nc bnc" id="L1399" title="All 2 branches missed.">                    if (pixelIndexes != null) {</span>
+<span class="nc bnc" id="L1400" title="All 2 branches missed.">                        for (Integer pixelIndex : pixelIndexes) {</span>
+<span class="nc" id="L1401">                            PairInt loc = junctionLocationMap.get(pixelIndex);</span>
+<span class="nc" id="L1402">                            loc.setX(loc.getX() - 1);</span>
+<span class="nc" id="L1403">                        }</span>
+                        
+<span class="nc" id="L1405">                        theEdgeToPixelIndexMap.remove(edgeIndex);</span>
+                        
+<span class="nc" id="L1407">                        Integer edgeIndexEarlier = Integer.valueOf(eIdx - 1);</span>
+                    
+<span class="nc" id="L1409">                        theEdgeToPixelIndexMap.put(edgeIndexEarlier, pixelIndexes);</span>
+                    }                                        
+                }
+                
+<span class="nc bnc" id="L1413" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L1414">                    algorithms.misc.MiscDebug.assertConsistentEdgeCapacity(</span>
+                        theEdgeToPixelIndexMap, junctionLocationMap, 
+                        junctionMap, edges);
+                }
+            }
+<span class="nc" id="L1419">        } </span>
+        
+<span class="nc" id="L1421">        return nSplices;</span>
+    }
+
+    protected void reduceMultipleEndpointsForEdge(
+        List&lt;PairIntArray&gt; edges,
+        Map&lt;Integer, Set&lt;PointPairInt&gt;&gt; edgeFirstEndPointMap,
+        Map&lt;Integer, Set&lt;PointPairInt&gt;&gt; edgeLastEndPointMap, 
+        Map&lt;PairInt, PairInt&gt; endPointMap, Set&lt;PointPairInt&gt; theJoinPoints) {
+        
+<span class="nc" id="L1430">        Map&lt;Integer, Set&lt;PointPairInt&gt;&gt; tmpFirstRemoveMap = new HashMap&lt;Integer, Set&lt;PointPairInt&gt;&gt;();</span>
+        
+<span class="nc" id="L1432">        Map&lt;Integer, Set&lt;PointPairInt&gt;&gt; tmpLastRemoveMap = new HashMap&lt;Integer, Set&lt;PointPairInt&gt;&gt;();</span>
+        
+<span class="nc bnc" id="L1434" title="All 2 branches missed.">        for (int type = 0; type &lt; 2; ++type) {</span>
+        
+<span class="nc" id="L1436">            Map&lt;Integer, Set&lt;PointPairInt&gt;&gt; edgeMap = edgeFirstEndPointMap;</span>
+<span class="nc bnc" id="L1437" title="All 2 branches missed.">            if (type == 1) {</span>
+<span class="nc" id="L1438">                edgeMap = edgeLastEndPointMap;</span>
+            }
+            
+<span class="nc bnc" id="L1441" title="All 2 branches missed.">            for (Entry&lt;Integer, Set&lt;PointPairInt&gt;&gt; entry : edgeMap.entrySet()) {</span>
+
+<span class="nc" id="L1443">                Set&lt;PointPairInt&gt; joinPointSet = entry.getValue();</span>
+
+<span class="nc bnc" id="L1445" title="All 2 branches missed.">                if (joinPointSet.size() &lt; 2) {</span>
+<span class="nc" id="L1446">                    continue;</span>
+                }
+
+                // has more than one joint point for this endpoint, though some
+                // might have already been removed and are in tmpFirstRemoveMap
+                // if so
+     
+<span class="nc bnc" id="L1453" title="All 2 branches missed.">                if (log.isLoggable(Level.FINE)) {</span>
+                    // construct a warning
+<span class="nc" id="L1455">                    StringBuilder sb = new StringBuilder(&quot;edge &quot;);</span>
+<span class="nc" id="L1456">                    sb.append(entry.getKey().toString())</span>
+<span class="nc" id="L1457">                        .append(&quot; has &quot;).append(Integer.toString(joinPointSet.size()))</span>
+<span class="nc" id="L1458">                        .append(&quot; first endpoints, so deciding between them:&quot;);</span>
+                
+<span class="nc bnc" id="L1460" title="All 2 branches missed.">                    for (PointPairInt joinPoint : entry.getValue()) {</span>
+<span class="nc" id="L1461">                        PairInt loc0 = joinPoint.getKey();</span>
+<span class="nc" id="L1462">                        PairInt loc1 = joinPoint.getValue();            </span>
+<span class="nc" id="L1463">                        PairIntArray edge0 = edges.get(loc0.getX());</span>
+<span class="nc" id="L1464">                        PairIntArray edge1 = edges.get(loc1.getX());            </span>
+<span class="nc" id="L1465">                        int x0 = edge0.getX(loc0.getY());</span>
+<span class="nc" id="L1466">                        int y0 = edge0.getY(loc0.getY());</span>
+<span class="nc" id="L1467">                        int x1 = edge1.getX(loc1.getY());</span>
+<span class="nc" id="L1468">                        int y1 = edge1.getY(loc1.getY());                </span>
+<span class="nc" id="L1469">                        sb.append(&quot;\n&quot;)</span>
+<span class="nc" id="L1470">                            .append(&quot; &quot;).append(Integer.toString(loc0.getX())).append(&quot;:&quot;)</span>
+<span class="nc" id="L1471">                            .append(Integer.toString(loc0.getY()))</span>
+<span class="nc" id="L1472">                            .append(&quot; (&quot;).append(Integer.toString(x0)).append(&quot;,&quot;)</span>
+<span class="nc" id="L1473">                            .append(Integer.toString(y0)).append(&quot;)&lt;--&gt;&quot;)</span>
+<span class="nc" id="L1474">                            .append(&quot; &quot;).append(Integer.toString(loc1.getX())).append(&quot;:&quot;)</span>
+<span class="nc" id="L1475">                            .append(Integer.toString(loc1.getY()))</span>
+<span class="nc" id="L1476">                            .append(&quot; (&quot;).append(Integer.toString(x1)).append(&quot;,&quot;)</span>
+<span class="nc" id="L1477">                            .append(Integer.toString(y1)).append(&quot;)&quot;);</span>
+<span class="nc" id="L1478">                    }</span>
+<span class="nc" id="L1479">                    log.warning(sb.toString());</span>
+                }
+                
+                // choose closest join point pair, and break ties with those that
+                // have higher number of members that are already endpoints.
+
+<span class="nc" id="L1485">                PointPairInt closestJoinPoint = null;</span>
+<span class="nc" id="L1486">                int closestDistSq = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1487">                int closestCanBeReordered0 = -99;</span>
+<span class="nc" id="L1488">                int closestCanBeReordered1 = -99;</span>
+                
+<span class="nc bnc" id="L1490" title="All 2 branches missed.">                for (PointPairInt joinPoint : joinPointSet) {</span>
+
+<span class="nc" id="L1492">                    PairInt loc0 = joinPoint.getKey();</span>
+<span class="nc" id="L1493">                    PairIntArray edge0 = edges.get(loc0.getX());</span>
+<span class="nc" id="L1494">                    int n0 = edge0.getN();</span>
+                    
+<span class="nc" id="L1496">                    Set&lt;PointPairInt&gt; removedFirstSet = </span>
+<span class="nc" id="L1497">                        tmpFirstRemoveMap.get(Integer.valueOf(loc0.getX()));</span>
+<span class="nc bnc" id="L1498" title="All 2 branches missed.">                    if (removedFirstSet == null) {</span>
+<span class="nc" id="L1499">                        removedFirstSet = new HashSet&lt;PointPairInt&gt;();</span>
+<span class="nc" id="L1500">                        tmpFirstRemoveMap.put(Integer.valueOf(loc0.getX()), removedFirstSet);</span>
+                    }
+                    
+<span class="nc" id="L1503">                    Set&lt;PointPairInt&gt; removedLastSet = </span>
+<span class="nc" id="L1504">                        tmpLastRemoveMap.get(Integer.valueOf(loc0.getX()));</span>
+<span class="nc bnc" id="L1505" title="All 2 branches missed.">                    if (removedLastSet == null) {</span>
+<span class="nc" id="L1506">                        removedLastSet = new HashSet&lt;PointPairInt&gt;();</span>
+<span class="nc" id="L1507">                        tmpLastRemoveMap.put(Integer.valueOf(loc0.getX()), removedLastSet);</span>
+                    }
+
+<span class="nc bnc" id="L1510" title="All 6 branches missed.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &lt; 2) &amp;&amp; removedFirstSet.contains(joinPoint)) {</span>
+<span class="nc" id="L1511">                        continue;</span>
+                    }
+<span class="nc bnc" id="L1513" title="All 6 branches missed.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &gt; (n0 - 3)) &amp;&amp; removedLastSet.contains(joinPoint)) {</span>
+<span class="nc" id="L1514">                        continue;</span>
+                    }
+
+<span class="nc" id="L1517">                    PairInt loc1 = joinPoint.getValue();</span>
+<span class="nc" id="L1518">                    PairIntArray edge1 = edges.get(loc1.getX());</span>
+
+<span class="nc bnc" id="L1520" title="All 4 branches missed.">                    assert(edge0 != null);</span>
+<span class="nc bnc" id="L1521" title="All 4 branches missed.">                    assert(edge1 != null);</span>
+
+<span class="nc" id="L1523">                    int diffX = edge0.getX(loc0.getY()) - edge1.getX(loc1.getY());</span>
+<span class="nc" id="L1524">                    int diffY = edge0.getY(loc0.getY()) - edge1.getY(loc1.getY());</span>
+<span class="nc" id="L1525">                    int distSq = (diffX * diffX) + (diffY * diffY);</span>
+<span class="nc bnc" id="L1526" title="All 2 branches missed.">                    if (distSq &lt; closestDistSq) {</span>
+<span class="nc" id="L1527">                        closestDistSq = distSq;</span>
+<span class="nc" id="L1528">                        closestJoinPoint = joinPoint;</span>
+<span class="nc" id="L1529">                        closestCanBeReordered0 = canBeReordered(loc0, edge0);</span>
+<span class="nc" id="L1530">                        closestCanBeReordered1 = canBeReordered(loc1, edge1);</span>
+<span class="nc bnc" id="L1531" title="All 2 branches missed.">                    } else if (distSq == closestDistSq) {</span>
+<span class="nc" id="L1532">                        int cr0 = canBeReordered(loc0, edge0);</span>
+<span class="nc" id="L1533">                        int cr1 = canBeReordered(loc1, edge1);;</span>
+<span class="nc bnc" id="L1534" title="All 4 branches missed.">                        if (closestCanBeReordered0 == 0 &amp;&amp; closestCanBeReordered1 == 0) {</span>
+<span class="nc" id="L1535">                            continue;</span>
+                        }
+<span class="nc bnc" id="L1537" title="All 12 branches missed.">                        if (((cr0 == 0) &amp;&amp; (cr1 == 0)) ||</span>
+                            (closestCanBeReordered0 != 0 &amp;&amp; closestCanBeReordered1 != 0
+                                &amp;&amp; ((cr0 == 0) || cr1 == 0))
+                            ) {
+<span class="nc" id="L1541">                            closestDistSq = distSq;</span>
+<span class="nc" id="L1542">                            closestJoinPoint = joinPoint;</span>
+<span class="nc" id="L1543">                            closestCanBeReordered0 = cr0;</span>
+<span class="nc" id="L1544">                            closestCanBeReordered1 = cr1;</span>
+                        }
+                    }
+<span class="nc" id="L1547">                }</span>
+
+                //TODO: revisit this 
+<span class="nc bnc" id="L1550" title="All 2 branches missed.">                if (closestJoinPoint == null) {</span>
+<span class="nc" id="L1551">                    continue;</span>
+                }                
+                //assert (closestJoinPoint != null);
+
+<span class="nc bnc" id="L1555" title="All 2 branches missed.">                for (PointPairInt joinPoint : joinPointSet) {</span>
+
+<span class="nc bnc" id="L1557" title="All 2 branches missed.">                    if (joinPoint.equals(closestJoinPoint)) {</span>
+<span class="nc" id="L1558">                        continue;</span>
+                    }
+
+<span class="nc" id="L1561">                    PairInt loc0 = joinPoint.getKey();</span>
+<span class="nc" id="L1562">                    PairIntArray edge0 = edges.get(loc0.getX());</span>
+<span class="nc" id="L1563">                    int n0 = edge0.getN();</span>
+
+<span class="nc" id="L1565">                    Set&lt;PointPairInt&gt; removedFirstSet0 = </span>
+<span class="nc" id="L1566">                        tmpFirstRemoveMap.get(Integer.valueOf(loc0.getX()));</span>
+                   
+<span class="nc" id="L1568">                    Set&lt;PointPairInt&gt; removedLastSet0 = </span>
+<span class="nc" id="L1569">                        tmpLastRemoveMap.get(Integer.valueOf(loc0.getX()));</span>
+                    
+<span class="nc bnc" id="L1571" title="All 6 branches missed.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &lt; 2) &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
+<span class="nc" id="L1572">                        continue;</span>
+                    }
+<span class="nc bnc" id="L1574" title="All 6 branches missed.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &gt; (n0 - 3)) &amp;&amp; removedLastSet0.contains(joinPoint)) {</span>
+<span class="nc" id="L1575">                        continue;</span>
+                    }
+
+<span class="nc" id="L1578">                    PairInt loc1 = joinPoint.getValue();</span>
+<span class="nc" id="L1579">                    PairIntArray edge1 = edges.get(loc1.getX());</span>
+<span class="nc" id="L1580">                    int n1 = edge1.getN();</span>
+
+<span class="nc bnc" id="L1582" title="All 4 branches missed.">                    assert(edge0 != null);</span>
+<span class="nc bnc" id="L1583" title="All 4 branches missed.">                    assert(edge1 != null);</span>
+
+<span class="nc bnc" id="L1585" title="All 4 branches missed.">                    if ((n0 == 3) &amp;&amp; (loc0.getY() == 1)) {</span>
+<span class="nc" id="L1586">                        log.fine(String.format(</span>
+                            &quot;removing point (%d,%d) but it is in the middle of an edge of size 3&quot;,
+<span class="nc" id="L1588">                            edge0.getX(1), edge0.getY(1)));</span>
+                    }
+                    
+<span class="nc" id="L1591">                    Set&lt;PointPairInt&gt; removedFirstSet1 = </span>
+<span class="nc" id="L1592">                        tmpFirstRemoveMap.get(Integer.valueOf(loc1.getX()));</span>
+<span class="nc bnc" id="L1593" title="All 2 branches missed.">                    if (removedFirstSet1 == null) {</span>
+<span class="nc" id="L1594">                        removedFirstSet1 = new HashSet&lt;PointPairInt&gt;();</span>
+<span class="nc" id="L1595">                        tmpFirstRemoveMap.put(Integer.valueOf(loc1.getX()), removedFirstSet1);</span>
+                    }
+                    
+<span class="nc" id="L1598">                    Set&lt;PointPairInt&gt; removedLastSet1 = </span>
+<span class="nc" id="L1599">                        tmpLastRemoveMap.get(Integer.valueOf(loc1.getX()));</span>
+<span class="nc bnc" id="L1600" title="All 2 branches missed.">                    if (removedLastSet1 == null) {</span>
+<span class="nc" id="L1601">                        removedLastSet1 = new HashSet&lt;PointPairInt&gt;();</span>
+<span class="nc" id="L1602">                        tmpLastRemoveMap.put(Integer.valueOf(loc1.getX()), removedLastSet1);</span>
+                    }
+
+<span class="nc" id="L1605">                    boolean isFirstEndPoint0 = false;</span>
+<span class="nc bnc" id="L1606" title="All 2 branches missed.">                    if (loc0.getY() == 0) {</span>
+<span class="nc" id="L1607">                        isFirstEndPoint0 = true;</span>
+<span class="nc bnc" id="L1608" title="All 4 branches missed.">                    } else if ((loc0.getY() != (n0 - 1)) &amp;&amp; (loc0.getY() &lt; 2)) {</span>
+<span class="nc" id="L1609">                        isFirstEndPoint0 = true;</span>
+                    }
+<span class="nc" id="L1611">                    boolean isFirstEndPoint1 = false;</span>
+<span class="nc bnc" id="L1612" title="All 2 branches missed.">                    if (loc1.getY() == 0) {</span>
+<span class="nc" id="L1613">                        isFirstEndPoint1 = true;</span>
+<span class="nc bnc" id="L1614" title="All 4 branches missed.">                    } else if ((loc1.getY() != (n1 - 1)) &amp;&amp; (loc1.getY() &lt; 2)) {</span>
+<span class="nc" id="L1615">                        isFirstEndPoint1 = true;</span>
+                    }
+
+<span class="nc bnc" id="L1618" title="All 4 branches missed.">                    if (isFirstEndPoint0 &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
+<span class="nc" id="L1619">                        continue;</span>
+<span class="nc bnc" id="L1620" title="All 4 branches missed.">                    } else if (!isFirstEndPoint0 &amp;&amp; removedLastSet0.contains(joinPoint)) {</span>
+<span class="nc" id="L1621">                        continue;</span>
+                    }
+
+<span class="nc bnc" id="L1624" title="All 2 branches missed.">                    if (isFirstEndPoint0) {</span>
+<span class="nc" id="L1625">                        removedFirstSet0.add(joinPoint);</span>
+                    } else {
+<span class="nc" id="L1627">                        removedLastSet0.add(joinPoint);</span>
+                    }
+<span class="nc bnc" id="L1629" title="All 2 branches missed.">                    if (isFirstEndPoint1) {</span>
+<span class="nc" id="L1630">                        removedFirstSet1.add(joinPoint);</span>
+                    } else {
+<span class="nc" id="L1632">                        removedLastSet1.add(joinPoint);</span>
+                    }
+
+<span class="nc" id="L1635">                    boolean removed = theJoinPoints.remove(joinPoint);</span>
+<span class="nc bnc" id="L1636" title="All 4 branches missed.">                    assert(removed);</span>
+                    
+<span class="nc" id="L1638">                    tmpFirstRemoveMap.put(Integer.valueOf(loc0.getX()), removedFirstSet0);</span>
+<span class="nc" id="L1639">                    tmpLastRemoveMap.put(Integer.valueOf(loc0.getX()), removedLastSet0);</span>
+                    
+<span class="nc" id="L1641">                    tmpFirstRemoveMap.put(Integer.valueOf(loc1.getX()), removedFirstSet1);</span>
+<span class="nc" id="L1642">                    tmpLastRemoveMap.put(Integer.valueOf(loc1.getX()), removedLastSet1);</span>
+<span class="nc" id="L1643">                }                </span>
+<span class="nc" id="L1644">            }</span>
+            
+            // --- update the edge maps for the changes ---
+            
+<span class="nc" id="L1648">            Map&lt;Integer, Set&lt;PointPairInt&gt;&gt; tmpMap = new HashMap&lt;Integer, Set&lt;PointPairInt&gt;&gt;();</span>
+            
+<span class="nc bnc" id="L1650" title="All 2 branches missed.">            for (Entry&lt;Integer, Set&lt;PointPairInt&gt;&gt; entry : edgeFirstEndPointMap.entrySet()) {</span>
+                
+<span class="nc" id="L1652">                Set&lt;PointPairInt&gt; rmJoinPointSet = tmpFirstRemoveMap.get(entry.getKey());</span>
+                
+<span class="nc bnc" id="L1654" title="All 4 branches missed.">                if (rmJoinPointSet == null || rmJoinPointSet.isEmpty()) {</span>
+<span class="nc" id="L1655">                    tmpMap.put(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L1656">                    continue;</span>
+                }
+                
+<span class="nc" id="L1659">                Set&lt;PointPairInt&gt; tmpJoinPointSet = new HashSet&lt;PointPairInt&gt;();</span>
+<span class="nc bnc" id="L1660" title="All 2 branches missed.">                for (PointPairInt joinPoint : entry.getValue()) {</span>
+<span class="nc bnc" id="L1661" title="All 2 branches missed.">                    if (!rmJoinPointSet.contains(joinPoint)) {</span>
+<span class="nc" id="L1662">                        tmpJoinPointSet.add(joinPoint);</span>
+                    }
+<span class="nc" id="L1664">                }</span>
+<span class="nc" id="L1665">                tmpMap.put(entry.getKey(), tmpJoinPointSet);</span>
+<span class="nc" id="L1666">            }</span>
+<span class="nc" id="L1667">            edgeFirstEndPointMap.clear();</span>
+<span class="nc" id="L1668">            edgeFirstEndPointMap.putAll(tmpMap);</span>
+            
+<span class="nc" id="L1670">            tmpMap = new HashMap&lt;Integer, Set&lt;PointPairInt&gt;&gt;();</span>
+            
+<span class="nc bnc" id="L1672" title="All 2 branches missed.">            for (Entry&lt;Integer, Set&lt;PointPairInt&gt;&gt; entry : edgeLastEndPointMap.entrySet()) {</span>
+                
+<span class="nc" id="L1674">                Set&lt;PointPairInt&gt; rmJoinPointSet = tmpLastRemoveMap.get(entry.getKey());</span>
+                
+<span class="nc bnc" id="L1676" title="All 4 branches missed.">                if (rmJoinPointSet == null || rmJoinPointSet.isEmpty()) {</span>
+<span class="nc" id="L1677">                    tmpMap.put(entry.getKey(), entry.getValue());</span>
+<span class="nc" id="L1678">                    continue;</span>
+                }
+                
+<span class="nc" id="L1681">                Set&lt;PointPairInt&gt; tmpJoinPointSet = new HashSet&lt;PointPairInt&gt;();</span>
+<span class="nc bnc" id="L1682" title="All 2 branches missed.">                for (PointPairInt joinPoint : entry.getValue()) {</span>
+<span class="nc bnc" id="L1683" title="All 2 branches missed.">                    if (!rmJoinPointSet.contains(joinPoint)) {</span>
+<span class="nc" id="L1684">                        tmpJoinPointSet.add(joinPoint);</span>
+                    }
+<span class="nc" id="L1686">                }</span>
+<span class="nc" id="L1687">                tmpMap.put(entry.getKey(), tmpJoinPointSet);</span>
+<span class="nc" id="L1688">            }</span>
+<span class="nc" id="L1689">            edgeLastEndPointMap.clear();</span>
+<span class="nc" id="L1690">            edgeLastEndPointMap.putAll(tmpMap);</span>
+        }
+        
+<span class="nc" id="L1693">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

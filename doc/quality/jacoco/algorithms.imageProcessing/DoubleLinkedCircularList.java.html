@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DoubleLinkedCircularList.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">DoubleLinkedCircularList.java</span></div><h1>DoubleLinkedCircularList.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DoubleLinkedCircularList.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">DoubleLinkedCircularList.java</span></div><h1>DoubleLinkedCircularList.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 /**
  * a doubly linked list with a sentinel in between the last and first item.
@@ -60,41 +60,57 @@ public class DoubleLinkedCircularList {
 <span class="nc" id="L60">            throw new IllegalArgumentException(&quot;node must have key set&quot;);</span>
         }
         
-<span class="fc" id="L63">        node.setRight(sentinel.getRight());</span>
-<span class="fc" id="L64">        sentinel.getRight().setLeft(node);</span>
-<span class="fc" id="L65">        sentinel.setRight(node);</span>
-<span class="fc" id="L66">        node.setLeft(sentinel);</span>
-<span class="fc" id="L67">        number++;</span>
+        // nodes are inserted to the right of the sentinel.
+                
+<span class="fc" id="L65">        HeapNode rightOfSentinel = sentinel.getRight();</span>
         
-<span class="fc" id="L69">        return node;</span>
+<span class="fc" id="L67">        node.setRight(rightOfSentinel);</span>
+<span class="fc" id="L68">        rightOfSentinel.setLeft(node);</span>
+<span class="fc" id="L69">        sentinel.setRight(node);</span>
+<span class="fc" id="L70">        node.setLeft(sentinel);</span>
+<span class="fc" id="L71">        number++;</span>
+        
+<span class="fc" id="L73">        return node;</span>
     }
 
     public boolean remove(int key) {
-<span class="fc" id="L73">        HeapNode cn = search(key);</span>
-<span class="fc" id="L74">        remove(cn);</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        return (cn != null);</span>
+<span class="fc" id="L77">        HeapNode cn = search(key);</span>
+<span class="fc" id="L78">        remove(cn);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        return (cn != null);</span>
     }
     
     public void remove(HeapNode node) {
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">    	if (node == null) {</span>
-<span class="nc" id="L80">    		return;</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">    	if (node == null) {</span>
+<span class="nc" id="L84">    		return;</span>
     	}
-<span class="fc" id="L82">        node.getRight().setLeft(node.getLeft());</span>
-<span class="fc" id="L83">        node.getLeft().setRight(node.getRight());</span>
+<span class="fc" id="L86">        node.getRight().setLeft(node.getLeft());</span>
+<span class="fc" id="L87">        node.getLeft().setRight(node.getRight());</span>
+        
+<span class="fc" id="L89">        HeapNode right = node.getRight();</span>
+<span class="fc" id="L90">        HeapNode left = node.getLeft();</span>
+        
+<span class="fc" id="L92">        right.setLeft(left);</span>
+<span class="fc" id="L93">        left.setRight(right);</span>
+        
+        // reset node's ends to a sentinel.  the user's of the class use that logic.
+<span class="fc" id="L96">        node.setRight(new HeapNode(sentinelKey));</span>
+<span class="fc" id="L97">        node.getRight().setRight(node);</span>
+<span class="fc" id="L98">        node.getRight().setLeft(node);</span>
+<span class="fc" id="L99">        node.setLeft(node.getRight());</span>
                 
-<span class="fc" id="L85">        number--;</span>
-<span class="fc" id="L86">    }</span>
+<span class="fc" id="L101">        number--;</span>
+<span class="fc" id="L102">    }</span>
    
     public HeapNode search(int key) {
         
-<span class="fc" id="L90">        HeapNode cn = sentinel.getRight();</span>
+<span class="fc" id="L106">        HeapNode cn = sentinel.getRight();</span>
         
-<span class="fc bfc" id="L92" title="All 4 branches covered.">        while ((cn.getKey() != sentinel.getKey()) &amp;&amp; (cn.getKey() != key)) {</span>
-<span class="fc" id="L93">            cn = cn.getRight();</span>
+<span class="fc bfc" id="L108" title="All 4 branches covered.">        while ((cn.getKey() != sentinel.getKey()) &amp;&amp; (cn.getKey() != key)) {</span>
+<span class="fc" id="L109">            cn = cn.getRight();</span>
         }
         
-<span class="pc bpc" id="L96" title="1 of 4 branches missed.">        return ((cn.getKey() != noValue) &amp;&amp;  (cn.getKey() != sentinel.getKey()))</span>
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">        return ((cn.getKey() != noValue) &amp;&amp;  (cn.getKey() != sentinel.getKey()))</span>
             ? cn : null;
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
