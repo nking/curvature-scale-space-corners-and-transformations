@@ -61,7 +61,7 @@ public class ShapeMatcher {
         int smallestGroupLimit = 100;
         //TODO: consider scaling this by image size or by size and res if one
         //  day that information is passed to this method
-        int largestGroupLimit = 1000;
+        int largestGroupLimit = 5000;
 
         ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true); 
         ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true); 

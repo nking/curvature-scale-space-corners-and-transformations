@@ -115,6 +115,11 @@ public class DFSContiguousValueFinder {
         int width = img.getWidth();
         int height = img.getHeight();
         
+        //int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        //int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        int[] dxs = new int[]{-1, 0,  1, 0};
+        int[] dys = new int[]{ 0, -1, 0, 1};
+        
         java.util.Stack<Integer> stack = new java.util.Stack<Integer>();
         
         //O(N)
@@ -145,41 +150,40 @@ public class DFSContiguousValueFinder {
 
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
-            for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
-                if ((vX < 0) || (vX > (width - 1))) {
+            for (int i = 0; i < dxs.length; ++i) {
+                
+                int vX = uX + dxs[i];
+                int vY = uY + dys[i];
+            
+                if ((vX < 0) || (vX > (width - 1)) || (vY < 0) || (vY > (height - 1))) {
                     continue;
                 }
-                for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
-                    if ((vY < 0) || (vY > (height - 1))) {
-                        continue;
-                    }
-                    
-                    int vIndex = (vY * width) + vX;
-            
-                    Integer vKey = Integer.valueOf(vIndex);
-                 
-                    if (visited.contains(vKey)) {
-                        continue;
-                    }
-                    
-                    //TODO: could consider not allowing diagonal connections
-                    
-                    visited.add(vKey);
-                
-                    int vPixValue = img.getValue(vIndex);
-            
-                    if ((notValue && (vPixValue == pixelValue)) ||
-                        (!notValue && (vPixValue != pixelValue))) {
-                        
-                        continue;
-                    }
-                   
-                    processPair(uKey, vKey, false);
-                
-                    // inserting back at the top of the stack assures that the 
-                    // search continues next from an associated point
-                    stack.add(vKey);
+
+                int vIndex = (vY * width) + vX;
+
+                Integer vKey = Integer.valueOf(vIndex);
+
+                if (visited.contains(vKey)) {
+                    continue;
                 }
+                    
+                //TODO: could consider not allowing diagonal connections
+
+                visited.add(vKey);
+
+                int vPixValue = img.getValue(vIndex);
+
+                if ((notValue && (vPixValue == pixelValue)) ||
+                    (!notValue && (vPixValue != pixelValue))) {
+
+                    continue;
+                }
+
+                processPair(uKey, vKey, false);
+                
+                // inserting back at the top of the stack assures that the 
+                // search continues next from an associated point
+                stack.add(vKey);
             }
         }
        
