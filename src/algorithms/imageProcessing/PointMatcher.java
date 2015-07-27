@@ -3820,7 +3820,7 @@ if (compTol == 1) {
 
             while (s2.getNextSubset(selected2) != -1) {
 
-                TransformationParameters params = tc.calulateEuclideanGivenScale(
+                TransformationParameters params = tc.calulateEuclidean(
                     set1.getX(selected1[0]), set1.getY(selected1[0]),
                     set1.getX(selected1[1]), set1.getY(selected1[1]),
                     set2.getX(selected2[0]), set2.getY(selected2[0]),
@@ -3858,7 +3858,7 @@ if (compTol == 1) {
                     }
                 }
 
-                params = tc.calulateEuclideanGivenScale(
+                params = tc.calulateEuclidean(
                     set1.getX(selected1[0]), set1.getY(selected1[0]),
                     set1.getX(selected1[1]), set1.getY(selected1[1]),
                     set2.getX(selected2[1]), set2.getY(selected2[1]),
@@ -3983,7 +3983,7 @@ if (compTol == 1) {
                         idx21 = swap;
                     }
 
-                    TransformationParameters params = tc.calulateEuclideanGivenScale(
+                    TransformationParameters params = tc.calulateEuclidean(
                         set1.getX(idx10), set1.getY(idx10),
                         set1.getX(idx11), set1.getY(idx11),
                         set2.getX(idx20), set2.getY(idx20),
@@ -4301,7 +4301,7 @@ if (compTol == 1) {
 
                 while (s2.getNextSubset(selected2) != -1) {
 
-                    TransformationParameters params = tc.calulateEuclideanGivenScale(
+                    TransformationParameters params = tc.calulateEuclidean(
                         set1Subsets[0].getX(selected1[0]), set1Subsets[0].getY(selected1[0]),
                         set1Subsets[0].getX(selected1[1]), set1Subsets[0].getY(selected1[1]),
                         set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
@@ -4339,7 +4339,7 @@ if (compTol == 1) {
                         }
                     }
 
-                    params = tc.calulateEuclideanGivenScale(
+                    params = tc.calulateEuclidean(
                         set1Subsets[0].getX(selected1[0]), set1Subsets[0].getY(selected1[0]),
                         set1Subsets[0].getX(selected1[1]), set1Subsets[0].getY(selected1[1]),
                         set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),
@@ -4460,7 +4460,7 @@ if (compTol == 1) {
 
                 while (s2.getNextSubset(selected2) != -1) {
 
-                    TransformationParameters params = tc.calulateEuclideanGivenScale(
+                    TransformationParameters params = tc.calulateEuclidean(
                         set1.getX(selected1[0]), set1.getY(selected1[0]),
                         set1.getX(selected1[1]), set1.getY(selected1[1]),
                         set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
@@ -4509,7 +4509,7 @@ if (compTol == 1) {
                             }
                         }
 
-                        params = tc.calulateEuclideanGivenScale(
+                        params = tc.calulateEuclidean(
                             set1.getX(selected1[0]), set1.getY(selected1[0]),
                             set1.getX(selected1[1]), set1.getY(selected1[1]),
                             set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),

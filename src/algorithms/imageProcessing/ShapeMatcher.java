@@ -6,8 +6,6 @@ import algorithms.misc.Histogram;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayDescendingComparator;
 import algorithms.util.ResourceFinder;
-import java.awt.Polygon;
-import java.awt.geom.PathIterator;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -48,6 +46,12 @@ public class ShapeMatcher {
         boolean performBinning = false;
         int binFactor1 = 1;
         
+        int kN = 4;
+        boolean performBinarySegmentation = true;
+        if (performBinarySegmentation) {
+            kN = 2;
+        }
+        
         /*
         one could start with essentially no limits here and then
         looks at the distribution of resulting contiguous group
@@ -59,11 +63,36 @@ public class ShapeMatcher {
         //  day that information is passed to this method
         int largestGroupLimit = 1000;
 
-        HistogramEqualization hEq = new HistogramEqualization(img1Grey);
-        hEq.applyFilter();
-        hEq = new HistogramEqualization(img2Grey);
-        hEq.applyFilter();
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true); 
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true); 
 
+        log.info("stats1=" + stats1.toString());
+        log.info("stats2=" + stats2.toString());
+        
+        boolean performHistEq = false;        
+        double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();
+        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();        
+        double meanDivMedian2 = stats2.getMean()/stats2.getMedian();
+        if (
+            ((median1DivMedian2 > 1) && ((median1DivMedian2 - 1) > 0.2)) ||
+            ((median1DivMedian2 < 1) && (median1DivMedian2 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian1 > 1) && ((meanDivMedian1 - 1) > 0.2)) ||
+            ((meanDivMedian1 < 1) && (meanDivMedian1 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian2 > 1) && ((meanDivMedian2 - 1) > 0.2)) ||
+            ((meanDivMedian2 < 1) && (meanDivMedian2 < 0.8))) {
+            performHistEq = true;
+        }
+        if (performHistEq) {
+            HistogramEqualization hEq = new HistogramEqualization(img1Grey);
+            hEq.applyFilter();
+            hEq = new HistogramEqualization(img2Grey);
+            hEq.applyFilter();
+        }
+            
         if (performBinning) {
             binFactor1 = (int) Math.ceil(
                 Math.max((float)img1Grey.getWidth()/200.f,
@@ -78,9 +107,9 @@ public class ShapeMatcher {
             img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
             img2Grey = imageProcessor.binImage(img2Grey, binFactor1);
         }
-        imageProcessor.applyImageSegmentation(img1Grey, 4);
-        imageProcessor.applyImageSegmentation(img2Grey, 4);
-           
+        imageProcessor.applyImageSegmentation(img1Grey, kN);
+        imageProcessor.applyImageSegmentation(img2Grey, kN);
+        
         Map<Integer, Integer> freqMap1 = Histogram.createAFrequencyMap(img1Grey);
         Map<Integer, Integer> freqMap2 = Histogram.createAFrequencyMap(img2Grey);
         
@@ -165,7 +194,7 @@ public class ShapeMatcher {
         float highLimit2 = largestGroupLimit;
         int nIter = 0;
         int nIterMax = 10;
-        while (((nIter == 0) || (n1 > 50) || (n2 > 50)) && (nIter < nIterMax)) {
+        while (false && ((nIter == 0) || (n1 > 50) || (n2 > 50)) && (nIter < nIterMax)) {
             for (int im = 0; im < 2; ++im) {
                 Map<Integer, List<GrahamScan>> hulls = hulls1;
                 Map<Integer, List<PairIntArray>> contigPoints = contigMap1;

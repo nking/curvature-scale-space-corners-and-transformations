@@ -261,8 +261,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
     }
     
      /**
-     * coordinate transformations from pair 1 to pair 2 are calculated 
-     * given "scale".
+     * coordinate transformations from pair 1 to pair 2 are calculated.
      * 
      * positive Y is up 
        positive X is right
@@ -280,7 +279,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * @param centroidY1
      * @return 
      */
-    public TransformationParameters calulateEuclideanGivenScale(
+    public TransformationParameters calulateEuclidean(
         final int set1X1, final int set1Y1, 
         final int set1X2, final int set1Y2,
         final int set2X1, final int set2Y1, 
@@ -371,7 +370,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         
         return params;
     }
-    
+   
     /**
      * from a set of transformation parameters params that transform
      * points in reference frame 1 into reference frame 2, create

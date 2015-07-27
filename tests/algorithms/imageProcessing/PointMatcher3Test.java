@@ -34,7 +34,7 @@ public class PointMatcher3Test extends TestCase {
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
     
-    public void testCalculateEuclideanTransformation() throws Exception {
+    public void estCalculateEuclideanTransformation() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -213,7 +213,7 @@ TransformationPointFit fit = fits.get(0);
         
     }
 
-    public void testCalculateEuclideanTransformation2()
+    public void estCalculateEuclideanTransformation2()
         throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -481,7 +481,7 @@ TransformationPointFit fit = fits.get(0);
         int z = 1;
     }*/
 
-    public void testSkyline() throws Exception {
+    public void estSkyline() throws Exception {
 
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",
@@ -719,15 +719,20 @@ TransformationPointFit fit = fits.get(0);
         tests skyline extractor, iterative corners, euclidean point matcher,
         then stereopojection calculation
         */
-
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-
+        String fileName1, fileName2;
+/*
+        fileName1 = "brown_lowe_2003_image1.jpg";
+        fileName2 = "brown_lowe_2003_image2.jpg";
+*/
         /*
-        String fileName1 = "venturi_mountain_j6_0001.png";
-        String fileName2 = "venturi_mountain_j6_0010.png";
+        fileName1 = "venturi_mountain_j6_0001.png";
+        fileName2 = "venturi_mountain_j6_0010.png";
         */
-
+        
+        fileName1 = "books_illum3_v0_695x555.png";
+        fileName2 = "books_illum3_v6_695x555.png";
+        
+        
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         int image1Width = img1.getWidth();
@@ -739,26 +744,27 @@ TransformationPointFit fit = fits.get(0);
         int image2Height = img2.getHeight();
 
         // mask out the sky
-            
-        ImageHelperForTests helper = new ImageHelperForTests(img1, true);
-        SkylineExtractor skylineExtractor = new SkylineExtractor();                    
-        PairIntArray outputSkyCentroid = new PairIntArray();
-        // sky are the zeros in this:
-        GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img1,
-            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+        if (fileName1.contains("brown") || fileName1.contains("venturi")) {
+            ImageHelperForTests helper = new ImageHelperForTests(img1, true);
+            SkylineExtractor skylineExtractor = new SkylineExtractor();                    
+            PairIntArray outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img1,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
 
-        ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.multiplyBinary(img1, resultMask);
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.multiplyBinary(img1, resultMask);
 
-        helper = new ImageHelperForTests(img2, true);
-        skylineExtractor = new SkylineExtractor();                    
-        outputSkyCentroid = new PairIntArray();
-        // sky are the zeros in this:
-        resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img2,
-            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-        imageProcessor.multiplyBinary(img2, resultMask);
+            helper = new ImageHelperForTests(img2, true);
+            skylineExtractor = new SkylineExtractor();                    
+            outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img2,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+            imageProcessor.multiplyBinary(img2, resultMask);
+        }
         
         PairIntArray outputMatchedScene = new PairIntArray();
         PairIntArray outputMatchedModel = new PairIntArray();

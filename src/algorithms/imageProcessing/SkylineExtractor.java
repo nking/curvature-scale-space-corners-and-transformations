@@ -309,6 +309,8 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
             mask.setValue(x, y, 0);
         }
         
+        log.info("number of sky points=" + points.size());
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();        
         double[] xycen = curveHelper.calculateXYCentroids(points);
         outputSkyCentroid.add((int)Math.round(xycen[0]), (int)Math.round(xycen[1]));
