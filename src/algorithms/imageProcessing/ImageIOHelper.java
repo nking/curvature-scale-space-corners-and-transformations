@@ -1040,6 +1040,34 @@ int z1 = 1;
             }
         }
     }
+    
+    public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
+        int yOffsetToApply, Image input, int nExtraForDot,
+        int rClr, int gClr, int bClr) throws 
+        IOException {
+        
+        if (points == null || input == null) {
+            return;
+        }
+                  
+        for (PairInt p : points) {
+
+            int x = p.getX() + xOffsetToApply;
+            int y = p.getY() + yOffsetToApply;
+
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                float xx = x + dx;
+                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     public static void addAlternatingColorCurvesToImage(
         List<PairIntArray> curves, String fileName, boolean writeImage, 

@@ -3781,6 +3781,25 @@ if (compTol == 1) {
     calculateEuclideanTransformationForSmallSets(
         PairIntArray set1, PairIntArray set2,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
+        
+        float toleranceTransX;
+        float toleranceTransY;
+        if (useLargestToleranceForOutput) {
+            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);
+            toleranceTransY = toleranceTransX;
+        } else {
+            toleranceTransX = 4;
+            toleranceTransY = 4;
+        }
+
+        return calculateEuclideanTransformationForSmallSets(set1, set2, 
+            toleranceTransX, toleranceTransY, useGreedyMatching);
+    }
+    
+    public List<TransformationPointFit>
+    calculateEuclideanTransformationForSmallSets(PairIntArray set1, 
+        PairIntArray set2, float toleranceTransX, float toleranceTransY, 
+        boolean useGreedyMatching) {
 
         int n1 = set1.getN();
         int n2 = set2.getN();
@@ -3792,83 +3811,92 @@ if (compTol == 1) {
         int[] selected1 = new int[k];
         int[] selected2 = new int[k];
 
+        /*
+        save bestFit for scale near 1,
+                   bestFit for scale > 1
+                   bestFit for scale < 1
+        and normalized for each.
+        */
+        TransformationPointFit bestFitScaleGT1 = null;
+        TransformationPointFit bestFitScaleLT1 = null;
+        TransformationPointFit bestFitScale1 = null;
+        TransformationPointFit bestFitNormalizedScaleGT1 = null;
+        TransformationPointFit bestFitNormalizedScaleLT1 = null;
+        TransformationPointFit bestFitNormalizedScale1 = null;
+        
         int maxNMatchable = Math.min(n1, n2);
 
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
-        float toleranceTransX;
-        float toleranceTransY;
-        if (useLargestToleranceForOutput) {
-            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);
-            toleranceTransY = toleranceTransX;
-        } else {
-            toleranceTransX = 4;
-            toleranceTransY = 4;
-        }
-
+        
         TransformationPointFit bestFitNormalized = null;
-
-        List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
-
         TransformationPointFit bestFit = null;
-
+        
+        List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
         List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
 
         while (s1.getNextSubset(selected1) != -1) {
 
+            int idx10 = selected1[0];
+            int idx11 = selected1[1];
+
             SubsetChooser s2 = new SubsetChooser(n2, k);
+
+            //TODO: could save the calculations for point 1 here
 
             while (s2.getNextSubset(selected2) != -1) {
 
-                TransformationParameters params = tc.calulateEuclidean(
-                    set1.getX(selected1[0]), set1.getY(selected1[0]),
-                    set1.getX(selected1[1]), set1.getY(selected1[1]),
-                    set2.getX(selected2[0]), set2.getY(selected2[0]),
-                    set2.getX(selected2[1]), set2.getY(selected2[1]),
-                    0, 0);
+                int idx20 = selected2[0];
+                int idx21 = selected2[1];
 
-                TransformationPointFit fit = evaluateForUnmatched(params,
-                    set1, set2, toleranceTransX, toleranceTransY,
-                    useGreedyMatching);
+                for (int order = 0; order < 2; ++order) {
 
-                if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
-                    if (fitIsBetterNormalized(bestFitNormalized, fit)) {
-                        if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
-                            && (fit.getMeanDistFromModel() < 1)) {
-                            if (similarToBestFitNormalized.isEmpty()) {
-                                similarToBestFitNormalized.add(bestFitNormalized);
-                            }
-                            similarToBestFitNormalized.add(fit);
-                        } else {
-                            similarToBestFitNormalized.clear();
-                        }
-                        bestFitNormalized = fit;
+                    if (order == 1) {
+                        int swap = idx20;
+                        idx20 = idx21;
+                        idx21 = swap;
                     }
-                    if (fitIsBetter(bestFit, fit)) {
-                        if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
-                            && (fit.getMeanDistFromModel() < 1)) {
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
-                            }
-                            similarToBestFit.add(fit);
-                        } else {
-                            similarToBestFit.clear();
-                        }
-                        bestFit = fit;
+
+                    TransformationParameters params = tc.calulateEuclidean(
+                        set1.getX(idx10), set1.getY(idx10),
+                        set1.getX(idx11), set1.getY(idx11),
+                        set2.getX(idx20), set2.getY(idx20),
+                        set2.getX(idx21), set2.getY(idx21),
+                        0, 0);
+                    
+                    TransformationPointFit fit = evaluateForUnmatched(params,
+                        set1, set2, toleranceTransX, toleranceTransY,
+                        useGreedyMatching);
+
+                    if ((fit == null) || (fit.getNumberOfMatchedPoints() < 2)) {
+                        continue;
                     }
-                }
 
-                params = tc.calulateEuclidean(
-                    set1.getX(selected1[0]), set1.getY(selected1[0]),
-                    set1.getX(selected1[1]), set1.getY(selected1[1]),
-                    set2.getX(selected2[1]), set2.getY(selected2[1]),
-                    set2.getX(selected2[0]), set2.getY(selected2[0]),
-                    0, 0);
-
-                fit = evaluateForUnmatched(params, set1, set2,
-                    toleranceTransX, toleranceTransY, useGreedyMatching);
-
-                if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                    float scale = params.getScale();
+                    
+                    if ((scale >= 0.95) && (scale <= 1.05)) {
+                        if (fitIsBetter(bestFitScale1, fit)) {
+                            bestFitScale1 = fit;
+                        }
+                        if (fitIsBetterNormalized(bestFitNormalizedScale1, fit)) {
+                            bestFitNormalizedScale1 = fit;
+                        }
+                    } else if (scale > 1.05) {
+                        if (fitIsBetter(bestFitScaleGT1, fit)) {
+                            bestFitScaleGT1 = fit;
+                        }
+                        if (fitIsBetterNormalized(bestFitNormalizedScaleGT1, fit)) {
+                            bestFitNormalizedScaleGT1 = fit;
+                        }
+                    } else if (scale < 0.95) {
+                        if (fitIsBetter(bestFitScaleLT1, fit)) {
+                            bestFitScaleLT1 = fit;
+                        }
+                        if (fitIsBetterNormalized(bestFitNormalizedScaleLT1, fit)) {
+                            bestFitNormalizedScaleLT1 = fit;
+                        }
+                    }
+                    
                     if (fitIsBetterNormalized(bestFitNormalized, fit)) {
                         if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
                             && (fit.getMeanDistFromModel() < 1)) {
@@ -3914,7 +3942,16 @@ if (compTol == 1) {
         }
         log.info("bestFit(not normalized)=" + bestFit.toString());
         similarToBestFitNormalized.add(0, bestFit);
-
+        
+        log.info("bestFit(normalized)=" + bestFitNormalized.toString());
+        
+        log.info("bestFitScaleGT1=" + bestFitScaleGT1.toString());
+        log.info("bestFitScaleLT1=" + bestFitScaleLT1.toString());
+        log.info("bestFitScale1=" + bestFitScale1.toString());
+        log.info("bestFitNormalizedScaleGT1=" + bestFitNormalizedScaleGT1.toString());
+        log.info("bestFitNormalizedScaleLT1=" + bestFitNormalizedScaleLT1.toString());
+        log.info("bestFitNormalizedScale1=" + bestFitNormalizedScale1.toString());
+       
         return similarToBestFitNormalized;
     }
 

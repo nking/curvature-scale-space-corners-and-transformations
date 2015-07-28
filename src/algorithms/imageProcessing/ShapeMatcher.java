@@ -1,8 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.misc.Histogram;
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayDescendingComparator;
 import algorithms.util.ResourceFinder;
@@ -11,9 +14,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class ShapeMatcher {
@@ -123,17 +128,24 @@ public class ShapeMatcher {
         Map<Integer, List<GrahamScan>> hulls2 = 
             new HashMap<Integer, List<GrahamScan>>();
         
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        PairIntArray hullCentroids1 = new PairIntArray();
+        PairIntArray hullCentroids2 = new PairIntArray();
+        
         for (int im = 0; im < 2; ++im) {
             
             Map<Integer, Integer> freqMap = freqMap1;
             Map<Integer, List<PairIntArray>> contigMap = contigMap1;
             Map<Integer, List<GrahamScan>> hulls = hulls1;
             GreyscaleImage imgGrey = img1Grey;
-            
+            PairIntArray hullCentroids = hullCentroids1;
+                        
             if (im == 1) {
                 freqMap = freqMap2;
                 contigMap = contigMap2;
                 hulls = hulls2;
+                hullCentroids = hullCentroids2;
                 imgGrey = img2Grey;
             }
  
@@ -172,116 +184,36 @@ public class ShapeMatcher {
                         scan.computeHull(x, y);
 
                         listHulls.add(scan);
+                        
+                        double[] centroidXY = curveHelper.calculateXYCentroids(
+                            scan.getXHull(), scan.getYHull()); 
+                        
+                        hullCentroids.add((int)Math.round(centroidXY[0]), 
+                            (int)Math.round(centroidXY[1]));
+                        
                     } catch (GrahamScanTooFewPointsException e) {
                         log.severe(e.getMessage());
                     }                    
                 }
-                hulls.put(pixValue, listHulls);
+                hulls.put(pixValue, listHulls);                
             }
-        }
-
-        // change the limits to get comparable numbers of features in both
-        // images and a workable number of features
-        int n1 = 0;
-        int n2 = 0;
-        int minSize1 = Integer.MAX_VALUE;
-        int maxSize1 = Integer.MIN_VALUE;
-        int minSize2 = Integer.MAX_VALUE;
-        int maxSize2 = Integer.MIN_VALUE;
-        float smallestGroupLimit1 = smallestGroupLimit;
-        float smallestGroupLimit2 = smallestGroupLimit;
-        float highLimit1 = largestGroupLimit;
-        float highLimit2 = largestGroupLimit;
-        int nIter = 0;
-        int nIterMax = 10;
-        while (false && ((nIter == 0) || (n1 > 50) || (n2 > 50)) && (nIter < nIterMax)) {
-            for (int im = 0; im < 2; ++im) {
-                Map<Integer, List<GrahamScan>> hulls = hulls1;
-                Map<Integer, List<PairIntArray>> contigPoints = contigMap1;
-                float highLimit = highLimit1;
-                float lowLimit = smallestGroupLimit1;
-                if (im == 0) {
-                    if ((nIter > 0) && (n1 > 50)) {
-                        if ((nIter & 1) == 1) {
-                            highLimit1 = maxSize1 * 0.75f;
-                        } else {
-                            smallestGroupLimit1 = minSize1 * 1.3f;
-                        }
-                    }
-                    highLimit = highLimit1;
-                    lowLimit = smallestGroupLimit1;
-                    n1 = 0;
-                    minSize1 = Integer.MAX_VALUE;
-                    maxSize1 = Integer.MIN_VALUE;
-                } else if (im == 1) {
-                    if ((nIter > 0) && (n2 > 50)) {
-                        if ((nIter & 1) == 1) {
-                            highLimit2 = maxSize2 * 0.75f;
-                        } else {
-                            smallestGroupLimit2 = minSize2 * 1.3f;
-                        }
-                    }
-                    highLimit = highLimit2;
-                    lowLimit = smallestGroupLimit2;
-                    n2 = 0;
-                    minSize2 = Integer.MAX_VALUE;
-                    maxSize2 = Integer.MIN_VALUE;
-                    hulls = hulls2;
-                    contigPoints = contigMap2;
-                }
-                
-                for (Entry<Integer, List<GrahamScan>> entry : hulls.entrySet()) {
-                    
-                    List<Integer> rmIndexes = new ArrayList<Integer>();
-                    
-                    List<PairIntArray> contigPointList = contigPoints.get(entry.getKey());
-                    assert(contigPointList != null);
-                    List<GrahamScan> hullList = entry.getValue();
-                    
-                    for (int i = 0; i < contigPointList.size(); ++i) {
-                        PairIntArray p = contigPointList.get(i);
-                        int nP = p.getN();
-                        //if ((nP > highLimit) || (nP < lowLimit)) {
-                        if (nP < lowLimit) {
-                            rmIndexes.add(Integer.valueOf(i));
-                        } else {
-                            if (im == 0) {
-                                n1++;
-                                if (nP < minSize1) {
-                                    minSize1 = nP;
-                                }
-                                if (nP > maxSize1) {
-                                    maxSize1 = nP;
-                                }
-                            } else {
-                                n2++;
-                                if (nP < minSize2) {
-                                    minSize2 = nP;
-                                }
-                                if (nP > maxSize2) {
-                                    maxSize2 = nP;
-                                }
-                            }
-                        }
-                    }
-                    if (!rmIndexes.isEmpty()) {
-                        for (int i = (rmIndexes.size() - 1); i > -1; --i) {
-                            int rmIdx = rmIndexes.get(i).intValue();
-                            contigPointList.remove(rmIdx);
-                            hullList.remove(rmIdx);
-                        }
-                    }
-                }
-            }
-            
-            log.info(String.format("%d) image1: nHulls=%d, minNP=%d, maxNP=%d", 
-                nIter, n1, minSize1, maxSize1));
-            log.info(String.format("%d) image2: nHulls=%d, minNP=%d, maxNP=%d", 
-                nIter, n2, minSize2, maxSize2));
-            
-            nIter++;
         }
         
+        float toleranceTransX = 50;//30;
+        float toleranceTransY = toleranceTransX;
+        boolean useGreedyMatching = true;
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        List<TransformationPointFit> fits = 
+            pointMatcher.calculateEuclideanTransformationForSmallSets(
+                hullCentroids1, hullCentroids2, toleranceTransX, toleranceTransY, 
+                useGreedyMatching);
+        for (TransformationPointFit fit : fits) {
+            log.info("fit=" + fit.toString());
+        }
+        
+    
+        // ===== debug: plot the hulls =======
         Image img1W = ImageIOHelper.convertImage(img1Grey);
         Image img2W = ImageIOHelper.convertImage(img2Grey);
         
@@ -340,10 +272,10 @@ public class ShapeMatcher {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
         }
+        // ===== end debug plot of hulls =======
         
-        // presuming that matching of those blobs produces a good first euclidean
-        //    transformation, corners can then be used to make matching
-        //    point lists.
+        // make corners
+        
         if (!performBinning) {
             imageProcessor.blur(img1Grey, 2);
             imageProcessor.blur(img2Grey, 2);
@@ -361,7 +293,7 @@ public class ShapeMatcher {
         detector2.findCorners();
         PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
         
-        
+        // ===== plot the corners ====
         img1W = ImageIOHelper.convertImage(img1Grey);
         img2W = ImageIOHelper.convertImage(img2Grey);
         ImageIOHelper.addCurveToImage(corners1, img1W, 1, 255, 0, 0);
@@ -376,14 +308,68 @@ public class ShapeMatcher {
         }
         
         /*
-        the corners are dense in some places, but look pretty good.
-        
-        the matching algorithm can be greedy within a tolerance, but might
-        also need to delay the matching until a second stage if there are
-        many within tolerance.  The 2nd stage would try to fit a delta pattern
-        consistent with projection over the whole group of corners.
+        filter the corners to keep only those within hulls to see if the numbers
+        are small enough for pairwise transformation calculations.
         */
+        Set<PairInt> allCorners1 = Misc.convert(corners1);
+        Set<PairInt> allCorners2 = Misc.convert(corners2);
+        Set<PairInt> cornersWithinHulls1 = new HashSet<PairInt>();
+        Set<PairInt> cornersWithinHulls2 = new HashSet<PairInt>();
         
+        log.info("n1Corners=" + allCorners1.size() + " n2Corners2=" 
+            + allCorners2.size());
+        
+        PointInPolygon pP = new PointInPolygon();
+            
+        for (int im = 0; im < 2; ++im) {
+            
+            Map<Integer, List<GrahamScan>> hullsMap = hulls1; 
+            Set<PairInt> allCorners = allCorners1;
+            Set<PairInt> cornersWithinHulls = cornersWithinHulls1;
+            if (im == 1) {
+                hullsMap = hulls2;
+                allCorners = allCorners2;
+                cornersWithinHulls = cornersWithinHulls2;
+            }
+            
+            for (Entry<Integer, List<GrahamScan>> entry : hullsMap.entrySet()) {
+                List<GrahamScan> hulls = entry.getValue();
+                for (GrahamScan hull : hulls) {
+                    Set<PairInt> rm = new HashSet<PairInt>();
+                    for (PairInt p : allCorners) {
+                        // try without a tolerance
+                        boolean isInHull = pP.isInSimpleCurve(p.getX(), p.getY(),
+                            hull.getXHull(), hull.getYHull(), 
+                            hull.getXHull().length);
+                        if (isInHull) {
+                            cornersWithinHulls.add(p);
+                            rm.add(p);
+                        }
+                    }
+                    for (PairInt p : rm) {
+                        allCorners.remove(p);
+                    }
+                }
+            }
+        }
+        
+        log.info("cornersHulls1=" + cornersWithinHulls1.size() 
+            + " cornersHulls2=" + cornersWithinHulls2.size());
+        
+        // ===== plot the corners ====
+        img1W = ImageIOHelper.convertImage(img1Grey);
+        img2W = ImageIOHelper.convertImage(img2Grey);
+        ImageIOHelper.addToImage(cornersWithinHulls1, 0, 0, img1W, 2, 255, 0, 0);
+        ImageIOHelper.addToImage(cornersWithinHulls2, 0, 0, img2W, 2, 255, 0, 0);
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/img1_corners_in_hulls.png", img1W);
+            ImageIOHelper.writeOutputImage(dirPath + "/img2_corners_in_hulls.png", img2W);
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+                
         return null;
         //throw new UnsupportedOperationException("not yet implemented");
     
