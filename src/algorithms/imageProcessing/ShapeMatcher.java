@@ -340,6 +340,49 @@ public class ShapeMatcher {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
         }
+        
+        // presuming that matching of those blobs produces a good first euclidean
+        //    transformation, corners can then be used to make matching
+        //    point lists.
+        
+        imageProcessor.blur(img1Grey, 2);
+        imageProcessor.blur(img2Grey, 2);
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img1Grey);
+        detector.doNotPerformHistogramEqualization();
+        detector.findCorners();
+        PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();
+
+        CurvatureScaleSpaceCornerDetector detector2 = new
+            CurvatureScaleSpaceCornerDetector(img2Grey);
+        detector2.doNotPerformHistogramEqualization();
+        detector2.findCorners();
+        PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
+        
+        
+        img1W = ImageIOHelper.convertImage(img1Grey);
+        img2W = ImageIOHelper.convertImage(img2Grey);
+        ImageIOHelper.addCurveToImage(corners1, img1W, 1, 255, 0, 0);
+        ImageIOHelper.addCurveToImage(corners2, img2W, 1, 255, 0, 0);
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/img1_corners.png", img1W);
+            ImageIOHelper.writeOutputImage(dirPath + "/img2_corners.png", img2W);
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+        
+        /*
+        the corners are dense in some places, but look pretty good.
+        
+        the matching algorithm can be greedy within a tolerance, but might
+        also need to delay the matching until a second stage if there are
+        many within tolerance.  The 2nd stage would try to fit a delta pattern
+        consistent with projection over the whole group of corners.
+        */
+        
         return null;
         //throw new UnsupportedOperationException("not yet implemented");
     
