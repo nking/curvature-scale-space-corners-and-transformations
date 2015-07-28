@@ -97,8 +97,7 @@ public class HistogramEqualization {
                 long aC = aHistC[a];
                 
                 /*
-                the implied max should be explicit...sz pixels has something 
-                to do with that
+                the implied max should be explicit...
                 
                 sz - min = (x - min)*255
                 

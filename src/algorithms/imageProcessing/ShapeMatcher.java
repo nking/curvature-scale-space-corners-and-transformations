@@ -97,11 +97,11 @@ public class ShapeMatcher {
             binFactor1 = (int) Math.ceil(
                 Math.max((float)img1Grey.getWidth()/200.f,
                 (float)img2Grey.getHeight()/200.));
-            smallestGroupLimit /= binFactor1;
-            largestGroupLimit /= binFactor1;
+            smallestGroupLimit /= (binFactor1*binFactor1);
+            largestGroupLimit /= (binFactor1*binFactor1);
             
             // prevent from being smaller than needed for a convex hull
-            if (smallestGroupLimit <= 3) {
+            if (smallestGroupLimit < 4) {
                 smallestGroupLimit = 4;
             }
             img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
@@ -344,9 +344,10 @@ public class ShapeMatcher {
         // presuming that matching of those blobs produces a good first euclidean
         //    transformation, corners can then be used to make matching
         //    point lists.
-        
-        imageProcessor.blur(img1Grey, 2);
-        imageProcessor.blur(img2Grey, 2);
+        if (!performBinning) {
+            imageProcessor.blur(img1Grey, 2);
+            imageProcessor.blur(img2Grey, 2);
+        }
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1Grey);

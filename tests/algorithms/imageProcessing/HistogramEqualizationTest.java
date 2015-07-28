@@ -2,26 +2,16 @@ package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class HistogramEqualizationTest {
+public class HistogramEqualizationTest extends TestCase {
     
     public HistogramEqualizationTest() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
     }
     
     private GreyscaleImage getTestImage() {
@@ -46,7 +36,6 @@ public class HistogramEqualizationTest {
         return img;
     }
 
-    @Test
     public void testCalculateHistogram() {
                 
         GreyscaleImage img = getTestImage();
@@ -101,7 +90,6 @@ public class HistogramEqualizationTest {
         assertTrue(Arrays.equals(instance.getHist(), expectedCounts));
     }
 
-    @Test
     public void testCalculateCumulativeHistogram() {
         
         GreyscaleImage img = getTestImage();
@@ -167,7 +155,6 @@ public class HistogramEqualizationTest {
         }        
     }
 
-    @Test
     public void testApplyTransformationFunction() {
         
         GreyscaleImage img = getTestImage();
@@ -231,7 +218,6 @@ public class HistogramEqualizationTest {
         }
     }
     
-    @Test
     public void testAppearance() throws Exception {
         
         String fileName = "house.gif";

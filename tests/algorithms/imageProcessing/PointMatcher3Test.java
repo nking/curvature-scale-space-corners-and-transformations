@@ -720,18 +720,15 @@ TransformationPointFit fit = fits.get(0);
         then stereopojection calculation
         */
         String fileName1, fileName2;
-/*
+
         fileName1 = "brown_lowe_2003_image1.jpg";
         fileName2 = "brown_lowe_2003_image2.jpg";
-*/
-        /*
-        fileName1 = "venturi_mountain_j6_0001.png";
-        fileName2 = "venturi_mountain_j6_0010.png";
-        */
+
+        //fileName1 = "venturi_mountain_j6_0001.png";
+        //fileName2 = "venturi_mountain_j6_0010.png";
         
-        fileName1 = "books_illum3_v0_695x555.png";
-        fileName2 = "books_illum3_v6_695x555.png";
-        
+        //fileName1 = "books_illum3_v0_695x555.png";
+        //fileName2 = "books_illum3_v6_695x555.png";
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
