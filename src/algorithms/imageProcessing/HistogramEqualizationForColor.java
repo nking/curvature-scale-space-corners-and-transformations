@@ -9,17 +9,29 @@ import java.util.logging.Logger;
   
  * @author nichole
  */
-public class HistogramEqualization {
+public class HistogramEqualizationForColor {
     
-    protected GreyscaleImage img = null;
+    protected Image img = null;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    private final long[] aHist = new long[256];
+    private final long[] rHist = new long[256];
     
-    private final long[] aHistC = new long[256];
+    private final long[] rHistC = new long[256];
     
-    protected long aHistCMin = Long.MAX_VALUE;
+    protected long rHistCMin = Long.MAX_VALUE;
+    
+    private final long[] gHist = new long[256];
+    
+    private final long[] gHistC = new long[256];
+    
+    protected long gHistCMin = Long.MAX_VALUE;
+    
+    private final long[] bHist = new long[256];
+    
+    private final long[] bHistC = new long[256];
+    
+    protected long bHistCMin = Long.MAX_VALUE;
     
     private boolean finished = false;
     
@@ -28,7 +40,7 @@ public class HistogramEqualization {
      * 
      * @param input 
      */
-    public HistogramEqualization(GreyscaleImage input) {
+    public HistogramEqualizationForColor(Image input) {
         
         this.img = input;
     }
@@ -60,24 +72,39 @@ public class HistogramEqualization {
         
         for (int i = 0; i < img.getWidth(); i++) {
             for (int j = 0; j < img.getHeight(); j++) {
-                int a = img.getValue(i, j);
-                aHist[a]++;
+                int r = img.getR(i, j);
+                rHist[r]++;
+                int g = img.getG(i, j);
+                gHist[g]++;
+                int b = img.getB(i, j);
+                bHist[b]++;
             }
         }
     }
     
     protected void calculateCumulativeHistogram() {
         
-        aHistC[0] = aHist[0];
-        
-        for (int i = 1; i < aHist.length; i++) {
-            aHistC[i] = aHistC[i - 1] + aHist[i];
-            
-            if ((aHistC[i] > 0) && (aHistC[i] < aHistCMin)) {
-                aHistCMin = aHistC[i];
+        rHistC[0] = rHist[0];        
+        for (int i = 1; i < rHist.length; i++) {
+            rHistC[i] = rHistC[i - 1] + rHist[i];
+            if ((rHistC[i] > 0) && (rHistC[i] < rHistCMin)) {
+                rHistCMin = rHistC[i];
             }
         }
-        
+        gHistC[0] = gHist[0];        
+        for (int i = 1; i < gHist.length; i++) {
+            gHistC[i] = gHistC[i - 1] + gHist[i];
+            if ((gHistC[i] > 0) && (gHistC[i] < gHistCMin)) {
+                gHistCMin = gHistC[i];
+            }
+        }
+        bHistC[0] = bHist[0];        
+        for (int i = 1; i < bHist.length; i++) {
+            bHistC[i] = bHistC[i - 1] + bHist[i];
+            if ((bHistC[i] > 0) && (bHistC[i] < bHistCMin)) {
+                bHistCMin = bHistC[i];
+            }
+        }
     }
     
     /**
@@ -100,9 +127,14 @@ public class HistogramEqualization {
         for (int i = 0; i < img.getWidth(); i++) {
             for (int j = 0; j < img.getHeight(); j++) {
                 
-                int a = img.getValue(i, j);
+                int r = img.getR(i, j);
+                long rC = rHistC[r];
                 
-                long aC = aHistC[a];
+                int g = img.getG(i, j);
+                long gC = gHistC[g];
+                
+                int b = img.getB(i, j);
+                long bC = bHistC[b];
                 
                 /*
                 the implied max should be explicit...
@@ -113,10 +145,16 @@ public class HistogramEqualization {
                 
                 */
                 
-                int aT = (a == 0) ? 0 : 
-                    Math.round((aC - aHistCMin)*254.f/(sz - aHistCMin)) + 1;
+                int rT = (r == 0) ? 0 : 
+                    Math.round((rC - rHistCMin)*254.f/(sz - rHistCMin)) + 1;
+                
+                int gT = (g == 0) ? 0 : 
+                    Math.round((gC - gHistCMin)*254.f/(sz - gHistCMin)) + 1;
+                
+                int bT = (b == 0) ? 0 : 
+                    Math.round((bC - bHistCMin)*254.f/(sz - bHistCMin)) + 1;
                
-                img.setValue(i, j, aT);
+                img.setRGB(i, j, rT, gT, bT);
             }
         }        
     }
@@ -125,19 +163,19 @@ public class HistogramEqualization {
      * return the values for the histogram
      * @return the rHist
      */
-    public long[] getHist() {
-        return aHist;
+    public long[] getRHist() {
+        return rHist;
     }
 
     /**
      * return the values for the cumulative histogram
      * @return the rHistC
      */
-    public long[] getHistC() {
-        return aHistC;
+    public long[] getRHistC() {
+        return rHistC;
     }
 
-    public long getHistCMin() {
-        return aHistCMin;
+    public long getRHistCMin() {
+        return rHistCMin;
     }
 }

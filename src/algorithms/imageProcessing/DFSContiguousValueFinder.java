@@ -167,8 +167,6 @@ public class DFSContiguousValueFinder {
                     continue;
                 }
                     
-                //TODO: could consider not allowing diagonal connections
-
                 visited.add(vKey);
 
                 int vPixValue = img.getValue(vIndex);

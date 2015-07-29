@@ -2,7 +2,9 @@ package algorithms.misc;
 
 import algorithms.CountingSort;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -1075,5 +1077,48 @@ public class MiscMath {
 
         return bytes;
     }
+   
+    /**
+     * create a random shuffle of the source array.
+     * It uses wikipedia pseudo code for the In/Out method.
+     * (add reference here).
+     * @param source
+     * @return 
+     */
+    public static PairIntArray shuffle(PairIntArray source) throws NoSuchAlgorithmException {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
+        
+        PairIntArray out = new PairIntArray();
+        
+        int n = source.getN();
+        
+        for (int i = 0; i < n; ++i) {
+             
+            int j = (i == 0) ? 0 : sr.nextInt(out.getN());
+            
+            if (j == out.getN()) {
+                out.add(source.getX(i), source.getY(i));
+            } else {
+                out.add(out.getX(j), out.getY(j));
+                out.set(j, source.getX(i), source.getY(i));
+            }
+        }
+        
+        return out;
+    }
     
+    public static PairIntArray get20NeighborOffsets() {
+        
+        PairIntArray r2Offsets = new PairIntArray();
+        r2Offsets.add(-1, 2); r2Offsets.add(0, 2); r2Offsets.add(1, 2);
+        r2Offsets.add(-2, 1); r2Offsets.add(-1, 1); r2Offsets.add(0, 1); r2Offsets.add(1, 1); r2Offsets.add(2, 1);
+        r2Offsets.add(-2, 0); r2Offsets.add(-1, 0); r2Offsets.add(0, 0); r2Offsets.add(1, 0); r2Offsets.add(2, 0);
+        r2Offsets.add(-2, -1); r2Offsets.add(-1, -1); r2Offsets.add(0, -1); r2Offsets.add(1, -1); r2Offsets.add(2, -1);
+        r2Offsets.add(-1, -2); r2Offsets.add(0, -2); r2Offsets.add(1, -2);
+        
+        return r2Offsets;
+    }
 }

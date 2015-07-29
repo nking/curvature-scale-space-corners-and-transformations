@@ -6,6 +6,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.PixelColors;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
@@ -733,5 +734,27 @@ public class MiscDebug {
         double t0 = System.currentTimeMillis();
         double t = t0 - ((int)(t0/1.E9)) * 1E9;
         return (int)t;
+    }
+
+    public static void printDifferences(PixelColors clr1, PixelColors[] clr2) {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        for (int i = 0; i < clr2.length; ++i) {
+                        
+            int diffR = clr1.getRed() - clr2[i].getRed();
+            int diffG = clr1.getGreen() - clr2[i].getGreen();
+            int diffB = clr1.getBlue() - clr2[i].getBlue();
+            float diffCIEX = clr1.getCIEX() - clr2[i].getCIEX();
+            float diffCIEY = clr1.getCIEY() - clr2[i].getCIEY();
+            
+            sb.append("diffR=").append(Integer.toString(diffR))
+                .append(" diffG=").append(Integer.toString(diffG))
+                .append(" diffB=").append(Integer.toString(diffB))
+                .append(" diffCIEX=").append(Float.toString(diffCIEX))
+                .append(" diffCIEY=").append(Float.toString(diffCIEY))
+                .append("\n");            
+        }
+        log.info(sb.toString());
     }
 }

@@ -60,6 +60,21 @@ public class PointPartitioner {
                 output.get(index).add(points.getX(i), points.getY(i));
             }
             
+            // fill up the first bin if it's smaller than subsetSize
+            int lastIdx = n - 1;
+            while ((output.get(0).getN() < subsetSize) && (lastIdx > 0)) {
+                int nToAdd = subsetSize - output.get(0).getN();
+                PairIntArray p = output.get(lastIdx);
+                int canAdd = (p.getN() < nToAdd) ? p.getN() : nToAdd;
+                for (int i = 0; i < canAdd; ++i) {
+                    int idx = p.getN() - 1 - i;
+                    output.get(0).add(p.getX(idx), p.getY(idx));
+                }
+                for (int i = 0; i < nToAdd; ++i) {
+                    p.removeRange(p.getN() - 1, p.getN() - 1);
+                }
+            }
+            
             return output;
         
         } catch (NoSuchAlgorithmException ex) {

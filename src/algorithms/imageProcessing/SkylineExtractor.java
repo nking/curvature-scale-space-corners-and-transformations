@@ -2635,41 +2635,6 @@ static int outImgNum=0;
         return set;
     }
 
-    private PixelColors getAveragedColorOfDifference(Set<PairInt> pointsToExclude, 
-        Image colorImg, int xOffset, int yOffset) {
-        
-        long rSum = 0;
-        long gSum = 0;
-        long bSum = 0;
-        int n = 0;
-        
-        for (int col = 0; col < colorImg.getWidth(); col++) {
-            for (int row = 0; row < colorImg.getHeight(); row++) {
-                
-                PairInt p = new PairInt(col - xOffset, row - yOffset);
-                
-                if (pointsToExclude.contains(p)) {
-                    continue;
-                }
-                
-                int idx = colorImg.getInternalIndex(col, row);
-        
-                rSum += colorImg.getR(idx);
-                gSum += colorImg.getG(idx);
-                bSum += colorImg.getB(idx);
-                n++;
-            }
-        }
-        
-        int rAvg = (int)Math.round((double)rSum/(double)n);
-        int gAvg = (int)Math.round((double)gSum/(double)n);
-        int bAvg = (int)Math.round((double)bSum/(double)n);
-        
-        PixelColors avgColor = new PixelColors(rAvg, gAvg, bAvg);
-        
-        return avgColor;
-    }
-
     private void removeBinFactorArtifacts(Set<PairInt> points, int binFactor, 
         int pointsImageWidth, int pointsImageHeight,
         int pointsImageXOffset, int pointsImageYOffset) {

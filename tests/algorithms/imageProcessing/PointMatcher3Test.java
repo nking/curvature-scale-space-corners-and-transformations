@@ -721,14 +721,21 @@ TransformationPointFit fit = fits.get(0);
         */
         String fileName1, fileName2;
 
+        //-280, -14
         fileName1 = "brown_lowe_2003_image1.jpg";
         fileName2 = "brown_lowe_2003_image2.jpg";
 
+        //-30, 0
         //fileName1 = "venturi_mountain_j6_0001.png";
         //fileName2 = "venturi_mountain_j6_0010.png";
         
+        //-80,  NOTE images already rectified
         //fileName1 = "books_illum3_v0_695x555.png";
         //fileName2 = "books_illum3_v6_695x555.png";
+        
+        // can find unrectified stereo images for testing here:
+        //   http://www.cvlibs.net/datasets/kitti/raw_data.php
+        //   http://www.robots.ox.ac.uk/NewCollegeData/index.php?n=Main.Downloads
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);

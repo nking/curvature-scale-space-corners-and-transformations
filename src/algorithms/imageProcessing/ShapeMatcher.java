@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -48,7 +49,7 @@ public class ShapeMatcher {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        boolean performBinning = false;
+        final boolean performBinning = true;
         int binFactor1 = 1;
         
         int kN = 4;
@@ -68,6 +69,9 @@ public class ShapeMatcher {
         //  day that information is passed to this method
         int largestGroupLimit = 5000;
 
+        ImageExt img1Cp = (ImageExt)image1.copyImage();
+        ImageExt img2Cp = (ImageExt)image2.copyImage();
+        
         ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true); 
         ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true); 
 
@@ -96,8 +100,12 @@ public class ShapeMatcher {
             hEq.applyFilter();
             hEq = new HistogramEqualization(img2Grey);
             hEq.applyFilter();
+            /*HistogramEqualizationForColor hEqC = new HistogramEqualizationForColor(img1Cp);
+            hEqC.applyFilter();
+            hEqC = new HistogramEqualizationForColor(img2Cp);
+            hEqC.applyFilter();*/
         }
-            
+        
         if (performBinning) {
             binFactor1 = (int) Math.ceil(
                 Math.max((float)img1Grey.getWidth()/200.f,
@@ -111,6 +119,8 @@ public class ShapeMatcher {
             }
             img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
             img2Grey = imageProcessor.binImage(img2Grey, binFactor1);
+            img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
+            img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
         imageProcessor.applyImageSegmentation(img1Grey, kN);
         imageProcessor.applyImageSegmentation(img2Grey, kN);
@@ -130,8 +140,12 @@ public class ShapeMatcher {
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        PairIntArray hullCentroids1 = new PairIntArray();
-        PairIntArray hullCentroids2 = new PairIntArray();
+        Map<Integer, PairIntArray> hullCentroids1Map = 
+            new HashMap<Integer, PairIntArray>();
+        Map<Integer, PairIntArray> hullCentroids2Map = 
+            new HashMap<Integer, PairIntArray>();
+        PairIntArray allHullCentroids1 = new PairIntArray();
+        PairIntArray allHullCentroids2 = new PairIntArray();
         
         for (int im = 0; im < 2; ++im) {
             
@@ -139,14 +153,15 @@ public class ShapeMatcher {
             Map<Integer, List<PairIntArray>> contigMap = contigMap1;
             Map<Integer, List<GrahamScan>> hulls = hulls1;
             GreyscaleImage imgGrey = img1Grey;
-            PairIntArray hullCentroids = hullCentroids1;
-                        
+            PairIntArray hullCentroids = allHullCentroids1;
+            Map<Integer, PairIntArray> hullCentroidsMap = hullCentroids1Map;
             if (im == 1) {
                 freqMap = freqMap2;
                 contigMap = contigMap2;
                 hulls = hulls2;
-                hullCentroids = hullCentroids2;
+                hullCentroids = allHullCentroids2;
                 imgGrey = img2Grey;
+                hullCentroidsMap = hullCentroids2Map;
             }
  
             for (Entry<Integer, Integer> entry : freqMap.entrySet()) {
@@ -167,52 +182,72 @@ public class ShapeMatcher {
                     }
                 }
                 Collections.sort(list, new PairIntArrayDescendingComparator());
-
-                contigMap.put(pixValue, list);
+                
+                // storing the centroids for this intensity level hulls separateley
+                PairIntArray pvHullCentroids = new PairIntArray();
+                
+                // remove hulls with large area on image bounds
+                List<Integer> rm = new ArrayList<Integer>();
                 
                 List<GrahamScan> listHulls = new ArrayList<GrahamScan>();
-                for (PairIntArray xy : list) {
+                for (int i = 0; i < list.size(); ++i) {
+                    
+                    PairIntArray xy = list.get(i);
+                    
                     GrahamScan scan = new GrahamScan();
                     try {
                         float[] x = new float[xy.getN()];
                         float[] y = new float[x.length];
-                        for (int i = 0; i < x.length; ++i) {
-                            x[i] = xy.getX(i);
-                            y[i] = xy.getY(i);
+                        for (int ii = 0; ii < x.length; ++ii) {
+                            x[ii] = xy.getX(ii);
+                            y[ii] = xy.getY(ii);
                         }
+                        
+                        double[] centroidXY = 
+                            curveHelper.calculateXYCentroids(x, y);
 
                         scan.computeHull(x, y);
-
-                        listHulls.add(scan);
                         
-                        double[] centroidXY = curveHelper.calculateXYCentroids(
-                            scan.getXHull(), scan.getYHull()); 
+                        int nBounds = 0;
+                        for (int ii = 0; ii < scan.getXHull().length; ++ii) {
+                            float xh = scan.getXHull()[ii];
+                            float yh = scan.getYHull()[ii];
+                            if ((xh == 0) || xh == (imgGrey.getWidth() - 1) ||
+                                (yh == 0) || yh == (imgGrey.getHeight() - 1)) {
+                                nBounds++;
+                            }
+                        }
+                        if (nBounds > 1) {
+                            
+                            rm.add(Integer.valueOf(i));
+                            
+                        } else {
+                            
+                            listHulls.add(scan);
                         
-                        hullCentroids.add((int)Math.round(centroidXY[0]), 
-                            (int)Math.round(centroidXY[1]));
+                            int xh = (int)Math.round(centroidXY[0]);
+                            int yh = (int)Math.round(centroidXY[1]);
+                            
+                            hullCentroids.add(xh, yh);
+                            pvHullCentroids.add(xh, yh);
+                        }
                         
                     } catch (GrahamScanTooFewPointsException e) {
                         log.severe(e.getMessage());
-                    }                    
+                    }
                 }
-                hulls.put(pixValue, listHulls);                
+                
+                for (int i = (rm.size() - 1); i > -1; --i) {
+                    int rmIdx = rm.get(i).intValue();
+                    list.remove(rmIdx);
+                }
+                
+                contigMap.put(pixValue, list);
+                hulls.put(pixValue, listHulls);
+                hullCentroidsMap.put(pixValue, pvHullCentroids);
             }
         }
         
-        float toleranceTransX = 50;//30;
-        float toleranceTransY = toleranceTransX;
-        boolean useGreedyMatching = true;
-        
-        PointMatcher pointMatcher = new PointMatcher();
-        List<TransformationPointFit> fits = 
-            pointMatcher.calculateEuclideanTransformationForSmallSets(
-                hullCentroids1, hullCentroids2, toleranceTransX, toleranceTransY, 
-                useGreedyMatching);
-        for (TransformationPointFit fit : fits) {
-            log.info("fit=" + fit.toString());
-        }
-        
-    
         // ===== debug: plot the hulls =======
         Image img1W = ImageIOHelper.convertImage(img1Grey);
         Image img2W = ImageIOHelper.convertImage(img2Grey);
@@ -228,13 +263,10 @@ public class ShapeMatcher {
                     y[i] = Math.round(hull.getYHull()[i]);                   
                 }
                 if (c == 0) {
-                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 255, 0, 0);
                     ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 255, 0, 0);
                 } else if (c == 1) {
-                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 0, 255, 0);
                     ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 0, 255, 0);
                 } else {
-                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 0, 0, 255);
                     ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 0, 0, 255);
                 }
             }
@@ -251,13 +283,10 @@ public class ShapeMatcher {
                     y[i] = Math.round(hull.getYHull()[i]);
                 }
                 if (c == 0) {
-                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 255, 0, 0);
                     ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 255, 0, 0);
                 } else if (c == 1) {
-                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 0, 255, 0);
                     ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 0, 255, 0);
                 } else {
-                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 0, 0, 255);
                     ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 0, 0, 255);
                 }
             }
@@ -268,6 +297,9 @@ public class ShapeMatcher {
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(dirPath + "/img1_binned.png", img1W);
             ImageIOHelper.writeOutputImage(dirPath + "/img2_binned.png", img2W);
+            
+            ImageIOHelper.writeOutputImage(dirPath + "/img1_binned_clr.png", img1Cp);
+            ImageIOHelper.writeOutputImage(dirPath + "/img2_binned_clr.png", img2Cp);
         } catch (Exception e) {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
@@ -307,96 +339,175 @@ public class ShapeMatcher {
             log.severe("ERROR: " + e.getMessage());
         }
         
+        log.info("n1Corners=" + corners1.getN() + " n2Corners2=" 
+            + corners2.getN());
+         
         /*
-        filter the corners to keep only those within hulls to see if the numbers
-        are small enough for pairwise transformation calculations.
+        this matching using the hulls only works pretty well, but also needs
+        to use information from the surrounding region to rule out fits.
+        For the Brown & Lowe panoramic images, for example, the diagonal 
+        features are matching to diagonal features in the 2nd image 
+        (matching for ridges rather than a smaller number of adjacent features).
+        
+        If make an assumption that the histogram equalization and then color
+        segmentation leaves the images in consistent state w.r.t. similar 
+        colors and intensities being displayed similarly, then this
+        should be fine to compare the surrounding intensities.  
+        Can do a cross centered on the centroid, rotated for the transformation
+        angle being tested and compare the intensities and gradient.
+        
+        This would be making an assumption about scale or re-doing surrounding 
+        sum when needed for different scale.
+        
+        Note that if that is not the case, the images should be pre-processed
+        to make that true before being given to this method.
         */
-        Set<PairInt> allCorners1 = Misc.convert(corners1);
-        Set<PairInt> allCorners2 = Misc.convert(corners2);
-        Set<PairInt> cornersWithinHulls1 = new HashSet<PairInt>();
-        Set<PairInt> cornersWithinHulls2 = new HashSet<PairInt>();
         
-        log.info("n1Corners=" + allCorners1.size() + " n2Corners2=" 
-            + allCorners2.size());
+        float toleranceTransX = 20;//30;
+        float toleranceTransY = toleranceTransX;
+        boolean useGreedyMatching = true;
+        boolean earlyConvergeReturn = true;
+        boolean setsAreMatched = false;
         
-        PointInPolygon pP = new PointInPolygon();
+        log.info("nAllHulls1=" + allHullCentroids1.getN() 
+            + " nAllHulls2=" + allHullCentroids2.getN());
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        
+        TransformationPointFit bestFit00 = null;
+        
+        for (Entry<Integer, PairIntArray> entry : hullCentroids1Map.entrySet()) {
             
-        for (int im = 0; im < 2; ++im) {
+            Integer pixValue1 = entry.getKey();
             
-            Map<Integer, List<GrahamScan>> hullsMap = hulls1; 
-            Set<PairInt> allCorners = allCorners1;
-            Set<PairInt> cornersWithinHulls = cornersWithinHulls1;
-            if (im == 1) {
-                hullsMap = hulls2;
-                allCorners = allCorners2;
-                cornersWithinHulls = cornersWithinHulls2;
+            // find the closest value to it in the image2 map.  should be very
+            // similar if image content is similar and pre-processing the same.
+            // else, may need to use allHullCentroids1 and allHullCentroids2
+            // in one calculation
+            
+            Integer pixValue2 = null;
+            Iterator<Entry<Integer, PairIntArray>> iter = hullCentroids2Map.entrySet().iterator();
+            while (iter.hasNext()) {
+                Integer pV = iter.next().getKey();
+                if (pixValue2 == null) {
+                    pixValue2 = pV;
+                } else {
+                    int diff = Math.abs(pixValue1.intValue() - pixValue2.intValue());
+                    int diffV = Math.abs(pV.intValue() - pixValue2.intValue());
+                    if (diffV < diff) {
+                        pixValue2 = pV;
+                    }
+                }
             }
             
-            for (Entry<Integer, List<GrahamScan>> entry : hullsMap.entrySet()) {
-                List<GrahamScan> hulls = entry.getValue();
-                for (GrahamScan hull : hulls) {
-                    Set<PairInt> rm = new HashSet<PairInt>();
-                    for (PairInt p : allCorners) {
-                        // try without a tolerance
-                        boolean isInHull = pP.isInSimpleCurve(p.getX(), p.getY(),
-                            hull.getXHull(), hull.getYHull(), 
-                            hull.getXHull().length);
-                        if (isInHull) {
-                            cornersWithinHulls.add(p);
-                            rm.add(p);
-                        }
-                    }
-                    for (PairInt p : rm) {
-                        allCorners.remove(p);
-                    }
+            PairIntArray hull1Centroids = entry.getValue();
+            PairIntArray hull2Centroids = hullCentroids2Map.get(pixValue2);
+            
+            log.info("nHulls1=" + hull1Centroids.getN() + " nHulls2=" 
+                + hull2Centroids.getN() + " {" + pixValue1 + "," + pixValue2 + "}");
+            
+            double toleranceColor = 18;
+            
+            long t00 = System.currentTimeMillis();
+            List<TransformationPointFit> fits0
+                = pointMatcher.calculateEuclideanTransformationUsingPairs(
+                img1Cp, img2Cp,
+                hull1Centroids, hull2Centroids,
+                toleranceTransX, toleranceTransY, toleranceColor,
+                earlyConvergeReturn, useGreedyMatching);
+            long t10 = System.currentTimeMillis();
+            log.info("calculateEuclideanTransformationForSmallSets for hull centroids seconds="
+                + ((t10 - t00) * 1e-3));
+            
+            for (TransformationPointFit fit : fits0) {
+                
+                log.info("fit=" + fit.toString());
+                
+                TransformationPointFit fit2 = pointMatcher.transformAndEvaluateFit(
+                    corners1, corners2, fit.getParameters(), 
+                    toleranceTransX, toleranceTransY, useGreedyMatching,
+                    setsAreMatched);
+
+                if (pointMatcher.fitIsBetter(bestFit00, fit2)) {
+                    bestFit00 = fit2;
+                    log.info("bestFit0=" + bestFit00.toString());
                 }
             }
         }
         
-        log.info("cornersHulls1=" + cornersWithinHulls1.size() 
-            + " cornersHulls2=" + cornersWithinHulls2.size());
-        
-        // ===== plot the corners ====
-        img1W = ImageIOHelper.convertImage(img1Grey);
-        img2W = ImageIOHelper.convertImage(img2Grey);
-        ImageIOHelper.addToImage(cornersWithinHulls1, 0, 0, img1W, 2, 255, 0, 0);
-        ImageIOHelper.addToImage(cornersWithinHulls2, 0, 0, img2W, 2, 255, 0, 0);
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/img1_corners_in_hulls.png", img1W);
-            ImageIOHelper.writeOutputImage(dirPath + "/img2_corners_in_hulls.png", img2W);
-        } catch (Exception e) {
-             e.printStackTrace();
-            log.severe("ERROR: " + e.getMessage());
-        }
-                
-        return null;
-        //throw new UnsupportedOperationException("not yet implemented");
-    
         /*
-        -- segmentation by cieXY color into 3 bands
-        -- dfs contiguous find of each of the 3 intensity bands
-           -- convex hull of the groups
-           -- compare the hulls of one image to the hulls of the other image:  
-              -- by area and single pixel intensity?  (the cie xy histogram skipping
-                    algorithm may assign different colors to same feature, so should
-                    probably ignore intensity unless know the images are very similar).
-              -- by shape
-                -- furthest pairs?
-                -- a description of ellipticity?
-                -- points on the hull or centroid matching enough between 
-                   the 2 images to be used like "corners"?
-              -- by an increasing rotation and a fixed rotational range to
-                 only look at hulls that are within the projected beam of the
-                 hull in image1 under consideration?
-                 -- need to store the best for a hull and also the fits as the
-                    rotations are tried, that is, dynamic programming to avoid
-                    repeating calculations.
-                    -- then the best of each hull can be quickly looked up for
-                       the other hulls (i.e. was rotation=20 within top fits
-                       for the neighboring hulls and with consistent translation...)
-                       
+        if need to calculate for all hull centroids, can use the rotation 
+        and translation grid based search followed by downhill simplex:
+        
+        boolean useGreedyMatching = true;
+        boolean searchScaleToo = true;
+        float scale = 1;
+        TransformationPointFit[] starterPoints = pointMatcher.preSearch0Small(
+            allHullCentroids1, allHullCentroids2, scale,
+            0, 359, useGreedyMatching);
+        TransformationPointFit[] fits2 =
+            pointMatcher.refineTransformationWithDownhillSimplexWrapper(
+            starterPoints, allHullCentroids1, allHullCentroids2, searchScaleToo, 
+            useGreedyMatching);
+        
+        log.info("fit3=" + fits2[0].toString());
         */
+             
+        if ((bestFit00 == null) ||
+            (((float)bestFit00.getNumberOfMatchedPoints()
+            /(float)bestFit00.getNMaxMatchable()) < 0.5)) {
+                        
+            // unfortunately, the quicker solution didn't work so need to try
+            // to solve it using all corners (though the internal implementation
+            // does not try all permutations).
+            
+            long t0 = System.currentTimeMillis();
+            List<TransformationPointFit> fits
+                = pointMatcher.calculateEuclideanTransformationUsingPairs(
+                    corners1, corners2, toleranceTransX, toleranceTransY,
+                    earlyConvergeReturn, useGreedyMatching);
+            long t1 = System.currentTimeMillis();
+            log.info("calculateEuclideanTransformationUsingPairs seconds="
+                + ((t1 - t0) * 1e-3));
+            
+            // the evaluation has already been tried against all corners
+            // so only need to compare the fits.
+            
+            // this finds best that is usually a scale that is not 1, so
+            // if one knows that the scale should be '1', should use the
+            // method that solves mostly vertical transformations specifically
+            
+            for (TransformationPointFit fit : fits) {
+                if (pointMatcher.fitIsBetter(bestFit00, fit)) {
+                    bestFit00 = fit;
+                }
+            }
+            log.info("best from all corners=" + bestFit00.toString());
+        }
+        
+        // refine the solution 
+        float rotHalfRangeInDegrees = 20;
+        float rotDeltaInDegrees = 2;
+        float transXHalfRange = 40; 
+        float transXDelta = 4;
+        float transYHalfRange = transXHalfRange; 
+        float transYDelta = transXDelta;
+        
+        long t0 = System.currentTimeMillis();
+        TransformationPointFit bestFit = pointMatcher.refineTheTransformation(
+            bestFit00.getParameters(), corners1, corners2,
+            rotHalfRangeInDegrees, rotDeltaInDegrees,
+            transXHalfRange, transXDelta,
+            transYHalfRange, transYDelta,
+            useGreedyMatching);
+        long t1 = System.currentTimeMillis();
+        
+        log.info(((t1-t0)*1e-3) + "seconds) refined solution=" + bestFit.toString());
+        
+        //TODO: use the transformation to make matching corner lists, 
+        //   perhaps from larger images
+        
+        return bestFit;
     }
 
 }
