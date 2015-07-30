@@ -197,15 +197,58 @@ public class ShapeMatcherTest extends TestCase {
         double maxDiff = (255 - 0.75*255);
         assertTrue(stat.avgDiffPix < maxDiff);
         assertTrue(stat.stDevDiffPix < Math.sqrt(25*(maxDiff*maxDiff)/24.));
-        assertTrue(Math.abs(stat.avgDivPix - (1./0.75)) < 0.01);
-        assertTrue(stat.stDevDivPix < 0.05);
+        assertTrue(Math.abs(stat.avgDivPix - (1./0.75)) < 0.1);
+        assertTrue(stat.stDevDivPix < 0.15);
         
         
         // copy image 1 and subtract a known amount
+        img2 = (ImageExt)img1.copyImage();
+        for (int i = 0; i < img2.nPixels; ++i) {
+            int r = Math.round(img2.getR(i) - 2);
+            int g = Math.round(img2.getG(i) - 2);
+            int b = Math.round(img2.getB(i) - 2);
+            int col = img2.getCol(i);
+            int row = img2.getRow(i);
+            img2.setRGB(col, row, r, g, b);
+        }
+        stat = matcher.calculateStat(img1, img2,
+            5, 5, 5, 5, offsets0, offsets0);
+        assertTrue(Math.abs(stat.avgDiffPix - 2) < 0.01);
+        assertTrue(stat.stDevDiffPix < 0.03);
+        assertTrue(Math.abs(stat.avgDivPix - 1) < 0.33);
         
         
         // rotate image2 by 67.5 degrees
         // fetch the offsets for transformation
         // compare to the results of previous test
+        img2 = (ImageExt)img1.copyImage();
+        FeatureComparisonStat stat0 = matcher.calculateStat(img1, img2,
+            5, 5, 5, 5, offsets0, offsets0);
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(5);
+        params.setOriginY(5);
+        params.setRotationInDegrees(67.5f);
+        params.setTranslationX(0);
+        params.setTranslationY(0);
+        params.setScale(1);
+        
+        Transformer transformer = new Transformer();
+        Image img = transformer.applyTransformation(img1, params, img1.getWidth(), 
+            img1.getHeight());
+        
+        float[][] offset67point5 = transformer.transformXY(67.5f, offsets0);
+        
+        stat = matcher.calculateStat(img, img2, 5, 5, 5, 5, offset67point5, 
+            offsets0);
+        
+        assertTrue(Math.abs(stat0.avgDiffPix) < 0.01);
+        assertTrue(Math.abs(stat0.avgDiffPix - stat.avgDiffPix) < 0.01);
+        assertTrue(Math.abs(stat0.stDevDiffPix) < 0.01);
+        assertTrue(Math.abs(stat0.stDevDiffPix - stat.stDevDiffPix) < 0.01);
+        assertTrue(Math.abs(stat0.avgDivPix - 1) < 0.01);
+        assertTrue(Math.abs(stat0.avgDivPix - stat.avgDivPix) < 0.01);
+        assertTrue(Math.abs(stat0.stDevDivPix) < 0.01);
+        assertTrue(Math.abs(stat0.stDevDivPix - stat.stDevDivPix) < 0.01);        
     }
 }

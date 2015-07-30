@@ -490,10 +490,6 @@ public class Transformer {
         for (int x = 0; x < input.getWidth(); x++) {
             for (int y = 0; y < input.getHeight(); y++) {
                 
-                int r = input.getR(x, y);
-                int g = input.getG(x, y);
-                int b = input.getB(x, y);
-                
                 double xr = centroidX * scale 
                     + (((x - centroidX) * scale * cos)
                     + ((y - centroidY) * scale * sin));
@@ -511,6 +507,10 @@ public class Transformer {
                 if ((x2 > -1) && (x2 < (output.getWidth() - 1) &&
                     (y2 > -1) && (y2 < (output.getHeight() - 1)))) {
 
+                    int r = input.getR(x, y);
+                    int g = input.getG(x, y);
+                    int b = input.getB(x, y);
+                
                     output.setRGB(x2, y2, r, g, b);
                 }
             }
