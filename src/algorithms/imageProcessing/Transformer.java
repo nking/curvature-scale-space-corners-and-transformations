@@ -559,4 +559,46 @@ public class Transformer {
         
         return tr2;
     }
+    
+    /**
+     * given a two-dimensional array of x and y, apply rotation to them
+     * and return the result.
+     * @param rotationInDegrees
+     * @param xy
+     * @return 
+     */
+    public float[][] transformXY(float rotationInDegrees, float[][] xy) {
+        
+        if (xy == null) {
+            throw new IllegalArgumentException("xy cannot be null");
+        }
+        if (xy.length == 0) {
+            return new float[0][];
+        }
+        if (xy[0].length != 2) {
+            throw new IllegalArgumentException(
+            "xy must be size 2 for the 2nd dimension");
+        }
+        
+        double rotationInRadians = rotationInDegrees * Math.PI/180.;
+        
+        double cos = Math.cos(rotationInRadians);
+        double sin = Math.sin(rotationInRadians);
+        
+        float[][] transformed = new float[xy.length][];
+        
+        for (int i = 0; i < xy.length; ++i) {
+            
+            float x = xy[i][0];
+            float y = xy[i][1];
+            
+            double xr = (x * cos) + (y * sin);
+            double yr = (-x * sin) + (y * cos);
+            
+            transformed[i] = new float[]{(float)xr, (float)yr};
+        }
+        
+        return transformed;
+    }
+    
 }

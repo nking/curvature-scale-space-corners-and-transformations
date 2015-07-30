@@ -113,6 +113,8 @@ public class ShapeMatcher {
             smallestGroupLimit /= (binFactor1*binFactor1);
             largestGroupLimit /= (binFactor1*binFactor1);
             
+            log.info("binFactor1=" + binFactor1);
+            
             // prevent from being smaller than needed for a convex hull
             if (smallestGroupLimit < 4) {
                 smallestGroupLimit = 4;
@@ -376,6 +378,9 @@ public class ShapeMatcher {
         
         TransformationPointFit bestFit00 = null;
         
+        List<PairIntArray> hullCentroids1List = new ArrayList<PairIntArray>();
+        List<PairIntArray> hullCentroids2List = new ArrayList<PairIntArray>();
+        
         for (Entry<Integer, PairIntArray> entry : hullCentroids1Map.entrySet()) {
             
             Integer pixValue1 = entry.getKey();
@@ -403,8 +408,21 @@ public class ShapeMatcher {
             PairIntArray hull1Centroids = entry.getValue();
             PairIntArray hull2Centroids = hullCentroids2Map.get(pixValue2);
             
+            hullCentroids1List.add(hull1Centroids);
+            hullCentroids2List.add(hull2Centroids);
+            
             log.info("nHulls1=" + hull1Centroids.getN() + " nHulls2=" 
                 + hull2Centroids.getN() + " {" + pixValue1 + "," + pixValue2 + "}");
+        }
+        
+        // 1st entry is coords w.r.t. img1, 2nd entry is coords w.r.t. img2
+        PairIntArray[] matchedHullCentroids = matchFeatures(img1Cp, img2Cp,
+            hullCentroids1List, hullCentroids2List);
+        
+        for (int i = 0; i < hullCentroids1List.size(); ++i) {
+            
+            PairIntArray hull1Centroids = hullCentroids1List.get(i);
+            PairIntArray hull2Centroids = hullCentroids2List.get(i);
             
             double toleranceColor = 18;
             
@@ -510,4 +528,53 @@ public class ShapeMatcher {
         return bestFit;
     }
 
+    /**
+     * NOT YET IMPLEMENTED
+     * match the given point lists by comparing rotated and dithered blocks
+     * surrounding points in the first list to blocks around points in the
+     * second list.
+     * The runtime complexity is O(N1 * N2), but there are many steps for
+     * the rotation and dither operations.
+     * @param img1Cp
+     * @param img2Cp
+     * @param points1List
+     * @param points2List
+     * @return 
+     */
+    protected PairIntArray[] matchFeatures(ImageExt img1Cp, ImageExt img2Cp, 
+        List<PairIntArray> points1List, List<PairIntArray> points2List) {
+        
+        return null;
+    }
+    
+    /**
+     * create x and y offsets for the neighbor points within 2 pixel radius.
+     * The result is a two-dimensional array of length 25 with the first
+     * dimension being the x array and the 2nd dimension being the y array.
+     * Note that the offset of (0,0) is the first given.
+     * @return 
+     */
+    public float[][] createNeighborOffsets() {
+        
+        float[][] xyout = new float[25][];
+        xyout[0] = new float[2];
+        
+        int d = 2;
+        
+        int count = 1;
+        for (int x = -d; x <= d; ++x) {
+            for (int y = -d; y <= d; ++y) {
+                if (x == 0 && y == 0) {
+                    continue;
+                }
+                
+                xyout[count] = new float[]{x, y};
+                
+                count++;
+            }
+        }
+    
+        return xyout;
+    }
+    
 }

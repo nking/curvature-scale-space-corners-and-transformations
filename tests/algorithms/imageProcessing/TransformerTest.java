@@ -436,4 +436,41 @@ public class TransformerTest extends TestCase {
         assertTrue(Math.abs(paramsSDiv4.getOriginY() - params.getOriginY()) < 0.01);
         assertTrue(Math.abs(paramsSDiv4.getRotationInDegrees() - params.getRotationInDegrees()) < 0.01);
     }
+    
+    public void testTransformXY() throws Exception {
+            
+        float rotationInDegrees = 90;
+        
+        float[][] xy = new float[4][];
+        xy[0] = new float[]{0, 2};
+        xy[1] = new float[]{2, 0};
+        xy[2] = new float[]{0, -3};
+        xy[3] = new float[]{-2, 0};
+        
+        float[][] expected = new float[4][];
+        expected[0] = new float[]{2, 0};
+        expected[1] = new float[]{0, -2};
+        expected[2] = new float[]{-3, 0};
+        expected[3] = new float[]{0, 2};
+        
+        Transformer transformer = new Transformer();
+        
+        float[][] results = transformer.transformXY(rotationInDegrees, xy);
+        
+        assertTrue(results.length == expected.length);
+        
+        for (int i = 0; i < results.length; ++i) {
+            assertTrue(results[i].length == expected[i].length);
+            
+            float x = results[i][0];
+            float y = results[i][1];
+            
+            float xExp = expected[i][0];
+            float yExp = expected[i][1];
+            
+            assertTrue(Math.abs(x - xExp) < 0.1);
+            assertTrue(Math.abs(y - yExp) < 0.1);
+        }
+        
+    }
 }

@@ -4816,14 +4816,9 @@ if (compTol == 1) {
         TransformationPointFit bestFit = null;
 
         Transformer transformer = new Transformer();
-        
+
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
-
-log.info("set1");
-        PixelColors[] clrAvg1 = avgOfNeighborIntensities(points1, img1);
-log.info("set2");
-        PixelColors[][] clrAvg2 = avgOfNeighborIntensities(points2, img2, true);
 
         while (s1.getNextSubset(selected1) != -1) {
 
@@ -4838,11 +4833,9 @@ log.info("set2");
 
             int x10 = points1.getX(idx10);
             int y10 = points1.getY(idx10);
-            PixelColors clr10 = clrAvg1[idx10];
 
             int x11 = points1.getX(idx11);
             int y11 = points1.getY(idx11);
-            PixelColors clr11 = clrAvg1[idx11];
 
             SubsetChooser s2 = new SubsetChooser(n2, k);
 
@@ -4852,11 +4845,9 @@ log.info("set2");
                 int idx21 = selected2[1];
                 int x20 = points2.getX(idx20);
                 int y20 = points2.getY(idx20);
-                PixelColors[] clr20 = clrAvg2[idx20];
 
                 int x21 = points2.getX(idx21);
                 int y21 = points2.getY(idx21);
-                PixelColors[] clr21 = clrAvg2[idx21];
 
                 for (int order = 0; order < 2; ++order) {
                     if (order == 1) {
@@ -4866,40 +4857,32 @@ log.info("set2");
                         swap = y20;
                         y20 = y21;
                         y21 = swap;
-                        PixelColors[] swap2 = clr20;
-                        clr20 = clr21;
-                        clr21 = swap2;
                     }
-
-                    boolean firstPointIsSimilar =
-                        containsOneSimilarWithinTolerance(clr10, clr20, 
-                            toleranceColor);
-
-                    boolean secondPointIsSimilar =
-                        containsOneSimilarWithinTolerance(clr11, clr21, 
-                            toleranceColor);
-
-                    if (!firstPointIsSimilar || !secondPointIsSimilar) {
-                        continue;
-                    }
+                    
+                    // TODO: might need a small amount of dithering to allow
+                    // for finding the better centroid
                     
                     TransformationParameters params = tc.calulateEuclidean(
                         x10, y10, x11, y11, x20, y20, x21, y21, 0, 0);
                     
-                    //TODO: memoize these transformed patches
+                    // TODO: memoize transformed patches and discarded transformations
+
+                    boolean firstPointIsSimilar = patchesAreSimilar(params, img1, img2,
+                        transformer, x10, y10);
                     
-                    firstPointIsSimilar = patchesAreSimilar(params, img1, img2,
-                        transformer, x10, y10, x20, y20);
+                    if (!firstPointIsSimilar) {
+                        continue;
+                    }
 
-                    secondPointIsSimilar = patchesAreSimilar(params, img1, img2,
-                        transformer, x11, y11, x21, y21);
+                    boolean secondPointIsSimilar = patchesAreSimilar(params, img1, img2,
+                        transformer, x11, y11);
 
-                    if (!firstPointIsSimilar || !secondPointIsSimilar) {
+                    if (!secondPointIsSimilar) {
                         continue;
                     }
 
                     TransformationPointFit fit = evaluateForUnmatchedGreedy(
-                        params, points1, points2, clrAvg1, clrAvg2,
+                        params, points1, points2, img1, img2,
                         toleranceTransX, toleranceTransY);
 
                     if ((fit == null) || (fit.getNumberOfMatchedPoints() < 2)) {
@@ -4968,8 +4951,8 @@ log.info("set2");
             for (int nIdx = 0; nIdx < ncXOffsets.length; ++nIdx) {
                 int x = x0 + ncXOffsets[nIdx];
                 int y = y0 + ncYOffsets[nIdx];
-                
-                PixelColors clr = avgOfNeighborIntensities(x, y, neighborOffsets, 
+
+                PixelColors clr = avgOfNeighborIntensities(x, y, neighborOffsets,
                     img);
 
                 output[i][nIdx] = clr;
@@ -4978,9 +4961,9 @@ log.info("set2");
 
         return output;
     }
-    
+
     PixelColors[] avgOfNeighborIntensities(PairIntArray points, ImageExt img) {
-        
+
         PixelColors[] output = new PixelColors[points.getN()];
 
         PairIntArray neighborOffsets = MiscMath.get20NeighborOffsets();
@@ -4989,23 +4972,23 @@ log.info("set2");
 
             int x = points.getX(i);
             int y = points.getY(i);
-            
+
             PixelColors clr = avgOfNeighborIntensities(x, y, neighborOffsets, img);
-               
+
             output[i] = clr;
         }
-        
+
         return output;
     }
-    
-    PixelColors avgOfNeighborIntensities(int x, int y, PairIntArray neighborOffsets, 
+
+    PixelColors avgOfNeighborIntensities(int x, int y, PairIntArray neighborOffsets,
         ImageExt img) {
 
         img.setRadiusForPopulateOnDemand(0);
-        
+
         int colMax = img.getWidth() - 1;
         int rowMax = img.getHeight()- 1;
-        
+
         int sumR = 0;
         int sumG = 0;
         int sumB = 0;
@@ -5042,14 +5025,14 @@ log.info("set2");
 
         PixelColors pixClr = new PixelColors(sumR, sumG, sumB, sumCIEX,
             sumCIEY);
-        
+
         return pixClr;
     }
 
     private TransformationPointFit evaluateForUnmatchedGreedy(
         TransformationParameters params,
         PairIntArray points1, PairIntArray points2,
-        PixelColors[] colors1, PixelColors[][] colors2,
+        ImageExt img1, ImageExt img2,
         float toleranceTransX, float toleranceTransY) {
 
         Transformer transformer = new Transformer();
@@ -5071,10 +5054,6 @@ log.info("set2");
         int nMatched = 0;
         double avg = 0;
 
-        //TODO: this may need to be changed:
-        // for B&L2003(?) 18 works well
-        double eps = 18;
-
         for (int i = 0; i < n; i++) {
 
             float transformedX = trFiltered1.getX(i);
@@ -5082,8 +5061,6 @@ log.info("set2");
 
             double minDiff = Double.MAX_VALUE;
             int min2Idx = -1;
-
-            PixelColors clr1 = colors1[i];
 
             for (int j = 0; j < filtered2.getN(); j++) {
 
@@ -5098,11 +5075,10 @@ log.info("set2");
                     (Math.abs(dy) > toleranceTransY)) {
                     continue;
                 }
-
-                // compare the average of the neighbor intensities
-                boolean looksSimilar = containsOneSimilarWithinTolerance(clr1,
-                    colors2[j], eps);
                 
+                boolean looksSimilar = patchesAreSimilar(params, img1, img2, 
+                    transformer, points1.getX(i), points1.getY(i));
+
                 if (!looksSimilar){
                     continue;
                 }
@@ -5147,51 +5123,55 @@ log.info("set2");
 
     private boolean containsOneSimilarWithinTolerance(PixelColors clr1,
         PixelColors[] clr2, double eps) {
-        
+
         boolean oneIsSimlar = false;
-        
+
         double cieXEps = 0.012;
         double cieYEps = 0.009;
-        
+
         for (int i = 0; i < clr2.length; ++i) {
-                        
+
             int diffR = Math.abs(clr1.getRed() - clr2[i].getRed());
             int diffG = Math.abs(clr1.getGreen() - clr2[i].getGreen());
             int diffB = Math.abs(clr1.getBlue() - clr2[i].getBlue());
             float diffCIEX = Math.abs(clr1.getCIEX() - clr2[i].getCIEX());
             float diffCIEY = Math.abs(clr1.getCIEY() - clr2[i].getCIEY());
-            
-            if ((diffR > eps) || (diffG > eps) || (diffB > eps) || 
+
+            if ((diffR > eps) || (diffG > eps) || (diffB > eps) ||
                 (diffCIEX > cieXEps) || (diffCIEY > cieYEps)) {
                 continue;
             }
-            
+
             oneIsSimlar = true;
-            
+
             break;
         }
-        
+
         return oneIsSimlar;
     }
 
-    boolean patchesAreSimilar(TransformationParameters params, 
+    boolean patchesAreSimilar(TransformationParameters params,
         ImageExt img1, ImageExt img2, Transformer transformer,
-        final int x1, final int y1, final int x2, final int y2) {
-        
+        final int x1, final int y1) {
+
         final int d = 2;
-        
-        int rgbEps = 2;
-                
+
         // for each pixel (x1, y1) +-d transform the point to image 2
         // and compare the differences.
         // -- compare by division
         // -- compare by sum of block
-        
+
         int count = 0;
-        int sumR = 0;
-        int sumG = 0;
-        int sumB = 0;
+        //int sumR = 0;
+        //int sumG = 0;
+        //int sumB = 0;
         
+        double sumRDiv = 0;
+        double sumGDiv = 0;
+        double sumBDiv = 0;
+        double sumCieXDiv = 0;
+        double sumCieYDiv = 0;
+
         for (int x = (x1 - d); x <= (x1 + d); ++x) {
             if ((x < 0) || (x > (img1.getWidth() - 1))) {
                 continue;
@@ -5200,20 +5180,32 @@ log.info("set2");
                 if ((y < 0) || (y > (img1.getHeight() - 1))) {
                     continue;
                 }
-                
+
                 int idx1 = img1.getInternalIndex(x, y);
-            
-                //TODO: keep only best indicator
+
+                double[] xyT = transformer.applyTransformation(params, x, y);
+
+                // compare to (x2, y2) given as a check
+                int x2T = (int)Math.round(xyT[0]);
+                int y2T = (int)Math.round(xyT[1]);
+                
+                if ((x2T < 0) || (x2T > (img2.getWidth() - 1)) ||
+                    (y2T < 0) || (y2T > (img2.getHeight() - 1))) {
+                    continue;
+                }
+                
+                if (debug) {
+                    if (y == y1 && x == x1) {
+                        log.info(String.format("(%d,%d) transformed to img2 (%d,%d)",
+                            x1, y1, x2T, y2T));
+                    }
+                }
+
                 float cieX1 = img1.getCIEX(idx1);
                 float cieY1 = img1.getCIEY(idx1);
                 int r1 = img1.getR(idx1);
                 int g1 = img1.getG(idx1);
                 int b1 = img1.getB(idx1);
-            
-                double[] xyT = transformer.applyTransformation(params, x, y);
-                
-                int x2T = (int)Math.round(xyT[0]);
-                int y2T = (int)Math.round(xyT[1]);
                 
                 int idx2 = img2.getInternalIndex(x2T, y2T);
                 float cieX2 = img2.getCIEX(idx2);
@@ -5221,35 +5213,69 @@ log.info("set2");
                 int r2 = img2.getR(idx2);
                 int g2 = img2.getG(idx2);
                 int b2 = img2.getB(idx2);
-                
+
                 float cieXDiv = cieX1/cieX2;
                 float cieYDiv = cieY1/cieY2;
                 float rDiv = (float)r1/(float)r2;
                 float gDiv = (float)g1/(float)g2;
                 float bDiv = (float)b1/(float)b2;
-                
+
+                /*
                 int rDiff = Math.abs(r1 - r2);
                 int gDiff = Math.abs(g1 - g2);
                 int bDiff = Math.abs(b1 - b2);
-                
+
+                log.info("cieXDiv=+ " + cieXDiv + " cieYDiv=" + cieYDiv
+                    + " rDiv=" + rDiv + " gDiv=" + gDiv + " bDiv=" + bDiv
+                    + " rDiff=" + rDiff + " gDiff=" + gDiff + " bDiff=" + bDiff
+                );
+
                 sumR += rDiff;
                 sumG += gDiff;
                 sumB += bDiff;
+                */
+
+                sumRDiv += rDiv;
+                sumGDiv += gDiv;
+                sumBDiv += bDiv;
+                
+                sumCieXDiv += cieXDiv;
+                sumCieYDiv += cieYDiv;
                 
                 count++;
             }
         }
         
-        float rAvg = (float)sumR/(float)count;
+        if (count == 0) {
+            return false;
+        }
+
+        /*float rAvg = (float)sumR/(float)count;
         float gAvg = (float)sumG/(float)count;
         float bAvg = (float)sumB/(float)count;
+        */
         
-        //TODO: find best comparisons thru testing
+        double rDivAvg = sumRDiv/(double)count;
+        double gDivAvg = sumGDiv/(double)count;
+        double bDivAvg = sumBDiv/(double)count;
         
-        if ((rAvg > rgbEps) || (gAvg > rgbEps) || (bAvg > rgbEps)) {
+        double cieXDivAvg = sumCieXDiv/(double)count;
+        double cieYDivAvg = sumCieYDiv/(double)count;
+        
+        if (debug) {
+            log.info("rDivAvg=+ " + rDivAvg + " gDivAvg=" + gDivAvg + 
+                " bDivAvg=" + bDivAvg 
+                + " cieXDivAvg=" + cieXDivAvg + " cieYDivAvg=" + cieYDivAvg);
+        }
+
+        if ((rDivAvg < 0.84) || (gDivAvg < 0.84) || (bDivAvg < 0.84)) {
             return false;
         }
         
+        if ((rDivAvg > 1.19) || (gDivAvg > 1.19) || (bDivAvg > 1.19)) {
+            return false;
+        }
+
         return true;
     }
 
