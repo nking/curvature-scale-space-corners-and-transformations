@@ -346,24 +346,38 @@ public class ShapeMatcher {
             + corners2.getN());
          
         /*
-        this matching using the hulls only works pretty well, but also needs
-        to use information from the surrounding region to rule out fits.
-        For the Brown & Lowe panoramic images, for example, the diagonal 
-        features are matching to diagonal features in the 2nd image 
-        (matching for ridges rather than a smaller number of adjacent features).
-        
         If make an assumption that the histogram equalization and then color
         segmentation leaves the images in consistent state w.r.t. similar 
-        colors and intensities being displayed similarly, then this
-        should be fine to compare the surrounding intensities.  
-        Can do a cross centered on the centroid, rotated for the transformation
-        angle being tested and compare the intensities and gradient.
+        colors and intensities being displayed similarly, then selection of
+        blobs in this way should lead to comparable lists (which are
+        subsets of the total, that is the blobs found for intensity level i0
+        in image 1 are the ones to match to similar intensity level in image 2).
         
-        This would be making an assumption about scale or re-doing surrounding 
-        sum when needed for different scale.
+        Using the blobs, that is the hulls above, has reduced the number of
+        regions to compare.
         
-        Note that if that is not the case, the images should be pre-processed
-        to make that true before being given to this method.
+        Using the centroids of the blobs is appealling, but these will likely
+        be in regions free of large gradients so are difficult to distinguish.
+        
+        Corners filtered to be only those that cross those blob hulls, however,
+        should be good features to use.
+        
+        The problem is that the corners filtered to those lists are still too
+        many to use pairwise transformation calculation from every possible
+        pair (the process is approx n^4).
+        
+        So feature matching using patches surrounding the corners is needed and 
+        this is an N^2 process but accompanied by many steps for the comparisons.
+        
+        Note that feature matching instead of straight pairwise transformation
+        calculation unfortunately needs an assumption made about the
+        scale.
+        
+        So if one does have a reduced list of corners from the intersection
+        with the blob hulls, that is smaller than 30 or 40 in each list
+        (especially if near a dozen), then one should prefer to use pairwise
+        calculations over feature matching, but feature matching
+        can still be used to verify the results.
         */
         
         float toleranceTransX = 20;//30;
@@ -416,10 +430,18 @@ public class ShapeMatcher {
                 + hull2Centroids.getN() + " {" + pixValue1 + "," + pixValue2 + "}");
         }
         
+        //TODO: put the code to filter all corners to the intersection
+        // will the hull centroids here.
+        // Then use those corners in "matchFeatures" because they will
+        // have significant gradient in surrounding block making it easier
+        // to uniquely match.
+        
         // 1st entry is coords w.r.t. img1, 2nd entry is coords w.r.t. img2
         PairIntArray[] matchedHullCentroids = matchFeatures(img1Cp, img2Cp,
             hullCentroids1List, hullCentroids2List);
-        
+if (true) {
+    return null;
+}        
         for (int i = 0; i < hullCentroids1List.size(); ++i) {
             
             PairIntArray hull1Centroids = hullCentroids1List.get(i);
@@ -554,6 +576,9 @@ public class ShapeMatcher {
             throw new IllegalArgumentException(
             "points1List must be the same size as points2List");
         }
+        
+        //TODO: NOTE changing this to use gradients in the statistics
+        
         
         /*
         Two ways to compare the blocks:
@@ -817,6 +842,17 @@ public class ShapeMatcher {
         float stDevDiffPix;
         float avgDivPix;
         float stDevDivPix;
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("p1=").append(img1Point.toString()).append(" ")
+            .append("p2=").append(img2Point.toString()).append("\n")
+            .append("avgDiffPix=").append(avgDiffPix)
+            .append(" stDevDiffPix=").append(stDevDiffPix)
+            .append(" avgDivPix=").append(avgDivPix)
+            .append(" stDevDivPix=").append(stDevDivPix);
+            return sb.toString();
+        }
     }
     
 }

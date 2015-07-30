@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.ShapeMatcher.FeatureComparisonStat;
 import algorithms.util.PairInt;
+import algorithms.util.ResourceFinder;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -254,4 +255,177 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue(Math.abs(stat0.stDevDivPix) < 0.01);
         assertTrue(Math.abs(stat0.stDevDivPix - stat.stDevDivPix) < 0.01);        
     }
+    
+    public void testCalculateStat2() throws Exception {
+        
+        //TODO: this needs to be adapted when gradients
+        // are used in the stats.
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+        
+        // choose regions from Brown & Lowe images to compare
+        String fileName1, fileName2;
+        ImageExt img1, img2;
+        PairInt img1Pt1, img1Pt2, img2Pt1, img2Pt2;
+        int binFactor;
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        //seed = 1438231301005L;
+        log.info("SEED3=" + seed);
+        sr.setSeed(seed);
+        
+
+        fileName1 = "brown_lowe_2003_image1.jpg";
+        fileName2 = "brown_lowe_2003_image2.jpg";
+        img1Pt1 = new PairInt(117, 111);
+        img1Pt2 = new PairInt(156, 52);
+        img2Pt1 = new PairInt(14, 105);
+        img2Pt2 = new PairInt(64, 52);
+        binFactor = 3;
+        /*
+        set1      set2
+        117,111   14,105
+        156,52    64,52
+        
+        transfomation for images having been binned by factor 3:
+        
+        params=rotationInRadians=6.110986 rotationInDegrees=350.13371979955923 scale=1.0302308
+            translationX=-85.15954 translationY=-28.318274 originX=0.0 originY=0.0
+        */
+        
+        
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        img1 = ImageIOHelper.readImageExt(filePath1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        img2 = ImageIOHelper.readImageExt(filePath2);
+        img1 = imageProcessor.binImage(img1, binFactor);
+        img2 = imageProcessor.binImage(img2, binFactor);
+        
+        ShapeMatcher matcher = new ShapeMatcher();
+       
+        TransformationParameters params = tc.calulateEuclidean(
+            img1Pt1.getX(), img1Pt1.getY(), img1Pt2.getX(), img1Pt2.getY(),
+            img1Pt2.getX(), img2Pt1.getY(), img2Pt2.getX(), img2Pt2.getY(), 
+            0, 0);
+        
+        log.info("params=" + params);
+        
+        Transformer transformer = new Transformer();
+        
+        Set<FeatureComparisonStat> trueMatches = new HashSet<FeatureComparisonStat>();
+        Set<FeatureComparisonStat> differentPatches = new HashSet<FeatureComparisonStat>();
+        
+        float[][] offsets0 = matcher.createNeighborOffsets();
+        float[][] offsetsT = transformer.transformXY(
+            Math.round(params.getRotationInDegrees()), offsets0);
+        
+        FeatureComparisonStat stat1 = matcher.calculateStat(img1, img2,
+            img1Pt1.getX(), img1Pt1.getY(), img2Pt1.getX(), img2Pt1.getY(), 
+            offsetsT, offsets0);
+        trueMatches.add(stat1);
+        
+        FeatureComparisonStat stat2 = matcher.calculateStat(img1, img2,
+            img1Pt2.getX(), img1Pt2.getY(), img2Pt2.getX(), img2Pt2.getY(),
+            offsetsT, offsets0);
+        trueMatches.add(stat2);
+        
+        log.info("true match =" + stat1.toString());
+        log.info("true match =" + stat2.toString());
+        
+        /*
+         INFO: true match =p1=x=117 y=111 p2=x=14 y=105
+         avgDiffPix=21.480001 stDevDiffPix=19.142578 avgDivPix=1.0866014 stDevDivPix=0.2703045
+
+         INFO: true match =p1=x=156 y=52 p2=x=64 y=52
+         avgDiffPix=15.88 stDevDiffPix=10.870372 avgDivPix=0.9379496 stDevDivPix=0.10855621
+        */
+        
+        /*
+        visit 100 other places randomly in the image avoiding correct match
+        and store the stats.
+        
+        // offsets from that transformation should not match:
+        */
+        
+        for (int i = 0; i < 100; i++) {
+            
+            int x2 = 7 + sr.nextInt(img2.getWidth() - 12);
+            int y2 = 7 + sr.nextInt(img2.getHeight() - 12);
+            while ((Math.abs(x2 - img2Pt1.getX()) < 6) && 
+                (Math.abs(y2 - img2Pt1.getY()) < 6)) {
+                x2 = 7 + sr.nextInt(img2.getWidth() - 12);
+                y2 = 7 + sr.nextInt(img2.getHeight() - 12);
+            }
+            
+            int rotD = sr.nextInt(360);
+            
+            float[][] offsetsR = transformer.transformXY(rotD, offsets0);
+            
+            FeatureComparisonStat s = matcher.calculateStat(img1, img2,
+                img1Pt1.getX(), img1Pt1.getY(), x2, y2, offsetsR, offsets0);
+            
+            differentPatches.add(s);
+        }
+                
+    }
+    
+    /*
+    brown & Lowe images hull centers to compare using the dithering test when
+    implemented:
+    
+    set1: list0:
+     (157,82)
+     (75,114)
+     (134,89)
+     (6,110)
+     (155,57)
+     (21,117)
+     (43,93)
+     (129,119)
+     (10,104)
+     (140,60)
+     (146,67)
+     (103,116)
+     (118,116)
+     (28,113)
+     (117,82)
+     (91,108)
+     (17,110)
+     (72,104)
+     (119,111)
+     set1 list1:
+     (11,56)
+     (44,96)
+     (5,78)
+    
+    set2 list0:
+     (150,96)
+     (102,110)
+     (60,80)
+     (102,96)
+     (37,84)
+     (116,110)
+     (5,66)
+     (20,75)
+     (11,74)
+     (17,106)
+     (80,94)
+     (19,54)
+     (49,57)
+     (80,79)
+     (98,83)
+     (89,92)
+     (124,118)
+     (54,65)
+     (25,55)
+     (67,106)
+    set2 list1:
+     (145,108)
+     (123,99)
+     (131,96)
+    */
 }
