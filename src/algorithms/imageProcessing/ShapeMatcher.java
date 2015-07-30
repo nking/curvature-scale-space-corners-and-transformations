@@ -731,9 +731,12 @@ public class ShapeMatcher {
             gDiff[count] = Math.abs(g1 - g2);
             bDiff[count] = Math.abs(b1 - b2);
             
-            rDiv[count] = r1/r2;
-            gDiv[count] = g1/g2;
-            bDiv[count] = b1/b2;
+            //TODO: reconsider whether to keep the value if all are zero,
+            //    because it may be a dead pixel.  
+            
+            rDiv[count] = (r2 == 0) ? 255 : r1/r2;
+            gDiv[count] = (g2 == 0) ? 255 : g1/g2;
+            bDiv[count] = (b2 == 0) ? 255 : b1/b2;
             
             count++;
         }

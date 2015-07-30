@@ -102,7 +102,7 @@ public class ShapeMatcherTest extends TestCase {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1438229484875L;
+        //seed = 1438231301005L;
         log.info("SEED1=" + seed);
         sr.setSeed(seed);
         
@@ -123,7 +123,7 @@ public class ShapeMatcherTest extends TestCase {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1438229484897L;
+        //seed = 1438231301105L;
         log.info("SEED2=" + seed);
         sr.setSeed(seed);
         
@@ -168,7 +168,7 @@ public class ShapeMatcherTest extends TestCase {
         // fill a small image randomly from 0 to 255
         // copy that image to img2 then make small random offsets for some
         // pixels.
-        ImageExt img1 = randomImage(0, 255, 10, 10);
+        ImageExt img1 = randomImage(10, 255, 10, 10);
         ImageExt img2 = (ImageExt)img1.copyImage();
         applyRandomOffsets(2, img2); 
         
@@ -179,6 +179,9 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue(stat.avgDiffPix < 1);
         assertTrue(stat.stDevDiffPix < 1);
         double rch = (2*Math.sqrt(10*10)/25.);
+        if (Math.abs(stat.avgDivPix - 1) > 3*rch) {
+            log.info("stat.avgDivPix=" + stat.avgDivPix);
+        }
         assertTrue(Math.abs(stat.avgDivPix - 1) <= 3*rch);
         assertTrue(stat.stDevDivPix < Math.sqrt(25*(rch*rch)/24.));
         
