@@ -261,8 +261,8 @@ public class ShapeMatcher {
             }
         }
         
-        MiscDebug.writeHullImages(img1Grey, hulls1, "1_binned");
-        MiscDebug.writeHullImages(img2Grey, hulls2, "2_binned");
+        MiscDebug.writeHullImages(img1Grey, hulls1, "1_binned_hulls");
+        MiscDebug.writeHullImages(img2Grey, hulls2, "2_binned_hulls");
         MiscDebug.writeImage(img1Cp, "1_binned_clr");
         MiscDebug.writeImage(img2Cp, "2_binned_clr");
        
@@ -330,7 +330,7 @@ public class ShapeMatcher {
             corners1, hulls1);
         
         Map<Integer, PairIntArray> filteredCorners2 = filterToHulls(
-            corners1, hulls2);
+            corners2, hulls2);
         
         /*
         use feature description to find similar looking features within
@@ -378,6 +378,12 @@ public class ShapeMatcher {
             // and details
             PairIntArray filtered1 = entry.getValue();
             PairIntArray filtered2 = filteredCorners2.get(pixValue2);
+            
+            log.info("nFiltered1=" + filtered1.getN() + " for intensity=" + pixValue1.toString());
+            log.info("nFiltered2=" + filtered2.getN() + " for intensity=" + pixValue2.toString());
+            
+            MiscDebug.plotCorners(img1Grey, filtered1, pixValue1.toString() + "_1_filtered");
+            MiscDebug.plotCorners(img2Grey, filtered2, pixValue2.toString() + "_2_filtered");
             
             Map<PairInt, List<FeatureComparisonStat>> similar = 
                 findSimilarFeatures(img1Cp, img2Cp, filtered1, filtered2);
@@ -564,16 +570,14 @@ if (true) {
                             FeatureComparisonStat stat = calculateStat(img1, 
                                 img2, x1d, y1d, x2, y2, offsets, offsets0);
 
-                            if (stat != null) {
+                            if (stat != null && !Float.isInfinite(stat.sumSqDiff)) {
                                 if (best == null) {
                                     best = stat;
                                 } else {
-                                    if (best.avgDiffPix > stat.avgDiffPix) {
+                                    float bestDiv = stat.sumSqDiff/stat.img2PointErr;
+                                    float div = stat.sumSqDiff/stat.img2PointErr;
+                                    if (bestDiv < div) {
                                         best = stat;
-                                    } else if (Math.abs(best.avgDiffPix - stat.avgDiffPix) < 0.1) {
-                                        if (best.stDevDiffPix > stat.stDevDiffPix) {
-                                            best = stat;
-                                        }
                                     }
                                 }
                             }
@@ -628,13 +632,12 @@ if (true) {
         best practices.
         */
         
+        float err2Sq = sumSquaredError(img2, x2, y2, offsets2);
+        
         int count = 0;
-        float[] rDiff = new float[offsets1.length];
-        float[] gDiff = new float[offsets1.length];
-        float[] bDiff = new float[offsets1.length];
-        float[] rDiv = new float[offsets1.length];
-        float[] gDiv = new float[offsets1.length];
-        float[] bDiv = new float[offsets1.length];
+        double sumR = 0;
+        double sumG = 0;
+        double sumB = 0;
         for (int i = 0; i < offsets1.length; ++i) {
             int x1P = Math.round(x1 + offsets1[i][0]);
             int y1P = Math.round(y1 + offsets1[i][1]);
@@ -661,52 +664,23 @@ if (true) {
             float g2 = img2.getG(idx2);
             float b2 = img2.getB(idx2);
             
-            rDiff[count] = Math.abs(r1 - r2);
-            gDiff[count] = Math.abs(g1 - g2);
-            bDiff[count] = Math.abs(b1 - b2);
-            
-            //TODO: reconsider whether to keep the value if all are zero,
-            //    because it may be a dead pixel.  
-            
-            rDiv[count] = (r2 == 0) ? 255 : r1/r2;
-            gDiv[count] = (g2 == 0) ? 255 : g1/g2;
-            bDiv[count] = (b2 == 0) ? 255 : b1/b2;
+            sumR += (r1 - r2)*(r1 - r2);
+            sumG += (g1 - g2)*(g1 - g2);
+            sumB += (b1 - b2)*(b1 - b2);
             
             count++;
         }
+        sumR /= (double)count;
+        sumG /= (double)count;
+        sumB /= (double)count;
         
-        float[] rDiffAvgStDev = MiscMath.getAvgAndStDev(rDiff, count);
-        float[] gDiffAvgStDev = MiscMath.getAvgAndStDev(gDiff, count);
-        float[] bDiffAvgStDev = MiscMath.getAvgAndStDev(bDiff, count);
-        
-        float[] rDivAvgStDev = MiscMath.getAvgAndStDev(rDiv, count);
-        float[] gDivAvgStDev = MiscMath.getAvgAndStDev(gDiv, count);
-        float[] bDivAvgStDev = MiscMath.getAvgAndStDev(bDiv, count);
-        
-        float avgDiffPix = (rDiffAvgStDev[0] + gDiffAvgStDev[0] + 
-            bDiffAvgStDev[0])/3.f;
-        
-        float avgDivPix = (rDivAvgStDev[0] + gDivAvgStDev[0] + 
-            bDivAvgStDev[0])/3.f;
-        
-        // std deviations add in quadrature
-        float stDevDiffPix = (float)Math.sqrt(
-            (rDiffAvgStDev[1]*rDiffAvgStDev[1] + 
-            gDiffAvgStDev[1]*gDiffAvgStDev[1] + 
-            bDiffAvgStDev[1]*bDiffAvgStDev[1])/2.f);
-        
-        float stDevDivPix = (float)Math.sqrt(
-            (rDivAvgStDev[1]*rDivAvgStDev[1] + 
-            gDivAvgStDev[1]*gDivAvgStDev[1] + 
-            bDivAvgStDev[1]*bDivAvgStDev[1])/2.f);
+        float avg = (float)(sumR + sumG + sumB)/3.f;
         
         FeatureComparisonStat stat = new FeatureComparisonStat();
         stat.img1Point = new PairInt(x1, y1);
         stat.img2Point = new PairInt(x2, y2);
-        stat.avgDiffPix = avgDiffPix;
-        stat.stDevDiffPix = stDevDiffPix;
-        stat.avgDivPix = avgDivPix;
-        stat.stDevDivPix = stDevDivPix;
+        stat.sumSqDiff = avg;
+        stat.img2PointErr = err2Sq;
         
         return stat;
     }
@@ -781,23 +755,54 @@ if (true) {
         
         return filteredCorners;
     }
+
+    float sumSquaredError(Image img, int x, int y, float[][] offsets) {
+        
+        int rVC = img.getR(x, y);
+        int gVC = img.getG(x, y);
+        int bVC = img.getB(x, y);
+        
+        int count = 0;
+        
+        double sumR = 0;
+        double sumG = 0;
+        double sumB = 0;
+        for (int i = 1; i < offsets.length; ++i) {
+            int x2 = Math.round(x + offsets[i][0]);
+            int y2 = Math.round(y + offsets[i][1]);
+            if (x2 < 0 || y2 < 0 || (x2 > (img.getWidth() - 1)) || (y2 > (img.getHeight() - 1))) {
+                return Float.POSITIVE_INFINITY;
+            }
+            int idx = img.getInternalIndex(x2, y2);
+            int diffR = img.getR(idx) - rVC;
+            int diffG = img.getG(idx) - gVC;
+            int diffB = img.getB(idx) - bVC;
+            sumR += (diffR * diffR);
+            sumG += (diffG * diffG);
+            sumB += (diffB * diffB);
+            count++;
+        }
+        sumR /= (double)count;
+        sumG /= (double)count;
+        sumB /= (double)count;
+        
+        float avg = (float)(sumR + sumG + sumB)/3.f;
+        
+        return avg;
+    }
     
     public static class FeatureComparisonStat {
         PairInt img1Point;
         PairInt img2Point;
-        float avgDiffPix;
-        float stDevDiffPix;
-        float avgDivPix;
-        float stDevDivPix;
+        float sumSqDiff;
+        float img2PointErr;
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("p1=").append(img1Point.toString()).append(" ")
             .append("p2=").append(img2Point.toString()).append("\n")
-            .append("avgDiffPix=").append(avgDiffPix)
-            .append(" stDevDiffPix=").append(stDevDiffPix)
-            .append(" avgDivPix=").append(avgDivPix)
-            .append(" stDevDivPix=").append(stDevDivPix);
+            .append("sumSqDiff=").append(sumSqDiff)
+            .append(" err2=").append(img2PointErr);
             return sb.toString();
         }
     }

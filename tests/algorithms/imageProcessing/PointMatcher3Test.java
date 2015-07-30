@@ -919,7 +919,7 @@ if (true) {
             //test.testCalculateEuclideanTransformation();
             //test.testCalculateEuclideanTransformation2();
             //test.testIterativeCorners();
-            //test.testShapeMatching();
+            test.testShapeMatching();
 
         } catch(Exception e) {
             e.printStackTrace();
