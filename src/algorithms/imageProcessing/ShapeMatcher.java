@@ -5,6 +5,7 @@ import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayDescendingComparator;
@@ -529,20 +530,132 @@ public class ShapeMatcher {
     }
 
     /**
-     * NOT YET IMPLEMENTED
      * match the given point lists by comparing rotated and dithered blocks
      * surrounding points in the first list to blocks around points in the
      * second list.
      * The runtime complexity is O(N1 * N2), but there are many steps for
      * the rotation and dither operations.
-     * @param img1Cp
-     * @param img2Cp
+     * @param img1
+     * @param img2
      * @param points1List
      * @param points2List
      * @return 
      */
-    protected PairIntArray[] matchFeatures(ImageExt img1Cp, ImageExt img2Cp, 
+    protected PairIntArray[] matchFeatures(ImageExt img1, ImageExt img2, 
         List<PairIntArray> points1List, List<PairIntArray> points2List) {
+        
+        if (points1List == null) {
+            throw new IllegalArgumentException("points1List cannot be null");
+        }
+        if (points2List == null) {
+            throw new IllegalArgumentException("points2List cannot be null");
+        }
+        if (points1List.size() != points2List.size()) {
+            throw new IllegalArgumentException(
+            "points1List must be the same size as points2List");
+        }
+        
+        /*
+        Two ways to compare the blocks:
+           (1) sum the intensities in r,g,b in block 1 and subtract the same 
+               for the same in block 2.
+               This can be used to improve the center of the img1 block by 
+               minimizing the difference from dithered results.
+            
+               It ignores the gradient in the blocks that is useful
+               for distinguishing between other blocks so although fast, 
+               it might not be the best for matching.
+        
+           (2) divide each pixel in the rotated frame for block1 by the pixel 
+               in the block2 to calc avg and standard deviation from avg.
+               then need to find a consistent answer from the best matches
+               for each blob.  the best matches are closest to one.
+               Note that if the two images have differences like exposure level
+               differences, one would expect the ratio at best might not be '1',
+               and that would be apparent in all of the true matches.
+        */
+        
+        /*
+        data structure to store partial results:
+        
+        key = img1 feature coordinates
+        value = map with
+                key = img2 feature coordinates
+                value = map with
+                        key = rotation angle
+                        value = best of stats for dithering around the primary
+                                key and transforming the block to compare to
+                                the img2 block for the key rotation
+        */
+        
+        Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>>
+            comparisonMap = new HashMap<PairInt, Map<PairInt, 
+            Map<Float, FeatureComparisonStat>>>();
+          
+        Transformer transformer = new Transformer();
+        
+        float[][] offsets0 = createNeighborOffsets();
+
+        for (float rotInDeg = 0; rotInDeg < 360; rotInDeg += 22.5f) {
+
+            float[][] offsets = offsets0;
+            
+            if (rotInDeg > 0) {
+                offsets = transformer.transformXY(rotInDeg, offsets);
+            }
+            
+            for (int idxL1 = 0; idxL1 < points1List.size(); ++idxL1) {
+
+                PairIntArray points1 = points1List.get(idxL1);
+
+                PairIntArray points2 = points2List.get(idxL1);
+
+                for (int idx1 = 0; idx1 < points1.getN(); ++idx1) {
+                    int x1 = points1.getX(idx1);
+                    int y1 = points1.getY(idx1);
+                    PairInt p1 = new PairInt(x1, y1);
+
+                    for (int idx2 = 0; idx2 < points2.getN(); ++idx2) {
+                        int x2 = points2.getX(idx2);
+                        int y2 = points2.getY(idx2);
+                        PairInt p2 = new PairInt(x2, y2);
+
+                        // dither around (x1, y1) to find best stat
+                        FeatureComparisonStat best = null;
+                        for (int x1d = (x1 - 1); x1d <= (x1 + 1); ++x1d) {
+                            if ((x1d < 0) || (x1d > (img1.getWidth() - 1))) {
+                                continue;
+                            }
+                            for (int y1d = (y1 - 1); y1d <= (y1 + 1); ++y1d) {
+                                if ((y1d < 0) || (y1d > (img1.getHeight() - 1))) {
+                                    continue;
+                                }
+                                
+                                FeatureComparisonStat stat = calculateStat(img1, 
+                                    img2, x1d, y1d, x2, y2, offsets, offsets0);
+                                
+                                if (stat != null) {
+                                    if (best == null) {
+                                        best = stat;
+                                    } else {
+                                        if (best.avgDiffPix > stat.avgDiffPix) {
+                                            best = stat;
+                                        } else if (Math.abs(best.avgDiffPix - stat.avgDiffPix) < 0.1) {
+                                            if (best.stDevDiffPix > stat.stDevDiffPix) {
+                                                best = stat;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        storeInMap(comparisonMap, p1, p2, rotInDeg, best);                        
+                    }
+                }
+            }
+        }
+        
+        //TODO: process the results and simplify them above
         
         return null;
     }
@@ -575,6 +688,132 @@ public class ShapeMatcher {
         }
     
         return xyout;
+    }
+
+    FeatureComparisonStat calculateStat(ImageExt img1, ImageExt img2, 
+        final int x1, final int y1, final int x2, final int y2, 
+        final float[][] offsets1, final float[][] offsets2) {
+        
+        int count = 0;
+        float[] rDiff = new float[offsets1.length];
+        float[] gDiff = new float[offsets1.length];
+        float[] bDiff = new float[offsets1.length];
+        float[] rDiv = new float[offsets1.length];
+        float[] gDiv = new float[offsets1.length];
+        float[] bDiv = new float[offsets1.length];
+        for (int i = 0; i < offsets1.length; ++i) {
+            int x1P = Math.round(x1 + offsets1[i][0]);
+            int y1P = Math.round(y1 + offsets1[i][1]);
+            if ((x1P < 0) || (x1P > (img1.getWidth() - 1)) || (y1P < 0) ||
+                (y1P > (img1.getHeight() - 1))) {
+                continue;
+            }
+            
+            int x2P = Math.round(x2 + offsets2[i][0]);
+            int y2P = Math.round(y2 + offsets2[i][1]);
+            if ((x2P < 0) || (x2P > (img2.getWidth() - 1)) || (y2P < 0) ||
+                (y2P > (img2.getHeight() - 1))) {
+                continue;
+            }
+            
+            int idx1 = img1.getInternalIndex(x1P, y1P);
+            int idx2 = img1.getInternalIndex(x2P, y2P);
+            
+            float r1 = img1.getR(idx1);
+            float g1 = img1.getG(idx1);
+            float b1 = img1.getB(idx1);
+            
+            float r2 = img2.getR(idx2);
+            float g2 = img2.getG(idx2);
+            float b2 = img2.getB(idx2);
+            
+            rDiff[count] = Math.abs(r1 - r2);
+            gDiff[count] = Math.abs(g1 - g2);
+            bDiff[count] = Math.abs(b1 - b2);
+            
+            rDiv[count] = r1/r2;
+            gDiv[count] = g1/g2;
+            bDiv[count] = b1/b2;
+            
+            count++;
+        }
+        
+        float[] rDiffAvgStDev = MiscMath.getAvgAndStDev(rDiff, count);
+        float[] gDiffAvgStDev = MiscMath.getAvgAndStDev(gDiff, count);
+        float[] bDiffAvgStDev = MiscMath.getAvgAndStDev(bDiff, count);
+        
+        float[] rDivAvgStDev = MiscMath.getAvgAndStDev(rDiv, count);
+        float[] gDivAvgStDev = MiscMath.getAvgAndStDev(gDiv, count);
+        float[] bDivAvgStDev = MiscMath.getAvgAndStDev(bDiv, count);
+        
+        float avgDiffPix = (rDiffAvgStDev[0] + gDiffAvgStDev[0] + 
+            bDiffAvgStDev[0])/3.f;
+        
+        float avgDivPix = (rDivAvgStDev[0] + gDivAvgStDev[0] + 
+            bDivAvgStDev[0])/3.f;
+        
+        // std deviations add in quadrature
+        float stDevDiffPix = (float)Math.sqrt(
+            (rDiffAvgStDev[0]*rDiffAvgStDev[0] + 
+            gDiffAvgStDev[0]*gDiffAvgStDev[0] + 
+            bDiffAvgStDev[0]*bDiffAvgStDev[0])/2.f);
+        
+        float stDevDivPix = (float)Math.sqrt(
+            (rDivAvgStDev[0]*rDivAvgStDev[0] + 
+            gDivAvgStDev[0]*gDivAvgStDev[0] + 
+            bDivAvgStDev[0]*bDivAvgStDev[0])/2.f);
+        
+        FeatureComparisonStat stat = new FeatureComparisonStat();
+        stat.img1Point = new PairInt(x1, y1);
+        stat.img2Point = new PairInt(x2, y2);
+        stat.avgDiffPix = avgDiffPix;
+        stat.stDevDiffPix = stDevDiffPix;
+        stat.avgDivPix = avgDivPix;
+        stat.stDevDivPix = stDevDivPix;
+        
+        return stat;
+    }
+
+    private void storeInMap(Map<PairInt, Map<PairInt, Map<Float, 
+        FeatureComparisonStat>>> comparisonMap, PairInt p1, PairInt p2, 
+        float rotInDeg, FeatureComparisonStat best) {
+        
+        if (best == null) {
+            return;
+        }
+        
+        if (comparisonMap == null) {
+            throw new IllegalArgumentException("comparisonMap cannot be null");
+        }
+        
+        Map<PairInt, Map<Float, FeatureComparisonStat>> p1Map = 
+            comparisonMap.get(p1);
+        
+        if (p1Map == null) {
+            p1Map = new HashMap<PairInt, Map<Float, FeatureComparisonStat>>();
+            comparisonMap.put(p1, p1Map);
+        }
+        
+        Map<Float, FeatureComparisonStat> p2Map = p1Map.get(p2);
+        
+        if (p2Map == null) {
+            p2Map = new HashMap<Float, FeatureComparisonStat>();
+            p1Map.put(p2, p2Map);
+        }
+        
+        Float key = Float.valueOf(rotInDeg);
+        
+        p2Map.put(key, best);
+        
+    }
+    
+    public static class FeatureComparisonStat {
+        PairInt img1Point;
+        PairInt img2Point;
+        float avgDiffPix;
+        float stDevDiffPix;
+        float avgDivPix;
+        float stDevDivPix;
     }
     
 }

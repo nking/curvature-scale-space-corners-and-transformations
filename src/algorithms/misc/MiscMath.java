@@ -395,11 +395,23 @@ public class MiscMath {
      * given an array of points, return the average and standard deviation from
      * the average
      * @param x
-     * @return 
+     * @return float[]{avg, stDev}
      */
-    public static float[] getAvgAndStDev(float[] x) {
+    public static float[] getAvgAndStDev(float[] x) {        
+        return getAvgAndStDev(x, x.length);
+    }
+    
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
+     * @param length the number of indexes to use in x.  x can be longer than
+     * length
+     * @return float[]{avg, stDev}
+     */
+    public static float[] getAvgAndStDev(float[] x, int length) {
         
-        int n = x.length;
+        int n = length;
         double sumX = 0;
         for (int i = 0; i < n; i++) {
             sumX += x[i];
