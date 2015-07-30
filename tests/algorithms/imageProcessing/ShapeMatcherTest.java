@@ -280,20 +280,14 @@ public class ShapeMatcherTest extends TestCase {
 
         fileName1 = "brown_lowe_2003_image1.jpg";
         fileName2 = "brown_lowe_2003_image2.jpg";
-        img1Pt1 = new PairInt(117, 111);
-        img1Pt2 = new PairInt(156, 52);
-        img2Pt1 = new PairInt(14, 105);
-        img2Pt2 = new PairInt(64, 52);
+        img1Pt1 = new PairInt(127, 87); img1Pt2 = new PairInt(150, 68);
+        img2Pt1 = new PairInt(32, 82);  img2Pt2 = new PairInt(56, 66);
         binFactor = 3;
         /*
-        set1      set2
-        117,111   14,105
-        156,52    64,52
-        
         transfomation for images having been binned by factor 3:
         
-        params=rotationInRadians=6.110986 rotationInDegrees=350.13371979955923 scale=1.0302308
-            translationX=-85.15954 translationY=-28.318274 originX=0.0 originY=0.0
+        params=rotationInRadians=6.1807413 rotationInDegrees=354.13039133201386 scale=0.96686685
+            translationX=-81.54607 translationY=-14.233707 originX=0.0 originY=0.0
         */
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -307,7 +301,7 @@ public class ShapeMatcherTest extends TestCase {
        
         TransformationParameters params = tc.calulateEuclidean(
             img1Pt1.getX(), img1Pt1.getY(), img1Pt2.getX(), img1Pt2.getY(),
-            img1Pt2.getX(), img2Pt1.getY(), img2Pt2.getX(), img2Pt2.getY(), 
+            img2Pt1.getX(), img2Pt1.getY(), img2Pt2.getX(), img2Pt2.getY(), 
             0, 0);
         
         log.info("params=" + params);
@@ -349,7 +343,7 @@ public class ShapeMatcherTest extends TestCase {
         // offsets from that transformation should not match:
         */
         
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             
             int x2 = 7 + sr.nextInt(img2.getWidth() - 12);
             int y2 = 7 + sr.nextInt(img2.getHeight() - 12);
@@ -367,6 +361,8 @@ public class ShapeMatcherTest extends TestCase {
                 img1Pt1.getX(), img1Pt1.getY(), x2, y2, offsetsR, offsets0);
             
             differentPatches.add(s);
+            
+            log.info("not same blocks =" + s.toString());
         }
                 
     }
@@ -426,4 +422,15 @@ public class ShapeMatcherTest extends TestCase {
      (123,99)
      (131,96)
     */
+    
+    public static void main(String[] args) {
+        
+        ShapeMatcherTest test = new ShapeMatcherTest();
+        
+        try {
+            test.testCalculateStat2();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
+    }
 }

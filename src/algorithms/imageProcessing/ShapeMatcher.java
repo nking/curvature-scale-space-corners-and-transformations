@@ -261,8 +261,8 @@ public class ShapeMatcher {
             }
         }
         
-        MiscDebug.writeHullImages(img1Grey, hulls1, "1_binned");
-        MiscDebug.writeHullImages(img2Grey, hulls2, "2_binned");
+        MiscDebug.writeHullImages(img1Grey, hulls1, "1_binned_hulls");
+        MiscDebug.writeHullImages(img2Grey, hulls2, "2_binned_hulls");
         MiscDebug.writeImage(img1Cp, "1_binned_clr");
         MiscDebug.writeImage(img2Cp, "2_binned_clr");
        
@@ -330,7 +330,7 @@ public class ShapeMatcher {
             corners1, hulls1);
         
         Map<Integer, PairIntArray> filteredCorners2 = filterToHulls(
-            corners1, hulls2);
+            corners2, hulls2);
         
         /*
         use feature description to find similar looking features within
@@ -378,6 +378,12 @@ public class ShapeMatcher {
             // and details
             PairIntArray filtered1 = entry.getValue();
             PairIntArray filtered2 = filteredCorners2.get(pixValue2);
+            
+            log.info("nFiltered1=" + filtered1.getN() + " for intensity=" + pixValue1.toString());
+            log.info("nFiltered2=" + filtered2.getN() + " for intensity=" + pixValue2.toString());
+            
+            MiscDebug.plotCorners(img1Grey, filtered1, pixValue1.toString() + "_1_filtered");
+            MiscDebug.plotCorners(img2Grey, filtered2, pixValue2.toString() + "_2_filtered");
             
             Map<PairInt, List<FeatureComparisonStat>> similar = 
                 findSimilarFeatures(img1Cp, img2Cp, filtered1, filtered2);
@@ -628,6 +634,8 @@ if (true) {
         best practices.
         */
         
+        float[] err2 = sumError(img2, x2, y2, offsets2);
+        
         int count = 0;
         float[] rDiff = new float[offsets1.length];
         float[] gDiff = new float[offsets1.length];
@@ -707,6 +715,7 @@ if (true) {
         stat.stDevDiffPix = stDevDiffPix;
         stat.avgDivPix = avgDivPix;
         stat.stDevDivPix = stDevDivPix;
+        stat.img2PointRMSDiff = err2;
         
         return stat;
     }
@@ -781,6 +790,41 @@ if (true) {
         
         return filteredCorners;
     }
+
+    float[] sumError(Image img, int x, int y, float[][] offsets) {
+        int rVC = img.getR(x, y);
+        int gVC = img.getG(x, y);
+        int bVC = img.getB(x, y);
+        
+        int count = 0;
+        double sumR = 0;
+        double sumG = 0;
+        double sumB = 0;
+        for (int i = 1; i < offsets.length; ++i) {
+            int x2 = Math.round(x + offsets[i][0]);
+            int y2 = Math.round(y + offsets[i][1]);
+            if (x2 < 0 || y2 < 0 || (x2 > (img.getWidth() - 1)) || (y2 > (img.getHeight() - 1))) {
+                continue;
+            }
+            int idx = img.getInternalIndex(x2, y2);
+            int diffR = img.getR(idx) - rVC;
+            int diffG = img.getG(idx) - gVC;
+            int diffB = img.getB(idx) - bVC;
+            sumR += (diffR * diffR);
+            sumG += (diffG * diffG);
+            sumB += (diffB * diffB);
+            count ++;
+        }
+        sumR /= (double)count;
+        sumG /= (double)count;
+        sumB /= (double)count;
+        
+        sumR = Math.sqrt(sumR);
+        sumG = Math.sqrt(sumG);
+        sumB = Math.sqrt(sumB);
+        
+        return new float[]{(float)sumR, (float)sumG, (float)sumB};
+    }
     
     public static class FeatureComparisonStat {
         PairInt img1Point;
@@ -789,6 +833,7 @@ if (true) {
         float stDevDiffPix;
         float avgDivPix;
         float stDevDivPix;
+        float[] img2PointRMSDiff;
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
@@ -797,7 +842,10 @@ if (true) {
             .append("avgDiffPix=").append(avgDiffPix)
             .append(" stDevDiffPix=").append(stDevDiffPix)
             .append(" avgDivPix=").append(avgDivPix)
-            .append(" stDevDivPix=").append(stDevDivPix);
+            .append(" stDevDivPix=").append(stDevDivPix)
+            .append(" rmsErrRed2=").append(img2PointRMSDiff[0])
+            .append(" rmsErrGreen2=").append(img2PointRMSDiff[1])
+            .append(" rmsErrBlue2=").append(img2PointRMSDiff[2]);
             return sb.toString();
         }
     }
