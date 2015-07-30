@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.ShapeMatcher.FeatureComparisonStat;
 import algorithms.util.PairInt;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -175,10 +176,12 @@ public class ShapeMatcherTest extends TestCase {
         
         float[][] offsets0 = matcher.createNeighborOffsets();
         
-        //FeatureComparisonStat stat = matcher.calculateStat(img1, img2,
-        //    );
-        
-        
+        FeatureComparisonStat stat = matcher.calculateStat(img1, img2,
+            5, 5, 5, 5, offsets0, offsets0);
+        assertTrue(stat.avgDiffPix < 1);
+        assertTrue(stat.stDevDiffPix < 1);
+        assertTrue(Math.abs(stat.avgDivPix - 1) < 0.05);
+        assertTrue(stat.stDevDivPix < Math.sqrt(25*(0.05*0.05)/24.));
         
         // copy image1 again, but mult all pixels in img2 by 0.75
         

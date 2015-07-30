@@ -754,14 +754,14 @@ public class ShapeMatcher {
         
         // std deviations add in quadrature
         float stDevDiffPix = (float)Math.sqrt(
-            (rDiffAvgStDev[0]*rDiffAvgStDev[0] + 
-            gDiffAvgStDev[0]*gDiffAvgStDev[0] + 
-            bDiffAvgStDev[0]*bDiffAvgStDev[0])/2.f);
+            (rDiffAvgStDev[1]*rDiffAvgStDev[1] + 
+            gDiffAvgStDev[1]*gDiffAvgStDev[1] + 
+            bDiffAvgStDev[1]*bDiffAvgStDev[1])/2.f);
         
         float stDevDivPix = (float)Math.sqrt(
-            (rDivAvgStDev[0]*rDivAvgStDev[0] + 
-            gDivAvgStDev[0]*gDivAvgStDev[0] + 
-            bDivAvgStDev[0]*bDivAvgStDev[0])/2.f);
+            (rDivAvgStDev[1]*rDivAvgStDev[1] + 
+            gDivAvgStDev[1]*gDivAvgStDev[1] + 
+            bDivAvgStDev[1]*bDivAvgStDev[1])/2.f);
         
         FeatureComparisonStat stat = new FeatureComparisonStat();
         stat.img1Point = new PairInt(x1, y1);
