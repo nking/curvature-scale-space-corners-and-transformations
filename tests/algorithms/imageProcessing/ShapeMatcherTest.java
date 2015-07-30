@@ -180,8 +180,9 @@ public class ShapeMatcherTest extends TestCase {
             5, 5, 5, 5, offsets0, offsets0);
         assertTrue(stat.avgDiffPix < 1);
         assertTrue(stat.stDevDiffPix < 1);
-        assertTrue(Math.abs(stat.avgDivPix - 1) < 0.05);
-        assertTrue(stat.stDevDivPix < Math.sqrt(25*(0.05*0.05)/24.));
+        double rch = (2*Math.sqrt(10*10)/25.);
+        assertTrue(Math.abs(stat.avgDivPix - 1) <= rch);
+        assertTrue(stat.stDevDivPix < Math.sqrt(25*(rch*rch)/24.));
         
         // copy image1 again, but mult all pixels in img2 by 0.75
         
