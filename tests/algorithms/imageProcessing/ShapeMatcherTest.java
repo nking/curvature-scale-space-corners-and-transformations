@@ -102,6 +102,7 @@ public class ShapeMatcherTest extends TestCase {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
+        //seed = 1438229484875L;
         log.info("SEED1=" + seed);
         sr.setSeed(seed);
         
@@ -122,6 +123,7 @@ public class ShapeMatcherTest extends TestCase {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
+        //seed = 1438229484897L;
         log.info("SEED2=" + seed);
         sr.setSeed(seed);
         
@@ -160,10 +162,6 @@ public class ShapeMatcherTest extends TestCase {
     }
     
     public void testCalculateStat() throws Exception {
-        /*
-        FeatureComparisonStat calculateStat(ImageExt img1, ImageExt img2,
-        int x1, int y1, int x2, int y2, float[][] offsets1, float[][] offsets2) {
-        */
         
         ShapeMatcher matcher = new ShapeMatcher();
         
@@ -181,10 +179,30 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue(stat.avgDiffPix < 1);
         assertTrue(stat.stDevDiffPix < 1);
         double rch = (2*Math.sqrt(10*10)/25.);
-        assertTrue(Math.abs(stat.avgDivPix - 1) <= rch);
+        assertTrue(Math.abs(stat.avgDivPix - 1) <= 3*rch);
         assertTrue(stat.stDevDivPix < Math.sqrt(25*(rch*rch)/24.));
         
         // copy image1 again, but mult all pixels in img2 by 0.75
+        img2 = (ImageExt)img1.copyImage();
+        for (int i = 0; i < img2.nPixels; ++i) {
+            int r = Math.round(0.75f * img2.getR(i));
+            int g = Math.round(0.75f * img2.getG(i));
+            int b = Math.round(0.75f * img2.getB(i));
+            int col = img2.getCol(i);
+            int row = img2.getRow(i);
+            img2.setRGB(col, row, r, g, b);
+        }
+        stat = matcher.calculateStat(img1, img2,
+            5, 5, 5, 5, offsets0, offsets0);
+        double maxDiff = (255 - 0.75*255);
+        assertTrue(stat.avgDiffPix < maxDiff);
+        assertTrue(stat.stDevDiffPix < Math.sqrt(25*(maxDiff*maxDiff)/24.));
+        assertTrue(Math.abs(stat.avgDivPix - (1./0.75)) < 0.01);
+        assertTrue(stat.stDevDivPix < 0.05);
+        
+        
+        // copy image 1 and subtract a known amount
+        
         
         // rotate image2 by 67.5 degrees
         // fetch the offsets for transformation
