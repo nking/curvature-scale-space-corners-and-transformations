@@ -277,7 +277,6 @@ public class ShapeMatcherTest extends TestCase {
         //seed = 1438231301005L;
         log.info("SEED3=" + seed);
         sr.setSeed(seed);
-        
 
         fileName1 = "brown_lowe_2003_image1.jpg";
         fileName2 = "brown_lowe_2003_image2.jpg";
@@ -296,7 +295,6 @@ public class ShapeMatcherTest extends TestCase {
         params=rotationInRadians=6.110986 rotationInDegrees=350.13371979955923 scale=1.0302308
             translationX=-85.15954 translationY=-28.318274 originX=0.0 originY=0.0
         */
-        
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         img1 = ImageIOHelper.readImageExt(filePath1);
