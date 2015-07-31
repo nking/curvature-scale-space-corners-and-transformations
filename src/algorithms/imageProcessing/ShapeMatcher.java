@@ -321,18 +321,33 @@ public class ShapeMatcher {
         calculation unfortunately needs an assumption made about the
         scale.
         
-        So if one does have a reduced list of corners from the intersection
-        with the blob hulls, that is smaller than 30 or 40 in each list
-        (especially if near a dozen), then one should prefer to use pairwise
-        calculations over feature matching, but feature matching
-        can still be used to verify the results.
+        TODO: For sets with < a dozen or two dozen members each, could 
+        consider using pairwise calculation checked by feature matches.
+        
+        TODO: refactor to be able to use gaussian pyramids if scale=1 is not
+              known, then fit to find scale (for sets with large number of members).
+             see Lindenberg 1998 and Lowe 2004
         */
         
-        Map<Integer, PairIntArray> filteredCorners1 = filterToHulls(
-            corners1, hulls1);
+        List<PairIntArray> filteredCornersList1 = new ArrayList();
+        List<PairIntArray> filteredCornersList2 = new ArrayList();
+        filterCornersAndOrderByMatchingIntensity(corners1, hulls1,
+            corners2, hulls2, filteredCornersList1, filteredCornersList2);
         
-        Map<Integer, PairIntArray> filteredCorners2 = filterToHulls(
-            corners2, hulls2);
+        boolean useFiltered = true;
+        
+        int nFiltered1Tot = 0;
+        int nFiltered2Tot = 0;
+        for (PairIntArray p : filteredCornersList1) {
+            nFiltered1Tot += p.getN();
+        }
+        for (PairIntArray p : filteredCornersList2) {
+            nFiltered2Tot += p.getN();
+        }
+        
+        if ((nFiltered1Tot < 12) || (nFiltered2Tot < 12)) {
+            useFiltered = false;
+        }
         
         /*
         use feature description to find similar looking features within
@@ -346,64 +361,39 @@ public class ShapeMatcher {
                 value = list of similar looking points in filteredCorners2
                         for the same intensity level.
         */
-        Map<Integer, Map<PairInt, List<FeatureComparisonStat>>> similarCorners
-            = new HashMap<Integer, Map<PairInt, List<FeatureComparisonStat>>>();
         
-        Set<Integer> matchedFilter2Keys = new HashSet<Integer>();
+        List<Map<PairInt, List<FeatureComparisonStat>>> similarCorners
+            = new ArrayList<Map<PairInt, List<FeatureComparisonStat>>>();
         
-        // iterate over intensity keys to find the closest matching in intensities
-        // to compare those lists
-        for (Entry<Integer, PairIntArray> entry : filteredCorners1.entrySet()) {
+        if (useFiltered) {
             
-            Integer pixValue1 = entry.getKey();
-            
-            // find the closest value to it in the image2 map.  should be very
-            // similar if image content is similar and pre-processing the same.
-            // else, may need to use allHullCentroids1 and allHullCentroids2
-            // in one calculation
-            
-            Integer pixValue2 = null;
-            Iterator<Entry<Integer, PairIntArray>> iter = 
-                filteredCorners2.entrySet().iterator();
-            while (iter.hasNext()) {
-                Integer pV = iter.next().getKey();
-                if (matchedFilter2Keys.contains(pV)) {
-                    continue;
-                }
-                if (pixValue2 == null) {
-                    pixValue2 = pV;
-                } else {
-                    int diff = Math.abs(pixValue1.intValue() - pixValue2.intValue());
-                    int diffV = Math.abs(pV.intValue() - pixValue2.intValue());
-                    if (diffV < diff) {
-                        pixValue2 = pV;
-                    }
-                }
-            }
-            
-            if (pixValue2 == null) {
-                continue;
-            }
-            matchedFilter2Keys.add(pixValue2);
-            
-            // sets with keys pixValue1 and pixValues should hold common blobs
-            // and details
-            PairIntArray filtered1 = entry.getValue();
-            PairIntArray filtered2 = filteredCorners2.get(pixValue2);
-            
-            log.info("nFiltered1=" + filtered1.getN() + " for intensity=" + pixValue1.toString());
-            log.info("nFiltered2=" + filtered2.getN() + " for intensity=" + pixValue2.toString());
+            for (int i = 0; i < filteredCornersList1.size(); ++i) {
+                // sets with keys pixValue1 and pixValues should hold common blobs
+                // and details
+                PairIntArray filtered1 = filteredCornersList1.get(i);
+                PairIntArray filtered2 = filteredCornersList2.get(i);
 
-            log.info("filtered1=" + filtered1.toString());
-            log.info("filtered2=" + filtered2.toString());
+                log.info("nFiltered1=" + filtered1.getN());
+                log.info("nFiltered2=" + filtered2.getN());
+
+                //log.info("filtered1=" + filtered1.toString());
+                //log.info("filtered2=" + filtered2.toString());
+
+                MiscDebug.plotCorners(img1Grey, filtered1, "1_" + i + "_filtered");
+                MiscDebug.plotCorners(img2Grey, filtered2, "2_" + i + "_filtered");
+
+                Map<PairInt, List<FeatureComparisonStat>> similar = 
+                    findSimilarFeatures(img1Cp, img2Cp, filtered1, filtered2);
+
+                similarCorners.add(similar);
+            }
             
-            MiscDebug.plotCorners(img1Grey, filtered1, pixValue1.toString() + "_1_filtered");
-            MiscDebug.plotCorners(img2Grey, filtered2, pixValue2.toString() + "_2_filtered");
+        } else {
             
             Map<PairInt, List<FeatureComparisonStat>> similar = 
-                findSimilarFeatures(img1Cp, img2Cp, filtered1, filtered2);
-                        
-            similarCorners.put(pixValue1, similar);
+                findSimilarFeatures(img1Cp, img2Cp, corners1, corners2);
+
+            similarCorners.add(similar);
         }
         
 if (true) {
@@ -806,6 +796,66 @@ if (true) {
         float avg = (float)(sumR + sumG + sumB)/3.f;
         
         return avg;
+    }
+
+    private void filterCornersAndOrderByMatchingIntensity(
+        PairIntArray corners1, Map<Integer, List<GrahamScan>> hulls1, 
+        PairIntArray corners2, Map<Integer, List<GrahamScan>> hulls2, 
+        List<PairIntArray> outputFilteredCornersList1, 
+        List<PairIntArray> outputFilteredCornersList2) {
+        
+        Map<Integer, PairIntArray> filteredCorners1 = filterToHulls(
+            corners1, hulls1);
+        
+        Map<Integer, PairIntArray> filteredCorners2 = filterToHulls(
+            corners2, hulls2);
+        
+        Set<Integer> matchedFilter2Keys = new HashSet<Integer>();
+        
+        // iterate over intensity keys to find the closest matching in intensities
+        // to compare those lists
+        for (Entry<Integer, PairIntArray> entry : filteredCorners1.entrySet()) {
+            
+            Integer pixValue1 = entry.getKey();
+            
+            // find the closest value to it in the image2 map.  should be very
+            // similar if image content is similar and pre-processing the same.
+            // else, may need to use allHullCentroids1 and allHullCentroids2
+            // in one calculation
+            
+            Integer pixValue2 = null;
+            Iterator<Entry<Integer, PairIntArray>> iter = 
+                filteredCorners2.entrySet().iterator();
+            while (iter.hasNext()) {
+                Integer pV = iter.next().getKey();
+                if (matchedFilter2Keys.contains(pV)) {
+                    continue;
+                }
+                if (pixValue2 == null) {
+                    pixValue2 = pV;
+                } else {
+                    int diff = Math.abs(pixValue1.intValue() - pixValue2.intValue());
+                    int diffV = Math.abs(pV.intValue() - pixValue2.intValue());
+                    if (diffV < diff) {
+                        pixValue2 = pV;
+                    }
+                }
+            }
+            
+            if (pixValue2 == null) {
+                continue;
+            }
+            matchedFilter2Keys.add(pixValue2);
+            
+            // sets with keys pixValue1 and pixValues should hold common blobs
+            // and details
+            PairIntArray filtered1 = entry.getValue();
+            PairIntArray filtered2 = filteredCorners2.get(pixValue2);
+            
+            outputFilteredCornersList1.add(filtered1);
+            outputFilteredCornersList2.add(filtered2);
+        }
+        
     }
     
     public static class FeatureComparisonStat {

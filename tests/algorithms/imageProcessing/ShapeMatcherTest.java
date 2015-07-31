@@ -255,7 +255,7 @@ public class ShapeMatcherTest extends TestCase {
         log.info("SEED3=" + seed);
         sr.setSeed(seed);
 
-        for (int ds = 0; ds < 1; ++ds) {
+        for (int ds = 1; ds < 2; ++ds) {
 
             switch (ds) {
                 case 0: {
@@ -293,14 +293,25 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "venturi_mountain_j6_0010.png";
                     points1 = new ArrayList<PairInt>();
                     points2 = new ArrayList<PairInt>();
-                    //points1.add(new PairInt(, )); 
-                    //points2.add(new PairInt(, ));  
+                    points1.add(new PairInt(152, 88)); 
+                    points2.add(new PairInt(142, 87)); 
+                    
+                    points1.add(new PairInt(56, 94)); 
+                    points2.add(new PairInt(48, 95)); 
+                    
+                    points1.add(new PairInt(147, 46)); 
+                    points2.add(new PairInt(137, 46)); 
+                    
+                    // this one is good for the dither test to find true center:
+                    points1.add(new PairInt(37,90));
+                    points2.add(new PairInt(28, 93));
 
                     binFactor = 4;
                     /*
                     transfomation for images having been binned by factor binFactor:
 
-                    params=
+                    params=rotationInRadians=0.022482984 rotationInDegrees=1.2881800807667518 scale=0.98079264
+                        translationX=-8.983139 translationY=4.063554 originX=0.0 originY=0.0
                     */
                     break;
                 }
