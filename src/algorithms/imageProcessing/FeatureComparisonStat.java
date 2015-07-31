@@ -91,8 +91,9 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         float div = sumSqDiff/img2PointErr;
         float divOther = other.getSumSqDiff()/other.getImg2PointErr();
         
-        if (other.getSumSqDiff() > other.getImg2PointErr()) {
-            if (sumSqDiff > img2PointErr) {
+        // square sum of differences has to be less than the expected error
+        if (divOther > 1) {
+            if (div > 1) {
                 if (div < divOther) {
                     return -1;
                 } else if (div > divOther) {
@@ -101,7 +102,7 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
                 return 0;
             }
             return -1;
-        } else if (sumSqDiff > img2PointErr) {
+        } else if (div > 1) {
             return 1;
         }
         
