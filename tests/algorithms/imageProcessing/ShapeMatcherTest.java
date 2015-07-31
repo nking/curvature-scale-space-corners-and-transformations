@@ -21,7 +21,7 @@ public class ShapeMatcherTest extends TestCase {
     public ShapeMatcherTest() {
     }
 
-    public void estCreateNeighborOffsets() throws Exception {
+    public void testCreateNeighborOffsets() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -49,7 +49,7 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue(offsetsSet.size() == 25);
     }
 
-    public void estRotateOffsets() throws Exception {
+    public void testRotateOffsets() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -160,7 +160,7 @@ public class ShapeMatcherTest extends TestCase {
         }
     }
 
-    public void estCalculateStat() throws Exception {
+    public void testCalculateStat() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -234,7 +234,7 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue((stat0.sumSqDiff/stat0.img2PointErr) < 1);
     }
 
-    public void estCalculateStat2() throws Exception {
+    public void testCalculateStat2() throws Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
