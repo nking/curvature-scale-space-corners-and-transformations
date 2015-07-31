@@ -663,11 +663,31 @@ if (true) {
      */
     public float[][] createNeighborOffsets() {
         
-        float[][] xyout = new float[25][];
-        xyout[0] = new float[2];
-        
+        //TODO: test if this needs to be higher for higher resolution data
         int d = 2;
         
+        return createNeighborOffsets(d);
+    }
+
+    /**
+     * create x and y offsets for the neighbor points within 2 pixel radius.
+     * The result is a two-dimensional array of length 25 with the first
+     * dimension being the x array and the 2nd dimension being the y array.
+     * Note that the offset of (0,0) is the first given.
+     * @param d the half radius of square of offsets, beginning at (0,0)
+     * then (-d,-d), (-d, -d+1),... to make a dXd two dimensional array 
+     * of offsets.
+     * @return 
+     */
+    protected float[][] createNeighborOffsets(int d) {
+        
+        //TODO: change to use one dimensional array
+        
+        int n = 2*d + 1;
+        
+        float[][] xyout = new float[n*n][];
+        xyout[0] = new float[2];
+                
         int count = 1;
         for (int x = -d; x <= d; ++x) {
             for (int y = -d; y <= d; ++y) {

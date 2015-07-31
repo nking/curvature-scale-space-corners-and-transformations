@@ -694,6 +694,8 @@ public class ShapeMatcherTest extends TestCase {
             then further comparing with stat diff sums?
             */
 
+            int p1Count = 0;
+            
             for (Entry<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> entry :
                 comparisonMap.entrySet()) {
 
@@ -731,8 +733,8 @@ public class ShapeMatcherTest extends TestCase {
                 //looks like the top ? best always contain the expected point
                 boolean foundBest = false;
                 int bestIdx = -1;
-                float bestSumSqDiff = -1;
-                float bestErr = -1;
+                FeatureComparisonStat bestStat = null;
+                
                 for (int i = 0; i < vec.getNumberOfItems(); ++i) {
                     FeatureComparisonStat fs = vec.getArray()[i];
                     int deltaX = Math.abs(fs.getImg2Point().getX() - expectedX2);
@@ -742,22 +744,45 @@ public class ShapeMatcherTest extends TestCase {
                     if ((deltaX <= 2) && (deltaY <= 2) && (Math.abs(diffDeg) < 22.5f)) {
                         foundBest = true;
                         bestIdx = i;
-                        bestSumSqDiff = fs.getSumSqDiff();
-                        bestErr = fs.getImg2PointErr();
+                        bestStat = fs;
                     }
-    log.info("top " + i + " for " + p1.toString() + " : " + fs.toString() 
-    + " expectedX2=" + expectedX2 + " expectedY2=" + expectedY2);
                 }
-
-                log.info(ds + ") found best was at sorted index=" + bestIdx 
-                    + " bestSumSqDiff=" + bestSumSqDiff + " bestErr=" + bestErr);
+                
+                String str = (bestStat == null) ? 
+                    String.format(
+                        "%d) best at sorted idx=%d ssd=%.2f er=%.2f rotD=%.2f sep=%d",
+                        ds, bestIdx)
+                    : String.format(
+                        "%d) best at sorted idx=%d ssd=%.2f err=%.2f rotD=%.2f sep=%d",
+                        ds, bestIdx, bestStat.getSumSqDiff(), 
+                        bestStat.getImg2PointErr(), bestStat.getImg1RotInDegrees(),
+                        Math.round(bestStat.getSqDist()));
+                //log.info(str);
                 if (!foundBest) {
                     // look at p1PairsMap
                     int z = 1;
                 }
+                
+                /*
+                Can see from prints below that the SSD is not enough to 
+                distinguish the best solution each time.
+                
+                TODO: add gradient comparisons or implement one of the
+                feature descriptors in the literature
+                */
+                    
+                for (int i = 0; i < vec.getNumberOfItems(); ++i) {
+                    FeatureComparisonStat fs = vec.getArray()[i];                    
+                    String str2 = String.format("%d)   pt(%d) %d %s", ds, p1Count, i, fs.toString());
+                    if (i == bestIdx) {
+                        str2 =    String.format("%d)***pt(%d) %d %s", ds, p1Count, i, fs.toString());
+                    }
+                    log.info(str2);
+                }
+                
                 assertTrue(foundBest);
-
-                int z = 1;
+                
+                p1Count++;
             }
         
             /*
