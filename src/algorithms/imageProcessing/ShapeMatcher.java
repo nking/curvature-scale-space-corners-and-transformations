@@ -751,6 +751,15 @@ if (true) {
                         scan.getYHull(), scan.getXHull().length)) {
                         
                         cornersH.add(x, y);
+                    } else {
+                        for (int ii = 0; ii < scan.getXHull().length; ++ii) {
+                            float diffX = Math.abs(x - scan.getXHull()[ii]);
+                            float diffY = Math.abs(y - scan.getYHull()[ii]);
+                            if (diffX < 2 && diffY < 2) {
+                                cornersH.add(x, y);
+                                break;
+                            }
+                        }
                     }
                 }
             }
