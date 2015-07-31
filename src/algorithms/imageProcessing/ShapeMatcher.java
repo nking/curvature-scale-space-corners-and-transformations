@@ -379,8 +379,8 @@ public class ShapeMatcher {
                 log.info("nFiltered1=" + filtered1.getN());
                 log.info("nFiltered2=" + filtered2.getN());
 
-                //log.info("filtered1=" + filtered1.toString());
-                //log.info("filtered2=" + filtered2.toString());
+                log.info("filtered1=" + filtered1.toString());
+                log.info("filtered2=" + filtered2.toString());
 
                 MiscDebug.plotCorners(img1Grey, filtered1, "1_" + i + "_filtered");
                 MiscDebug.plotCorners(img2Grey, filtered2, "2_" + i + "_filtered");
@@ -538,6 +538,63 @@ if (true) {
                                 the img2 block for the key rotation
         */
         
+        Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
+            comparisonMap = findSimilarFeaturesForRotatedFrames(
+            img1, img2, points1, points2);
+        
+        //Map<PairInt, List<FeatureComparisonStat>>
+        
+        return null;
+    }
+    
+    /**
+     * match the given point lists by comparing rotated and dithered blocks
+     * surrounding points in the first list to blocks around points in the
+     * second list.
+     * The runtime complexity is O(N1 * N2), but there are many steps for
+     * the rotation and dither operations.
+     * @param img1
+     * @param img2
+     * @param points1
+     * @param points2
+     * @return 
+     */
+    protected Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
+    findSimilarFeaturesForRotatedFrames(
+        ImageExt img1, ImageExt img2, PairIntArray points1, 
+        PairIntArray points2) {
+        
+        if (img1 == null) {
+            throw new IllegalArgumentException("img1 cannot be null");
+        }
+        if (img2 == null) {
+            throw new IllegalArgumentException("img2 cannot be null");
+        }
+        if (points1 == null) {
+            throw new IllegalArgumentException("points1 cannot be null");
+        }
+        if (points2 == null) {
+            throw new IllegalArgumentException("points2 cannot be null");
+        }
+                
+        /*
+         matchFeatures can be used to filter corners to ambigious or unambiguous
+        degenerate matches and then pairwise calcs can distiguish between them
+        */
+        
+        /*
+        data structure to store partial results:
+        
+        key = img1 feature coordinates
+        value = map with
+                key = img2 feature coordinates
+                value = map with
+                        key = rotation angle
+                        value = best of stats for dithering around the primary
+                                key and transforming the block to compare to
+                                the img2 block for the key rotation
+        */
+        
         Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>>
             comparisonMap = new HashMap<PairInt, Map<PairInt, 
             Map<Float, FeatureComparisonStat>>>();
@@ -565,7 +622,7 @@ if (true) {
                     PairInt p2 = new PairInt(x2, y2);
 
                     // dither around (x1, y1) to find best stat
-                    int d = 1;
+                    int d = 2;
                     FeatureComparisonStat best = ditherToFindBestStat(
                         img1, img2, x1, y1, x2, y2, offsets, offsets0, d);
                     
@@ -574,13 +631,7 @@ if (true) {
             }
         }
         
-        //TODO: process the results
-        
-        //Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> comparisonMap
-        
-        //Map<PairInt, List<FeatureComparisonStat>>
-        
-        return null;
+        return comparisonMap;
     }
     
     /**
@@ -884,9 +935,6 @@ if (true) {
                     } else {
                         float bestDiv = stat.sumSqDiff / stat.img2PointErr;
                         float div = stat.sumSqDiff / stat.img2PointErr;
-                        /*if (bestDiv > div) {
-                         best = stat;
-                         }*/
                         if (best.sumSqDiff > stat.sumSqDiff) {
                             best = stat;
                         }

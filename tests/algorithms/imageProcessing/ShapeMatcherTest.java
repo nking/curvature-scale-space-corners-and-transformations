@@ -21,7 +21,7 @@ public class ShapeMatcherTest extends TestCase {
     public ShapeMatcherTest() {
     }
 
-    public void testCreateNeighborOffsets() throws Exception {
+    public void estCreateNeighborOffsets() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -49,7 +49,7 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue(offsetsSet.size() == 25);
     }
 
-    public void testRotateOffsets() throws Exception {
+    public void estRotateOffsets() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -160,7 +160,7 @@ public class ShapeMatcherTest extends TestCase {
         }
     }
 
-    public void testCalculateStat() throws Exception {
+    public void estCalculateStat() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -234,7 +234,7 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue((stat0.sumSqDiff/stat0.img2PointErr) < 1);
     }
 
-    public void testCalculateStat2() throws Exception {
+    public void estCalculateStat2() throws Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -463,7 +463,7 @@ public class ShapeMatcherTest extends TestCase {
         log.info("SEED3=" + seed);
         sr.setSeed(seed);
 
-        for (int ds = 0; ds < 1; ++ds) {
+        for (int ds = 0; ds < 3; ++ds) {
 
             switch (ds) {
                 case 0: {
@@ -510,8 +510,7 @@ public class ShapeMatcherTest extends TestCase {
                     points1.add(147, 46);
                     points2.add(137, 46);
 
-                    // this one is good for the dither test to find true center:
-                    points1.add(37, 90);
+                    points1.add(37, 91);
                     points2.add(28, 93);
 
                     binFactor = 4;
@@ -638,13 +637,34 @@ public class ShapeMatcherTest extends TestCase {
             
             log.info("  deltaX=" + deltaX + " deltaY=" + deltaY);
             
-            //assertTrue(deltaX == 0);
-            //assertTrue(deltaY == 0);
+            assertTrue(deltaX == 0);
+            assertTrue(deltaY == 0);
+            
+            // move center by dx, dy and assert that algorithm finds the true
+            // center.  make dither large to test above rounding errors (+-1)
+            int dither2 = 2;
+            int dx = 2*sr.nextInt(1);
+            int dy = 2*sr.nextInt(1);
+            if (sr.nextBoolean()) {
+                dx *= -1;
+            }
+            if (sr.nextBoolean()) {
+                dy *= -1;
+            }
+            if (dx != 0 || dy != 0) {
+                stat = matcher.ditherToFindBestStat(
+                    img1, img2, (x1 + dx), (y1 + dy), x2, y2, offsetsT, offsets0, 
+                    dither2);
+                deltaX = x1 - stat.img1Point.getX();
+                deltaY = y1 - stat.img1Point.getY();
+                //log.info("stat=" + stat);
+                //log.info("  deltaX=" + deltaX + " deltaY=" + deltaY 
+                //    + " dx=" + dx + " dy=" + dy);
+                assertTrue(Math.abs(deltaX - dx) < 2);
+                assertTrue(Math.abs(deltaY - dy) < 2);
+            }
         }
         
-        // examine the points against reversed list to make sure they don't match
-
-        int z=1;
     }
 
     public static void main(String[] args) {
