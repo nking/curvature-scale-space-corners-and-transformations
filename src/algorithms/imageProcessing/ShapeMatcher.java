@@ -519,9 +519,7 @@ if (true) {
         if (points2 == null) {
             throw new IllegalArgumentException("points2 cannot be null");
         }
-        
-        //TODO: NOTE changing this to use gradients in the statistics
-        
+                
         /*
          matchFeatures can be used to filter corners to ambigious or unambiguous
         degenerate matches and then pairwise calcs can distiguish between them
@@ -567,38 +565,20 @@ if (true) {
                     PairInt p2 = new PairInt(x2, y2);
 
                     // dither around (x1, y1) to find best stat
-                    FeatureComparisonStat best = null;
-                    for (int x1d = (x1 - 1); x1d <= (x1 + 1); ++x1d) {
-                        if ((x1d < 0) || (x1d > (img1.getWidth() - 1))) {
-                            continue;
-                        }
-                        for (int y1d = (y1 - 1); y1d <= (y1 + 1); ++y1d) {
-                            if ((y1d < 0) || (y1d > (img1.getHeight() - 1))) {
-                                continue;
-                            }
-
-                            FeatureComparisonStat stat = calculateStat(img1, 
-                                img2, x1d, y1d, x2, y2, offsets, offsets0);
-
-                            if (stat != null && !Float.isInfinite(stat.sumSqDiff)) {
-                                if (best == null) {
-                                    best = stat;
-                                } else {
-                                    float bestDiv = stat.sumSqDiff/stat.img2PointErr;
-                                    float div = stat.sumSqDiff/stat.img2PointErr;
-                                    if (bestDiv < div) {
-                                        best = stat;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    int d = 1;
+                    FeatureComparisonStat best = ditherToFindBestStat(
+                        img1, img2, x1, y1, x2, y2, offsets, offsets0, d);
+                    
                     storeInMap(comparisonMap, p1, p2, rotInDeg, best);                        
                 }
             }
         }
         
-        //TODO: process the results and simplify them above
+        //TODO: process the results
+        
+        //Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> comparisonMap
+        
+        //Map<PairInt, List<FeatureComparisonStat>>
         
         return null;
     }
@@ -878,6 +858,43 @@ if (true) {
             outputFilteredCornersList2.add(filtered2);
         }
         
+    }
+
+    FeatureComparisonStat ditherToFindBestStat(ImageExt img1, 
+        ImageExt img2, int x1, int y1, int x2, int y2, 
+        float[][] offsets1, float[][] offsets2, int dither) {
+        
+        FeatureComparisonStat best = null;
+        
+        for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+            if ((x1d < 0) || (x1d > (img1.getWidth() - 1))) {
+                continue;
+            }
+            for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                if ((y1d < 0) || (y1d > (img1.getHeight() - 1))) {
+                    continue;
+                }
+
+                FeatureComparisonStat stat = calculateStat(img1,
+                    img2, x1d, y1d, x2, y2, offsets1, offsets2);
+
+                if (stat != null && !Float.isInfinite(stat.sumSqDiff)) {
+                    if (best == null) {
+                        best = stat;
+                    } else {
+                        float bestDiv = stat.sumSqDiff / stat.img2PointErr;
+                        float div = stat.sumSqDiff / stat.img2PointErr;
+                        /*if (bestDiv > div) {
+                         best = stat;
+                         }*/
+                        if (best.sumSqDiff > stat.sumSqDiff) {
+                            best = stat;
+                        }
+                    }
+                }
+            }
+        }
+        return best;
     }
     
     public static class FeatureComparisonStat {
