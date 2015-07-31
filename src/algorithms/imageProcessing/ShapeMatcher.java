@@ -542,6 +542,25 @@ if (true) {
             comparisonMap = findSimilarFeaturesForRotatedFrames(
             img1, img2, points1, points2);
         
+        /*
+        analyze total map:
+        
+        not a design yet:
+        
+            find for each primary key, the smallest diffSqSum and the smallest diffSqSum/err
+        
+            -- For the top <?> of those, 
+               -- are they uniquely matched?
+               -- calculate euclidean transformations from pairs of them
+                  -- are the results consistent w/ each other and the found frame rotations?
+                     -- if yes, then filter map for rotations near that rotation
+                        and remove the points already paired.
+                        -- the filter the map to remove any stats matches that
+                           are not feasible with the transformation parameters.
+        
+                     -- else if not consistent?
+        */
+        
         //Map<PairInt, List<FeatureComparisonStat>>
         
         return null;
@@ -623,8 +642,9 @@ if (true) {
 
                     // dither around (x1, y1) to find best stat
                     int d = 2;
-                    FeatureComparisonStat best = ditherToFindBestStat(
+                    FeatureComparisonStat best = ditherToFindSmallestSqSumDiff(
                         img1, img2, x1, y1, x2, y2, offsets, offsets0, d);
+                    best.setImg1RotInDegrees(rotInDeg);
                     
                     storeInMap(comparisonMap, p1, p2, rotInDeg, best);                        
                 }
@@ -718,10 +738,10 @@ if (true) {
         float avg = (float)(sumR + sumG + sumB)/3.f;
         
         FeatureComparisonStat stat = new FeatureComparisonStat();
-        stat.img1Point = new PairInt(x1, y1);
-        stat.img2Point = new PairInt(x2, y2);
-        stat.sumSqDiff = avg;
-        stat.img2PointErr = err2Sq;
+        stat.setImg1Point(new PairInt(x1, y1));
+        stat.setImg2Point(new PairInt(x2, y2));
+        stat.setSumSqDiff(avg);
+        stat.setImg2PointErr(err2Sq);
         
         return stat;
     }
@@ -911,11 +931,11 @@ if (true) {
         
     }
 
-    FeatureComparisonStat ditherToFindBestStat(ImageExt img1, 
+    FeatureComparisonStat ditherToFindSmallestSqSumDiff(ImageExt img1, 
         ImageExt img2, int x1, int y1, int x2, int y2, 
         float[][] offsets1, float[][] offsets2, int dither) {
         
-        FeatureComparisonStat best = null;
+        FeatureComparisonStat smallestSqSumStat = null;
         
         for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
             if ((x1d < 0) || (x1d > (img1.getWidth() - 1))) {
@@ -929,36 +949,18 @@ if (true) {
                 FeatureComparisonStat stat = calculateStat(img1,
                     img2, x1d, y1d, x2, y2, offsets1, offsets2);
 
-                if (stat != null && !Float.isInfinite(stat.sumSqDiff)) {
-                    if (best == null) {
-                        best = stat;
+                if (stat != null && !Float.isInfinite(stat.getSumSqDiff())) {
+                    if (smallestSqSumStat == null) {
+                        smallestSqSumStat = stat;
                     } else {
-                        float bestDiv = stat.sumSqDiff / stat.img2PointErr;
-                        float div = stat.sumSqDiff / stat.img2PointErr;
-                        if (best.sumSqDiff > stat.sumSqDiff) {
-                            best = stat;
+                        if (smallestSqSumStat.getSumSqDiff() > stat.getSumSqDiff()) {
+                            smallestSqSumStat = stat;
                         }
                     }
                 }
             }
         }
-        return best;
-    }
-    
-    public static class FeatureComparisonStat {
-        PairInt img1Point;
-        PairInt img2Point;
-        float sumSqDiff;
-        float img2PointErr;
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("p1=").append(img1Point.toString()).append(" ")
-            .append("p2=").append(img2Point.toString()).append("\n")
-            .append("sumSqDiff=").append(sumSqDiff)
-            .append(" err2=").append(img2PointErr);
-            return sb.toString();
-        }
+        return smallestSqSumStat;
     }
     
 }
