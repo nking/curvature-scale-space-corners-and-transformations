@@ -255,7 +255,7 @@ public class ShapeMatcherTest extends TestCase {
         log.info("SEED3=" + seed);
         sr.setSeed(seed);
 
-        for (int ds = 1; ds < 2; ++ds) {
+        for (int ds = 0; ds < 3; ++ds) {
 
             switch (ds) {
                 case 0: {
@@ -312,6 +312,36 @@ public class ShapeMatcherTest extends TestCase {
 
                     params=rotationInRadians=0.022482984 rotationInDegrees=1.2881800807667518 scale=0.98079264
                         translationX=-8.983139 translationY=4.063554 originX=0.0 originY=0.0
+                    */
+                    break;
+                } 
+                case 2: {
+
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    points1 = new ArrayList<PairInt>();
+                    points2 = new ArrayList<PairInt>();
+                    points1.add(new PairInt(158, 20)); 
+                    points2.add(new PairInt(143, 20)); 
+                    
+                    points1.add(new PairInt(98, 134)); 
+                    points2.add(new PairInt(64, 134)); 
+                    
+                    points1.add(new PairInt(139, 110)); 
+                    points2.add(new PairInt(109, 110)); 
+                    
+                    points1.add(new PairInt(154, 99)); 
+                    points2.add(new PairInt(122, 99));                     
+                    
+                    points1.add(new PairInt(133, 21)); 
+                    points2.add(new PairInt(118, 21)); 
+                    
+                    binFactor = 4;
+                    /*
+                    transfomation for images having been binned by factor binFactor:
+
+                    params=rotationInRadians=6.1616626 rotationInDegrees=353.0372605364883 scale=1.0766312
+                        translationX=-23.24295 translationY=-21.994938 originX=0.0 originY=0.0
                     */
                     break;
                 }

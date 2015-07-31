@@ -289,7 +289,10 @@ public class ShapeMatcher {
         
         log.info("n1Corners=" + corners1.getN() + " n2Corners2=" 
             + corners2.getN());
-         
+        
+        //log.info("corners1=" + corners1.toString());
+        //log.info("corners2=" + corners2.toString());
+
         MiscDebug.plotCorners(img1Grey, corners1, "1_corners");
         MiscDebug.plotCorners(img2Grey, corners2, "2_corners");
         
@@ -329,8 +332,8 @@ public class ShapeMatcher {
              see Lindenberg 1998 and Lowe 2004
         */
         
-        List<PairIntArray> filteredCornersList1 = new ArrayList();
-        List<PairIntArray> filteredCornersList2 = new ArrayList();
+        List<PairIntArray> filteredCornersList1 = new ArrayList<PairIntArray>();
+        List<PairIntArray> filteredCornersList2 = new ArrayList<PairIntArray>();
         filterCornersAndOrderByMatchingIntensity(corners1, hulls1,
             corners2, hulls2, filteredCornersList1, filteredCornersList2);
         
@@ -738,6 +741,8 @@ if (true) {
             
             List<GrahamScan> hullList = entry.getValue();
            
+            Set<PairInt> added = new HashSet<PairInt>();
+            
             PairIntArray cornersH = new PairIntArray();
             
             for (GrahamScan scan : hullList) {
@@ -747,16 +752,24 @@ if (true) {
                     int x = corners.getX(i);
                     int y = corners.getY(i);
                     
+                    PairInt p = new PairInt(x, y);
+                    
+                    if (added.contains(p)) {
+                        continue;
+                    }
+                    
                     if (poly.isInSimpleCurve(x, y, scan.getXHull(), 
                         scan.getYHull(), scan.getXHull().length)) {
                         
                         cornersH.add(x, y);
+                        added.add(p);
                     } else {
                         for (int ii = 0; ii < scan.getXHull().length; ++ii) {
                             float diffX = Math.abs(x - scan.getXHull()[ii]);
                             float diffY = Math.abs(y - scan.getYHull()[ii]);
                             if (diffX < 2 && diffY < 2) {
                                 cornersH.add(x, y);
+                                added.add(p);
                                 break;
                             }
                         }

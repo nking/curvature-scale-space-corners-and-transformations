@@ -728,13 +728,13 @@ TransformationPointFit fit = fits.get(0);
 
         //-30, 0
         //https://venturi.fbk.eu/results/public-datasets/mountain-dataset/
-        fileName1 = "venturi_mountain_j6_0001.png";
-        fileName2 = "venturi_mountain_j6_0010.png";
+        //fileName1 = "venturi_mountain_j6_0001.png";
+        //fileName2 = "venturi_mountain_j6_0010.png";
         
         //-80,  NOTE images already rectified
         //2005 dataset from http://vision.middlebury.edu/stereo/data/ 
-        //fileName1 = "books_illum3_v0_695x555.png";
-        //fileName2 = "books_illum3_v6_695x555.png";
+        fileName1 = "books_illum3_v0_695x555.png";
+        fileName2 = "books_illum3_v6_695x555.png";
         
         // can find unrectified stereo images for testing here:
         //   http://www.cvlibs.net/datasets/kitti/raw_data.php
