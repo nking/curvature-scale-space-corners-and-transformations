@@ -241,10 +241,13 @@ public class ShapeMatcherTest extends TestCase {
             MatchedPointsTransformationCalculator();
         
         // choose regions from Brown & Lowe images to compare
-        String fileName1, fileName2;
-        ImageExt img1, img2;
-        List<PairInt> points1, points2;
-        int binFactor;
+        String fileName1 = null; 
+        String fileName2 = null;
+        ImageExt img1 = null; 
+        ImageExt img2 = null;
+        List<PairInt> points1 = new ArrayList<PairInt>();
+        List<PairInt> points2 = new ArrayList<PairInt>();
+        int binFactor = 1;
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -252,21 +255,57 @@ public class ShapeMatcherTest extends TestCase {
         log.info("SEED3=" + seed);
         sr.setSeed(seed);
 
+        for (int ds = 0; ds < 1; ++ds) {
 
-        fileName1 = "brown_lowe_2003_image1.jpg";
-        fileName2 = "brown_lowe_2003_image2.jpg";
-        points1 = new ArrayList<PairInt>();
-        points2 = new ArrayList<PairInt>();
-        points1.add(new PairInt(127, 87)); points1.add(new PairInt(150, 68));
-        points2.add(new PairInt(32, 82)); points2.add(new PairInt(56, 66));
-        binFactor = 3;
-        /*
-        transfomation for images having been binned by factor 3:
-        
-        params=rotationInRadians=6.1807413 rotationInDegrees=354.13039133201386 scale=0.96686685
-            translationX=-81.54607 translationY=-14.233707 originX=0.0 originY=0.0
-        */
+            switch (ds) {
+                case 0: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    points1 = new ArrayList<PairInt>();
+                    points2 = new ArrayList<PairInt>();
+                    points1.add(new PairInt(127, 87)); 
+                    points2.add(new PairInt(32, 82)); 
+                    points1.add(new PairInt(150, 68));
+                    points2.add(new PairInt(56, 66));
+                    points1.add(new PairInt(148, 79)); 
+                    points2.add(new PairInt(53, 76)); 
+                    points1.add(new PairInt(165, 85)); 
+                    points2.add(new PairInt(66, 83)); 
+                    points1.add(new PairInt(143, 66)); 
+                    points2.add(new PairInt(52, 64)); 
+                    /*
+                    points for dither test:
+                    (115, 82)   (23, 76)
+                    (139, 59)   (48, 56)
+                    */
+                    binFactor = 3;
+                    /*
+                    transfomation for images having been binned by factor 3:
 
+                    params=rotationInRadians=6.1807413 rotationInDegrees=354.13039133201386 scale=0.96686685
+                        translationX=-81.54607 translationY=-14.233707 originX=0.0 originY=0.0
+                    */
+                    break;
+                } 
+                case 1: {
+
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    points1 = new ArrayList<PairInt>();
+                    points2 = new ArrayList<PairInt>();
+                    //points1.add(new PairInt(, )); 
+                    //points2.add(new PairInt(, ));  
+
+                    binFactor = 4;
+                    /*
+                    transfomation for images having been binned by factor binFactor:
+
+                    params=
+                    */
+                    break;
+                }
+            }
+        }
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         img1 = ImageIOHelper.readImageExt(filePath1);
@@ -307,6 +346,15 @@ public class ShapeMatcherTest extends TestCase {
         
         log.info("true match =" + stat1.toString());
         log.info("true match =" + stat2.toString());
+        
+        for (int i = 2; i < points1.size(); ++i) {
+            FeatureComparisonStat stat = matcher.calculateStat(img1, img2,
+                points1.get(i).getX(), points1.get(i).getY(),
+                points2.get(i).getX(), points2.get(i).getY(),
+                offsetsT, offsets0);
+            trueMatches.add(stat);
+            log.info("true match =" + stat.toString());
+        }
         
         /*
          INFO: true match =p1=x=117 y=111 p2=x=14 y=105

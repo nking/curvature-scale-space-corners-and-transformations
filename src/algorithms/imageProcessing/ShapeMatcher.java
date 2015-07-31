@@ -349,6 +349,8 @@ public class ShapeMatcher {
         Map<Integer, Map<PairInt, List<FeatureComparisonStat>>> similarCorners
             = new HashMap<Integer, Map<PairInt, List<FeatureComparisonStat>>>();
         
+        Set<Integer> matchedFilter2Keys = new HashSet<Integer>();
+        
         // iterate over intensity keys to find the closest matching in intensities
         // to compare those lists
         for (Entry<Integer, PairIntArray> entry : filteredCorners1.entrySet()) {
@@ -365,6 +367,9 @@ public class ShapeMatcher {
                 filteredCorners2.entrySet().iterator();
             while (iter.hasNext()) {
                 Integer pV = iter.next().getKey();
+                if (matchedFilter2Keys.contains(pV)) {
+                    continue;
+                }
                 if (pixValue2 == null) {
                     pixValue2 = pV;
                 } else {
@@ -375,6 +380,11 @@ public class ShapeMatcher {
                     }
                 }
             }
+            
+            if (pixValue2 == null) {
+                continue;
+            }
+            matchedFilter2Keys.add(pixValue2);
             
             // sets with keys pixValue1 and pixValues should hold common blobs
             // and details
