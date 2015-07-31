@@ -310,98 +310,97 @@ public class ShapeMatcherTest extends TestCase {
                     break;
                 }
             }
-        }
 
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        img1 = ImageIOHelper.readImageExt(filePath1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        img2 = ImageIOHelper.readImageExt(filePath2);
-        img1 = imageProcessor.binImage(img1, binFactor);
-        img2 = imageProcessor.binImage(img2, binFactor);
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            img1 = ImageIOHelper.readImageExt(filePath1);
+            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+            img2 = ImageIOHelper.readImageExt(filePath2);
+            img1 = imageProcessor.binImage(img1, binFactor);
+            img2 = imageProcessor.binImage(img2, binFactor);
 
-        ShapeMatcher matcher = new ShapeMatcher();
+            ShapeMatcher matcher = new ShapeMatcher();
 
-        TransformationParameters params = tc.calulateEuclidean(
-            points1.get(0).getX(), points1.get(0).getY(), points1.get(1).getX(), points1.get(1).getY(),
-            points2.get(0).getX(), points2.get(0).getY(), points2.get(1).getX(), points2.get(1).getY(),
-            0, 0);
+            TransformationParameters params = tc.calulateEuclidean(
+                points1.get(0).getX(), points1.get(0).getY(), points1.get(1).getX(), points1.get(1).getY(),
+                points2.get(0).getX(), points2.get(0).getY(), points2.get(1).getX(), points2.get(1).getY(),
+                0, 0);
 
-        log.info("params=" + params);
+            log.info("params=" + params);
 
-        Transformer transformer = new Transformer();
+            Transformer transformer = new Transformer();
 
-        Set<FeatureComparisonStat> trueMatches = new HashSet<FeatureComparisonStat>();
-        Set<FeatureComparisonStat> differentPatches = new HashSet<FeatureComparisonStat>();
+            Set<FeatureComparisonStat> trueMatches = new HashSet<FeatureComparisonStat>();
+            Set<FeatureComparisonStat> differentPatches = new HashSet<FeatureComparisonStat>();
 
-        float[][] offsets0 = matcher.createNeighborOffsets();
-        float[][] offsetsT = transformer.transformXY(
-            Math.round(params.getRotationInDegrees()), offsets0);
+            float[][] offsets0 = matcher.createNeighborOffsets();
+            float[][] offsetsT = transformer.transformXY(
+                Math.round(params.getRotationInDegrees()), offsets0);
 
-        FeatureComparisonStat stat1 = matcher.calculateStat(img1, img2,
-            points1.get(0).getX(), points1.get(0).getY(),
-            points2.get(0).getX(), points2.get(0).getY(),
-            offsetsT, offsets0);
-        trueMatches.add(stat1);
-
-        FeatureComparisonStat stat2 = matcher.calculateStat(img1, img2,
-            points1.get(1).getX(), points1.get(1).getY(),
-            points2.get(1).getX(), points2.get(1).getY(),
-            offsetsT, offsets0);
-        trueMatches.add(stat2);
-
-        log.info("true match =" + stat1.toString());
-        log.info("true match =" + stat2.toString());
-
-        for (int i = 2; i < points1.size(); ++i) {
-            FeatureComparisonStat stat = matcher.calculateStat(img1, img2,
-                points1.get(i).getX(), points1.get(i).getY(),
-                points2.get(i).getX(), points2.get(i).getY(),
+            FeatureComparisonStat stat1 = matcher.calculateStat(img1, img2,
+                points1.get(0).getX(), points1.get(0).getY(),
+                points2.get(0).getX(), points2.get(0).getY(),
                 offsetsT, offsets0);
-            trueMatches.add(stat);
-            log.info("true match =" + stat.toString());
-        }
+            trueMatches.add(stat1);
 
-        /*
-         INFO: true match =p1=x=117 y=111 p2=x=14 y=105
-         avgDiffPix=21.480001 stDevDiffPix=19.142578 avgDivPix=1.0866014 stDevDivPix=0.2703045
+            FeatureComparisonStat stat2 = matcher.calculateStat(img1, img2,
+                points1.get(1).getX(), points1.get(1).getY(),
+                points2.get(1).getX(), points2.get(1).getY(),
+                offsetsT, offsets0);
+            trueMatches.add(stat2);
 
-         INFO: true match =p1=x=156 y=52 p2=x=64 y=52
-         avgDiffPix=15.88 stDevDiffPix=10.870372 avgDivPix=0.9379496 stDevDivPix=0.10855621
-        */
+            log.info("true match =" + stat1.toString());
+            log.info("true match =" + stat2.toString());
 
-        /*
-        visit 100 other places randomly in the image avoiding correct match
-        and store the stats.
-
-        // offsets from that transformation should not match:
-        */
-
-        for (int i = 0; i < 100; i++) {
-
-            int x2 = 7 + sr.nextInt(img2.getWidth() - 12);
-            int y2 = 7 + sr.nextInt(img2.getHeight() - 12);
-            while ((Math.abs(x2 - points2.get(0).getX()) < 6) &&
-                (Math.abs(y2 - points2.get(0).getY()) < 6)) {
-                x2 = 7 + sr.nextInt(img2.getWidth() - 12);
-                y2 = 7 + sr.nextInt(img2.getHeight() - 12);
+            for (int i = 2; i < points1.size(); ++i) {
+                FeatureComparisonStat stat = matcher.calculateStat(img1, img2,
+                    points1.get(i).getX(), points1.get(i).getY(),
+                    points2.get(i).getX(), points2.get(i).getY(),
+                    offsetsT, offsets0);
+                trueMatches.add(stat);
+                log.info("true match =" + stat.toString());
             }
 
-            int rotD = sr.nextInt(360);
+            /*
+             INFO: true match =p1=x=117 y=111 p2=x=14 y=105
+             avgDiffPix=21.480001 stDevDiffPix=19.142578 avgDivPix=1.0866014 stDevDivPix=0.2703045
 
-            float[][] offsetsR = transformer.transformXY(rotD, offsets0);
+             INFO: true match =p1=x=156 y=52 p2=x=64 y=52
+             avgDiffPix=15.88 stDevDiffPix=10.870372 avgDivPix=0.9379496 stDevDivPix=0.10855621
+            */
 
-            FeatureComparisonStat s = matcher.calculateStat(img1, img2,
-                points1.get(0).getX(), points1.get(0).getY(), x2, y2, offsetsR, offsets0);
+            /*
+            visit 100 other places randomly in the image avoiding correct match
+            and store the stats.
 
-            differentPatches.add(s);
+            // offsets from that transformation should not match:
+            */
 
-            float div = s.getSumSqDiff()/s.getImg2PointErr();
-            if (div <= 1) {
-                log.info(i + " (expected sumSqDiff/err > 1) for not same blocks ="
-                    + s.toString());
+            for (int i = 0; i < 100; i++) {
+
+                int x2 = 7 + sr.nextInt(img2.getWidth() - 12);
+                int y2 = 7 + sr.nextInt(img2.getHeight() - 12);
+                while ((Math.abs(x2 - points2.get(0).getX()) < 6) &&
+                    (Math.abs(y2 - points2.get(0).getY()) < 6)) {
+                    x2 = 7 + sr.nextInt(img2.getWidth() - 12);
+                    y2 = 7 + sr.nextInt(img2.getHeight() - 12);
+                }
+
+                int rotD = sr.nextInt(360);
+
+                float[][] offsetsR = transformer.transformXY(rotD, offsets0);
+
+                FeatureComparisonStat s = matcher.calculateStat(img1, img2,
+                    points1.get(0).getX(), points1.get(0).getY(), x2, y2, offsetsR, offsets0);
+
+                differentPatches.add(s);
+
+                float div = s.getSumSqDiff()/s.getImg2PointErr();
+                if (div <= 1) {
+                    log.info(i + " (expected sumSqDiff/err > 1) for not same blocks ="
+                        + s.toString());
+                }
             }
         }
-
     }
 
     public void testDitherToFindSmallestSqSumDiff() throws Exception {
@@ -478,115 +477,115 @@ public class ShapeMatcherTest extends TestCase {
                     break;
                 }
             }
-        }
 
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        img1 = ImageIOHelper.readImageExt(filePath1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        img2 = ImageIOHelper.readImageExt(filePath2);
-        img1 = imageProcessor.binImage(img1, binFactor);
-        img2 = imageProcessor.binImage(img2, binFactor);
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            img1 = ImageIOHelper.readImageExt(filePath1);
+            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+            img2 = ImageIOHelper.readImageExt(filePath2);
+            img1 = imageProcessor.binImage(img1, binFactor);
+            img2 = imageProcessor.binImage(img2, binFactor);
 
-        ShapeMatcher matcher = new ShapeMatcher();
+            ShapeMatcher matcher = new ShapeMatcher();
 
-        TransformationParameters params = tc.calulateEuclidean(
-            points1.getX(0), points1.getY(0), points1.getX(1), points1.getY(1),
-            points2.getX(0), points2.getY(0), points2.getX(1), points2.getY(1),
-            0, 0);
+            TransformationParameters params = tc.calulateEuclidean(
+                points1.getX(0), points1.getY(0), points1.getX(1), points1.getY(1),
+                points2.getX(0), points2.getY(0), points2.getX(1), points2.getY(1),
+                0, 0);
 
-        log.info("params=" + params);
+            log.info("params=" + params);
 
 
-        Transformer transformer = new Transformer();
+            Transformer transformer = new Transformer();
 
-        int dither = 1;
+            int dither = 1;
 
-        float[][] offsets0 = matcher.createNeighborOffsets();
-        float[][] offsetsT = transformer.transformXY(
-            Math.round(params.getRotationInDegrees()), offsets0);
+            float[][] offsets0 = matcher.createNeighborOffsets();
+            float[][] offsetsT = transformer.transformXY(
+                Math.round(params.getRotationInDegrees()), offsets0);
 
-        if (fileName1.contains("brown_lowe")) {
+            if (fileName1.contains("brown_lowe")) {
+
+                /* points for dither test:
+                (115, 82)   (23, 76)
+                (139, 59)   (48, 56)
+                */
+                int x1 = 115; int y1 = 82;
+                int x2 = 23; int y2 = 76;
+                int dither2 = 5;
             
-            /* points for dither test:
-            (115, 82)   (23, 76)
-            (139, 59)   (48, 56)
-            */
-            int x1 = 115; int y1 = 82;
-            int x2 = 23; int y2 = 76;
-            int dither2 = 5;
-            
-            FeatureComparisonStat stat0 = matcher.ditherToFindSmallestSqSumDiff(
-                img1, img2, x1, y1, x2, y2, offsetsT, offsets0, dither2);
-            
-            int deltaX = x1 - stat0.getImg1Point().getX();
-            int deltaY = y1 - stat0.getImg1Point().getY();
-            
-            log.info("*deltaX=" + deltaX + " deltaY=" + deltaY + " stat=" + stat0);
-            assertTrue((deltaX != 0) || (deltaY != 0));
-            
-            x1 = 139; y1 = 59;
-            x2 = 49; y2 = 56;
-            FeatureComparisonStat stat1 = matcher.ditherToFindSmallestSqSumDiff(
-                img1, img2, x1, y1, x2, y2, offsetsT, offsets0, dither2);
-            
-            deltaX = x1 - stat1.getImg1Point().getX();
-            deltaY = y1 - stat1.getImg1Point().getY();
-            
-            log.info("*deltaX=" + deltaX + " deltaY=" + deltaY + " stat=" + stat1);
-            assertTrue((deltaX != 0) || (deltaY != 0));
-            
-        }
+                FeatureComparisonStat stat0 = matcher.ditherToFindSmallestSqSumDiff(
+                    img1, img2, x1, y1, x2, y2, offsetsT, offsets0, dither2);
 
-        for (int i = 0; i < points1.getN(); ++i) {
+                int deltaX = x1 - stat0.getImg1Point().getX();
+                int deltaY = y1 - stat0.getImg1Point().getY();
 
-            int x1 = points1.getX(i);
-            int y1 = points1.getY(i);
+                log.info("*deltaX=" + deltaX + " deltaY=" + deltaY + " stat=" + stat0);
+                assertTrue((deltaX != 0) || (deltaY != 0));
 
-            int x2 = points2.getX(i);
-            int y2 = points2.getY(i);
+                x1 = 139; y1 = 59;
+                x2 = 49; y2 = 56;
+                FeatureComparisonStat stat1 = matcher.ditherToFindSmallestSqSumDiff(
+                    img1, img2, x1, y1, x2, y2, offsetsT, offsets0, dither2);
 
-            FeatureComparisonStat stat = matcher.ditherToFindSmallestSqSumDiff(
-                img1, img2, x1, y1, x2, y2, offsetsT, offsets0, dither);
+                deltaX = x1 - stat1.getImg1Point().getX();
+                deltaY = y1 - stat1.getImg1Point().getY();
 
-            float div = stat.getSumSqDiff()/stat.getImg2PointErr();
-            log.info(stat.toString());
-            
-            assertTrue(div <= 1);
+                log.info("*deltaX=" + deltaX + " deltaY=" + deltaY + " stat=" + stat1);
+                assertTrue((deltaX != 0) || (deltaY != 0));
 
-            if (div > 1) {
-                log.info("ERROR: expected to see div < 1");
             }
+
+            for (int i = 0; i < points1.getN(); ++i) {
+
+                int x1 = points1.getX(i);
+                int y1 = points1.getY(i);
+
+                int x2 = points2.getX(i);
+                int y2 = points2.getY(i);
+
+                FeatureComparisonStat stat = matcher.ditherToFindSmallestSqSumDiff(
+                    img1, img2, x1, y1, x2, y2, offsetsT, offsets0, dither);
+
+                float div = stat.getSumSqDiff()/stat.getImg2PointErr();
+                log.info(stat.toString());
             
-            int deltaX = x1 - stat.getImg1Point().getX();
-            int deltaY = y1 - stat.getImg1Point().getY();
-            
-            log.info("  deltaX=" + deltaX + " deltaY=" + deltaY);
-            
-            assertTrue(deltaX == 0);
-            assertTrue(deltaY == 0);
-            
-            // move center by dx, dy and assert that algorithm finds the true
-            // center.  make dither large to test above rounding errors (+-1)
-            int dither2 = 2;
-            int dx = 2*sr.nextInt(1);
-            int dy = 2*sr.nextInt(1);
-            if (sr.nextBoolean()) {
-                dx *= -1;
-            }
-            if (sr.nextBoolean()) {
-                dy *= -1;
-            }
-            if (dx != 0 || dy != 0) {
-                stat = matcher.ditherToFindSmallestSqSumDiff(
-                    img1, img2, (x1 + dx), (y1 + dy), x2, y2, offsetsT, offsets0, 
-                    dither2);
-                deltaX = x1 - stat.getImg1Point().getX();
-                deltaY = y1 - stat.getImg1Point().getY();
-                //log.info("stat=" + stat);
-                //log.info("  deltaX=" + deltaX + " deltaY=" + deltaY 
-                //    + " dx=" + dx + " dy=" + dy);
-                assertTrue(Math.abs(deltaX - dx) < 2);
-                assertTrue(Math.abs(deltaY - dy) < 2);
+                assertTrue(div <= 1);
+
+                if (div > 1) {
+                    log.info("ERROR: expected to see div < 1");
+                }
+
+                int deltaX = x1 - stat.getImg1Point().getX();
+                int deltaY = y1 - stat.getImg1Point().getY();
+
+                log.info("  deltaX=" + deltaX + " deltaY=" + deltaY);
+
+                assertTrue(deltaX == 0);
+                assertTrue(deltaY == 0);
+
+                // move center by dx, dy and assert that algorithm finds the true
+                // center.  make dither large to test above rounding errors (+-1)
+                int dither2 = 2;
+                int dx = 2*sr.nextInt(1);
+                int dy = 2*sr.nextInt(1);
+                if (sr.nextBoolean()) {
+                    dx *= -1;
+                }
+                if (sr.nextBoolean()) {
+                    dy *= -1;
+                }
+                if (dx != 0 || dy != 0) {
+                    stat = matcher.ditherToFindSmallestSqSumDiff(
+                        img1, img2, (x1 + dx), (y1 + dy), x2, y2, offsetsT, offsets0, 
+                        dither2);
+                    deltaX = x1 - stat.getImg1Point().getX();
+                    deltaY = y1 - stat.getImg1Point().getY();
+                    //log.info("stat=" + stat);
+                    //log.info("  deltaX=" + deltaX + " deltaY=" + deltaY 
+                    //    + " dx=" + dx + " dy=" + dy);
+                    assertTrue(Math.abs(deltaX - dx) < 2);
+                    assertTrue(Math.abs(deltaY - dy) < 2);
+                }
             }
         }
         
@@ -666,112 +665,117 @@ public class ShapeMatcherTest extends TestCase {
                     break;
                 }
             }
-        }
 
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        img1 = ImageIOHelper.readImageExt(filePath1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        img2 = ImageIOHelper.readImageExt(filePath2);
-        img1 = imageProcessor.binImage(img1, binFactor);
-        img2 = imageProcessor.binImage(img2, binFactor);
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            img1 = ImageIOHelper.readImageExt(filePath1);
+            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+            img2 = ImageIOHelper.readImageExt(filePath2);
+            img1 = imageProcessor.binImage(img1, binFactor);
+            img2 = imageProcessor.binImage(img2, binFactor);
 
-        ShapeMatcher matcher = new ShapeMatcher();
+            ShapeMatcher matcher = new ShapeMatcher();
 
-        TransformationParameters params = tc.calulateEuclidean(
-            points1.getX(0), points1.getY(0), points1.getX(1), points1.getY(1),
-            points2.getX(0), points2.getY(0), points2.getX(1), points2.getY(1),
-            0, 0);
+            TransformationParameters params = tc.calulateEuclidean(
+                points1.getX(0), points1.getY(0), points1.getX(1), points1.getY(1),
+                points2.getX(0), points2.getY(0), points2.getX(1), points2.getY(1),
+                0, 0);
 
-        log.info("params=" + params);
+            log.info("params=" + params);
+
+            Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
+                comparisonMap = matcher.findSimilarFeaturesForRotatedFrames(
+                img1, img2, points1, points2);
         
-        Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
-            comparisonMap = matcher.findSimilarFeaturesForRotatedFrames(
-            img1, img2, points1, points2);
-        
-        /*
-        looking at patterns to determine best solution for all.
-        The most distinct best answer(s) may be what can use for filtering
-        the map by nearby rotation, then further filtering remaining
-        entries using pairwise calculation.
-        then further comparing with stat diff sums?
-        */
-        
-        for (Entry<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> entry :
-            comparisonMap.entrySet()) {
-            
-            PairInt p1 = entry.getKey();
-            int expectedIndex = -1;
-            for (int i = 0; i < points1.getN(); ++i) {
-                int x = points1.getX(i);
-                int y = points1.getY(i);
-                if ((x == p1.getX()) && (y == p1.getY())) {
-                    expectedIndex = i;
-                    break;
-                }
-            }            
-            int expectedX2 = points2.getX(expectedIndex);
-            int expectedY2 = points2.getY(expectedIndex);
-            float expectedRotDeg = params.getRotationInDegrees();
-            
-            Map<PairInt, Map<Float, FeatureComparisonStat>> p1PairsMap = entry.getValue();
-            
-            FixedSizeSortedVector<FeatureComparisonStat> vec = 
-                new FixedSizeSortedVector<FeatureComparisonStat>(6, 
-                    FeatureComparisonStat.class);
-           
-            for (PairInt p2 : p1PairsMap.keySet()) {
-                Map<Float, FeatureComparisonStat> p1P2Map = p1PairsMap.get(p2);
-                for (Entry<Float, FeatureComparisonStat> entry3 : p1P2Map.entrySet()) {
-                    FeatureComparisonStat stat = entry3.getValue();
-                    float div = stat.getSumSqDiff()/stat.getImg2PointErr();
-                    if (div <= 1) {
-                        vec.add(stat);
+            /*
+            looking at patterns to determine best solution for all.
+            The most distinct best answer(s) may be what can use for filtering
+            the map by nearby rotation, then further filtering remaining
+            entries using pairwise calculation.
+            then further comparing with stat diff sums?
+            */
+
+            for (Entry<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> entry :
+                comparisonMap.entrySet()) {
+
+                PairInt p1 = entry.getKey();
+                int expectedIndex = -1;
+                for (int i = 0; i < points1.getN(); ++i) {
+                    int x = points1.getX(i);
+                    int y = points1.getY(i);
+                    if ((x == p1.getX()) && (y == p1.getY())) {
+                        expectedIndex = i;
+                        break;
+                    }
+                }            
+                int expectedX2 = points2.getX(expectedIndex);
+                int expectedY2 = points2.getY(expectedIndex);
+                float expectedRotDeg = params.getRotationInDegrees();
+
+                Map<PairInt, Map<Float, FeatureComparisonStat>> p1PairsMap = entry.getValue();
+
+                FixedSizeSortedVector<FeatureComparisonStat> vec = 
+                    new FixedSizeSortedVector<FeatureComparisonStat>(6, 
+                        FeatureComparisonStat.class);
+
+                for (PairInt p2 : p1PairsMap.keySet()) {
+                    Map<Float, FeatureComparisonStat> p1P2Map = p1PairsMap.get(p2);
+                    for (Entry<Float, FeatureComparisonStat> entry3 : p1P2Map.entrySet()) {
+                        FeatureComparisonStat stat = entry3.getValue();
+                        float div = stat.getSumSqDiff()/stat.getImg2PointErr();
+                        if (div <= 1) {
+                            vec.add(stat);
+                        }
                     }
                 }
-            }
-            
-            //looks like the top ? best always contain the expected point
-            boolean foundBest = false;
-            int bestIdx = -1;
-            for (int i = 0; i < vec.getNumberOfItems(); ++i) {
-                FeatureComparisonStat fs = vec.getArray()[i];
-                int deltaX = Math.abs(fs.getImg2Point().getX() - expectedX2);
-                int deltaY = Math.abs(fs.getImg2Point().getY() - expectedY2);
-                float diffDeg = AngleUtil.getAngleDifference(
-                    fs.getImg1RotInDegrees(), expectedRotDeg);
-                if ((deltaX <= 2) && (deltaY <= 2) && (Math.abs(diffDeg) < 22.5f)) {
-                    foundBest = true;
-                    bestIdx = i;
+
+                //looks like the top ? best always contain the expected point
+                boolean foundBest = false;
+                int bestIdx = -1;
+                float bestSumSqDiff = -1;
+                float bestErr = -1;
+                for (int i = 0; i < vec.getNumberOfItems(); ++i) {
+                    FeatureComparisonStat fs = vec.getArray()[i];
+                    int deltaX = Math.abs(fs.getImg2Point().getX() - expectedX2);
+                    int deltaY = Math.abs(fs.getImg2Point().getY() - expectedY2);
+                    float diffDeg = AngleUtil.getAngleDifference(
+                        fs.getImg1RotInDegrees(), expectedRotDeg);
+                    if ((deltaX <= 2) && (deltaY <= 2) && (Math.abs(diffDeg) < 22.5f)) {
+                        foundBest = true;
+                        bestIdx = i;
+                        bestSumSqDiff = fs.getSumSqDiff();
+                        bestErr = fs.getImg2PointErr();
+                    }
+    log.info("top " + i + " for " + p1.toString() + " : " + fs.toString() 
+    + " expectedX2=" + expectedX2 + " expectedY2=" + expectedY2);
                 }
-log.info("top " + i + " for " + p1.toString() + " : " + fs.toString() 
-+ " expectedX2=" + expectedX2 + " expectedY2=" + expectedY2);
-            }
-            
-            log.info("found best was at sorted index=" + bestIdx);
-            if (!foundBest) {
-                // look at p1PairsMap
+
+                log.info(ds + ") found best was at sorted index=" + bestIdx 
+                    + " bestSumSqDiff=" + bestSumSqDiff + " bestErr=" + bestErr);
+                if (!foundBest) {
+                    // look at p1PairsMap
+                    int z = 1;
+                }
+                assertTrue(foundBest);
+
                 int z = 1;
             }
-            assertTrue(foundBest);
-            
-            int z = 1;
+        
+            /*
+            analyze total map:
+                find for each primary key, the smallest diffSqSum and the smallest diffSqSum/err
+
+                -- For the top <?> of those, 
+                   -- are they uniquely matched?
+                   -- calculate euclidean transformations from pairs of them
+                      -- are the results consistent w/ each other and the found frame rotations?
+                         -- if yes, then filter map for rotations near that rotation
+                            and remove the points already paired.
+                            -- the filter the map to remove any stats matches that
+                               are not feasible with the transformation parameters.
+
+                         -- else if not consistent?
+            */
         }
-        
-        /*
-        analyze total map:
-            find for each primary key, the smallest diffSqSum and the smallest diffSqSum/err
-        
-            -- For the top <?> of those, 
-               -- are they uniquely matched?
-               -- calculate euclidean transformations from pairs of them
-                  -- are the results consistent w/ each other and the found frame rotations?
-                     -- if yes, then filter map for rotations near that rotation
-                        and remove the points already paired.
-                        -- the filter the map to remove any stats matches that
-                           are not feasible with the transformation parameters.
-        
-                     -- else if not consistent?
-        */
     }
     
     protected static void getBrownAndLoweFeatureCenters(PairIntArray out1,
