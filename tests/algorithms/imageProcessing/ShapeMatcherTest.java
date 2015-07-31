@@ -5,10 +5,7 @@ import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -238,9 +235,6 @@ public class ShapeMatcherTest extends TestCase {
     
     public void testCalculateStat2() throws Exception {
         
-        //TODO: this needs to be adapted when gradients
-        // are used in the stats.
-        
         ImageProcessor imageProcessor = new ImageProcessor();
         
         MatchedPointsTransformationCalculator tc = new
@@ -249,7 +243,7 @@ public class ShapeMatcherTest extends TestCase {
         // choose regions from Brown & Lowe images to compare
         String fileName1, fileName2;
         ImageExt img1, img2;
-        PairInt img1Pt1, img1Pt2, img2Pt1, img2Pt2;
+        List<PairInt> points1, points2;
         int binFactor;
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -258,10 +252,13 @@ public class ShapeMatcherTest extends TestCase {
         log.info("SEED3=" + seed);
         sr.setSeed(seed);
 
+
         fileName1 = "brown_lowe_2003_image1.jpg";
         fileName2 = "brown_lowe_2003_image2.jpg";
-        img1Pt1 = new PairInt(127, 87); img1Pt2 = new PairInt(150, 68);
-        img2Pt1 = new PairInt(32, 82);  img2Pt2 = new PairInt(56, 66);
+        points1 = new ArrayList<PairInt>();
+        points2 = new ArrayList<PairInt>();
+        points1.add(new PairInt(127, 87)); points1.add(new PairInt(150, 68));
+        points2.add(new PairInt(32, 82)); points2.add(new PairInt(56, 66));
         binFactor = 3;
         /*
         transfomation for images having been binned by factor 3:
@@ -269,6 +266,7 @@ public class ShapeMatcherTest extends TestCase {
         params=rotationInRadians=6.1807413 rotationInDegrees=354.13039133201386 scale=0.96686685
             translationX=-81.54607 translationY=-14.233707 originX=0.0 originY=0.0
         */
+
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         img1 = ImageIOHelper.readImageExt(filePath1);
@@ -280,8 +278,8 @@ public class ShapeMatcherTest extends TestCase {
         ShapeMatcher matcher = new ShapeMatcher();
        
         TransformationParameters params = tc.calulateEuclidean(
-            img1Pt1.getX(), img1Pt1.getY(), img1Pt2.getX(), img1Pt2.getY(),
-            img2Pt1.getX(), img2Pt1.getY(), img2Pt2.getX(), img2Pt2.getY(), 
+            points1.get(0).getX(), points1.get(0).getY(), points1.get(1).getX(), points1.get(1).getY(),
+            points2.get(0).getX(), points2.get(0).getY(), points2.get(1).getX(), points2.get(1).getY(),
             0, 0);
         
         log.info("params=" + params);
@@ -296,12 +294,14 @@ public class ShapeMatcherTest extends TestCase {
             Math.round(params.getRotationInDegrees()), offsets0);
         
         FeatureComparisonStat stat1 = matcher.calculateStat(img1, img2,
-            img1Pt1.getX(), img1Pt1.getY(), img2Pt1.getX(), img2Pt1.getY(), 
+            points1.get(0).getX(), points1.get(0).getY(), 
+            points2.get(0).getX(), points2.get(0).getY(), 
             offsetsT, offsets0);
         trueMatches.add(stat1);
         
         FeatureComparisonStat stat2 = matcher.calculateStat(img1, img2,
-            img1Pt2.getX(), img1Pt2.getY(), img2Pt2.getX(), img2Pt2.getY(),
+            points1.get(1).getX(), points1.get(1).getY(), 
+            points2.get(1).getX(), points2.get(1).getY(), 
             offsetsT, offsets0);
         trueMatches.add(stat2);
         
@@ -327,8 +327,8 @@ public class ShapeMatcherTest extends TestCase {
             
             int x2 = 7 + sr.nextInt(img2.getWidth() - 12);
             int y2 = 7 + sr.nextInt(img2.getHeight() - 12);
-            while ((Math.abs(x2 - img2Pt1.getX()) < 6) && 
-                (Math.abs(y2 - img2Pt1.getY()) < 6)) {
+            while ((Math.abs(x2 - points2.get(0).getX()) < 6) && 
+                (Math.abs(y2 - points2.get(0).getY()) < 6)) {
                 x2 = 7 + sr.nextInt(img2.getWidth() - 12);
                 y2 = 7 + sr.nextInt(img2.getHeight() - 12);
             }
@@ -338,7 +338,7 @@ public class ShapeMatcherTest extends TestCase {
             float[][] offsetsR = transformer.transformXY(rotD, offsets0);
             
             FeatureComparisonStat s = matcher.calculateStat(img1, img2,
-                img1Pt1.getX(), img1Pt1.getY(), x2, y2, offsetsR, offsets0);
+                points1.get(0).getX(), points1.get(0).getY(), x2, y2, offsetsR, offsets0);
             
             differentPatches.add(s);
             
@@ -350,62 +350,6 @@ public class ShapeMatcherTest extends TestCase {
         }
                 
     }
-    
-    /*
-    brown & Lowe images hull centers to compare using the dithering test when
-    implemented:
-    
-    set1: list0:
-     (157,82)
-     (75,114)
-     (134,89)
-     (6,110)
-     (155,57)
-     (21,117)
-     (43,93)
-     (129,119)
-     (10,104)
-     (140,60)
-     (146,67)
-     (103,116)
-     (118,116)
-     (28,113)
-     (117,82)
-     (91,108)
-     (17,110)
-     (72,104)
-     (119,111)
-     set1 list1:
-     (11,56)
-     (44,96)
-     (5,78)
-    
-    set2 list0:
-     (150,96)
-     (102,110)
-     (60,80)
-     (102,96)
-     (37,84)
-     (116,110)
-     (5,66)
-     (20,75)
-     (11,74)
-     (17,106)
-     (80,94)
-     (19,54)
-     (49,57)
-     (80,79)
-     (98,83)
-     (89,92)
-     (124,118)
-     (54,65)
-     (25,55)
-     (67,106)
-    set2 list1:
-     (145,108)
-     (123,99)
-     (131,96)
-    */
     
     public static void main(String[] args) {
         

@@ -254,6 +254,8 @@ public class ShapeMatcher {
                     int rmIdx = rm.get(i).intValue();
                     list.remove(rmIdx);
                 }
+
+                log.info("nHulls" + (im + 1) + "=" + listHulls.size() + " for intensity=" + pixValue.toString());
                 
                 contigMap.put(pixValue, list);
                 hulls.put(pixValue, listHulls);
@@ -381,6 +383,9 @@ public class ShapeMatcher {
             
             log.info("nFiltered1=" + filtered1.getN() + " for intensity=" + pixValue1.toString());
             log.info("nFiltered2=" + filtered2.getN() + " for intensity=" + pixValue2.toString());
+
+            log.info("filtered1=" + filtered1.toString());
+            log.info("filtered2=" + filtered2.toString());
             
             MiscDebug.plotCorners(img1Grey, filtered1, pixValue1.toString() + "_1_filtered");
             MiscDebug.plotCorners(img2Grey, filtered2, pixValue2.toString() + "_2_filtered");
@@ -499,15 +504,17 @@ if (true) {
         ImageExt img1, ImageExt img2, PairIntArray points1, 
         PairIntArray points2) {
         
+        if (img1 == null) {
+            throw new IllegalArgumentException("img1 cannot be null");
+        }
+        if (img2 == null) {
+            throw new IllegalArgumentException("img2 cannot be null");
+        }
         if (points1 == null) {
             throw new IllegalArgumentException("points1 cannot be null");
         }
         if (points2 == null) {
             throw new IllegalArgumentException("points2 cannot be null");
-        }
-        if (points1.getN() != points2.getN()) {
-            throw new IllegalArgumentException(
-            "points1 must be the same size as points2");
         }
         
         //TODO: NOTE changing this to use gradients in the statistics
