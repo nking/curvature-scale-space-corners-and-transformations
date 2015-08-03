@@ -427,8 +427,8 @@ public class Transformer {
         float translationX = params.getTranslationX();
         float translationY = params.getTranslationY();
         
-        double centroidX = input.getWidth() >> 1;
-        double centroidY = input.getHeight() >> 1;
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
         
         GreyscaleImage output = new GreyscaleImage(outputWidth, 
             outputHeight);
@@ -469,6 +469,9 @@ public class Transformer {
     public Image applyTransformation(Image input, 
         TransformationParameters params, int outputWidth, int outputHeight) {
         
+        if (input == null) {
+            throw new IllegalArgumentException("input cannot be null");
+        }
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
         }
@@ -482,10 +485,13 @@ public class Transformer {
         float translationX = params.getTranslationX();
         float translationY = params.getTranslationY();
         
-        double centroidX = input.getWidth() >> 1;
-        double centroidY = input.getHeight() >> 1;
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
         
-        Image output = new Image(outputWidth, outputHeight);
+        boolean isExt = (input instanceof ImageExt);
+        
+        Image output = isExt ? new ImageExt(outputWidth, outputHeight) :
+            new Image(outputWidth, outputHeight);
         
         for (int x = 0; x < input.getWidth(); x++) {
             for (int y = 0; y < input.getHeight(); y++) {
@@ -504,14 +510,19 @@ public class Transformer {
                 int x2 = (int)Math.round(xt);
                 int y2 = (int)Math.round(yt);
 
-                if ((x2 > -1) && (x2 < (output.getWidth() - 1) &&
-                    (y2 > -1) && (y2 < (output.getHeight() - 1)))) {
-
-                    int r = input.getR(x, y);
-                    int g = input.getG(x, y);
-                    int b = input.getB(x, y);
+                if ((x2 < 0) || (x2 > (outputWidth - 1)) ||
+                    (y2 < 0) || (y2 > (outputHeight - 1))) {
+                    continue;
+                }
                 
-                    output.setRGB(x2, y2, r, g, b);
+                int r = input.getR(x, y);
+                int g = input.getG(x, y);
+                int b = input.getB(x, y);
+
+                output.setRGB(x2, y2, r, g, b);
+
+                if (isExt) {
+                    // TODO: copy any already set arrays too
                 }
             }
         }

@@ -785,6 +785,18 @@ public class MiscDebug {
             log.severe("ERROR: " + e.getMessage());
         }
     }
+    
+    public static void writeImage(GreyscaleImage img, String fileNameSuffix) {
+        
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 
+                + ".png", img);
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
 
     public static void plotCorners(GreyscaleImage imgGrey, PairIntArray corners, 
         String fileNameSuffix) {

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
@@ -406,6 +407,42 @@ public class ImageProcessor {
                 double gY = convolvedY.getValue(i, j);
 
                 int thetaG = calculateTheta(gX, gY);
+
+                output.setValue(i, j, thetaG);
+
+            }
+        }
+
+        return output;
+    }
+    
+    /**
+     * compute theta as a polar angle that increases in a clockwise manner
+     * and has a range from 0 to 359, inclusive.
+     * 
+     * @param convolvedX
+     * @param convolvedY
+     * @return 
+     */
+    public GreyscaleImage computeTheta360(final GreyscaleImage convolvedX,
+        final GreyscaleImage convolvedY) {
+
+        GreyscaleImage output = convolvedX.createWithDimensions();
+
+        for (int i = 0; i < convolvedX.getWidth(); i++) {
+            for (int j = 0; j < convolvedX.getHeight(); j++) {
+
+                double gX = convolvedX.getValue(i, j);
+
+                double gY = convolvedY.getValue(i, j);
+
+                double thetaR = (2. * Math.PI) - AngleUtil.polarAngleCCW(gX, gY);
+                
+                int thetaG = (int)Math.round(thetaR * 180./Math.PI);
+                
+                if (thetaG > 359) {
+                    thetaG = thetaG - 360;
+                }
 
                 output.setValue(i, j, thetaG);
 
