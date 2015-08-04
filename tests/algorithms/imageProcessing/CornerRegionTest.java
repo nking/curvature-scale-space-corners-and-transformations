@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException;
 import junit.framework.TestCase;
 
 /**
@@ -24,17 +25,44 @@ public class CornerRegionTest extends TestCase {
         assertTrue(Math.abs(orientation - 24) < 1);
     }
     
-    public void test1() throws Exception {
+    public void est1() throws Exception {
         
         CornerRegion cr = new CornerRegion(0, 3, 1);
         
         cr.set(0, 0.34f, 143, 255);
-        cr.set(1, 0.43f, 142, 255);
+            cr.set(1, 0.43f, 142, 255);
         cr.set(2, 0.35f, 141, 255);
         
-        double orientation = cr.getRelativeOrientation();
+        boolean caughtException = false;
         
-        assertTrue(Math.abs(orientation - (Math.PI/2.)) < (1.*Math.PI/180.));
+        try {
+            double orientation = cr.getRelativeOrientation();
+        } catch (CornerRegionDegneracyException e) {
+            caughtException = true;
+        }
+        
+        assertTrue(caughtException);
     }
     
+    public void test2() throws Exception {
+        
+        CornerRegion cr = new CornerRegion(0, 5, 2);
+        
+        cr.set(0, 0.13f, 143, 254);
+        cr.set(1, 0.34f, 143, 255);
+        cr.set(2, 0.43f, 142, 255);
+        cr.set(3, 0.35f, 141, 255);
+        cr.set(4, 0.28f, 140, 255);
+        
+        boolean caughtException = false;
+        
+        try {
+            double orientation = cr.getRelativeOrientation();
+            assertTrue(Math.abs(orientation - (3*Math.PI/2.)) < (1.*Math.PI/180.));
+        } catch (CornerRegionDegneracyException e) {
+            caughtException = true;
+        }
+        
+        assertFalse(caughtException);
+    }
 }
