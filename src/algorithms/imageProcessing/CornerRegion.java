@@ -123,8 +123,10 @@ public class CornerRegion {
      * @return the angle perpendicular to the maximum of curvature at the
      * location along the edge in units of degrees.
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
-     * an exception is thrown if dx=0 or dy=0 for all points owned by this
-     * instance.
+     * an exception is thrown if the slopes are the same for all points owned
+     * by this instance, that is the points represent a line.  This can happen
+     * when the radius of curvature is very large( == a small k) and any
+     * change is over a larger number of pixels than present here.
      */
     public float getRelativeOrientationInDegrees() throws CornerRegionDegneracyException {
 
@@ -140,8 +142,10 @@ public class CornerRegion {
      * @return the angle perpendicular to the maximum of curvature at the
      * location along the edge in units of radians.
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
-     * an exception is thrown if dx=0 or dy=0 for all points owned by this
-     * instance.
+     * an exception is thrown if the slopes are the same for all points owned
+     * by this instance, that is the points represent a line.  This can happen
+     * when the radius of curvature is very large( == a small k) and any
+     * change is over a larger number of pixels than present here.
      */
     public double getRelativeOrientation() throws CornerRegionDegneracyException {
 
@@ -163,8 +167,8 @@ public class CornerRegion {
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
      * an exception is thrown if the slopes are the same for all points owned
      * by this instance, that is the points represent a line.  This can happen
-     * when the radius of curvature is very large, but that produces a small
-     * curvature value (k=1/R).
+     * when the radius of curvature is very large( == a small k) and any
+     * change is over a larger number of pixels than present here.
      */
     protected double calculateOrientation() throws
         CornerRegionDegneracyException {
