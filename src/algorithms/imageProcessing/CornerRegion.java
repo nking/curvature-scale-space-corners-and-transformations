@@ -84,37 +84,8 @@ public class CornerRegion {
     public int getEdgeIdx() {
         return edgeIdx;
     }
-
-    public int getXBeforeMax() {
-        if (x.length == 0) {
-            throw new IllegalStateException("this is an empty instance");
-        }
-
-        return x[kMaxIdx - 1];
-    }
-
-    public int getYBeforeMax() {
-        if (x.length == 0) {
-            throw new IllegalStateException("this is an empty instance");
-        }
-
-        return y[kMaxIdx - 1];
-    }
-
-    public int getXAfterMax() {
-        if (x.length == 0) {
-            throw new IllegalStateException("this is an empty instance");
-        }
-
-        return x[kMaxIdx + 1];
-    }
-
-    public int getYAfterMax() {
-        if (x.length == 0) {
-            throw new IllegalStateException("this is an empty instance");
-        }
-
-        return y[kMaxIdx + 1];
+    public int getKMaxIdx() {
+        return kMaxIdx;
     }
 
     /**
@@ -254,21 +225,32 @@ public class CornerRegion {
         The angle vectors for theta0 and theta1 should point away from the
         centroid.
         */
-
-        double perp0 = calculatePerpendicularAngleAwayFromCentroid(theta0,
-            x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx], y[kMaxIdx], centroidXY);
-
-        double perp1 = calculatePerpendicularAngleAwayFromCentroid(theta1,
-            x[kMaxIdx], y[kMaxIdx], x[kMaxIdx + 1], y[kMaxIdx + 1], centroidXY);
-
+        
         //TODO: not sure will keep this weighting.  needs testing
         // weight by the respective adjacent curvature strengths
         double k0 = k[kMaxIdx - 1];
         double k1 = k[kMaxIdx + 1];
         double kTot = k0 + k1;
 
-        double weighted = (float)(((k0/kTot)*perp0) + ((k1/kTot)*perp1));
+        /*
+        // determine both angles separately, then calc weighted average:
+        double perp0 = calculatePerpendicularAngleAwayFromCentroid(theta0,
+            x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx], y[kMaxIdx], centroidXY);
 
+        double perp1 = calculatePerpendicularAngleAwayFromCentroid(theta1,
+            x[kMaxIdx], y[kMaxIdx], x[kMaxIdx + 1], y[kMaxIdx + 1], centroidXY);
+       
+        double weighted = (float)(((k0/kTot)*perp0) + ((k1/kTot)*perp1));
+        */
+        
+        // determine weighted average theta first, then calculate the perpendicular
+        // angle pointing out from the edge at the maximum of curvature:
+        double weightedTheta = (float)(((k0/kTot)*theta0) + ((k1/kTot)*theta1));
+        
+        double weighted = calculatePerpendicularAngleAwayFromCentroid(
+            weightedTheta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx], 
+            y[kMaxIdx], centroidXY);
+        
         return weighted;
     }
     
