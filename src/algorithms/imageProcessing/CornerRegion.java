@@ -25,7 +25,8 @@ public class CornerRegion {
 
     /**
      * constructor with edge index, the index with the maximum curvature in it
-     * with respect to nPoints.  A minimum of 5 points is recommended.
+     * with respect to nPoints.  A minimum of 5 points is recommended and
+     * large maximum curvature, k[kMaxIdx].
      * @param theEdgeIndex
      * @param maxCurvatureIndex
      * @param nPoints
@@ -79,6 +80,9 @@ public class CornerRegion {
     }
     public int[] getY() {
         return y;
+    }
+    public int getEdgeIdx() {
+        return edgeIdx;
     }
 
     public int getXBeforeMax() {
@@ -153,13 +157,15 @@ public class CornerRegion {
      * NOT READY FOR USE YET.  NEEDs MORE TESTING
      * calculate the angle perpendicular to the maximum of curvature.
      * The curvature has to be large enough so that a change in the neighboring
-     * points is present (dx and dy cannot both be zero for all the points
-     * given) else an exception is thrown.
+     * points is present (slopes cannot both be the same on both sides of the
+     * maximum for all the points given) else an exception is thrown.
      * @return the angle perpendicular to the maximum of curvature at the
      * location along the edge in units of radians.
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
-     * an exception is thrown if dx=0 or dy=0 for all points owned by this
-     * instance.
+     * an exception is thrown if the slopes are the same for all points owned 
+     * by this instance, that is the points represent a line.  This can happen
+     * when the radius of curvature is very large, but that produces a small
+     * curvature value (k=1/R).
      */
     protected double calculateOrientation() throws
         CornerRegionDegneracyException {
@@ -184,7 +190,7 @@ public class CornerRegion {
             theta1 = (2.*Math.PI) - theta1;
         }
 
-        /* determine wheter to add or subtract 90 for each vector:
+        /* determine whether to add or subtract 90 for each vector:
 
         the centroid of the middle and neighboring points determines the
         opposite side of the vector pointing outwards from the edge.
@@ -245,7 +251,7 @@ public class CornerRegion {
         }
 
         /*
-        The tangle vectors for theta0 and theta1 should point away from the
+        The angle vectors for theta0 and theta1 should point away from the
         centroid.
         */
 
@@ -255,6 +261,7 @@ public class CornerRegion {
         double perp1 = calculatePerpendicularAngleAwayFromCentroid(theta1,
             x[kMaxIdx], y[kMaxIdx], x[kMaxIdx + 1], y[kMaxIdx + 1], centroidXY);
 
+        //TODO: not sure will keep this weighting.  needs testing
         // weight by the respective adjacent curvature strengths
         double k0 = k[kMaxIdx - 1];
         double k1 = k[kMaxIdx + 1];
@@ -264,30 +271,7 @@ public class CornerRegion {
 
         return weighted;
     }
-
-    /**
-     *  QIII | QIV
-        -----|-----
-        QII  | QI
-     * @param xp
-     * @param yp
-     * @param xc
-     * @param yc
-     * @return
-     */
-    private int calculateQuadrant(int xp, int yp, int xc, int yc) {
-
-        int q = 4;
-        if ((xp < xc) && (yp >= yc)) {
-            q = 3;
-        } else if ((xp < xc) && (yp < yc)) {
-            q = 2;
-        } else if ((xp >= xc) && (yp < yc)) {
-            q = 1;
-        }
-        return q;
-    }
-
+    
     /**
      * given theta and the point (xp, yp), determine which direction and hence
      * polar angle (clockwise) is perpendicular away from the centroid.
