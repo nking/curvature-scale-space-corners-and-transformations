@@ -25,12 +25,12 @@ public class CornerRegionTest extends TestCase {
         assertTrue(Math.abs(orientation - 24) < 1);
     }
     
-    public void est1() throws Exception {
+    public void test1() throws Exception {
         
         CornerRegion cr = new CornerRegion(0, 3, 1);
         
         cr.set(0, 0.34f, 143, 255);
-            cr.set(1, 0.43f, 142, 255);
+        cr.set(1, 0.43f, 142, 255);
         cr.set(2, 0.35f, 141, 255);
         
         boolean caughtException = false;
