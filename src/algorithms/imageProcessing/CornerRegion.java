@@ -26,7 +26,7 @@ public class CornerRegion {
     /**
      * constructor with edge index, the index with the maximum curvature in it
      * with respect to nPoints.  A minimum of 5 points is recommended and
-     * for nPoints=5, a minimum k of 0.2 is needed.
+     * for nPoints=5, a minimum k of 0.2 is needed as the maximum curvature.
      * <pre>
      *   solid angle where r = radius of curvature.  k=1/r.
      *             .
