@@ -26,7 +26,35 @@ public class CornerRegion {
     /**
      * constructor with edge index, the index with the maximum curvature in it
      * with respect to nPoints.  A minimum of 5 points is recommended and
-     * large maximum curvature, k[kMaxIdx].
+     * for nPoints=5, a minimum k of 0.2 is needed.
+     * <pre>
+     *   solid angle where r = radius of curvature.  k=1/r.
+     *             .
+     *            /|\
+     *           / | \
+     *          / r-h \r
+     *         /   |   \
+     *        .----|----.
+     *             -     bottom portion is a triangle           w
+     *                                                  .----.-----.
+     *                                                    .  |h .
+     *                                                       .
+     *   the curvature is too small to determine slopes from neighboring
+     *   points when h is less than 1 pixel and w is 3 or more.
+     * 
+     *   limit to k for h=1.0 and w=3:
+     * 
+     *        r^2 = (r-h)^2 + w^2
+     * 
+     *        r^2 = r^2 - 2*r*h + h^2 + w^2
+     *        2*r*h = h^2 + w^2
+     *          r = (h^2 + w^2)/(2*h)
+     *          r = 5  which is k = 0.2  
+     * 
+     * Therefore, for k smaller than 0.2 won't see changes in slope in the
+     * neighboring 2 points on either side.
+     * 
+     * </pre>
      * @param theEdgeIndex
      * @param maxCurvatureIndex
      * @param nPoints
@@ -133,7 +161,7 @@ public class CornerRegion {
      * @return the angle perpendicular to the maximum of curvature at the
      * location along the edge in units of radians.
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
-     * an exception is thrown if the slopes are the same for all points owned 
+     * an exception is thrown if the slopes are the same for all points owned
      * by this instance, that is the points represent a line.  This can happen
      * when the radius of curvature is very large, but that produces a small
      * curvature value (k=1/R).
@@ -225,8 +253,8 @@ public class CornerRegion {
         The angle vectors for theta0 and theta1 should point away from the
         centroid.
         */
-        
-        //TODO: not sure will keep this weighting.  needs testing
+
+        //TODO: not sure will keep this weighting.  needs testing.
         // weight by the respective adjacent curvature strengths
         double k0 = k[kMaxIdx - 1];
         double k1 = k[kMaxIdx + 1];
@@ -239,21 +267,21 @@ public class CornerRegion {
 
         double perp1 = calculatePerpendicularAngleAwayFromCentroid(theta1,
             x[kMaxIdx], y[kMaxIdx], x[kMaxIdx + 1], y[kMaxIdx + 1], centroidXY);
-       
+
         double weighted = (float)(((k0/kTot)*perp0) + ((k1/kTot)*perp1));
         */
-        
+
         // determine weighted average theta first, then calculate the perpendicular
         // angle pointing out from the edge at the maximum of curvature:
         double weightedTheta = (float)(((k0/kTot)*theta0) + ((k1/kTot)*theta1));
-        
+
         double weighted = calculatePerpendicularAngleAwayFromCentroid(
-            weightedTheta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx], 
+            weightedTheta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx],
             y[kMaxIdx], centroidXY);
-        
+
         return weighted;
     }
-    
+
     /**
      * given theta and the point (xp, yp), determine which direction and hence
      * polar angle (clockwise) is perpendicular away from the centroid.
