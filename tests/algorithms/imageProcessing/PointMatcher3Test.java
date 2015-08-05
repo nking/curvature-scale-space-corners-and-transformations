@@ -778,6 +778,21 @@ TransformationPointFit fit = fits.get(0);
 
         ShapeMatcher shapeMatcher = new ShapeMatcher();
         
+        if (fileName1.contains("brown")) {
+            
+            TransformationParameters params90 = new TransformationParameters();
+            params90.setRotationInDegrees(90);
+            params90.setOriginX(0);
+            params90.setOriginY(0);
+            params90.setTranslationX(0);
+            params90.setTranslationY(img1.getWidth() - 1);
+
+            Transformer transformer = new Transformer();
+            
+            img1 = (ImageExt) transformer.applyTransformation(img1, params90,
+                img1.getHeight(), img1.getWidth());            
+        }
+        
         TransformationPointFit fit = shapeMatcher.findMatchingShapes(
             img1, img2, outputMatchedScene, outputMatchedModel);
 if (true) {

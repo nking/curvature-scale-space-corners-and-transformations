@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ShapeMatcher {
@@ -45,13 +47,13 @@ public class ShapeMatcher {
     public TransformationPointFit findMatchingShapes(ImageExt image1, ImageExt image2,
     PairIntArray outputMatched1, PairIntArray outputMatched2) throws 
         IOException, NoSuchAlgorithmException {
-        
+                
         GreyscaleImage img1Grey = image1.copyToGreyscale();
         GreyscaleImage img2Grey = image2.copyToGreyscale();
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        final boolean performBinning = true;
+        final boolean performBinning = false;
         int binFactor1 = 1;
         
         int kN = 4;
@@ -70,7 +72,7 @@ public class ShapeMatcher {
         //TODO: consider scaling this by image size or by size and res if one
         //  day that information is passed to this method
         int largestGroupLimit = 5000;
-
+        
         ImageExt img1Cp = (ImageExt)image1.copyImage();
         ImageExt img2Cp = (ImageExt)image2.copyImage();
         
@@ -98,6 +100,7 @@ public class ShapeMatcher {
             performHistEq = true;
         }
         if (performHistEq) {
+            log.info("use histogram equalization on the greyscale images");
             HistogramEqualization hEq = new HistogramEqualization(img1Grey);
             hEq.applyFilter();
             hEq = new HistogramEqualization(img2Grey);
@@ -126,6 +129,7 @@ public class ShapeMatcher {
             img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
+
         imageProcessor.applyImageSegmentation(img1Grey, kN);
         imageProcessor.applyImageSegmentation(img2Grey, kN);
 
@@ -230,17 +234,12 @@ public class ShapeMatcher {
                                 nBounds++;
                             }
                         }
-                        if (nBounds > 1) {
-                            
+                        if (nBounds > 3) {                            
                             rm.add(Integer.valueOf(i));
-                            
                         } else {
-                            
                             listHulls.add(scan);
-                        
                             int xh = (int)Math.round(centroidXY[0]);
                             int yh = (int)Math.round(centroidXY[1]);
-                            
                             hullCentroids.add(xh, yh);
                             pvHullCentroids.add(xh, yh);
                         }
@@ -280,7 +279,7 @@ public class ShapeMatcher {
         detector.doNotPerformHistogramEqualization();
         detector.findCorners();
         PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();
-
+        
         CurvatureScaleSpaceCornerDetector detector2 = new
             CurvatureScaleSpaceCornerDetector(img2Grey);
         detector2.doNotPerformHistogramEqualization();
@@ -289,6 +288,15 @@ public class ShapeMatcher {
         
         log.info("n1Corners=" + corners1.getN() + " n2Corners2=" 
             + corners2.getN());
+        
+        // experimenting with a slightly different definition for theta:
+        GreyscaleImage theta1360 = imageProcessor.computeTheta360(
+            detector.getGradientX(), detector.getGradientY());
+        GreyscaleImage theta2360 = imageProcessor.computeTheta360(
+            detector2.getGradientX(), detector2.getGradientY());
+        MiscDebug.writeImage(theta1360, "1_theta360");
+        MiscDebug.writeImage(theta2360, "2_theta360");
+
         
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
@@ -334,8 +342,10 @@ public class ShapeMatcher {
         
         List<PairIntArray> filteredCornersList1 = new ArrayList<PairIntArray>();
         List<PairIntArray> filteredCornersList2 = new ArrayList<PairIntArray>();
-        filterCornersAndOrderByMatchingIntensity(corners1, hulls1,
-            corners2, hulls2, filteredCornersList1, filteredCornersList2);
+        filterCornersAndOrderByMatchingIntensity(
+            corners1, hulls1,
+            corners2, hulls2, 
+            filteredCornersList1, filteredCornersList2);
         
         boolean useFiltered = true;
         
@@ -385,16 +395,59 @@ public class ShapeMatcher {
                 MiscDebug.plotCorners(img1Grey, filtered1, "1_" + i + "_filtered");
                 MiscDebug.plotCorners(img2Grey, filtered2, "2_" + i + "_filtered");
 
+                Set<CornerRegion> cornerRegions1 = detector.getEdgeCornerRegions();
+                CornerRegion[] cr1 = findCornerRegions(filtered1, cornerRegions1);
+                Set<CornerRegion> cornerRegions2 = detector2.getEdgeCornerRegions();
+                CornerRegion[] cr2 = findCornerRegions(filtered2, cornerRegions2);
+                
+                //log.info("corner region1:");
+                //MiscDebug.printCornerRegion(cr1);
+                //log.info("corner region2:");
+                //MiscDebug.printCornerRegion(cr2);
+//DEBUG before placing in tests 
+log.info("corner regions:");
+StringBuilder sb = new StringBuilder();
+for (int iii = 0; iii < cr1.length; ++iii) {
+    if ((cr1[iii] == null) || (cr2[iii] == null)) {
+        continue;
+    }
+    /*
+    try {
+        MiscDebug.display(cr1[iii], cr2[iii], img1Grey, img2Grey, 
+            String.valueOf(iii), 20);
+    } catch (Exception e) {
+        
+    }*/
+    sb.append("1) ").append(cr1[iii].toString()).append(" 2)").append(cr2[iii].toString());
+    int z = 1;
+}
+log.info(sb.toString());
+                
                 Map<PairInt, List<FeatureComparisonStat>> similar = 
-                    findSimilarFeatures(img1Cp, img2Cp, filtered1, filtered2);
+                    findSimilarFeatures(
+                        img1Cp, detector.getGradientXY(), theta1360, filtered1,
+                        cr1,
+                        img2Cp, detector2.getGradientXY(), theta2360, filtered2,
+                        cr2
+                    );
+                    /*findSimilarFeatures(img1Cp, 
+                        img2Cp, filtered1, filtered2);*/
 
                 similarCorners.add(similar);
             }
             
         } else {
             
+            Set<CornerRegion> cornerRegions1 = detector.getEdgeCornerRegions();
+            CornerRegion[] cr1 = findCornerRegions(corners1, cornerRegions1);
+            Set<CornerRegion> cornerRegions2 = detector2.getEdgeCornerRegions();
+            CornerRegion[] cr2 = findCornerRegions(corners2, cornerRegions2);
+                
             Map<PairInt, List<FeatureComparisonStat>> similar = 
-                findSimilarFeatures(img1Cp, img2Cp, corners1, corners2);
+                findSimilarFeatures(
+                    img1Cp, detector.getGradientXY(), theta1360, corners1, cr1,
+                    img2Cp, detector2.getGradientXY(), theta2360, corners2, cr2);
+                //findSimilarFeatures(img1Cp, img2Cp, corners1, corners2);
 
             similarCorners.add(similar);
         }
@@ -578,6 +631,104 @@ if (true) {
      * @param points2
      * @return 
      */
+    protected Map<PairInt, List<FeatureComparisonStat>> findSimilarFeatures(
+        ImageExt img1, GreyscaleImage gXY1, GreyscaleImage theta1, PairIntArray points1,
+        CornerRegion[] cornerRegions1,
+        ImageExt img2, GreyscaleImage gXY2, GreyscaleImage theta2, PairIntArray points2,
+        CornerRegion[] cornerRegions2) {
+        
+        if (img1 == null) {
+            throw new IllegalArgumentException("img1 cannot be null");
+        }
+        if (img2 == null) {
+            throw new IllegalArgumentException("img2 cannot be null");
+        }
+        if (points1 == null) {
+            throw new IllegalArgumentException("points1 cannot be null");
+        }
+        if (points2 == null) {
+            throw new IllegalArgumentException("points2 cannot be null");
+        }
+        if (gXY1 == null) {
+            throw new IllegalArgumentException("gXY1 cannot be null");
+        }
+        if (gXY2 == null) {
+            throw new IllegalArgumentException("gXY2 cannot be null");
+        }
+        if (theta1 == null) {
+            throw new IllegalArgumentException("theta1 cannot be null");
+        }
+        if (theta2 == null) {
+            throw new IllegalArgumentException("theta2 cannot be null");
+        }
+        if (cornerRegions1 == null) {
+            throw new IllegalArgumentException("cornerRegions1 cannot be null");
+        }
+        if (cornerRegions2 == null) {
+            throw new IllegalArgumentException("cornerRegions2 cannot be null");
+        }
+        
+        Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
+            comparisonMap = new HashMap<PairInt, Map<PairInt, 
+            Map<Float, FeatureComparisonStat>>>();
+            
+        float[][] offsets0 = createNeighborOffsets();
+        
+        int dither = 1;
+        
+        int nF = (2 * dither + 1) * (2 * dither + 1);
+        
+        for (int idx1 = 0; idx1 < points1.getN(); ++idx1) {
+            
+            CornerRegion cornerRegion1 = cornerRegions1[idx1];
+            
+            if (cornerRegion1 == null) {
+                continue;
+            }
+            
+            int x1 = points1.getX(idx1);
+            int y1 = points1.getY(idx1);
+            
+            PairInt p1 = new PairInt(x1, y1);
+                                   
+            for (int idx2 = 0; idx2 < points2.getN(); ++idx2) {
+                
+                CornerRegion cornerRegion2 = cornerRegions2[idx2];
+            
+                if (cornerRegion2 == null) {
+                    continue;
+                }
+            
+                int x2 = points2.getX(idx2);
+                int y2 = points2.getY(idx2);
+                PairInt p2 = new PairInt(x2, y2);
+                
+                FeatureComparisonStat best = findBestMatchAmongDitheredCoords(
+                    img1, gXY1, theta1, cornerRegion1,
+                    img2, gXY2, theta2, cornerRegion2,
+                    x2, y2, offsets0);
+                
+                storeInMap(comparisonMap, p1, p2, best.getImg1RotInDegrees(), 
+                    best);
+            }
+
+        }
+        
+        return null;
+    }
+    
+    /**
+     * match the given point lists by comparing rotated and dithered blocks
+     * surrounding points in the first list to blocks around points in the
+     * second list.
+     * The runtime complexity is O(N1 * N2), but there are many steps for
+     * the rotation and dither operations.
+     * @param img1
+     * @param img2
+     * @param points1
+     * @param points2
+     * @return 
+     */
     protected Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
     findSimilarFeaturesForRotatedFrames(
         ImageExt img1, ImageExt img2, PairIntArray points1, 
@@ -597,8 +748,10 @@ if (true) {
         }
                 
         /*
-         matchFeatures can be used to filter corners to ambigious or unambiguous
-        degenerate matches and then pairwise calcs can distiguish between them
+         This method currently compares with SSD and SSD based error
+        but might need to keep the top 10 or more and then further
+        use detailed gradient histograms or other feature descriptor
+        methods.
         */
         
         /*
@@ -664,7 +817,7 @@ if (true) {
     public float[][] createNeighborOffsets() {
         
         //TODO: test if this needs to be higher for higher resolution data
-        int d = 2;
+        int d = 8;
         
         return createNeighborOffsets(d);
     }
@@ -871,7 +1024,7 @@ if (true) {
             int x2 = Math.round(x + offsets[i][0]);
             int y2 = Math.round(y + offsets[i][1]);
             if (x2 < 0 || y2 < 0 || (x2 > (img.getWidth() - 1)) || (y2 > (img.getHeight() - 1))) {
-                return Float.POSITIVE_INFINITY;
+                continue;
             }
             int idx = img.getInternalIndex(x2, y2);
             int diffR = img.getR(idx) - rVC;
@@ -891,7 +1044,7 @@ if (true) {
         return avg;
     }
 
-    private void filterCornersAndOrderByMatchingIntensity(
+    protected void filterCornersAndOrderByMatchingIntensity(
         PairIntArray corners1, Map<Integer, List<GrahamScan>> hulls1, 
         PairIntArray corners2, Map<Integer, List<GrahamScan>> hulls2, 
         List<PairIntArray> outputFilteredCornersList1, 
@@ -981,6 +1134,89 @@ if (true) {
             }
         }
         return smallestSqSumStat;
+    }
+
+    private CornerRegion[] findCornerRegions(PairIntArray corners, 
+        Set<CornerRegion> cornerRegions) {
+        
+        int n = corners.getN();
+        
+        CornerRegion[] out = new CornerRegion[n];
+        
+        for (int i = 0; i < corners.getN(); ++i) {
+            
+            int x = corners.getX(i);
+            int y = corners.getY(i);
+            
+            CornerRegion cr = null;
+            int diffSqMin = Integer.MAX_VALUE;
+            for (CornerRegion cornerRegion : cornerRegions) {
+                int kMaxIdx = cornerRegion.getKMaxIdx();
+                int xcr = cornerRegion.getX()[kMaxIdx];
+                int ycr = cornerRegion.getY()[kMaxIdx];
+                int diffX = Math.abs(xcr - x);
+                int diffY = Math.abs(ycr - y);
+                if (diffX > 4 || diffY > 4) {
+                    continue;
+                }
+                int diffSq = diffX * diffX + diffY * diffY;
+                if (diffSq < diffSqMin) {
+                    diffSqMin = diffSq;
+                    cr = cornerRegion;
+                }
+            }
+            
+            out[i] = cr ;
+        }
+        
+        return out;
+    }
+
+    private FeatureComparisonStat findBestMatchAmongDitheredCoords(
+        ImageExt img1, GreyscaleImage gXY1, GreyscaleImage theta1, 
+        CornerRegion cornerRegion1, ImageExt img2, GreyscaleImage gXY2, 
+        GreyscaleImage theta2, CornerRegion cornerRegion2, int x2, int y2, 
+        float[][] offsets0) {
+        
+        int dither = 2;
+        
+        /*
+        compare the blocks around cornerRegion1 and (x2, y2):
+            dither by an amount around cornerRegion1:
+                consider the cornerRegion1 rotation and +15 and -15:
+                    compare SSD of intensities
+                    if that passes:
+                        compare quadrants of gradients (probably histograms
+                        as suggested often in the literature).
+        */
+        
+        FeatureComparisonStat best = null;
+        
+        final int x1 = cornerRegion1.getX()[cornerRegion1.getKMaxIdx()];
+        final int y1 = cornerRegion1.getY()[cornerRegion1.getKMaxIdx()];
+        
+        for (int x = (x1 - dither); x <= (x1 + dither); ++x) {
+            if (x < 0 || (x > (gXY1.getWidth() - 1))) {
+                continue;
+            }
+            for (int y = (y1 - dither); y <= (y1 + dither); ++y) {
+                if (y < 0 || (y > (gXY1.getHeight() - 1))) {
+                    continue;
+                }
+                
+                try {
+                    double rot = cornerRegion1.getRelativeOrientation();
+                    
+                    // consider +- 25 degrees.
+                    
+                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                    log.log(Level.SEVERE, null, ex);
+                }
+                
+            }
+        }
+        
+        return best;
     }
     
 }

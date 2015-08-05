@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -23,7 +24,7 @@ public class ShapeMatcherTest extends TestCase {
     public ShapeMatcherTest() {
     }
 
-    public void testCreateNeighborOffsets() throws Exception {
+    public void estCreateNeighborOffsets() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -51,7 +52,7 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue(offsetsSet.size() == 25);
     }
 
-    public void testRotateOffsets() throws Exception {
+    public void estRotateOffsets() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -162,7 +163,7 @@ public class ShapeMatcherTest extends TestCase {
         }
     }
 
-    public void testCalculateStat() throws Exception {
+    public void estCalculateStat() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
@@ -236,7 +237,7 @@ public class ShapeMatcherTest extends TestCase {
         assertTrue((stat0.getSumSqDiff()/stat0.getImg2PointErr()) < 1);
     }
 
-    public void testCalculateStat2() throws Exception {
+    public void estCalculateStat2() throws Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -258,7 +259,7 @@ public class ShapeMatcherTest extends TestCase {
         log.info("SEED3=" + seed);
         sr.setSeed(seed);
 
-        for (int ds = 0; ds < 3; ++ds) {
+        for (int ds = 0; ds < 1; ++ds) {
 
             switch (ds) {
                 case 0: {
@@ -266,7 +267,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "brown_lowe_2003_image2.jpg";
                     points1 = new ArrayList<PairInt>();
                     points2 = new ArrayList<PairInt>();
-                    getBrownAndLoweFeatureCenters(points1, points2);
+                    getBrownAndLoweFeatureCentersBinned(points1, points2);
                     binFactor = 3;
                     /*
                     transfomation for images having been binned by factor 3:
@@ -282,8 +283,8 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "venturi_mountain_j6_0010.png";
                     points1 = new ArrayList<PairInt>();
                     points2 = new ArrayList<PairInt>();
-                    getVenturiFeatureCenters(points1, points2);
-                    
+                    getVenturiFeatureCentersBinned(points1, points2);
+
                     binFactor = 4;
                     /*
                     transfomation for images having been binned by factor binFactor:
@@ -299,7 +300,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "books_illum3_v6_695x555.png";
                     points1 = new ArrayList<PairInt>();
                     points2 = new ArrayList<PairInt>();
-                    getBooksFeatureCenters(points1, points2);
+                    getBooksFeatureCentersBinned(points1, points2);
                     binFactor = 4;
                     /*
                     transfomation for images having been binned by factor binFactor:
@@ -403,7 +404,7 @@ public class ShapeMatcherTest extends TestCase {
         }
     }
 
-    public void testDitherToFindSmallestSqSumDiff() throws Exception {
+    public void estDitherToFindSmallestSqSumDiff() throws Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -433,7 +434,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "brown_lowe_2003_image2.jpg";
                     points1 = new PairIntArray();
                     points2 = new PairIntArray();
-                    getBrownAndLoweFeatureCenters(points1, points2);
+                    getBrownAndLoweFeatureCentersBinned(points1, points2);
                     binFactor = 3;
                     /*
                     transfomation for images having been binned by factor 3:
@@ -449,7 +450,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "venturi_mountain_j6_0010.png";
                     points1 = new PairIntArray();
                     points2 = new PairIntArray();
-                    getVenturiFeatureCenters(points1, points2);
+                    getVenturiFeatureCentersBinned(points1, points2);
                     binFactor = 4;
                     /*
                     transfomation for images having been binned by factor binFactor:
@@ -465,7 +466,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "books_illum3_v6_695x555.png";
                     points1 = new PairIntArray();
                     points2 = new PairIntArray();
-                    getBooksFeatureCenters(points1, points2);
+                    getBooksFeatureCentersBinned(points1, points2);
 
                     binFactor = 4;
                     /*
@@ -512,7 +513,7 @@ public class ShapeMatcherTest extends TestCase {
                 int x1 = 115; int y1 = 82;
                 int x2 = 23; int y2 = 76;
                 int dither2 = 5;
-            
+
                 FeatureComparisonStat stat0 = matcher.ditherToFindSmallestSqSumDiff(
                     img1, img2, x1, y1, x2, y2, offsetsT, offsets0, dither2);
 
@@ -548,7 +549,7 @@ public class ShapeMatcherTest extends TestCase {
 
                 float div = stat.getSumSqDiff()/stat.getImg2PointErr();
                 log.info(stat.toString());
-            
+
                 assertTrue(div <= 1);
 
                 if (div > 1) {
@@ -576,22 +577,22 @@ public class ShapeMatcherTest extends TestCase {
                 }
                 if (dx != 0 || dy != 0) {
                     stat = matcher.ditherToFindSmallestSqSumDiff(
-                        img1, img2, (x1 + dx), (y1 + dy), x2, y2, offsetsT, offsets0, 
+                        img1, img2, (x1 + dx), (y1 + dy), x2, y2, offsetsT, offsets0,
                         dither2);
                     deltaX = x1 - stat.getImg1Point().getX();
                     deltaY = y1 - stat.getImg1Point().getY();
                     //log.info("stat=" + stat);
-                    //log.info("  deltaX=" + deltaX + " deltaY=" + deltaY 
+                    //log.info("  deltaX=" + deltaX + " deltaY=" + deltaY
                     //    + " dx=" + dx + " dy=" + dy);
                     assertTrue(Math.abs(deltaX - dx) < 2);
                     assertTrue(Math.abs(deltaY - dy) < 2);
                 }
             }
         }
-        
+
     }
-    
-    public void testFindSimilarFeaturesForRotatedFrames() throws Exception {
+
+    public void estFindSimilarFeaturesForRotatedFrames() throws Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -621,7 +622,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "brown_lowe_2003_image2.jpg";
                     points1 = new PairIntArray();
                     points2 = new PairIntArray();
-                    getBrownAndLoweFeatureCenters(points1, points2);
+                    getBrownAndLoweFeatureCentersBinned(points1, points2);
                     binFactor = 3;
                     /*
                     transfomation for images having been binned by factor 3:
@@ -637,7 +638,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "venturi_mountain_j6_0010.png";
                     points1 = new PairIntArray();
                     points2 = new PairIntArray();
-                    getVenturiFeatureCenters(points1, points2);
+                    getVenturiFeatureCentersBinned(points1, points2);
                     binFactor = 4;
                     /*
                     transfomation for images having been binned by factor binFactor:
@@ -653,7 +654,7 @@ public class ShapeMatcherTest extends TestCase {
                     fileName2 = "books_illum3_v6_695x555.png";
                     points1 = new PairIntArray();
                     points2 = new PairIntArray();
-                    getBooksFeatureCenters(points1, points2);
+                    getBooksFeatureCentersBinned(points1, points2);
 
                     binFactor = 4;
                     /*
@@ -682,10 +683,10 @@ public class ShapeMatcherTest extends TestCase {
 
             log.info("params=" + params);
 
-            Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
+            Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>>
                 comparisonMap = matcher.findSimilarFeaturesForRotatedFrames(
                 img1, img2, points1, points2);
-        
+
             /*
             looking at patterns to determine best solution for all.
             The most distinct best answer(s) may be what can use for filtering
@@ -695,7 +696,7 @@ public class ShapeMatcherTest extends TestCase {
             */
 
             int p1Count = 0;
-            
+
             for (Entry<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> entry :
                 comparisonMap.entrySet()) {
 
@@ -708,15 +709,15 @@ public class ShapeMatcherTest extends TestCase {
                         expectedIndex = i;
                         break;
                     }
-                }            
+                }
                 int expectedX2 = points2.getX(expectedIndex);
                 int expectedY2 = points2.getY(expectedIndex);
                 float expectedRotDeg = params.getRotationInDegrees();
 
                 Map<PairInt, Map<Float, FeatureComparisonStat>> p1PairsMap = entry.getValue();
 
-                FixedSizeSortedVector<FeatureComparisonStat> vec = 
-                    new FixedSizeSortedVector<FeatureComparisonStat>(6, 
+                FixedSizeSortedVector<FeatureComparisonStat> vec =
+                    new FixedSizeSortedVector<FeatureComparisonStat>(6,
                         FeatureComparisonStat.class);
 
                 for (PairInt p2 : p1PairsMap.keySet()) {
@@ -734,7 +735,7 @@ public class ShapeMatcherTest extends TestCase {
                 boolean foundBest = false;
                 int bestIdx = -1;
                 FeatureComparisonStat bestStat = null;
-                
+
                 for (int i = 0; i < vec.getNumberOfItems(); ++i) {
                     FeatureComparisonStat fs = vec.getArray()[i];
                     int deltaX = Math.abs(fs.getImg2Point().getX() - expectedX2);
@@ -747,14 +748,14 @@ public class ShapeMatcherTest extends TestCase {
                         bestStat = fs;
                     }
                 }
-                
-                String str = (bestStat == null) ? 
+
+                String str = (bestStat == null) ?
                     String.format(
                         "%d) best at sorted idx=%d ssd=%.2f er=%.2f rotD=%.2f sep=%d",
                         ds, bestIdx)
                     : String.format(
                         "%d) best at sorted idx=%d ssd=%.2f err=%.2f rotD=%.2f sep=%d",
-                        ds, bestIdx, bestStat.getSumSqDiff(), 
+                        ds, bestIdx, bestStat.getSumSqDiff(),
                         bestStat.getImg2PointErr(), bestStat.getImg1RotInDegrees(),
                         Math.round(bestStat.getSqDist()));
                 //log.info(str);
@@ -762,34 +763,34 @@ public class ShapeMatcherTest extends TestCase {
                     // look at p1PairsMap
                     int z = 1;
                 }
-                
+
                 /*
-                Can see from prints below that the SSD is not enough to 
+                Can see from prints below that the SSD is not enough to
                 distinguish the best solution each time.
-                
+
                 TODO: add gradient comparisons or implement one of the
                 feature descriptors in the literature
                 */
-                    
+
                 for (int i = 0; i < vec.getNumberOfItems(); ++i) {
-                    FeatureComparisonStat fs = vec.getArray()[i];                    
+                    FeatureComparisonStat fs = vec.getArray()[i];
                     String str2 = String.format("%d)   pt(%d) %d %s", ds, p1Count, i, fs.toString());
                     if (i == bestIdx) {
                         str2 =    String.format("%d)***pt(%d) %d %s", ds, p1Count, i, fs.toString());
                     }
                     log.info(str2);
                 }
-                
+
                 assertTrue(foundBest);
-                
+
                 p1Count++;
             }
-        
+
             /*
             analyze total map:
                 find for each primary key, the smallest diffSqSum and the smallest diffSqSum/err
 
-                -- For the top <?> of those, 
+                -- For the top <?> of those,
                    -- are they uniquely matched?
                    -- calculate euclidean transformations from pairs of them
                       -- are the results consistent w/ each other and the found frame rotations?
@@ -802,22 +803,138 @@ public class ShapeMatcherTest extends TestCase {
             */
         }
     }
-    
-    protected static void getBrownAndLoweFeatureCenters(PairIntArray out1,
+
+    public void testRegionOrientation() throws Exception {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+
+        // choose regions from Brown & Lowe images to compare
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+        
+        PairIntArray points1 = new PairIntArray();
+        PairIntArray points2 = new PairIntArray();
+        getBrownAndLoweFeatureCenters90(points1, points2);
+        //binFactor = 3;
+        /*
+        transfomation for images having been binned by factor 3:
+
+        params=rotationInRadians=6.1807413 rotationInDegrees=354.13039133201386 scale=0.96686685
+            translationX=-81.54607 translationY=-14.233707 originX=0.0 originY=0.0
+        */
+        
+        TransformationParameters params = tc.calulateEuclidean(
+            points1.getX(0), points1.getY(0), points1.getX(1), points1.getY(1),
+            points2.getX(0), points2.getY(0), points2.getX(1), points2.getY(1),
+            0, 0);
+
+        log.info("params=" + params);
+            
+        BinSegmentationHelper helper = new BinSegmentationHelper(fileName1, fileName2);
+        helper.applySteps0();
+        
+        Set<CornerRegion> cornerRegions1 = helper.getCornerRegions1();
+        Set<CornerRegion> cornerRegions2 = helper.getCornerRegions2();
+        
+        ShapeMatcher matcher = new ShapeMatcher();
+
+        // iterate over the manual list of corners and find the corner regions
+        for (int ii = 0; ii < points1.getN(); ++ii) {
+
+            final int x1 = points1.getX(ii);
+            final int y1 = points1.getY(ii);
+            final int x2 = points2.getX(ii);
+            final int y2 = points2.getY(ii);
+
+            log.info("looking for corner region for (" + x1 + "," + y1 + ")");
+
+            float diffSqMin = Float.MAX_VALUE;
+            CornerRegion cr1 = null;
+            for (CornerRegion cr : cornerRegions1) {
+                int kMaxIdx = cr.getKMaxIdx();
+                int x = cr.getX()[kMaxIdx];
+                int y = cr.getY()[kMaxIdx];
+                int xDiff = Math.abs(x1 - x);
+                int yDiff = Math.abs(y1 - y);
+                if (xDiff < 5 && yDiff < 5) {
+                    float diffSq = xDiff*xDiff + yDiff*yDiff;
+                    if (diffSq < diffSqMin) {
+                        diffSqMin = diffSq;
+                        cr1 = cr;
+                    }
+                }
+            }
+                
+            diffSqMin = Float.MAX_VALUE;
+            CornerRegion cr2 = null;
+            for (CornerRegion cr : cornerRegions2) {
+                int kMaxIdx = cr.getKMaxIdx();
+                int x = cr.getX()[kMaxIdx];
+                int y = cr.getY()[kMaxIdx];
+                int xDiff = Math.abs(x2 - x);
+                int yDiff = Math.abs(y2 - y);
+                if (xDiff < 5 && yDiff < 5) {
+                    float diffSq = xDiff*xDiff + yDiff*yDiff;
+                    if (diffSq < diffSqMin) {
+                        diffSqMin = diffSq;
+                        cr2 = cr;
+                    }
+                }
+            }
+
+            if (cr1 != null && cr2 != null) {
+
+                log.info("corner region1 " + ii);
+                log.info(cr1.toString());
+                
+                log.info("corner region2 " + ii);
+                log.info(cr2.toString());
+                
+                float rotD1 = cr1.getRelativeOrientationInDegrees();
+
+                float rotD2 = cr2.getRelativeOrientationInDegrees();
+
+                float rotDeg = AngleUtil.getAngleDifference(rotD1, rotD2);
+
+                log.info("rot difference between corner1 and corner2=" +
+                    rotDeg + " params.rotationInDegrees=" 
+                    + params.getRotationInDegrees());
+            }
+        }
+    }
+
+    protected static void getBrownAndLoweFeatureCentersBinned(PairIntArray out1,
         PairIntArray out2) {
-        out1.add(128, 87);
-        out2.add(32, 82);
+        out1.add(144, 67);
+        out2.add(52, 64);
         out1.add(150, 68);
         out2.add(56, 66);
         out1.add(148, 79);
         out2.add(53, 76);
         out1.add(165, 85);
         out2.add(66, 83);
-        out1.add(144, 67);
-        out2.add(52, 64);
+        out1.add(128, 87);
+        out2.add(32, 82);
     }
 
-    private void getBrownAndLoweFeatureCenters(List<PairInt> points1,
+    protected static void getBrownAndLoweFeatureCenters90(PairIntArray out1,
+        PairIntArray out2) {
+        out1.add(206, 66);
+        out2.add(168, 200);
+        out1.add(331, 161);
+        out2.add(54, 313);
+        out1.add(268, 85);
+        out2.add(142, 255);
+        out1.add(181, 85);
+        out2.add(156, 173);
+        out1.add(195, 187);
+        out2.add(53, 171);
+    }
+
+    private void getBrownAndLoweFeatureCentersBinned(List<PairInt> points1,
         List<PairInt> points2) {
         points1.add(new PairInt(128, 87));
         points2.add(new PairInt(32, 82));
@@ -830,8 +947,8 @@ public class ShapeMatcherTest extends TestCase {
         points1.add(new PairInt(144, 67));
         points2.add(new PairInt(52, 64));
     }
-    
-    private void getVenturiFeatureCenters(PairIntArray points1, 
+
+    private void getVenturiFeatureCentersBinned(PairIntArray points1,
         PairIntArray points2) {
         points1.add(152, 88);
         points2.add(142, 87);
@@ -847,7 +964,7 @@ public class ShapeMatcherTest extends TestCase {
 
     }
 
-    private void getVenturiFeatureCenters(List<PairInt> points1, 
+    private void getVenturiFeatureCentersBinned(List<PairInt> points1,
         List<PairInt> points2) {
         points1.add(new PairInt(152, 88));
         points2.add(new PairInt(142, 87));
@@ -863,7 +980,7 @@ public class ShapeMatcherTest extends TestCase {
 
     }
 
-    private void getBooksFeatureCenters(PairIntArray points1, 
+    private void getBooksFeatureCentersBinned(PairIntArray points1,
         PairIntArray points2) {
         points1.add(158, 20);
         points2.add(143, 20);
@@ -881,9 +998,9 @@ public class ShapeMatcherTest extends TestCase {
         points2.add(118, 21);
     }
 
-    private void getBooksFeatureCenters(List<PairInt> points1, 
+    private void getBooksFeatureCentersBinned(List<PairInt> points1,
         List<PairInt> points2) {
-        
+
         points1.add(new PairInt(158, 20));
         points2.add(new PairInt(143, 20));
 
@@ -900,16 +1017,17 @@ public class ShapeMatcherTest extends TestCase {
         points2.add(new PairInt(118, 21));
 
     }
-    
+
     public static void main(String[] args) {
 
         ShapeMatcherTest test = new ShapeMatcherTest();
 
         try {
             //test.testCalculateStat2();
+            test.testRegionOrientation();
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
     }
-    
+
 }

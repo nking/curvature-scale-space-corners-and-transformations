@@ -243,6 +243,32 @@ public class GreyscaleImage {
         return img2;
     }
     
+    public GreyscaleImage subImage(int xCenter, int yCenter, int subWidth, 
+        int subHeight) {
+       
+        GreyscaleImage img2 = new GreyscaleImage(subWidth, subHeight);
+                
+        int col2 = 0;
+        for (int col = (xCenter - (subWidth/2)); col < (xCenter + (subWidth/2));
+            ++col) {
+            
+            int row2 = 0;
+            for (int row = (yCenter - (subHeight/2)); row < (yCenter + (subHeight/2));
+            ++row) {
+                
+                int v = getValue(col, row);
+                
+                img2.setValue(col2, row2, v);
+                
+                row2++;
+            }
+            
+            col2++;
+        }
+                
+        return img2;
+    }
+    
     public Image copyImageToGreen() {
         
         Image img2 = new Image(width, height);

@@ -1,15 +1,14 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.NearestPoints;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MedianSmooth;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,9 +52,13 @@ public class CurvatureScaleSpaceCornerDetector extends
      * this is not ready for use yet.  when implemented it should hold
      * a sublist of corners that are better to use for matching the same
      * in other images.
+     * TODO: populate this with edgeCornerRegionMap values
      */
     protected PairIntArray cornersForMatching = new PairIntArray();
 
+    protected Map<Integer, List<CornerRegion>> edgeCornerRegionMap = new
+        HashMap<Integer, List<CornerRegion>>();
+    
     /**
      * corners populated if extractSkyline is true
      */
@@ -66,6 +69,8 @@ public class CurvatureScaleSpaceCornerDetector extends
     protected float factorIncreaseForCurvatureMinimum = 1.f;
     
     protected boolean performWholeImageCorners = true;
+    
+    protected boolean doStoreCornerRegions = true;
     
     public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
 
@@ -101,6 +106,10 @@ public class CurvatureScaleSpaceCornerDetector extends
     }
     public void disableJaggedLineCorrections() {
         enableJaggedLineCorrections = false;
+    }
+    
+    public void doNotStoreCornerRegions() {
+        doStoreCornerRegions = false;
     }
     
     public void increaseFactorForCurvatureMinimum(float factor) {
@@ -285,7 +294,7 @@ public class CurvatureScaleSpaceCornerDetector extends
 
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps
             = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
-
+       
         // perform the analysis on the edgesScaleSpaceMaps
         for (int i = 0; i < theEdges.size(); i++) {
 
@@ -349,6 +358,13 @@ public class CurvatureScaleSpaceCornerDetector extends
 
         PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
 
+        if (maxCandidateCornerIndexes.isEmpty()) {
+            return xy;
+        }
+        
+        boolean storeCornerRegion = doStoreCornerRegions && 
+            !edgeCornerRegionMap.containsKey(Integer.valueOf(edgeNumber));
+        
         if (correctForJaggedLines && !doUseOutdoorMode) {
 
             PairIntArray jaggedLines = removeFalseCorners(
@@ -368,8 +384,15 @@ public class CurvatureScaleSpaceCornerDetector extends
                     continue;
                 }
             }
-
-            xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+            
+            float x = scaleSpace.getX(idx);
+            float y = scaleSpace.getY(idx);
+            
+            if (storeCornerRegion) {
+                storeCornerRegion(edgeNumber, idx, k, scaleSpace);
+            }
+            
+            xy.add(x, y);
         }
 
         return xy;
@@ -855,7 +878,10 @@ if (doUseOutdoorMode) {
     }
 
     public PairIntArray getCornersInOriginalReferenceFrame() {
-
+        
+PairIntArray cp = corners.copy();
+MultiArrayMergeSort.sortByYThenX(cp);
+  
         PairIntArray co = new PairIntArray();
         for (int i = 0; i < corners.getN(); i++) {
             int x = corners.getX(i);
@@ -1168,4 +1194,73 @@ if (doUseOutdoorMode) {
         log.info("number of skyline corners=" + theSkylineCorners.getN());
     }
 
+    private void storeCornerRegion(int edgeNumber, int cornerIdx, float[] k, 
+        ScaleSpaceCurve scaleSpace) {
+        
+        //for 2 neighboring points on each side, min k is 0.2
+        if (k[cornerIdx] < 0.2f) {
+            return;
+        }
+
+        int nCR = 0;
+        int kMaxIdx = -1;
+
+        //log.info("edgeIdx=" + edgeNumber + " corner idx=" + cornerIdx + " (" + 
+        //    Math.round(scaleSpace.getX(cornerIdx)) + "," +
+        //    Math.round(scaleSpace.getY(cornerIdx)) +")");
+        
+        for (int pIdx = (cornerIdx - 2); pIdx <= (cornerIdx + 2); ++pIdx) {
+            if (pIdx < 0 || (pIdx > (k.length - 1))) {
+                continue;
+            }
+            if (pIdx == cornerIdx) {
+                kMaxIdx = nCR;
+            }
+            nCR++;
+            //log.info(String.format(
+            //   "k[%d]=%.2f  for (%.0f, %.0f)", pIdx, k[pIdx],
+            //   scaleSpace.getX(pIdx), scaleSpace.getY(pIdx))); 
+        }
+        if (nCR < 3) {
+            return;
+        }
+        if (kMaxIdx == 0 || kMaxIdx == (nCR - 1)) {
+            return;
+        }
+        //log.info(" ==> kept");
+        
+        CornerRegion cr = new CornerRegion(edgeNumber, nCR, kMaxIdx);
+        nCR = 0;
+        for (int pIdx = (cornerIdx - 2); pIdx <= (cornerIdx + 2); ++pIdx) {
+            if (pIdx < 0 || (pIdx > (k.length - 1))) {
+                continue;
+            }
+            cr.set(nCR, k[pIdx], 
+                Math.round(scaleSpace.getX(pIdx)),
+                Math.round(scaleSpace.getY(pIdx)));
+            nCR++; 
+        }
+        Integer key = Integer.valueOf(edgeNumber);
+        List<CornerRegion> list = edgeCornerRegionMap.get(key);
+        if (list == null) {
+            list = new ArrayList<CornerRegion>();
+            edgeCornerRegionMap.put(key, list);
+        }
+        list.add(cr);
+    }
+
+    public Map<Integer, List<CornerRegion>> getEdgeCornerRegionMap() {
+        return edgeCornerRegionMap;
+    }
+    
+    public Set<CornerRegion> getEdgeCornerRegions() {
+        
+        Set<CornerRegion> set = new HashSet<CornerRegion>();
+        
+        for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
+            set.addAll(entry.getValue());
+        }
+        
+        return set;
+    }
 }

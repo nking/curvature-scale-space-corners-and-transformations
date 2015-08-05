@@ -1,11 +1,20 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  *
  * @author nichole
  */
 public class AngleUtil {
-    
+
     /**
     calculates the difference of angles between pairs of points in set1 and 
     set 2.  diffX1, diffX2 are the difference
@@ -117,7 +126,7 @@ public class AngleUtil {
     }
     
     /**
-    calculates the polar theta given x and y w.r.t. origin.  theta increases
+    calculates the polar theta in radians given x and y w.r.t. origin.  theta increases
     * in value in a counter clockwise direction (CCW).
 
      * @param x
@@ -308,5 +317,188 @@ public class AngleUtil {
 
         return angleDiff;
     }
+    
+    public static float getAngleAverageInDegrees(float rotDegrees0, float rotDegrees1) {
+       
+        double angleAvg = getAngleAverage(rotDegrees0, rotDegrees1, false);
+        
+        return (float) angleAvg;
+    }
+    
+    public static double getAngleAverageInRadians(double rotation0, double rotation1) {
+       
+        double angleAvg = getAngleAverage(rotation0, rotation1, true);
+        
+        return angleAvg;
+    }
+    
+    protected static int getClockwiseQuadrantForDegrees(double rotationInDegrees) {
+        /*
+          III | IV
+          ---------
+          II  |  I
+        */
+        int q = 1;
+        if (rotationInDegrees >= 270) {
+            q = 4;
+        } else if (rotationInDegrees >= 180) {
+            q = 3;
+        } else if (rotationInDegrees >= 90) {
+            q = 2;
+        }
+        return q;
+    }
+    
+    protected static int getClockwiseQuadrantForRadians(double rotation) {
+        /*
+          III | IV
+          ---------
+          II  |  I
+        */
+        int q = 1;
+        if (rotation >= 3.*Math.PI/2.) {
+            q = 4;
+        } else if (rotation >= Math.PI) {
+            q = 3;
+        } else if (rotation >= Math.PI/2.) {
+            q = 2;
+        }
+        return q;
+    }
+    
+    /**
+     * given twoPi in degrees or in radians, return the angle average.
+     * @param rot0
+     * @param rot1
+     * @param useRadians
+     * @return 
+     */
+    protected static double getAngleAverage(double rot0, double rot1, boolean useRadians) {
+         /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+        double twoPI;
+        int q0, q1;
+        if (useRadians) {
+            twoPI = 2. * Math.PI;
+            q0 = getClockwiseQuadrantForRadians(rot0);
+            q1 = getClockwiseQuadrantForRadians(rot1);
+        } else {
+            twoPI = 360.;
+            q0 = getClockwiseQuadrantForDegrees(rot0);
+            q1 = getClockwiseQuadrantForDegrees(rot1);
+        }
+                     
+        /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+        double angleAvg = -1;
+        if (q0 == 1) {
+            if (q1 == 1 || q1 == 2) {
+                angleAvg = (rot0 + rot1)/2.;
+            } else if (q1 == 3) {
+                double diff = rot1 - rot0;
+                if (diff > (twoPI/2.)) {
+                    angleAvg = (twoPI + rot0 + rot1)/2;
+                } else {
+                    angleAvg = (rot0 + rot1)/2.;
+                }
+            } else {
+                angleAvg = (twoPI + rot0 + rot1)/2;
+            }
+        } else if (q0 == 2) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1 || q1 == 2 || q1 == 3) {
+                angleAvg = (rot0 + rot1)/2.f;
+            } else if (q1 == 4) {
+                double diff = rot1 - rot0;
+                if (diff > (twoPI/2.)) {
+                    angleAvg = (twoPI + rot0 + rot1)/2;
+                } else {
+                    angleAvg = (rot0 + rot1)/2.f;
+                }
+            }
+        } else if (q0 == 3) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                double diff = rot0 - rot1;
+                if (diff > (twoPI/2.)) {
+                    angleAvg = (twoPI + rot1 + rot0)/2;
+                } else {
+                    angleAvg = (rot0 + rot1)/2.f;
+                }
+            } else {
+                angleAvg = (rot0 + rot1)/2.f;
+            }
+        } else if (q0 == 4) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                angleAvg = (twoPI + rot0 + rot1)/2;
+            } else if (q1 == 2) {
+                double diff = (rot0 - rot1);
+                if (diff > (twoPI/2.)) {
+                    angleAvg = (twoPI + rot0 + rot1)/2;
+                } else {
+                    angleAvg = (rot0 + rot1)/2.f;
+                }
+            } else {
+                angleAvg = (rot0 + rot1)/2.f;
+            }
+        }
 
+        if (useRadians) {
+            if (angleAvg >= twoPI) {
+                angleAvg = angleAvg - twoPI;
+            }
+        } else {
+            if (angleAvg > 359) {
+                angleAvg = angleAvg - 360;
+            }
+        }
+        
+        return angleAvg;
+    }
+    
+    protected static int getClockwiseQuadrant(float rotationInDegrees) {
+        /*
+          III | IV
+          ---------
+          II  |  I
+        */
+        int q = 1;
+        if (rotationInDegrees >= 270) {
+            q = 4;
+        } else if (rotationInDegrees >= 180) {
+            q = 3;
+        } else if (rotationInDegrees >= 90) {
+            q = 2;
+        }
+        return q;
+    }
 }

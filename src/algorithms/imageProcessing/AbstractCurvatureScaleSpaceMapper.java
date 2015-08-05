@@ -60,6 +60,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     protected GreyscaleImage gradientXY = null;
     
+    protected GreyscaleImage gradientX = null;
+    
+    protected GreyscaleImage gradientY = null;
+    
     protected GreyscaleImage theta = null;
     
     /**
@@ -252,6 +256,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 filter.applyFilter(img);
         
                 gradientXY = filter.getGradientXY();
+                
+                gradientX = filter.getGradientX();
+                
+                gradientY = filter.getGradientY();
         
                 theta = filter.getTheta();
         
@@ -301,6 +309,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         filter.applyFilter(img);
         
         gradientXY = filter.getGradientXY();
+        
+        gradientX = filter.getGradientX();
+        
+        gradientY = filter.getGradientY();
         
         theta = filter.getTheta();
         
@@ -588,6 +600,14 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     public GreyscaleImage getGradientXY() {
         return gradientXY;
+    }
+    
+    public GreyscaleImage getGradientX() {
+        return gradientX;
+    }
+    
+    public GreyscaleImage getGradientY() {
+        return gradientY;
     }
     
     public Map<Integer, Set<Integer>> getJunctionMap() {        

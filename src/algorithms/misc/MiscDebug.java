@@ -3,8 +3,10 @@ package algorithms.misc;
 import algorithms.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.imageProcessing.CIEChromaticity;
+import algorithms.imageProcessing.CornerRegion;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.PixelColors;
@@ -811,6 +813,50 @@ public class MiscDebug {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
         }
+    }
+
+    public static void printCornerRegion(CornerRegion[] cr) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cr.length; ++i) {
+            if (cr[i] == null) {
+                continue;
+            }
+            sb.append(Integer.valueOf(i)).append(") ").append(cr[i].toString());
+        }
+        
+        log.info(sb.toString());
+    }
+
+    public static void display(CornerRegion cornerRegion1, 
+        CornerRegion cornerRegion2, GreyscaleImage img1Grey, 
+        GreyscaleImage img2Grey, String index, int halfWidthOfDisplay) 
+        throws CornerRegion.CornerRegionDegneracyException, IOException {
+        
+        int sWidth = 2*halfWidthOfDisplay;
+        int sHeight = 2*halfWidthOfDisplay;
+        
+        int kMaxIdx = cornerRegion1.getKMaxIdx();
+        int x1 = cornerRegion1.getX()[kMaxIdx];
+        int y1 = cornerRegion1.getY()[kMaxIdx];
+        float orientation1 = cornerRegion1.getRelativeOrientationInDegrees();
+        String label1 = String.format("[%s] (%d,%d) %.1f degrees", index, x1, y1, 
+            orientation1);
+        
+        GreyscaleImage sImg1 = img1Grey.subImage(x1, y1, sWidth, sHeight);
+        
+        kMaxIdx = cornerRegion2.getKMaxIdx();
+        int x2 = cornerRegion2.getX()[kMaxIdx];
+        int y2 = cornerRegion2.getY()[kMaxIdx];
+        float orientation2 = cornerRegion2.getRelativeOrientationInDegrees();
+        String label2 = String.format("[%s] (%d,%d) %.1f degrees", index, x2, y2, 
+            orientation2);
+        
+        GreyscaleImage sImg2 = img2Grey.subImage(x2, y2, sWidth, sHeight);
+        
+        ImageDisplayer.displayImage(label1, sImg1);
+        ImageDisplayer.displayImage(label2, sImg2);
+        
+        int z = 1;
     }
 
 }

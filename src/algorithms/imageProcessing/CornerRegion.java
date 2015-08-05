@@ -125,7 +125,7 @@ public class CornerRegion {
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
      * an exception is thrown if the slopes are the same for all points owned
      * by this instance, that is the points represent a line.  This can happen
-     * when the radius of curvature is very large( == a small k) and any
+     * when the radius of curvature is very large (== a small k) and any
      * change is over a larger number of pixels than present here.
      */
     public float getRelativeOrientationInDegrees() throws CornerRegionDegneracyException {
@@ -144,7 +144,7 @@ public class CornerRegion {
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
      * an exception is thrown if the slopes are the same for all points owned
      * by this instance, that is the points represent a line.  This can happen
-     * when the radius of curvature is very large( == a small k) and any
+     * when the radius of curvature is very large (== a small k) and any
      * change is over a larger number of pixels than present here.
      */
     public double getRelativeOrientation() throws CornerRegionDegneracyException {
@@ -167,7 +167,7 @@ public class CornerRegion {
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
      * an exception is thrown if the slopes are the same for all points owned
      * by this instance, that is the points represent a line.  This can happen
-     * when the radius of curvature is very large( == a small k) and any
+     * when the radius of curvature is very large (== a small k) and any
      * change is over a larger number of pixels than present here.
      */
     protected double calculateOrientation() throws
@@ -275,15 +275,21 @@ public class CornerRegion {
         double weighted = (float)(((k0/kTot)*perp0) + ((k1/kTot)*perp1));
         */
 
+        /*
         // determine weighted average theta first, then calculate the perpendicular
         // angle pointing out from the edge at the maximum of curvature:
-        double weightedTheta = (float)(((k0/kTot)*theta0) + ((k1/kTot)*theta1));
+        
+        /*needs to account for averaging when one angle is near 360 and the
+        other is 0 or greater
+        */
 
-        double weighted = calculatePerpendicularAngleAwayFromCentroid(
-            weightedTheta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx],
+        double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);
+        
+        double perp = calculatePerpendicularAngleAwayFromCentroid(
+            theta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx],
             y[kMaxIdx], centroidXY);
 
-        return weighted;
+        return perp;
     }
 
     /**
@@ -345,6 +351,18 @@ public class CornerRegion {
         }
 
         return perp;
+    }
+    
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        for (int i = 0; i < x.length; ++i) {
+            sb.append(String.format("k[%d]=%.2f  x,y=(%d, %d)\n", i, k[i],
+                x[i], y[i]));
+        }
+        
+        return sb.toString();
     }
 
     public static class CornerRegionDegneracyException extends Exception {
