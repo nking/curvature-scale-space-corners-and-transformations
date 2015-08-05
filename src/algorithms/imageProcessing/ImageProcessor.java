@@ -966,19 +966,17 @@ public class ImageProcessor {
         return output;
     }
 
-    public void blur(GreyscaleImage input, float sigma) {
-
-        float[] kernel = Gaussian1D.getKernel(sigma);
+    protected void blur(GreyscaleImage input, float[] kernel) {
 
         Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
 
         GreyscaleImage output = input.createWithDimensions();
 
         for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {
+            for (int j = 0; j < input.getHeight(); j++) {               
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, true);
-                int g = (int) conv;
+                int g = (int)Math.round(conv);
                 output.setValue(i, j, g);
             }
         }
@@ -989,12 +987,26 @@ public class ImageProcessor {
             for (int j = 0; j < input.getHeight(); j++) {
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, false);
-                int g = (int) conv;
+                int g = (int)Math.round(conv);
                 output.setValue(i, j, g);
             }
         }
 
         input.resetTo(output);
+    }
+    
+    public void blur(GreyscaleImage input, float sigma) {
+
+        float[] kernel = Gaussian1D.getKernel(sigma);
+
+        blur(input, kernel);
+    }
+    
+    public void blur(GreyscaleImage input, SIGMA sigma) {
+
+        float[] kernel = Gaussian1D.getKernel(sigma);
+
+        blur(input, kernel);
     }
 
     /**
@@ -1005,6 +1017,40 @@ public class ImageProcessor {
     public void blur(Image input, float sigma) {
 
         float[] kernel = Gaussian1D.getKernel(sigma);
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+        Image output = (ImageExt)input.copyImage();
+
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double[] conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, true);
+                output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
+            }
+        }
+
+        input.resetTo(output);
+
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double[] conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, false);
+                output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
+            }
+        }
+
+        input.resetTo(output);
+    }
+    
+    /**
+     * blur the r, g, b vectors of image input by sigma.
+     * @param input
+     * @param kernel iD kernel
+     */
+    protected void blur(Image input, float[] kernel) {
 
         Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
 

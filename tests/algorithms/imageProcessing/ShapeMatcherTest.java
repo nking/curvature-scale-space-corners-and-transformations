@@ -1044,17 +1044,9 @@ public class ShapeMatcherTest extends TestCase {
         out1.add(291, 493);
         out2.add(106, 296);
         
-        out1.add(364, 34);
-        out2.add(569, 355);
-       
-        out1.add(316, 158);
-        out2.add(447, 314);
-        
-        out1.add(446, 221);
+        out1.add(447, 221);
         out2.add(384, 446);
         
-        out1.add(276, 373);
-        out2.add(232, 277);
         
     }
 

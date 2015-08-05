@@ -76,7 +76,8 @@ public class GaussianTest {
         
         for (int i = 0; i < n; i++) {
                         
-            int x = (int)k1dh.convolvePointWithKernel(a0, i, gSIGMA, true);
+            int x = (int)Math.round(k1dh.convolvePointWithKernel(a0, i, gSIGMA, 
+                true));
                         
             //int y = (int)k1dh.convolvePointWithKernel(a0, i, gSIGMA, false);
                         
@@ -85,8 +86,8 @@ public class GaussianTest {
         
         for (int i = 0; i < n; i++) {
                         
-            int y = (int)k1dh.convolvePointWithKernel(convolvedA0X, i, gSIGMA, 
-                false);
+            int y = (int)Math.round(k1dh.convolvePointWithKernel(convolvedA0X, 
+                i, gSIGMA, false));
                         
             convolvedA0XY.add(convolvedA0X.getX(i), y);
         }
@@ -107,9 +108,11 @@ public class GaussianTest {
         
         for (int i = 0; i < a1.getN(); i++) {
                         
-            int x = (int)k1dh.convolvePointWithKernel(a1, i, gSIGMA, true);
+            int x = (int)Math.round(k1dh.convolvePointWithKernel(a1, i, gSIGMA, 
+                true));
                         
-            int y = (int)k1dh.convolvePointWithKernel(a1, i, gSIGMA, false);
+            int y = (int)Math.round(k1dh.convolvePointWithKernel(a1, i, gSIGMA, 
+                false));
             
             convolvedA1X.add(x, a1.getY(i));
             
@@ -118,8 +121,8 @@ public class GaussianTest {
         
         for (int i = 0; i < a1.getN(); i++) {
                         
-            int y = (int)k1dh.convolvePointWithKernel(convolvedA1Y, i, gSIGMA, 
-                false);
+            int y = (int)Math.round(k1dh.convolvePointWithKernel(convolvedA1Y, 
+                i, gSIGMA, false));
                         
             convolvedA1XY.add(convolvedA1X.getX(i), y);
         }

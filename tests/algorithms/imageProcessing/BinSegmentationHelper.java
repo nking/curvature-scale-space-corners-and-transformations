@@ -481,8 +481,8 @@ public class BinSegmentationHelper {
         // make corners
 
         if (!performBinning) {
-            imageProcessor.blur(img1Grey, 2);
-            imageProcessor.blur(img2Grey, 2);
+            imageProcessor.blur(img1Grey, SIGMA.ONE);
+            imageProcessor.blur(img2Grey, SIGMA.ONE);
         }
 
         CurvatureScaleSpaceCornerDetector detector = new

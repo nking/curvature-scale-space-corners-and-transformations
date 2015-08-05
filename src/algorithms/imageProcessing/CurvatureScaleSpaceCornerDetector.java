@@ -1304,9 +1304,9 @@ MultiArrayMergeSort.sortByYThenX(cp);
                 float kMax = cr.getK()[kMaxIdx];
                 boolean keep = true;               
                 if ((kMaxIdx > 0) && (kMaxIdx < (cr.getX().length - 1))) {
-                    if (Math.abs(cr.getK()[kMaxIdx - 1] - kMax) < 0.01) {
+                    if (Math.abs(cr.getK()[kMaxIdx - 1] - kMax) < 0.02) {
                         keep = false;
-                    } else if (Math.abs(cr.getK()[kMaxIdx + 1] - kMax) < 0.01) {
+                    } else if (Math.abs(cr.getK()[kMaxIdx + 1] - kMax) < 0.02) {
                         keep = false;
                     }
                 }

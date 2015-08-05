@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.misc.MiscMath;
 import java.io.IOException;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,20 +13,11 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class Gaussian1DTest {
+public class Gaussian1DTest extends TestCase {
     
     public Gaussian1DTest() {
     }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
 
-    @Test
     public void testEstimateHWZI() {
                         
         SIGMA sigma = SIGMA.TWO;
@@ -50,7 +42,6 @@ public class Gaussian1DTest {
         
     }
 
-    @Test
     public void testGetNormalization() {
                                 
         float[] g = Gaussian1D.getKernel(SIGMA.ONE);
@@ -63,7 +54,6 @@ public class Gaussian1DTest {
         assertTrue(Math.round(sum) == 1);
     }
   
-    @Test
     public void testCheckAllBinomialKernels() throws IOException {
                         
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();

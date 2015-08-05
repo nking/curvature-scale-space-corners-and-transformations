@@ -179,15 +179,14 @@ public class Gaussian1D {
     
     protected static float[] getBinomialKernelSigmaZeroPointSevenOne() {
         // 1 2 1,  norm = 1./2^2 = 0.25... actually was 0.33333
-        //return new float[]{0.25f, 0.5f, 0.25f};
-        return new float[]{0.3333333333333333f, 0.6666666666666666f,
-            0.3333333333333333f};
+        return new float[]{0.25f, 0.5f, 0.25f};
+        //return new float[]{0.3333333333333333f, 0.6666666666666666f,
+        //    0.3333333333333333f};
     }
     
     protected static float[] getBinomialKernelSigmaOne() {
-        // 1 4 6 4 1, norm=1/2^4=0.0625..correction is 1./15  
-        return new float[]{0.06666666666666667f, 0.26666666666666666f, 0.4f, 
-            0.26666666666666666f, 0.06666666666666667f};
+        // 1 4 6 4 1,
+        return new float[]{0.0625f, 0.25f, 0.375f, 0.25f, 0.0625f};
     }
     
     protected static float[] getBinomialKernelSigmaOneSQRT2() {
