@@ -811,13 +811,15 @@ public class ShapeMatcherTest extends TestCase {
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 
-        // choose regions from Brown & Lowe images to compare
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        
         PairIntArray points1 = new PairIntArray();
         PairIntArray points2 = new PairIntArray();
-        getBrownAndLoweFeatureCenters90(points1, points2);
+        //getBrownAndLoweFeatureCenters90(points1, points2);
+        //String fileName1 = "brown_lowe_2003_image1.jpg";
+        //String fileName2 = "brown_lowe_2003_image2.jpg";
+        String fileName1 = "venturi_mountain_j6_0001.png";
+        String fileName2 = "venturi_mountain_j6_0010.png";
+        getVenturiFeatureCenters90(points1, points2);
+        
         //binFactor = 3;
         /*
         transfomation for images having been binned by factor 3:
@@ -834,7 +836,14 @@ public class ShapeMatcherTest extends TestCase {
         log.info("params=" + params);
             
         BinSegmentationHelper helper = new BinSegmentationHelper(fileName1, fileName2);
-        helper.applySteps0();
+        
+        if (fileName1.contains("brown")) {
+            helper.applySteps0();
+        } else {
+            helper.applySteps1();
+        }
+        
+        helper.createSortedCornerRegions();
         
         Set<CornerRegion> cornerRegions1 = helper.getCornerRegions1();
         Set<CornerRegion> cornerRegions2 = helper.getCornerRegions2();
@@ -1028,6 +1037,25 @@ public class ShapeMatcherTest extends TestCase {
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
+    }
+
+    private void getVenturiFeatureCenters90(PairIntArray out1, PairIntArray out2) {
+        
+        out1.add(291, 493);
+        out2.add(106, 296);
+        
+        out1.add(364, 34);
+        out2.add(569, 355);
+       
+        out1.add(316, 158);
+        out2.add(447, 314);
+        
+        out1.add(446, 221);
+        out2.add(384, 446);
+        
+        out1.add(276, 373);
+        out2.add(232, 277);
+        
     }
 
 }

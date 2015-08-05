@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -24,47 +26,49 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * a place holder for many steps while determining a way to create 
+ * a place holder for many steps while determining a way to create
  * correspondence lists that makes it easier to use in tests until
  * can change the design.
- * 
+ *
  * @author nichole
  */
 public class BinSegmentationHelper {
-    
+
     protected Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     protected final String fileName1;
     protected final String fileName2;
     protected final String filePath1;
     protected final String filePath2;
-    
+
     ImageExt img1 = null;
     ImageExt img2 = null;
+    GreyscaleImage img1Grey = null;
+    GreyscaleImage img2Grey = null;
     int binFactor = 1;
-        
+
     private PairIntArray corners1 = null;
     private PairIntArray corners2 = null;
-    
+
     private List<PairIntArray> filteredCornersList1 = null;
     private List<PairIntArray> filteredCornersList2 = null;
     private Set<CornerRegion> cornerRegions1 = null;
     private Set<CornerRegion> cornerRegions2 = null;
-   
+
     public BinSegmentationHelper(String fileName1, String fileName2) throws IOException, Exception {
         this.fileName1 = fileName1;
         this.fileName2 = fileName2;
-        
+
         filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         img1 = ImageIOHelper.readImageExt(filePath1);
 
         filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         img2 = ImageIOHelper.readImageExt(filePath2);
-        
+
     }
-    
+
     public void applySteps0() throws IOException, NoSuchAlgorithmException {
-        
+
         ImageHelperForTests helper = new ImageHelperForTests(img1, true);
         SkylineExtractor skylineExtractor = new SkylineExtractor();
         PairIntArray outputSkyCentroid = new PairIntArray();
@@ -84,7 +88,7 @@ public class BinSegmentationHelper {
             helper.getTheta(), helper.getGradientXY(), img2,
             helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
         imageProcessor.multiplyBinary(img2, resultMask);
-        
+
         TransformationParameters params90 = new TransformationParameters();
         params90.setRotationInDegrees(90);
         params90.setOriginX(0);
@@ -98,19 +102,19 @@ public class BinSegmentationHelper {
             img1.getHeight(), img1.getWidth());
 
         //---------------
-        
-        GreyscaleImage img1Grey = img1.copyToGreyscale();
-        GreyscaleImage img2Grey = img2.copyToGreyscale();
-                
+
+        img1Grey = img1.copyToGreyscale();
+        img2Grey = img2.copyToGreyscale();
+
         final boolean performBinning = false;
         int binFactor1 = 1;
-        
+
         int kN = 4;
         boolean performBinarySegmentation = true;
         if (performBinarySegmentation) {
             kN = 2;
         }
-        
+
         /*
         one could start with essentially no limits here and then
         looks at the distribution of resulting contiguous group
@@ -121,19 +125,19 @@ public class BinSegmentationHelper {
         //TODO: consider scaling this by image size or by size and res if one
         //  day that information is passed to this method
         int largestGroupLimit = 5000;
-        
+
         ImageExt img1Cp = (ImageExt)img1.copyImage();
         ImageExt img2Cp = (ImageExt)img2.copyImage();
-        
-        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true); 
-        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true); 
+
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true);
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true);
 
         log.info("stats1=" + stats1.toString());
         log.info("stats2=" + stats2.toString());
-        
-        boolean performHistEq = false;        
+
+        boolean performHistEq = false;
         double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();
-        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();        
+        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();
         double meanDivMedian2 = stats2.getMean()/stats2.getMedian();
         if (
             ((median1DivMedian2 > 1) && ((median1DivMedian2 - 1) > 0.2)) ||
@@ -159,16 +163,16 @@ public class BinSegmentationHelper {
             hEqC = new HistogramEqualizationForColor(img2Cp);
             hEqC.applyFilter();*/
         }
-        
+
         if (performBinning) {
             binFactor1 = (int) Math.ceil(
                 Math.max((float)img1Grey.getWidth()/200.f,
                 (float)img2Grey.getHeight()/200.));
             smallestGroupLimit /= (binFactor1*binFactor1);
             largestGroupLimit /= (binFactor1*binFactor1);
-            
+
             log.info("binFactor1=" + binFactor1);
-            
+
             // prevent from being smaller than needed for a convex hull
             if (smallestGroupLimit < 4) {
                 smallestGroupLimit = 4;
@@ -184,31 +188,31 @@ public class BinSegmentationHelper {
 
         // == contiguous regions within size limits become blobs of interest,
         //    indexed by their intensity levels
-        
+
         Map<Integer, Integer> freqMap1 = Histogram.createAFrequencyMap(img1Grey);
         Map<Integer, Integer> freqMap2 = Histogram.createAFrequencyMap(img2Grey);
-        
-        Map<Integer, List<PairIntArray>> contigMap1 
+
+        Map<Integer, List<PairIntArray>> contigMap1
             = new HashMap<Integer, List<PairIntArray>>();
-        Map<Integer, List<PairIntArray>> contigMap2 
+        Map<Integer, List<PairIntArray>> contigMap2
             = new HashMap<Integer, List<PairIntArray>>();
-        
-        Map<Integer, List<GrahamScan>> hulls1 = 
+
+        Map<Integer, List<GrahamScan>> hulls1 =
             new HashMap<Integer, List<GrahamScan>>();
-        Map<Integer, List<GrahamScan>> hulls2 = 
+        Map<Integer, List<GrahamScan>> hulls2 =
             new HashMap<Integer, List<GrahamScan>>();
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        Map<Integer, PairIntArray> hullCentroids1Map = 
+
+        Map<Integer, PairIntArray> hullCentroids1Map =
             new HashMap<Integer, PairIntArray>();
-        Map<Integer, PairIntArray> hullCentroids2Map = 
+        Map<Integer, PairIntArray> hullCentroids2Map =
             new HashMap<Integer, PairIntArray>();
         PairIntArray allHullCentroids1 = new PairIntArray();
         PairIntArray allHullCentroids2 = new PairIntArray();
-        
+
         for (int im = 0; im < 2; ++im) {
-            
+
             Map<Integer, Integer> freqMap = freqMap1;
             Map<Integer, List<PairIntArray>> contigMap = contigMap1;
             Map<Integer, List<GrahamScan>> hulls = hulls1;
@@ -223,7 +227,7 @@ public class BinSegmentationHelper {
                 imgGrey = img2Grey;
                 hullCentroidsMap = hullCentroids2Map;
             }
- 
+
             for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
 
                 Integer pixValue = entry.getKey();
@@ -242,18 +246,18 @@ public class BinSegmentationHelper {
                     }
                 }
                 Collections.sort(list, new PairIntArrayDescendingComparator());
-                
+
                 // storing the centroids for this intensity level hulls separateley
                 PairIntArray pvHullCentroids = new PairIntArray();
-                
+
                 // remove hulls with large area on image bounds
                 List<Integer> rm = new ArrayList<Integer>();
-                
+
                 List<GrahamScan> listHulls = new ArrayList<GrahamScan>();
                 for (int i = 0; i < list.size(); ++i) {
-                    
+
                     PairIntArray xy = list.get(i);
-                    
+
                     GrahamScan scan = new GrahamScan();
                     try {
                         float[] x = new float[xy.getN()];
@@ -262,18 +266,18 @@ public class BinSegmentationHelper {
                             x[ii] = xy.getX(ii);
                             y[ii] = xy.getY(ii);
                         }
-                        
-                        double[] centroidXY = 
+
+                        double[] centroidXY =
                             curveHelper.calculateXYCentroids(x, y);
 
                         scan.computeHull(x, y);
-                        
+
                         // if more than one hull point touches the bounds of the
                         // image, the hull is removed because it may be
                         // incomplete.  may need to change this rule later
-                        // if it makes the solution too shallow in terms of 
+                        // if it makes the solution too shallow in terms of
                         // very close points
-                        
+
                         int nBounds = 0;
                         for (int ii = 0; ii < scan.getXHull().length; ++ii) {
                             float xh = scan.getXHull()[ii];
@@ -283,7 +287,7 @@ public class BinSegmentationHelper {
                                 nBounds++;
                             }
                         }
-                        if (nBounds > 3) {                            
+                        if (nBounds > 3) {
                             rm.add(Integer.valueOf(i));
                         } else {
                             listHulls.add(scan);
@@ -292,53 +296,53 @@ public class BinSegmentationHelper {
                             hullCentroids.add(xh, yh);
                             pvHullCentroids.add(xh, yh);
                         }
-                        
+
                     } catch (GrahamScanTooFewPointsException e) {
                         log.severe(e.getMessage());
                     }
                 }
-                
+
                 for (int i = (rm.size() - 1); i > -1; --i) {
                     int rmIdx = rm.get(i).intValue();
                     list.remove(rmIdx);
                 }
 
                 log.info("nHulls" + (im + 1) + "=" + listHulls.size() + " for intensity=" + pixValue.toString());
-                
+
                 contigMap.put(pixValue, list);
                 hulls.put(pixValue, listHulls);
                 hullCentroidsMap.put(pixValue, pvHullCentroids);
             }
         }
-        
+
         MiscDebug.writeHullImages(img1Grey, hulls1, "1_binned_hulls");
         MiscDebug.writeHullImages(img2Grey, hulls2, "2_binned_hulls");
         MiscDebug.writeImage(img1Cp, "1_binned_clr");
         MiscDebug.writeImage(img2Cp, "2_binned_clr");
-       
+
         // make corners
-        
+
         if (!performBinning) {
             imageProcessor.blur(img1Grey, 2);
             imageProcessor.blur(img2Grey, 2);
         }
-        
+
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1Grey);
         detector.doNotPerformHistogramEqualization();
         detector.findCorners();
         corners1 = detector.getCornersInOriginalReferenceFrame();
-        cornerRegions1 = detector.getEdgeCornerRegions();
-        
+        cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+
         CurvatureScaleSpaceCornerDetector detector2 = new
             CurvatureScaleSpaceCornerDetector(img2Grey);
         detector2.doNotPerformHistogramEqualization();
         detector2.findCorners();
         corners2 = detector2.getCornersInOriginalReferenceFrame();
-        cornerRegions2 = detector2.getEdgeCornerRegions();
-        
+        cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+
         log.info("n1Corners=" + corners1.getN() + " n2Corners2=" + corners2.getN());
-        
+
         // experimenting with a slightly different definition for theta:
         GreyscaleImage theta1360 = imageProcessor.computeTheta360(
             detector.getGradientX(), detector.getGradientY());
@@ -346,22 +350,171 @@ public class BinSegmentationHelper {
             detector2.getGradientX(), detector2.getGradientY());
         MiscDebug.writeImage(theta1360, "1_theta360");
         MiscDebug.writeImage(theta2360, "2_theta360");
-        
+
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
 
         MiscDebug.plotCorners(img1Grey, corners1, "1_corners");
         MiscDebug.plotCorners(img2Grey, corners2, "2_corners");
-        
+
         ShapeMatcher shapeMatcher = new ShapeMatcher();
-        
+
         filteredCornersList1 = new ArrayList<PairIntArray>();
         filteredCornersList2 = new ArrayList<PairIntArray>();
         shapeMatcher.filterCornersAndOrderByMatchingIntensity(
             corners1, hulls1,
-            corners2, hulls2, 
+            corners2, hulls2,
             filteredCornersList1, filteredCornersList2);
-        
+
+    }
+
+    public void applySteps1() throws IOException, NoSuchAlgorithmException {
+
+        ImageHelperForTests helper = new ImageHelperForTests(img1, true);
+        SkylineExtractor skylineExtractor = new SkylineExtractor();
+        PairIntArray outputSkyCentroid = new PairIntArray();
+        // sky are the zeros in this:
+        GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+            helper.getTheta(), helper.getGradientXY(), img1,
+            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.multiplyBinary(img1, resultMask);
+
+        helper = new ImageHelperForTests(img2, true);
+        skylineExtractor = new SkylineExtractor();
+        outputSkyCentroid = new PairIntArray();
+        // sky are the zeros in this:
+        resultMask = skylineExtractor.createBestSkyMask(
+            helper.getTheta(), helper.getGradientXY(), img2,
+            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+        imageProcessor.multiplyBinary(img2, resultMask);
+
+        TransformationParameters params90 = new TransformationParameters();
+        params90.setRotationInDegrees(90);
+        params90.setOriginX(0);
+        params90.setOriginY(0);
+        params90.setTranslationX(0);
+        params90.setTranslationY(img1.getWidth() - 1);
+
+        Transformer transformer = new Transformer();
+
+        img1 = (ImageExt) transformer.applyTransformation(img1, params90,
+            img1.getHeight(), img1.getWidth());
+
+        //---------------
+
+        img1Grey = img1.copyToGreyscale();
+        img2Grey = img2.copyToGreyscale();
+
+        final boolean performBinning = false;
+        int binFactor1 = 1;
+
+        /*
+        one could start with essentially no limits here and then
+        looks at the distribution of resulting contiguous group
+        sizes to decide the range to keep.
+        For now, choosing limits.
+        */
+        int smallestGroupLimit = 100;
+        //TODO: consider scaling this by image size or by size and res if one
+        //  day that information is passed to this method
+        int largestGroupLimit = 5000;
+
+        ImageExt img1Cp = (ImageExt)img1.copyImage();
+        ImageExt img2Cp = (ImageExt)img2.copyImage();
+
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true);
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true);
+
+        log.info("stats1=" + stats1.toString());
+        log.info("stats2=" + stats2.toString());
+
+        boolean performHistEq = false;
+        double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();
+        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();
+        double meanDivMedian2 = stats2.getMean()/stats2.getMedian();
+        if (
+            ((median1DivMedian2 > 1) && ((median1DivMedian2 - 1) > 0.2)) ||
+            ((median1DivMedian2 < 1) && (median1DivMedian2 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian1 > 1) && ((meanDivMedian1 - 1) > 0.2)) ||
+            ((meanDivMedian1 < 1) && (meanDivMedian1 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian2 > 1) && ((meanDivMedian2 - 1) > 0.2)) ||
+            ((meanDivMedian2 < 1) && (meanDivMedian2 < 0.8))) {
+            performHistEq = true;
+        }
+        if (performHistEq) {
+            log.info("use histogram equalization on the greyscale images");
+            HistogramEqualization hEq = new HistogramEqualization(img1Grey);
+            hEq.applyFilter();
+            hEq = new HistogramEqualization(img2Grey);
+            hEq.applyFilter();
+            /*HistogramEqualizationForColor hEqC = new HistogramEqualizationForColor(img1Cp);
+            hEqC.applyFilter();
+            hEqC = new HistogramEqualizationForColor(img2Cp);
+            hEqC.applyFilter();*/
+        }
+
+        if (performBinning) {
+            binFactor1 = (int) Math.ceil(
+                Math.max((float)img1Grey.getWidth()/200.f,
+                (float)img2Grey.getHeight()/200.));
+            smallestGroupLimit /= (binFactor1*binFactor1);
+            largestGroupLimit /= (binFactor1*binFactor1);
+
+            log.info("binFactor1=" + binFactor1);
+
+            // prevent from being smaller than needed for a convex hull
+            if (smallestGroupLimit < 4) {
+                smallestGroupLimit = 4;
+            }
+            img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
+            img2Grey = imageProcessor.binImage(img2Grey, binFactor1);
+            img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
+            img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
+        }
+
+        // make corners
+
+        if (!performBinning) {
+            imageProcessor.blur(img1Grey, 2);
+            imageProcessor.blur(img2Grey, 2);
+        }
+
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img1Grey);
+        detector.doNotPerformHistogramEqualization();
+        detector.findCorners();
+        corners1 = detector.getCornersInOriginalReferenceFrame();
+        cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+
+        CurvatureScaleSpaceCornerDetector detector2 = new
+            CurvatureScaleSpaceCornerDetector(img2Grey);
+        detector2.doNotPerformHistogramEqualization();
+        detector2.findCorners();
+        corners2 = detector2.getCornersInOriginalReferenceFrame();
+        cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+
+        log.info("n1Corners=" + corners1.getN() + " n2Corners2=" + corners2.getN());
+
+        // experimenting with a slightly different definition for theta:
+        GreyscaleImage theta1360 = imageProcessor.computeTheta360(
+            detector.getGradientX(), detector.getGradientY());
+        GreyscaleImage theta2360 = imageProcessor.computeTheta360(
+            detector2.getGradientX(), detector2.getGradientY());
+        MiscDebug.writeImage(theta1360, "1_theta360");
+        MiscDebug.writeImage(theta2360, "2_theta360");
+
+        //log.info("corners1=" + corners1.toString());
+        //log.info("corners2=" + corners2.toString());
+
+        MiscDebug.plotCorners(img1Grey, corners1, "1_corners");
+        MiscDebug.plotCorners(img2Grey, corners2, "2_corners");
+
     }
 
     /**
@@ -404,5 +557,51 @@ public class BinSegmentationHelper {
      */
     public Set<CornerRegion> getCornerRegions2() {
         return cornerRegions2;
+    }
+
+    public void createSortedCornerRegions() {
+        int n1 = cornerRegions1.size();
+        int n2 = cornerRegions2.size();
+        float[] k1 = new float[n1];
+        float[] k2 = new float[n2];
+        PairInt[] p1 = new PairInt[n1];
+        PairInt[] p2 = new PairInt[n2];
+        
+        PairIntArray rCorners1 = new PairIntArray();
+        PairIntArray rCorners2 = new PairIntArray();
+    
+        int count = 0;
+        for (CornerRegion cr : cornerRegions1) {
+            int kMaxIdx = cr.getKMaxIdx();
+            k1[count] = cr.getK()[kMaxIdx];
+            int x = cr.getX()[kMaxIdx];
+            int y = cr.getY()[kMaxIdx];
+            
+            p1[count] = new PairInt(x, y);
+            rCorners1.add(x, y);
+            
+            count++;
+        }
+        count = 0;
+        for (CornerRegion cr : cornerRegions2) {
+            int kMaxIdx = cr.getKMaxIdx();
+            k2[count] = cr.getK()[kMaxIdx];
+            int x = cr.getX()[kMaxIdx];
+            int y = cr.getY()[kMaxIdx];
+            
+            p2[count] = new PairInt(x, y);
+            rCorners2.add(x, y);
+            
+            count++;
+        }
+
+        MiscDebug.plotCorners(img1Grey, rCorners1, "1_region_corners");
+        MiscDebug.plotCorners(img2Grey, rCorners2, "2_region_corners");
+        
+        QuickSort.sortBy1stArg(k1, p1);
+
+        QuickSort.sortBy1stArg(k2, p2);
+
+        int z = 1;
     }
 }

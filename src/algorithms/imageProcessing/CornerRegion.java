@@ -353,6 +353,17 @@ public class CornerRegion {
         return perp;
     }
     
+    public CornerRegion copy() {
+        
+        CornerRegion cr = new CornerRegion(edgeIdx, x.length, kMaxIdx);
+        cr.orientation = orientation;
+        System.arraycopy(k, 0, cr.getK(), 0, k.length);
+        System.arraycopy(x, 0, cr.getX(), 0, x.length);
+        System.arraycopy(y, 0, cr.getY(), 0, y.length);
+        
+        return cr;
+    }
+    
     public String toString() {
         
         StringBuilder sb = new StringBuilder();

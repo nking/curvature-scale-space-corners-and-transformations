@@ -709,6 +709,13 @@ public class CurvatureScaleSpaceCornerDetector extends
 if (doUseOutdoorMode) {
     factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;
 }
+        //to limit k to curvature that shows a rise in 1 pixel over a run of 3,
+        // use 0.2 for a lower limit.
+        // TODO: it's not clear that kLowerLimit is a good idea.  the relative change
+        // filter alone is good for all size scale corners, and adding this
+        // limit biases the results.  may want to only use this bias if
+        // the some amount of curvature points are >= 0.2
+        float kLowerLimit = 0.05f;
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 
@@ -732,7 +739,7 @@ if (doUseOutdoorMode) {
                             // avoids divide by very small number sometimes
                             compare = lowThreshold;
                         }
-                        if (k[idx] >= factorAboveMin * compare) {
+                        if (k[idx] >= kLowerLimit && k[idx] >= factorAboveMin * compare) {
                             cornerCandidates.add(Integer.valueOf(idx));
                             found = true;
                         }
@@ -752,7 +759,7 @@ if (doUseOutdoorMode) {
                             // avoids divide by very small number sometimes
                             compare = lowThreshold;
                         }
-                        if (k[idx] >= factorAboveMin * compare) {
+                        if (k[idx] >= kLowerLimit && k[idx] >= factorAboveMin * compare) {
                             cornerCandidates.add(Integer.valueOf(idx));
                         }
                         break;
@@ -1259,6 +1266,60 @@ MultiArrayMergeSort.sortByYThenX(cp);
         
         for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
             set.addAll(entry.getValue());
+        }
+        
+        return set;
+    }
+    
+     public Set<CornerRegion> getEdgeCornerRegionsInOriginalReferenceFrame() {
+        
+        Set<CornerRegion> set = new HashSet<CornerRegion>();
+        
+        for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
+            for (CornerRegion cr : entry.getValue()) {
+                CornerRegion crCopy = cr.copy();
+                for (int i = 0; i < cr.getX().length; ++i) {
+                    int x = cr.getX()[i] + this.trimmedXOffset;
+                    int y = cr.getY()[i] + this.trimmedYOffset;
+                    crCopy.set(i, cr.getK()[i], x, y);
+                }
+                set.add(crCopy);
+            }
+        }
+        
+        return set;
+    }
+     
+    public Set<CornerRegion> getEdgeCornerRegionsInOriginalReferenceFrame(boolean removeAmbiguousPeaks) {
+        
+        if (!removeAmbiguousPeaks) {
+            return getEdgeCornerRegionsInOriginalReferenceFrame();
+        }
+        
+        Set<CornerRegion> set = new HashSet<CornerRegion>();
+        
+        for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
+            for (CornerRegion cr : entry.getValue()) {
+                int kMaxIdx = cr.getKMaxIdx();
+                float kMax = cr.getK()[kMaxIdx];
+                boolean keep = true;               
+                if ((kMaxIdx > 0) && (kMaxIdx < (cr.getX().length - 1))) {
+                    if (Math.abs(cr.getK()[kMaxIdx - 1] - kMax) < 0.01) {
+                        keep = false;
+                    } else if (Math.abs(cr.getK()[kMaxIdx + 1] - kMax) < 0.01) {
+                        keep = false;
+                    }
+                }
+                if (keep) {
+                    CornerRegion crCopy = cr.copy();
+                    for (int i = 0; i < cr.getX().length; ++i) {
+                        int x = cr.getX()[i] + this.trimmedXOffset;
+                        int y = cr.getY()[i] + this.trimmedYOffset;
+                        crCopy.set(i, cr.getK()[i], x, y);
+                    }
+                    set.add(crCopy);
+                }
+            }
         }
         
         return set;
