@@ -79,4 +79,114 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     public boolean isNormalized() {
         return hasBeenNormalized;
     }
+    
+    @Override
+    public float calculateSSD(IntensityDescriptor otherDesc) {
+        
+        if (otherDesc == null) {
+            throw new IllegalArgumentException("otherDesc cannot be null");
+        }
+        
+        if (!(otherDesc instanceof ClrIntensityDescriptor)) {
+            throw new IllegalArgumentException(
+            "otherDesc has to be type ClrIntensityDescriptor");
+        }
+        
+        ClrIntensityDescriptor other = (ClrIntensityDescriptor)otherDesc;
+        
+        if (this.red.length != other.red.length) {
+            throw new IllegalArgumentException(
+            "this and other arrays must have the same lengths");
+        }
+                
+        int count = 0;
+        double sumR = 0;
+        double sumG = 0;
+        double sumB = 0;
+        
+        for (int i = 0; i < this.red.length; ++i) {
+            
+            int r1 = red[i];
+            if (r1 == sentinel) {
+                continue;
+            }
+            int r2 = other.red[i];
+            if (r2 == sentinel) {
+                continue;
+            }
+            
+            int g1 = green[i];
+            int b1 = blue[i];
+            
+            int g2 = other.green[i];
+            int b2 = other.blue[i];
+            
+            sumR += (r1 - r2)*(r1 - r2);
+            sumG += (g1 - g2)*(g1 - g2);
+            sumB += (b1 - b2)*(b1 - b2);
+            
+            count++;
+        }
+        sumR /= (double)count;
+        sumG /= (double)count;
+        sumB /= (double)count;
+        
+        float avg = (float)(sumR + sumG + sumB)/3.f;
+        
+        return avg;
+    }
+    
+    /**
+     * Determine the sum squared error within this descriptor using 
+     * auto-correlation and the assumption that the value at the middle index 
+     * is the value from the original central pixel.
+     * 
+     * @return 
+     */
+    @Override
+    public float sumSquaredError() {
+        
+        int n = red.length;
+        int midIdx = n >> 1;
+        
+        int rVC = red[midIdx];
+        int gVC = green[midIdx];
+        int bVC = blue[midIdx];
+        
+        if (rVC == sentinel || gVC == sentinel || bVC == sentinel) {
+            throw new IllegalStateException(
+            "ERROR: the central values for the array are somehow sentinels");
+        }
+        
+        int count = 0;
+        
+        double sumR = 0;
+        double sumG = 0;
+        double sumB = 0;
+        
+        for (int i = 0; i < this.red.length; ++i) {
+            
+            int r1 = red[i];
+            if (r1 == sentinel) {
+                continue;
+            }
+            
+            int diffR = red[i] - rVC;
+            int diffG = green[i] - gVC;
+            int diffB = blue[i] - bVC;
+        
+            sumR += (diffR * diffR);
+            sumG += (diffG * diffG);
+            sumB += (diffB * diffB);
+            count++;
+        }
+        sumR /= (double)count;
+        sumG /= (double)count;
+        sumB /= (double)count;
+        
+        float avg = (float)(sumR + sumG + sumB)/3.f;
+        
+        return avg;
+    }
+
 }

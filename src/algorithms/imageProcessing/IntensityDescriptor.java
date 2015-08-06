@@ -9,4 +9,9 @@ public interface IntensityDescriptor {
     public void applyNormalization();
     
     public boolean isNormalized();
+    
+    public float calculateSSD(IntensityDescriptor otherDesc);
+    
+    public float sumSquaredError();
+    
 }

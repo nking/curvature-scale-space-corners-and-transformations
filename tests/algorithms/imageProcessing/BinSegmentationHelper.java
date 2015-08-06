@@ -618,6 +618,13 @@ public class BinSegmentationHelper {
         int z = 1;
     }
 
+    public GreyscaleImage getGreyscaleImage1() {
+        return img1Grey;
+    }
+    public GreyscaleImage getGreyscaleImage2() {
+        return img2Grey;
+    }
+    
     public ImageExt getImage1() {
         return img1;
     }

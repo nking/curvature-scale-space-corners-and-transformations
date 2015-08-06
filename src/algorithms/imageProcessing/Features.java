@@ -271,4 +271,41 @@ public class Features {
         return desc;
     }
 
+    /**
+     * calculate the intensity based statistic (SSD) between the two descriptors
+     * with the caveat that the 2nd descriptor is the one used to calculate
+     * the error (so make sure that pattern is consistently used by invoker).
+     * 
+     * @param desc1
+     * @param x1
+     * @param y1
+     * @param desc2
+     * @param x2
+     * @param y2
+     * @return 
+     */
+    public static FeatureComparisonStat calculateIntensityStat(
+        IntensityDescriptor desc1, final int x1, final int y1,
+        IntensityDescriptor desc2, final int x2, final int y2) {
+    
+        if (desc1 == null) {
+            throw new IllegalArgumentException("desc1 cannot be null");
+        }
+        if (desc2 == null) {
+            throw new IllegalArgumentException("desc2 cannot be null");
+        }
+        
+        float err2Sq = desc2.sumSquaredError();
+        
+        float ssd = desc1.calculateSSD(desc2);
+        
+        FeatureComparisonStat stat = new FeatureComparisonStat();
+        stat.setImg1Point(new PairInt(x1, y1));
+        stat.setImg2Point(new PairInt(x2, y2));
+        stat.setSumSqDiff(ssd);
+        stat.setImg2PointErr(err2Sq);
+        
+        return stat;
+    }
+
 }

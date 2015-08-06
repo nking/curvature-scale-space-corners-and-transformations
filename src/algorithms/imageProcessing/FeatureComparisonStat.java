@@ -13,7 +13,6 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     private float sumSqDiff = Float.POSITIVE_INFINITY;
     private float img2PointErr = Float.POSITIVE_INFINITY;
     private float img1RotInDegrees = Float.POSITIVE_INFINITY;
-    private float sqDist = Float.POSITIVE_INFINITY;
 
     /**
      * @return the img1Point
@@ -29,9 +28,6 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         
         this.img1Point = img1Point;
         
-        if (img2Point != null) {
-            calculateDist();
-        }
     }
 
     /**
@@ -48,9 +44,6 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         
         this.img2Point = img2Point;
         
-        if (img1Point != null) {
-            calculateDist();
-        }
     }
 
     /**
@@ -140,18 +133,6 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         this.img1RotInDegrees = img1RotInDegrees;
     }
 
-    public float getSqDist() {
-        return sqDist;
-    }
-    
-    protected void calculateDist() {
-        
-        int diffX = img1Point.getX() - img2Point.getX();
-        int diffY = img1Point.getY() - img2Point.getY();
-        
-        this.sqDist = (diffX*diffX) + (diffY*diffY);
-    }
-
     @Override
     public String toString() {
         
@@ -160,8 +141,7 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
             .append("p2=").append(img2Point.toString())
             .append(String.format(" ssd=%.2f", sumSqDiff))
             .append(String.format(" err=%.2f", img2PointErr))
-            .append(String.format(" rot=%.2f", img1RotInDegrees))
-            .append(String.format(" sqDist=%d", Math.round(sqDist)));
+            .append(String.format(" rot=%.2f", img1RotInDegrees));
         
         return sb.toString();
     }
