@@ -904,7 +904,7 @@ if (true) {
             }
             
             int idx1 = img1.getInternalIndex(x1P, y1P);
-            int idx2 = img1.getInternalIndex(x2P, y2P);
+            int idx2 = img2.getInternalIndex(x2P, y2P);
             
             float r1 = img1.getR(idx1);
             float g1 = img1.getG(idx1);
