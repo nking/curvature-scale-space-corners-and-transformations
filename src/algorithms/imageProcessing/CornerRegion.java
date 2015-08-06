@@ -2,10 +2,16 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairIntArray;
+import java.util.Arrays;
 
 /**
  * class to hold a few details from the creation of corners that
- * help later to match corners.
+ * help later to match corners.  Note that the equals compares the
+ * contents of x and y only, so this corner can be used in Collections
+ * to establish equals or not, but does not have any other comparison 
+ * attributes.  Note also that the equals assumption means that the user
+ * has to manage possible conflicts if they place in the same 
+ * Set instances from more than one image.
  *
  * @author nichole
  */
@@ -22,6 +28,11 @@ public class CornerRegion {
     protected final int[] y;
 
     protected double orientation = Double.MIN_VALUE;
+    
+    //TODO: a temporary work around until the classes for curvature are refactored
+    // is that this instance may hold fake neighboring curvature values
+    // if set by the junction finding method.
+    protected boolean dummyValuesInKNeighbors = false;
 
     /**
      * constructor with edge index, the index with the maximum curvature in it
@@ -82,7 +93,7 @@ public class CornerRegion {
 
         k = new float[nPoints];
         x = new int[nPoints];
-        y = new int[nPoints];
+        y = new int[nPoints];        
     }
 
     public void set(int index, float kValue, int xCoordinate, int yCoordinate) {
@@ -114,6 +125,13 @@ public class CornerRegion {
     }
     public int getKMaxIdx() {
         return kMaxIdx;
+    }
+    
+    public void setFlagThatNeighborsHoldDummyValues() {
+        dummyValuesInKNeighbors = true;
+    }
+    public boolean kValuesAreDummy() {
+        return dummyValuesInKNeighbors;
     }
 
     /**
@@ -374,6 +392,82 @@ public class CornerRegion {
         }
         
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        
+        if (!(obj instanceof CornerRegion)) {
+            return false;
+        }
+            
+        CornerRegion other = (CornerRegion)obj;
+            
+        if (x.length != other.getX().length) {
+            return false;
+        }
+        
+        if (!Arrays.equals(x, other.getX())) {
+            return false;
+        }
+     
+        return Arrays.equals(y, other.getY());
+    }
+    
+    @Override
+    public int hashCode() {
+
+        int hash = fnvHashCode();
+
+        return hash;
+    }
+
+    int fnv321aInit = 0x811c9dc5;
+    int fnv32Prime = 0x01000193;
+
+    /**
+     * hash = offset_basis
+     * for each octet_of_data to be hashed
+     *     hash = hash xor octet_of_data
+     *     hash = hash * FNV_prime
+     * return hash
+     *
+     * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+     */
+    protected int fnvHashCode() {
+
+        int sum = fnv321aInit;
+
+        sum = includeInHashSum(sum, edgeIdx);
+        
+        sum = includeInHashSum(sum, kMaxIdx);
+
+        for (int xCoord : x) {
+            sum = includeInHashSum(sum, xCoord);
+        }
+        for (int yCoord : y) {
+            sum = includeInHashSum(sum, yCoord);
+        }
+        for (float kValue : k) {
+            int kBits = Float.floatToIntBits(kValue);
+            sum = includeInHashSum(sum, kBits);
+        }
+        
+        // not including orientation which may or may not be set because it's
+        // calculated only upon need
+        
+        return sum;
+    }
+
+    private int includeInHashSum(int sum, int variable) {
+        
+        // xor the bottom with the current octet.
+        sum ^= variable;
+
+        // multiply by the 32 bit FNV magic prime mod 2^32
+        sum *= fnv32Prime;
+        
+        return sum;
     }
 
     public static class CornerRegionDegneracyException extends Exception {

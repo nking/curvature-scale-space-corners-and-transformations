@@ -1,12 +1,14 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.compGeometry.NearestPoints;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -1290,14 +1292,15 @@ MultiArrayMergeSort.sortByYThenX(cp);
         return set;
     }
      
-    public Set<CornerRegion> getEdgeCornerRegionsInOriginalReferenceFrame(boolean removeAmbiguousPeaks) {
+    public Set<CornerRegion> getEdgeCornerRegionsInOriginalReferenceFrame(
+        boolean removeAmbiguousPeaks) {
         
         if (!removeAmbiguousPeaks) {
             return getEdgeCornerRegionsInOriginalReferenceFrame();
         }
-        
+
         Set<CornerRegion> set = new HashSet<CornerRegion>();
-        
+       
         for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
             for (CornerRegion cr : entry.getValue()) {
                 int kMaxIdx = cr.getKMaxIdx();
@@ -1311,17 +1314,161 @@ MultiArrayMergeSort.sortByYThenX(cp);
                     }
                 }
                 if (keep) {
-                    CornerRegion crCopy = cr.copy();
-                    for (int i = 0; i < cr.getX().length; ++i) {
-                        int x = cr.getX()[i] + this.trimmedXOffset;
-                        int y = cr.getY()[i] + this.trimmedYOffset;
-                        crCopy.set(i, cr.getK()[i], x, y);
+                    
+                    int xCorner = cr.getX()[kMaxIdx];
+                    int yCorner = cr.getY()[kMaxIdx];
+                    
+                    /*
+                    check if in a junction, and if so either try to reconstruct
+                    best path around portion of image that curvature maximum
+                    is on, or discard this corner region as possibly ambiguous.
+                    */
+                    
+                    boolean isInAJunction = isInAJunction(xCorner, yCorner);
+                    
+                    if (!isInAJunction) {
+                        
+                        CornerRegion crCopy = cr.copy();
+                        for (int i = 0; i < cr.getX().length; ++i) {
+                            int x = cr.getX()[i] + this.trimmedXOffset;
+                            int y = cr.getY()[i] + this.trimmedYOffset;
+                            crCopy.set(i, cr.getK()[i], x, y);
+                        }
+                        set.add(crCopy);
+                        
+                    } else {
+                        
+                        List<CornerRegion> crWithinJunctions = 
+                            searchForCornerRegionWithinJunctions(xCorner, 
+                            yCorner, kMax);
+
+                        if (crWithinJunctions != null) {
+                            set.addAll(crWithinJunctions);
+                        }
                     }
-                    set.add(crCopy);
                 }
             }
         }
         
         return set;
+    }
+
+    /**
+     * search for the point (x, y) within the junction maps, and if found,
+     * construct best defining CornerRegion for the point.  The best defining
+     * region for the curvature neighbors appears to be the lowest intensity 
+     * pixels when the edge surrounds a void or dark patch.
+     * This method may need to be revised or used with segmentation or 
+     * object recognition (in which case it probably belongs in a class
+     * to specialize handling of the junction points for the EdgeExtractorWithJunctions).
+     * 
+     * NOTE: there is a flaw here that this instance does not retain the
+     * scale space curves or the curvature of all edges currently,
+     * so 2 dummy values for the neighboring curvatures are returned
+     * (a flag is set in the CornerRegion to indicate that).
+     * 
+     * @param x
+     * @param y
+     * @param k not used, just stored in the returned CornerRegion
+     * @return 
+     */
+    protected List<CornerRegion> searchForCornerRegionWithinJunctions(int x, 
+        int y, float k) {
+        
+        Integer pixIndex = Integer.valueOf(img.getIndex(x, y));
+
+        // if the corner is a junction, these are it's neighbors:
+        Set<Integer> junctionAdjPixIndexes = junctionMap.get(pixIndex);
+
+        PairInt edgeLocation = junctionLocationMap.get(pixIndex);
+                
+        if ((junctionAdjPixIndexes == null || junctionAdjPixIndexes.isEmpty())
+            && (edgeLocation == null)) {
+            return null;
+        }
+        
+        if (junctionAdjPixIndexes == null || junctionAdjPixIndexes.isEmpty()) {
+            // because edgeLocation is not null, this pixel is in a junction.
+            // iterate over each of the 8 neighbors and if it's in the
+            // junctionLocationMap, add it to junctionAdjPixIndexes for
+            // making CornerRegions
+            if (junctionAdjPixIndexes == null) {
+                junctionAdjPixIndexes = new HashSet<Integer>();
+            }
+            int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+            int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+            for (int i = 0; i < dx8.length; ++i) {
+                int x1 = x + dx8[i];
+                int y1 = y + dy8[i];
+                if (x1 < 0 || y1 < 0 || (x1 > (img.getWidth() - 1)) || 
+                (y1 > (img.getHeight() - 1))) {
+                    continue;
+                }
+                Integer pixIndex1 = Integer.valueOf(img.getIndex(x1, y1));
+                if (junctionLocationMap.containsKey(pixIndex1)) {
+                    junctionAdjPixIndexes.add(pixIndex1);
+                }
+            }
+        }
+        
+        List<CornerRegion> output = new ArrayList<CornerRegion>();
+        
+        List<Integer> list = new ArrayList<Integer>(junctionAdjPixIndexes);
+        
+        for (int i = 0; i < list.size(); ++i) {
+            
+            Integer pixIndex1 = list.get(i);
+            
+            PairInt edgeLocation1 = junctionLocationMap.get(pixIndex1);
+            
+            PairIntArray edge1 = edges.get(edgeLocation1.getX());
+            int x1 = edge1.getX(edgeLocation1.getY());
+            int y1 = edge1.getY(edgeLocation1.getY());
+            
+            for (int j = (i + 1); j < list.size(); ++j) {
+                
+                Integer pixIndex2 = list.get(j);
+                
+                PairInt edgeLocation2 = junctionLocationMap.get(pixIndex2);
+                
+                PairIntArray edge2 = edges.get(edgeLocation2.getX());
+                int x2 = edge2.getX(edgeLocation2.getY());
+                int y2 = edge2.getY(edgeLocation2.getY());
+            
+                // making only 3 pixel regions instead of 5 for now
+                
+                CornerRegion cr = new CornerRegion(edgeLocation.getX(), 3, 1);
+                cr.setFlagThatNeighborsHoldDummyValues();
+
+                cr.set(0, 0.1f*k, x1, y1);
+                cr.set(1, k, x, y);
+                cr.set(2, 0.1f*k, x2, y2);
+                
+                output.add(cr);
+            }
+        }
+        
+        return output;
+    }
+    
+    /**
+     * search for the point (x, y) within the junction maps and return true
+     * if found.
+     * 
+     * @param x
+     * @param y
+     * @return 
+     */
+    protected boolean isInAJunction(int x, int y) {
+        
+        Integer pixIndex = Integer.valueOf(img.getIndex(x, y));
+
+        Set<Integer> junctionAdjPixIndexes = junctionMap.get(pixIndex);
+
+        if (junctionAdjPixIndexes != null && !junctionAdjPixIndexes.isEmpty()) {
+            return true;
+        }
+        
+        return junctionLocationMap.containsKey(pixIndex);
     }
 }

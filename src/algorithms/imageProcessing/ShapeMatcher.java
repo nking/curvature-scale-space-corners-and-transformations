@@ -706,10 +706,13 @@ if (true) {
                 FeatureComparisonStat best = findBestMatchAmongDitheredCoords(
                     img1, gXY1, theta1, cornerRegion1,
                     img2, gXY2, theta2, cornerRegion2,
-                    x2, y2, offsets0);
+                    /*x2, y2,*/ offsets0);
                 
-                storeInMap(comparisonMap, p1, p2, best.getImg1RotInDegrees(), 
-                    best);
+                //TODO: compare gradients now
+                
+                //storeInMap(comparisonMap, p1, p2, best.getImg1RotInDegrees(), 
+                //    best);
+                
             }
 
         }
@@ -856,7 +859,7 @@ if (true) {
     
         return xyout;
     }
-
+    
     FeatureComparisonStat calculateStat(Image img1, Image img2, 
         final int x1, final int y1, final int x2, final int y2, 
         final float[][] offsets1, final float[][] offsets2) {
@@ -868,6 +871,19 @@ if (true) {
         
         float err2Sq = sumSquaredError(img2, x2, y2, offsets2);
         
+        return calculateStat(img1, img2, x1, y1, x2, y2, 
+            offsets1, offsets2, err2Sq);
+    }
+
+    FeatureComparisonStat calculateStat(Image img1, Image img2, 
+        final int x1, final int y1, final int x2, final int y2, 
+        final float[][] offsets1, final float[][] offsets2, float err2Sq) {
+    
+        /*
+        TODO: this may need to change to use gradients similarly to 
+        best practices.
+        */
+                
         int count = 0;
         double sumR = 0;
         double sumG = 0;
@@ -1104,12 +1120,34 @@ if (true) {
         
     }
 
+    /**
+     * make offsets of size dither around (x1, y1) to find the best match
+     * of (x1 + delta, y1 + delta) to (x2, y2) where the match is found as
+     * the smallest sum of square differences by pixel of block1 from block2,
+     * where block1 and block2 are defined by the offsets1 and offsets2,
+     * respectively.
+     * Note that the method discards any pair whose sumSqDiff is larger than
+     * the error (defined by auto-correlation) for block 2).
+     * 
+     * @param img1
+     * @param img2
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param offsets1
+     * @param offsets2
+     * @param dither can be 0 or larger
+     * @return 
+     */
     FeatureComparisonStat ditherToFindSmallestSqSumDiff(ImageExt img1, 
         ImageExt img2, int x1, int y1, int x2, int y2, 
         float[][] offsets1, float[][] offsets2, int dither) {
         
         FeatureComparisonStat smallestSqSumStat = null;
         
+        float err2Sq = sumSquaredError(img2, x2, y2, offsets2);
+                
         for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
             if ((x1d < 0) || (x1d > (img1.getWidth() - 1))) {
                 continue;
@@ -1119,20 +1157,24 @@ if (true) {
                     continue;
                 }
 
-                FeatureComparisonStat stat = calculateStat(img1,
-                    img2, x1d, y1d, x2, y2, offsets1, offsets2);
+                FeatureComparisonStat stat = calculateStat(img1, img2, x1d, y1d, 
+                    x2, y2, offsets1, offsets2, err2Sq);
 
-                if (stat != null && !Float.isInfinite(stat.getSumSqDiff())) {
-                    if (smallestSqSumStat == null) {
+                if ((stat == null) || Float.isInfinite(stat.getSumSqDiff()) ||
+                    (stat.getSumSqDiff() > stat.getImg2PointErr())) {
+                    continue;
+                }
+                    
+                if (smallestSqSumStat == null) {
+                    smallestSqSumStat = stat;
+                } else {
+                    if (smallestSqSumStat.getSumSqDiff() > stat.getSumSqDiff()) {
                         smallestSqSumStat = stat;
-                    } else {
-                        if (smallestSqSumStat.getSumSqDiff() > stat.getSumSqDiff()) {
-                            smallestSqSumStat = stat;
-                        }
                     }
                 }
             }
         }
+        
         return smallestSqSumStat;
     }
 
@@ -1172,11 +1214,13 @@ if (true) {
         return out;
     }
 
-    private FeatureComparisonStat findBestMatchAmongDitheredCoords(
+    protected FeatureComparisonStat findBestMatchAmongDitheredCoords(
         ImageExt img1, GreyscaleImage gXY1, GreyscaleImage theta1, 
         CornerRegion cornerRegion1, ImageExt img2, GreyscaleImage gXY2, 
-        GreyscaleImage theta2, CornerRegion cornerRegion2, int x2, int y2, 
+        GreyscaleImage theta2, CornerRegion cornerRegion2,
         float[][] offsets0) {
+        
+        Transformer transformer = new Transformer();
         
         int dither = 2;
         
@@ -1195,25 +1239,40 @@ if (true) {
         final int x1 = cornerRegion1.getX()[cornerRegion1.getKMaxIdx()];
         final int y1 = cornerRegion1.getY()[cornerRegion1.getKMaxIdx()];
         
-        for (int x = (x1 - dither); x <= (x1 + dither); ++x) {
-            if (x < 0 || (x > (gXY1.getWidth() - 1))) {
-                continue;
-            }
-            for (int y = (y1 - dither); y <= (y1 + dither); ++y) {
-                if (y < 0 || (y > (gXY1.getHeight() - 1))) {
-                    continue;
+        final int x2 = cornerRegion2.getX()[cornerRegion2.getKMaxIdx()];
+        final int y2 = cornerRegion2.getY()[cornerRegion2.getKMaxIdx()];
+        
+        //TODO: may need the gradient comparisons while dithering
+        
+        //TODO: change the two dimensional arrays to one dimensional
+        
+        try {
+            double rot = cornerRegion1.getRelativeOrientation();
+            int rotD = (int)Math.round(rot * 180./Math.PI);
+
+            // +- 25 degrees.
+            for (int iRot = (rotD - 25); iRot <= (rotD + 25); 
+                iRot += 25) {
+
+                float[][] pixelOffsets1 = transformer.transformXY(iRot, 
+                    offsets0);
+
+                FeatureComparisonStat stat = ditherToFindSmallestSqSumDiff(
+                    img1, img2, x1, y1, x2, y2, pixelOffsets1, offsets0, dither);
+
+                if (stat != null) {
+                    if (best == null) {
+                        best = stat;
+                    } else {
+                        if (best.getSumSqDiff() > stat.getSumSqDiff()) {
+                            best = stat;
+                        }
+                    }
                 }
-                
-                try {
-                    double rot = cornerRegion1.getRelativeOrientation();
-                    
-                    // consider +- 25 degrees.
-                    
-                } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.log(Level.SEVERE, null, ex);
-                }
-                
             }
+
+        } catch (CornerRegion.CornerRegionDegneracyException ex) {
+            log.log(Level.SEVERE, null, ex);
         }
         
         return best;

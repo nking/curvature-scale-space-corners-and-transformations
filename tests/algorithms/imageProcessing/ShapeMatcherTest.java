@@ -813,12 +813,12 @@ public class ShapeMatcherTest extends TestCase {
 
         PairIntArray points1 = new PairIntArray();
         PairIntArray points2 = new PairIntArray();
-        //getBrownAndLoweFeatureCenters90(points1, points2);
-        //String fileName1 = "brown_lowe_2003_image1.jpg";
-        //String fileName2 = "brown_lowe_2003_image2.jpg";
-        String fileName1 = "venturi_mountain_j6_0001.png";
-        String fileName2 = "venturi_mountain_j6_0010.png";
-        getVenturiFeatureCenters90(points1, points2);
+        getBrownAndLoweFeatureCenters90(points1, points2);
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+        //String fileName1 = "venturi_mountain_j6_0001.png";
+        //String fileName2 = "venturi_mountain_j6_0010.png";
+        //getVenturiFeatureCenters90(points1, points2);
         
         //binFactor = 3;
         /*
@@ -838,17 +838,27 @@ public class ShapeMatcherTest extends TestCase {
         BinSegmentationHelper helper = new BinSegmentationHelper(fileName1, fileName2);
         
         if (fileName1.contains("brown")) {
-            helper.applySteps0();
+            //helper.applySteps0();
+            helper.applySteps1();
         } else {
             helper.applySteps1();
         }
         
         helper.createSortedCornerRegions();
         
+        ShapeMatcher matcher = new ShapeMatcher();
+        
+        ImageExt img1 = helper.getImage1(); 
+        GreyscaleImage gXY1 = helper.getGXY1();
+        GreyscaleImage theta1 = helper.getTheta1();
+        ImageExt img2 = helper.getImage2(); 
+        GreyscaleImage gXY2 = helper.getGXY2();
+        GreyscaleImage theta2 = helper.getTheta2();
+        float[][] offsets0 = matcher.createNeighborOffsets(8);
+        
         Set<CornerRegion> cornerRegions1 = helper.getCornerRegions1();
         Set<CornerRegion> cornerRegions2 = helper.getCornerRegions2();
         
-        ShapeMatcher matcher = new ShapeMatcher();
 
         // iterate over the manual list of corners and find the corner regions
         for (int ii = 0; ii < points1.getN(); ++ii) {
@@ -860,8 +870,7 @@ public class ShapeMatcherTest extends TestCase {
 
             log.info("looking for corner region for (" + x1 + "," + y1 + ")");
 
-            float diffSqMin = Float.MAX_VALUE;
-            CornerRegion cr1 = null;
+            Set<CornerRegion> set1 = new HashSet<CornerRegion>();
             for (CornerRegion cr : cornerRegions1) {
                 int kMaxIdx = cr.getKMaxIdx();
                 int x = cr.getX()[kMaxIdx];
@@ -869,16 +878,11 @@ public class ShapeMatcherTest extends TestCase {
                 int xDiff = Math.abs(x1 - x);
                 int yDiff = Math.abs(y1 - y);
                 if (xDiff < 5 && yDiff < 5) {
-                    float diffSq = xDiff*xDiff + yDiff*yDiff;
-                    if (diffSq < diffSqMin) {
-                        diffSqMin = diffSq;
-                        cr1 = cr;
-                    }
+                    set1.add(cr);
                 }
             }
-                
-            diffSqMin = Float.MAX_VALUE;
-            CornerRegion cr2 = null;
+            
+            Set<CornerRegion> set2 = new HashSet<CornerRegion>();
             for (CornerRegion cr : cornerRegions2) {
                 int kMaxIdx = cr.getKMaxIdx();
                 int x = cr.getX()[kMaxIdx];
@@ -886,31 +890,38 @@ public class ShapeMatcherTest extends TestCase {
                 int xDiff = Math.abs(x2 - x);
                 int yDiff = Math.abs(y2 - y);
                 if (xDiff < 5 && yDiff < 5) {
-                    float diffSq = xDiff*xDiff + yDiff*yDiff;
-                    if (diffSq < diffSqMin) {
-                        diffSqMin = diffSq;
-                        cr2 = cr;
-                    }
+                    set2.add(cr);
                 }
             }
+            
+            for (CornerRegion cr1 : set1) {
+                for (CornerRegion cr2 : set2) {
 
-            if (cr1 != null && cr2 != null) {
+                    log.info("corner region1 " + ii);
+                    log.info(cr1.toString());
 
-                log.info("corner region1 " + ii);
-                log.info(cr1.toString());
-                
-                log.info("corner region2 " + ii);
-                log.info(cr2.toString());
-                
-                float rotD1 = cr1.getRelativeOrientationInDegrees();
+                    log.info("corner region2 " + ii);
+                    log.info(cr2.toString());
 
-                float rotD2 = cr2.getRelativeOrientationInDegrees();
+                    float rotD1 = cr1.getRelativeOrientationInDegrees();
 
-                float rotDeg = AngleUtil.getAngleDifference(rotD1, rotD2);
+                    float rotD2 = cr2.getRelativeOrientationInDegrees();
 
-                log.info("rot difference between corner1 and corner2=" +
-                    rotDeg + " params.rotationInDegrees=" 
-                    + params.getRotationInDegrees());
+                    float rotDeg = AngleUtil.getAngleDifference(rotD1, rotD2);
+
+                    log.info("rotD1=" + rotD1 + " rotD2=" + rotD2);
+
+                    log.info("rot difference between corner1 and corner2=" +
+                        rotDeg + " params.rotationInDegrees=" 
+                        + params.getRotationInDegrees());
+
+                    FeatureComparisonStat best = 
+                        matcher.findBestMatchAmongDitheredCoords(
+                        img1, gXY1, theta1, cr1,
+                        img2, gXY2, theta2, cr2, offsets0);
+
+                    int z=1;
+                }
             }
         }
     }

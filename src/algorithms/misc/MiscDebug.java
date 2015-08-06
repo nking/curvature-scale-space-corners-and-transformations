@@ -311,6 +311,26 @@ public class MiscDebug {
         }
     }
 
+    public static void writeEdges(List<PairIntArray> edges, GreyscaleImage img,
+        String fileName) {
+        try {
+            
+            Image img2 = ImageIOHelper.convertImage(img);
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
+            
+            if (!fileName.contains("\\.")) {
+                fileName = fileName + ".png";
+            }
+            String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
+            String sep = System.getProperty("file.separator");
+            ImageIOHelper.writeOutputImage(dirPath + sep + fileName, img2);
+            
+        } catch (IOException e) {
+            
+        }
+    }
+    
     public static void writeJoinPointsImage(Map<PairInt, PairInt> theJoinPointMap, 
         List<PairIntArray> edges, GreyscaleImage img) {
         

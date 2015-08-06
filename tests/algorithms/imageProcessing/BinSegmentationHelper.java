@@ -4,11 +4,6 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
-import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.SkylineExtractor;
 import algorithms.misc.Histogram;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -54,6 +49,10 @@ public class BinSegmentationHelper {
     private List<PairIntArray> filteredCornersList2 = null;
     private Set<CornerRegion> cornerRegions1 = null;
     private Set<CornerRegion> cornerRegions2 = null;
+    private GreyscaleImage gXY1 = null;
+    private GreyscaleImage gXY2 = null;
+    private GreyscaleImage theta1 = null;
+    private GreyscaleImage theta2 = null;
 
     public BinSegmentationHelper(String fileName1, String fileName2) throws IOException, Exception {
         this.fileName1 = fileName1;
@@ -333,6 +332,9 @@ public class BinSegmentationHelper {
         detector.findCorners();
         corners1 = detector.getCornersInOriginalReferenceFrame();
         cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        gXY1 = detector.getGradientXY();
+        MiscDebug.writeEdges(detector.getEdgesInOriginalReferenceFrame(), 
+            img1Grey, "1_edges");
 
         CurvatureScaleSpaceCornerDetector detector2 = new
             CurvatureScaleSpaceCornerDetector(img2Grey);
@@ -340,16 +342,19 @@ public class BinSegmentationHelper {
         detector2.findCorners();
         corners2 = detector2.getCornersInOriginalReferenceFrame();
         cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        gXY2 = detector2.getGradientXY();
+        MiscDebug.writeEdges(detector2.getEdgesInOriginalReferenceFrame(), 
+            img2Grey, "2_edges");
 
         log.info("n1Corners=" + corners1.getN() + " n2Corners2=" + corners2.getN());
 
         // experimenting with a slightly different definition for theta:
-        GreyscaleImage theta1360 = imageProcessor.computeTheta360(
+        theta1 = imageProcessor.computeTheta360(
             detector.getGradientX(), detector.getGradientY());
-        GreyscaleImage theta2360 = imageProcessor.computeTheta360(
+        theta2 = imageProcessor.computeTheta360(
             detector2.getGradientX(), detector2.getGradientY());
-        MiscDebug.writeImage(theta1360, "1_theta360");
-        MiscDebug.writeImage(theta2360, "2_theta360");
+        MiscDebug.writeImage(theta1, "1_theta360");
+        MiscDebug.writeImage(theta2, "2_theta360");
 
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
@@ -491,23 +496,31 @@ public class BinSegmentationHelper {
         detector.findCorners();
         corners1 = detector.getCornersInOriginalReferenceFrame();
         cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-
+        gXY1 = detector.getGradientXY();
+        MiscDebug.writeEdges(detector.getEdgesInOriginalReferenceFrame(), 
+            img1Grey, "1_edges");
+        MiscDebug.writeImage(img1Cp, "1_clr");
+        
         CurvatureScaleSpaceCornerDetector detector2 = new
             CurvatureScaleSpaceCornerDetector(img2Grey);
         detector2.doNotPerformHistogramEqualization();
         detector2.findCorners();
         corners2 = detector2.getCornersInOriginalReferenceFrame();
         cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-
+        gXY2 = detector.getGradientXY();
+        MiscDebug.writeEdges(detector2.getEdgesInOriginalReferenceFrame(), 
+            img2Grey, "2_edges");
+        MiscDebug.writeImage(img2Cp, "2_clr");
+        
         log.info("n1Corners=" + corners1.getN() + " n2Corners2=" + corners2.getN());
 
         // experimenting with a slightly different definition for theta:
-        GreyscaleImage theta1360 = imageProcessor.computeTheta360(
+        theta1 = imageProcessor.computeTheta360(
             detector.getGradientX(), detector.getGradientY());
-        GreyscaleImage theta2360 = imageProcessor.computeTheta360(
+        theta2 = imageProcessor.computeTheta360(
             detector2.getGradientX(), detector2.getGradientY());
-        MiscDebug.writeImage(theta1360, "1_theta360");
-        MiscDebug.writeImage(theta2360, "2_theta360");
+        MiscDebug.writeImage(theta1, "1_theta360");
+        MiscDebug.writeImage(theta2, "2_theta360");
 
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
@@ -603,5 +616,29 @@ public class BinSegmentationHelper {
         QuickSort.sortBy1stArg(k2, p2);
 
         int z = 1;
+    }
+
+    public ImageExt getImage1() {
+        return img1;
+    }
+
+    public GreyscaleImage getGXY1() {
+        return gXY1;
+    }
+
+    public GreyscaleImage getTheta1() {
+        return theta1;
+    }
+
+    public ImageExt getImage2() {
+        return img2;
+    }
+
+    public GreyscaleImage getGXY2() {
+        return gXY2;
+    }
+
+    public GreyscaleImage getTheta2() {
+        return theta2;
     }
 }
