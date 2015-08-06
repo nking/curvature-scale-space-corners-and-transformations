@@ -2854,7 +2854,8 @@ public class ImageProcessor {
     /**
     NOT YET TESTED
      http://en.wikipedia.org/wiki/Bilinear_interpolation
-     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg                
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg   
+     * 
      * @param x
      * @param y
      * @return 

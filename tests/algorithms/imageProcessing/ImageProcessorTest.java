@@ -772,6 +772,61 @@ public class ImageProcessorTest extends TestCase {
             }
         }
     }
+   
+    public void testBiLinearInterpolation0() throws Exception {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Image img = new Image(10, 10);
+        Arrays.fill(img.r, 100);
+        Arrays.fill(img.g, 200);
+        Arrays.fill(img.b, 50);
+        
+        float x = 2f;
+        float y = 2f;
+        double[] rgb = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(rgb[0] - 100) < 0.1);
+        assertTrue(Math.abs(rgb[1] - 200) < 0.1);
+        assertTrue(Math.abs(rgb[2] - 50) < 0.1);
+        
+        x = 2.2f;
+        y = 2.7f;
+        rgb = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(rgb[0] - 100) < 0.1);
+        assertTrue(Math.abs(rgb[1] - 200) < 0.1);
+        assertTrue(Math.abs(rgb[2] - 50) < 0.1);
+        
+    }
+    
+    public void testBiLinearInterpolation1() throws Exception {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage img = new GreyscaleImage(10, 10);
+        Arrays.fill(img.getValues(), 100);
+        
+        float x = 2f;
+        float y = 2f;
+        double v = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(v - 100) < 0.1);
+        
+        x = 2.2f;
+        y = 2.7f;
+        v = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(v - 100) < 0.1);
+        
+        //-------
+        img = new GreyscaleImage(10, 10);
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                img.setValue(i, j, i);
+            }
+        }
+        x = 4.3f;
+        y = 6f;
+        v = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(v - 4.3) < 0.01);
+    }
     
     private GreyscaleImage getCheckboard(int width) {
         

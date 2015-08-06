@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import static algorithms.imageProcessing.ClrIntensityDescriptor.sentinel;
 import algorithms.misc.MiscMath;
 
 /**
