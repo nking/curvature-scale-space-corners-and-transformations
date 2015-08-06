@@ -236,8 +236,8 @@ public class Features {
             
             float y1P = yCenter + offsets[i][1];
             
-            if ((x1P < 0) || (x1P > (gsImg.getWidth() - 1)) || (y1P < 0) ||
-                (y1P > (gsImg.getHeight() - 1))) {
+            if ((x1P < 0) || (x1P > (clrImg.getWidth() - 1)) || (y1P < 0) ||
+                (y1P > (clrImg.getHeight() - 1))) {
                 
                 outputR[count] = sentinel;
                 outputG[count] = sentinel;
