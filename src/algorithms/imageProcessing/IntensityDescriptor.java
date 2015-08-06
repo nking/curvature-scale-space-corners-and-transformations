@@ -6,4 +6,7 @@ package algorithms.imageProcessing;
  */
 public interface IntensityDescriptor {
     
+    public void applyNormalization();
+    
+    public boolean isNormalized();
 }

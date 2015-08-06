@@ -433,6 +433,45 @@ public class MiscMath {
      * given an array of points, return the average and standard deviation from
      * the average
      * @param x
+     * @param length the number of indexes to use in x.  x can be longer than
+     * length
+     * @param sentinel value to flag that an item should not be included in
+     * calculations.
+     * @return float[]{avg, stDev}
+     */
+    public static float[] getAvgAndStDevIgnoreForSentinel(int[] x, int length, 
+        final int sentinel) {
+        
+        int n = length;
+        double sumX = 0;
+        int count = 0;
+        for (int i = 0; i < n; i++) {
+            if (x[i] == sentinel) {
+                continue;
+            }
+            sumX += x[i];
+            count++;
+        }
+        
+        float avgX = (float)(sumX/(float)count);
+        
+        sumX = 0;
+        for (int i = 0; i < n; i++) {
+            if (x[i] == sentinel) {
+                continue;
+            }
+            double diffX = x[i] - avgX;
+            sumX += (diffX * diffX);
+        }
+        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));
+        
+        return new float[]{avgX, stdDevX};
+    }
+    
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
      * @return 
      */
     public static double[] getAvgAndStDev(double[] x) {

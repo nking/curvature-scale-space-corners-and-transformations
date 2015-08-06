@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +22,8 @@ public class Features {
     protected final int bHalfW;
     
     protected final boolean useNormalizedIntensities;
+    
+    protected final float[][] xyOffsets;
     
     /**
     key = pixel coordinates of center of frame;
@@ -53,6 +56,7 @@ public class Features {
         this.clrImg = null;
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
+        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
     }
     
     /**
@@ -70,11 +74,47 @@ public class Features {
         this.clrImg = image;
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
+        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
     }
     
+    /**
+     * extract the intensity from the image for the given block center and
+     * return it in a descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at (xCenter, yCenter)
+     * @return 
+     */
     public IntensityDescriptor extractIntensity(int xCenter, int yCenter, 
-        float rotation) {
-        throw new UnsupportedOperationException("not yet implemented");
+        int rotation) {
+        
+        checkBounds(xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotKey = Integer.valueOf(rotation);
+        
+        Map<Integer, IntensityDescriptor> descriptors = intensityBlocks.get(p);
+        
+        IntensityDescriptor descriptor = null;
+        
+        if (descriptors != null) {
+            descriptor = descriptors.get(rotKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        } else {
+            descriptors = new HashMap<Integer, IntensityDescriptor>();
+            intensityBlocks.put(p, descriptors);
+        }
+        
+        descriptor = extractIntensityForBlock(xCenter, yCenter, rotation);
+        
+        assert(descriptor != null);
+        
+        descriptors.put(rotKey, descriptor);
+        
+        return descriptor;
     }
     
     public GradientDescriptor extractGradient(int xCenter, int yCenter, 
@@ -82,18 +122,137 @@ public class Features {
         throw new UnsupportedOperationException("not yet implemented");
     }
     
-    private IntensityDescriptor extractNormalizedIntensity(int xCenter, 
-        int yCenter, float rotation) {
-        throw new UnsupportedOperationException("not yet implemented");
+    private IntensityDescriptor extractIntensityForBlock(int xCenter, 
+        int yCenter, int rotation) {
+        
+        Transformer transformer = new Transformer();
+        
+        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);
+        
+        IntensityDescriptor descriptor;
+        
+        if (gsImg != null) {
+            descriptor = extractGsIntensityForBlock(xCenter, yCenter, 
+                frameOffsets);
+        } else {
+            descriptor = extractClrIntensityForBlock(xCenter, yCenter, 
+                frameOffsets);
+        }
+        
+        if (useNormalizedIntensities) {
+            descriptor.applyNormalization();
+        }
+        
+        return descriptor;
     }
-    
-    private void extractNormalizedIntensity(int xCenter, 
-        int yCenter, float rotation, float[] output) {
-        throw new UnsupportedOperationException("not yet implemented");
+
+    private void checkBounds(int xCenter, int yCenter) {
+        
+        if (xCenter < 0 || yCenter < 0) {
+            throw new IllegalArgumentException("xCenter and yCenter must be > -1");
+        }
+        
+        if (gsImg != null) {
+            if (xCenter > (gsImg.getWidth() - 1)) {
+                throw new IllegalArgumentException("xCenter must be less than image width");
+            }
+            if (yCenter > (gsImg.getHeight() - 1)) {
+                throw new IllegalArgumentException("yCenter must be less than image height");
+            }
+        } else {
+            if (xCenter > (clrImg.getWidth() - 1)) {
+                throw new IllegalArgumentException("xCenter must be less than image width");
+            }
+            if (yCenter > (clrImg.getHeight() - 1)) {
+                throw new IllegalArgumentException("yCenter must be less than image height");
+            }
+        }
     }
-    
-    private void normalize(float[] output) {
-        throw new UnsupportedOperationException("not yet implemented");
+
+    /**
+     * NOT READY FOR USE YET
+     * extract the intensity from the image and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param offsets
+     * @return 
+     */
+    private IntensityDescriptor extractGsIntensityForBlock(int xCenter, 
+        int yCenter, float[][] offsets) {
+        
+        int[] output = new int[offsets.length];
+        
+        int sentinel = GsIntensityDescriptor.sentinel;
+        
+        int count = 0;
+        for (int i = 0; i < offsets.length; ++i) {
+            
+            float x1P = xCenter + offsets[i][0];
+            
+            float y1P = yCenter + offsets[i][1];
+            
+            if ((x1P < 0) || (x1P > (gsImg.getWidth() - 1)) || (y1P < 0) ||
+                (y1P > (gsImg.getHeight() - 1))) {
+                
+                output[count] = sentinel;
+                
+            } else {
+                throw new UnsupportedOperationException("not yet implemented");
+                //< interpolate for a half pixel radius around (xCenter, yCenter) if not an integer
+            }
+            
+        }
+        
+        IntensityDescriptor desc = new GsIntensityDescriptor(output);
+        
+        return desc;
     }
    
+    /**
+     * NOT READY FOR USE YET
+     * extract the intensity from the image and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param offsets
+     * @return 
+     */
+    private IntensityDescriptor extractClrIntensityForBlock(int xCenter, 
+        int yCenter, float[][] offsets) {
+        
+        int[] outputR = new int[offsets.length];
+        int[] outputG = new int[offsets.length];
+        int[] outputB = new int[offsets.length];
+        
+        int sentinel = ClrIntensityDescriptor.sentinel;
+        
+        int count = 0;
+        for (int i = 0; i < offsets.length; ++i) {
+            
+            float x1P = xCenter + offsets[i][0];
+            
+            float y1P = yCenter + offsets[i][1];
+            
+            if ((x1P < 0) || (x1P > (gsImg.getWidth() - 1)) || (y1P < 0) ||
+                (y1P > (gsImg.getHeight() - 1))) {
+                
+                outputR[count] = sentinel;
+                outputG[count] = sentinel;
+                outputB[count] = sentinel;
+                
+            } else {
+                throw new UnsupportedOperationException("not yet implemented");
+                //< interpolate for a half pixel radius around (xCenter, yCenter) if not an integer
+            }
+            
+        }
+        
+        IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG,
+            outputB);
+        
+        return desc;
+    }
 }
