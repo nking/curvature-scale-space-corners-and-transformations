@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * NOT READY FOR USE.  NOT TESTED YET.
  * class to help extract and reuse feature descriptors.
  * @author nichole
  */
@@ -149,28 +150,32 @@ public class Features {
     private void checkBounds(int xCenter, int yCenter) {
         
         if (xCenter < 0 || yCenter < 0) {
-            throw new IllegalArgumentException("xCenter and yCenter must be > -1");
+            throw new IllegalArgumentException(
+            "xCenter and yCenter must be > -1");
         }
         
         if (gsImg != null) {
             if (xCenter > (gsImg.getWidth() - 1)) {
-                throw new IllegalArgumentException("xCenter must be less than image width");
+                throw new IllegalArgumentException(
+                "xCenter must be less than image width");
             }
             if (yCenter > (gsImg.getHeight() - 1)) {
-                throw new IllegalArgumentException("yCenter must be less than image height");
+                throw new IllegalArgumentException(
+                "yCenter must be less than image height");
             }
         } else {
             if (xCenter > (clrImg.getWidth() - 1)) {
-                throw new IllegalArgumentException("xCenter must be less than image width");
+                throw new IllegalArgumentException(
+                "xCenter must be less than image width");
             }
             if (yCenter > (clrImg.getHeight() - 1)) {
-                throw new IllegalArgumentException("yCenter must be less than image height");
+                throw new IllegalArgumentException(
+                "yCenter must be less than image height");
             }
         }
     }
 
     /**
-     * NOT READY FOR USE YET
      * extract the intensity from the image and place in the descriptor.
      * Note that if the transformed pixel is out of bounds of the image,
      * a sentinel is the value for that location in the descriptor.
@@ -186,6 +191,8 @@ public class Features {
         
         int sentinel = GsIntensityDescriptor.sentinel;
         
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         int count = 0;
         for (int i = 0; i < offsets.length; ++i) {
             
@@ -199,10 +206,13 @@ public class Features {
                 output[count] = sentinel;
                 
             } else {
-                throw new UnsupportedOperationException("not yet implemented");
-                //< interpolate for a half pixel radius around (xCenter, yCenter) if not an integer
+                
+                //non-adaptive algorithms: nearest neighbor or bilinear
+                
+                double v = imageProcessor.biLinearInterpolation(gsImg, x1P, y1P);
+                
+                output[count] = (int)Math.round(v);
             }
-            
         }
         
         IntensityDescriptor desc = new GsIntensityDescriptor(output);
@@ -211,7 +221,6 @@ public class Features {
     }
    
     /**
-     * NOT READY FOR USE YET
      * extract the intensity from the image and place in the descriptor.
      * Note that if the transformed pixel is out of bounds of the image,
      * a sentinel is the value for that location in the descriptor.
@@ -229,6 +238,8 @@ public class Features {
         
         int sentinel = ClrIntensityDescriptor.sentinel;
         
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         int count = 0;
         for (int i = 0; i < offsets.length; ++i) {
             
@@ -244,8 +255,12 @@ public class Features {
                 outputB[count] = sentinel;
                 
             } else {
-                throw new UnsupportedOperationException("not yet implemented");
-                //< interpolate for a half pixel radius around (xCenter, yCenter) if not an integer
+                
+                double[] v = imageProcessor.biLinearInterpolation(clrImg, x1P, y1P);
+                
+                outputR[count] = (int)Math.round(v[0]);
+                outputG[count] = (int)Math.round(v[1]);
+                outputB[count] = (int)Math.round(v[2]);
             }
             
         }
@@ -255,4 +270,5 @@ public class Features {
         
         return desc;
     }
+
 }

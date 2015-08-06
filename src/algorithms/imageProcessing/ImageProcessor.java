@@ -2799,4 +2799,135 @@ public class ImageProcessor {
         }
     }
 
+    /**
+     * NOT YET TESTED
+     * 
+     http://en.wikipedia.org/wiki/Bilinear_interpolation
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg                
+     * @param x
+     * @param y
+     * @return 
+     */
+    public double biLinearInterpolation(GreyscaleImage gsImg, float x, float y) {
+                
+        double x1 = Math.floor(x);
+       
+        double x2 = Math.ceil(x);
+        
+        double y1 = Math.floor(y);
+       
+        double y2 = Math.ceil(y);
+        
+        double v1, v2;
+        
+        if (x1 == x2) {
+            
+            v1 = gsImg.getValue((int)x1, (int)y1);
+            
+            if (y1 == y2) {
+                return v1;
+            }
+            
+            v2 = gsImg.getValue((int)x1, (int)y2);
+            
+        } else {
+            
+            // interpolate over row y1
+            v1 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y1) +
+                ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y1);
+            
+            if (y1 == y2) {
+                return v1;
+            }
+            
+            // interpolate over row y2
+            v2 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y2) +
+                ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y2);
+        }
+        
+        // interpolate the fraction of v1 and v2 over rows
+        double v = ((y2 - y)/(y2 - y1)) * v1 + ((y - y1)/(y2 - y1)) * v2;
+        
+        return v;
+    }
+    
+    /**
+    NOT YET TESTED
+     http://en.wikipedia.org/wiki/Bilinear_interpolation
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg                
+     * @param x
+     * @param y
+     * @return 
+     */
+    public double[] biLinearInterpolation(Image clrImg, float x, float y) {
+        
+        double x1 = Math.floor(x);
+       
+        double x2 = Math.ceil(x);
+        
+        double y1 = Math.floor(y);
+       
+        double y2 = Math.ceil(y);
+                
+        double r1, r2, g1, g2, b1, b2;
+        
+        if (x1 == x2) {
+
+            r1 = clrImg.getR((int)x1, (int)y1);
+            g1 = clrImg.getG((int)x1, (int)y1);
+            b1 = clrImg.getB((int)x1, (int)y1);
+
+            if (y1 == y2) {
+                return new double[]{r1, g1, b1};
+            } 
+            
+            r2 = clrImg.getR((int)x1, (int)y2);
+            g2 = clrImg.getG((int)x1, (int)y2);
+            b2 = clrImg.getB((int)x1, (int)y2);
+
+        } else {
+       
+            double v1X2Frac = ((x2 - x)/(x2 - x1));
+            double v1X1Frac = ((x - x1)/(x2 - x1));
+            
+            // interpolate over row y1
+            r1 = v1X2Frac * clrImg.getR((int)x1, (int)y1) +
+                v1X1Frac * clrImg.getR((int)x2, (int)y1);
+            
+            g1 = v1X2Frac * clrImg.getG((int)x1, (int)y1) +
+                v1X1Frac * clrImg.getG((int)x2, (int)y1);
+            
+            b1 = v1X2Frac * clrImg.getB((int)x1, (int)y1) +
+                v1X1Frac * clrImg.getB((int)x2, (int)y1);
+            
+            if (y1 == y2) {
+                return new double[]{r1, g1, b1};
+            }
+            
+            // interpolate over row y2
+            r2 = v1X2Frac * clrImg.getR((int)x1, (int)y2) +
+                v1X1Frac * clrImg.getR((int)x2, (int)y2);
+            
+            g2 = v1X2Frac * clrImg.getG((int)x1, (int)y2) +
+                v1X1Frac * clrImg.getG((int)x2, (int)y2);
+            
+            b2 = v1X2Frac * clrImg.getB((int)x1, (int)y2) +
+                v1X1Frac * clrImg.getB((int)x2, (int)y2);
+        }
+        
+        double v1Y2Frac = ((y2 - y)/(y2 - y1));
+        double v1Y1Frac = ((y - y1)/(y2 - y1));
+            
+        // interpolate the fraction of v1 and v2 over rows
+        double r = v1Y2Frac * r1 + v1Y1Frac * r2;
+        
+        // interpolate the fraction of v1 and v2 over rows
+        double g = v1Y2Frac * g1 + v1Y1Frac * g2;
+        
+        // interpolate the fraction of v1 and v2 over rows
+        double b = v1Y2Frac * b1 + v1Y1Frac * b2;
+        
+        return new double[]{r, g, b};
+    }
+    
 }
