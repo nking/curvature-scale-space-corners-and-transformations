@@ -326,7 +326,7 @@ public class ShapeMatcherTest extends TestCase {
                         matcher.findBestAmongDitheredRotated(
                         features1, features2, cr1, cr2, dither);
 
-                    if (stat != null && (stat.getSumSqDiff() > stat.getImg2PointErr())) {
+                    if (stat != null && (stat.getSumSqDiff() < stat.getImg2PointErr())) {
                         if (best == null) {
                             best = stat;
                             log.info(ii + ") best stat so far=" + best.toString());

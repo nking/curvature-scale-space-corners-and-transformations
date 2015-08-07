@@ -3,15 +3,12 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayDescendingComparator;
-import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -900,9 +897,11 @@ if (true) {
                     
                     if (best == null) {
                         best = stat;
+                        best.setImg1RotInDegrees(rotD1);
                     } else {
                         if (best.getSumSqDiff() > stat.getSumSqDiff()) {
                             best = stat;
+                            best.setImg1RotInDegrees(rotD1);
                         }
                     }
                 }
