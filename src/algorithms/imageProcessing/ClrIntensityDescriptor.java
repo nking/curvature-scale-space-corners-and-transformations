@@ -40,6 +40,7 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     }
     
     /**
+     * NOT IMPLEMENTED
      * apply a normalization to pixel values such that 
      * I[pixel] = (I[pixel] - mean(all I))/standardDeviation(all I).
      * The method invoked a second time does not change the internal values.
@@ -51,28 +52,27 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
             return;
         }
         
+        /*
+        TODO: implement this...
+        
+        histogram equalization at the pre-processing stage of the entire image
+        can stretch the range of values over the available range, but for
+        images containing a small intersection of content that might not be
+        a helpful operation.
+        
+        corrections at the block level for illumination probably need to 
+        be derived at a larger level with knowledge of the illumination
+        source...
+        */
+        
+        /*
         float[] meanAndStDevR = MiscMath.getAvgAndStDevIgnoreForSentinel(red, 
             red.length, sentinel);
         float[] meanAndStDevG = MiscMath.getAvgAndStDevIgnoreForSentinel(green, 
             green.length, sentinel);
         float[] meanAndStDevB = MiscMath.getAvgAndStDevIgnoreForSentinel(blue, 
-            blue.length, sentinel);
-        
-        for (int i = 0; i < red.length; ++i) {
-            
-            if (red[i] == sentinel) {
-                continue;
-            }
-            red[i] -= meanAndStDevR[0];
-            red[i] /= meanAndStDevR[1];
-            
-            green[i] -= meanAndStDevG[0];
-            green[i] /= meanAndStDevG[1];
-            
-            blue[i] -= meanAndStDevB[0];
-            blue[i] /= meanAndStDevB[1];
-            
-        }
+            blue.length, sentinel);        
+        */
         
         hasBeenNormalized = true;
     }

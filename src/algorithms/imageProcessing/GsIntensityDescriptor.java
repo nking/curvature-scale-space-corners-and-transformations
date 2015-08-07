@@ -21,9 +21,10 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     }
     
     /**
-     * NOT YET TESTED
-     * apply a normalization to pixel values such that 
-     * I[pixel] = (I[pixel] - mean(all I))/standardDeviation(all I).
+     * NOT YET IMPLEMENTED
+     * apply a normalization to pixel values to try to reduce the differences 
+     * due to images of the same region due to lighting or perspective 
+     * for example.
      * The method invoked a second time does not change the internal values.
      */
     @Override
@@ -33,18 +34,21 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
             return;
         }
         
+        /*
+        TODO: implement this...
+        
+        histogram equalization at the pre-processing stage of the entire image
+        can stretch the range of values over the available range, but for
+        images containing a small intersection of content that might not be
+        a helpful operation.
+        
+        corrections at the block level for illumination probably need to 
+        be derived at a larger level with knowledge of the illumination
+        source...
+        */
+        
         float[] meanAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(grey, 
             grey.length, sentinel);
-        
-        for (int i = 0; i < grey.length; ++i) {
-            
-            if (grey[i] == sentinel) {
-                continue;
-            }
-            
-            grey[i] -= meanAndStDev[0];
-            grey[i] /= meanAndStDev[1];
-        }
         
         hasBeenNormalized = true;
     }
