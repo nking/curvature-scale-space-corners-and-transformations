@@ -79,7 +79,8 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
 
     @Override
     public boolean isNormalized() {
-        return hasBeenNormalized;
+        return false;
+        //return hasBeenNormalized;
     }
     
     @Override

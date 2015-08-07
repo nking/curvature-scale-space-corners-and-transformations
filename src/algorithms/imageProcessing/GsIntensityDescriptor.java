@@ -55,7 +55,8 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
 
     @Override
     public boolean isNormalized() {
-        return hasBeenNormalized;
+        return false;
+        //return hasBeenNormalized;
     }
     
     @Override
@@ -91,7 +92,9 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
                 continue;
             }
             
-            sum += (v1 - v2)*(v1 - v2);
+            int diff = v1 - v2;
+            
+            sum += diff*diff;
             
             count++;
         }
