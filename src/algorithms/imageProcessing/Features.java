@@ -16,6 +16,10 @@ public class Features {
     
     protected final Image clrImg;
     
+    // TODO: consider adding the color gradients when the use of gradients
+    //     is tested and working
+    protected final GreyscaleImage thetaImg;
+    
     /**
      * the half width of a block.  For example, to extract the 25 pixels
      * centered on (xc, yc), bHalfW would be '2'
@@ -51,13 +55,15 @@ public class Features {
      * for each block are normalized by mean and standard deviation
      * I_normalized(pixel) = (I(pixel)-I_mean(block))/I_stdev(block)).
      */
-    public Features(GreyscaleImage image, int blockHalfWidths, 
+    public Features(GreyscaleImage image, GreyscaleImage gradientThetaImg,
+        int blockHalfWidths, 
         boolean useNormalizedIntensities) {
         this.gsImg = image;
         this.clrImg = null;
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
         this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
+        this.thetaImg = gradientThetaImg;
     }
     
     /**
@@ -69,13 +75,14 @@ public class Features {
      * for each block are normalized by mean and standard deviation
      * I_normalized(pixel) = (I(pixel)-I_mean(block))/I_stdev(block)).
      */
-    public Features(Image image, int blockHalfWidths, boolean 
-        useNormalizedIntensities) {
+    public Features(Image image, GreyscaleImage gradientThetaImg,
+        int blockHalfWidths, boolean useNormalizedIntensities) {
         this.gsImg = null;
         this.clrImg = image;
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
         this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
+        this.thetaImg = gradientThetaImg;
     }
     
     /**
@@ -147,32 +154,52 @@ public class Features {
         return descriptor;
     }
 
-    private void checkBounds(int xCenter, int yCenter) {
+    private void checkBounds(int x, int y) {
         
-        if (xCenter < 0 || yCenter < 0) {
-            throw new IllegalArgumentException(
-            "xCenter and yCenter must be > -1");
+        if (isWithinXBounds(y)) {
+            throw new IllegalArgumentException("y is out of bounds of image");
+        }
+        if (isWithinYBounds(y)) {
+            throw new IllegalArgumentException("y is out of bounds of image");
+        }
+    }
+    
+    public boolean isWithinXBounds(int x) {
+        
+        if (x < 0) {
+            return false;
         }
         
         if (gsImg != null) {
-            if (xCenter > (gsImg.getWidth() - 1)) {
-                throw new IllegalArgumentException(
-                "xCenter must be less than image width");
-            }
-            if (yCenter > (gsImg.getHeight() - 1)) {
-                throw new IllegalArgumentException(
-                "yCenter must be less than image height");
+            if (x > (gsImg.getWidth() - 1)) {
+                return false;
             }
         } else {
-            if (xCenter > (clrImg.getWidth() - 1)) {
-                throw new IllegalArgumentException(
-                "xCenter must be less than image width");
-            }
-            if (yCenter > (clrImg.getHeight() - 1)) {
-                throw new IllegalArgumentException(
-                "yCenter must be less than image height");
+            if (x > (clrImg.getWidth() - 1)) {
+                return false;
             }
         }
+        
+        return true;
+    }
+    
+    public boolean isWithinYBounds(int y) {
+        
+        if (y < 0) {
+            return false;
+        }
+        
+        if (gsImg != null) {
+            if (y > (gsImg.getHeight() - 1)) {
+                return false;
+            }
+        } else {
+            if (y > (clrImg.getHeight() - 1)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**

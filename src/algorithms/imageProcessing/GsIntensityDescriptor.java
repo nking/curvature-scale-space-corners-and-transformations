@@ -12,6 +12,8 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     
     protected final int[] grey;
     
+    protected float sumSquaredError = Float.NaN;
+    
     protected boolean hasBeenNormalized = false;
     
     public GsIntensityDescriptor(int[] intensities) {
@@ -97,11 +99,17 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
      * Determine the sum squared error within this descriptor using 
      * auto-correlation and the assumption that the value at the middle index 
      * is the value from the original central pixel.
-     * 
+     * Note that the value is persisted after one calculation.  Any use
+     * of normalization should happen before this is first invoked.
+     * (A function with a force calculation argument can be made if necessary though).
      * @return 
      */
     @Override
     public float sumSquaredError() {
+        
+        if (!Float.isNaN(sumSquaredError)) {
+            return sumSquaredError;
+        }
         
         int n = grey.length;
         int midIdx = n >> 1;
@@ -130,8 +138,10 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
             count++;
         }
         sum /= (double)count;
-                
-        return (float)sum;
+               
+        this.sumSquaredError = (float)sum;
+        
+        return sumSquaredError;
     }
 
 }

@@ -17,6 +17,8 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     protected final int[] green;
     protected final int[] blue;
     
+    protected float sumSquaredError = Float.NaN;
+    
     protected boolean hasBeenNormalized = false;
     
     public ClrIntensityDescriptor(int[] r, int[] g, int[] b) {
@@ -140,11 +142,17 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
      * Determine the sum squared error within this descriptor using 
      * auto-correlation and the assumption that the value at the middle index 
      * is the value from the original central pixel.
-     * 
+     * Note that the value is persisted after one calculation.  Any use
+     * of normalization should happen before this is first invoked.
+     * (A function with a force calculation argument can be made if necessary though).
      * @return 
      */
     @Override
     public float sumSquaredError() {
+        
+        if (!Float.isNaN(sumSquaredError)) {
+            return sumSquaredError;
+        }
         
         int n = red.length;
         int midIdx = n >> 1;
@@ -186,7 +194,9 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
         
         float avg = (float)(sumR + sumG + sumB)/3.f;
         
-        return avg;
+        this.sumSquaredError = avg;
+        
+        return sumSquaredError;
     }
 
 }
