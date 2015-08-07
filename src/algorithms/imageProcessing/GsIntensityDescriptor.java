@@ -21,6 +21,7 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     }
     
     /**
+     * NOT YET TESTED
      * apply a normalization to pixel values such that 
      * I[pixel] = (I[pixel] - mean(all I))/standardDeviation(all I).
      * The method invoked a second time does not change the internal values.

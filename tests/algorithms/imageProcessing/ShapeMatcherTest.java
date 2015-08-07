@@ -258,7 +258,7 @@ public class ShapeMatcherTest extends TestCase {
         ShapeMatcher matcher = new ShapeMatcher();
         
         int blockHalfWidth = 2;
-        boolean useNormalizedIntensities = true;
+        boolean useNormalizedIntensities = false;
         
         ImageExt img1 = helper.getImage1(); 
         GreyscaleImage gXY1 = helper.getGXY1();
@@ -317,44 +317,28 @@ public class ShapeMatcherTest extends TestCase {
                 }
             }
             
-            for (CornerRegion cr1 : set1) {
-                                
-                int rotD1 = Math.round(cr1.getRelativeOrientationInDegrees());
-                
-                int kMaxIdx1 = cr1.getKMaxIdx();
-                
-                IntensityDescriptor desc1 = features1.extractIntensity(
-                    cr1.getX()[kMaxIdx1], cr1.getY()[kMaxIdx1], rotD1);
-                
+            FeatureComparisonStat best = null;
+            
+            for (CornerRegion cr1 : set1) {                                
                 for (CornerRegion cr2 : set2) {
 
-                    log.info("corner region1 " + ii);
-                    log.info(cr1.toString());
-
-                    log.info("corner region2 " + ii);
-                    log.info(cr2.toString());
-
-                    int rotD2 = Math.round(cr2.getRelativeOrientationInDegrees());
-
-                    float rotDeg = AngleUtil.getAngleDifference(rotD1, rotD2);
-
-                    log.info("rotD1=" + rotD1 + " rotD2=" + rotD2);
-
-                    log.info("rot difference between corner1 and corner2=" +
-                        rotDeg + " params.rotationInDegrees=" 
-                        + params.getRotationInDegrees());
-
-                    int kMaxIdx2 = cr2.getKMaxIdx();
-                
-                    IntensityDescriptor desc2 = features2.extractIntensity(
-                        cr2.getX()[kMaxIdx2], cr2.getY()[kMaxIdx2], rotD2);
-                    
                     FeatureComparisonStat stat = 
                         matcher.findBestAmongDitheredRotated(
                         features1, features2, cr1, cr2, dither);
 
-                    int zz=1;
-                }
+                    if (stat != null && (stat.getSumSqDiff() > stat.getImg2PointErr())) {
+                        if (best == null) {
+                            best = stat;
+                            log.info(ii + ") best stat so far=" + best.toString());
+                        } else if (best.getSumSqDiff() > stat.getSumSqDiff()) {
+                            best = stat;
+                            log.info(ii + ") best stat so far=" + best.toString());
+                        }
+                    }
+                }                
+            }
+            if (best != null) {
+                log.info(ii + ") FINAL best=" + best.toString());
             }
         }
     }

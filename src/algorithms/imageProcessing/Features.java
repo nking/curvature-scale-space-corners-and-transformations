@@ -93,8 +93,8 @@ public class Features {
      * @param rotation dominant orientation in degrees for feature at (xCenter, yCenter)
      * @return 
      */
-    public IntensityDescriptor extractIntensity(int xCenter, int yCenter, 
-        int rotation) {
+    public IntensityDescriptor extractIntensity(final int xCenter, 
+        final int yCenter, final int rotation) {
         
         checkBounds(xCenter, yCenter);
         
@@ -156,10 +156,10 @@ public class Features {
 
     private void checkBounds(int x, int y) {
         
-        if (isWithinXBounds(y)) {
-            throw new IllegalArgumentException("y is out of bounds of image");
+        if (!isWithinXBounds(x)) {
+            throw new IllegalArgumentException("x is out of bounds of image");
         }
-        if (isWithinYBounds(y)) {
+        if (!isWithinYBounds(y)) {
             throw new IllegalArgumentException("y is out of bounds of image");
         }
     }
@@ -240,6 +240,8 @@ public class Features {
                 
                 output[count] = (int)Math.round(v);
             }
+            
+            count++;
         }
         
         IntensityDescriptor desc = new GsIntensityDescriptor(output);
@@ -290,6 +292,7 @@ public class Features {
                 outputB[count] = (int)Math.round(v[2]);
             }
             
+            count++;
         }
         
         IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG,

@@ -587,7 +587,7 @@ if (true) {
         }
         
         int blockHalfWidth = 2;
-        boolean useNormalizedIntensities = true;
+        boolean useNormalizedIntensities = false;
         
         // TODO: consider using greyscale images
         Features features1 = new Features(img1, theta1, blockHalfWidth, 
@@ -878,11 +878,11 @@ if (true) {
         IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);
         
         for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
-            if (features1.isWithinXBounds(x1d)) {
+            if (!features1.isWithinXBounds(x1d)) {
                 continue;
             }
             for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
-                if (features1.isWithinYBounds(y1d)) {
+                if (!features1.isWithinYBounds(y1d)) {
                     continue;
                 }
                 
