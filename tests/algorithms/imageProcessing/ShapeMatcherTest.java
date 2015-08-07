@@ -322,9 +322,14 @@ public class ShapeMatcherTest extends TestCase {
             for (CornerRegion cr1 : set1) {                                
                 for (CornerRegion cr2 : set2) {
 
-                    FeatureComparisonStat stat = 
-                        matcher.findBestAmongDitheredRotated(
+                    FeatureComparisonStat stat = null;
+                    
+                    try {
+                        stat = matcher.findBestAmongDitheredRotated(
                         features1, features2, cr1, cr2, dither);
+                    } catch(CornerRegion.CornerRegionDegneracyException e) {
+                        log.severe(e.getMessage());
+                    }
 
                     if (stat != null && (stat.getSumSqDiff() < stat.getImg2PointErr())) {
                         if (best == null) {
@@ -361,14 +366,18 @@ public class ShapeMatcherTest extends TestCase {
         PairIntArray out2) {
         out1.add(206, 66);
         out2.add(168, 200);
-        out1.add(331, 161);
-        out2.add(54, 313);
-        out1.add(268, 85);
-        out2.add(142, 255);
-        out1.add(181, 85);
-        out2.add(156, 173);
-        out1.add(195, 187);
-        out2.add(53, 171);
+        out1.add(331, 167);
+        out2.add(43, 313);
+        out1.add(165, 187);
+        out2.add(55, 139);
+        out1.add(220, 220);
+        out2.add(9, 194);
+        out1.add(170, 37);
+        out2.add(200, 171);
+        out1.add(316, 51);
+        out2.add(164, 305);
+        out1.add(168, 62);
+        out2.add(178, 164);
     }
 
     private void getBrownAndLoweFeatureCentersBinned(List<PairInt> points1,
