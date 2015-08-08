@@ -164,7 +164,6 @@ public class ShapeMatcherTest extends TestCase {
     }
 
         /*
-
             switch (ds) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -284,7 +283,6 @@ public class ShapeMatcherTest extends TestCase {
         Features features2 = new Features(helper.getGreyscaleImage2(), 
             gXY2, blockHalfWidth, useNormalizedIntensities);
         
-        // TODO: this is not the final flow of logic.  still experimenting...
         
         // iterate over the manual list of corners and find the corner regions
         for (int ii = 0; ii < points1.getN(); ++ii) {
@@ -322,7 +320,9 @@ public class ShapeMatcherTest extends TestCase {
             
             FeatureComparisonStat best = null;
             
-            for (CornerRegion cr1 : set1) {                                
+            int c1 = 0;
+            for (CornerRegion cr1 : set1) {
+                int c2 = 0;
                 for (CornerRegion cr2 : set2) {
 
                     FeatureComparisonStat stat = null;
@@ -343,11 +343,70 @@ public class ShapeMatcherTest extends TestCase {
                             log.info(ii + ") best stat so far=" + best.toString());
                         }
                     }
-                }                
+                    c2++;
+                }
+                c1++;
             }
             assertNotNull(best);
             log.info(ii + ") FINAL best=" + best.toString());
         }
+        
+        // Now search from points1 through all of corners2 to see if best 
+        // match is what is expected.
+        
+        // iterate over the manual list of corners and find the corner regions
+        for (int ii = 0; ii < points1.getN(); ++ii) {
+
+            final int x1 = points1.getX(ii);
+            final int y1 = points1.getY(ii);
+            final int x2 = points2.getX(ii);
+            final int y2 = points2.getY(ii);
+
+            log.info("looking for corner region for (" + x1 + "," + y1 + ")");
+
+            Set<CornerRegion> set1 = new HashSet<CornerRegion>();
+            for (CornerRegion cr : cornerRegions1) {
+                int kMaxIdx = cr.getKMaxIdx();
+                int x = cr.getX()[kMaxIdx];
+                int y = cr.getY()[kMaxIdx];
+                int xDiff = Math.abs(x1 - x);
+                int yDiff = Math.abs(y1 - y);
+                if (xDiff < 5 && yDiff < 5) {
+                    set1.add(cr);
+                }
+            }
+            
+            FeatureComparisonStat best = null;
+                        
+            for (CornerRegion cr1 : set1) {                                
+                for (CornerRegion cr2 : cornerRegions2) {
+                    FeatureComparisonStat stat = null;
+                    try {
+                        stat = matcher.findBestAmongDitheredRotated(
+                            features1, features2, cr1, cr2, dither);
+                    } catch(CornerRegion.CornerRegionDegneracyException e) {
+                        log.severe(e.getMessage());
+                    }
+                    if (stat != null) {
+                        if (best == null) {
+                            best = stat;
+                            log.info(ii + ") best stat so far=" + best.toString());
+                        } else if (best.getSumSqDiff() > stat.getSumSqDiff()) {
+                            best = stat;
+                            log.info(ii + ") best stat so far=" + best.toString());
+                        }
+                    }
+                }                
+            }
+            
+            int diffX = best.getImg2Point().getX() - x2;
+            int diffY = best.getImg2Point().getY() - y2;
+            
+            assertNotNull(best);
+            
+            log.info(ii + ") FINAL diffX,diffY=(" + diffX + "," + diffY 
+            + ") best for compare against all corners2=" + best.toString());
+        }        
     }
 
     protected static void getBrownAndLoweFeatureCentersBinned(PairIntArray out1,

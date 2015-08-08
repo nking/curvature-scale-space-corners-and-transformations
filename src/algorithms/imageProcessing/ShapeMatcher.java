@@ -657,13 +657,12 @@ if (true) {
      * create x and y offsets for the neighbor points within 2 pixel radius.
      * The result is a two-dimensional array of length 25 with the first
      * dimension being the x array and the 2nd dimension being the y array.
-     * Note that the offset of (0,0) is the first given.
      * @return 
      */
     public float[][] createNeighborOffsets() {
         
         //TODO: test if this needs to be higher for higher resolution data
-        int d = 8;
+        int d = 2;
         
         return Misc.createNeighborOffsets(d);
     }    
@@ -909,9 +908,14 @@ if (true) {
                     FeatureComparisonStat gStat = Features.calculateIntensityStat(
                         gDesc1, x1d, y1d, gDesc2, x2, y2);
                     
-                    if ((gStat.getSumSqDiff() < gStat.getImg2PointErr()) &&
-                        (stat.getSumSqDiff() < stat.getImg2PointErr())) {
+                    if ((gStat.getSumSqDiff() < 1.1*gStat.getImg2PointErr()) &&
+                        (stat.getSumSqDiff() < 1.1*stat.getImg2PointErr())) {
                         
+                        log.info(String.format(
+                            "(%d,%d) rot1=%d (%d,%d) rot2=%d intStat=(%.1f,%.1f) gStat=(%.1f,%.1f)",
+                            x1d, y1d, rotD1, x2, y2, rot2, stat.getSumSqDiff(), stat.getImg2PointErr(),
+                            gStat.getSumSqDiff(), gStat.getImg2PointErr()));                            
+
                         boolean compareIntensities = false;
                         
                         if (bestGradient == null) {
@@ -939,13 +943,6 @@ if (true) {
                         }
                         
                         if (compareIntensities) {
-                            
-                            if (stat.getSumSqDiff() < stat.getImg2PointErr()) {
-                                log.info(String.format(
-                                    "(%d,%d) rot1=%d (%d,%d) rot2=%d intStat=(%.1f,%.1f) gStat=(%.1f,%.1f)",
-                                    x1d, y1d, rotD1, x2, y2, rot2, stat.getSumSqDiff(), stat.getImg2PointErr(),
-                                    gStat.getSumSqDiff(), gStat.getImg2PointErr()));
-                            }
                             
                             if (bestIntensity == null) {
                                 bestIntensity = stat;

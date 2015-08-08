@@ -41,9 +41,7 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     
     /**
      * NOT IMPLEMENTED
-     * apply a normalization to pixel values such that 
-     * I[pixel] = (I[pixel] - mean(all I))/standardDeviation(all I).
-     * The method invoked a second time does not change the internal values.
+     * apply a normalization to pixel values 
      */
     @Override
     public void applyNormalization() {

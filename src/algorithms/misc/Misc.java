@@ -52,9 +52,9 @@ public class Misc {
      * create x and y offsets for the neighbor points within d pixel radius.
      * The result is a two-dimensional array of length (2*d+1)^2 with the first
      * dimension being the x array and the 2nd dimension being the y array.
-     * Note that the offset of (0,0) is the first given.
-     * @param d the half radius of square of offsets, beginning at (0,0)
-     * then (-d,-d), (-d, -d+1),... to make a dXd two dimensional array 
+     * Note that the offset of (0,0) is in the middle of the arrays.
+     * @param d the half radius of square of offsets, beginning at
+     * (-d,-d), (-d, -d+1),... to make a (2d+1)^2 two dimensional array 
      * of offsets.
      * @return 
      */
@@ -65,14 +65,10 @@ public class Misc {
         int n = 2*radiusFromCenter + 1;
         
         float[][] xyout = new float[n*n][];
-        xyout[0] = new float[2];
                 
-        int count = 1;
+        int count = 0;
         for (int x = -radiusFromCenter; x <= radiusFromCenter; ++x) {
             for (int y = -radiusFromCenter; y <= radiusFromCenter; ++y) {
-                if (x == 0 && y == 0) {
-                    continue;
-                }
                 
                 xyout[count] = new float[]{x, y};
                 

@@ -101,14 +101,14 @@ public class Features {
         
         PairInt p = new PairInt(xCenter, yCenter);
         
-        Integer rotKey = Integer.valueOf(rotation);
+        Integer rotationKey = Integer.valueOf(rotation);
         
         Map<Integer, IntensityDescriptor> descriptors = intensityBlocks.get(p);
         
         IntensityDescriptor descriptor = null;
         
         if (descriptors != null) {
-            descriptor = descriptors.get(rotKey);
+            descriptor = descriptors.get(rotationKey);
             if (descriptor != null) {
                 return descriptor;
             }
@@ -121,7 +121,7 @@ public class Features {
         
         assert(descriptor != null);
         
-        descriptors.put(rotKey, descriptor);
+        descriptors.put(rotationKey, descriptor);
         
         return descriptor;
     }
