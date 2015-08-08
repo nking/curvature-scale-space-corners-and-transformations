@@ -16,8 +16,8 @@ public class GsGradientDescriptor implements GradientDescriptor {
     
     protected boolean hasBeenNormalized = false;
     
-    public GsGradientDescriptor(int[] binnedCells) {
-        this.grey = binnedCells;
+    public GsGradientDescriptor(int[] a) {
+        this.grey = a;
     }
     
     // TODO: may change to use histograms or another technique

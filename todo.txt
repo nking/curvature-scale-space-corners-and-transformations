@@ -1,44 +1,436 @@
 Note, this is a precursor step to the agile story and tasks to gather notes 
 on needed features, bugs, etc.
 
--- consider making a separate method in EdgeExtractor for junction finding
-   between all edge points, even if embedded in the curve.
-   -- O(N_points) calculate x and y bounds of each edge
-   -- < O(N_points^2) compare edges within 1 pixel of each other's bounds to find
-      adjacent points.
-      store in 2 maps: key = pair int of pix coord, value = set<PairInt> of adjacent.
-                       key = pair int of each junction pix coord, 
-                             value = pairint holding edge index and index within the edge
-   -- << O(N_points) iterate over the junction maps to remove the keys which are not the center
-      of their junctions by comparing the number of values in first map among all members.
+-- detailed look at each stat
+   -- gradient
+      -- make a per-pixel option for extracting gradient
+   -- theta
+      -- constructor for Features needs to include a theta argument
+      -- make a per-pixel option for extracting theta
+      -- make the structure for a 2x2 cell of theta histogram (instead of binned values?)
 
--- since the Edges are constructed from intensity differences as the basis of the gradient,
-   it seems as if it might be useful to make a similar gradient set of images based upon
-   color instead of intensity.  
-   to do so, one could use the CIE X,Y color space with a center of (0.35, 0.35) and calculate
-   the theta of a (cieX, xieY) point.  that theta between 0 and 359 degrees would be mapped
-   to values 0 to 254.  the center space near (0.35, 0.35) is white so would be set to value 255.
-   I started the code for this already.
-   -- for each image, could use a histogram of values to perform theta to 0 to 255 conversion to
-      occupy the least amount of space so that the histogram equalization in Canny can change the range,
-      in other words, remove gaps in the theta bins during assignment.
-   -- converting color image to cie xy theta creates a greyscale image which can be used
-      by the CannyEdgeFilter and EdgeExtractor similarly to the intensity greyscale image.
-   -- compare the resulting extracted edges between the default intensity based and a color based.
+-- for B&L:
+   -- find expected matches using expected point lists as guides and searching
+      from corner regions close to them:
+      -- assert that intensities pass matching characteristics (SSD < err)
+      -- assert that gradients pass matching characteristics ( ? )
+         -- try gradients first with the 360 maps
+         -- once the method is working, can I reuse the coarser gradients
+            constructed during corner calcs?
+      -- assert that for a given point in expected point list1, the
+            matching point is found within the top k results
+      -- pause here and make sure the same results are achievable w/
+         the Venturi and the books test datasets.
+      -- determine a pattern to find the correct matches within the top results
+         -- presumably, pairwise calculation of euclidean for all matched pairs
+            (even if ambiguous).
+            then a look at frequency of the derived transformations before
+            using that as a fit to all points to decide between transformations?
+            Statistical methods that find the average among those while removing
+            outliers.   fitting in 3-d space: rot, transX, transY.
+-- for scale:
+     T. Lindeberg (1998). "Feature detection with automatic scale selection."
+         International Journal of Computer Vision 30 (2): pp 77--116.
+
+    Given: two images of the same scene with a large scale difference between them
+      -- find the same interest points indepently in each image
+    search for maxima of suitable functions in scale and space over the image.
+
+-- continue to develop the main method and test it.
+   -- finish implementing use of gradients
+      -- the histograms over larger than one pixel probably help to
+         still match even when there is skew
+   -- use all 3 images
+   -- compare greyscale to color use of intensities and gradients
+   -- verify that normalize is probably needed.
+      -- the test image of the statues at very different projections
+         is possibly a good test.
+
+-- histogram gradients
+
+           7 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+           6 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+           5 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+           4 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+           3 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+           2 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+           1 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+           0 [ ][ ][ ][ ][ ][ ][ ][ ] @ [ ][ ][ ][ ][ ][ ][ ]
+             -8  -7 -6 -5 -4 -3 -2 -1 0  1  2  3  4  5  6  7 
+                                      1  2  3  4  5  6  7  8
+          -1 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+          -2 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+          -3 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+          -4 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+          -5 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+          -6 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+          -7 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+          -8 [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+
+       Map<PairInt, Float> gradientXY
+       Map<PairInt, Float> theta
+
+       discard any with Mij < 0.1 of max Mi <-- didn't I do this with 2layer filtering of gXY?
+
+   (1) make an image out of AngleUtil.polarAngleCCW(gX, gY) just to compare visually to
+       the current theta image.
+       
+   (2) because these are corners, there should always be a dominant gradient, yes?
+       that is a unique direction for the pixel, yes?
+       If that is true, then:
+       (2a) determine dominant gradient in the 4x4 cell surrounding the pixel theta_ij = AngleUtil.polarAngleCCW(gX, gY)
+            defined as the max among those.
+            (note, i'm reusing the canny edge detector products here, excepting theta which I'm going to rewrite)
+    ---> test that this gives stable orientation w.r.t. the left and right image corners.  see espec the B&L2003.
+         since the corners are defned using a certain small radius, presumably the dominant gradient should be
+         small too... need it impervious to noise if going to rely on this without testing for other rotations.
+    ---> test expecially for the venturi images which look to be in regions without much of a gradient.
+       (2b) make a filter of offsets rotated by that amount using the transform of the zero offsets.
+            the current radius from center is small, but can increase it.
+            -- use the same filter for SSD of intensity as am currently doing
+            -- use the same filter for SSD of theta or a manhattan distance.
+
+            -- add the ability to analyze each of the 3 colors separately.  currently I'm averaging the results.
+           
+            -- for brown & lowe espec, is it better to replace the SSD with a normalized stat (and hence re-compute theta and mag from that)?
+            
+       
+       
+-- consider in my feature comparisons, keeping the individual
+   color information.
+
+-- improve my canny edge detector w/ some new entries here for computing
+   gradient using 6 neighbors
+   and the suggested derivations of the 2-layer thresh
+   and the line thinner
+   https://en.wikipedia.org/wiki/Canny_edge_detector#Finding_the_Intensity_Gradient_of_the_Image
+
+   note that the gradient changes might help with the normalized gradient right away
+
+-- normalized gradient and binary kernels
+http://www.cs.washington.edu/robotics/postscripts/kdes-nips-10.pdf
+
+       dominant gradient:  
+           |black->gray->white| is pointing left -90 
+           |white->gray->black| is pointing right 90 
+
+   see Windor & Brown for descriptor eval
+
+   is affine accounted for by mean and stdev corrections?
+              ( I(x) - mean(I) )
+      I'(x) = ------------------
+                  stdev(I)
+   then gaussian blur by sigma=2.7
+   then derivative (gradient) computed with 
+       n=2 binomial filter for a Gaussian first derivative 
+       that is sigma = sqrt(2)/2 = 0.707 = [1, 0, -1]
+
+   NOTE: for my canny edge filter, default uses 0.5f, -0.0f, -0.5 for kernel which is 1,0,-1 normalized by 0.5
+  
+      The theta corrected for the dominant gradient rotation is:
+          theta' = tan(gY/gX)-thetaDominant
+
+          thetaRel = -1*(AngleUtil.polarAngleCCW(gX, gY) - thetaDominant;
+      ==> the theta values memoized should be relative to 0,
+          then adapted upon use
+
+      theta' histogram is made for each group (subdivisions of the block) for n=8 intervals of 45 degrees each.
+          group is 4x4... or so
+
+      the feature vector is magnitude * theta' histogram where magnitude 
+          F_hist(group within block) = summation over each pixel in the group of
+                 m_adjusted * theta' histogram
+                 where m_adjusted = m(pixel) / sqrt( (summation of square of each m(pixel) in the group) + epsG ) (is epsG to avoid a divide by 0??)
+
+-- implement gradient use
+    -- before or after impl, read the chandrasekhar paper
+        http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
+        this is not patented?
+
+-- once have the new implementation in place, consider using dynamic programming
+   to store and reuse values for rotation.
+     -- because it's an O(1) fetch, would not be saving much in current impl,
+        but that might not be true once normalized and orientation corrections made
+
+-- for more feature matching tests,
+    see
+    http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
+    "For evaluating the performance of low-bit-rate descrip- tors, we use two data sets provided by Winder and Brown [10], Trevi Fountain and Notre Dame. Each data set has matching pairs of 64×64 pixel patches. For algorithms that require training, we use matching pairs from the Trevi Fountain. For testing, we randomly select 10,000 matching"
+    S. A. Winder and M. Brown, “Learning Local Image Descriptors,”
+in Computer Vision and Pattern Recognition, 2007. CVPR ’07. IEEE
+Conference on, 2007, pp. 1–8. 1, 2
+
+-- for the findSimilarFeaturesForRotatedFrames, also store
+   quadrants?
+     [][][][][]
+     [][][][][]
+     [][] *[][]    
+     [][][][][]
+     [][][][][]
+
+-- could improve the offsets by making them one-dimension instead...
+
+-- consider changing the binning to use gaussian pyramids instead
+   and save intermediate images.
+   -- solve for scale there with series of gaussian pyramids
+-- note that should make a different track when there are good filtered
+   corners but they are a small list.
+   in that case, can use pair-wise matching and validate the transformation
+   with the feature comparison for the 2 sets of points involved.
+
+-- instead of making the Euclidean transformation,
+   try matching patches in the blob list between images using patch comparisons?
+   instead of being N^4 it would be N^2 X rotating patches to compare
+
+   For a patch of size <>, number of rotations to compare over 360 is?
+       if the square is +- 2 from center, 
+           If summing within the
+           patch as a total rather than pixel to pixel comparison, can
+           use the repeated pattern, just once for a single rotation angle.
+               0 degrees
+               22.5 degrees
+               45 degrees
+               67.5 degrees
+           If comparing each pixel, then would calculate for each center,
+               the pixels for 0,  22.5,  45,  67.5
+                             90, 112.5, 135, 157.5
+                            180, 202.5, 225, 247.5
+                            ...,   ..., ...,   ...
+               32 sets of extracting a 5x5 matrix
+
+For a quick look, 
+   make a copy of the binned color images (w/o heq and w/ heq).
+
+   take the general hull centers from each, extracting a region += 10 around
+   them.
+
+   compare img1 to img2:
+      blob1: sum the intensities within the patterns for 0, 22.5, 45, 67.5 and
+                compare to each 5x5 blob2 centroids.
+             then dither the blob1 centroids by +- 1 and redo-the comparison.
+      what is the list of true and false hits?
+
+   would be good to have this one in a separate testable method.
+ 
+   ==> the goal is to see if can match the blobs before transformation calcs,
+       --> this specific step is to see if summed intensities is fine.
+       --> It looks like the comparison of each pixel is needed and that essentially uses the gradient information.
+
+       write these 2 methods.
 
 
--- after all of the improvements to the EdgeExtractor are finished,
-   revisit the CannyEdgeFilter to adjust the 2-layer threshold,
-   and consider adjusting the gaussian convolution radius.
-   -- then consider adjustments in the Corner detector's curvature
-      factor above minimum.
-   -- rerun curvature and inflecion tests
+-- have binned image corners which look like the best possible correspondence.
+   -- the number of corners is still too high though.
+      n1=178, n2=138
+      and need pairwise calcs (N^4 including eval) so need n's closer to 30 or 40.
 
--- finish integrating use of skyline extractor in edge extractor
+      -- try and save the binned image hulls pairwise trans calcs.
+         -- this should be a really small number of permutations to try.
+
+      -- apply the solution to the binned corners?
+         -- if not a very good fit, try the binned corners pairwise even though 
+            calcs may take a long time
+         -- NOTE that a pairwise calc for scale=1 and rotation near 0 should be adapted for using this
+            for a more specific method.
    
--- return to the point correspondence
+      -- tangent, trying a method which reduces set2 to 30 in size by randomly sampling
+         over regions that cover the entire dataset.
+         the complexity is still too high: 98 billion.
 
--- for coverage reports, re-enable
+         I think this method isn't correct. 
+         Need to keep all of set2 but subsample set1.
+         can randomly arrange set1 to make it more likely that visit a set of points
+         that are not ordered.
+         -- also, need to remove all of high density areas to clean the corners list.
+            -- see the rightmost bottom corners in binned books image
+
+      -- what did the corners within the hulls alone look like and are the
+         numbers small enough to use here?
+
+
+
+-- make 2 dim array for parameters
+   make one dim array for each image of centriods
+   make one dim array for each image of circle radius
+
+   int[] imgCentroids1
+   int[] imgCentroids2
+   int[] imgRadii1
+   int[] imgRadii2
+
+    
+
+
+-- when finished with a faster point matcher:
+   -- re-check the CMDLine classes and add flags where needed.
+   -- re-build the executable jars
+   -- re-do the javadocs
+   -- commit all of that and merge it with main branch
+   -- read on what a migrate to github involves.
+   -- make space at github
+   -- make figures for the project page at google code
+   -- migrate to github
+
+-- revisit areas where using CountingSort and compare 
+     O(N_max_value) to O(N*lg2N) where the later is the number of points
+
+-- trying to match features in brown & lowe:
+   skyline mask
+   segmentation by cieXY color into 3 bands
+   dfs contiguous find of each of the 3 groups of sizes > <100?>
+   for the largest groups:
+      convex hull to make shapes.
+   compare the hulls to the other image?  (by contour matching or by shape such as area and widest
+      extent (furthest pairs), or by intensity per pixel?
+      -- need to be able to compare partial mathes too fr incomplete shapes
+
+   -- for matching blobs, need a way to find all blobs intersecting with a beam
+         that is varying by rotation.
+         -- Sweep and Prune method?
+         -- hierarchical bounding volumes?
+
+                      @
+    *--------------
+   ***              @
+    ****-----------
+
+   Goal is to match features in image1 to image2 to make matched points lists
+   which can be used for epipolar projection calculations (and rectification, etc)
+
+    iteratively reduce the number of blobs?
+    then pairwise calcs of the centroids?  (N^2) calc.
+    then histogram of rough calcs?  rotation, transX, transY
+    then detailed comparison of what looks like matched features to create
+    point lists?
+
+
+-- write an epipolar projection test for brown & lowe
+
+
+-- to convert from euclidean transformation to projective,
+    need 5 points:
+       J.G. Semple, G.T. Kneebone, Algebraic Projective Geometry, Oxford University Press, Oxford, 1952.
+
+-- there's a 5-point method:
+   Nister, D.: An efficient solution to the five-point relative pose problem. Trans.
+   PAMI 26, 756–770 (2004)
+
+-- make plans for a stereoscopic matcher, image rectification, and disparity map maker
+
+-- http://proquest.safaribooksonline.com.ezproxy.spl.org:2048/book/electrical-engineering/communications-engineering/9780123965028/chapter-20dot-clustering/st010_html_17?query=((ransac))#snippet
+
+-- for a random subset chooser, since
+     the x only depends upon the subset size, not on n, the number to choose from,
+     could think about a way to calculate the bitstring randomly.
+     for k = 7, the lowest bitstring is 0111 1111 which is a decimal value of 127.
+     n gives the largest number of bitstring positions with k at the highest value positions.
+     To calculate it in this way probably needs to use BigInteger.
+     It has some random methods in it, so one could probably work out how to draw
+     a number randomly between those values.
+     Then might find the next lowest number from that, that has k=7 '1' digits.
+     For example, if the random number were 252, that is 1111 1100, the next lowest 
+     bitstring with k=7 1's is 1111 1011.      (find lowest set bit, change it to 0 and set the 2 below it to 1)
+     If that bitstring has already been selected randomly, then the SubsetChooser's
+     Gosper's hack quickly returns the next larger k=7 bitstring.
+
+     This should be compared to the way I'm currently selecting k=7 indexes randomly.
+     currently:  not sure actually... I think I select 7 randomly with no repeating digits
+     and then sort them and see if the combination has been selected before, and 
+     repeat if they have.
+        that mean 7 random operations * 7 * lg2(7) for sort operations = 7 random * 20 steps for single iteration.
+     
+        the random w/ biginteger is 1 or more random operations (see internal implementation)
+        plus a find lowest bit operation, plus 3 set bits, plus gospers hack (a half dozen bit operations)
+        so the result =  1 (or more internal to BigInteger) rand operation + a dozen or so bit operations.
+
+        The advantage to the BigInteger method is that it is possibly faster, but the draw would be
+        within highly uneven space (the universe drawn from is far larger than the number of possible
+        permutations, and then one adjusts to find the next lowest matching number).
+        The probability that a single number had the k=7 digits set can be estimated using
+        the probability of drawing one unique set of all the possible subsets for k=7 and n (with one draw)
+        so that's 1./((n!/(k!*(n-k)!)) and then would need to account for the dilution of
+        that within a larger set of numbers (nbits with highest k bits set to '1' - kbits all set to '1').
+        The adjustment to select the next lowest number with k bits set leads to an uneven
+        distribution (not uniform), but that would not necessarily be a bad thing here.
+
+    Following the line of reasoning I must have started with:
+       Ideally, one would be randomly choosing between k bit positions whose maximum is n.
+       That requires enumerating all combinations and choosing randomly from them.
+       Can see a pattern easily within Gosper's hack already, so might be a clever way
+       to store them or to recalculate with offsets or derive a new ordering
+       from Gosper's Hack that would allow an O(1) access of a bitstring from a random number 
+       chosen within the range of the number of possible permutations.
+       This ideal implementation would be uniform random draws.
+
+    For either, should be storing "selected" as a bitstring.
+    
+    For the current implementation, I am not checking for having selected the previous combination
+    before because the chance of drawing the same combination should be pretty small.
+       The probability of selecting the same 7 objects out of n objects is roughly calculated with
+            the presence of unique set of k within n objects is 1./(n!/(k!*(n-k)!)) 
+            but that is not considering 'k draws'.   Can't use Bernoulli principle because that
+            gives an answer that is a number having any k digits rather than a uniquely ordered
+            set of k digits.
+            
+    ** do a quick plot of the difference of k=7 among n=(some number such that nPermutations < 1<<63)
+       drawn by 7 random draws from a max of n numbers
+       versus the BigInteger random draw 
+
+-- fix the contour matcher search to use a compare and binary search? and fixed size vector?
+
+-- then enable the skyline browne & lowe tests again
+-- then enable the brown & lowe corners again.
+   --> needs to be able to use fit from the skyline to start
+       the corner fit.
+-- then enable the venturi and book corners transformations
+
+-- reenable the tests in PointMatcher3Test for coverage reports
+
+-- consider a fixed size binary tree structure to improve the
+   sort operation of moving all items below insert node location.
+   -- would need a traversal method to create an output array
+      of ordered nodes.
+   -- the advantage to the current class is the small amount of
+      memory it takes and that it doesn't create more arrays than one.
+
+-- review whether can remove the reeval sections
+
+-- need to improve the rotation scan...
+      if the fit is already close to convergence, should be able to skip
+         much of the rest of the rotation if the past couple of rots have turned up
+         zero matches... maybe pause and do a quick run through large deltas and 
+         determine if can skip large sections of the rotation.
+   -- does a quick scan through 45 degree rotations and generous tolerance
+      tell anything about ruling out rotation angles or narrowing down feasible?
+      OR a quick simplex with starter points being 45 degree sep and the translation delta used normally?  tolerance should be high...
+
+   -- plot the simplex to see if can see a pattern to approach local min
+      -- current assumption of rotation angle used can be changed
+
+-- may need to redo my personal algorithm impl for the rwa network with
+   an interpretation of symbols just read in LinTao Zhang's thesis:
+   A dot B or A*B is A AND B, while A + B is A OR B.
+   I interpreted A + B as and i'm certain.... re-read the paper for rwa
+   algorithm to see if he uses similar symbols as Zhang
+
+-- for the final solution of brown & lowe epipolar, it should be radial epipolar in each, but the center
+   of the radial patter is to the left in the right image and to the
+   right in the left image.
+
+-- retest SkylineDownhillSimplex
+
+-- fix my downhill simplex in other projects
+
+-- need to revisit jagged line corrections
+   -- this may be removing too many valid corners...
+      for example, for the skyline edges, had to disable jagged line 
+      corrections completely.
+
+-- make the method to combine 2 skyline masks to decide what is sky and what
+is land when there are differences.
+
+-- tests for coverage...
+    -- for coverage reports, re-enable
        SkylineDownhillSimplexTest
     
 -- before merging with main, checkout code and build and runtests
@@ -84,18 +476,6 @@ Notes: A "celltree" is now more commonly called a "compressed quadtree" or "comp
          or assumption of horizontal.  In ambiguous cases, might need to make the assumption of
          skyline being horizontal in the image and sky near the top of the image...would like to avoid
          that assumption if at all possible.
-
---in the RANSAC stage, for a threshold for matching, consider using
-   0.6% of maximum image dimension
-   (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
-
--- revisit my RANSAC methods and consider characteristics from various
-   descriptions of implementations.  recalculating the number of iterations
-   as the number of inliers and outliers are determined.
-
--- there's a 5-point method:
-   Nister, D.: An efficient solution to the five-point relative pose problem. Trans.
-   PAMI 26, 756–770 (2004)
 
 -- one day, put in my algorithms toolbox, deconvolution methods:
    weiner filter deconvolution

@@ -12,10 +12,21 @@ import java.util.Map;
  */
 public class Features {
     
+    /**
+     * either gsImg or clrImg will be set by the constructor and they
+     * are the grey scale image or the color image, respectively.
+     */
     protected final GreyscaleImage gsImg;
     
+    /**
+     * either gsImg or clrImg will be set by the constructor and they
+     * are the grey scale image or the color image, respectively.
+     */
     protected final Image clrImg;
     
+    /**
+     * the gradient image of gsImg or clrImg.
+     */
     protected final GreyscaleImage gradientImg;
     
     //TODO: add this to a setter:
@@ -28,6 +39,8 @@ public class Features {
     protected final int bHalfW;
     
     protected final boolean useNormalizedIntensities;
+    
+    protected final boolean useBinnedCellGradients = false;
     
     protected final float[][] xyOffsets;
     
@@ -50,11 +63,12 @@ public class Features {
     /**
      * 
      * @param image
+     * @param theGradientImg gradient image of the image region (usually
+     * from the process of creating corners).
      * @param blockHalfWidths the half width of a block.  For example, to 
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
-     * @param useNormalizedIntensities if true, the intensity descriptors
-     * for each block are normalized by mean and standard deviation
-     * I_normalized(pixel) = (I(pixel)-I_mean(block))/I_stdev(block)).
+     * @param useNormalizedIntensities normalize the intensities extracted
+     * from image if true
      */
     public Features(GreyscaleImage image, GreyscaleImage theGradientImg,
         int blockHalfWidths, 
@@ -72,9 +86,8 @@ public class Features {
      * @param image
      * @param blockHalfWidths the half width of a block.  For example, to 
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
-     * @param useNormalizedIntensities if true, the intensity descriptors
-     * for each block are normalized by mean and standard deviation
-     * I_normalized(pixel) = (I(pixel)-I_mean(block))/I_stdev(block)).
+     * @param useNormalizedIntensities normalize the intensities extracted
+     * from image if true
      */
     public Features(Image image, GreyscaleImage theGradientImg,
         int blockHalfWidths, boolean useNormalizedIntensities) {
@@ -127,11 +140,7 @@ public class Features {
     }
     
     /**
-     * To reduce the importance of exact rotation alignment, and to allow more
-     * tolerance for projection, this is not use single pixel
-     * data in a block from the constructor's half width, instead, it is
-     * binning the data by 2 in x and y around xCenter and yCenter to 
-     * make 16 such binned regions.
+     * 
      * @param xCenter
      * @param yCenter
      * @param rotation dominant orientation in degrees for feature at (xCenter, yCenter)
@@ -160,12 +169,12 @@ public class Features {
             gradientBlocks.put(p, descriptors);
         }
         
-        if (gradientImg != null) {
+        if (useBinnedCellGradients) {
             descriptor = extractGsGradientForCells(xCenter, yCenter);
         } else {
-            descriptor = extractClrGradientForCells(xCenter, yCenter);
+             descriptor = extractGradientForBlock(xCenter, yCenter, rotation);
         }
-                
+        
         assert(descriptor != null);
         
         descriptors.put(rotKey, descriptor);
@@ -193,6 +202,19 @@ public class Features {
         if (useNormalizedIntensities) {
             descriptor.applyNormalization();
         }
+        
+        return descriptor;
+    }
+    
+    private GradientDescriptor extractGradientForBlock(int xCenter, 
+        int yCenter, int rotation) {
+        
+        Transformer transformer = new Transformer();
+        
+        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);
+        
+        GradientDescriptor descriptor = extractGsGradientForBlock(
+            xCenter, yCenter, frameOffsets);
         
         return descriptor;
     }
@@ -288,6 +310,54 @@ public class Features {
         }
         
         IntensityDescriptor desc = new GsIntensityDescriptor(output);
+        
+        return desc;
+    }
+    
+    /**
+     * extract from the image and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param offsets
+     * @return 
+     */
+    private GradientDescriptor extractGsGradientForBlock(int xCenter, 
+        int yCenter, float[][] offsets) {
+        
+        int[] output = new int[offsets.length];
+        
+        int sentinel = GsGradientDescriptor.sentinel;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int count = 0;
+        for (int i = 0; i < offsets.length; ++i) {
+            
+            float x1P = xCenter + offsets[i][0];
+            
+            float y1P = yCenter + offsets[i][1];
+            
+            if ((x1P < 0) || (Math.ceil(x1P) > (gradientImg.getWidth() - 1)) || 
+                (y1P < 0) || (Math.ceil(y1P) > (gradientImg.getHeight() - 1))) {
+                
+                output[count] = sentinel;
+                
+            } else {
+                
+                //non-adaptive algorithms: nearest neighbor or bilinear
+                
+                double v = imageProcessor.biLinearInterpolation(gradientImg, 
+                    x1P, y1P);
+                
+                output[count] = (int)Math.round(v);
+            }
+            
+            count++;
+        }
+        
+        GradientDescriptor desc = new GsGradientDescriptor(output);
         
         return desc;
     }

@@ -39,7 +39,8 @@ public class CornersOfSUSANTest extends TestCase {
             (5) corner detectors should be efficient        
         */
         
-        String fileName = "susan-in.gif";
+        //String fileName = "susan-in.gif";
+        String fileName = "susan-in_plus.png";
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
