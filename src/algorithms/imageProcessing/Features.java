@@ -257,9 +257,9 @@ public class Features {
     private IntensityDescriptor extractGsIntensityForBlock(int xCenter, 
         int yCenter, float[][] offsets) {
         
-        int[] output = new int[offsets.length];
+        float[] output = new float[offsets.length];
         
-        int sentinel = GsIntensityDescriptor.sentinel;
+        float sentinel = GsIntensityDescriptor.sentinel;
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -540,8 +540,62 @@ public class Features {
         FeatureComparisonStat stat = new FeatureComparisonStat();
         stat.setImg1Point(new PairInt(x1, y1));
         stat.setImg2Point(new PairInt(x2, y2));
-        stat.setSumSqDiff(ssd);
-        stat.setImg2PointErr(err2Sq);
+        stat.setSumIntensitySqDiff(ssd);
+        stat.setImg2PointIntensityErr(err2Sq);
+        
+        return stat;
+    }
+    
+    /**
+     * calculate the intensity and gradient based statistics between the two 
+     * descriptors with the caveat that the 2nd descriptor is the one used to 
+     * calculate the error (so make sure that pattern is consistently used by 
+     * invoker).
+     * 
+     * @param descIntensity1
+     * @param descGradient1
+     * @param x1
+     * @param y1
+     * @param descIntensity2
+     * @param descGradient2
+     * @param x2
+     * @param y2
+     * @return 
+     */
+    public static FeatureComparisonStat calculateStats(
+        IntensityDescriptor descIntensity1, GradientDescriptor descGradient1, 
+        final int x1, final int y1,
+        IntensityDescriptor descIntensity2, GradientDescriptor descGradient2, 
+        final int x2, final int y2) {
+    
+        if (descIntensity1 == null) {
+            throw new IllegalArgumentException("descIntensity1 cannot be null");
+        }
+        if (descGradient1 == null) {
+            throw new IllegalArgumentException("descGradient1 cannot be null");
+        }
+        if (descIntensity2 == null) {
+            throw new IllegalArgumentException("descIntensity2 cannot be null");
+        }
+        if (descGradient2 == null) {
+            throw new IllegalArgumentException("descGradient2 cannot be null");
+        }
+        
+        float err2SqIntensity = descIntensity2.sumSquaredError();
+        
+        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);
+        
+        float err2SqGradient = descGradient2.sumSquaredError();
+        
+        float ssdGradient = descGradient1.calculateSSD(descGradient2);
+        
+        FeatureComparisonStat stat = new FeatureComparisonStat();
+        stat.setImg1Point(new PairInt(x1, y1));
+        stat.setImg2Point(new PairInt(x2, y2));
+        stat.setSumIntensitySqDiff(ssdIntensity);
+        stat.setImg2PointIntensityErr(err2SqIntensity);
+        stat.setSumGradientSqDiff(ssdGradient);
+        stat.setImg2PointGradientErr(err2SqGradient);
         
         return stat;
     }

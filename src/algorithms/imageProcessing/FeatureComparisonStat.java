@@ -10,8 +10,10 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
 
     private PairInt img1Point = null;
     private PairInt img2Point = null;
-    private float sumSqDiff = Float.POSITIVE_INFINITY;
-    private float img2PointErr = Float.POSITIVE_INFINITY;
+    private float sumIntensitySqDiff = Float.POSITIVE_INFINITY;
+    private float sumGradientSqDiff = Float.POSITIVE_INFINITY;
+    private float img2PointIntensityErr = Float.POSITIVE_INFINITY;
+    private float img2PointGradientErr = Float.POSITIVE_INFINITY;
     private float img1RotInDegrees = Float.POSITIVE_INFINITY;
     private float img2RotInDegrees = Float.POSITIVE_INFINITY;
 
@@ -25,10 +27,8 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     /**
      * @param img1Point the img1Point to set
      */
-    public void setImg1Point(PairInt img1Point) {
-        
+    public void setImg1Point(PairInt img1Point) {        
         this.img1Point = img1Point;
-        
     }
 
     /**
@@ -41,38 +41,64 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     /**
      * @param img2Point the img2Point to set
      */
-    public void setImg2Point(PairInt img2Point) {
-        
+    public void setImg2Point(PairInt img2Point) {        
         this.img2Point = img2Point;
-        
     }
 
     /**
-     * @return the sumSqDiff
+     * @return the sum of the square of differences of intensity
      */
-    public float getSumSqDiff() {
-        return sumSqDiff;
+    public float getSumIntensitySqDiff() {
+        return sumIntensitySqDiff;
     }
 
     /**
-     * @param sumSqDiff the sumSqDiff to set
+     * @param sumSqDiff the sum of the square of differences of intensity
      */
-    public void setSumSqDiff(float sumSqDiff) {
-        this.sumSqDiff = sumSqDiff;
+    public void setSumIntensitySqDiff(float sumSqDiff) {
+        this.sumIntensitySqDiff = sumSqDiff;
     }
 
     /**
-     * @return the img2PointErr
+     * @return the sum of the square of differences of intensity
      */
-    public float getImg2PointErr() {
-        return img2PointErr;
+    public float getSumGradientSqDiff() {
+        return sumGradientSqDiff;
     }
 
     /**
-     * @param img2PointErr the img2PointErr to set
+     * @param sumSqDiff the sum of the square of differences of intensity
      */
-    public void setImg2PointErr(float img2PointErr) {
-        this.img2PointErr = img2PointErr;
+    public void setSumGradientSqDiff(float sumSqDiff) {
+        this.sumGradientSqDiff = sumSqDiff;
+    }
+
+    /**
+     * @return the img2PointIntensityErr
+     */
+    public float getImg2PointIntensityErr() {
+        return img2PointIntensityErr;
+    }
+
+    /**
+     * @param img2PointIntensityErr the img2PointIntensityErr to set
+     */
+    public void setImg2PointIntensityErr(float img2PointIntensityErr) {
+        this.img2PointIntensityErr = img2PointIntensityErr;
+    }
+    
+    /**
+     * @return the img2PointGradientErr
+     */
+    public float getImg2PointGradientErr() {
+        return img2PointGradientErr;
+    }
+
+    /**
+     * @param img2PointGradientErr the img2PointIntensityErr to set
+     */
+    public void setImg2PointGradientErr(float img2PointGradientErr) {
+        this.img2PointGradientErr = img2PointGradientErr;
     }
     
     /**
@@ -87,37 +113,12 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         if (other == null) {
             return -1;
         }
-        if (Float.isInfinite(other.getSumSqDiff())) {
+        if (Float.isInfinite(other.getSumIntensitySqDiff())) {
             return -1;
         }
         
-        //TODO: consider an eps within which to use sumSqDiff/err
+        throw new UnsupportedOperationException("not yet implemented");
         
-        float div = sumSqDiff/img2PointErr;
-        float divOther = other.getSumSqDiff()/other.getImg2PointErr();
-        
-        // square sum of differences has to be less than the expected error
-        if (divOther > 1) {
-            if (div > 1) {
-                if (div < divOther) {
-                    return -1;
-                } else if (div > divOther) {
-                    return 1;
-                }
-                return 0;
-            }
-            return -1;
-        } else if (div > 1) {
-            return 1;
-        }
-        
-        if (sumSqDiff < other.getSumSqDiff()) {
-            return -1;
-        } else if (sumSqDiff == other.getSumSqDiff()) {
-            return 0;
-        } else {
-            return 1;
-        }
     }
 
     /**
@@ -154,10 +155,12 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         StringBuilder sb = new StringBuilder();
         sb.append("p1=").append(img1Point.toString()).append(" ")
             .append("p2=").append(img2Point.toString())
-            .append(String.format(" ssd=%.2f", sumSqDiff))
-            .append(String.format(" err2=%.2f", img2PointErr))
-            .append(String.format(" rot1D=%.2f", img1RotInDegrees))
-            .append(String.format(" rot2D=%.2f", img2RotInDegrees))
+            .append(String.format(" ssdIntensity=%.4f", sumIntensitySqDiff))
+            .append(String.format(" err2Intensity=%.4f", img2PointIntensityErr))
+            .append(String.format(" ssdGradient=%.4f", sumGradientSqDiff))
+            .append(String.format(" err2Gradient=%.4f", img2PointGradientErr))
+            .append(String.format(" rot1D=%.4f", img1RotInDegrees))
+            .append(String.format(" rot2D=%.4f", img2RotInDegrees))
         ;
         
         return sb.toString();

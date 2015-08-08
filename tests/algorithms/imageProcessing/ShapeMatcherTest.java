@@ -262,7 +262,7 @@ public class ShapeMatcherTest extends TestCase {
         ShapeMatcher matcher = new ShapeMatcher();
         
         int blockHalfWidth = 2;
-        boolean useNormalizedIntensities = false;
+        boolean useNormalizedIntensities = true;
         
         ImageExt img1 = helper.getImage1(); 
         GreyscaleImage gXY1 = helper.getGXY1();
@@ -319,6 +319,8 @@ public class ShapeMatcherTest extends TestCase {
             }
             
             FeatureComparisonStat best = null;
+            float bestGradientSSD = Float.MAX_VALUE;
+            float secondBestGradientSSD = Float.MAX_VALUE - 1;
             
             int c1 = 0;
             for (CornerRegion cr1 : set1) {
@@ -334,13 +336,42 @@ public class ShapeMatcherTest extends TestCase {
                         log.severe(e.getMessage());
                     }
 
+                    //TODO: need to use gradient in further fitness function too
+                    
                     if (stat != null) {
-                        if (best == null) {
-                            best = stat;
-                            log.info(ii + ") best stat so far=" + best.toString());
-                        } else if (best.getSumSqDiff() > stat.getSumSqDiff()) {
-                            best = stat;
-                            log.info(ii + ") best stat so far=" + best.toString());
+                        log.info(ii + ") stat=" + stat.toString());
+                        
+                        boolean compareIntensities = false;
+
+                        if (bestGradientSSD == Float.MAX_VALUE) {
+                            bestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() == bestGradientSSD) {
+                            compareIntensities = true;
+                        } else if (secondBestGradientSSD == (Float.MAX_VALUE - 1)) {
+                            secondBestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() == secondBestGradientSSD) {
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() < bestGradientSSD) {
+                            assert (bestGradientSSD != secondBestGradientSSD);
+                            secondBestGradientSSD = bestGradientSSD;
+                            bestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() < secondBestGradientSSD) {
+                            secondBestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        }
+                        if (compareIntensities) {
+                            if (best == null) {
+                                best = stat;
+                                log.info(ii + ") best stat so far=" + best.toString());
+                            } else {
+                                if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                                    best = stat;
+                                    log.info(ii + ") best stat so far=" + best.toString());
+                                }
+                            }
                         }
                     }
                     c2++;
@@ -350,7 +381,7 @@ public class ShapeMatcherTest extends TestCase {
             assertNotNull(best);
             log.info(ii + ") FINAL best=" + best.toString());
         }
-        
+       
         // Now search from points1 through all of corners2 to see if best 
         // match is what is expected.
         
@@ -377,6 +408,8 @@ public class ShapeMatcherTest extends TestCase {
             }
             
             FeatureComparisonStat best = null;
+            float bestGradientSSD = Float.MAX_VALUE;
+            float secondBestGradientSSD = Float.MAX_VALUE - 1;
                         
             for (CornerRegion cr1 : set1) {                                
                 for (CornerRegion cr2 : cornerRegions2) {
@@ -388,12 +421,39 @@ public class ShapeMatcherTest extends TestCase {
                         log.severe(e.getMessage());
                     }
                     if (stat != null) {
-                        if (best == null) {
-                            best = stat;
-                            log.info(ii + ") best stat so far=" + best.toString());
-                        } else if (best.getSumSqDiff() > stat.getSumSqDiff()) {
-                            best = stat;
-                            log.info(ii + ") best stat so far=" + best.toString());
+                        log.info(ii + ") stat=" + stat.toString());
+
+                        boolean compareIntensities = false;
+
+                        if (bestGradientSSD == Float.MAX_VALUE) {
+                            bestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() == bestGradientSSD) {
+                            compareIntensities = true;
+                        } else if (secondBestGradientSSD == (Float.MAX_VALUE - 1)) {
+                            secondBestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() == secondBestGradientSSD) {
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() < bestGradientSSD) {
+                            assert (bestGradientSSD != secondBestGradientSSD);
+                            secondBestGradientSSD = bestGradientSSD;
+                            bestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        } else if (stat.getSumGradientSqDiff() < secondBestGradientSSD) {
+                            secondBestGradientSSD = stat.getSumGradientSqDiff();
+                            compareIntensities = true;
+                        }
+                        if (compareIntensities) {
+                            if (best == null) {
+                                best = stat;
+                                log.info(ii + ") best stat so far=" + best.toString());
+                            } else {
+                                if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                                    best = stat;
+                                    log.info(ii + ") best stat so far=" + best.toString());
+                                }
+                            }
                         }
                     }
                 }                
@@ -406,7 +466,7 @@ public class ShapeMatcherTest extends TestCase {
             
             log.info(ii + ") FINAL diffX,diffY=(" + diffX + "," + diffY 
             + ") best for compare against all corners2=" + best.toString());
-        }        
+        }
     }
 
     protected static void getBrownAndLoweFeatureCentersBinned(PairIntArray out1,
@@ -431,7 +491,6 @@ public class ShapeMatcherTest extends TestCase {
         out2.add(43, 313);
         out1.add(165, 187);
         out2.add(55, 139);
-        
         out1.add(220, 220);
         out2.add(9, 194);
         out1.add(170, 37);

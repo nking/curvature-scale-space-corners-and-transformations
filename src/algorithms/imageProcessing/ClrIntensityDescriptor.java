@@ -50,9 +50,7 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
             return;
         }
         
-        /*
-        TODO: implement this...
-        
+        /*        
         histogram equalization at the pre-processing stage of the entire image
         can stretch the range of values over the available range, but for
         images containing a small intersection of content that might not be
@@ -63,22 +61,29 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
         source...
         */
         
-        /*
         float[] meanAndStDevR = MiscMath.getAvgAndStDevIgnoreForSentinel(red, 
             red.length, sentinel);
         float[] meanAndStDevG = MiscMath.getAvgAndStDevIgnoreForSentinel(green, 
             green.length, sentinel);
         float[] meanAndStDevB = MiscMath.getAvgAndStDevIgnoreForSentinel(blue, 
             blue.length, sentinel);        
-        */
+        
+        for (int i = 0; i < red.length; ++i) {
+            red[i]-= meanAndStDevR[0];
+        }
+        for (int i = 0; i < green.length; ++i) {
+            green[i] -= meanAndStDevG[0];
+        }
+        for (int i = 0; i < blue.length; ++i) {
+            blue[i] -= meanAndStDevB[0];
+        }
         
         hasBeenNormalized = true;
     }
 
     @Override
     public boolean isNormalized() {
-        return false;
-        //return hasBeenNormalized;
+        return hasBeenNormalized;
     }
     
     @Override

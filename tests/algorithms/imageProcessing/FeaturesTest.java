@@ -121,16 +121,16 @@ public class FeaturesTest extends TestCase {
         FeatureComparisonStat stat = Features.calculateIntensityStat(
             desc1, x1, y1, desc2, x2, y2);
         
-        float sqSumDiff = stat.getSumSqDiff();
+        float sqSumIntensityDiff = stat.getSumIntensitySqDiff();
         
-        float sqErr = stat.getImg2PointErr();
+        float sqIntensityErr = stat.getImg2PointIntensityErr();
                 
         float expSSD = (40 * 40);
         
         double expSqErr = Math.sqrt(12) * 25.;
         
         // 3 * sigma for large confidence.  stdev=12
-        assertTrue(Math.abs(sqSumDiff - expSSD) < 3 * expSqErr);
+        assertTrue(Math.abs(sqSumIntensityDiff - expSSD) < 3 * expSqErr);
         
         //assertTrue(Math.abs(sqErr - expSqErr) < 3 * Math.sqrt(expSqErr));
     }

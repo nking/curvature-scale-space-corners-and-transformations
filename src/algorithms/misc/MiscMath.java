@@ -463,7 +463,46 @@ public class MiscMath {
             double diffX = x[i] - avgX;
             sumX += (diffX * diffX);
         }
-        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));
+        float stdDevX = (float)(Math.sqrt(sumX/(float)(count - 1.0f)));
+        
+        return new float[]{avgX, stdDevX};
+    }
+    
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
+     * @param length the number of indexes to use in x.  x can be longer than
+     * length
+     * @param sentinel value to flag that an item should not be included in
+     * calculations.
+     * @return float[]{avg, stDev}
+     */
+    public static float[] getAvgAndStDevIgnoreForSentinel(float[] x, int length, 
+        final float sentinel) {
+        
+        int n = length;
+        double sumX = 0;
+        int count = 0;
+        for (int i = 0; i < n; i++) {
+            if (x[i] == sentinel) {
+                continue;
+            }
+            sumX += x[i];
+            count++;
+        }
+        
+        float avgX = (float)(sumX/(float)count);
+        
+        sumX = 0;
+        for (int i = 0; i < n; i++) {
+            if (x[i] == sentinel) {
+                continue;
+            }
+            double diffX = x[i] - avgX;
+            sumX += (diffX * diffX);
+        }
+        float stdDevX = (float)(Math.sqrt(sumX/(float)(count - 1.0f)));
         
         return new float[]{avgX, stdDevX};
     }
@@ -1206,6 +1245,38 @@ public class MiscMath {
         return (float)sum;
     }
     
+    public static float calculateSSD(float[] a, float[] b, float sentinel) {
+        
+        if (a.length != b.length) {
+            throw new IllegalArgumentException(
+            "a and b must have the same lengths");
+        }
+                
+        int count = 0;
+        double sum = 0;
+        
+        for (int i = 0; i < a.length; ++i) {
+            
+            float v1 = a[i];
+            if (v1 == sentinel) {
+                continue;
+            }
+            float v2 = b[i];
+            if (v2 == sentinel) {
+                continue;
+            }
+            
+            float diff = v1 - v2;
+            
+            sum += diff*diff;
+            
+            count++;
+        }
+        sum /= (double)count;
+                
+        return (float)sum;
+    }
+    
     /**
      * Determine the sum squared error within this array using 
      * auto-correlation and the assumption that the value at the middle index 
@@ -1237,6 +1308,46 @@ public class MiscMath {
             }
             
             int diff = a[i] - vc;
+        
+            sum += (diff * diff);
+            count++;
+        }
+        sum /= (double)count;
+                       
+        return (float)sum;
+    }
+
+    /**
+     * Determine the sum squared error within this array using 
+     * auto-correlation and the assumption that the value at the middle index 
+     * is the value from the original central pixel.  Values the same as the
+     * sentinel are ignored and not included in the calculation.
+     * @return 
+     */
+    public static float sumSquaredError(float[] a, float sentinel) {
+        
+        int n = a.length;
+        int midIdx = n >> 1;
+        
+        float vc = a[midIdx];
+        
+        if (vc == sentinel) {
+            throw new IllegalStateException(
+            "ERROR: the central value for the array is somehow sentinel");
+        }
+        
+        int count = 0;
+        
+        double sum = 0;
+        
+        for (int i = 0; i < a.length; ++i) {
+            
+            float v1 = a[i];
+            if (v1 == sentinel) {
+                continue;
+            }
+            
+            float diff = a[i] - vc;
         
             sum += (diff * diff);
             count++;

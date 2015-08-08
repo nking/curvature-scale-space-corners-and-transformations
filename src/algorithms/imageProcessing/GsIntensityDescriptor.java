@@ -8,15 +8,15 @@ import algorithms.misc.MiscMath;
  */
 public class GsIntensityDescriptor implements IntensityDescriptor {
 
-    protected static int sentinel = Integer.MIN_VALUE;
+    protected static float sentinel = Float.MIN_VALUE;
     
-    protected final int[] grey;
+    protected final float[] grey;
     
     protected float sumSquaredError = Float.NaN;
     
     protected boolean hasBeenNormalized = false;
     
-    public GsIntensityDescriptor(int[] intensities) {
+    public GsIntensityDescriptor(float[] intensities) {
         this.grey = intensities;
     }
     
@@ -34,9 +34,7 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
             return;
         }
         
-        /*
-        TODO: implement this...
-        
+        /*        
         histogram equalization at the pre-processing stage of the entire image
         can stretch the range of values over the available range, but for
         images containing a small intersection of content that might not be
@@ -50,13 +48,16 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
         float[] meanAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(grey, 
             grey.length, sentinel);
         
+        for (int i = 0; i < grey.length; ++i) {
+            grey[i] -= meanAndStDev[0];
+        }
+        
         hasBeenNormalized = true;
     }
 
     @Override
     public boolean isNormalized() {
-        return false;
-        //return hasBeenNormalized;
+        return hasBeenNormalized;
     }
     
     @Override
@@ -102,7 +103,7 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
         int n = grey.length;
         int midIdx = n >> 1;
         
-        int vc = grey[midIdx];
+        float vc = grey[midIdx];
         
         if (vc == sentinel) {
             throw new IllegalStateException(
