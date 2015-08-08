@@ -4,6 +4,6 @@ package algorithms.imageProcessing;
  *
  * @author nichole
  */
-public interface GradientDescriptor {
+public interface GradientDescriptor extends IDescriptor {
     
 }

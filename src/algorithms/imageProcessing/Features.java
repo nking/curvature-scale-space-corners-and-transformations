@@ -16,9 +16,10 @@ public class Features {
     
     protected final Image clrImg;
     
-    // TODO: consider adding the color gradients when the use of gradients
-    //     is tested and working
-    protected final GreyscaleImage thetaImg;
+    protected final GreyscaleImage gradientImg;
+    
+    //TODO: add this to a setter:
+    protected final Image clrGradientImg = null;
     
     /**
      * the half width of a block.  For example, to extract the 25 pixels
@@ -55,7 +56,7 @@ public class Features {
      * for each block are normalized by mean and standard deviation
      * I_normalized(pixel) = (I(pixel)-I_mean(block))/I_stdev(block)).
      */
-    public Features(GreyscaleImage image, GreyscaleImage gradientThetaImg,
+    public Features(GreyscaleImage image, GreyscaleImage theGradientImg,
         int blockHalfWidths, 
         boolean useNormalizedIntensities) {
         this.gsImg = image;
@@ -63,7 +64,7 @@ public class Features {
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
         this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
-        this.thetaImg = gradientThetaImg;
+        this.gradientImg = theGradientImg;
     }
     
     /**
@@ -75,14 +76,14 @@ public class Features {
      * for each block are normalized by mean and standard deviation
      * I_normalized(pixel) = (I(pixel)-I_mean(block))/I_stdev(block)).
      */
-    public Features(Image image, GreyscaleImage gradientThetaImg,
+    public Features(Image image, GreyscaleImage theGradientImg,
         int blockHalfWidths, boolean useNormalizedIntensities) {
         this.gsImg = null;
         this.clrImg = image;
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
         this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
-        this.thetaImg = gradientThetaImg;
+        this.gradientImg = theGradientImg;
     }
     
     /**
@@ -125,9 +126,51 @@ public class Features {
         return descriptor;
     }
     
+    /**
+     * To reduce the importance of exact rotation alignment, and to allow more
+     * tolerance for projection, this is not use single pixel
+     * data in a block from the constructor's half width, instead, it is
+     * binning the data by 2 in x and y around xCenter and yCenter to 
+     * make 16 such binned regions.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at (xCenter, yCenter)
+     * @return 
+     */
     public GradientDescriptor extractGradient(int xCenter, int yCenter, 
-        float rotation) {
-        throw new UnsupportedOperationException("not yet implemented");
+        int rotation) {
+                
+        checkBounds(xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotKey = Integer.valueOf(rotation);
+        
+        Map<Integer, GradientDescriptor> descriptors = gradientBlocks.get(p);
+        
+        GradientDescriptor descriptor = null;
+        
+        if (descriptors != null) {
+            descriptor = descriptors.get(rotKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        } else {
+            descriptors = new HashMap<Integer, GradientDescriptor>();
+            gradientBlocks.put(p, descriptors);
+        }
+        
+        if (gradientImg != null) {
+            descriptor = extractGsGradientForCells(xCenter, yCenter);
+        } else {
+            descriptor = extractClrGradientForCells(xCenter, yCenter);
+        }
+                
+        assert(descriptor != null);
+        
+        descriptors.put(rotKey, descriptor);
+        
+        return descriptor;
     }
     
     private IntensityDescriptor extractIntensityForBlock(int xCenter, 
@@ -248,6 +291,81 @@ public class Features {
         
         return desc;
     }
+    
+    /**
+     * extract the gradient from the image in 2X2 cells surrounding 
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param offsets
+     * @return 
+     */
+    private GradientDescriptor extractGsGradientForCells(int xCenter, 
+        int yCenter) {
+        
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]         
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3  
+        
+        */
+        int[] output = new int[16];
+        
+        int sentinel = GsGradientDescriptor.sentinel;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int count = 0;
+        for (int dx = -4; dx < 4; dx+=2) {
+            
+            float x1P = xCenter + dx;
+            float x2P = x1P + 1;
+            
+            if ((x1P < 0) || (Math.ceil(x1P) > (gradientImg.getWidth() - 1)) ||
+                (x2P < 0) || (Math.ceil(x2P) > (gradientImg.getWidth() - 1))
+                ) {
+                
+                output[count] = sentinel;
+                count++;
+                continue;
+            }
+            
+            for (int dy = -4; dy < 4; dy+=2) {
+            
+                float y1P = yCenter + dy;
+                float y2P = y1P + 1;
+            
+                if ((y1P < 0) || (Math.ceil(y1P) > (gradientImg.getWidth() - 1)) ||
+                    (y2P < 0) || (Math.ceil(y2P) > (gradientImg.getWidth() - 1))) {
+                
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                                
+                //non-adaptive algorithms: nearest neighbor or bilinear
+                
+                double v1 = imageProcessor.biLinearInterpolation(gradientImg, x1P, y1P);
+                double v2 = imageProcessor.biLinearInterpolation(gradientImg, x1P, y2P);
+                double v3 = imageProcessor.biLinearInterpolation(gradientImg, x2P, y1P);
+                double v4 = imageProcessor.biLinearInterpolation(gradientImg, x2P, y2P);
+                
+                output[count] = (int)Math.round((v1 + v2 + v3 + v4)/4.);
+            }
+            
+            count++;
+        }
+        
+        GradientDescriptor desc = new GsGradientDescriptor(output);
+        
+        return desc;
+    }
    
     /**
      * extract the intensity from the image and place in the descriptor.
@@ -300,6 +418,96 @@ public class Features {
         
         return desc;
     }
+    
+    /**
+     * extract the gradient from the image in 2X2 cells surrounding 
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param offsets
+     * @return 
+     */
+    private GradientDescriptor extractClrGradientForCells(int xCenter, 
+        int yCenter) {
+        
+        throw new UnsupportedOperationException("color gradient not yet implemented");
+        
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]         
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3  
+        */
+        /*
+        int[] red = new int[16];
+        int[] green = new int[16];
+        int[] blue = new int[16];
+        
+        int sentinel = GsGradientDescriptor.sentinel;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int count = 0;
+        for (int dx = -4; dx < 4; dx+=2) {
+            
+            float x1P = xCenter + dx;
+            float x2P = x1P + 1;
+            
+            if ((x1P < 0) || (Math.ceil(x1P) > (clrGradientImg.getWidth() - 1)) ||
+                (x2P < 0) || (Math.ceil(x2P) > (clrGradientImg.getWidth() - 1))
+                ) {
+                
+                red[count] = sentinel;
+                green[count] = sentinel;
+                blue[count] = sentinel;
+                
+                count++;
+                
+                continue;
+            }
+            
+            for (int dy = -4; dy < 4; dy+=2) {
+            
+                float y1P = yCenter + dy;
+                float y2P = y1P + 1;
+            
+                if ((y1P < 0) || (Math.ceil(y1P) > (clrGradientImg.getWidth() - 1)) ||
+                    (y2P < 0) || (Math.ceil(y2P) > (clrGradientImg.getWidth() - 1))) {
+                
+                    red[count] = sentinel;
+                    green[count] = sentinel;
+                    blue[count] = sentinel;
+                
+                    count++;
+                    continue;
+                }
+                                
+                //non-adaptive algorithms: nearest neighbor or bilinear
+                
+                double[] v1 = imageProcessor.biLinearInterpolation(clrGradientImg, x1P, y1P);
+                double[] v2 = imageProcessor.biLinearInterpolation(clrGradientImg, x1P, y2P);
+                double[] v3 = imageProcessor.biLinearInterpolation(clrGradientImg, x2P, y1P);
+                double[] v4 = imageProcessor.biLinearInterpolation(clrGradientImg, x2P, y2P);
+                
+                red[count] = (int)Math.round((v1[0] + v2[0] + v3[0] + v4[0])/4.);
+                green[count] = (int)Math.round((v1[1] + v2[1] + v3[1] + v4[1])/4.);
+                blue[count] = (int)Math.round((v1[2] + v2[2] + v3[2] + v4[2])/4.);
+            }
+            
+            count++;
+        }
+        
+        GradientDescriptor desc = new ClrGradientDescriptor(red, green, blue);
+        
+        return desc;
+        */
+    }
+   
 
     /**
      * calculate the intensity based statistic (SSD) between the two descriptors
@@ -315,8 +523,8 @@ public class Features {
      * @return 
      */
     public static FeatureComparisonStat calculateIntensityStat(
-        IntensityDescriptor desc1, final int x1, final int y1,
-        IntensityDescriptor desc2, final int x2, final int y2) {
+        IDescriptor desc1, final int x1, final int y1,
+        IDescriptor desc2, final int x2, final int y2) {
     
         if (desc1 == null) {
             throw new IllegalArgumentException("desc1 cannot be null");

@@ -84,7 +84,7 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     }
     
     @Override
-    public float calculateSSD(IntensityDescriptor otherDesc) {
+    public float calculateSSD(IDescriptor otherDesc) {
         
         if (otherDesc == null) {
             throw new IllegalArgumentException("otherDesc cannot be null");
@@ -102,39 +102,11 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
             "this and other arrays must have the same lengths");
         }
                 
-        int count = 0;
-        double sumR = 0;
-        double sumG = 0;
-        double sumB = 0;
-        
-        for (int i = 0; i < this.red.length; ++i) {
-            
-            int r1 = red[i];
-            if (r1 == sentinel) {
-                continue;
-            }
-            int r2 = other.red[i];
-            if (r2 == sentinel) {
-                continue;
-            }
-            
-            int g1 = green[i];
-            int b1 = blue[i];
-            
-            int g2 = other.green[i];
-            int b2 = other.blue[i];
-            
-            sumR += (r1 - r2)*(r1 - r2);
-            sumG += (g1 - g2)*(g1 - g2);
-            sumB += (b1 - b2)*(b1 - b2);
-            
-            count++;
-        }
-        sumR /= (double)count;
-        sumG /= (double)count;
-        sumB /= (double)count;
-        
-        float avg = (float)(sumR + sumG + sumB)/3.f;
+        float ssdR = MiscMath.calculateSSD(red, other.red, sentinel);
+        float ssdG = MiscMath.calculateSSD(green, other.green, sentinel);
+        float ssdB = MiscMath.calculateSSD(blue, other.blue, sentinel);
+           
+        float avg = (float)(ssdR + ssdG + ssdB)/3.f;
         
         return avg;
     }
@@ -167,33 +139,11 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
             "ERROR: the central values for the array are somehow sentinels");
         }
         
-        int count = 0;
+        float sqErrR = MiscMath.sumSquaredError(red, sentinel);
+        float sqErrG = MiscMath.sumSquaredError(green, sentinel);
+        float sqErrB = MiscMath.sumSquaredError(blue, sentinel);
         
-        double sumR = 0;
-        double sumG = 0;
-        double sumB = 0;
-        
-        for (int i = 0; i < this.red.length; ++i) {
-            
-            int r1 = red[i];
-            if (r1 == sentinel) {
-                continue;
-            }
-            
-            int diffR = red[i] - rVC;
-            int diffG = green[i] - gVC;
-            int diffB = blue[i] - bVC;
-        
-            sumR += (diffR * diffR);
-            sumG += (diffG * diffG);
-            sumB += (diffB * diffB);
-            count++;
-        }
-        sumR /= (double)count;
-        sumG /= (double)count;
-        sumB /= (double)count;
-        
-        float avg = (float)(sumR + sumG + sumB)/3.f;
+        float avg = (float)(sqErrR + sqErrG + sqErrB)/3.f;
         
         this.sumSquaredError = avg;
         

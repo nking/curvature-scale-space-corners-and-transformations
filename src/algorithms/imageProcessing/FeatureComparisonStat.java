@@ -13,6 +13,7 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     private float sumSqDiff = Float.POSITIVE_INFINITY;
     private float img2PointErr = Float.POSITIVE_INFINITY;
     private float img1RotInDegrees = Float.POSITIVE_INFINITY;
+    private float img2RotInDegrees = Float.POSITIVE_INFINITY;
 
     /**
      * @return the img1Point
@@ -132,6 +133,20 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     public void setImg1RotInDegrees(float img1RotInDegrees) {
         this.img1RotInDegrees = img1RotInDegrees;
     }
+    
+    /**
+     * @return the img2RotInDegrees
+     */
+    public float getImg2RotInDegrees() {
+        return img2RotInDegrees;
+    }
+
+    /**
+     * @param img2RotInDegrees the img2RotInDegrees to set
+     */
+    public void setImg2RotInDegrees(float img2RotInDegrees) {
+        this.img2RotInDegrees = img2RotInDegrees;
+    }
 
     @Override
     public String toString() {
@@ -140,8 +155,10 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         sb.append("p1=").append(img1Point.toString()).append(" ")
             .append("p2=").append(img2Point.toString())
             .append(String.format(" ssd=%.2f", sumSqDiff))
-            .append(String.format(" err=%.2f", img2PointErr))
-            .append(String.format(" rot=%.2f", img1RotInDegrees));
+            .append(String.format(" err2=%.2f", img2PointErr))
+            .append(String.format(" rot1D=%.2f", img1RotInDegrees))
+            .append(String.format(" rot2D=%.2f", img2RotInDegrees))
+        ;
         
         return sb.toString();
     }

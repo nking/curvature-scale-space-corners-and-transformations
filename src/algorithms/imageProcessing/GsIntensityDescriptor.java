@@ -60,7 +60,7 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     }
     
     @Override
-    public float calculateSSD(IntensityDescriptor otherDesc) {
+    public float calculateSSD(IDescriptor otherDesc) {
         
         if (otherDesc == null) {
             throw new IllegalArgumentException("otherDesc cannot be null");
@@ -77,30 +77,10 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
             throw new IllegalArgumentException(
             "this and other arrays must have the same lengths");
         }
+         
+        float ssd = MiscMath.calculateSSD(grey, other.grey, sentinel);
                 
-        int count = 0;
-        double sum = 0;
-        
-        for (int i = 0; i < this.grey.length; ++i) {
-            
-            int v1 = grey[i];
-            if (v1 == sentinel) {
-                continue;
-            }
-            int v2 = other.grey[i];
-            if (v2 == sentinel) {
-                continue;
-            }
-            
-            int diff = v1 - v2;
-            
-            sum += diff*diff;
-            
-            count++;
-        }
-        sum /= (double)count;
-                
-        return (float)sum;
+        return ssd;
     }
     
     /**
@@ -129,25 +109,9 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
             "ERROR: the central value for the array is somehow sentinel");
         }
         
-        int count = 0;
-        
-        double sum = 0;
-        
-        for (int i = 0; i < this.grey.length; ++i) {
+        float sqErr = MiscMath.sumSquaredError(grey, sentinel);
             
-            int v1 = grey[i];
-            if (v1 == sentinel) {
-                continue;
-            }
-            
-            int diff = grey[i] - vc;
-        
-            sum += (diff * diff);
-            count++;
-        }
-        sum /= (double)count;
-               
-        this.sumSquaredError = (float)sum;
+        this.sumSquaredError = sqErr;
         
         return sumSquaredError;
     }

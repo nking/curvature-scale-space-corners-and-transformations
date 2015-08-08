@@ -220,6 +220,11 @@ public class ShapeMatcherTest extends TestCase {
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 
+        /*
+        testing that a known list of matches are found as "matching" by the
+        algorithms.
+        */
+        
         PairIntArray points1 = new PairIntArray();
         PairIntArray points2 = new PairIntArray();
         getBrownAndLoweFeatureCenters90(points1, points2);
@@ -274,12 +279,10 @@ public class ShapeMatcherTest extends TestCase {
         int dither = 1;
         
         Features features1 = new Features(helper.getGreyscaleImage1(), 
-            theta1,
-            blockHalfWidth, useNormalizedIntensities);
+            gXY1, blockHalfWidth, useNormalizedIntensities);
         
         Features features2 = new Features(helper.getGreyscaleImage2(), 
-            theta2,
-            blockHalfWidth, useNormalizedIntensities);
+            gXY2, blockHalfWidth, useNormalizedIntensities);
         
         // TODO: this is not the final flow of logic.  still experimenting...
         
@@ -326,12 +329,12 @@ public class ShapeMatcherTest extends TestCase {
                     
                     try {
                         stat = matcher.findBestAmongDitheredRotated(
-                        features1, features2, cr1, cr2, dither);
+                            features1, features2, cr1, cr2, dither);
                     } catch(CornerRegion.CornerRegionDegneracyException e) {
                         log.severe(e.getMessage());
                     }
 
-                    if (stat != null && (stat.getSumSqDiff() < stat.getImg2PointErr())) {
+                    if (stat != null) {
                         if (best == null) {
                             best = stat;
                             log.info(ii + ") best stat so far=" + best.toString());
@@ -342,9 +345,8 @@ public class ShapeMatcherTest extends TestCase {
                     }
                 }                
             }
-            if (best != null) {
-                log.info(ii + ") FINAL best=" + best.toString());
-            }
+            assertNotNull(best);
+            log.info(ii + ") FINAL best=" + best.toString());
         }
     }
 
@@ -370,14 +372,16 @@ public class ShapeMatcherTest extends TestCase {
         out2.add(43, 313);
         out1.add(165, 187);
         out2.add(55, 139);
+        
         out1.add(220, 220);
         out2.add(9, 194);
         out1.add(170, 37);
         out2.add(200, 171);
         out1.add(316, 51);
         out2.add(164, 305);
-        out1.add(168, 62);
-        out2.add(178, 164);
+        
+        out1.add(165, 186);
+        out2.add(55, 139);
     }
 
     private void getBrownAndLoweFeatureCentersBinned(List<PairInt> points1,

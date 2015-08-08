@@ -507,7 +507,7 @@ public class BinSegmentationHelper {
         detector2.findCorners();
         corners2 = detector2.getCornersInOriginalReferenceFrame();
         cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-        gXY2 = detector.getGradientXY();
+        gXY2 = detector2.getGradientXY();
         MiscDebug.writeEdges(detector2.getEdgesInOriginalReferenceFrame(), 
             img2Grey, "2_edges");
         MiscDebug.writeImage(img2Cp, "2_clr");
@@ -521,7 +521,41 @@ public class BinSegmentationHelper {
             detector2.getGradientX(), detector2.getGradientY());
         MiscDebug.writeImage(theta1, "1_theta360");
         MiscDebug.writeImage(theta2, "2_theta360");
-
+        
+        MiscDebug.writeImage(gXY1, "1_gXY");
+        MiscDebug.writeImage(gXY2, "2_gXY");
+     
+        /* //TEMP files to visualize an offset:
+        GreyscaleImage theta1_tmp = theta1.copyImage();
+        GreyscaleImage theta2_tmp = theta2.copyImage();
+        for (int col = 0; col < theta1_tmp.getWidth(); ++col) {
+            for (int row = 0; row < theta1_tmp.getHeight(); ++row) {
+                int v = theta1_tmp.getValue(col, row);
+                v -= 93;
+                if (v < 0) {
+                    v += 360;
+                } else if (v > 359) {
+                    v = v - 360;
+                }
+                theta1_tmp.setValue(col, row, v);
+            }
+        }
+        for (int col = 0; col < theta2_tmp.getWidth(); ++col) {
+            for (int row = 0; row < theta2_tmp.getHeight(); ++row) {
+                int v = theta2_tmp.getValue(col, row);
+                v -= 338;
+                if (v < 0) {
+                    v += 360;
+                } else if (v > 359) {
+                    v = v - 360;
+                }
+                theta2_tmp.setValue(col, row, v);
+            }
+        }
+        MiscDebug.writeImage(theta1_tmp, "1_theta360_tmp");
+        MiscDebug.writeImage(theta2_tmp, "2_theta360_tmp");
+        */
+            
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
 

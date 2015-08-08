@@ -587,10 +587,10 @@ if (true) {
         boolean useNormalizedIntensities = false;
         
         // TODO: consider using greyscale images
-        Features features1 = new Features(img1, theta1, blockHalfWidth, 
+        Features features1 = new Features(img1, gXY1, blockHalfWidth, 
             useNormalizedIntensities);
         
-        Features features2 = new Features(img2, theta2, blockHalfWidth, 
+        Features features2 = new Features(img2, gXY2, blockHalfWidth, 
             useNormalizedIntensities);
          
         /*
@@ -856,9 +856,10 @@ if (true) {
 
     protected FeatureComparisonStat findBestAmongDitheredRotated(
         Features features1, Features features2, CornerRegion cornerRegion1, 
-        CornerRegion cornerRegion2, int dither) throws CornerRegion.CornerRegionDegneracyException {
+        CornerRegion cornerRegion2, int dither) throws 
+        CornerRegion.CornerRegionDegneracyException {
         
-        FeatureComparisonStat best = null;
+        FeatureComparisonStat bestIntensity = null;
         
         int kMaxIdx1 = cornerRegion1.getKMaxIdx();
         final int x1 = cornerRegion1.getX()[kMaxIdx1];
@@ -872,43 +873,98 @@ if (true) {
         int rot2 = (int)Math.round(
             cornerRegion2.getRelativeOrientationInDegrees());
         
+        /*
+        TODO: this fitness function may need adjustments, but so far
+        the best answers are from a first filter by both intensity and gradient
+        SSD being smaller than their errors, then a filter by the top 2 gradient
+        statistics, then find the top or top 2 from the intensity statistics
+        within those.
+        */
+        FeatureComparisonStat bestGradient = null;
+        FeatureComparisonStat secondBestGradient = null;
+        
         IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);
         
-        for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
-            if (!features1.isWithinXBounds(x1d)) {
-                continue;
-            }
-            for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
-                if (!features1.isWithinYBounds(y1d)) {
+        GradientDescriptor gDesc2 = features2.extractGradient(x2, y2, rot2);
+        
+        for (int rotD1 = (rot1 - 0/*25*/); rotD1 <= (rot1 + 0/*25*/); rotD1 += 25) {
+            for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+                if (!features1.isWithinXBounds(x1d)) {
                     continue;
                 }
-                
-                for (int rotD1 = (rot1 - 25); rotD1 <= (rot1 + 25); rotD1 += 25) {
-                    
-                    IntensityDescriptor desc1 = features1.extractIntensity(x1d, 
-                        y1d, rotD1);
-                    
-                    FeatureComparisonStat stat = Features.calculateIntensityStat(
-                        desc1, x1d, y1d, desc2, x2, y2);
-                    
-                    if (stat.getSumSqDiff() > stat.getImg2PointErr()) {
+                for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                    if (!features1.isWithinYBounds(y1d)) {
                         continue;
                     }
                     
-                    if (best == null) {
-                        best = stat;
-                        best.setImg1RotInDegrees(rotD1);
-                    } else {
-                        if (best.getSumSqDiff() > stat.getSumSqDiff()) {
-                            best = stat;
-                            best.setImg1RotInDegrees(rotD1);
+                    IntensityDescriptor desc1 = features1.extractIntensity(x1d,
+                        y1d, rotD1);
+
+                    FeatureComparisonStat stat = Features.calculateIntensityStat(
+                        desc1, x1d, y1d, desc2, x2, y2);
+               
+                    GradientDescriptor gDesc1 = features1.extractGradient(x1d, 
+                        y1d, rotD1);
+                    
+                    FeatureComparisonStat gStat = Features.calculateIntensityStat(
+                        gDesc1, x1d, y1d, gDesc2, x2, y2);
+                    
+                    if ((gStat.getSumSqDiff() < gStat.getImg2PointErr()) &&
+                        (stat.getSumSqDiff() < stat.getImg2PointErr())) {
+                        
+                        boolean compareIntensities = false;
+                        
+                        if (bestGradient == null) {
+                            bestGradient = gStat;
+                            bestGradient.setImg1RotInDegrees(rotD1);
+                            bestGradient.setImg2RotInDegrees(rot2);
+                            compareIntensities = true;
+                        } else if (Math.abs(gStat.getSumSqDiff() - bestGradient.getSumSqDiff()) < 0.01) {
+                            compareIntensities = true;
+                        } else if (secondBestGradient == null) {
+                            secondBestGradient = gStat;
+                            secondBestGradient.setImg1RotInDegrees(rotD1);
+                            secondBestGradient.setImg2RotInDegrees(rot2);
+                            compareIntensities = true;
+                        } else if (Math.abs(gStat.getSumSqDiff() - secondBestGradient.getSumSqDiff()) < 0.01) {
+                            compareIntensities = true;
+                        } else if (gStat.getSumSqDiff() < bestGradient.getSumSqDiff()) {
+                            assert(bestGradient.getSumSqDiff() != secondBestGradient.getSumSqDiff());
+                            secondBestGradient = bestGradient;
+                            bestGradient = gStat;
+                            compareIntensities = true;
+                        } else if (gStat.getSumSqDiff() < secondBestGradient.getSumSqDiff()) {
+                            secondBestGradient = gStat;
+                            compareIntensities = true;
+                        }
+                        
+                        if (compareIntensities) {
+                            
+                            if (stat.getSumSqDiff() < stat.getImg2PointErr()) {
+                                log.info(String.format(
+                                    "(%d,%d) rot1=%d (%d,%d) rot2=%d intStat=(%.1f,%.1f) gStat=(%.1f,%.1f)",
+                                    x1d, y1d, rotD1, x2, y2, rot2, stat.getSumSqDiff(), stat.getImg2PointErr(),
+                                    gStat.getSumSqDiff(), gStat.getImg2PointErr()));
+                            }
+                            
+                            if (bestIntensity == null) {
+                                bestIntensity = stat;
+                                bestIntensity.setImg1RotInDegrees(rotD1);
+                                bestIntensity.setImg2RotInDegrees(rot2);
+                            } else {
+                                if (bestIntensity.getSumSqDiff() > stat.getSumSqDiff()) {
+                                    bestIntensity = stat;
+                                    bestIntensity.setImg1RotInDegrees(rotD1);
+                                    bestIntensity.setImg2RotInDegrees(rot2);
+                                }
+                            }
                         }
                     }
                 }
             }
         }
         
-        return best;
+        return bestIntensity;
     }
 
 }
