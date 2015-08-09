@@ -29,6 +29,11 @@ public class Features {
      */
     protected final GreyscaleImage gradientImg;
     
+    /**
+     * the gradient orientation image
+     */
+    protected final GreyscaleImage thetaImg;
+    
     //TODO: add this to a setter:
     protected final Image clrGradientImg = null;
     
@@ -38,12 +43,12 @@ public class Features {
      */
     protected final int bHalfW;
     
+    protected final float[][] xyOffsets;
+    
     protected final boolean useNormalizedIntensities;
     
     protected final boolean useBinnedCellGradients = false;
-    
-    protected final float[][] xyOffsets;
-    
+        
     /**
     key = pixel coordinates of center of frame;
     value = map with key = rotation (in degrees) of the frame and value = the
@@ -61,42 +66,57 @@ public class Features {
         new HashMap<PairInt, Map<Integer, GradientDescriptor>>();
     
     /**
+    key = pixel coordinates of center of frame;
+    value = map with key = rotation (in degrees) of the frame and value = the
+    *     extracted descriptor
+    */
+    protected Map<PairInt, Map<Integer, ThetaDescriptor>> thetaBlocks = 
+        new HashMap<PairInt, Map<Integer, ThetaDescriptor>>();
+    
+    /**
      * 
      * @param image
      * @param theGradientImg gradient image of the image region (usually
      * from the process of creating corners).
+     * @param theThetaImg the gradient orientation angle image
      * @param blockHalfWidths the half width of a block.  For example, to 
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
      * @param useNormalizedIntensities normalize the intensities extracted
      * from image if true
      */
     public Features(GreyscaleImage image, GreyscaleImage theGradientImg,
-        int blockHalfWidths, 
-        boolean useNormalizedIntensities) {
+        GreyscaleImage theThetaImg,
+        int blockHalfWidths, boolean useNormalizedIntensities) {
         this.gsImg = image;
         this.clrImg = null;
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
-        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
         this.gradientImg = theGradientImg;
+        this.thetaImg = theThetaImg;
+        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
     }
     
     /**
      * 
      * @param image
+     * @param theGradientImg gradient image of the image region (usually
+     * from the process of creating corners).
+     * @param theThetaImg the gradient orientation angle image
      * @param blockHalfWidths the half width of a block.  For example, to 
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
      * @param useNormalizedIntensities normalize the intensities extracted
      * from image if true
      */
     public Features(Image image, GreyscaleImage theGradientImg,
+        GreyscaleImage theThetaImg,
         int blockHalfWidths, boolean useNormalizedIntensities) {
         this.gsImg = null;
         this.clrImg = image;
         this.bHalfW = blockHalfWidths;
         this.useNormalizedIntensities = useNormalizedIntensities;
-        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
         this.gradientImg = theGradientImg;
+        this.thetaImg = theThetaImg;
+        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
     }
     
     /**
@@ -104,7 +124,8 @@ public class Features {
      * return it in a descriptor.
      * @param xCenter
      * @param yCenter
-     * @param rotation dominant orientation in degrees for feature at (xCenter, yCenter)
+     * @param rotation dominant orientation in degrees for feature at 
+     * (xCenter, yCenter)
      * @return 
      */
     public IntensityDescriptor extractIntensity(final int xCenter, 
@@ -143,7 +164,8 @@ public class Features {
      * 
      * @param xCenter
      * @param yCenter
-     * @param rotation dominant orientation in degrees for feature at (xCenter, yCenter)
+     * @param rotation dominant orientation in degrees for feature at 
+     * (xCenter, yCenter)
      * @return 
      */
     public GradientDescriptor extractGradient(int xCenter, int yCenter, 
@@ -170,9 +192,9 @@ public class Features {
         }
         
         if (useBinnedCellGradients) {
-            descriptor = extractGsGradientForCells(xCenter, yCenter);
+            descriptor = extractGsGradientForCells(xCenter, yCenter, rotation);
         } else {
-             descriptor = extractGradientForBlock(xCenter, yCenter, rotation);
+            descriptor = extractGsGradientForBlock(xCenter, yCenter, rotation);
         }
         
         assert(descriptor != null);
@@ -182,11 +204,57 @@ public class Features {
         return descriptor;
     }
     
+    /**
+     * extract theta orientation from the image for (xCenter, yCenter) and
+     * return it in a descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at 
+     * (xCenter, yCenter)
+     * @return 
+     */
+    public ThetaDescriptor extractTheta(final int xCenter, final int yCenter, 
+        final int rotation) {
+       
+        checkBounds(xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        Map<Integer, ThetaDescriptor> descriptors = thetaBlocks.get(p);
+        
+        ThetaDescriptor descriptor = null;
+        
+        if (descriptors != null) {
+            descriptor = descriptors.get(rotationKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        } else {
+            descriptors = new HashMap<Integer, ThetaDescriptor>();
+            thetaBlocks.put(p, descriptors);
+        }
+         
+        /*
+        this will be one of 3 types of theta descriptors and the
+        choice will be set in constructor
+        */
+        
+        descriptor = extractThetaForBlock(xCenter, yCenter, rotation);
+        
+        assert(descriptor != null);
+        
+        descriptors.put(rotationKey, descriptor);
+        
+        return descriptor;
+    }
+    
     private IntensityDescriptor extractIntensityForBlock(int xCenter, 
         int yCenter, int rotation) {
         
         Transformer transformer = new Transformer();
-        
+
         float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);
         
         IntensityDescriptor descriptor;
@@ -206,19 +274,46 @@ public class Features {
         return descriptor;
     }
     
-    private GradientDescriptor extractGradientForBlock(int xCenter, 
+    private GradientDescriptor extractGsGradientForBlock(int xCenter, 
         int yCenter, int rotation) {
         
         Transformer transformer = new Transformer();
-        
+
         float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);
         
-        GradientDescriptor descriptor = extractGsGradientForBlock(
-            xCenter, yCenter, frameOffsets);
+        GradientDescriptor descriptor = null;
+        
+        if (gradientImg != null) {
+            descriptor = extractGsGradientForBlock(xCenter, yCenter, 
+                frameOffsets);
+        } /*else {
+            descriptor = extractClrGradientForBlock(xCenter, yCenter, 
+                frameOffsets);
+        }*/
         
         return descriptor;
     }
+    
+    private ThetaDescriptor extractThetaForBlock(int xCenter, 
+        int yCenter, int rotation) {
+        
+        Transformer transformer = new Transformer();
 
+        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);
+        
+        ThetaDescriptor descriptor = null;
+        
+        if (thetaImg != null) {
+            descriptor = extractThetaForBlock(xCenter, yCenter, 
+                frameOffsets);
+        } /*else {
+            descriptor = extractClrGradientForBlock(xCenter, yCenter, 
+                frameOffsets);
+        }*/
+        
+        return descriptor;
+    }
+    
     private void checkBounds(int x, int y) {
         
         if (!isWithinXBounds(x)) {
@@ -273,19 +368,17 @@ public class Features {
      * a sentinel is the value for that location in the descriptor.
      * @param xCenter
      * @param yCenter
-     * @param offsets
      * @return 
      */
     private IntensityDescriptor extractGsIntensityForBlock(int xCenter, 
         int yCenter, float[][] offsets) {
-        
+                
         float[] output = new float[offsets.length];
         
         float sentinel = GsIntensityDescriptor.sentinel;
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
+                
         int count = 0;
+        
         for (int i = 0; i < offsets.length; ++i) {
             
             float x1P = xCenter + offsets[i][0];
@@ -301,7 +394,11 @@ public class Features {
                 
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 
-                double v = imageProcessor.biLinearInterpolation(gsImg, x1P, y1P);
+                // bilinear:
+                //double v = imageProcessor.biLinearInterpolation(gsImg, x1P, y1P);
+                
+                // nearest neighbor
+                double v = gsImg.getValue(Math.round(x1P), Math.round(y1P));
                 
                 output[count] = (int)Math.round(v);
             }
@@ -315,24 +412,74 @@ public class Features {
     }
     
     /**
+     * extract theta orientation for the (xCenter, yCenter) region 
+     * and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return 
+     */
+    private ThetaDescriptor extractThetaForBlock(int xCenter, int yCenter, 
+        float[][] offsets) {
+        
+        int[] output = new int[offsets.length];
+        
+        int sentinel = PixelThetaDescriptor.sentinel;
+                
+        int count = 0;
+        
+        for (int i = 0; i < offsets.length; ++i) {
+            
+            float x1P = xCenter + offsets[i][0];
+            
+            float y1P = yCenter + offsets[i][1];
+            
+            if ((x1P < 0) || (Math.ceil(x1P) > (thetaImg.getWidth() - 1)) || 
+                (y1P < 0) || (Math.ceil(y1P) > (thetaImg.getHeight() - 1))) {
+                
+                output[count] = sentinel;
+                
+            } else {
+                
+                //non-adaptive algorithms: nearest neighbor or bilinear
+                
+                // bilinear:
+                //double v = imageProcessor.biLinearInterpolation(thetaImg, x1P, y1P);
+                
+                // nearest neighbor
+                double v = thetaImg.getValue(Math.round(x1P), Math.round(y1P));
+                
+                output[count] = (int)Math.round(v);
+            }
+            
+            count++;
+        }
+        
+        ThetaDescriptor desc = new PixelThetaDescriptor(output);
+        
+        return desc;
+    }
+    
+    /**
      * extract from the image and place in the descriptor.
      * Note that if the transformed pixel is out of bounds of the image,
      * a sentinel is the value for that location in the descriptor.
      * @param xCenter
      * @param yCenter
-     * @param offsets
+     * @param rotation
      * @return 
      */
     private GradientDescriptor extractGsGradientForBlock(int xCenter, 
         int yCenter, float[][] offsets) {
         
-        int[] output = new int[offsets.length];
-        
         int sentinel = GsGradientDescriptor.sentinel;
         
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
+        int[] output = new int[offsets.length];
+                       
         int count = 0;
+        
         for (int i = 0; i < offsets.length; ++i) {
             
             float x1P = xCenter + offsets[i][0];
@@ -348,8 +495,11 @@ public class Features {
                 
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 
-                double v = imageProcessor.biLinearInterpolation(gradientImg, 
-                    x1P, y1P);
+                // bilinear:
+                //double v = imageProcessor.biLinearInterpolation(gradientImg, x1P, y1P);
+                
+                // nearest neighbor
+                double v = gradientImg.getValue(Math.round(x1P), Math.round(y1P));
                 
                 output[count] = (int)Math.round(v);
             }
@@ -367,11 +517,11 @@ public class Features {
      * (xCenter, yCenter) for 16 cells.
      * @param xCenter
      * @param yCenter
-     * @param offsets
+     * @param rotation
      * @return 
      */
     private GradientDescriptor extractGsGradientForCells(int xCenter, 
-        int yCenter) {
+        int yCenter, int rotation) {
         
         /*
           3 [-][-][.][.][-][-][.][.]
@@ -384,52 +534,70 @@ public class Features {
          -4 [.][.][-][-][.][.][-][-]
             -4 -3 -2 -1  0  1  2  3  
         
+          3                   
+          2  3     7    11     15
+          1                    
+          0  2     6   10@     14         
+         -1                      
+         -2  1     5     9     13
+         -3                     
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3 
         */
+        
+        Transformer transformer = new Transformer();
+        
         int[] output = new int[16];
         
         int sentinel = GsGradientDescriptor.sentinel;
         
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        int count = 0;
+        int count = 0;                
         for (int dx = -4; dx < 4; dx+=2) {
-            
-            float x1P = xCenter + dx;
-            float x2P = x1P + 1;
-            
-            if ((x1P < 0) || (Math.ceil(x1P) > (gradientImg.getWidth() - 1)) ||
-                (x2P < 0) || (Math.ceil(x2P) > (gradientImg.getWidth() - 1))
-                ) {
-                
-                output[count] = sentinel;
-                count++;
-                continue;
-            }
-            
             for (int dy = -4; dy < 4; dy+=2) {
             
-                float y1P = yCenter + dy;
-                float y2P = y1P + 1;
-            
-                if ((y1P < 0) || (Math.ceil(y1P) > (gradientImg.getWidth() - 1)) ||
-                    (y2P < 0) || (Math.ceil(y2P) > (gradientImg.getWidth() - 1))) {
+                float[] dXY11T = transformer.rotate(rotation, dx, dy); 
+                float[] dXY12T = transformer.rotate(rotation, dx + 1, dy);
+                float[] dXY21T = transformer.rotate(rotation, dx, dy + 1); 
+                float[] dXY22T = transformer.rotate(rotation, dx + 1, dy + 1);
                 
+                float x11 = xCenter + dXY11T[0];
+                float y11 = yCenter + dXY11T[1];
+                
+                float x12 = xCenter + dXY12T[0];
+                float y12 = yCenter + dXY12T[1];
+                
+                float x21 = xCenter + dXY21T[0];
+                float y21 = yCenter + dXY21T[1];
+                
+                float x22 = xCenter + dXY22T[0];
+                float y22 = yCenter + dXY22T[1];
+
+                if ((x11 < 0) || (Math.ceil(x11) > (gradientImg.getWidth() - 1)) ||
+                    (y11 < 0) || (Math.ceil(y11) > (gradientImg.getHeight() - 1)) ||
+
+                    (x12 < 0) || (Math.ceil(x12) > (gradientImg.getWidth() - 1)) ||
+                    (y12 < 0) || (Math.ceil(y12) > (gradientImg.getHeight() - 1)) ||
+
+                    (x21 < 0) || (Math.ceil(x21) > (gradientImg.getWidth() - 1)) ||
+                    (y21 < 0) || (Math.ceil(y21) > (gradientImg.getHeight() - 1)) ||
+
+                    (x22 < 0) || (Math.ceil(x22) > (gradientImg.getWidth() - 1)) ||
+                    (y22 < 0) || (Math.ceil(y22) > (gradientImg.getHeight() - 1))
+                    ) {
                     output[count] = sentinel;
                     count++;
                     continue;
                 }
-                                
-                //non-adaptive algorithms: nearest neighbor or bilinear
-                
-                double v1 = imageProcessor.biLinearInterpolation(gradientImg, x1P, y1P);
-                double v2 = imageProcessor.biLinearInterpolation(gradientImg, x1P, y2P);
-                double v3 = imageProcessor.biLinearInterpolation(gradientImg, x2P, y1P);
-                double v4 = imageProcessor.biLinearInterpolation(gradientImg, x2P, y2P);
-                
-                output[count] = (int)Math.round((v1 + v2 + v3 + v4)/4.);
+
+                int v11 = gradientImg.getValue(Math.round(x11), Math.round(y11));
+                int v12 = gradientImg.getValue(Math.round(x12), Math.round(y12));
+                int v21 = gradientImg.getValue(Math.round(x21), Math.round(y21));
+                int v22 = gradientImg.getValue(Math.round(x22), Math.round(y22));
+
+                output[count] = (int)Math.round((v11 + v12 + v21 + v22)/4.);
+
+                count++;
             }
-            
-            count++;
         }
         
         GradientDescriptor desc = new GsGradientDescriptor(output);
@@ -448,16 +616,15 @@ public class Features {
      */
     private IntensityDescriptor extractClrIntensityForBlock(int xCenter, 
         int yCenter, float[][] offsets) {
-        
-        int[] outputR = new int[offsets.length];
-        int[] outputG = new int[offsets.length];
-        int[] outputB = new int[offsets.length];
-        
+                
         int sentinel = ClrIntensityDescriptor.sentinel;
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
+                
+        int[] outputR = new int[offsets.length];
+        int[] outputG = new int[outputR.length];
+        int[] outputB = new int[outputR.length];
         
         int count = 0;
+        
         for (int i = 0; i < offsets.length; ++i) {
             
             float x1P = xCenter + offsets[i][0];
@@ -473,11 +640,21 @@ public class Features {
                 
             } else {
                 
-                double[] v = imageProcessor.biLinearInterpolation(clrImg, x1P, y1P);
+                //non-adaptive algorithms: nearest neighbor or bilinear
                 
-                outputR[count] = (int)Math.round(v[0]);
-                outputG[count] = (int)Math.round(v[1]);
-                outputB[count] = (int)Math.round(v[2]);
+                // bilinear:
+                //double[] v = imageProcessor.biLinearInterpolation(clrImg, x1P, y1P);
+                
+                // nearest neighbor
+                int r = clrImg.getR(Math.round(x1P), Math.round(y1P));
+                    
+                int g = clrImg.getG(Math.round(x1P), Math.round(y1P));
+                    
+                int b = clrImg.getB(Math.round(x1P), Math.round(y1P));
+                    
+                outputR[count] = r;
+                outputG[count] = g;
+                outputB[count] = b;
             }
             
             count++;
@@ -519,65 +696,13 @@ public class Features {
         int[] blue = new int[16];
         
         int sentinel = GsGradientDescriptor.sentinel;
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        int count = 0;
-        for (int dx = -4; dx < 4; dx+=2) {
-            
-            float x1P = xCenter + dx;
-            float x2P = x1P + 1;
-            
-            if ((x1P < 0) || (Math.ceil(x1P) > (clrGradientImg.getWidth() - 1)) ||
-                (x2P < 0) || (Math.ceil(x2P) > (clrGradientImg.getWidth() - 1))
-                ) {
-                
-                red[count] = sentinel;
-                green[count] = sentinel;
-                blue[count] = sentinel;
-                
-                count++;
-                
-                continue;
-            }
-            
-            for (int dy = -4; dy < 4; dy+=2) {
-            
-                float y1P = yCenter + dy;
-                float y2P = y1P + 1;
-            
-                if ((y1P < 0) || (Math.ceil(y1P) > (clrGradientImg.getWidth() - 1)) ||
-                    (y2P < 0) || (Math.ceil(y2P) > (clrGradientImg.getWidth() - 1))) {
-                
-                    red[count] = sentinel;
-                    green[count] = sentinel;
-                    blue[count] = sentinel;
-                
-                    count++;
-                    continue;
-                }
-                                
-                //non-adaptive algorithms: nearest neighbor or bilinear
-                
-                double[] v1 = imageProcessor.biLinearInterpolation(clrGradientImg, x1P, y1P);
-                double[] v2 = imageProcessor.biLinearInterpolation(clrGradientImg, x1P, y2P);
-                double[] v3 = imageProcessor.biLinearInterpolation(clrGradientImg, x2P, y1P);
-                double[] v4 = imageProcessor.biLinearInterpolation(clrGradientImg, x2P, y2P);
-                
-                red[count] = (int)Math.round((v1[0] + v2[0] + v3[0] + v4[0])/4.);
-                green[count] = (int)Math.round((v1[1] + v2[1] + v3[1] + v4[1])/4.);
-                blue[count] = (int)Math.round((v1[2] + v2[2] + v3[2] + v4[2])/4.);
-            }
-            
-            count++;
-        }
+       
         
         GradientDescriptor desc = new ClrGradientDescriptor(red, green, blue);
         
         return desc;
         */
     }
-   
 
     /**
      * calculate the intensity based statistic (SSD) between the two descriptors

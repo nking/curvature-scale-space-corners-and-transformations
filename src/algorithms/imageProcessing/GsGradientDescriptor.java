@@ -63,16 +63,16 @@ public class GsGradientDescriptor implements GradientDescriptor {
         }
         
         int n = grey.length;
-        int midIdx = n >> 1;
+        int cenPixIdx = 10; // if n==16
         
-        int vc = grey[midIdx];
+        int vc = grey[cenPixIdx];
         
         if (vc == sentinel) {
             throw new IllegalStateException(
             "ERROR: the central value for the array is somehow sentinel");
         }
         
-        float sqErr = MiscMath.sumSquaredError(grey, sentinel);
+        float sqErr = MiscMath.sumSquaredError(grey, sentinel, cenPixIdx);
             
         this.sumSquaredError = sqErr;
         

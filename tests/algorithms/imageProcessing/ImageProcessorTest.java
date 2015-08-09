@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;

@@ -587,10 +587,10 @@ if (true) {
         boolean useNormalizedIntensities = false;
         
         // TODO: consider using greyscale images
-        Features features1 = new Features(img1, gXY1, blockHalfWidth, 
+        Features features1 = new Features(img1, gXY1, theta1, blockHalfWidth, 
             useNormalizedIntensities);
         
-        Features features2 = new Features(img2, gXY2, blockHalfWidth, 
+        Features features2 = new Features(img2, gXY2, theta2, blockHalfWidth, 
             useNormalizedIntensities);
          
         /*
@@ -900,10 +900,10 @@ if (true) {
                
                     GradientDescriptor gDesc1 = features1.extractGradient(x1d, 
                         y1d, rotD1);
-                    
+                  
                     FeatureComparisonStat stat = Features.calculateStats(
                         desc1, gDesc1, x1d, y1d, desc2, gDesc2, x2, y2);
-                    
+
                     if ((stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
                         (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())) {
                         

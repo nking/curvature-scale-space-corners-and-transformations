@@ -463,7 +463,7 @@ public class MiscMath {
             double diffX = x[i] - avgX;
             sumX += (diffX * diffX);
         }
-        float stdDevX = (float)(Math.sqrt(sumX/(float)(count - 1.0f)));
+        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));
         
         return new float[]{avgX, stdDevX};
     }
@@ -502,7 +502,7 @@ public class MiscMath {
             double diffX = x[i] - avgX;
             sumX += (diffX * diffX);
         }
-        float stdDevX = (float)(Math.sqrt(sumX/(float)(count - 1.0f)));
+        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));
         
         return new float[]{avgX, stdDevX};
     }
@@ -1284,12 +1284,11 @@ public class MiscMath {
      * sentinel are ignored and not included in the calculation.
      * @return 
      */
-    public static float sumSquaredError(int[] a, int sentinel) {
+    public static float sumSquaredError(int[] a, int sentinel, int centralIdx) {
         
         int n = a.length;
-        int midIdx = n >> 1;
         
-        int vc = a[midIdx];
+        int vc = a[centralIdx];
         
         if (vc == sentinel) {
             throw new IllegalStateException(
@@ -1324,12 +1323,11 @@ public class MiscMath {
      * sentinel are ignored and not included in the calculation.
      * @return 
      */
-    public static float sumSquaredError(float[] a, float sentinel) {
+    public static float sumSquaredError(float[] a, float sentinel, int centralPixIdx) {
         
         int n = a.length;
-        int midIdx = n >> 1;
         
-        float vc = a[midIdx];
+        float vc = a[centralPixIdx];
         
         if (vc == sentinel) {
             throw new IllegalStateException(
@@ -1340,7 +1338,7 @@ public class MiscMath {
         
         double sum = 0;
         
-        for (int i = 0; i < a.length; ++i) {
+        for (int i = 0; i < n; ++i) {
             
             float v1 = a[i];
             if (v1 == sentinel) {
@@ -1350,8 +1348,10 @@ public class MiscMath {
             float diff = a[i] - vc;
         
             sum += (diff * diff);
+            
             count++;
         }
+        
         sum /= (double)count;
                        
         return (float)sum;

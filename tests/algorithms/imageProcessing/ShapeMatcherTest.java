@@ -262,7 +262,7 @@ public class ShapeMatcherTest extends TestCase {
         ShapeMatcher matcher = new ShapeMatcher();
         
         int blockHalfWidth = 2;
-        boolean useNormalizedIntensities = true;
+        boolean useNormalizedIntensities = false;
         
         ImageExt img1 = helper.getImage1(); 
         GreyscaleImage gXY1 = helper.getGXY1();
@@ -278,10 +278,10 @@ public class ShapeMatcherTest extends TestCase {
         int dither = 1;
         
         Features features1 = new Features(helper.getGreyscaleImage1(), 
-            gXY1, blockHalfWidth, useNormalizedIntensities);
+            gXY1, theta1, blockHalfWidth, useNormalizedIntensities);
         
         Features features2 = new Features(helper.getGreyscaleImage2(), 
-            gXY2, blockHalfWidth, useNormalizedIntensities);
+            gXY2, theta2, blockHalfWidth, useNormalizedIntensities);
         
         
         // iterate over the manual list of corners and find the corner regions
@@ -303,6 +303,11 @@ public class ShapeMatcherTest extends TestCase {
                 int yDiff = Math.abs(y1 - y);
                 if (xDiff < 5 && yDiff < 5) {
                     set1.add(cr);
+                    try {
+                        cr.getRelativeOrientation();
+                    } catch(CornerRegion.CornerRegionDegneracyException e) {
+                        log.severe(e.getMessage());
+                    }
                 }
             }
             
@@ -315,6 +320,11 @@ public class ShapeMatcherTest extends TestCase {
                 int yDiff = Math.abs(y2 - y);
                 if (xDiff < 5 && yDiff < 5) {
                     set2.add(cr);
+                    try {
+                        cr.getRelativeOrientation();
+                    } catch(CornerRegion.CornerRegionDegneracyException e) {
+                        log.severe(e.getMessage());
+                    }
                 }
             }
             
@@ -384,7 +394,7 @@ public class ShapeMatcherTest extends TestCase {
        
         // Now search from points1 through all of corners2 to see if best 
         // match is what is expected.
-        
+      
         // iterate over the manual list of corners and find the corner regions
         for (int ii = 0; ii < points1.getN(); ++ii) {
 

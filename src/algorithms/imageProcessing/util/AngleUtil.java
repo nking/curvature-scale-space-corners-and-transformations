@@ -374,6 +374,27 @@ public class AngleUtil {
      * @return 
      */
     protected static double getAngleAverage(double rot0, double rot1, boolean useRadians) {
+        
+         /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+        double angleAvg = calcAngleAddition(rot0, rot1, useRadians)/2.;
+      
+        return angleAvg;
+    }
+    
+    /**
+     * given twoPi in degrees or in radians, return the angle average.
+     * @param rot0
+     * @param rot1
+     * @param useRadians
+     * @return 
+     */
+    public static double calcAngleAddition(double rot0, double rot1, boolean useRadians) {
          /*
                   270
                III | IV
@@ -400,19 +421,19 @@ public class AngleUtil {
                II  |  I
                    90
         */
-        double angleAvg = -1;
+        double angleSum = -1;
         if (q0 == 1) {
             if (q1 == 1 || q1 == 2) {
-                angleAvg = (rot0 + rot1)/2.;
+                angleSum = (rot0 + rot1);
             } else if (q1 == 3) {
                 double diff = rot1 - rot0;
                 if (diff > (twoPI/2.)) {
-                    angleAvg = (twoPI + rot0 + rot1)/2;
+                    angleSum = (twoPI + rot0 + rot1);
                 } else {
-                    angleAvg = (rot0 + rot1)/2.;
+                    angleSum = (rot0 + rot1);
                 }
             } else {
-                angleAvg = (twoPI + rot0 + rot1)/2;
+                angleSum = (twoPI + rot0 + rot1);
             }
         } else if (q0 == 2) {
             /*
@@ -423,13 +444,13 @@ public class AngleUtil {
                    90
             */
             if (q1 == 1 || q1 == 2 || q1 == 3) {
-                angleAvg = (rot0 + rot1)/2.f;
+                angleSum = (rot0 + rot1);
             } else if (q1 == 4) {
                 double diff = rot1 - rot0;
                 if (diff > (twoPI/2.)) {
-                    angleAvg = (twoPI + rot0 + rot1)/2;
+                    angleSum = (twoPI + rot0 + rot1);
                 } else {
-                    angleAvg = (rot0 + rot1)/2.f;
+                    angleSum = (rot0 + rot1);
                 }
             }
         } else if (q0 == 3) {
@@ -443,12 +464,12 @@ public class AngleUtil {
             if (q1 == 1) {
                 double diff = rot0 - rot1;
                 if (diff > (twoPI/2.)) {
-                    angleAvg = (twoPI + rot1 + rot0)/2;
+                    angleSum = (twoPI + rot1 + rot0);
                 } else {
-                    angleAvg = (rot0 + rot1)/2.f;
+                    angleSum = (rot0 + rot1);
                 }
             } else {
-                angleAvg = (rot0 + rot1)/2.f;
+                angleSum = (rot0 + rot1);
             }
         } else if (q0 == 4) {
             /*
@@ -459,30 +480,30 @@ public class AngleUtil {
                    90
             */
             if (q1 == 1) {
-                angleAvg = (twoPI + rot0 + rot1)/2;
+                angleSum = (twoPI + rot0 + rot1);
             } else if (q1 == 2) {
                 double diff = (rot0 - rot1);
                 if (diff > (twoPI/2.)) {
-                    angleAvg = (twoPI + rot0 + rot1)/2;
+                    angleSum = (twoPI + rot0 + rot1);
                 } else {
-                    angleAvg = (rot0 + rot1)/2.f;
+                    angleSum = (rot0 + rot1);
                 }
             } else {
-                angleAvg = (rot0 + rot1)/2.f;
+                angleSum = (rot0 + rot1);
             }
         }
 
         if (useRadians) {
-            if (angleAvg >= twoPI) {
-                angleAvg = angleAvg - twoPI;
+            if (angleSum >= twoPI) {
+                angleSum = angleSum - twoPI;
             }
         } else {
-            if (angleAvg > 359) {
-                angleAvg = angleAvg - 360;
+            if (angleSum > 359) {
+                angleSum = angleSum - 360;
             }
         }
         
-        return angleAvg;
+        return angleSum;
     }
     
     protected static int getClockwiseQuadrant(float rotationInDegrees) {

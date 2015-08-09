@@ -968,31 +968,9 @@ public class ImageProcessor {
 
     protected void blur(GreyscaleImage input, float[] kernel) {
 
-        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
-
-        GreyscaleImage output = input.createWithDimensions();
-
-        for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {               
-                double conv = kernel1DHelper.convolvePointWithKernel(
-                    input, i, j, kernel, true);
-                int g = (int)Math.round(conv);
-                output.setValue(i, j, g);
-            }
-        }
-
-        input.resetTo(output);
-
-        for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {
-                double conv = kernel1DHelper.convolvePointWithKernel(
-                    input, i, j, kernel, false);
-                int g = (int)Math.round(conv);
-                output.setValue(i, j, g);
-            }
-        }
-
-        input.resetTo(output);
+        applyKernel1D(input, kernel, true);
+        
+        applyKernel1D(input, kernel, false);
     }
     
     public void blur(GreyscaleImage input, float sigma) {
@@ -1039,6 +1017,25 @@ public class ImageProcessor {
                 double[] conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, false);
                 output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
+            }
+        }
+
+        input.resetTo(output);
+    }
+    
+    public void applyKernel1D(GreyscaleImage input, float[] kernel, 
+        boolean calcForX) {
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        GreyscaleImage output = input.createWithDimensions();
+
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {               
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, calcForX);
+                int g = (int)Math.round(conv);
+                output.setValue(i, j, g);
             }
         }
 
@@ -2930,5 +2927,5 @@ public class ImageProcessor {
         
         return new double[]{r, g, b};
     }
-    
+ 
 }

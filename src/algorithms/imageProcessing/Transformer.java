@@ -612,4 +612,25 @@ public class Transformer {
         return transformed;
     }
     
+    /**
+     * given a two-dimensional array of x and y, apply rotation to them
+     * and return the result.
+     * @param rotationInDegrees
+     * @param x
+     * @param y
+     * @return 
+     */
+    public float[] rotate(float rotationInDegrees, float x, float y) {
+        
+        double rotationInRadians = rotationInDegrees * Math.PI/180.;
+        
+        double cos = Math.cos(rotationInRadians);
+        double sin = Math.sin(rotationInRadians);
+                            
+        double xr = (x * cos) + (y * sin);
+        double yr = (-x * sin) + (y * cos);
+            
+        return new float[]{(float)xr, (float)yr};
+    }
+    
 }

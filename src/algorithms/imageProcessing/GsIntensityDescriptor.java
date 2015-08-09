@@ -1,6 +1,14 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -18,6 +26,7 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     
     public GsIntensityDescriptor(float[] intensities) {
         this.grey = intensities;
+
     }
     
     /**
@@ -110,11 +119,14 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
             "ERROR: the central value for the array is somehow sentinel");
         }
         
-        float sqErr = MiscMath.sumSquaredError(grey, sentinel);
+        float sqErr = MiscMath.sumSquaredError(grey, sentinel, midIdx);
             
         this.sumSquaredError = sqErr;
         
         return sumSquaredError;
     }
 
+    protected float[] getInternalArrayCopy() {
+        return Arrays.copyOf(grey, grey.length);
+    }
 }

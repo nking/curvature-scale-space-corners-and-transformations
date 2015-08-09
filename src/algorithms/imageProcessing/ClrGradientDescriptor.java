@@ -62,7 +62,7 @@ public class ClrGradientDescriptor implements GradientDescriptor {
         float ssdG = MiscMath.calculateSSD(green, other.green, sentinel);
         float ssdB = MiscMath.calculateSSD(blue, other.blue, sentinel);
            
-        float avg = (float)(ssdR + ssdG + ssdB)/3.f;
+        float avg = (ssdR + ssdG + ssdB)/3.f;
         
         return avg;
     }
@@ -95,11 +95,11 @@ public class ClrGradientDescriptor implements GradientDescriptor {
             "ERROR: the central values for the array are somehow sentinels");
         }
         
-        float sqErrR = MiscMath.sumSquaredError(red, sentinel);
-        float sqErrG = MiscMath.sumSquaredError(green, sentinel);
-        float sqErrB = MiscMath.sumSquaredError(blue, sentinel);
+        float sqErrR = MiscMath.sumSquaredError(red, sentinel, midIdx);
+        float sqErrG = MiscMath.sumSquaredError(green, sentinel, midIdx);
+        float sqErrB = MiscMath.sumSquaredError(blue, sentinel, midIdx);
         
-        float avg = (float)(sqErrR + sqErrG + sqErrB)/3.f;
+        float avg = (sqErrR + sqErrG + sqErrB)/3.f;
         
         this.sumSquaredError = avg;
         
