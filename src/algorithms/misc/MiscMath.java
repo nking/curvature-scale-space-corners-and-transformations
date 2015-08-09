@@ -1,6 +1,7 @@
 package algorithms.misc;
 
 import algorithms.CountingSort;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.math.BigInteger;
@@ -1245,6 +1246,40 @@ public class MiscMath {
         return (float)sum;
     }
     
+    public static float calculateAngular360SSD(int[] a, int[] b, int sentinel) {
+        
+        if (a.length != b.length) {
+            throw new IllegalArgumentException(
+            "a and b must have the same lengths");
+        }
+                
+        int count = 0;
+        
+        double sum = 0;
+        
+        for (int i = 0; i < a.length; ++i) {
+            
+            int v1 = a[i];
+            if (v1 == sentinel) {
+                continue;
+            }
+            int v2 = b[i];
+            if (v2 == sentinel) {
+                continue;
+            }
+            
+            float diff = AngleUtil.getAngleDifference(v1, v2);
+            
+            sum += diff*diff;
+            
+            count++;
+        }
+        
+        sum /= (double)count;
+                
+        return (float)sum;
+    }
+    
     public static float calculateSSD(float[] a, float[] b, float sentinel) {
         
         if (a.length != b.length) {
@@ -1311,6 +1346,48 @@ public class MiscMath {
             sum += (diff * diff);
             count++;
         }
+        sum /= (double)count;
+                       
+        return (float)sum;
+    }
+
+    /**
+     * Determine the sum squared error within this array using 
+     * auto-correlation and the assumption that the value at the middle index 
+     * is the value from the original central pixel.  Values the same as the
+     * sentinel are ignored and not included in the calculation.
+     * @return 
+     */
+    public static float sumSquaredAngular360Error(int[] a, int sentinel, 
+        int centralIdx) {
+        
+        int n = a.length;
+        
+        int vc = a[centralIdx];
+        
+        if (vc == sentinel) {
+            throw new IllegalStateException(
+            "ERROR: the central value for the array is somehow sentinel");
+        }
+        
+        int count = 0;
+        
+        double sum = 0;
+        
+        for (int i = 0; i < a.length; ++i) {
+            
+            int v1 = a[i];
+            if (v1 == sentinel) {
+                continue;
+            }
+            
+            float diff = AngleUtil.getAngleDifference(a[i], vc);
+        
+            sum += (diff * diff);
+            
+            count++;
+        }
+        
         sum /= (double)count;
                        
         return (float)sum;

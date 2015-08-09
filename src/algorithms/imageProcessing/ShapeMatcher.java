@@ -885,6 +885,9 @@ if (true) {
         
         GradientDescriptor gDesc2 = features2.extractGradient(x2, y2, rot2);
         
+        ThetaDescriptor tDesc2 = features2.extractTheta(x2, y2, rot2);
+        float tErrSq = tDesc2.sumSquaredError();
+        
         for (int rotD1 = (rot1 - 0/*25*/); rotD1 <= (rot1 + 0/*25*/); rotD1 += 25) {
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
                 if (!features1.isWithinXBounds(x1d)) {
@@ -900,7 +903,12 @@ if (true) {
                
                     GradientDescriptor gDesc1 = features1.extractGradient(x1d, 
                         y1d, rotD1);
-                  
+                    
+                    ThetaDescriptor tDesc1 = features1.extractTheta(x1d, y1d, 
+                        rotD1);
+                    
+                    float tErr1Sq = tDesc1.sumSquaredError();
+                    
                     FeatureComparisonStat stat = Features.calculateStats(
                         desc1, gDesc1, x1d, y1d, desc2, gDesc2, x2, y2);
 

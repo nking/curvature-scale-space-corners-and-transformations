@@ -47,7 +47,7 @@ public class Features {
     
     protected final boolean useNormalizedIntensities;
     
-    protected final boolean useBinnedCellGradients = false;
+    protected final boolean useBinnedCellGradients = true;
         
     /**
     key = pixel coordinates of center of frame;
@@ -305,7 +305,7 @@ public class Features {
         
         if (thetaImg != null) {
             descriptor = extractThetaForBlock(xCenter, yCenter, 
-                frameOffsets);
+                rotation, frameOffsets);
         } /*else {
             descriptor = extractClrGradientForBlock(xCenter, yCenter, 
                 frameOffsets);
@@ -422,7 +422,7 @@ public class Features {
      * @return 
      */
     private ThetaDescriptor extractThetaForBlock(int xCenter, int yCenter, 
-        float[][] offsets) {
+        int rotation, float[][] offsets) {
         
         int[] output = new int[offsets.length];
         
@@ -450,6 +450,12 @@ public class Features {
                 
                 // nearest neighbor
                 double v = thetaImg.getValue(Math.round(x1P), Math.round(y1P));
+                
+                v += rotation;
+                
+                if (v >= 360) {
+                    v = v - 360;
+                }
                 
                 output[count] = (int)Math.round(v);
             }
