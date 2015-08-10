@@ -715,11 +715,24 @@ public class Features {
                     
                  e.g. (0 + 350 + 340)/3. should equal 350, but if
                  the quadrants are not used, the result is 130.
-                 */
-                boolean useRadians = false;
                 
+                If add in pairs, can keep comparing the quadrants, but the 
+                result is increasingly wrong.
+                
+                (0 + 350)/2 = (360 + 350)/2=355
+                then (355 + 340)/2 = 347.5  instead of 350 from avg of all 3.
+                That's a factor of 1.007 different.
+                
+                (360.+350.+340.+330.)/4. is 345. but added in pairs is 338.75.
+                That's a factor of 1.0185 different.
+                
+                There's probably a pattern to use to correct these, but
+                haven't thought it through yet.
+                
+                **(This is probably one reason to prefer histograms).**
+                */                
                 int cCount = 0;
-                int sum = 0;
+                float avg = 0;
                 
                 for (int i = 0; i < xT.length; ++i) {
                     int x = Math.round(xT[i]);
@@ -731,12 +744,10 @@ public class Features {
                     
                     int v = thetaImg.getValue(x, y);
                     
-                    //TODO: need to test the angle addition.  might need to
-                    //adjust how to add these w.r.t. quadrants.
                     if (cCount == 0) {
-                        sum = v;
+                        avg = v;
                     } else {
-                        sum += AngleUtil.calcAngleAddition(sum, v, useRadians);
+                        avg += AngleUtil.getAngleAverageInDegrees(avg, v);
                     }
                     
                     cCount++;
@@ -748,7 +759,8 @@ public class Features {
                     continue;
                 }
                 
-                int avg = Math.round((float)sum/(float)cCount);
+                //TODO: correct this avg by a pattern that accounts for successive
+                // averaging of pairs
                 
                 // subtract the "dominant orientation"
                 avg -= rotation;
@@ -759,7 +771,7 @@ public class Features {
                     avg = avg + 360;
                 }            
                 
-                output[count] = avg;
+                output[count] = Math.round(avg);
 
                 count++;
             }
