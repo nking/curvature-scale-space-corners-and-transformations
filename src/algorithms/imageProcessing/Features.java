@@ -469,6 +469,8 @@ public class Features {
             throw new IllegalArgumentException("gradientDesc cannot be null");
         }
         
+        int centralPixelIndex = offsets.length >> 1;
+        
         int[] output = new int[offsets.length];
 
         int sentinel = PixelThetaDescriptor.sentinel;
@@ -488,6 +490,9 @@ public class Features {
             if ((x1P < 0) || (Math.ceil(x1P) > (thetaImg.getWidth() - 1)) ||
                 (y1P < 0) || (Math.ceil(y1P) > (thetaImg.getHeight() - 1))) {
 
+                if (count == centralPixelIndex) {
+                    return null;
+                }
                 output[count] = sentinel;
 
             } else {
@@ -496,6 +501,11 @@ public class Features {
                 int gradientV = ((GsGradientDescriptor)gradientDesc).grey[count];
                 
                 if (gradV < limitGradient) {
+
+                    if (count == centralPixelIndex) {
+                        // warning, S/N is too low to calc auto-correlation error
+                        // and algorithm will find a neaighbor to use instead
+                    }
                     
                     output[count] = sentinel;
                     
@@ -846,11 +856,30 @@ public class Features {
                 */
                 for (int i = 0; i < cCount; ++i) {
                     
-                    //TODO: there's still a possible error here when the above angleutil
-                    //made a quadrant correction such as adding 360 to an angle
-                    //so need to extract the angles used in the angleutil
-                    //store them in an array above to iterate over instead of 
-                    //fetching the values from the image again here.
+                    /*TODO: there's still a possible error here when the above angleutil
+                    made a quadrant correction such as adding 360 to an angle
+                    during it's calculation,
+                    so need to extract the angles used internal to angleutil
+                    and store them in an array vs above to iterate over here instead 
+                    of using the uncorrected values from the image again here.
+                    Note that the process would have to be iterative to rewrite
+                    array vs until there were no changes in angleUtil's corrections
+                    of rotation0 and rotation1 in order to get the real
+                    values to correct here.
+                    For example, 0, 0, 360 should average to 360.
+                    angleutil adds 0 and 0 then 360 and 360
+                    so vs would be [0, 360, 360] and would require another
+                    round of the same to determine that vs should be [360, 360, 360].
+                    --> Can see should sort the original array vs in decreasing order
+                    and then use angleutil on it while noting the quadrant corrected
+                    angles and replacing them in array vs.  Then one more iteration
+                    over vs to determine the corrections for adding pairs.
+                    Runtime complexity is then 
+                       O(N_cell_size) for store img values in [] vs
+                       + O(N_cell_size * log_2(N_cell_size)) for descending sort
+                       + O(N_cell_size) for pair angle averages
+                       + O(N_cell_size) for pair average corrections to total average.                    
+                    */
                     
                     int v = vs[i];
 

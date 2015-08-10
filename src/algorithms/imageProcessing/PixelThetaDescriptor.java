@@ -64,15 +64,28 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
         if (!Float.isNaN(sumSquaredError)) {
             return sumSquaredError;
         }
+        
+        int cIdx = centralIndex;
                 
-        int vc = a[centralIndex];
+        int vc = a[cIdx];
         
         if (vc == sentinel) {
-            throw new IllegalStateException(
-            "ERROR: the central value for the array is somehow sentinel");
+            // sometimes arrive here because the gradient for center pixel
+            // was too low intensity, so workaround is to reassign a nearby value
+            // if possible
+            int range = Math.min(((a.length - 1) - centralIndex), centralIndex);
+            for (int dIdx = 1; dIdx < range; ++dIdx) {
+                if (a[cIdx + dIdx] != sentinel) {
+                    cIdx = cIdx + dIdx;
+                    break;
+                } else if (a[cIdx - dIdx] != sentinel) {
+                    cIdx = cIdx - dIdx;
+                    break;
+                }
+            }
         }
         
-        float sqErr = MiscMath.sumSquaredAngular360Error(a, sentinel, centralIndex);
+        float sqErr = MiscMath.sumSquaredAngular360Error(a, sentinel, cIdx);
             
         this.sumSquaredError = sqErr;
         
