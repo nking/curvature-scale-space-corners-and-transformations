@@ -1,9 +1,12 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.CountingSort;
+import algorithms.MergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -515,6 +518,282 @@ public class AngleUtil {
         }
 
         return angleSum;
+    }
+    
+    /**
+     * NOT READY FOR USE YET
+     * given angles in degrees or in radians, return the angle sum corrected to
+     * the larger angle frame, e.g. 0 + 350 = 710.  It always chooses the
+     * smallest difference in quadrant space 
+     * between the two angles (adding a cycle if needed) before adding.
+     * @param rot0
+     * @param rot1
+     * @param useRadians
+     * @param outputQuadrantCorrected quadrant corrected values of 
+     * [rotationInDegrees0, rotationInDegrees1]
+     * @return 
+     */
+    public static double calcAngleAddition(double rot0, double rot1, 
+        boolean useRadians, double[] outputQuadrantCorrected) {
+        
+        if (rot0 < 0 || rot1 < 0) {
+            throw new IllegalArgumentException(
+                "rot0 and rot1 cannot be negative numbers");
+        }
+        
+        /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+         
+        /*
+        logic below is for rot0 and rot1 between 0 and 360 so temporarily
+        reduce angles to those ranges then add back the corrections.
+        */
+        double rot0Orig = rot0;
+        double rot1Orig = rot1;
+        
+        outputQuadrantCorrected[0] = rot0;
+        outputQuadrantCorrected[1] = rot1;
+        
+        // prefer to keep 360 instead of 0 because some of the invokers of this
+        // method might prefer a fraction times results to be > 0
+        if (rot0 != 360) {
+            rot0 = rot0 % 360;
+        }
+        if (rot1 != 360) {
+            rot1 = rot1 % 360;
+        }
+        
+        double twoPI;
+        int q0, q1;
+        if (useRadians) {
+            twoPI = 2. * Math.PI;
+            q0 = getClockwiseQuadrantForRadians(rot0);
+            q1 = getClockwiseQuadrantForRadians(rot1);
+        } else {
+            twoPI = 360.;
+            q0 = getClockwiseQuadrantForDegrees(rot0);
+            q1 = getClockwiseQuadrantForDegrees(rot1);
+        }
+       
+        /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+        
+        if (q0 == 1) {
+            if (q1 == 3) {
+                double diff = rot1 - rot0;
+                if (diff > (twoPI/2.)) {
+                    rot0 += twoPI;
+                    outputQuadrantCorrected[0] = rot0;
+                }
+            } else if (q1 == 4) {
+                rot0 += twoPI;
+                outputQuadrantCorrected[0] = rot0;
+            }
+        } else if (q0 == 2) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 4) {
+                double diff = rot1 - rot0;
+                if (diff > (twoPI/2.)) {
+                    rot0 += twoPI;
+                    outputQuadrantCorrected[0] = rot0;
+                }
+            }
+        } else if (q0 == 3) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                double diff = rot0 - rot1;
+                if (diff > (twoPI/2.)) {
+                    rot1 += twoPI;
+                    outputQuadrantCorrected[1] = rot1;
+                }
+            }
+        } else if (q0 == 4) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                rot1 += twoPI;
+                outputQuadrantCorrected[1] = rot1;
+            } else if (q1 == 2) {
+                double diff = (rot0 - rot1);
+                if (diff > (twoPI/2.)) {
+                    rot1 += twoPI;
+                    outputQuadrantCorrected[1] = rot1;
+                }
+            }
+        }
+        double angleSum = (rot0 + rot1);
+        
+        // add back any of the cycles in original values if larger than 360
+        if ((rot0 > twoPI) && (rot0 < rot0Orig)) {
+            double diff = (rot0Orig - rot0);
+            angleSum += diff;
+            outputQuadrantCorrected[0] += diff;
+        }
+        if ((rot1 > twoPI) && (rot1 < rot1Orig)) {
+            double diff = (rot1Orig - rot1);
+            angleSum += diff;
+            outputQuadrantCorrected[1] += diff;
+        }
+
+        return angleSum;
+    }
+     
+    /**
+     * calculate the angular average of rotDegrees0 and rotDegrees1 with
+     * corrections for quadrants if necessary.  For example, 0 averaged with
+     * 350 is 355.  Any changes in the given angles for quadrant math
+     * are seen in the populated outputQuadrantCorrected.
+     * @param outputQuadrantCorrected quadrant corrected values of 
+     * [rotationInDegrees0, rotationInDegrees1]
+     * @return 
+    */
+    protected static double getAngleAverageInDegrees(
+        double rotationInDegrees0, double rotationInDegrees1, 
+        double[] outputQuadrantCorrected) {
+        
+        boolean useRadians = false;
+        
+        double sum = calcAngleAddition(rotationInDegrees0, 
+            rotationInDegrees1, useRadians, outputQuadrantCorrected);
+        
+        return sum/2.;
+    }
+
+    /**
+     * NOT YET TESTED
+     Runtime complexity is O(N*lg2N) for sort + O(N) for pair angle averages
+     + O(N) for pair average corrections to total average.
+     * Note, may change to use CountingSort for N > 80 and max(angles) ~ 360
+     * in the future.
+                       
+     * @param angles angles in units of degrees.  Note that this array
+     * is modified by use here so pass a copy if it should not be.
+     * @param lastIndex last index to use in array angles, inclusive
+     * @return 
+     */
+    public static float calculateAverageWithQuadrantCorrections(int[] angles,
+        int lastIndex) {
+        
+        /*
+         because these are angles from 0 to 360, need to add them
+         while considering their quadrants.
+
+         e.g. (0 + 350 + 340)/3. should equal 350, but if
+         the quadrants are not used, the result is 130.
+
+         Can add in pairs, but need to correct the result.
+
+         averaging 4 numbers:
+         (a + b + c + d)/4. = (a/4) + (b/4) + (c/4) + (d/4)
+
+         averaging 4 numbers through 3 pair averages:
+         1) (a/2) + (b/2)
+         2) ((a/2) + (b/2))/2 + (c/2) = (a/4) + (b/4) + (c/2)
+         3) ((a/4) + (b/4) + (c/2))/2 + (d/2)
+            = (a/8) + (b/8) + (c/4) + (d/2)
+
+         and that needs to be corrected to (a/4) + (b/4) + (c/4) + (d/4)
+
+         for n=5, the successive pair averages is
+         1) (a/2) + (b/2)
+         2) ((a/2) + (b/2))/2 + (c/2) = (a/4) + (b/4) + (c/2)
+         3) ((a/4) + (b/4) + (c/2))/2 + (d/2)
+            = (a/8) + (b/8) + (c/4) + (d/2) 
+         4) ((a/8) + (b/8) + (c/4) + (d/2))/2 + (e/2)
+            = (a/16) + (b/16) + (c/8) + (d/4) + (e/2)
+               0        1         2       3       4
+         and that needs to be corrected to (a/5) + (b/5) + (c/5) + (d/5) + (e/5)
+
+         for all but the first number:
+            v[i]                 v[i]
+         ----------  +  v[i]*x  = ---
+         (1<<(n-i))                n
+                
+         for first variable, can add the correction:
+             total += v[0] * ((1<<(n-1)) - n)/(n*(1<<(n-1)))
+
+         then the correction afterwards to add:
+             from i=1 to i < n
+                 total += v[i] * ((1<<(n-i)) - n)/(n*(1<<(n-i)))
+         */
+        
+        //TODO: because 360 is usually the max value, if N is > 80, can
+        // use CountingSort here for better performance.
+        // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
+        
+        MergeSort.sortByDecr(angles, 0, lastIndex);
+        
+        // visit in order of large values to low to store quadrant corrections in vs
+        
+        double[] quadrantCorrected = new double[2];
+        
+        double avg = 0;
+        for (int i = 0; i <= lastIndex; ++i) {
+            
+            int v = angles[i];
+            
+            if (i == 0) {
+                avg = v;
+            } else {
+                
+                avg = getAngleAverageInDegrees(avg, v, quadrantCorrected);
+                
+                if (quadrantCorrected[0] != avg) {
+                    // TODO: this branch might not occur...revisit logic
+                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);
+                }
+                if (quadrantCorrected[1] != v) {
+                    angles[i] = (int)Math.round(quadrantCorrected[1]);
+                }
+            }
+        }
+
+        int n = lastIndex + 1;
+        for (int i = 0; i <= lastIndex; ++i) {
+
+            int v = angles[i];
+
+            float c0;
+
+            if (i == 0) {
+                c0 = 1 << (n - 1);
+            } else {
+                c0 = 1 << (n - i);
+            }
+
+            float add = v * (c0 - n) / (n * c0);
+
+            avg += add;
+        }
+
+        return (float)avg;
     }
     
     protected static int getClockwiseQuadrant(float rotationInDegrees) {

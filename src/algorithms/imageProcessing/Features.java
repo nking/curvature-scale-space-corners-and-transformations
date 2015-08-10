@@ -1,8 +1,10 @@
 package algorithms.imageProcessing;
 
+import algorithms.CountingSort;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -771,54 +773,15 @@ public class Features {
                 float lowLimit = 0.1f*maxGrd;
 
                 /*
-                 because these are angles from 0 to 360, need to add them
-                 while considering their quadrants.
-
-                 e.g. (0 + 350 + 340)/3. should equal 350, but if
-                 the quadrants are not used, the result is 130.
-
-                Can add in pairs, but need to correct the result.
-
-                averaging 4 numbers:
-                (a + b + c + d)/4. = (a/4) + (b/4) + (c/4) + (d/4)
-
-                averaging 4 numbers through 3 pair averages:
-                1) (a/2) + (b/2)
-                2) ((a/2) + (b/2))/2 + (c/2) = (a/4) + (b/4) + (c/2)
-                3) ((a/4) + (b/4) + (c/2))/2 + (d/2)
-                    = (a/8) + (b/8) + (c/4) + (d/2)
-
-                and that needs to be corrected to (a/4) + (b/4) + (c/4) + (d/4)
-
-                for n=5, the successive pair averages is
-                1) (a/2) + (b/2)
-                2) ((a/2) + (b/2))/2 + (c/2) = (a/4) + (b/4) + (c/2)
-                3) ((a/4) + (b/4) + (c/2))/2 + (d/2)
-                    = (a/8) + (b/8) + (c/4) + (d/2)
-                4) ((a/8) + (b/8) + (c/4) + (d/2))/2 + (e/2)
-                    = (a/16) + (b/16) + (c/8) + (d/4) + (e/2)
-                       0        1         2       3       4
-                and that needs to be corrected to (a/5) + (b/5) + (c/5) + (d/5) + (e/5)
-
-                for all but the first number:
-                    v[i]                 v[i]
-                ----------  +  v[i]*x  = ---
-                (1<<(n-i))                n
-                
-                for first variable, can add the correction:
-                   total += v[0] * ((1<<(n-1)) - n)/(n*(1<<(n-1)))
-
-                then the correction afterwards to add:
-                from i=1 to i < n
-                   total += v[i] * ((1<<(n-i)) - n)/(n*(1<<(n-i)))
-
-                **(This is probably one reason to prefer histograms).**
+                store the image values above the critical limit then
+                use angle util to average the values with consideration
+                for their quadrants.
                 */
+                
                 int cCount = 0;
-                float avg = 0;
                 
                 int[] vs = new int[xT.length];
-
+                int maxV = Integer.MIN_VALUE;
                 for (int i = 0; i < xT.length; ++i) {
                     int x = Math.round(xT[i]);
                     int y = Math.round(yT[i]);
@@ -826,76 +789,24 @@ public class Features {
                     if (vGradient < lowLimit) {
                         continue;
                     }
-
-                    int v = thetaImg.getValue(x, y);
-                    
-                    vs[cCount] = v;
-                    
-                    if (cCount == 0) {
-                        avg = v;
-                    } else {
-                        avg = AngleUtil.getAngleAverageInDegrees(avg, v);
+                    vs[cCount] = thetaImg.getValue(x, y);
+                    if (vs[cCount] > maxV) {
+                        maxV = vs[cCount];
                     }
-
                     cCount++;
                 }
-
+                
                 if (cCount == 0) {
                     output[count] = sentinel;
                     count++;
                     continue;
                 }
-
-                /*
-                correction for adding pairs:
-                for first variable,
-                   total += v[0] * ((1<<(n-1)) - n)/(n*(1<<(n-1)))
-
-                from i=1 to i < n
-                   total += v[i] * ((1<<(n-i)) - n)/(n*(1<<(n-i)))
-                */
-                for (int i = 0; i < cCount; ++i) {
-                    
-                    /*TODO: there's still a possible error here when the above angleutil
-                    made a quadrant correction such as adding 360 to an angle
-                    during it's calculation,
-                    so need to extract the angles used internal to angleutil
-                    and store them in an array vs above to iterate over here instead 
-                    of using the uncorrected values from the image again here.
-                    Note that the process would have to be iterative to rewrite
-                    array vs until there were no changes in angleUtil's corrections
-                    of rotation0 and rotation1 in order to get the real
-                    values to correct here.
-                    For example, 0, 0, 360 should average to 360.
-                    angleutil adds 0 and 0 then 360 and 360
-                    so vs would be [0, 360, 360] and would require another
-                    round of the same to determine that vs should be [360, 360, 360].
-                    --> Can see should sort the original array vs in decreasing order
-                    and then use angleutil on it while noting the quadrant corrected
-                    angles and replacing them in array vs.  Then one more iteration
-                    over vs to determine the corrections for adding pairs.
-                    Runtime complexity is then 
-                       O(N_cell_size) for store img values in [] vs
-                       + O(N_cell_size * log_2(N_cell_size)) for descending sort
-                       + O(N_cell_size) for pair angle averages
-                       + O(N_cell_size) for pair average corrections to total average.                    
-                    */
-                    
-                    int v = vs[i];
-
-                    float c0;
-
-                    if (i == 0) {
-                        c0 = 1 << (cCount - 1);
-                    } else {
-                        c0 = 1 << (cCount - i);
-                    }
-
-                    float add = v * (c0 - cCount)/(cCount * c0);
-
-                    avg += add;
-                }
-
+                
+                //Runtime complexity for the angular average is about 3 * O(cCount). 
+                
+                float avg = AngleUtil.calculateAverageWithQuadrantCorrections(vs, 
+                    cCount - 1);
+                
                 // subtract the "dominant orientation"
                 avg -= rotation;
 

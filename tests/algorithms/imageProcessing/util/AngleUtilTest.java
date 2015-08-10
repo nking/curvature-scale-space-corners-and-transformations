@@ -128,4 +128,24 @@ public class AngleUtilTest extends TestCase {
         
         int z = 1;
     }
+    
+    public void testCalculateAverageWithQuadrantCorrections() throws Exception {
+        
+        double rot0 = 0;
+        double rot1 = 360;
+        double[] outputQuadrantCorrected = new double[2];
+        boolean useRadians = false;
+        double sum0 = AngleUtil.calcAngleAddition(rot0, rot1, useRadians,
+            outputQuadrantCorrected);
+        
+        assertTrue(Math.abs(sum0 - 720) < 0.01);
+        assertTrue(Math.abs(outputQuadrantCorrected[0] - 360) < 0.01);
+        assertTrue(Math.abs(outputQuadrantCorrected[1] - 360) < 0.01);
+        
+        int[] angles = new int[]{0, 0, 360};
+        
+        float avg = AngleUtil.calculateAverageWithQuadrantCorrections(angles, 2);
+        
+        assertTrue(Math.abs(avg - 360) < 0.01);
+    }
 }
