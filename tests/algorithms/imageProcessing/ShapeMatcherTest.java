@@ -306,7 +306,7 @@ public class ShapeMatcherTest extends TestCase {
                     try {
                         cr.getRelativeOrientation();
                     } catch(CornerRegion.CornerRegionDegneracyException e) {
-                        log.severe(e.getMessage());
+                        //log.severe(e.getMessage());
                     }
                 }
             }
@@ -328,18 +328,29 @@ public class ShapeMatcherTest extends TestCase {
                 }
             }
             
+            log.info("nSet1=" + set1.size() + " nSet2=" + set2.size());
+            
+            log.info("expected diffRot=90 to 115");
+            
             FeatureComparisonStat best = null;
-            float bestGradientSSD = Float.MAX_VALUE;
-            float secondBestGradientSSD = Float.MAX_VALUE - 1;
             
             int c1 = 0;
             for (CornerRegion cr1 : set1) {
                 int c2 = 0;
                 for (CornerRegion cr2 : set2) {
-
+                    
                     FeatureComparisonStat stat = null;
                     
                     try {
+                        // discard the wrong matches while printing stats of expected
+                        // matches
+                        float diffRot = AngleUtil.getAngleDifference(
+                            cr1.getRelativeOrientationInDegrees(), 
+                            cr2.getRelativeOrientationInDegrees());
+                        if (Math.abs(Math.abs(diffRot) - 100) > 20) {
+                            continue;
+                        }
+                        
                         stat = matcher.findBestAmongDitheredRotated(
                             features1, features2, cr1, cr2, dither);
                     } catch(CornerRegion.CornerRegionDegneracyException e) {
@@ -351,36 +362,14 @@ public class ShapeMatcherTest extends TestCase {
                     if (stat != null) {
                         log.info(ii + ") stat=" + stat.toString());
                         
-                        boolean compareIntensities = false;
-
-                        if (bestGradientSSD == Float.MAX_VALUE) {
-                            bestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() == bestGradientSSD) {
-                            compareIntensities = true;
-                        } else if (secondBestGradientSSD == (Float.MAX_VALUE - 1)) {
-                            secondBestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() == secondBestGradientSSD) {
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() < bestGradientSSD) {
-                            assert (bestGradientSSD != secondBestGradientSSD);
-                            secondBestGradientSSD = bestGradientSSD;
-                            bestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() < secondBestGradientSSD) {
-                            secondBestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        }
-                        if (compareIntensities) {
-                            if (best == null) {
+                        if (best == null) {
+                            best = stat;
+                        } else {
+                            if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                //&& (best.getSumThetaDiff() > stat.getSumThetaDiff())
+                                ) {
                                 best = stat;
-                                log.info(ii + ") best stat so far=" + best.toString());
-                            } else {
-                                if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
-                                    best = stat;
-                                    log.info(ii + ") best stat so far=" + best.toString());
-                                }
                             }
                         }
                     }
@@ -428,41 +417,19 @@ public class ShapeMatcherTest extends TestCase {
                         stat = matcher.findBestAmongDitheredRotated(
                             features1, features2, cr1, cr2, dither);
                     } catch(CornerRegion.CornerRegionDegneracyException e) {
-                        log.severe(e.getMessage());
+                        //log.severe(e.getMessage());
                     }
                     if (stat != null) {
                         log.info(ii + ") stat=" + stat.toString());
 
-                        boolean compareIntensities = false;
-
-                        if (bestGradientSSD == Float.MAX_VALUE) {
-                            bestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() == bestGradientSSD) {
-                            compareIntensities = true;
-                        } else if (secondBestGradientSSD == (Float.MAX_VALUE - 1)) {
-                            secondBestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() == secondBestGradientSSD) {
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() < bestGradientSSD) {
-                            assert (bestGradientSSD != secondBestGradientSSD);
-                            secondBestGradientSSD = bestGradientSSD;
-                            bestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() < secondBestGradientSSD) {
-                            secondBestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        }
-                        if (compareIntensities) {
-                            if (best == null) {
+                        if (best == null) {
+                            best = stat;
+                        } else {
+                            if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                //&& (best.getSumThetaDiff() > stat.getSumThetaDiff())
+                                ) {
                                 best = stat;
-                                log.info(ii + ") best stat so far=" + best.toString());
-                            } else {
-                                if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
-                                    best = stat;
-                                    log.info(ii + ") best stat so far=" + best.toString());
-                                }
                             }
                         }
                     }

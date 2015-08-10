@@ -48,7 +48,7 @@ public class Features {
 
     protected final boolean useNormalizedIntensities;
 
-    protected final boolean useBinnedCellGradients = true;
+    protected final boolean useBinnedCellGradients = false;
 
     /*
     for theta descriptors, 1 of 3 choices:
@@ -493,6 +493,7 @@ public class Features {
             } else {
                 
                 double gradV = gradientImg.getValue(Math.round(x1P), Math.round(y1P));
+                int gradientV = ((GsGradientDescriptor)gradientDesc).grey[count];
                 
                 if (gradV < limitGradient) {
                     

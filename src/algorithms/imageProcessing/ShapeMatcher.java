@@ -929,7 +929,7 @@ if (true) {
 
                     if ((stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
                         (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
-                        && (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
+                        //&& (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
                         ) {
                                            
 float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
@@ -941,10 +941,9 @@ log.info("diffRot=" + diffRot + " stat=" + stat.toString());
                             best.setImg1RotInDegrees(rotD1);
                             best.setImg2RotInDegrees(rot2);
                         } else {
-                            if ((best.getSumThetaDiff() > stat.getSumThetaDiff()) &&
-                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                                &&
-                                (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                            if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                //&& (best.getSumThetaDiff() > stat.getSumThetaDiff())
                                 ) {
                                 best = stat;
                                 best.setImg1RotInDegrees(rotD1);
