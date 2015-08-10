@@ -632,5 +632,37 @@ public class Transformer {
             
         return new float[]{(float)xr, (float)yr};
     }
+
+    public void rotate(int rotationInDegrees, int x, int y, 
+        float[] outputX, float[] outputY, int outputIndex) {
+        
+        if (outputX == null) {
+            throw new IllegalArgumentException("outputX cannot be null");
+        }
+        if (outputY == null) {
+            throw new IllegalArgumentException("outputY cannot be null");
+        }
+        if (outputX.length != outputY.length) {
+            throw new IllegalArgumentException(
+            "outputX.length must be same length as outputY.length");
+        }
+        
+        if (outputIndex < 0 || (outputIndex > (outputX.length - 1))) {
+            throw new IllegalArgumentException(
+            "outputIndex is out of bounds of outputX");
+        }
+        
+        double rotationInRadians = rotationInDegrees * Math.PI/180.;
+        
+        double cos = Math.cos(rotationInRadians);
+        double sin = Math.sin(rotationInRadians);
+                            
+        double xr = (x * cos) + (y * sin);
+        double yr = (-x * sin) + (y * cos);
+        
+        outputX[outputIndex] = (float)xr;
+        outputY[outputIndex] = (float)yr;
+        
+    }
     
 }

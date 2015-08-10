@@ -355,6 +355,15 @@ public class AngleUtil {
           ---------
           II  |  I
         */
+        
+        if (rotation >= 2*Math.PI) {
+            rotation = rotation % (2.*Math.PI);
+        } else if (rotation < 0) {
+            while (rotation < 0) {
+                rotation += 2.*Math.PI;
+            }
+        }
+        
         int q = 1;
         if (rotation >= 3.*Math.PI/2.) {
             q = 4;
@@ -388,20 +397,28 @@ public class AngleUtil {
     }
     
     /**
-     * given twoPi in degrees or in radians, return the angle average.
+     * given twoPi in degrees or in radians, return the angle sum corrected to
+     * the larger angle frame, e.g. 0 + 350 = 710.
      * @param rot0
      * @param rot1
      * @param useRadians
      * @return 
      */
     public static double calcAngleAddition(double rot0, double rot1, boolean useRadians) {
-         /*
+        
+        if (rot0 < 0 || rot1 < 0) {
+            throw new IllegalArgumentException(
+                "rot0 and rot1 cannot be negative numbers");
+        }
+        
+        /*
                   270
                III | IV
           180  --------- 0
                II  |  I
                    90
         */
+        
         double twoPI;
         int q0, q1;
         if (useRadians) {
@@ -493,16 +510,6 @@ public class AngleUtil {
             }
         }
 
-        if (useRadians) {
-            if (angleSum >= twoPI) {
-                angleSum = angleSum - twoPI;
-            }
-        } else {
-            if (angleSum > 359) {
-                angleSum = angleSum - 360;
-            }
-        }
-        
         return angleSum;
     }
     
@@ -512,6 +519,15 @@ public class AngleUtil {
           ---------
           II  |  I
         */
+        
+        if (rotationInDegrees >= 360) {
+            rotationInDegrees = rotationInDegrees % 360;
+        } else if (rotationInDegrees < 0) {
+            while (rotationInDegrees < 0) {
+                rotationInDegrees += 360;
+            }
+        }
+        
         int q = 1;
         if (rotationInDegrees >= 270) {
             q = 4;

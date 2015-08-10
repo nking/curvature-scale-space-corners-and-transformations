@@ -17,6 +17,16 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
     }
     
     @Override
+    public float calculateDifference(ThetaDescriptor otherDesc) {
+        return calculateSSD(otherDesc);
+    }
+    
+    @Override
+    public float calculateError() {
+        return sumSquaredError();
+    }
+    
+    @Override
     public float calculateSSD(IDescriptor otherDesc) {
         
         if (otherDesc == null) {

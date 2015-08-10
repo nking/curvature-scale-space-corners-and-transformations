@@ -14,6 +14,8 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     private float sumGradientSqDiff = Float.POSITIVE_INFINITY;
     private float img2PointIntensityErr = Float.POSITIVE_INFINITY;
     private float img2PointGradientErr = Float.POSITIVE_INFINITY;
+    private float sumThetaDiff = Float.POSITIVE_INFINITY;
+    private float img2PointThetaErr = Float.POSITIVE_INFINITY;
     private float img1RotInDegrees = Float.POSITIVE_INFINITY;
     private float img2RotInDegrees = Float.POSITIVE_INFINITY;
 
@@ -149,16 +151,46 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         this.img2RotInDegrees = img2RotInDegrees;
     }
 
+    /**
+     * @return the sumThetaDiff
+     */
+    public float getSumThetaDiff() {
+        return sumThetaDiff;
+    }
+
+    /**
+     * @param sumThetaDiff the sumThetaDiff to set
+     */
+    public void setSumThetaDiff(float sumThetaDiff) {
+        this.sumThetaDiff = sumThetaDiff;
+    }
+
+    /**
+     * @return the img2PointThetaErr
+     */
+    public float getImg2PointThetaErr() {
+        return img2PointThetaErr;
+    }
+
+    /**
+     * @param img2PointThetaErr the img2PointThetaErr to set
+     */
+    public void setImg2PointThetaErr(float img2PointThetaErr) {
+        this.img2PointThetaErr = img2PointThetaErr;
+    }
+
     @Override
     public String toString() {
         
         StringBuilder sb = new StringBuilder();
         sb.append("p1=").append(img1Point.toString()).append(" ")
             .append("p2=").append(img2Point.toString())
-            .append(String.format(" ssdIntensity=%.4f", sumIntensitySqDiff))
-            .append(String.format(" err2Intensity=%.4f", img2PointIntensityErr))
-            .append(String.format(" ssdGradient=%.4f", sumGradientSqDiff))
-            .append(String.format(" err2Gradient=%.4f", img2PointGradientErr))
+            .append(String.format(" ssdInt=%.4f", sumIntensitySqDiff))
+            .append(String.format(" err2Int=%.4f", img2PointIntensityErr))
+            .append(String.format(" ssdGrd=%.4f", sumGradientSqDiff))
+            .append(String.format(" err2Grd=%.4f", img2PointGradientErr))            
+            .append(String.format(" thtDf=%.4f", sumThetaDiff))
+            .append(String.format(" thtErr=%.4f", img2PointThetaErr))
             .append(String.format(" rot1D=%.4f", img1RotInDegrees))
             .append(String.format(" rot2D=%.4f", img2RotInDegrees))
         ;

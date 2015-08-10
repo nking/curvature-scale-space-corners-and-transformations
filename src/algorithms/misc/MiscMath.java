@@ -1237,7 +1237,7 @@ public class MiscMath {
             
             int diff = v1 - v2;
             
-            sum += diff*diff;
+            sum += (diff * diff);
             
             count++;
         }
@@ -1270,7 +1270,7 @@ public class MiscMath {
             
             float diff = AngleUtil.getAngleDifference(v1, v2);
             
-            sum += diff*diff;
+            sum += (diff * diff);
             
             count++;
         }
@@ -1303,7 +1303,7 @@ public class MiscMath {
             
             float diff = v1 - v2;
             
-            sum += diff*diff;
+            sum += (diff * diff);
             
             count++;
         }
@@ -1381,7 +1381,7 @@ public class MiscMath {
                 continue;
             }
             
-            float diff = AngleUtil.getAngleDifference(a[i], vc);
+            float diff = AngleUtil.getAngleDifference(v1, vc);
         
             sum += (diff * diff);
             

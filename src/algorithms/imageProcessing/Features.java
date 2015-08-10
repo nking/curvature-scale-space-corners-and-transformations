@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.HashMap;
@@ -47,8 +48,30 @@ public class Features {
     
     protected final boolean useNormalizedIntensities;
     
-    protected final boolean useBinnedCellGradients = true;
-        
+    protected final boolean useBinnedCellGradients = false;
+    
+    /*
+    for theta descriptors, 1 of 3 choices:
+       (1) PixelThetaDescriptor: each pixel in 5x5 block stored.
+           comparion is pixel by pixel angular differences
+       (2) PixelThetaDescriptor: pixels binned into 2x2 cells and 16 total
+           surrounding the center.
+           comparison is item by item angular differences
+       (3) HistogramThetaDescriptor: pixels within mxm cells are made into
+           histograms of w bin width, and 8 or 16 such cells surrounding the
+           center.
+           each histogram before compared is normalized by peak?
+           corrections for wrap around during comparisons?
+           comparisons are then similar to SSD?
+    
+       Note that use of (1) does not have S/N correction and it requires
+       very good rotation alignment to achieve reasonable results, so the
+       "dominant orienation" as a stable relative angle for comparing frames
+       would need a refinement such as trying small degrees around it within
+       a range to find best match for better use of (1).
+    */
+    protected final int thetaType = 2;
+    
     /**
     key = pixel coordinates of center of frame;
     value = map with key = rotation (in degrees) of the frame and value = the
@@ -85,8 +108,9 @@ public class Features {
      * from image if true
      */
     public Features(GreyscaleImage image, GreyscaleImage theGradientImg,
-        GreyscaleImage theThetaImg,
-        int blockHalfWidths, boolean useNormalizedIntensities) {
+        GreyscaleImage theThetaImg, int blockHalfWidths, 
+        boolean useNormalizedIntensities) {
+        
         this.gsImg = image;
         this.clrImg = null;
         this.bHalfW = blockHalfWidths;
@@ -108,8 +132,9 @@ public class Features {
      * from image if true
      */
     public Features(Image image, GreyscaleImage theGradientImg,
-        GreyscaleImage theThetaImg,
-        int blockHalfWidths, boolean useNormalizedIntensities) {
+        GreyscaleImage theThetaImg, int blockHalfWidths, 
+        boolean useNormalizedIntensities) {
+        
         this.gsImg = null;
         this.clrImg = image;
         this.bHalfW = blockHalfWidths;
@@ -303,13 +328,15 @@ public class Features {
         
         ThetaDescriptor descriptor = null;
         
-        if (thetaImg != null) {
-            descriptor = extractThetaForBlock(xCenter, yCenter, 
-                rotation, frameOffsets);
-        } /*else {
-            descriptor = extractClrGradientForBlock(xCenter, yCenter, 
+        if (thetaType == 1) {
+            descriptor = extractThetaForBlock(xCenter, yCenter, rotation, 
                 frameOffsets);
-        }*/
+        } else if (thetaType == 2) {
+            descriptor = extractThetaForCells(xCenter, yCenter, rotation);
+        } else if (thetaType == 3) {
+            throw new UnsupportedOperationException("not yet implemented");
+            //descriptor = extractThetaHistograms(xCenter, yCenter, rotation);
+        }
         
         return descriptor;
     }
@@ -550,57 +577,56 @@ public class Features {
          -4  0     4     8     12
             -4 -3 -2 -1  0  1  2  3 
         */
-        
-        Transformer transformer = new Transformer();
-        
-        int[] output = new int[16];
-        
+                        
         int sentinel = GsGradientDescriptor.sentinel;
         
+        int cellDim = 2;
+        int nCellsAcross = 4;
+        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
+        
+        int[] output = new int[nCellsAcross * nCellsAcross];
+        float[] xT = new float[cellDim * cellDim];
+        float[] yT = new float[xT.length];
+                
         int count = 0;                
-        for (int dx = -4; dx < 4; dx+=2) {
-            for (int dy = -4; dy < 4; dy+=2) {
-            
-                float[] dXY11T = transformer.rotate(rotation, dx, dy); 
-                float[] dXY12T = transformer.rotate(rotation, dx + 1, dy);
-                float[] dXY21T = transformer.rotate(rotation, dx, dy + 1); 
-                float[] dXY22T = transformer.rotate(rotation, dx + 1, dy + 1);
+        for (int dx = -range0; dx < range0; dx+=cellDim) {
+            for (int dy = -range0; dy < range0; dy+=cellDim) {
                 
-                float x11 = xCenter + dXY11T[0];
-                float y11 = yCenter + dXY11T[1];
+                // --- calculate values for the cell ---
+                boolean withinBounds = transformCellCoordinates(gradientImg,
+                    rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
                 
-                float x12 = xCenter + dXY12T[0];
-                float y12 = yCenter + dXY12T[1];
-                
-                float x21 = xCenter + dXY21T[0];
-                float y21 = yCenter + dXY21T[1];
-                
-                float x22 = xCenter + dXY22T[0];
-                float y22 = yCenter + dXY22T[1];
-
-                if ((x11 < 0) || (Math.ceil(x11) > (gradientImg.getWidth() - 1)) ||
-                    (y11 < 0) || (Math.ceil(y11) > (gradientImg.getHeight() - 1)) ||
-
-                    (x12 < 0) || (Math.ceil(x12) > (gradientImg.getWidth() - 1)) ||
-                    (y12 < 0) || (Math.ceil(y12) > (gradientImg.getHeight() - 1)) ||
-
-                    (x21 < 0) || (Math.ceil(x21) > (gradientImg.getWidth() - 1)) ||
-                    (y21 < 0) || (Math.ceil(y21) > (gradientImg.getHeight() - 1)) ||
-
-                    (x22 < 0) || (Math.ceil(x22) > (gradientImg.getWidth() - 1)) ||
-                    (y22 < 0) || (Math.ceil(y22) > (gradientImg.getHeight() - 1))
-                    ) {
+                if (!withinBounds) {
                     output[count] = sentinel;
                     count++;
                     continue;
                 }
-
-                int v11 = gradientImg.getValue(Math.round(x11), Math.round(y11));
-                int v12 = gradientImg.getValue(Math.round(x12), Math.round(y12));
-                int v21 = gradientImg.getValue(Math.round(x21), Math.round(y21));
-                int v22 = gradientImg.getValue(Math.round(x22), Math.round(y22));
-
-                output[count] = (int)Math.round((v11 + v12 + v21 + v22)/4.);
+                
+                int cCount = 0;
+                int v = 0;
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    v += gradientImg.getValue(x, y);
+                    cCount++;
+                }
+                
+                if (cCount == 0) {
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                
+                v /= (float)cCount;
+                
+                // add the "dominant orientation"
+                v += rotation;
+                
+                if (v > 359) {
+                    v = v - 360;
+                }
+                
+                output[count] = v;
 
                 count++;
             }
@@ -611,6 +637,275 @@ public class Features {
         return desc;
     }
    
+    /**
+     * extract theta in angular degrees from the image in 2X2 cells surrounding 
+     * (xCenter, yCenter) for 16 cells, making the value correction for 
+     * "dominant orientation" too.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return 
+     */
+    private ThetaDescriptor extractThetaForCells(int xCenter, int yCenter, 
+        int rotation) {
+        
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]         
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3  
+        
+          3                   
+          2  3     7    11     15
+          1                    
+          0  2     6   10@     14         
+         -1                      
+         -2  1     5     9     13
+         -3                     
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3 
+        */
+                        
+        int sentinel = ThetaDescriptor.sentinel;
+        
+        int cellDim = 2;
+        int nCellsAcross = 4;
+        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
+        
+        int[] output = new int[nCellsAcross * nCellsAcross];
+        float[] xT = new float[cellDim * cellDim];
+        float[] yT = new float[xT.length];
+                
+        int count = 0;                
+        for (int dx = -range0; dx < range0; dx+=cellDim) {
+            for (int dy = -range0; dy < range0; dy+=cellDim) {
+                
+                // --- calculate values for the cell ---
+                boolean withinBounds = transformCellCoordinates(thetaImg,
+                    rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
+                
+                if (!withinBounds) {
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                
+                int maxGrd = Integer.MIN_VALUE;
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    int v = gradientImg.getValue(x, y);
+                    if (v > maxGrd) {
+                        maxGrd = v;
+                    }
+                }
+                
+                float lowLimit = 0.1f*maxGrd;
+                
+                /*
+                 because these are angles from 0 to 360, need to add them
+                 while considering their quadrants.
+                    
+                 e.g. (0 + 350 + 340)/3. should equal 350, but if
+                 the quadrants are not used, the result is 130.
+                 */
+                boolean useRadians = false;
+                
+                int cCount = 0;
+                int sum = 0;
+                
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    int vGradient = gradientImg.getValue(x, y);
+                    if (vGradient < lowLimit) {
+                        continue;
+                    }
+                    
+                    int v = thetaImg.getValue(x, y);
+                    
+                    sum += AngleUtil.calcAngleAddition(sum, v, useRadians);
+                    
+                    cCount++;
+                }
+                
+                if (cCount == 0) {
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                
+                int avg = Math.round((float)sum/(float)cCount);
+                
+                // add the "dominant orientation"
+                avg += rotation;
+                
+                if (avg > 359) {
+                    avg = avg % 360;
+                }                
+                
+                output[count] = avg;
+
+                count++;
+            }
+        }
+        
+        ThetaDescriptor desc = new PixelThetaDescriptor(output);
+        
+        return desc;
+    }
+    
+    /**
+     * extract the gradient from the image in 2X2 cells surrounding 
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return an instance of ThetaHistogramDescriptor.  Note that it's
+     * internal array may contain null values if a cell was out of bounds
+     * so any comparison methods should check for null.
+     */
+    private ThetaDescriptor extractThetaHistograms(int xCenter, int yCenter, 
+        int rotation) {
+        
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]         
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3  
+        
+          3                   
+          2  3     7    11     15
+          1                    
+          0  2     6   10@     14         
+         -1                      
+         -2  1     5     9     13
+         -3                     
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3 
+        */
+        
+        /*
+         theta' histogram is made for each group (subdivisions of the block) 
+         for n=8 intervals of 45 degrees each.
+         group is 4x4... or so.  above, still using 2x2 which would be
+         too small for a histogram
+                
+         S/N corrections:
+                
+         consider discarding values that have gradientXY < critical value
+         (suggested as 0.1 * maximum of gradientXY in this cell.  reference?)
+                
+         create a weight for each pixel within the 4x4 group based upon the gradient value:
+         w[pix] = gXY[pix] / sqrt(sum of squares of gXY[pix] in 4x4 group) + eps)
+         where eps is a small number to avoid divide by zero errors
+                
+         then the contribution of the pixel to the histogram bin is
+         weighted by that value, that is histogram increments are fractional
+         not integer.
+         (the bin the pixel is placed in is the same, just its contribution
+         that is weighted by fraction of total intensity).
+        */
+        
+        int sentinel = ThetaDescriptor.sentinel;
+        
+        int cellDim = 2;
+        int nCellsAcross = 4;
+        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
+        
+        int nHistBins = 36;
+        float binSize = 360.f/(float)nHistBins;
+        
+        // TODO: change the output here to be an array of histograms
+        float[][] output = new float[nCellsAcross * nCellsAcross][]; 
+        
+        float[] xT = new float[cellDim * cellDim];
+        float[] yT = new float[xT.length];
+                
+        int count = 0;                
+        for (int dx = -range0; dx < range0; dx+=cellDim) {
+            for (int dy = -range0; dy < range0; dy+=cellDim) {
+                                
+                // --- calculate values for the cell ---
+                boolean withinBounds = transformCellCoordinates(thetaImg,
+                    rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
+                
+                if (!withinBounds) {
+                    output[count] = null;
+                    count++;
+                    continue;
+                }
+                
+                int maxGrd = Integer.MIN_VALUE;
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    int v = gradientImg.getValue(x, y);
+                    if (v > maxGrd) {
+                        maxGrd = v;
+                    }
+                }
+                
+                float lowLimit = 0.1f*maxGrd;
+                int cellGrdSum = 0;
+                int cCount = 0;
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    int v = gradientImg.getValue(x, y);
+                    if (v < lowLimit) {
+                        continue;
+                    }
+                    cellGrdSum += v;
+                    cCount++;
+                }
+                
+                if (cCount == 0) {
+                    output[count] = null;
+                    count++;
+                    continue;
+                }
+                
+                cCount = 0;
+                
+                output[count] = new float[nHistBins];
+                
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    int vGradient = gradientImg.getValue(x, y);
+                    if (vGradient < lowLimit) {
+                        continue;
+                    }
+                    
+                    // add "dominant orientation"
+                    int v = thetaImg.getValue(x, y) + rotation;
+                    
+                    float weightedContrib = (float)vGradient/(float)cellGrdSum;
+                    
+                    //TODO: add weightedContrib to the histogram
+                    //  bin the v belongs in
+                    
+                    cCount++;
+                }
+            }
+        }
+        
+        ThetaDescriptor desc = new HistogramThetaDescriptor(output);
+        
+        return desc;
+    }
+    
     /**
      * extract the intensity from the image and place in the descriptor.
      * Note that if the transformed pixel is out of bounds of the image,
@@ -799,6 +1094,107 @@ public class Features {
         stat.setImg2PointGradientErr(err2SqGradient);
         
         return stat;
+    }
+
+    /**
+     * calculate the intensity and gradient based statistics between the two 
+     * descriptors with the caveat that the 2nd descriptor is the one used to 
+     * calculate the error (so make sure that pattern is consistently used by 
+     * invoker).
+     * 
+     * @param descIntensity1
+     * @param descGradient1
+     * @param descTheta1
+     * @param x1
+     * @param y1
+     * @param descIntensity2
+     * @param descGradient2
+     * @param descTheta2
+     * @param x2
+     * @param y2
+     * @return 
+     */
+    public static FeatureComparisonStat calculateStats(
+        IntensityDescriptor descIntensity1, GradientDescriptor descGradient1, 
+        ThetaDescriptor descTheta1,
+        final int x1, final int y1,
+        IntensityDescriptor descIntensity2, GradientDescriptor descGradient2, 
+        ThetaDescriptor descTheta2,
+        final int x2, final int y2) {
+    
+        if (descIntensity1 == null) {
+            throw new IllegalArgumentException("descIntensity1 cannot be null");
+        }
+        if (descGradient1 == null) {
+            throw new IllegalArgumentException("descGradient1 cannot be null");
+        }
+        if (descIntensity2 == null) {
+            throw new IllegalArgumentException("descIntensity2 cannot be null");
+        }
+        if (descGradient2 == null) {
+            throw new IllegalArgumentException("descGradient2 cannot be null");
+        }
+        if (descTheta1 == null) {
+            throw new IllegalArgumentException("descTheta1 cannot be null");
+        }
+        if (descTheta2 == null) {
+            throw new IllegalArgumentException("descTheta2 cannot be null");
+        }
+        
+        float err2SqIntensity = descIntensity2.sumSquaredError();
+        
+        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);
+        
+        float err2SqGradient = descGradient2.sumSquaredError();
+        
+        float ssdGradient = descGradient1.calculateSSD(descGradient2);
+        
+        float compTheta = descTheta1.calculateDifference(descTheta2);
+        float compThetaErr = descTheta2.calculateError();
+        
+        FeatureComparisonStat stat = new FeatureComparisonStat();
+        stat.setImg1Point(new PairInt(x1, y1));
+        stat.setImg2Point(new PairInt(x2, y2));
+        stat.setSumIntensitySqDiff(ssdIntensity);
+        stat.setImg2PointIntensityErr(err2SqIntensity);
+        stat.setSumGradientSqDiff(ssdGradient);
+        stat.setImg2PointGradientErr(err2SqGradient);
+        stat.setSumThetaDiff(compTheta);
+        stat.setImg2PointThetaErr(compThetaErr);
+        
+        return stat;
+    }
+
+    protected boolean transformCellCoordinates(GreyscaleImage img,
+        int rotation, 
+        int x0, int y0, int dx, int dy,
+        int cellDim, float[] outputX, float[] outputY) {
+        
+        Transformer transformer = new Transformer();
+        
+        int cCount = 0;
+        for (int dxc = 0; dxc < cellDim; ++dxc) {
+            for (int dyc = 0; dyc < cellDim; ++dyc) {
+
+                transformer.rotate(rotation, dx + dxc, dy + dyc,
+                    outputX, outputY, cCount);
+
+                outputX[cCount] += x0;
+                outputY[cCount] += y0;
+
+                if ((outputX[cCount] < 0)
+                    || (Math.ceil(outputX[cCount]) > (img.getWidth() - 1))
+                    || (outputY[cCount] < 0)
+                    || (Math.ceil(outputY[cCount]) > (img.getHeight() - 1))) {
+
+                    return false;
+                }
+
+                cCount++;
+            }
+        }
+
+        return true;
     }
 
 }

@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -910,17 +911,16 @@ if (true) {
                     float tErr1Sq = tDesc1.sumSquaredError();
                     
                     FeatureComparisonStat stat = Features.calculateStats(
-                        desc1, gDesc1, x1d, y1d, desc2, gDesc2, x2, y2);
+                        desc1, gDesc1, tDesc1, x1d, y1d, 
+                        desc2, gDesc2, tDesc2, x2, y2);
+                    
+log.info("tErr1Sq=" + tErr1Sq + " tErr2Sq=" + tErrSq);                    
+float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
+log.info("diffRot=" + diffRot + " stat=" + stat.toString());     
 
                     if ((stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
                         (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())) {
                         
-                        log.info(String.format(
-                            "(%d,%d) rot1=%d (%d,%d) rot2=%d intStat=(%.4f,%.4f) gStat=(%.4f,%.4f)",
-                            x1d, y1d, rotD1, x2, y2, rot2, 
-                            stat.getSumIntensitySqDiff(), stat.getImg2PointIntensityErr(),
-                            stat.getSumGradientSqDiff(), stat.getImg2PointGradientErr()));                            
-
                         boolean compareIntensities = false;
                         
                         if (bestGradientSSD == Float.POSITIVE_INFINITY) {

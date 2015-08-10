@@ -115,4 +115,17 @@ public class AngleUtilTest extends TestCase {
         result = AngleUtil.polarAngleCCW(x, y);
         assertTrue(Math.abs(result - expected) < 0.1);
     }
+    
+    public void testAngleAddition() throws Exception {
+        
+        boolean useRadians = false;
+        double sum = AngleUtil.calcAngleAddition(0, 350, useRadians);
+        
+        assertTrue(Math.abs(sum - 710) < 0.1);
+        
+        double avg = AngleUtil.getAngleAverage(0, 350, useRadians);
+        assertTrue(Math.abs(avg - 355) < 0.1);
+        
+        int z = 1;
+    }
 }
