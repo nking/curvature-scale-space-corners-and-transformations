@@ -449,19 +449,15 @@ public class AngleUtil {
                II  |  I
                    90
         */
-        double angleSum = -1;
+        
         if (q0 == 1) {
-            if (q1 == 1 || q1 == 2) {
-                angleSum = (rot0 + rot1);
-            } else if (q1 == 3) {
+            if (q1 == 3) {
                 double diff = rot1 - rot0;
                 if (diff > (twoPI/2.)) {
-                    angleSum = (twoPI + rot0 + rot1);
-                } else {
-                    angleSum = (rot0 + rot1);
+                    rot0 += twoPI;
                 }
-            } else {
-                angleSum = (twoPI + rot0 + rot1);
+            } else if (q1 == 4) {
+                rot0 += twoPI;
             }
         } else if (q0 == 2) {
             /*
@@ -471,14 +467,10 @@ public class AngleUtil {
                II  |  I
                    90
             */
-            if (q1 == 1 || q1 == 2 || q1 == 3) {
-                angleSum = (rot0 + rot1);
-            } else if (q1 == 4) {
+            if (q1 == 4) {
                 double diff = rot1 - rot0;
                 if (diff > (twoPI/2.)) {
-                    angleSum = (twoPI + rot0 + rot1);
-                } else {
-                    angleSum = (rot0 + rot1);
+                    rot0 += twoPI;
                 }
             }
         } else if (q0 == 3) {
@@ -492,12 +484,8 @@ public class AngleUtil {
             if (q1 == 1) {
                 double diff = rot0 - rot1;
                 if (diff > (twoPI/2.)) {
-                    angleSum = (twoPI + rot1 + rot0);
-                } else {
-                    angleSum = (rot0 + rot1);
+                    rot1 += twoPI;
                 }
-            } else {
-                angleSum = (rot0 + rot1);
             }
         } else if (q0 == 4) {
             /*
@@ -508,18 +496,15 @@ public class AngleUtil {
                    90
             */
             if (q1 == 1) {
-                angleSum = (twoPI + rot0 + rot1);
+                rot1 += twoPI;
             } else if (q1 == 2) {
                 double diff = (rot0 - rot1);
                 if (diff > (twoPI/2.)) {
-                    angleSum = (twoPI + rot0 + rot1);
-                } else {
-                    angleSum = (rot0 + rot1);
+                    rot1 += twoPI;
                 }
-            } else {
-                angleSum = (rot0 + rot1);
             }
         }
+        double angleSum = (rot0 + rot1);
         
         // add back any of the cycles in original values
         if (rot0 < rot0Orig) {

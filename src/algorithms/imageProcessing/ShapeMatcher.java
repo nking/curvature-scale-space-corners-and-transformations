@@ -925,14 +925,34 @@ if (true) {
                                         
                     FeatureComparisonStat stat = Features.calculateStats(
                         desc1, gDesc1, tDesc1, x1d, y1d, 
-                        desc2, gDesc2, tDesc2, x2, y2);
-                    
-float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
-log.info("diffRot=" + diffRot + " stat=" + stat.toString());     
+                        desc2, gDesc2, tDesc2, x2, y2);    
 
                     if ((stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
-                        (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())) {
-                        
+                        (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
+                        && (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
+                        ) {
+                                           
+float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
+log.info("diffRot=" + diffRot + " stat=" + stat.toString());
+
+                        //TRY best theta alone for fitness function
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1RotInDegrees(rotD1);
+                            best.setImg2RotInDegrees(rot2);
+                        } else {
+                            if ((best.getSumThetaDiff() > stat.getSumThetaDiff()) &&
+                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                &&
+                                (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                ) {
+                                best = stat;
+                                best.setImg1RotInDegrees(rotD1);
+                                best.setImg2RotInDegrees(rot2);
+                            }
+                        }
+
+                        /*
                         boolean compareIntensities = false;
                         
                         if (bestGradientSSD == Float.POSITIVE_INFINITY) {
@@ -968,6 +988,7 @@ log.info("diffRot=" + diffRot + " stat=" + stat.toString());
                                 }
                             }
                         }
+                        */
                     }
                 }
             }

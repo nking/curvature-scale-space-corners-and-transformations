@@ -48,7 +48,7 @@ public class Features {
 
     protected final boolean useNormalizedIntensities;
 
-    protected final boolean useBinnedCellGradients = false;
+    protected final boolean useBinnedCellGradients = true;
 
     /*
     for theta descriptors, 1 of 3 choices:
@@ -270,7 +270,7 @@ public class Features {
         choice will be set in constructor
         */
 
-        descriptor = extractThetaForBlock(xCenter, yCenter, rotation);
+        descriptor = extractThetaForType(xCenter, yCenter, rotation);
 
         if (descriptor != null) {
             descriptors.put(rotationKey, descriptor);
@@ -323,7 +323,7 @@ public class Features {
         return descriptor;
     }
 
-    private ThetaDescriptor extractThetaForBlock(int xCenter,
+    private ThetaDescriptor extractThetaForType(int xCenter,
         int yCenter, int rotation) {
 
         Transformer transformer = new Transformer();
@@ -333,8 +333,17 @@ public class Features {
         ThetaDescriptor descriptor = null;
 
         if (thetaType == 1) {
-            descriptor = extractThetaForBlock(xCenter, yCenter, rotation,
-                frameOffsets);
+            GradientDescriptor gradDesc = null;
+            if (useBinnedCellGradients) {
+                gradDesc = extractGsGradientForCells(xCenter, yCenter, rotation);
+            } else {
+                gradDesc = extractGradient(xCenter, yCenter, rotation);
+            }
+            if (gradDesc == null) {
+                return null;
+            }
+            descriptor = extractThetaForBlock(gradDesc, xCenter, yCenter, 
+                rotation, frameOffsets);
         } else if (thetaType == 2) {
             descriptor = extractThetaForCells(xCenter, yCenter, rotation);
         } else if (thetaType == 3) {
@@ -453,14 +462,22 @@ public class Features {
      * @param rotation
      * @return
      */
-    private ThetaDescriptor extractThetaForBlock(int xCenter, int yCenter,
-        int rotation, float[][] offsets) {
+    private ThetaDescriptor extractThetaForBlock(GradientDescriptor gradientDesc,
+        int xCenter, int yCenter, int rotation, float[][] offsets) {
 
+        if (gradientDesc == null) {
+            throw new IllegalArgumentException("gradientDesc cannot be null");
+        }
+        
         int[] output = new int[offsets.length];
 
         int sentinel = PixelThetaDescriptor.sentinel;
 
         int count = 0;
+        
+        int maxGradient = gradientDesc.getMaximum();
+        
+        float limitGradient = 0.1f * maxGradient;
 
         for (int i = 0; i < offsets.length; ++i) {
 
@@ -474,22 +491,36 @@ public class Features {
                 output[count] = sentinel;
 
             } else {
+                
+                double gradV = gradientImg.getValue(Math.round(x1P), Math.round(y1P));
+                
+                if (gradV < limitGradient) {
+                    
+                    output[count] = sentinel;
+                    
+                } else {
 
-                //non-adaptive algorithms: nearest neighbor or bilinear
+                    //non-adaptive algorithms: nearest neighbor or bilinear
 
-                // bilinear: (needs to be adapted for angular addition)
-                //double v = imageProcessor.biLinearInterpolation(thetaImg, x1P, y1P);
+                    // bilinear: (needs to be adapted for angular addition)
+                    //double v = imageProcessor.biLinearInterpolation(thetaImg, x1P, y1P);
 
-                // nearest neighbor
-                double v = thetaImg.getValue(Math.round(x1P), Math.round(y1P));
+                    // nearest neighbor
+                    double v = thetaImg.getValue(Math.round(x1P), Math.round(y1P));
 
-                v += rotation;
+                    // subtract "dominant orientation"
+                    v -= rotation;
 
-                if (v >= 360) {
-                    v = v - 360;
+                    if (v >= 360) {
+                        v = v % 360;
+                    } else if (v < 0) {
+                        while (v < 0) {
+                            v += 360;
+                        }
+                    }
+
+                    output[count] = (int)Math.round(v);
                 }
-
-                output[count] = (int)Math.round(v);
             }
 
             count++;
@@ -631,9 +662,6 @@ public class Features {
 
                 v /= (float)cCount;
 
-                // subtract the "dominant orientation"
-                v -= rotation;
-
                 if (v > 359) {
                     v = v % 360;
                 } else if (v < 0) {
@@ -766,9 +794,10 @@ public class Features {
                 ----------  +  v[i]*x  = ---
                 (1<<(n-i))                n
                 
-                for first variable,
+                for first variable, can add the correction:
                    total += v[0] * ((1<<(n-1)) - n)/(n*(1<<(n-1)))
 
+                then the correction afterwards to add:
                 from i=1 to i < n
                    total += v[i] * ((1<<(n-i)) - n)/(n*(1<<(n-i)))
 
@@ -776,6 +805,8 @@ public class Features {
                 */
                 int cCount = 0;
                 float avg = 0;
+                
+                int[] vs = new int[xT.length];
 
                 for (int i = 0; i < xT.length; ++i) {
                     int x = Math.round(xT[i]);
@@ -786,7 +817,9 @@ public class Features {
                     }
 
                     int v = thetaImg.getValue(x, y);
-
+                    
+                    vs[cCount] = v;
+                    
                     if (cCount == 0) {
                         avg = v;
                     } else {
@@ -810,37 +843,27 @@ public class Features {
                 from i=1 to i < n
                    total += v[i] * ((1<<(n-i)) - n)/(n*(1<<(n-i)))
                 */
-                int n = cCount;
-                cCount = 0;
-                for (int i = 0; i < xT.length; ++i) {
-                    int x = Math.round(xT[i]);
-                    int y = Math.round(yT[i]);
-                    int vGradient = gradientImg.getValue(x, y);
-                    if (vGradient < lowLimit) {
-                        continue;
-                    }
-
+                for (int i = 0; i < cCount; ++i) {
+                    
                     //TODO: there's still an error here when the above angleutil
-                    //made a quadrant correction.
-                    //need to extract the angles used in the angleutil
+                    //made a quadrant correction such as adding 360 to an angle
+                    //so need to extract the angles used in the angleutil
                     //store them in an array above to iterate over instead of 
                     //fetching the values from the image again here.
                     
-                    int v = thetaImg.getValue(x, y);
+                    int v = vs[i];
 
                     float c0;
 
-                    if (cCount == 0) {
-                        c0 = 1 << (n - 1);
+                    if (i == 0) {
+                        c0 = 1 << (cCount - 1);
                     } else {
-                        c0 = 1 << (n - i);
+                        c0 = 1 << (cCount - i);
                     }
 
-                    float add = v * (c0 - n)/(n * c0);
+                    float add = v * (c0 - cCount)/(cCount * c0);
 
                     avg += add;
-
-                    cCount++;
                 }
 
                 // subtract the "dominant orientation"
@@ -1254,6 +1277,8 @@ public class Features {
             throw new IllegalArgumentException("descTheta2 cannot be null");
         }
 
+//TODO: review the SSD and error normalizations and skipping of sentinels
+        
         float err2SqIntensity = descIntensity2.sumSquaredError();
 
         float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);
@@ -1262,8 +1287,10 @@ public class Features {
 
         float ssdGradient = descGradient1.calculateSSD(descGradient2);
 
+        float err2Theta = descTheta2.calculateError();
+        
         float compTheta = descTheta1.calculateDifference(descTheta2);
-        float compThetaErr = descTheta2.calculateError();
+        
 
         FeatureComparisonStat stat = new FeatureComparisonStat();
         stat.setImg1Point(new PairInt(x1, y1));
@@ -1273,7 +1300,7 @@ public class Features {
         stat.setSumGradientSqDiff(ssdGradient);
         stat.setImg2PointGradientErr(err2SqGradient);
         stat.setSumThetaDiff(compTheta);
-        stat.setImg2PointThetaErr(compThetaErr);
+        stat.setImg2PointThetaErr(err2Theta);
 
         return stat;
     }

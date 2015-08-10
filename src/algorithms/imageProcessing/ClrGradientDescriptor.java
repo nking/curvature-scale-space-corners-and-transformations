@@ -21,6 +21,8 @@ public class ClrGradientDescriptor implements GradientDescriptor {
     
     protected boolean hasBeenNormalized = false;
     
+    protected int maximum = Integer.MIN_VALUE;
+    
     /**
      * the index within arrays red, green and blue that the central pixel
      * value is stored in.
@@ -113,6 +115,26 @@ public class ClrGradientDescriptor implements GradientDescriptor {
     @Override
     public int getCentralIndex() {
         return centralIndex;
+    }
+
+    @Override
+    public int getMaximum() {
+        //TODO: may need to change when used
+        if (maximum == Integer.MIN_VALUE) {
+            for (int i = 0; i < red.length; ++i) {
+                if (red[i] > maximum) {
+                    maximum = red[i];
+                }
+                if (green[i] > maximum) {
+                    maximum = green[i];
+                }
+                if (blue[i] > maximum) {
+                    maximum = blue[i];
+                }
+            }
+        }
+        
+        return maximum;
     }
 
 }

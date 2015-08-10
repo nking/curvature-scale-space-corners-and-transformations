@@ -11,7 +11,7 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
     protected final int[] a;
     
     protected float sumSquaredError = Float.NaN;
-    
+        
     /**
      * the index within array a that the central pixel
      * value is stored in.
@@ -25,6 +25,7 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
     
     @Override
     public float calculateDifference(ThetaDescriptor otherDesc) {
+                
         return calculateSSD(otherDesc);
     }
     

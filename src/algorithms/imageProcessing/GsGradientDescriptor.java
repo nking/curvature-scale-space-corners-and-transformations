@@ -16,6 +16,8 @@ public class GsGradientDescriptor implements GradientDescriptor {
     
     protected boolean hasBeenNormalized = false;
     
+    protected int maximum = Integer.MIN_VALUE;
+    
     /**
      * the index within array grey that the central pixel
      * value is stored in.
@@ -86,6 +88,20 @@ public class GsGradientDescriptor implements GradientDescriptor {
     @Override
     public int getCentralIndex() {
         return centralIndex;
+    }
+
+    @Override
+    public int getMaximum() {
+        
+        if (maximum == Integer.MIN_VALUE) {
+            for (int i = 0; i < grey.length; ++i) {
+                if (grey[i] > maximum) {
+                    maximum = grey[i];
+                }
+            }
+        }
+        
+        return maximum;
     }
 
 }
