@@ -824,7 +824,7 @@ public class Features {
                     if (cCount == 0) {
                         avg = v;
                     } else {
-                        avg += AngleUtil.getAngleAverageInDegrees(avg, v);
+                        avg = AngleUtil.getAngleAverageInDegrees(avg, v);
                     }
 
                     cCount++;
@@ -846,7 +846,7 @@ public class Features {
                 */
                 for (int i = 0; i < cCount; ++i) {
                     
-                    //TODO: there's still an error here when the above angleutil
+                    //TODO: there's still a possible error here when the above angleutil
                     //made a quadrant correction such as adding 360 to an angle
                     //so need to extract the angles used in the angleutil
                     //store them in an array above to iterate over instead of 

@@ -367,7 +367,7 @@ public class ShapeMatcherTest extends TestCase {
                         } else {
                             if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
                                 && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                //&& (best.getSumThetaDiff() > stat.getSumThetaDiff())
+                                && (best.getSumThetaDiff() > stat.getSumThetaDiff())
                                 ) {
                                 best = stat;
                             }
@@ -427,7 +427,7 @@ public class ShapeMatcherTest extends TestCase {
                         } else {
                             if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
                                 && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                //&& (best.getSumThetaDiff() > stat.getSumThetaDiff())
+                                && (best.getSumThetaDiff() > stat.getSumThetaDiff())
                                 ) {
                                 best = stat;
                             }

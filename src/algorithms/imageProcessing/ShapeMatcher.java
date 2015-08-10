@@ -929,7 +929,7 @@ if (true) {
 
                     if ((stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
                         (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
-                        //&& (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
+                        && (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
                         ) {
                                            
 float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
