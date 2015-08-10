@@ -404,7 +404,8 @@ public class AngleUtil {
      * @param useRadians
      * @return 
      */
-    public static double calcAngleAddition(double rot0, double rot1, boolean useRadians) {
+    public static double calcAngleAddition(double rot0, double rot1, 
+        boolean useRadians) {
         
         if (rot0 < 0 || rot1 < 0) {
             throw new IllegalArgumentException(
@@ -418,6 +419,16 @@ public class AngleUtil {
                II  |  I
                    90
         */
+         
+        /*
+        logic below is for rot0 and rot1 between 0 and 360 so temporarily
+        reduce angles to those ranges then add back the corrections.
+        */
+        double rot0Orig = rot0;
+        double rot1Orig = rot1;
+        
+        rot0 = rot0 % 360;
+        rot1 = rot1 % 360;
         
         double twoPI;
         int q0, q1;
@@ -430,7 +441,7 @@ public class AngleUtil {
             q0 = getClockwiseQuadrantForDegrees(rot0);
             q1 = getClockwiseQuadrantForDegrees(rot1);
         }
-                     
+       
         /*
                   270
                III | IV
@@ -508,6 +519,14 @@ public class AngleUtil {
             } else {
                 angleSum = (rot0 + rot1);
             }
+        }
+        
+        // add back any of the cycles in original values
+        if (rot0 < rot0Orig) {
+            angleSum += (rot0Orig - rot0);
+        }
+        if (rot1 < rot1Orig) {
+            angleSum += (rot1Orig - rot1);
         }
 
         return angleSum;

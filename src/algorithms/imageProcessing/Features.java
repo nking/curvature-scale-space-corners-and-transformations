@@ -66,7 +66,7 @@ public class Features {
     
        Note that use of (1) does not have S/N correction and it requires
        very good rotation alignment to achieve reasonable results, so the
-       "dominant orienation" as a stable relative angle for comparing frames
+       "dominant orientation" as a stable relative angle for comparing frames
        would need a refinement such as trying small degrees around it within
        a range to find best match for better use of (1).
     */
@@ -472,7 +472,7 @@ public class Features {
                 
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 
-                // bilinear:
+                // bilinear: (needs to be adapted for angular addition)
                 //double v = imageProcessor.biLinearInterpolation(thetaImg, x1P, y1P);
                 
                 // nearest neighbor
@@ -528,7 +528,7 @@ public class Features {
                 
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 
-                // bilinear:
+                // bilinear: 
                 //double v = imageProcessor.biLinearInterpolation(gradientImg, x1P, y1P);
                 
                 // nearest neighbor
@@ -619,11 +619,13 @@ public class Features {
                 
                 v /= (float)cCount;
                 
-                // add the "dominant orientation"
-                v += rotation;
+                // subtract the "dominant orientation"
+                v -= rotation;
                 
                 if (v > 359) {
-                    v = v - 360;
+                    v = v % 360;
+                } else if (v < 0) {
+                    v = v + 360;
                 }
                 
                 output[count] = v;
@@ -729,7 +731,13 @@ public class Features {
                     
                     int v = thetaImg.getValue(x, y);
                     
-                    sum += AngleUtil.calcAngleAddition(sum, v, useRadians);
+                    //TODO: need to test the angle addition.  might need to
+                    //adjust how to add these w.r.t. quadrants.
+                    if (cCount == 0) {
+                        sum = v;
+                    } else {
+                        sum += AngleUtil.calcAngleAddition(sum, v, useRadians);
+                    }
                     
                     cCount++;
                 }
@@ -742,12 +750,14 @@ public class Features {
                 
                 int avg = Math.round((float)sum/(float)cCount);
                 
-                // add the "dominant orientation"
-                avg += rotation;
+                // subtract the "dominant orientation"
+                avg -= rotation;
                 
                 if (avg > 359) {
                     avg = avg % 360;
-                }                
+                } else if (avg < 0) {
+                    avg = avg + 360;
+                }            
                 
                 output[count] = avg;
 
@@ -888,8 +898,11 @@ public class Features {
                         continue;
                     }
                     
-                    // add "dominant orientation"
-                    int v = thetaImg.getValue(x, y) + rotation;
+                    // subtract "dominant orientation"
+                    int v = thetaImg.getValue(x, y) - rotation;
+                    if (v < 0) {
+                        v += 360;
+                    }
                     
                     float weightedContrib = (float)vGradient/(float)cellGrdSum;
                     
