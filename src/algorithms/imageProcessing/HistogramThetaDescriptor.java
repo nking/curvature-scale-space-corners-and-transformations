@@ -10,8 +10,17 @@ public class HistogramThetaDescriptor extends ThetaDescriptor {
     
     protected float sumSquaredError = Float.NaN;
     
-    public HistogramThetaDescriptor(float[][] theCellHistograms) {
+    /**
+     * the index within arrays cellHistograms that the central pixel
+     * value is stored in.
+     */
+    protected final int centralIndex;
+    
+    public HistogramThetaDescriptor(float[][] theCellHistograms, 
+        int centralPixelIndex) {
+        
         this.cellHistograms = theCellHistograms;
+        this.centralIndex = centralPixelIndex;
     }
     
     @Override
@@ -54,6 +63,11 @@ public class HistogramThetaDescriptor extends ThetaDescriptor {
         }
         
         throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
+    public int getCentralIndex() {
+        return centralIndex;
     }
     
 }

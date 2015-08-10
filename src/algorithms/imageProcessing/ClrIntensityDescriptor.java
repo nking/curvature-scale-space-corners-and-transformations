@@ -22,7 +22,13 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     
     protected boolean hasBeenNormalized = false;
     
-    public ClrIntensityDescriptor(int[] r, int[] g, int[] b) {
+    /**
+     * the index within arrays red, green and blue that the central pixel
+     * value is stored in.
+     */
+    protected final int centralIndex;
+    
+    public ClrIntensityDescriptor(int[] r, int[] g, int[] b, int centralPixelIndex) {
         if (r == null) {
             throw new IllegalArgumentException("r cannot be null");
         }
@@ -38,6 +44,7 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
         this.red = r;
         this.green = g;
         this.blue = b;
+        this.centralIndex = centralPixelIndex;
     }
     
     /**
@@ -130,28 +137,30 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
         if (!Float.isNaN(sumSquaredError)) {
             return sumSquaredError;
         }
-        
-        int n = red.length;
-        int midIdx = n >> 1;
-        
-        int rVC = red[midIdx];
-        int gVC = green[midIdx];
-        int bVC = blue[midIdx];
+                
+        int rVC = red[centralIndex];
+        int gVC = green[centralIndex];
+        int bVC = blue[centralIndex];
         
         if (rVC == sentinel || gVC == sentinel || bVC == sentinel) {
             throw new IllegalStateException(
             "ERROR: the central values for the array are somehow sentinels");
         }
         
-        float sqErrR = MiscMath.sumSquaredError(red, sentinel, midIdx);
-        float sqErrG = MiscMath.sumSquaredError(green, sentinel, midIdx);
-        float sqErrB = MiscMath.sumSquaredError(blue, sentinel, midIdx);
+        float sqErrR = MiscMath.sumSquaredError(red, sentinel, centralIndex);
+        float sqErrG = MiscMath.sumSquaredError(green, sentinel, centralIndex);
+        float sqErrB = MiscMath.sumSquaredError(blue, sentinel, centralIndex);
         
         float avg = (sqErrR + sqErrG + sqErrB)/3.f;
         
         this.sumSquaredError = avg;
         
         return sumSquaredError;
+    }
+
+    @Override
+    public int getCentralIndex() {
+        return centralIndex;
     }
 
     protected int[] getInternalRedArrayCopy() {

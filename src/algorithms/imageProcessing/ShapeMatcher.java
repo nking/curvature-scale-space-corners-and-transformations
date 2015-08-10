@@ -886,8 +886,15 @@ if (true) {
         
         GradientDescriptor gDesc2 = features2.extractGradient(x2, y2, rot2);
         
+        if (gDesc2 == null) {
+            return null;
+        }
+        
         ThetaDescriptor tDesc2 = features2.extractTheta(x2, y2, rot2);
-        float tErrSq = tDesc2.sumSquaredError();
+        
+        if (tDesc2 == null) {
+            return null;
+        }
         
         for (int rotD1 = (rot1 - 0/*25*/); rotD1 <= (rot1 + 0/*25*/); rotD1 += 25) {
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
@@ -905,16 +912,21 @@ if (true) {
                     GradientDescriptor gDesc1 = features1.extractGradient(x1d, 
                         y1d, rotD1);
                     
+                    if (gDesc1 == null) {
+                        continue;
+                    }
+                    
                     ThetaDescriptor tDesc1 = features1.extractTheta(x1d, y1d, 
                         rotD1);
                     
-                    float tErr1Sq = tDesc1.sumSquaredError();
-                    
+                    if (tDesc1 == null) {
+                        continue;
+                    }
+                                        
                     FeatureComparisonStat stat = Features.calculateStats(
                         desc1, gDesc1, tDesc1, x1d, y1d, 
                         desc2, gDesc2, tDesc2, x2, y2);
                     
-log.info("tErr1Sq=" + tErr1Sq + " tErr2Sq=" + tErrSq);                    
 float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
 log.info("diffRot=" + diffRot + " stat=" + stat.toString());     
 

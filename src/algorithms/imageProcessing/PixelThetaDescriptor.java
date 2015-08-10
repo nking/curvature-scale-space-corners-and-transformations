@@ -12,8 +12,15 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
     
     protected float sumSquaredError = Float.NaN;
     
-    public PixelThetaDescriptor(int[] intensities) {
+    /**
+     * the index within array a that the central pixel
+     * value is stored in.
+     */
+    protected final int centralIndex;
+    
+    public PixelThetaDescriptor(int[] intensities, int centralPixelIndex) {
         this.a = intensities;
+        this.centralIndex = centralPixelIndex;
     }
     
     @Override
@@ -56,22 +63,24 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
         if (!Float.isNaN(sumSquaredError)) {
             return sumSquaredError;
         }
-        
-        int n = a.length;
-        int cenPixIdx = 10; // if n==16
-        
-        int vc = a[cenPixIdx];
+                
+        int vc = a[centralIndex];
         
         if (vc == sentinel) {
             throw new IllegalStateException(
             "ERROR: the central value for the array is somehow sentinel");
         }
         
-        float sqErr = MiscMath.sumSquaredAngular360Error(a, sentinel, cenPixIdx);
+        float sqErr = MiscMath.sumSquaredAngular360Error(a, sentinel, centralIndex);
             
         this.sumSquaredError = sqErr;
         
         return sumSquaredError;
+    }
+
+    @Override
+    public int getCentralIndex() {
+        return centralIndex;
     }
     
 }

@@ -6,6 +6,8 @@ package algorithms.imageProcessing;
  */
 public interface IDescriptor {
 
+    public int getCentralIndex();
+    
     public float calculateSSD(IDescriptor otherDesc);
 
     public float sumSquaredError();

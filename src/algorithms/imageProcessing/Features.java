@@ -191,7 +191,9 @@ public class Features {
      * @param yCenter
      * @param rotation dominant orientation in degrees for feature at
      * (xCenter, yCenter)
-     * @return
+     * @return descriptor holding gradient rotated.  NOTE that the method may
+     * return null if ant part of the center coordinate cell was was rotated
+     * out of the frame.
      */
     public GradientDescriptor extractGradient(int xCenter, int yCenter,
         int rotation) {
@@ -222,9 +224,9 @@ public class Features {
             descriptor = extractGsGradientForBlock(xCenter, yCenter, rotation);
         }
 
-        assert(descriptor != null);
-
-        descriptors.put(rotKey, descriptor);
+        if (descriptor != null) {
+            descriptors.put(rotKey, descriptor);
+        }
 
         return descriptor;
     }
@@ -236,7 +238,9 @@ public class Features {
      * @param yCenter
      * @param rotation dominant orientation in degrees for feature at
      * (xCenter, yCenter)
-     * @return
+     * @return descriptor for theta extracted from the image.  NOTE that this
+     * method may return null if the (xCenter, yCenter) frame is rotated in
+     * part out of the frame.
      */
     public ThetaDescriptor extractTheta(final int xCenter, final int yCenter,
         final int rotation) {
@@ -268,9 +272,9 @@ public class Features {
 
         descriptor = extractThetaForBlock(xCenter, yCenter, rotation);
 
-        assert(descriptor != null);
-
-        descriptors.put(rotationKey, descriptor);
+        if (descriptor != null) {
+            descriptors.put(rotationKey, descriptor);
+        }
 
         return descriptor;
     }
@@ -433,7 +437,8 @@ public class Features {
             count++;
         }
 
-        IntensityDescriptor desc = new GsIntensityDescriptor(output);
+        IntensityDescriptor desc = new GsIntensityDescriptor(output,
+            offsets.length >> 1);
 
         return desc;
     }
@@ -490,7 +495,8 @@ public class Features {
             count++;
         }
 
-        ThetaDescriptor desc = new PixelThetaDescriptor(output);
+        ThetaDescriptor desc = new PixelThetaDescriptor(output, 
+            offsets.length >> 1);
 
         return desc;
     }
@@ -540,7 +546,8 @@ public class Features {
             count++;
         }
 
-        GradientDescriptor desc = new GsGradientDescriptor(output);
+        GradientDescriptor desc = new GsGradientDescriptor(output,
+            offsets.length >> 1);
 
         return desc;
     }
@@ -579,6 +586,8 @@ public class Features {
         */
 
         int sentinel = GsGradientDescriptor.sentinel;
+        
+        int centralPixelIndex = 10;
 
         int cellDim = 2;
         int nCellsAcross = 4;
@@ -597,6 +606,9 @@ public class Features {
                     rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
 
                 if (!withinBounds) {
+                    if (count == centralPixelIndex) {
+                        return null;
+                    }
                     output[count] = sentinel;
                     count++;
                     continue;
@@ -634,7 +646,8 @@ public class Features {
             }
         }
 
-        GradientDescriptor desc = new GsGradientDescriptor(output);
+        GradientDescriptor desc = new GsGradientDescriptor(output, 
+            centralPixelIndex);
 
         return desc;
     }
@@ -646,7 +659,11 @@ public class Features {
      * @param xCenter
      * @param yCenter
      * @param rotation
-     * @return
+     * @return descriptor for the region given and orientation given.  NOTE
+     * that it can return null if the central region is shifted out of the
+     * image frame.  If any other cells excepting the center are shifted
+     * out, an object is returned with those cells holding the sentinel as a
+     * value (further code interprets those as a skip instruction).
      */
     private ThetaDescriptor extractThetaForCells(int xCenter, int yCenter,
         int rotation) {
@@ -675,6 +692,8 @@ public class Features {
 
         int sentinel = ThetaDescriptor.sentinel;
 
+        int centralPixelIndex = 10;
+        
         int cellDim = 2;
         int nCellsAcross = 4;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
@@ -690,13 +709,11 @@ public class Features {
                 // --- calculate values for the cell ---
                 boolean withinBounds = transformCellCoordinates(thetaImg,
                     rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
-
-                //TODO: need to store the central pixel idx in the returned
-                // object and need to allow a return null
-                // here when this count==centralPixelIdx
-                // (which can happen when center is the edge of image and
-                // transform results in some pixels being out of image frame).
+                
                 if (!withinBounds) {
+                    if (count == centralPixelIndex) {
+                        return null;
+                    }
                     output[count] = sentinel;
                     count++;
                     continue;
@@ -841,7 +858,8 @@ public class Features {
             }
         }
 
-        ThetaDescriptor desc = new PixelThetaDescriptor(output);
+        ThetaDescriptor desc = new PixelThetaDescriptor(output, 
+            centralPixelIndex);
 
         return desc;
     }
@@ -905,6 +923,8 @@ public class Features {
 
         int sentinel = ThetaDescriptor.sentinel;
 
+        int centralPixelIndex = 10;
+        
         int cellDim = 2;
         int nCellsAcross = 4;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
@@ -927,6 +947,9 @@ public class Features {
                     rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
 
                 if (!withinBounds) {
+                    if (count == centralPixelIndex) {
+                        return null;
+                    }
                     output[count] = null;
                     count++;
                     continue;
@@ -990,7 +1013,8 @@ public class Features {
             }
         }
 
-        ThetaDescriptor desc = new HistogramThetaDescriptor(output);
+        ThetaDescriptor desc = new HistogramThetaDescriptor(output,
+            centralPixelIndex);
 
         return desc;
     }
@@ -1051,7 +1075,7 @@ public class Features {
         }
 
         IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG,
-            outputB);
+            outputB, offsets.length);
 
         return desc;
     }

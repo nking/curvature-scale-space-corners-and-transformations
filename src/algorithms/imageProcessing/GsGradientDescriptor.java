@@ -16,8 +16,15 @@ public class GsGradientDescriptor implements GradientDescriptor {
     
     protected boolean hasBeenNormalized = false;
     
-    public GsGradientDescriptor(int[] a) {
+    /**
+     * the index within array grey that the central pixel
+     * value is stored in.
+     */
+    protected final int centralIndex;
+    
+    public GsGradientDescriptor(int[] a, int centralPixelIndex) {
         this.grey = a;
+        this.centralIndex = centralPixelIndex;
     }
     
     // TODO: may change to use histograms or another technique
@@ -62,21 +69,23 @@ public class GsGradientDescriptor implements GradientDescriptor {
             return sumSquaredError;
         }
         
-        int n = grey.length;
-        int cenPixIdx = 10; // if n==16
-        
-        int vc = grey[cenPixIdx];
+        int vc = grey[centralIndex];
         
         if (vc == sentinel) {
             throw new IllegalStateException(
             "ERROR: the central value for the array is somehow sentinel");
         }
         
-        float sqErr = MiscMath.sumSquaredError(grey, sentinel, cenPixIdx);
+        float sqErr = MiscMath.sumSquaredError(grey, sentinel, centralIndex);
             
         this.sumSquaredError = sqErr;
         
         return sumSquaredError;
+    }
+
+    @Override
+    public int getCentralIndex() {
+        return centralIndex;
     }
 
 }

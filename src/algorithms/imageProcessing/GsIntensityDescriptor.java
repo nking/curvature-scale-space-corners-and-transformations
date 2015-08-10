@@ -1,14 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.util.Errors;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -24,9 +17,15 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     
     protected boolean hasBeenNormalized = false;
     
-    public GsIntensityDescriptor(float[] intensities) {
+    /**
+     * the index within array grey that the central pixel
+     * value is stored in.
+     */
+    protected final int centralIndex;
+    
+    public GsIntensityDescriptor(float[] intensities, int centralPixelIndex) {
         this.grey = intensities;
-
+        this.centralIndex = centralPixelIndex;
     }
     
     /**
@@ -109,17 +108,14 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
             return sumSquaredError;
         }
         
-        int n = grey.length;
-        int midIdx = n >> 1;
-        
-        float vc = grey[midIdx];
+        float vc = grey[centralIndex];
         
         if (vc == sentinel) {
             throw new IllegalStateException(
             "ERROR: the central value for the array is somehow sentinel");
         }
         
-        float sqErr = MiscMath.sumSquaredError(grey, sentinel, midIdx);
+        float sqErr = MiscMath.sumSquaredError(grey, sentinel, centralIndex);
             
         this.sumSquaredError = sqErr;
         
@@ -129,4 +125,10 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     protected float[] getInternalArrayCopy() {
         return Arrays.copyOf(grey, grey.length);
     }
+
+    @Override
+    public int getCentralIndex() {
+        return centralIndex;
+    }
+    
 }
