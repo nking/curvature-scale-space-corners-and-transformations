@@ -871,15 +871,6 @@ if (true) {
         int rot2 = (int)Math.round(
             cornerRegion2.getRelativeOrientationInDegrees());
         
-        /*
-        TODO: this fitness function may need adjustments, but so far
-        the best answers are from a first filter by both intensity and gradient
-        SSD being smaller than their errors, then a filter by the top 2 gradient
-        statistics, then find the top or top 2 from the intensity statistics
-        within those.
-        */
-        float bestGradientSSD = Float.POSITIVE_INFINITY;
-        float secondBestGradientSSD = Float.MAX_VALUE;
         FeatureComparisonStat best = null;
         
         IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);
@@ -895,9 +886,8 @@ if (true) {
         if (tDesc2 == null) {
             return null;
         }
-        log.info("desc2=" + tDesc2.toString());
         
-        for (int rotD1 = (rot1 - 0/*25*/); rotD1 <= (rot1 + 0/*25*/); rotD1 += 25) {
+        for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 30) {
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
                 if (!features1.isWithinXBounds(x1d)) {
                     continue;
@@ -923,19 +913,40 @@ if (true) {
                     if (tDesc1 == null) {
                         continue;
                     }
-                    log.info("desc1=" + tDesc1.toString());
-                                        
+                    
+                    /*
+                    TODO:  
+                    a quick look at a difficult match that is commonly present
+                    in the image suggests this:
+                    
+                    New approach:
+                     -- gradient: find best angle and dither from gradient alone
+                        (dither=1 seems fine, and delta rotation=10 over rotation
+                         range of +- 30)
+                        -- a larger region is needed.  can see in one image 
+                           need halfWidth of 12 to 14
+                        -- can be binned 2x2 or single pixels
+                     -- intensity and theta: use a larger area that extends to 
+                           at least 6 or 7 from center (=halfWidth)
+                     -- for theta, bin by 2 and use outlier removal for a small 
+                        number of cells if needed.                    
+                    */
+                   
                     FeatureComparisonStat stat = Features.calculateStats(
                         desc1, gDesc1, tDesc1, x1d, y1d, 
-                        desc2, gDesc2, tDesc2, x2, y2);    
-
+                        desc2, gDesc2, tDesc2, x2, y2);
+                   
                     if (
                         (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
                         (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
-                        && 
-                        (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
+                        && (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
                         ) {
-                                           
+                        
+log.info("idesc1=" + desc1.toString());
+log.info("idesc2=" + desc2.toString() + " intensitySSD=" + desc1.calculateSSD(desc2));                    
+log.info("tdesc1=" + tDesc1.toString());
+log.info("tdesc2=" + tDesc2.toString() + " thetaSSD=" + tDesc1.calculateDifference(tDesc2));
+                                                                        
 float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
 log.info("diffRot=" + diffRot + " stat=" + stat.toString());
 
@@ -947,53 +958,15 @@ log.info("diffRot=" + diffRot + " stat=" + stat.toString());
                         } else {
                             if (
                                 (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                                //&& (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                //&& 
-                                //(best.getSumThetaDiff() > stat.getSumThetaDiff())
+                                && 
+                                (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                && (best.getSumThetaDiff() > stat.getSumThetaDiff())
                                 ) {
                                 best = stat;
                                 best.setImg1RotInDegrees(rotD1);
                                 best.setImg2RotInDegrees(rot2);
                             }
                         }
-
-                        /*
-                        boolean compareIntensities = false;
-                        
-                        if (bestGradientSSD == Float.POSITIVE_INFINITY) {
-                            bestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (bestGradientSSD == stat.getSumGradientSqDiff()) {
-                            compareIntensities = true;
-                        } else if (secondBestGradientSSD == Float.MAX_VALUE) {
-                            secondBestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (secondBestGradientSSD == stat.getSumGradientSqDiff()) {
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() < bestGradientSSD) {
-                            assert(bestGradientSSD != secondBestGradientSSD);
-                            secondBestGradientSSD = bestGradientSSD;
-                            bestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        } else if (stat.getSumGradientSqDiff() < secondBestGradientSSD) {
-                            secondBestGradientSSD = stat.getSumGradientSqDiff();
-                            compareIntensities = true;
-                        }
-                        
-                        if (compareIntensities) {
-                            if (best == null) {
-                                best = stat;
-                                best.setImg1RotInDegrees(rotD1);
-                                best.setImg2RotInDegrees(rot2);
-                            } else {
-                                if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
-                                    best = stat;
-                                    best.setImg1RotInDegrees(rotD1);
-                                    best.setImg2RotInDegrees(rot2);
-                                }
-                            }
-                        }
-                        */
                     }
                 }
             }

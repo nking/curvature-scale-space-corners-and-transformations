@@ -1,13 +1,10 @@
 package algorithms.imageProcessing;
 
-import algorithms.CountingSort;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * NOT READY FOR USE.  NOT TESTED YET.
@@ -51,7 +48,9 @@ public class Features {
 
     protected final boolean useNormalizedIntensities;
 
-    protected final boolean useBinnedCellGradients = false;
+    protected final boolean useBinnedCellGradients = true;
+    
+    protected final boolean useBinnedCellIntensities = true;
 
     /*
     for theta descriptors, 1 of 3 choices:
@@ -108,7 +107,7 @@ public class Features {
      * @param blockHalfWidths the half width of a block.  For example, to
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
      * @param useNormalizedIntensities normalize the intensities extracted
-     * from image if true
+     * from image if true (NOT YET IMPLEMENTED)
      */
     public Features(GreyscaleImage image, GreyscaleImage theGradientImg,
         GreyscaleImage theThetaImg, int blockHalfWidths,
@@ -132,7 +131,7 @@ public class Features {
      * @param blockHalfWidths the half width of a block.  For example, to
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
      * @param useNormalizedIntensities normalize the intensities extracted
-     * from image if true
+     * from image if true (NOT YET IMPLEMENTED)
      */
     public Features(Image image, GreyscaleImage theGradientImg,
         GreyscaleImage theThetaImg, int blockHalfWidths,
@@ -179,12 +178,16 @@ public class Features {
             intensityBlocks.put(p, descriptors);
         }
 
-        descriptor = extractIntensityForBlock(xCenter, yCenter, rotation);
+        if (useBinnedCellIntensities) {
+            descriptor = extractIntensityForCells(xCenter, yCenter, rotation);
+        } else {
+            descriptor = extractIntensityForBlock(xCenter, yCenter, rotation);
+        }
 
-        assert(descriptor != null);
-
-        descriptors.put(rotationKey, descriptor);
-
+        if (descriptor != null) {
+            descriptors.put(rotationKey, descriptor);
+        }
+        
         return descriptor;
     }
 
@@ -297,6 +300,27 @@ public class Features {
         } else {
             descriptor = extractClrIntensityForBlock(xCenter, yCenter,
                 frameOffsets);
+        }
+
+        if (useNormalizedIntensities) {
+            //NOTE, not yet implemented
+            descriptor.applyNormalization();
+        }
+
+        return descriptor;
+    }
+    
+    private IntensityDescriptor extractIntensityForCells(int xCenter,
+        int yCenter, int rotation) {
+
+        IntensityDescriptor descriptor;
+
+        if (gsImg != null) {
+            descriptor = extractGsIntensityForCells(xCenter, yCenter,
+                rotation);
+        } else {
+            descriptor = extractClrIntensityForCells(xCenter, yCenter,
+                rotation);
         }
 
         if (useNormalizedIntensities) {
@@ -647,8 +671,10 @@ public class Features {
             for (int dy = -range0; dy < range0; dy+=cellDim) {
 
                 // --- calculate values for the cell ---
-                boolean withinBounds = transformCellCoordinates(gradientImg,
-                    rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
+                boolean withinBounds = transformCellCoordinates(
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+                    gradientImg.getWidth(), gradientImg.getHeight(),
+                    xT, yT);
 
                 if (!withinBounds) {
                     if (count == centralPixelIndex) {
@@ -694,6 +720,206 @@ public class Features {
         return desc;
     }
 
+    /**
+     * extract the intensity from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    private IntensityDescriptor extractGsIntensityForCells(int xCenter,
+        int yCenter, int rotation) {
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+
+          3
+          2  3     7    11     15
+          1
+          0  2     6   10@     14
+         -1
+         -2  1     5     9     13
+         -3
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3
+        */
+
+        float sentinel = GsIntensityDescriptor.sentinel;
+
+        int centralPixelIndex = 10;
+
+        int cellDim = 2;
+        int nCellsAcross = 4;
+        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
+
+        float[] output = new float[nCellsAcross * nCellsAcross];
+        float[] xT = new float[cellDim * cellDim];
+        float[] yT = new float[xT.length];
+
+        int count = 0;
+        for (int dx = -range0; dx < range0; dx+=cellDim) {
+            for (int dy = -range0; dy < range0; dy+=cellDim) {
+
+                // --- calculate values for the cell ---
+                boolean withinBounds = transformCellCoordinates(
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+                    gsImg.getWidth(), gsImg.getHeight(),
+                    xT, yT);
+
+                if (!withinBounds) {
+                    if (count == centralPixelIndex) {
+                        return null;
+                    }
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+
+                int cCount = 0;
+                int v = 0;
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    v += gsImg.getValue(x, y);
+                    cCount++;
+                }
+
+                if (cCount == 0) {
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+
+                v /= (float)cCount;
+
+                output[count] = v;
+
+                count++;
+            }
+        }
+
+        IntensityDescriptor desc = new GsIntensityDescriptor(output,
+            centralPixelIndex);
+
+        return desc;
+    }
+
+    /**
+     * extract the intensity from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    private IntensityDescriptor extractClrIntensityForCells(int xCenter,
+        int yCenter, int rotation) {
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+
+          3
+          2  3     7    11     15
+          1
+          0  2     6   10@     14
+         -1
+         -2  1     5     9     13
+         -3
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3
+        */
+
+        int sentinel = ClrIntensityDescriptor.sentinel;
+
+        int centralPixelIndex = 10;
+
+        int cellDim = 2;
+        int nCellsAcross = 4;
+        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
+
+        int[] red = new int[nCellsAcross * nCellsAcross];
+        int[] green = new int[red.length];
+        int[] blue = new int[red.length];
+        float[] xT = new float[cellDim * cellDim];
+        float[] yT = new float[xT.length];
+
+        int count = 0;
+        for (int dx = -range0; dx < range0; dx+=cellDim) {
+            for (int dy = -range0; dy < range0; dy+=cellDim) {
+
+                // --- calculate values for the cell ---
+                boolean withinBounds = transformCellCoordinates(
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+                    clrImg.getWidth(), clrImg.getHeight(),
+                    xT, yT);
+
+                if (!withinBounds) {
+                    if (count == centralPixelIndex) {
+                        return null;
+                    }
+                    red[count] = sentinel;
+                    green[count] = sentinel;
+                    blue[count] = sentinel;
+                    count++;
+                    continue;
+                }
+
+                int cCount = 0;
+                int r = 0;
+                int g = 0;
+                int b = 0;
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    r += clrImg.getR(x, y);
+                    g += clrImg.getG(x, y);
+                    b += clrImg.getB(x, y);
+                    cCount++;
+                }
+
+                if (cCount == 0) {
+                    red[count] = sentinel;
+                    green[count] = sentinel;
+                    blue[count] = sentinel;
+                    count++;
+                    continue;
+                }
+
+                r /= (float)cCount;
+                g /= (float)cCount;
+                b /= (float)cCount;
+
+                red[count] = r;
+                green[count] = g;
+                blue[count] = b;
+
+                count++;
+            }
+        }
+
+        IntensityDescriptor desc = new ClrIntensityDescriptor(red, green, blue,
+            centralPixelIndex);
+
+        return desc;
+    }
+    
     /**
      * extract theta in angular degrees from the image in 2X2 cells surrounding
      * (xCenter, yCenter) for 16 cells, making the value correction for
@@ -749,8 +975,10 @@ public class Features {
             for (int dy = -range0; dy < range0; dy+=cellDim) {
 
                 // --- calculate values for the cell ---
-                boolean withinBounds = transformCellCoordinates(thetaImg,
-                    rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
+                boolean withinBounds = transformCellCoordinates(
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+                    thetaImg.getWidth(), thetaImg.getHeight(),
+                    xT, yT);
 
                 if (!withinBounds) {
                     if (count == centralPixelIndex) {
@@ -804,15 +1032,6 @@ public class Features {
                 /* 
                 using the weighted values reduces the "outlier" differences
                 when comparing to another set of cells in other image.
-                
-                The result is a similar mean difference, but much smaller
-                standard deviation (due to small number of points).
-                
-                The result for the SSD calculation is a much smaller value,
-                with a slightly smaller error.
-                
-                So if SSD is used as a fitness statistic instead of mean and 
-                stdev, then the weighted averaged is preferred.
                 */
 
                 //runtime complexity for the angular average is about 3 * O(cCount).
@@ -923,8 +1142,10 @@ public class Features {
             for (int dy = -range0; dy < range0; dy+=cellDim) {
 
                 // --- calculate values for the cell ---
-                boolean withinBounds = transformCellCoordinates(thetaImg,
-                    rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
+                boolean withinBounds = transformCellCoordinates(
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+                    thetaImg.getWidth(), thetaImg.getHeight(),
+                    xT, yT);
 
                 if (!withinBounds) {
                     if (count == centralPixelIndex) {
@@ -1246,11 +1467,6 @@ public class Features {
 
         float compTheta = descTheta1.calculateDifference(descTheta2);
 
-        float[] meanAndStDev = descTheta1.calculateMeanAndStDev(descTheta2);
-        
-        Logger.getLogger(Features.class.getName()).info(
-            "theta diff meanAndStDev=" + Arrays.toString(meanAndStDev));
-
         FeatureComparisonStat stat = new FeatureComparisonStat();
         stat.setImg1Point(new PairInt(x1, y1));
         stat.setImg2Point(new PairInt(x2, y2));
@@ -1264,10 +1480,11 @@ public class Features {
         return stat;
     }
 
-    protected boolean transformCellCoordinates(GreyscaleImage img,
+    protected boolean transformCellCoordinates(
         int rotation,
         int x0, int y0, int dx, int dy,
-        int cellDim, float[] outputX, float[] outputY) {
+        int cellDim, int imageWidth, int imageHeight,
+        float[] outputX, float[] outputY) {
 
         Transformer transformer = new Transformer();
 
@@ -1282,9 +1499,9 @@ public class Features {
                 outputY[cCount] += y0;
 
                 if ((outputX[cCount] < 0)
-                    || (Math.ceil(outputX[cCount]) > (img.getWidth() - 1))
+                    || (Math.ceil(outputX[cCount]) > (imageWidth - 1))
                     || (outputY[cCount] < 0)
-                    || (Math.ceil(outputY[cCount]) > (img.getHeight() - 1))) {
+                    || (Math.ceil(outputY[cCount]) > (imageHeight - 1))) {
 
                     return false;
                 }

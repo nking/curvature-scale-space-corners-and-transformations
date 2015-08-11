@@ -9,7 +9,7 @@ import java.util.Arrays;
  */
 public class GsIntensityDescriptor implements IntensityDescriptor {
 
-    protected static float sentinel = Float.MIN_VALUE;
+    public static float sentinel = Float.MIN_VALUE;
     
     protected final float[] grey;
     
@@ -53,14 +53,9 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
         source...
         */
         
-        float[] meanAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(grey, 
-            grey.length, sentinel);
+        throw new UnsupportedOperationException("not yet implemented");
         
-        for (int i = 0; i < grey.length; ++i) {
-            grey[i] -= meanAndStDev[0];
-        }
-        
-        hasBeenNormalized = true;
+        //hasBeenNormalized = true;
     }
 
     @Override
@@ -129,6 +124,11 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     @Override
     public int getCentralIndex() {
         return centralIndex;
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(grey);
     }
     
 }

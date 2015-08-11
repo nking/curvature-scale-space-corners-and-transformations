@@ -524,13 +524,14 @@ public class BinSegmentationHelper {
         MiscDebug.writeImage(gXY1, "1_gXY");
         MiscDebug.writeImage(gXY2, "2_gXY");
      
-        /* //TEMP files to visualize an offset:
+        /*
+        //TEMP files to visualize an offset:
         GreyscaleImage theta1_tmp = theta1.copyImage();
         GreyscaleImage theta2_tmp = theta2.copyImage();
         for (int col = 0; col < theta1_tmp.getWidth(); ++col) {
             for (int row = 0; row < theta1_tmp.getHeight(); ++row) {
                 int v = theta1_tmp.getValue(col, row);
-                v -= 93;
+                v -= 150;
                 if (v < 0) {
                     v += 360;
                 } else if (v > 359) {
@@ -542,7 +543,7 @@ public class BinSegmentationHelper {
         for (int col = 0; col < theta2_tmp.getWidth(); ++col) {
             for (int row = 0; row < theta2_tmp.getHeight(); ++row) {
                 int v = theta2_tmp.getValue(col, row);
-                v -= 338;
+                v -= 135;
                 if (v < 0) {
                     v += 360;
                 } else if (v > 359) {

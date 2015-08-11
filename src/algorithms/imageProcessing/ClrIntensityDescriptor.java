@@ -12,7 +12,7 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     //TODO: use more compact data structures after the general logic
     // is working and tested
     
-    protected static int sentinel = Integer.MIN_VALUE;
+    public static int sentinel = Integer.MIN_VALUE;
     
     protected final int[] red;
     protected final int[] green;
@@ -68,25 +68,10 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
         be derived at a larger level with knowledge of the illumination
         source...
         */
-        
-        float[] meanAndStDevR = MiscMath.getAvgAndStDevIgnoreForSentinel(red, 
-            red.length, sentinel);
-        float[] meanAndStDevG = MiscMath.getAvgAndStDevIgnoreForSentinel(green, 
-            green.length, sentinel);
-        float[] meanAndStDevB = MiscMath.getAvgAndStDevIgnoreForSentinel(blue, 
-            blue.length, sentinel);        
-        
-        for (int i = 0; i < red.length; ++i) {
-            red[i]-= meanAndStDevR[0];
-        }
-        for (int i = 0; i < green.length; ++i) {
-            green[i] -= meanAndStDevG[0];
-        }
-        for (int i = 0; i < blue.length; ++i) {
-            blue[i] -= meanAndStDevB[0];
-        }
-        
-        hasBeenNormalized = true;
+       
+        throw new UnsupportedOperationException("not yet implemented");
+       
+        //hasBeenNormalized = true;
     }
 
     @Override
@@ -166,4 +151,13 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     protected int[] getInternalRedArrayCopy() {
         return Arrays.copyOf(red, red.length);
     }
+
+    @Override
+    public String toString() {
+        String str1 = "red=" + Arrays.toString(red);
+        String str2 = "\ngreen=" + Arrays.toString(green);
+        String str3 = "\nblue=" + Arrays.toString(blue);
+        return str1 + str2 + str3;
+    }
+    
 }
