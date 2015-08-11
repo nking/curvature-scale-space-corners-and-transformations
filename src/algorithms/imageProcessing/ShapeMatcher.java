@@ -895,6 +895,7 @@ if (true) {
         if (tDesc2 == null) {
             return null;
         }
+        log.info("desc2=" + tDesc2.toString());
         
         for (int rotD1 = (rot1 - 0/*25*/); rotD1 <= (rot1 + 0/*25*/); rotD1 += 25) {
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
@@ -922,14 +923,17 @@ if (true) {
                     if (tDesc1 == null) {
                         continue;
                     }
+                    log.info("desc1=" + tDesc1.toString());
                                         
                     FeatureComparisonStat stat = Features.calculateStats(
                         desc1, gDesc1, tDesc1, x1d, y1d, 
                         desc2, gDesc2, tDesc2, x2, y2);    
 
-                    if ((stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
+                    if (
+                        (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
                         (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
-                        && (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
+                        && 
+                        (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
                         ) {
                                            
 float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
@@ -941,9 +945,11 @@ log.info("diffRot=" + diffRot + " stat=" + stat.toString());
                             best.setImg1RotInDegrees(rotD1);
                             best.setImg2RotInDegrees(rot2);
                         } else {
-                            if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                                && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                //&& (best.getSumThetaDiff() > stat.getSumThetaDiff())
+                            if (
+                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                //&& (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                //&& 
+                                //(best.getSumThetaDiff() > stat.getSumThetaDiff())
                                 ) {
                                 best = stat;
                                 best.setImg1RotInDegrees(rotD1);

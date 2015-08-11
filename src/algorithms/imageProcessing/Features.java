@@ -7,6 +7,7 @@ import algorithms.util.PairInt;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * NOT READY FOR USE.  NOT TESTED YET.
@@ -14,7 +15,7 @@ import java.util.Map;
  * @author nichole
  */
 public class Features {
-
+    
     /**
      * either gsImg or clrImg will be set by the constructor and they
      * are the grey scale image or the color image, respectively.
@@ -344,7 +345,7 @@ public class Features {
             if (gradDesc == null) {
                 return null;
             }
-            descriptor = extractThetaForBlock(gradDesc, xCenter, yCenter, 
+            descriptor = extractThetaForBlock(gradDesc, xCenter, yCenter,
                 rotation, frameOffsets);
         } else if (thetaType == 2) {
             descriptor = extractThetaForCells(xCenter, yCenter, rotation);
@@ -470,17 +471,17 @@ public class Features {
         if (gradientDesc == null) {
             throw new IllegalArgumentException("gradientDesc cannot be null");
         }
-        
+
         int centralPixelIndex = offsets.length >> 1;
-        
+
         int[] output = new int[offsets.length];
 
         int sentinel = PixelThetaDescriptor.sentinel;
 
         int count = 0;
-        
+
         int maxGradient = gradientDesc.getMaximum();
-        
+
         float limitGradient = 0.1f * maxGradient;
 
         for (int i = 0; i < offsets.length; ++i) {
@@ -498,19 +499,19 @@ public class Features {
                 output[count] = sentinel;
 
             } else {
-                
+
                 double gradV = gradientImg.getValue(Math.round(x1P), Math.round(y1P));
                 int gradientV = ((GsGradientDescriptor)gradientDesc).grey[count];
-                
+
                 if (gradV < limitGradient) {
 
                     if (count == centralPixelIndex) {
                         // warning, S/N is too low to calc auto-correlation error
                         // and algorithm will find a neaighbor to use instead
                     }
-                    
+
                     output[count] = sentinel;
-                    
+
                 } else {
 
                     //non-adaptive algorithms: nearest neighbor or bilinear
@@ -539,7 +540,7 @@ public class Features {
             count++;
         }
 
-        ThetaDescriptor desc = new PixelThetaDescriptor(output, 
+        ThetaDescriptor desc = new PixelThetaDescriptor(output,
             offsets.length >> 1);
 
         return desc;
@@ -630,7 +631,7 @@ public class Features {
         */
 
         int sentinel = GsGradientDescriptor.sentinel;
-        
+
         int centralPixelIndex = 10;
 
         int cellDim = 2;
@@ -687,7 +688,7 @@ public class Features {
             }
         }
 
-        GradientDescriptor desc = new GsGradientDescriptor(output, 
+        GradientDescriptor desc = new GsGradientDescriptor(output,
             centralPixelIndex);
 
         return desc;
@@ -734,7 +735,7 @@ public class Features {
         int sentinel = ThetaDescriptor.sentinel;
 
         int centralPixelIndex = 10;
-        
+
         int cellDim = 2;
         int nCellsAcross = 4;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
@@ -750,7 +751,7 @@ public class Features {
                 // --- calculate values for the cell ---
                 boolean withinBounds = transformCellCoordinates(thetaImg,
                     rotation, xCenter, yCenter, dx, dy, cellDim, xT, yT);
-                
+
                 if (!withinBounds) {
                     if (count == centralPixelIndex) {
                         return null;
@@ -770,18 +771,18 @@ public class Features {
                     }
                 }
 
-                float lowLimit = 0.1f*maxGrd;
+                float lowLimit = 0.1f * maxGrd;
 
                 /*
                 store the image values above the critical limit then
                 use angle util to average the values with consideration
                 for their quadrants.
                 */
-                
+
                 int cCount = 0;
-                
+
                 int[] vs = new int[xT.length];
-                int maxV = Integer.MIN_VALUE;
+                int[] gradients = new int[xT.length];
                 for (int i = 0; i < xT.length; ++i) {
                     int x = Math.round(xT[i]);
                     int y = Math.round(yT[i]);
@@ -790,23 +791,38 @@ public class Features {
                         continue;
                     }
                     vs[cCount] = thetaImg.getValue(x, y);
-                    if (vs[cCount] > maxV) {
-                        maxV = vs[cCount];
-                    }
+                    gradients[cCount] = vGradient;
                     cCount++;
                 }
-                
+
                 if (cCount == 0) {
                     output[count] = sentinel;
                     count++;
                     continue;
                 }
                 
-                //Runtime complexity for the angular average is about 3 * O(cCount). 
+                /* 
+                using the weighted values reduces the "outlier" differences
+                when comparing to another set of cells in other image.
                 
-                float avg = AngleUtil.calculateAverageWithQuadrantCorrections(vs, 
-                    cCount - 1);
+                The result is a similar mean difference, but much smaller
+                standard deviation (due to small number of points).
                 
+                The result for the SSD calculation is a much smaller value,
+                with a slightly smaller error.
+                
+                So if SSD is used as a fitness statistic instead of mean and 
+                stdev, then the weighted averaged is preferred.
+                */
+
+                //runtime complexity for the angular average is about 3 * O(cCount).
+                //float avg = AngleUtil.calculateAverageWithQuadrantCorrections(
+                //    vs, cCount - 1);
+
+                float avg =
+                    AngleUtil.calculateWeightedAverageWithQuadrantCorrections(
+                        vs, gradients, cCount - 1);
+
                 // subtract the "dominant orientation"
                 avg -= rotation;
 
@@ -822,7 +838,7 @@ public class Features {
             }
         }
 
-        ThetaDescriptor desc = new PixelThetaDescriptor(output, 
+        ThetaDescriptor desc = new PixelThetaDescriptor(output,
             centralPixelIndex);
 
         return desc;
@@ -888,7 +904,7 @@ public class Features {
         int sentinel = ThetaDescriptor.sentinel;
 
         int centralPixelIndex = 10;
-        
+
         int cellDim = 2;
         int nCellsAcross = 4;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
@@ -1218,8 +1234,6 @@ public class Features {
             throw new IllegalArgumentException("descTheta2 cannot be null");
         }
 
-//TODO: review the SSD and error normalizations and skipping of sentinels
-        
         float err2SqIntensity = descIntensity2.sumSquaredError();
 
         float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);
@@ -1229,9 +1243,13 @@ public class Features {
         float ssdGradient = descGradient1.calculateSSD(descGradient2);
 
         float err2Theta = descTheta2.calculateError();
-        
+
         float compTheta = descTheta1.calculateDifference(descTheta2);
+
+        float[] meanAndStDev = descTheta1.calculateMeanAndStDev(descTheta2);
         
+        Logger.getLogger(Features.class.getName()).info(
+            "theta diff meanAndStDev=" + Arrays.toString(meanAndStDev));
 
         FeatureComparisonStat stat = new FeatureComparisonStat();
         stat.setImg1Point(new PairInt(x1, y1));

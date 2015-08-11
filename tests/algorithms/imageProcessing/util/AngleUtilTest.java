@@ -143,7 +143,7 @@ public class AngleUtilTest extends TestCase {
         assertTrue(Math.abs(outputQuadrantCorrected[1] - 360) < 0.01);
         
         int[] angles = new int[]{0, 0, 360};
-        
+                
         float avg = AngleUtil.calculateAverageWithQuadrantCorrections(angles, 2);
         
         assertTrue(Math.abs(avg - 360) < 0.01);

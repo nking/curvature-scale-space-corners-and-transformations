@@ -11,4 +11,6 @@ public abstract class ThetaDescriptor implements IDescriptor {
     public abstract float calculateDifference(ThetaDescriptor otherDesc);
     
     public abstract float calculateError();
+
+    public abstract float[] calculateMeanAndStDev(ThetaDescriptor descTheta2);
 }

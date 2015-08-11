@@ -69,5 +69,10 @@ public class HistogramThetaDescriptor extends ThetaDescriptor {
     public int getCentralIndex() {
         return centralIndex;
     }
+
+    @Override
+    public float[] calculateMeanAndStDev(ThetaDescriptor descTheta2) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
     
 }

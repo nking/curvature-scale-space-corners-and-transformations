@@ -275,7 +275,7 @@ public class ShapeMatcherTest extends TestCase {
         Set<CornerRegion> cornerRegions1 = helper.getCornerRegions1();
         Set<CornerRegion> cornerRegions2 = helper.getCornerRegions2();
      
-        int dither = 1;
+        int dither = 0;//1;
         
         Features features1 = new Features(helper.getGreyscaleImage1(), 
             gXY1, theta1, blockHalfWidth, useNormalizedIntensities);
@@ -285,7 +285,7 @@ public class ShapeMatcherTest extends TestCase {
         
         
         // iterate over the manual list of corners and find the corner regions
-        for (int ii = 0; ii < points1.getN(); ++ii) {
+        for (int ii = 0; ii < 1/*points1.getN()*/; ++ii) {
 
             final int x1 = points1.getX(ii);
             final int y1 = points1.getY(ii);
@@ -323,12 +323,12 @@ public class ShapeMatcherTest extends TestCase {
                     try {
                         cr.getRelativeOrientation();
                     } catch(CornerRegion.CornerRegionDegneracyException e) {
-                        log.severe(e.getMessage());
+                        //log.severe(e.getMessage());
                     }
                 }
             }
             
-            log.info("nSet1=" + set1.size() + " nSet2=" + set2.size());
+            log.info(ii + ") nSet1=" + set1.size() + " nSet2=" + set2.size());
             
             log.info("expected diffRot=90 to 115");
             
@@ -354,7 +354,7 @@ public class ShapeMatcherTest extends TestCase {
                         stat = matcher.findBestAmongDitheredRotated(
                             features1, features2, cr1, cr2, dither);
                     } catch(CornerRegion.CornerRegionDegneracyException e) {
-                        log.severe(e.getMessage());
+                        //log.severe(e.getMessage());
                     }
 
                     //TODO: need to use gradient in further fitness function too
@@ -365,9 +365,11 @@ public class ShapeMatcherTest extends TestCase {
                         if (best == null) {
                             best = stat;
                         } else {
-                            if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                                && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                && (best.getSumThetaDiff() > stat.getSumThetaDiff())
+                            if (
+                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                //&& (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                //&& 
+                                //(best.getSumThetaDiff() > stat.getSumThetaDiff())
                                 ) {
                                 best = stat;
                             }
@@ -385,7 +387,7 @@ public class ShapeMatcherTest extends TestCase {
         // match is what is expected.
       
         // iterate over the manual list of corners and find the corner regions
-        for (int ii = 0; ii < points1.getN(); ++ii) {
+        for (int ii = 0; ii < 1/*points1.getN()*/; ++ii) {
 
             final int x1 = points1.getX(ii);
             final int y1 = points1.getY(ii);
@@ -424,12 +426,16 @@ public class ShapeMatcherTest extends TestCase {
 
                         if (best == null) {
                             best = stat;
+                            log.info(ii + ") best=" + best.toString());
                         } else {
-                            if ((best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                                && (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                && (best.getSumThetaDiff() > stat.getSumThetaDiff())
+                            if (
+                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                //&& (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                //&& 
+                                //(best.getSumThetaDiff() > stat.getSumThetaDiff())
                                 ) {
                                 best = stat;
+                                log.info(ii + ") best=" + best.toString());
                             }
                         }
                     }
@@ -464,8 +470,11 @@ public class ShapeMatcherTest extends TestCase {
         PairIntArray out2) {
         out1.add(206, 66);
         out2.add(168, 200);
+        
+        // weak feature whose center gradient currently removes it's true match
         out1.add(331, 167);
         out2.add(43, 313);
+        
         out1.add(165, 187);
         out2.add(55, 139);
         out1.add(220, 220);

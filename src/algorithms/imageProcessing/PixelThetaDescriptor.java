@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
+import java.util.Arrays;
 
 /**
  *
@@ -91,10 +93,54 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
         
         return sumSquaredError;
     }
+    
+    public float[] calculateMeanAndStDev(ThetaDescriptor otherDesc) {
+        
+        if (otherDesc == null) {
+            throw new IllegalArgumentException("otherDesc cannot be null");
+        }
+        
+        if (!(otherDesc instanceof PixelThetaDescriptor)) {
+            throw new IllegalArgumentException(
+            "otherDesc has to be type ThetaDescriptor");
+        }
+        
+        PixelThetaDescriptor other = (PixelThetaDescriptor)otherDesc;
+        
+        if (this.a.length != other.a.length) {
+            throw new IllegalArgumentException(
+            "this and other arrays must have the same lengths");
+        }
+        
+        int[] diffs = new int[a.length];
+        
+        for (int i = 0; i < diffs.length; ++i) {
+            
+            if (a[i] == sentinel || other.a[i] == sentinel) {
+                
+                diffs[i] = sentinel;
+                
+            } else {
+                
+                diffs[i] = Math.round(AngleUtil.getAngleDifference(a[i], 
+                    other.a[i]));
+            }
+        }
+         
+        float[] mnAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(diffs,
+            diffs.length, sentinel);
+        
+        return mnAndStDev;
+    }
 
     @Override
     public int getCentralIndex() {
         return centralIndex;
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(a);
     }
     
 }

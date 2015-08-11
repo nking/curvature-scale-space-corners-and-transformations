@@ -290,7 +290,7 @@ public class MultiArrayMergeSort {
               
     }
     
-    private static void sortByDecr(int[] a1, int[] a2, int idxLo, int idxHi) {
+    public static void sortByDecr(int[] a1, int[] a2, int idxLo, int idxHi) {
 
         if (idxLo < idxHi) {
 
