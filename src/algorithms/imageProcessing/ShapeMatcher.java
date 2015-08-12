@@ -876,7 +876,26 @@ if (true) {
             return null;
         }
         
+        // TODO: could decide not to find best rotation here and just discard
+        // false matches due to wrong orientation at end of comparisons
+        int[] rotations = new int[10];
+        int i = 0;
         for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
+            rotations[i] = rotD1;
+            i++;
+        }
+        rotations[i] = rot1 + 90;
+        i++;
+        rotations[i] = rot1 + 180;
+        i++;
+        rotations[i] = rot1 + 270;
+        i++;
+        
+        
+        for (int rotD1 : rotations) {
+            if (rotD1 > 359) {
+                rotD1 = 360 - rotD1;
+            }
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
                 if (!features1.isWithinXBounds(x1d)) {
                     continue;

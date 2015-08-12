@@ -569,6 +569,7 @@ public class ShapeMatcherTest extends TestCase {
         out1.add(415, 538);
         out2.add(61, 422);
         
+        // point2 has badly determined orientation
         out1.add(272, 575);
         out2.add(23, 275);
         
