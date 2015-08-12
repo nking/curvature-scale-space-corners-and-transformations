@@ -1316,8 +1316,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
         return edited;
     }
     
-    public Set<CornerRegion> getEdgeCornerRegions(
-        boolean removeAmbiguousPeaks) {
+    public Set<CornerRegion> getEdgeCornerRegions(boolean removeAmbiguousPeaks) {
         
         if (!removeAmbiguousPeaks) {
             return getEdgeCornerRegions();
@@ -1330,13 +1329,14 @@ MultiArrayMergeSort.sortByYThenX(cp);
                 int kMaxIdx = cr.getKMaxIdx();
                 float kMax = cr.getK()[kMaxIdx];
                 boolean keep = true;               
-                if ((kMaxIdx > 0) && (kMaxIdx < (cr.getX().length - 1))) {
-                    if (Math.abs(cr.getK()[kMaxIdx - 1] - kMax) < 0.02) {
+                /*if ((kMaxIdx > 0) && (kMaxIdx < (cr.getX().length - 1))) {
+                    if (Math.abs(cr.getK()[kMaxIdx - 1] - kMax) < 0.005) {
                         keep = false;
-                    } else if (Math.abs(cr.getK()[kMaxIdx + 1] - kMax) < 0.02) {
+                    } else if (Math.abs(cr.getK()[kMaxIdx + 1] - kMax) < 0.005) {
                         keep = false;
                     }
-                }
+                }*/
+                
                 if (keep) {
                     
                     int xCorner = cr.getX()[kMaxIdx];
