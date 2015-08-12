@@ -661,21 +661,33 @@ public class ImageProcessor {
 
     public void shrinkImage(final GreyscaleImage input,
         int[] offsetsAndDimensions) {
-
-        //xOffset, yOffset, width, height
-        GreyscaleImage output = new GreyscaleImage(offsetsAndDimensions[2],
-            offsetsAndDimensions[3]);
-        output.setXRelativeOffset(offsetsAndDimensions[0]);
-        output.setYRelativeOffset(offsetsAndDimensions[1]);
+        
+        int w2 = offsetsAndDimensions[2];
+        int h2 = offsetsAndDimensions[3];
+        
+        int offset1X = offsetsAndDimensions[0];
+        int offset1Y = offsetsAndDimensions[1];
+        
+        GreyscaleImage output = new GreyscaleImage(w2, h2);
+        output.setXRelativeOffset(offset1X);
+        output.setYRelativeOffset(offset1Y);
 
         int x = 0;
+        
+        int endCol = (offset1X + w2);
+        if (endCol > input.getWidth()) {
+            endCol = input.getWidth();
+        }
+        int endRow =  (offset1Y + h2);
+        if (endRow > input.getHeight()) {
+            endRow = input.getHeight();
+        }
 
-        for (int col = offsetsAndDimensions[0]; col < offsetsAndDimensions[2];
-            col++) {
+        for (int col = offset1X; col < endCol; col++) {
 
             int y = 0;
-            for (int row = offsetsAndDimensions[1]; row < offsetsAndDimensions[3];
-                row++) {
+            
+            for (int row = offset1Y; row < endRow; row++) {
 
                 int v = input.getValue(col, row);
 
@@ -686,6 +698,8 @@ public class ImageProcessor {
 
             x++;
         }
+        
+        input.resetTo(output);
     }
 
     /**
@@ -705,6 +719,8 @@ public class ImageProcessor {
         */
         //xOffset, yOffset, width, height
         // subtract xOffset from x in input and yOffset from y in input
+        
+        //TODO: remove points out of bounds of final image
         
         for (PairInt p : input) {
             p.setX(p.getX() - offsetsAndDimensions[0]);
@@ -730,6 +746,8 @@ public class ImageProcessor {
         */
         //xOffset, yOffset, width, height
         // subtract xOffset from x in input and yOffset from y in input
+        
+        //TODO: remove points out of bounds of final image
         
         for (int i = 0; i < input.getN(); ++i) {
             int x = input.getX(i) - offsetsAndDimensions[0];

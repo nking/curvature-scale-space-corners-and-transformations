@@ -560,7 +560,7 @@ public class CannyEdgeFilter {
             lineThinner = lineThinnerClass.newInstance();
             
             if (gXY != null) {
-                if (shrinkToSize != null) {
+                if (shrinkToSize != null && !gXY.isThisSize(shrinkToSize)) {                
                     GreyscaleImage gXY2 = gXY.copyImage();
                     ImageProcessor imageProcessor = new ImageProcessor();
                     imageProcessor.shrinkImage(gXY2, shrinkToSize);

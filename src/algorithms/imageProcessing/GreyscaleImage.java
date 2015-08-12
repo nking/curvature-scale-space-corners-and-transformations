@@ -335,4 +335,20 @@ public class GreyscaleImage {
     public void setYRelativeOffset(int yRelativeOffset) {
         this.yRelativeOffset = yRelativeOffset;
     }
+
+    public boolean isThisSize(int[] offsetsAndDimensions) {
+        
+        int w = offsetsAndDimensions[2];
+        int h = offsetsAndDimensions[3];
+        
+        int offsetX = offsetsAndDimensions[0];
+        int offsetY = offsetsAndDimensions[1];
+        
+        if (this.width != w || this.height != h || 
+            this.xRelativeOffset != offsetX || this.yRelativeOffset != offsetY) {
+            return false;
+        }
+        
+        return true;
+    }
 }

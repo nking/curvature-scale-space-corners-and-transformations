@@ -35,8 +35,10 @@ public class BinSegmentationHelper {
     protected final String filePath1;
     protected final String filePath2;
 
-    ImageExt img1 = null;
-    ImageExt img2 = null;
+    ImageExt img1Orig = null;
+    ImageExt img2Orig = null;
+    GreyscaleImage img1GreyOrig = null;
+    GreyscaleImage img2GreyOrig = null;
     GreyscaleImage img1Grey = null;
     GreyscaleImage img2Grey = null;
     int binFactor = 1;
@@ -58,51 +60,51 @@ public class BinSegmentationHelper {
         this.fileName2 = fileName2;
 
         filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        img1 = ImageIOHelper.readImageExt(filePath1);
+        img1Orig = ImageIOHelper.readImageExt(filePath1);
 
         filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        img2 = ImageIOHelper.readImageExt(filePath2);
+        img2Orig = ImageIOHelper.readImageExt(filePath2);
 
     }
 
     public void applySteps0() throws IOException, NoSuchAlgorithmException {
 
-        ImageHelperForTests helper = new ImageHelperForTests(img1, true);
+        ImageHelperForTests helper = new ImageHelperForTests(img1Orig, true);
         SkylineExtractor skylineExtractor = new SkylineExtractor();
         PairIntArray outputSkyCentroid = new PairIntArray();
         // sky are the zeros in this:
         GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img1,
+            helper.getTheta(), helper.getGradientXY(), img1Orig,
             helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.multiplyBinary(img1, resultMask);
+        imageProcessor.multiplyBinary(img1Orig, resultMask);
 
-        helper = new ImageHelperForTests(img2, true);
+        helper = new ImageHelperForTests(img2Orig, true);
         skylineExtractor = new SkylineExtractor();
         outputSkyCentroid = new PairIntArray();
         // sky are the zeros in this:
         resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img2,
+            helper.getTheta(), helper.getGradientXY(), img2Orig,
             helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-        imageProcessor.multiplyBinary(img2, resultMask);
+        imageProcessor.multiplyBinary(img2Orig, resultMask);
 
         TransformationParameters params90 = new TransformationParameters();
         params90.setRotationInDegrees(90);
         params90.setOriginX(0);
         params90.setOriginY(0);
         params90.setTranslationX(0);
-        params90.setTranslationY(img1.getWidth() - 1);
+        params90.setTranslationY(img1Orig.getWidth() - 1);
 
         Transformer transformer = new Transformer();
 
-        img1 = (ImageExt) transformer.applyTransformation(img1, params90,
-            img1.getHeight(), img1.getWidth());
+        img1Orig = (ImageExt) transformer.applyTransformation(img1Orig, params90,
+            img1Orig.getHeight(), img1Orig.getWidth());
 
         //---------------
 
-        img1Grey = img1.copyToGreyscale();
-        img2Grey = img2.copyToGreyscale();
+        img1GreyOrig = img1Orig.copyToGreyscale();
+        img2GreyOrig = img2Orig.copyToGreyscale();
 
         final boolean performBinning = false;
         int binFactor1 = 1;
@@ -124,11 +126,11 @@ public class BinSegmentationHelper {
         //  day that information is passed to this method
         int largestGroupLimit = 5000;
 
-        ImageExt img1Cp = (ImageExt)img1.copyImage();
-        ImageExt img2Cp = (ImageExt)img2.copyImage();
+        ImageExt img1Cp = (ImageExt)img1Orig.copyImage();
+        ImageExt img2Cp = (ImageExt)img2Orig.copyImage();
 
-        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true);
-        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true);
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1GreyOrig, true);
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2GreyOrig, true);
 
         log.info("stats1=" + stats1.toString());
         log.info("stats2=" + stats2.toString());
@@ -152,9 +154,9 @@ public class BinSegmentationHelper {
         }
         if (performHistEq) {
             log.info("use histogram equalization on the greyscale images");
-            HistogramEqualization hEq = new HistogramEqualization(img1Grey);
+            HistogramEqualization hEq = new HistogramEqualization(img1GreyOrig);
             hEq.applyFilter();
-            hEq = new HistogramEqualization(img2Grey);
+            hEq = new HistogramEqualization(img2GreyOrig);
             hEq.applyFilter();
             /*HistogramEqualizationForColor hEqC = new HistogramEqualizationForColor(img1Cp);
             hEqC.applyFilter();
@@ -164,8 +166,8 @@ public class BinSegmentationHelper {
 
         if (performBinning) {
             binFactor1 = (int) Math.ceil(
-                Math.max((float)img1Grey.getWidth()/200.f,
-                (float)img2Grey.getHeight()/200.));
+                Math.max((float)img1GreyOrig.getWidth()/200.f,
+                (float)img2GreyOrig.getHeight()/200.));
             smallestGroupLimit /= (binFactor1*binFactor1);
             largestGroupLimit /= (binFactor1*binFactor1);
 
@@ -175,20 +177,20 @@ public class BinSegmentationHelper {
             if (smallestGroupLimit < 4) {
                 smallestGroupLimit = 4;
             }
-            img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
-            img2Grey = imageProcessor.binImage(img2Grey, binFactor1);
+            img1GreyOrig = imageProcessor.binImage(img1GreyOrig, binFactor1);
+            img2GreyOrig = imageProcessor.binImage(img2GreyOrig, binFactor1);
             img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
 
-        imageProcessor.applyImageSegmentation(img1Grey, kN);
-        imageProcessor.applyImageSegmentation(img2Grey, kN);
+        imageProcessor.applyImageSegmentation(img1GreyOrig, kN);
+        imageProcessor.applyImageSegmentation(img2GreyOrig, kN);
 
         // == contiguous regions within size limits become blobs of interest,
         //    indexed by their intensity levels
 
-        Map<Integer, Integer> freqMap1 = Histogram.createAFrequencyMap(img1Grey);
-        Map<Integer, Integer> freqMap2 = Histogram.createAFrequencyMap(img2Grey);
+        Map<Integer, Integer> freqMap1 = Histogram.createAFrequencyMap(img1GreyOrig);
+        Map<Integer, Integer> freqMap2 = Histogram.createAFrequencyMap(img2GreyOrig);
 
         Map<Integer, List<PairIntArray>> contigMap1
             = new HashMap<Integer, List<PairIntArray>>();
@@ -214,7 +216,7 @@ public class BinSegmentationHelper {
             Map<Integer, Integer> freqMap = freqMap1;
             Map<Integer, List<PairIntArray>> contigMap = contigMap1;
             Map<Integer, List<GrahamScan>> hulls = hulls1;
-            GreyscaleImage imgGrey = img1Grey;
+            GreyscaleImage imgGrey = img1GreyOrig;
             PairIntArray hullCentroids = allHullCentroids1;
             Map<Integer, PairIntArray> hullCentroidsMap = hullCentroids1Map;
             if (im == 1) {
@@ -222,7 +224,7 @@ public class BinSegmentationHelper {
                 contigMap = contigMap2;
                 hulls = hulls2;
                 hullCentroids = allHullCentroids2;
-                imgGrey = img2Grey;
+                imgGrey = img2GreyOrig;
                 hullCentroidsMap = hullCentroids2Map;
             }
 
@@ -313,37 +315,49 @@ public class BinSegmentationHelper {
             }
         }
 
-        MiscDebug.writeHullImages(img1Grey, hulls1, "1_binned_hulls");
-        MiscDebug.writeHullImages(img2Grey, hulls2, "2_binned_hulls");
+        MiscDebug.writeHullImages(img1GreyOrig, hulls1, "1_binned_hulls");
+        MiscDebug.writeHullImages(img2GreyOrig, hulls2, "2_binned_hulls");
         MiscDebug.writeImage(img1Cp, "1_binned_clr");
         MiscDebug.writeImage(img2Cp, "2_binned_clr");
 
         // make corners
 
         if (!performBinning) {
-            imageProcessor.blur(img1Grey, 2);
-            imageProcessor.blur(img2Grey, 2);
+            imageProcessor.blur(img1GreyOrig, 2);
+            imageProcessor.blur(img2GreyOrig, 2);
         }
 
         CurvatureScaleSpaceCornerDetector detector = new
-            CurvatureScaleSpaceCornerDetector(img1Grey);
+            CurvatureScaleSpaceCornerDetector(img1GreyOrig);
         detector.doNotPerformHistogramEqualization();
         detector.findCorners();
         corners1 = detector.getCornersInOriginalReferenceFrame();
-        cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        cornerRegions1 = detector.getEdgeCornerRegions(true);
+        //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         gXY1 = detector.getGradientXY();
+        img1Grey = img1GreyOrig.copyImage();
+        imageProcessor.shrinkImage(img1Grey, 
+            new int[]{gXY1.getXRelativeOffset(), gXY1.getYRelativeOffset(),
+                gXY1.getWidth(), gXY1.getHeight()
+            });
         MiscDebug.writeEdges(detector.getEdgesInOriginalReferenceFrame(), 
-            img1Grey, "1_edges");
+            img1GreyOrig, "1_edges");
 
         CurvatureScaleSpaceCornerDetector detector2 = new
-            CurvatureScaleSpaceCornerDetector(img2Grey);
+            CurvatureScaleSpaceCornerDetector(img2GreyOrig);
         detector2.doNotPerformHistogramEqualization();
         detector2.findCorners();
         corners2 = detector2.getCornersInOriginalReferenceFrame();
-        cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        cornerRegions2 = detector2.getEdgeCornerRegions(true);
+        //cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         gXY2 = detector2.getGradientXY();
+        img2Grey = img2GreyOrig.copyImage();
+        imageProcessor.shrinkImage(img2Grey, 
+            new int[]{gXY2.getXRelativeOffset(), gXY2.getYRelativeOffset(),
+                gXY2.getWidth(), gXY2.getHeight()
+            });
         MiscDebug.writeEdges(detector2.getEdgesInOriginalReferenceFrame(), 
-            img2Grey, "2_edges");
+            img2GreyOrig, "2_edges");
 
         log.info("n1Corners=" + corners1.getN() + " n2Corners2=" + corners2.getN());
 
@@ -358,8 +372,8 @@ public class BinSegmentationHelper {
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
 
-        MiscDebug.plotCorners(img1Grey, corners1, "1_corners");
-        MiscDebug.plotCorners(img2Grey, corners2, "2_corners");
+        MiscDebug.plotCorners(img1GreyOrig, corners1, "1_corners");
+        MiscDebug.plotCorners(img2GreyOrig, corners2, "2_corners");
 
         ShapeMatcher shapeMatcher = new ShapeMatcher();
 
@@ -374,46 +388,46 @@ public class BinSegmentationHelper {
 
     public void applySteps1() throws IOException, NoSuchAlgorithmException {
 
-        ImageHelperForTests helper = new ImageHelperForTests(img1, true);
+        ImageHelperForTests helper = new ImageHelperForTests(img1Orig, true);
         SkylineExtractor skylineExtractor = new SkylineExtractor();
         PairIntArray outputSkyCentroid = new PairIntArray();
         // sky are the zeros in this:
         GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img1,
+            helper.getTheta(), helper.getGradientXY(), img1Orig,
             helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-
+        
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.multiplyBinary(img1, resultMask);
+        imageProcessor.multiplyBinary(img1Orig, resultMask);
 
-        helper = new ImageHelperForTests(img2, true);
+        helper = new ImageHelperForTests(img2Orig, true);
         skylineExtractor = new SkylineExtractor();
         outputSkyCentroid = new PairIntArray();
         // sky are the zeros in this:
         resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img2,
+            helper.getTheta(), helper.getGradientXY(), img2Orig,
             helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-        imageProcessor.multiplyBinary(img2, resultMask);
-
+        imageProcessor.multiplyBinary(img2Orig, resultMask);
+        
         TransformationParameters params90 = new TransformationParameters();
         params90.setRotationInDegrees(90);
         params90.setOriginX(0);
         params90.setOriginY(0);
         params90.setTranslationX(0);
-        params90.setTranslationY(img1.getWidth() - 1);
+        params90.setTranslationY(img1Orig.getWidth() - 1);
 
         Transformer transformer = new Transformer();
 
-        img1 = (ImageExt) transformer.applyTransformation(img1, params90,
-            img1.getHeight(), img1.getWidth());
+        img1Orig = (ImageExt) transformer.applyTransformation(img1Orig, params90,
+            img1Orig.getHeight(), img1Orig.getWidth());
 
         //---------------
 
-        img1Grey = img1.copyToGreyscale();
-        img2Grey = img2.copyToGreyscale();
+        img1GreyOrig = img1Orig.copyToGreyscale();
+        img2GreyOrig = img2Orig.copyToGreyscale();
 
         final boolean performBinning = false;
         int binFactor1 = 1;
-
+        
         /*
         one could start with essentially no limits here and then
         looks at the distribution of resulting contiguous group
@@ -425,11 +439,11 @@ public class BinSegmentationHelper {
         //  day that information is passed to this method
         int largestGroupLimit = 5000;
 
-        ImageExt img1Cp = (ImageExt)img1.copyImage();
-        ImageExt img2Cp = (ImageExt)img2.copyImage();
+        ImageExt img1Cp = (ImageExt)img1Orig.copyImage();
+        ImageExt img2Cp = (ImageExt)img2Orig.copyImage();
 
-        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true);
-        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true);
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1GreyOrig, true);
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2GreyOrig, true);
 
         log.info("stats1=" + stats1.toString());
         log.info("stats2=" + stats2.toString());
@@ -453,9 +467,9 @@ public class BinSegmentationHelper {
         }
         if (performHistEq) {
             log.info("use histogram equalization on the greyscale images");
-            HistogramEqualization hEq = new HistogramEqualization(img1Grey);
+            HistogramEqualization hEq = new HistogramEqualization(img1GreyOrig);
             hEq.applyFilter();
-            hEq = new HistogramEqualization(img2Grey);
+            hEq = new HistogramEqualization(img2GreyOrig);
             hEq.applyFilter();
             /*HistogramEqualizationForColor hEqC = new HistogramEqualizationForColor(img1Cp);
             hEqC.applyFilter();
@@ -465,8 +479,8 @@ public class BinSegmentationHelper {
 
         if (performBinning) {
             binFactor1 = (int) Math.ceil(
-                Math.max((float)img1Grey.getWidth()/200.f,
-                (float)img2Grey.getHeight()/200.));
+                Math.max((float)img1GreyOrig.getWidth()/200.f,
+                (float)img2GreyOrig.getHeight()/200.));
             smallestGroupLimit /= (binFactor1*binFactor1);
             largestGroupLimit /= (binFactor1*binFactor1);
 
@@ -476,8 +490,8 @@ public class BinSegmentationHelper {
             if (smallestGroupLimit < 4) {
                 smallestGroupLimit = 4;
             }
-            img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
-            img2Grey = imageProcessor.binImage(img2Grey, binFactor1);
+            img1GreyOrig = imageProcessor.binImage(img1GreyOrig, binFactor1);
+            img2GreyOrig = imageProcessor.binImage(img2GreyOrig, binFactor1);
             img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
@@ -485,31 +499,48 @@ public class BinSegmentationHelper {
         // make corners
 
         if (!performBinning) {
-            imageProcessor.blur(img1Grey, SIGMA.ONE);
-            imageProcessor.blur(img2Grey, SIGMA.ONE);
+            imageProcessor.blur(img1GreyOrig, SIGMA.ONE);
+            imageProcessor.blur(img2GreyOrig, SIGMA.ONE);
         }
+        
+log.info("img1Grey.w=" + img1GreyOrig.getWidth() + " img1Grey.h=" + img1GreyOrig.getHeight());
+log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig.getHeight());
 
         CurvatureScaleSpaceCornerDetector detector = new
-            CurvatureScaleSpaceCornerDetector(img1Grey);
+            CurvatureScaleSpaceCornerDetector(img1GreyOrig);
         detector.doNotPerformHistogramEqualization();
         detector.findCorners();
         corners1 = detector.getCornersInOriginalReferenceFrame();
-        cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        cornerRegions1 = detector.getEdgeCornerRegions(true);
+        //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         gXY1 = detector.getGradientXY();
+        img1Grey = img1GreyOrig.copyImage();
+        imageProcessor.shrinkImage(img1Grey, 
+            new int[]{gXY1.getXRelativeOffset(), gXY1.getYRelativeOffset(),
+                gXY1.getWidth(), gXY1.getHeight()
+            });
         MiscDebug.writeEdges(detector.getEdgesInOriginalReferenceFrame(), 
-            img1Grey, "1_edges");
+            img1GreyOrig, "1_edges");
         MiscDebug.writeImage(img1Cp, "1_clr");
+        MiscDebug.plotCorners(img1GreyOrig, corners1, "1__corners");
         
         CurvatureScaleSpaceCornerDetector detector2 = new
-            CurvatureScaleSpaceCornerDetector(img2Grey);
+            CurvatureScaleSpaceCornerDetector(img2GreyOrig);
         detector2.doNotPerformHistogramEqualization();
         detector2.findCorners();
         corners2 = detector2.getCornersInOriginalReferenceFrame();
-        cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        cornerRegions2 = detector2.getEdgeCornerRegions(true);
+        //cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         gXY2 = detector2.getGradientXY();
+        img2Grey = img2GreyOrig.copyImage();
+        imageProcessor.shrinkImage(img2Grey, 
+            new int[]{gXY2.getXRelativeOffset(), gXY2.getYRelativeOffset(),
+                gXY2.getWidth(), gXY2.getHeight()
+            });
         MiscDebug.writeEdges(detector2.getEdgesInOriginalReferenceFrame(), 
-            img2Grey, "2_edges");
+            img2GreyOrig, "2_edges");
         MiscDebug.writeImage(img2Cp, "2_clr");
+        MiscDebug.plotCorners(img2GreyOrig, corners2, "2__corners");
         
         log.info("n1Corners=" + corners1.getN() + " n2Corners2=" + corners2.getN());
 
@@ -518,11 +549,15 @@ public class BinSegmentationHelper {
             detector.getGradientX(), detector.getGradientY());
         theta2 = imageProcessor.computeTheta360(
             detector2.getGradientX(), detector2.getGradientY());
-        MiscDebug.writeImage(theta1, "1_theta360");
-        MiscDebug.writeImage(theta2, "2_theta360");
         
-        MiscDebug.writeImage(gXY1, "1_gXY");
-        MiscDebug.writeImage(gXY2, "2_gXY");
+        MiscDebug.writeImage(img1Grey, "1_greyscale_trimmed");
+        MiscDebug.writeImage(img2Grey, "2_greyscale_trimmed");
+        
+        MiscDebug.writeImage(theta1, "1_theta360_trimmed");
+        MiscDebug.writeImage(theta2, "2_theta360_trimmed");
+        
+        MiscDebug.writeImage(gXY1, "1_gXY_trimmed");
+        MiscDebug.writeImage(gXY2, "2_gXY_trimmed");
      
         /*
         //TEMP files to visualize an offset:
@@ -559,22 +594,22 @@ public class BinSegmentationHelper {
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
 
-        MiscDebug.plotCorners(img1Grey, corners1, "1_corners");
-        MiscDebug.plotCorners(img2Grey, corners2, "2_corners");
+        MiscDebug.plotCorners(img1GreyOrig, corners1, "1_corners");
+        MiscDebug.plotCorners(img2GreyOrig, corners2, "2_corners");
 
     }
 
     /**
      * @return the corners1
      */
-    public PairIntArray getCorners1() {
+    public PairIntArray getCorners1InOriginalReferenceFrame() {
         return corners1;
     }
 
     /**
      * @return the corners2
      */
-    public PairIntArray getCorners2() {
+    public PairIntArray getCorners2InOriginalReferenceFrame() {
         return corners2;
     }
 
@@ -642,8 +677,10 @@ public class BinSegmentationHelper {
             count++;
         }
 
-        MiscDebug.plotCorners(img1Grey, rCorners1, "1_region_corners");
-        MiscDebug.plotCorners(img2Grey, rCorners2, "2_region_corners");
+        // these are in trimmed reference frame
+        
+        MiscDebug.plotCorners(img1Grey, rCorners1, "1_region_corners_trimmed");
+        MiscDebug.plotCorners(img2Grey, rCorners2, "2_region_corners_trimmed");
         
         QuickSort.sortBy1stArg(k1, p1);
 
@@ -659,8 +696,8 @@ public class BinSegmentationHelper {
         return img2Grey;
     }
     
-    public ImageExt getImage1() {
-        return img1;
+    public ImageExt getImage1InOriginalReferenceFrame() {
+        return img1Orig;
     }
 
     public GreyscaleImage getGXY1() {
@@ -671,8 +708,8 @@ public class BinSegmentationHelper {
         return theta1;
     }
 
-    public ImageExt getImage2() {
-        return img2;
+    public ImageExt getImage2InOriginalReferenceFrame() {
+        return img2Orig;
     }
 
     public GreyscaleImage getGXY2() {

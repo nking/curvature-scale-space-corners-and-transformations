@@ -1299,6 +1299,30 @@ MultiArrayMergeSort.sortByYThenX(cp);
             return getEdgeCornerRegionsInOriginalReferenceFrame();
         }
 
+        Set<CornerRegion> set = getEdgeCornerRegions(removeAmbiguousPeaks);
+       
+        Set<CornerRegion> edited = new HashSet<CornerRegion>();
+        
+        for (CornerRegion cr : set) {
+            CornerRegion crCopy = cr.copy();
+            for (int i = 0; i < crCopy.getX().length; ++i) {
+                int x = crCopy.getX()[i] + this.trimmedXOffset;
+                int y = crCopy.getY()[i] + this.trimmedYOffset;
+                crCopy.set(i, crCopy.getK()[i], x, y);
+            }
+            edited.add(crCopy);
+        }
+        
+        return edited;
+    }
+    
+    public Set<CornerRegion> getEdgeCornerRegions(
+        boolean removeAmbiguousPeaks) {
+        
+        if (!removeAmbiguousPeaks) {
+            return getEdgeCornerRegions();
+        }
+
         Set<CornerRegion> set = new HashSet<CornerRegion>();
        
         for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
@@ -1328,13 +1352,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
                     
                     if (!isInAJunction) {
                         
-                        CornerRegion crCopy = cr.copy();
-                        for (int i = 0; i < cr.getX().length; ++i) {
-                            int x = cr.getX()[i] + this.trimmedXOffset;
-                            int y = cr.getY()[i] + this.trimmedYOffset;
-                            crCopy.set(i, cr.getK()[i], x, y);
-                        }
-                        set.add(crCopy);
+                        set.add(cr);
                         
                     } else {
                         
@@ -1343,20 +1361,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
                             yCorner, kMax);
 
                         if (crWithinJunctions != null) {
-                            
-                            // edit the corner regions to be in original image
-                            // frame
-                            for (CornerRegion crEdit : crWithinJunctions) {
-                                for (int cIdx = 0; cIdx < crEdit.getX().length; ++cIdx) {
-                                    int xEdit = crEdit.getX()[cIdx] 
-                                        + this.trimmedXOffset;
-                                    int yEdit = crEdit.getY()[cIdx] 
-                                        + this.trimmedYOffset;
-                                    float k = crEdit.getK()[cIdx];
-                                    crEdit.set(cIdx, k, xEdit, yEdit);
-                                }
-                            }
-                            
+                           
                             set.addAll(crWithinJunctions);
                         }
                     }

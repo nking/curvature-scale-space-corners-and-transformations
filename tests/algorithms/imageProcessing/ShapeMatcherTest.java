@@ -256,34 +256,46 @@ public class ShapeMatcherTest extends TestCase {
         int blockHalfWidth = 12;
         boolean useNormalizedIntensities = true;
         
-        ImageExt img1 = helper.getImage1(); 
-        GreyscaleImage gXY1 = helper.getGXY1();
-        GreyscaleImage theta1 = helper.getTheta1();
-        ImageExt img2 = helper.getImage2(); 
-        GreyscaleImage gXY2 = helper.getGXY2();
-        GreyscaleImage theta2 = helper.getTheta2();
-        float[][] offsets0 = Misc.createNeighborOffsets(2);
+        final GreyscaleImage gsImg1 = helper.getGreyscaleImage1();
+        final GreyscaleImage gXY1 = helper.getGXY1();
+        final GreyscaleImage theta1 = helper.getTheta1();
+        final GreyscaleImage gsImg2 = helper.getGreyscaleImage2();
+        final GreyscaleImage gXY2 = helper.getGXY2();
+        final GreyscaleImage theta2 = helper.getTheta2();
         
+        assertTrue(gsImg1.getWidth() == gXY1.getWidth());
+        assertTrue(gsImg1.getHeight() == gXY1.getHeight());
+        assertTrue(gsImg2.getWidth() == gXY2.getWidth());
+        assertTrue(gsImg2.getHeight() == gXY2.getHeight());
+        assertTrue(gsImg1.getWidth() == theta1.getWidth());
+        assertTrue(gsImg1.getHeight() == theta1.getHeight());
+        assertTrue(gsImg2.getWidth() == theta2.getWidth());
+        assertTrue(gsImg2.getHeight() == theta2.getHeight());
+        
+        // NOTE: these are in the trimmed coordinates reference frame
+        // which are the same as the images given to Features
         Set<CornerRegion> cornerRegions1 = helper.getCornerRegions1();
         Set<CornerRegion> cornerRegions2 = helper.getCornerRegions2();
      
-        int dither = 1;//2;//1;
+        int dither = 1;// 1 is fine for B&L2003
         
-        Features features1 = new Features(helper.getGreyscaleImage1(), 
+        Features features1 = new Features(gsImg1, 
             gXY1, theta1, blockHalfWidth, useNormalizedIntensities);
         
-        Features features2 = new Features(helper.getGreyscaleImage2(), 
+        Features features2 = new Features(gsImg2, 
             gXY2, theta2, blockHalfWidth, useNormalizedIntensities);
         
         // iterate over the manual list of corners and find the corner regions
         for (int ii = 0; ii < points1.getN(); ++ii) {
 
-            final int x1 = points1.getX(ii);
-            final int y1 = points1.getY(ii);
-            final int x2 = points2.getX(ii);
-            final int y2 = points2.getY(ii);
+            // the point lists are in the original image reference frame so transform them
+            final int x1 = (points1.getX(ii) - gXY1.getXRelativeOffset());
+            final int y1 = (points1.getY(ii) - gXY1.getYRelativeOffset());
+            final int x2 = (points2.getX(ii) - gXY2.getXRelativeOffset());
+            final int y2 = (points2.getY(ii) - gXY2.getYRelativeOffset());
 
-            log.info("looking for corner region for (" + x1 + "," + y1 + ")");
+            log.info("looking for corner region for (" + points1.getX(ii) 
+                + "," + points1.getY(ii) + ")");
 
             Set<CornerRegion> set1 = new HashSet<CornerRegion>();
             for (CornerRegion cr : cornerRegions1) {
@@ -311,7 +323,7 @@ public class ShapeMatcherTest extends TestCase {
                 int yDiff = Math.abs(y2 - y);
                 if (xDiff < 3 && yDiff < 3) {
                     set2.add(cr);
-                    try { 
+                    try {
                         cr.getRelativeOrientation();
                     } catch(CornerRegion.CornerRegionDegneracyException e) {
                         //log.severe(e.getMessage());
@@ -361,12 +373,14 @@ public class ShapeMatcherTest extends TestCase {
         // iterate over the manual list of corners and find the corner regions
         for (int ii = 0; ii < points1.getN(); ++ii) {
 
-            final int x1 = points1.getX(ii);
-            final int y1 = points1.getY(ii);
-            final int x2 = points2.getX(ii);
-            final int y2 = points2.getY(ii);
+            // the point lists are in the original image reference frame so transform them
+            final int x1 = (points1.getX(ii) - gXY1.getXRelativeOffset());
+            final int y1 = (points1.getY(ii) - gXY1.getYRelativeOffset());
+            final int x2 = (points2.getX(ii) - gXY2.getXRelativeOffset());
+            final int y2 = (points2.getY(ii) - gXY2.getYRelativeOffset());
 
-            log.info("looking for corner region for (" + x1 + "," + y1 + ")");
+            log.info("looking for corner region for (" + points1.getX(ii) 
+                + "," + points1.getY(ii) + ")");
 
             Set<CornerRegion> set1 = new HashSet<CornerRegion>();
             for (CornerRegion cr : cornerRegions1) {
@@ -407,11 +421,11 @@ public class ShapeMatcherTest extends TestCase {
                 }
             }
             
-            int diffX = best.getImg2Point().getX() - x2;
-            int diffY = best.getImg2Point().getY() - y2;
-            
             assertNotNull(best);
             
+            int diffX = best.getImg2Point().getX() - x2;
+            int diffY = best.getImg2Point().getY() - y2;
+                        
             log.info(ii + ") FINAL diffX,diffY=(" + diffX + "," + diffY 
             + ") best for compare against all corners2=" + best.toString());
         }

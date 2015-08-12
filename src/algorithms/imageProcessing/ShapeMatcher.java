@@ -584,8 +584,8 @@ if (true) {
             throw new IllegalArgumentException("cornerRegions2 cannot be null");
         }
         
-        int blockHalfWidth = 2;
-        boolean useNormalizedIntensities = false;
+        int blockHalfWidth = 12;
+        boolean useNormalizedIntensities = true;
         
         // TODO: consider using greyscale images
         Features features1 = new Features(img1, gXY1, theta1, blockHalfWidth, 
@@ -996,9 +996,9 @@ if (true) {
                         x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
 
                     if (
-                        (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
-                        (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
-                        && (stat.getSumThetaSqDiff() < stat.getImg2PointThetaErr())
+                        (stat.getSumIntensitySqDiff() <= stat.getImg2PointIntensityErr()) &&
+                        (stat.getSumGradientSqDiff() <= stat.getImg2PointGradientErr())
+                        && (stat.getSumThetaSqDiff() <= stat.getImg2PointThetaErr())
                         ) {
                                                  
 float diffRot = AngleUtil.getAngleDifference(rotD1, rotD2);

@@ -109,9 +109,9 @@ public class Features {
      * @param useNormalizedIntensities normalize the intensities extracted
      * from image if true (NOT YET IMPLEMENTED)
      */
-    public Features(GreyscaleImage image, GreyscaleImage theGradientImg,
-        GreyscaleImage theThetaImg, int blockHalfWidths,
-        boolean useNormalizedIntensities) {
+    public Features(final GreyscaleImage image, final GreyscaleImage theGradientImg,
+        final GreyscaleImage theThetaImg, final int blockHalfWidths,
+        final boolean useNormalizedIntensities) {
 
         this.gsImg = image;
         this.clrImg = null;
@@ -133,9 +133,9 @@ public class Features {
      * @param useNormalizedIntensities normalize the intensities extracted
      * from image if true (NOT YET IMPLEMENTED)
      */
-    public Features(Image image, GreyscaleImage theGradientImg,
-        GreyscaleImage theThetaImg, int blockHalfWidths,
-        boolean useNormalizedIntensities) {
+    public Features(final Image image, final GreyscaleImage theGradientImg,
+        final GreyscaleImage theThetaImg, final int blockHalfWidths,
+        final boolean useNormalizedIntensities) {
 
         this.gsImg = null;
         this.clrImg = image;
@@ -790,8 +790,9 @@ public class Features {
                 for (int i = 0; i < xT.length; ++i) {
                     int x = Math.round(xT[i]);
                     int y = Math.round(yT[i]);
-                    v += gsImg.getValue(x, y);
-                    cCount++;
+                    int v0 = gsImg.getValue(x, y);
+                    v += v0;
+                    cCount++;// img changed?  w=480,h=640
                 }
 
                 if (cCount == 0) {
@@ -1397,6 +1398,12 @@ public class Features {
 
         float err2SqIntensity = descIntensity2.sumSquaredError();
 
+        float err1SqIntensity = descIntensity1.sumSquaredError();
+        
+        //TODO: revisit this:
+        //float errSqIntensity = (err2SqIntensity > err1SqIntensity) ?
+        //    err2SqIntensity : err1SqIntensity;
+
         float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);
 
         float err2SqGradient = descGradient2.sumSquaredError();
@@ -1498,6 +1505,12 @@ public class Features {
         }
 
         float err2SqIntensity = descIntensity2.sumSquaredError();
+
+        float err1SqIntensity = descIntensity1.sumSquaredError();
+        
+        //TODO: revisit this:
+        //float errSqIntensity = (err2SqIntensity > err1SqIntensity) ?
+        //    err2SqIntensity : err1SqIntensity;
 
         float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);
 
