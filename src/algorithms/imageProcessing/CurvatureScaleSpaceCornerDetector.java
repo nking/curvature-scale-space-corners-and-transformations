@@ -1343,6 +1343,20 @@ MultiArrayMergeSort.sortByYThenX(cp);
                             yCorner, kMax);
 
                         if (crWithinJunctions != null) {
+                            
+                            // edit the corner regions to be in original image
+                            // frame
+                            for (CornerRegion crEdit : crWithinJunctions) {
+                                for (int cIdx = 0; cIdx < crEdit.getX().length; ++cIdx) {
+                                    int xEdit = crEdit.getX()[cIdx] 
+                                        + this.trimmedXOffset;
+                                    int yEdit = crEdit.getY()[cIdx] 
+                                        + this.trimmedYOffset;
+                                    float k = crEdit.getK()[cIdx];
+                                    crEdit.set(cIdx, k, xEdit, yEdit);
+                                }
+                            }
+                            
                             set.addAll(crWithinJunctions);
                         }
                     }
@@ -1361,6 +1375,10 @@ MultiArrayMergeSort.sortByYThenX(cp);
      * This method may need to be revised or used with segmentation or 
      * object recognition (in which case it probably belongs in a class
      * to specialize handling of the junction points for the EdgeExtractorWithJunctions).
+     * 
+     * Note that the CornerRegions are not necessarily in the same frame
+     * as the original image (they do not have trimmedXOffset and trimmedYOffset
+     * added to them).
      * 
      * NOTE: there is a flaw here that this instance does not retain the
      * scale space curves or the curvature of all edges currently,
@@ -1440,6 +1458,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
                 CornerRegion cr = new CornerRegion(edgeLocation.getX(), 3, 1);
                 cr.setFlagThatNeighborsHoldDummyValues();
 
+                // add the image offsets
                 cr.set(0, 0.1f*k, x1, y1);
                 cr.set(1, k, x, y);
                 cr.set(2, 0.1f*k, x2, y2);

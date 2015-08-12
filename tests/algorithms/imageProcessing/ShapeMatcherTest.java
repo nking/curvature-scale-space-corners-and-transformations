@@ -226,20 +226,12 @@ public class ShapeMatcherTest extends TestCase {
         
         PairIntArray points1 = new PairIntArray();
         PairIntArray points2 = new PairIntArray();
-        getBrownAndLoweFeatureCenters90(points1, points2);
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        //String fileName1 = "venturi_mountain_j6_0001.png";
-        //String fileName2 = "venturi_mountain_j6_0010.png";
-        //getVenturiFeatureCenters90(points1, points2);
-        
-        //binFactor = 3;
-        /*
-        transfomation for images having been binned by factor 3:
-
-        params=rotationInRadians=6.1807413 rotationInDegrees=354.13039133201386 scale=0.96686685
-            translationX=-81.54607 translationY=-14.233707 originX=0.0 originY=0.0
-        */
+        //getBrownAndLoweFeatureCenters90(points1, points2);
+        //String fileName1 = "brown_lowe_2003_image1.jpg";
+        //String fileName2 = "brown_lowe_2003_image2.jpg";
+        String fileName1 = "venturi_mountain_j6_0001.png";
+        String fileName2 = "venturi_mountain_j6_0010.png";
+        getVenturiFeatureCenters90(points1, points2);
         
         TransformationParameters params = tc.calulateEuclidean(
             points1.getX(0), points1.getY(0), points1.getX(1), points1.getY(1),
@@ -560,12 +552,17 @@ public class ShapeMatcherTest extends TestCase {
 
     private void getVenturiFeatureCenters90(PairIntArray out1, PairIntArray out2) {
         
-        out1.add(291, 493);
-        out2.add(106, 296);
+        out1.add(415, 538);
+        out2.add(61, 422);
         
-        out1.add(447, 221);
-        out2.add(384, 446);
+        out1.add(272, 575);
+        out2.add(23, 275);
         
+        out1.add(259, 366);
+        out2.add(238, 261);
+        
+        out1.add(308, 67);
+        out2.add(534, 305);
         
     }
 
