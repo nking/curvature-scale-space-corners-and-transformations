@@ -374,20 +374,30 @@ public class MiscMath {
      */
     public static double[] getAvgAndStDev(int[] x) {
         
-        int n = x.length;
+        return getAvgAndStDev(x, x.length);
+    }
+    
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
+     * @return 
+     */
+    public static double[] getAvgAndStDev(int[] x, int length) {
+        
         long sumX = 0;
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < length; i++) {
             sumX += x[i];
         }
         
-        double avgX = (double)sumX/(double)n;
+        double avgX = (double)sumX/(double)length;
         
         sumX = 0;
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < length; i++) {
             double diffX = x[i] - avgX;
             sumX += (diffX * diffX);
         }
-        double stdDevX = (Math.sqrt(sumX/(n - 1.0f)));
+        double stdDevX = (Math.sqrt(sumX/(length - 1.0f)));
         
         return new double[]{avgX, stdDevX};
     }
@@ -1279,7 +1289,7 @@ public class MiscMath {
                 
         return (float)sum;
     }
-    
+   
     public static float calculateSSD(float[] a, float[] b, float sentinel) {
         
         if (a.length != b.length) {

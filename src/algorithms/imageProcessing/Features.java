@@ -1398,12 +1398,6 @@ public class Features {
 
         float err2SqIntensity = descIntensity2.sumSquaredError();
 
-        float err1SqIntensity = descIntensity1.sumSquaredError();
-        
-        //TODO: revisit this:
-        //float errSqIntensity = (err2SqIntensity > err1SqIntensity) ?
-        //    err2SqIntensity : err1SqIntensity;
-
         float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);
 
         float err2SqGradient = descGradient2.sumSquaredError();

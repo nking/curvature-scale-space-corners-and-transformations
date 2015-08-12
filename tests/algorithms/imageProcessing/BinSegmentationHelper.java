@@ -386,27 +386,30 @@ public class BinSegmentationHelper {
 
     }
 
-    public void applySteps1() throws IOException, NoSuchAlgorithmException {
+    public void applySteps1(boolean subtractSky) throws IOException, NoSuchAlgorithmException {
 
         ImageHelperForTests helper = new ImageHelperForTests(img1Orig, true);
-        SkylineExtractor skylineExtractor = new SkylineExtractor();
-        PairIntArray outputSkyCentroid = new PairIntArray();
-        // sky are the zeros in this:
-        GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img1Orig,
-            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
         
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.multiplyBinary(img1Orig, resultMask);
+        
+        if (subtractSky) {
+            SkylineExtractor skylineExtractor = new SkylineExtractor();
+            PairIntArray outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img1Orig,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);            
+            imageProcessor.multiplyBinary(img1Orig, resultMask);
 
-        helper = new ImageHelperForTests(img2Orig, true);
-        skylineExtractor = new SkylineExtractor();
-        outputSkyCentroid = new PairIntArray();
-        // sky are the zeros in this:
-        resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img2Orig,
-            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-        imageProcessor.multiplyBinary(img2Orig, resultMask);
+            helper = new ImageHelperForTests(img2Orig, true);
+            skylineExtractor = new SkylineExtractor();
+            outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img2Orig,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+            imageProcessor.multiplyBinary(img2Orig, resultMask);
+        }
         
         TransformationParameters params90 = new TransformationParameters();
         params90.setRotationInDegrees(90);
@@ -509,7 +512,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1GreyOrig);
         detector.doNotPerformHistogramEqualization();
-        detector.findCorners();
+        detector.findCorners();        
         corners1 = detector.getCornersInOriginalReferenceFrame();
         cornerRegions1 = detector.getEdgeCornerRegions(true);
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
@@ -559,14 +562,14 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         MiscDebug.writeImage(gXY1, "1_gXY_trimmed");
         MiscDebug.writeImage(gXY2, "2_gXY_trimmed");
      
-        /*
+        
         //TEMP files to visualize an offset:
         GreyscaleImage theta1_tmp = theta1.copyImage();
         GreyscaleImage theta2_tmp = theta2.copyImage();
         for (int col = 0; col < theta1_tmp.getWidth(); ++col) {
             for (int row = 0; row < theta1_tmp.getHeight(); ++row) {
                 int v = theta1_tmp.getValue(col, row);
-                v -= 150;
+                v -= 308;
                 if (v < 0) {
                     v += 360;
                 } else if (v > 359) {
@@ -578,7 +581,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         for (int col = 0; col < theta2_tmp.getWidth(); ++col) {
             for (int row = 0; row < theta2_tmp.getHeight(); ++row) {
                 int v = theta2_tmp.getValue(col, row);
-                v -= 135;
+                v -= 225;
                 if (v < 0) {
                     v += 360;
                 } else if (v > 359) {
@@ -589,7 +592,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         }
         MiscDebug.writeImage(theta1_tmp, "1_theta360_tmp");
         MiscDebug.writeImage(theta2_tmp, "2_theta360_tmp");
-        */
+        
             
         //log.info("corners1=" + corners1.toString());
         //log.info("corners2=" + corners2.toString());
