@@ -610,13 +610,9 @@ if (true) {
         Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
             comparisonMap = new HashMap<PairInt, Map<PairInt, 
             Map<Float, FeatureComparisonStat>>>();
-            
-        float[][] offsets0 = createNeighborOffsets();
-        
+                    
         int dither = 1;
-        
-        int nF = (2 * dither + 1) * (2 * dither + 1);
-        
+                
         for (int idx1 = 0; idx1 < cornerRegions1.length; ++idx1) {
             
             CornerRegion cornerRegion1 = cornerRegions1[idx1];
@@ -625,30 +621,19 @@ if (true) {
                 continue;
             }
             
-            for (int idx2 = 0; idx2 < cornerRegions1.length; ++idx2) {
-                
-                CornerRegion cornerRegion2 = cornerRegions2[idx2];
+            /*
+            TODO: 
+            through tests, decide whether keeping only the best match to 
+            cornerRegion1, or the top k best matches.
             
-                if (cornerRegion2 == null) {
-                    continue;
-                }
-                
-                try {
+            */
+            
+            FeatureComparisonStat best = findBestMatch(features1, features2,
+                cornerRegion1, cornerRegions2, dither);
+            
+            //storeInMap(comparisonMap, p1, p2, best.getImg1RotInDegrees(),
+            //    stat);
                     
-                    FeatureComparisonStat stat = findBestAmongDitheredRotated(
-                        features1, features2, cornerRegion1, cornerRegion2,
-                        dither);
-                
-                    if (stat != null) {
-                        //storeInMap(comparisonMap, p1, p2, best.getImg1RotInDegrees(),
-                        //    stat);
-                    }
-                    
-                } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.log(Level.SEVERE, null, ex);
-                }
-            }
-
         }
         
         return null;
@@ -854,7 +839,19 @@ if (true) {
         return out;
     }
 
-    protected FeatureComparisonStat findBestAmongDitheredRotated(
+    /**
+     * comparison of gradients to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param cornerRegion1
+     * @param cornerRegion2
+     * @param dither
+     * @return
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
+     */
+    protected FeatureComparisonStat ditherAndRotateForCorner1Location(
         Features features1, Features features2, CornerRegion cornerRegion1, 
         CornerRegion cornerRegion2, int dither) throws 
         CornerRegion.CornerRegionDegneracyException {
@@ -872,22 +869,14 @@ if (true) {
             cornerRegion2.getRelativeOrientationInDegrees());
         
         FeatureComparisonStat best = null;
-        
-        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);
-        
+                
         GradientDescriptor gDesc2 = features2.extractGradient(x2, y2, rot2);
         
         if (gDesc2 == null) {
             return null;
         }
         
-        ThetaDescriptor tDesc2 = features2.extractTheta(x2, y2, rot2);
-        
-        if (tDesc2 == null) {
-            return null;
-        }
-        
-        for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 30) {
+        for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
                 if (!features1.isWithinXBounds(x1d)) {
                     continue;
@@ -897,74 +886,27 @@ if (true) {
                         continue;
                     }
                     
-                    IntensityDescriptor desc1 = features1.extractIntensity(x1d,
-                        y1d, rotD1);
-               
                     GradientDescriptor gDesc1 = features1.extractGradient(x1d, 
                         y1d, rotD1);
                     
                     if (gDesc1 == null) {
                         continue;
                     }
-                    
-                    ThetaDescriptor tDesc1 = features1.extractTheta(x1d, y1d, 
-                        rotD1);
-                    
-                    if (tDesc1 == null) {
-                        continue;
-                    }
-                    
-                    /*
-                    TODO:  
-                    a quick look at a difficult match that is commonly present
-                    in the image suggests this:
-                    
-                    New approach:
-                     -- gradient: find best angle and dither from gradient alone
-                        (dither=1 seems fine, and delta rotation=10 over rotation
-                         range of +- 30)
-                        -- a larger region is needed.  can see in one image 
-                           need halfWidth of 12 to 14
-                        -- can be binned 2x2 or single pixels
-                     -- intensity and theta: use a larger area that extends to 
-                           at least 6 or 7 from center (=halfWidth)
-                     -- for theta, bin by 2 and use outlier removal for a small 
-                        number of cells if needed.                    
-                    */
+                       
+                    FeatureComparisonStat stat = Features.calculateGradientStats(
+                        gDesc1, x1d, y1d, gDesc2, x2, y2);
                    
-                    FeatureComparisonStat stat = Features.calculateStats(
-                        desc1, gDesc1, tDesc1, x1d, y1d, 
-                        desc2, gDesc2, tDesc2, x2, y2);
-                   
-                    if (
-                        (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
-                        (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
-                        && (stat.getSumThetaDiff() < stat.getImg2PointThetaErr())
-                        ) {
+                    if (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr()) {
                         
-log.info("idesc1=" + desc1.toString());
-log.info("idesc2=" + desc2.toString() + " intensitySSD=" + desc1.calculateSSD(desc2));                    
-log.info("tdesc1=" + tDesc1.toString());
-log.info("tdesc2=" + tDesc2.toString() + " thetaSSD=" + tDesc1.calculateDifference(tDesc2));
-                                                                        
-float diffRot = AngleUtil.getAngleDifference(rotD1, rot2);
-log.info("diffRot=" + diffRot + " stat=" + stat.toString());
-
-                        //TRY best theta alone for fitness function
                         if (best == null) {
                             best = stat;
-                            best.setImg1RotInDegrees(rotD1);
-                            best.setImg2RotInDegrees(rot2);
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
                         } else {
-                            if (
-                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                                && 
-                                (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                && (best.getSumThetaDiff() > stat.getSumThetaDiff())
-                                ) {
+                            if (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff()) {
                                 best = stat;
-                                best.setImg1RotInDegrees(rotD1);
-                                best.setImg2RotInDegrees(rot2);
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
                             }
                         }
                     }
@@ -973,6 +915,121 @@ log.info("diffRot=" + diffRot + " stat=" + stat.toString());
         }
         
         return best;
+    }
+
+    protected FeatureComparisonStat findBestMatch(Features features1, 
+        Features features2, CornerRegion cornerRegion1, 
+        CornerRegion[] cornerRegions2, int dither) {
+        
+        FeatureComparisonStat best = null;
+        
+        for (int idx2 = 0; idx2 < cornerRegions2.length; ++idx2) {
+
+            CornerRegion cornerRegion2 = cornerRegions2[idx2];
+
+            if (cornerRegion2 == null) {
+                continue;
+            }
+
+            try {
+
+                /*
+                 for the given corner region1,
+                 dither and make small rotation changes to find the 
+                 best centering and rotation to minimize the differences
+                 in gradient descriptors between cornerRegion1 and cornerRegion2.
+                 */
+                FeatureComparisonStat stat = ditherAndRotateForCorner1Location(
+                    features1, features2, cornerRegion1, cornerRegion2,
+                    dither);
+                
+                if (stat != null) {
+
+                    //compare all descriptors to find best
+                    int x1 = stat.getImg1Point().getX();
+                    int y1 = stat.getImg1Point().getY();
+                    int rotD1 = Math.round(stat.getImg1PointRotInDegrees());
+
+                    int kMaxIdx2 = cornerRegion2.getKMaxIdx();
+                    int x2 = cornerRegion2.getX()[kMaxIdx2];
+                    int y2 = cornerRegion2.getY()[kMaxIdx2];
+                    int rotD2 = Math.round(
+                        cornerRegion2.getRelativeOrientationInDegrees());
+
+                    IntensityDescriptor iDesc1 = features1.extractIntensity(
+                        x1, y1, rotD1);
+                    if (iDesc1 == null) {
+                        continue;
+                    }
+
+                    ThetaDescriptor tDesc1 = features1.extractTheta(
+                        x1, y1, rotD1);
+                    if (tDesc1 == null) {
+                        continue;
+                    }
+
+                    GradientDescriptor gDesc1 = features1.extractGradient(
+                        x1, y1, rotD1);
+                    if (gDesc1 == null) {
+                        continue;
+                    }
+
+                    IntensityDescriptor iDesc2 = features2.extractIntensity(
+                        x2, y2, rotD2);
+                    if (iDesc2 == null) {
+                        continue;
+                    }
+
+                    ThetaDescriptor tDesc2 = features2.extractTheta(
+                        x2, y2, rotD2);
+                    if (tDesc2 == null) {
+                        continue;
+                    }
+
+                    GradientDescriptor gDesc2 = features2.extractGradient(
+                        x2, y2, rotD2);
+                    if (gDesc2 == null) {
+                        continue;
+                    }
+
+                    stat = Features.calculateStats(iDesc1, gDesc1, tDesc1,
+                        x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
+
+                    if (
+                        (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) &&
+                        (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr())
+                        && (stat.getSumThetaSqDiff() < stat.getImg2PointThetaErr())
+                        ) {
+                                                 
+float diffRot = AngleUtil.getAngleDifference(rotD1, rotD2);
+log.info("diffRot=" + diffRot + " stat=" + stat.toString());
+
+                        //TRY best theta alone for fitness function
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rotD2);
+                        } else {
+                            if (
+                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                                && 
+                                (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                                && (best.getSumThetaSqDiff() > stat.getSumThetaSqDiff())
+                                ) {
+                                best = stat;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rotD2);
+                            }
+                        }
+                    }
+                }
+            } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                //log.log(Level.SEVERE, null, ex);
+            }
+        }
+
+        return best;
+        
     }
 
 }

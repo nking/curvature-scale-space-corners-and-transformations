@@ -12,12 +12,12 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     private PairInt img2Point = null;
     private float sumIntensitySqDiff = Float.POSITIVE_INFINITY;
     private float sumGradientSqDiff = Float.POSITIVE_INFINITY;
+    private float sumThetaSqDiff = Float.POSITIVE_INFINITY;
     private float img2PointIntensityErr = Float.POSITIVE_INFINITY;
     private float img2PointGradientErr = Float.POSITIVE_INFINITY;
-    private float sumThetaDiff = Float.POSITIVE_INFINITY;
     private float img2PointThetaErr = Float.POSITIVE_INFINITY;
-    private float img1RotInDegrees = Float.POSITIVE_INFINITY;
-    private float img2RotInDegrees = Float.POSITIVE_INFINITY;
+    private float img1PointRotInDegrees = Float.POSITIVE_INFINITY;
+    private float img2PointRotInDegrees = Float.POSITIVE_INFINITY;
 
     /**
      * @return the img1Point
@@ -124,45 +124,45 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     }
 
     /**
-     * @return the img1RotInDegrees
+     * @return the img1PointRotInDegrees
      */
-    public float getImg1RotInDegrees() {
-        return img1RotInDegrees;
+    public float getImg1PointRotInDegrees() {
+        return img1PointRotInDegrees;
     }
 
     /**
-     * @param img1RotInDegrees the img1RotInDegrees to set
+     * @param rotationInDegrees the orientation rotation for point 1 region
      */
-    public void setImg1RotInDegrees(float img1RotInDegrees) {
-        this.img1RotInDegrees = img1RotInDegrees;
+    public void setImg1PointRotInDegrees(float rotationInDegrees) {
+        this.img1PointRotInDegrees = rotationInDegrees;
     }
     
     /**
-     * @return the img2RotInDegrees
+     * @return the img2PointRotInDegrees
      */
-    public float getImg2RotInDegrees() {
-        return img2RotInDegrees;
+    public float getImg2PointRotInDegrees() {
+        return img2PointRotInDegrees;
     }
 
     /**
-     * @param img2RotInDegrees the img2RotInDegrees to set
+     * @param rotationInDegrees the orientation rotation for point 2 region
      */
-    public void setImg2RotInDegrees(float img2RotInDegrees) {
-        this.img2RotInDegrees = img2RotInDegrees;
+    public void setImg2PointRotInDegrees(float rotationInDegrees) {
+        this.img2PointRotInDegrees = rotationInDegrees;
     }
 
     /**
-     * @return the sumThetaDiff
+     * @return the sumThetaSqDiff
      */
-    public float getSumThetaDiff() {
-        return sumThetaDiff;
+    public float getSumThetaSqDiff() {
+        return sumThetaSqDiff;
     }
 
     /**
-     * @param sumThetaDiff the sumThetaDiff to set
+     * @param sumSquareDiffs the sum of the square of the differences
      */
-    public void setSumThetaDiff(float sumThetaDiff) {
-        this.sumThetaDiff = sumThetaDiff;
+    public void setSumThetaSqDiff(float sumSquareDiffs) {
+        this.sumThetaSqDiff = sumSquareDiffs;
     }
 
     /**
@@ -189,10 +189,10 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
             .append(String.format(" err2Int=%.4f", img2PointIntensityErr))
             .append(String.format(" ssdGrd=%.4f", sumGradientSqDiff))
             .append(String.format(" err2Grd=%.4f", img2PointGradientErr))            
-            .append(String.format(" thtDf=%.4f", sumThetaDiff))
+            .append(String.format(" thtDf=%.4f", sumThetaSqDiff))
             .append(String.format(" thtErr=%.4f", img2PointThetaErr))
-            .append(String.format(" rot1D=%.4f", img1RotInDegrees))
-            .append(String.format(" rot2D=%.4f", img2RotInDegrees))
+            .append(String.format(" rot1D=%.4f", img1PointRotInDegrees))
+            .append(String.format(" rot2D=%.4f", img2PointRotInDegrees))
         ;
         
         return sb.toString();

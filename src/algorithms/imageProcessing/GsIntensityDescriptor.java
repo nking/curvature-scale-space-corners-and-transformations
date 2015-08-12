@@ -53,9 +53,14 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
         source...
         */
         
-        throw new UnsupportedOperationException("not yet implemented");
+        float[] meanAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(grey, 
+            grey.length, sentinel);
         
-        //hasBeenNormalized = true;
+        for (int i = 0; i < grey.length; ++i) {
+            grey[i] -= meanAndStDev[0];
+        }
+        
+        hasBeenNormalized = true;
     }
 
     @Override

@@ -303,7 +303,6 @@ public class Features {
         }
 
         if (useNormalizedIntensities) {
-            //NOTE, not yet implemented
             descriptor.applyNormalization();
         }
 
@@ -656,12 +655,13 @@ public class Features {
 
         int sentinel = GsGradientDescriptor.sentinel;
 
-        int centralPixelIndex = 10;
-
         int cellDim = 2;
-        int nCellsAcross = 4;
+        int nCellsAcross = 6;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
 
+        int nColsHalf = (nCellsAcross/2);
+        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;
+        
         int[] output = new int[nCellsAcross * nCellsAcross];
         float[] xT = new float[cellDim * cellDim];
         float[] yT = new float[xT.length];
@@ -755,12 +755,13 @@ public class Features {
 
         float sentinel = GsIntensityDescriptor.sentinel;
 
-        int centralPixelIndex = 10;
-
         int cellDim = 2;
-        int nCellsAcross = 4;
+        int nCellsAcross = 6;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
 
+        int nColsHalf = (nCellsAcross/2);
+        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;
+        
         float[] output = new float[nCellsAcross * nCellsAcross];
         float[] xT = new float[cellDim * cellDim];
         float[] yT = new float[xT.length];
@@ -848,12 +849,13 @@ public class Features {
 
         int sentinel = ClrIntensityDescriptor.sentinel;
 
-        int centralPixelIndex = 10;
-
         int cellDim = 2;
-        int nCellsAcross = 4;
+        int nCellsAcross = 6;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
 
+        int nColsHalf = (nCellsAcross/2);
+        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;
+        
         int[] red = new int[nCellsAcross * nCellsAcross];
         int[] green = new int[red.length];
         int[] blue = new int[red.length];
@@ -960,12 +962,13 @@ public class Features {
 
         int sentinel = ThetaDescriptor.sentinel;
 
-        int centralPixelIndex = 10;
-
         int cellDim = 2;
-        int nCellsAcross = 4;
+        int nCellsAcross = 6;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
 
+        int nColsHalf = (nCellsAcross/2);
+        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;
+        
         int[] output = new int[nCellsAcross * nCellsAcross];
         float[] xT = new float[cellDim * cellDim];
         float[] yT = new float[xT.length];
@@ -1122,12 +1125,13 @@ public class Features {
 
         int sentinel = ThetaDescriptor.sentinel;
 
-        int centralPixelIndex = 10;
-
         int cellDim = 2;
-        int nCellsAcross = 4;
+        int nCellsAcross = 6;
         int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));
 
+        int nColsHalf = (nCellsAcross/2);
+        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;
+        
         int nHistBins = 36;
         float binSize = 360.f/(float)nHistBins;
 
@@ -1416,6 +1420,44 @@ public class Features {
      * calculate the error (so make sure that pattern is consistently used by
      * invoker).
      *
+     * @param descGradient1
+     * @param x1
+     * @param y1
+     * @param descGradient2
+     * @param x2
+     * @param y2
+     * @return
+     */
+    public static FeatureComparisonStat calculateGradientStats(
+        GradientDescriptor descGradient1, final int x1, final int y1,
+        GradientDescriptor descGradient2, final int x2, final int y2) {
+
+        if (descGradient1 == null) {
+            throw new IllegalArgumentException("descGradient1 cannot be null");
+        }
+        if (descGradient2 == null) {
+            throw new IllegalArgumentException("descGradient2 cannot be null");
+        }
+
+        float err2SqGradient = descGradient2.sumSquaredError();
+
+        float ssdGradient = descGradient1.calculateSSD(descGradient2);
+
+        FeatureComparisonStat stat = new FeatureComparisonStat();
+        stat.setImg1Point(new PairInt(x1, y1));
+        stat.setImg2Point(new PairInt(x2, y2));
+        stat.setSumGradientSqDiff(ssdGradient);
+        stat.setImg2PointGradientErr(err2SqGradient);
+
+        return stat;
+    }
+    
+    /**
+     * calculate the intensity and gradient based statistics between the two
+     * descriptors with the caveat that the 2nd descriptor is the one used to
+     * calculate the error (so make sure that pattern is consistently used by
+     * invoker).
+     *
      * @param descIntensity1
      * @param descGradient1
      * @param descTheta1
@@ -1474,7 +1516,7 @@ public class Features {
         stat.setImg2PointIntensityErr(err2SqIntensity);
         stat.setSumGradientSqDiff(ssdGradient);
         stat.setImg2PointGradientErr(err2SqGradient);
-        stat.setSumThetaDiff(compTheta);
+        stat.setSumThetaSqDiff(compTheta);
         stat.setImg2PointThetaErr(err2Theta);
 
         return stat;
