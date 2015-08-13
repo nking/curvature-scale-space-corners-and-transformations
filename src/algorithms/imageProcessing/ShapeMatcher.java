@@ -584,28 +584,14 @@ if (true) {
             throw new IllegalArgumentException("cornerRegions2 cannot be null");
         }
         
-        int blockHalfWidth = 12;
+        int blockHalfWidth = 2;
         boolean useNormalizedIntensities = true;
         
-        // TODO: consider using greyscale images
         Features features1 = new Features(img1, gXY1, theta1, blockHalfWidth, 
             useNormalizedIntensities);
         
         Features features2 = new Features(img2, gXY2, theta2, blockHalfWidth, 
             useNormalizedIntensities);
-         
-        /*
-        comparisons between cornerRegions1 and cornerRegions2 are made to see
-        if an individual region matches in intensity and then in the gradient
-        of intensity.
-        
-        For the comparisons, there is small dither operation around the 
-        central coordinate of each cornerRegions1 region and for each dither,
-        there is also a variation of the calculated orientation by +- 25.
-        
-        The best match among the dithers and rotations for the original 
-        cornerRegions1 instance is stored if a match was found.
-        */
         
         Map<PairInt, Map<PairInt, Map<Float, FeatureComparisonStat>>> 
             comparisonMap = new HashMap<PairInt, Map<PairInt, 

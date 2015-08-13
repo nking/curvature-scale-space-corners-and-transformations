@@ -268,7 +268,7 @@ public class ShapeMatcherTest extends TestCase {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
-        int blockHalfWidth = 12;
+        int blockHalfWidth = 2;//3;
         boolean useNormalizedIntensities = true;
 
         final GreyscaleImage gsImg1 = helper.getGreyscaleImage1();
@@ -455,6 +455,10 @@ public class ShapeMatcherTest extends TestCase {
             
             log.info(ii + ") FINAL diffX,diffY=(" + diffX3 + "," + diffY3
             + ") best3 for compare against all corners2=" + best3.toString());
+            
+            boolean t1 = (Math.abs(diffX) < 3) && (Math.abs(diffY) < 3);
+            boolean t3 = (Math.abs(diffX3) < 3) && (Math.abs(diffY3) < 3);
+            assertTrue(t1 || t3);
         }
     }
 
