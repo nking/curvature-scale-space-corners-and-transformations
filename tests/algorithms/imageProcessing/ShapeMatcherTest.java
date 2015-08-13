@@ -338,28 +338,27 @@ public class ShapeMatcherTest extends TestCase {
             log.info("expected diffRot=90 to 115");
 
             FeatureComparisonStat best = null;
+                        
+            FeatureComparisonStat best3 = null;
 
             int c1 = 0;
             for (CornerRegion cr1 : set1) {
 
-                FeatureComparisonStat stat =
+                FeatureComparisonStat[] stats =
                     matcher.findBestMatch(features1, features2, cr1,
                     set2.toArray(new CornerRegion[set2.size()]), dither);
 
-                if (stat != null) {
+                if (stats.length > 0) {
+                    
+                    for (FeatureComparisonStat stat : stats) {
 
-                    log.info(ii + ") stat=" + stat.toString());
+                        log.info(ii + ") stat=" + stat.toString());
 
-                    if (best == null) {
-                        best = stat;
-                    } else {
-                        if (
-                            (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                            &&
-                            (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                            && (best.getSumThetaSqDiff() > stat.getSumThetaSqDiff())
-                            ) {
+                        if (matcher.fitIsBetter(best, stat)) {
                             best = stat;
+                        }
+                        if (matcher.fitIsBetter3(best3, stat)) {
+                            best3 = stat;
                         }
                     }
                 }
@@ -367,6 +366,7 @@ public class ShapeMatcherTest extends TestCase {
             }
             assertNotNull(best);
             log.info(ii + ") FINAL best=" + best.toString());
+            log.info(ii + ") FINAL best3=" + best3.toString());
         }
 
         // Now search from points1 through all of corners2 to see if best
@@ -397,27 +397,26 @@ public class ShapeMatcherTest extends TestCase {
             }
 
             FeatureComparisonStat best = null;
+            FeatureComparisonStat best3 = null;
 
             for (CornerRegion cr1 : set1) {
 
-                FeatureComparisonStat stat =
-                    matcher.findBestMatch(features1, features2, cr1,
-                    cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), dither);
+                FeatureComparisonStat[] stats
+                    = matcher.findBestMatch(features1, features2, cr1,
+                      cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
+                      dither);
 
-                if (stat != null) {
+                if (stats.length > 0) {
 
-                    log.info(ii + ") stat=" + stat.toString());
+                    for (FeatureComparisonStat stat : stats) {
 
-                    if (best == null) {
-                        best = stat;
-                    } else {
-                        if (
-                            (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                            &&
-                            (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                            && (best.getSumThetaSqDiff() > stat.getSumThetaSqDiff())
-                            ) {
+                        log.info(ii + ") stat=" + stat.toString());
+
+                        if (matcher.fitIsBetter(best, stat)) {
                             best = stat;
+                        }
+                        if (matcher.fitIsBetter3(best3, stat)) {
+                            best3 = stat;
                         }
                     }
                 }
@@ -430,6 +429,12 @@ public class ShapeMatcherTest extends TestCase {
 
             log.info(ii + ") FINAL diffX,diffY=(" + diffX + "," + diffY
             + ") best for compare against all corners2=" + best.toString());
+            
+            log.info(ii + ") FINAL diffX,diffY=(" + 
+                (best3.getImg2Point().getX() - x2)
+                + "," + 
+                (best3.getImg2Point().getY() - y2)
+            + ") best3 for compare against all corners2=" + best3.toString());
         }
     }
 
@@ -600,6 +605,9 @@ public class ShapeMatcherTest extends TestCase {
         to projection
         out1.add(449, 163);
         out2.add(413, 449);
+        
+        out1.add(131, 339);
+        out2.add(292, 131);
         */
         
         //3
@@ -622,16 +630,7 @@ public class ShapeMatcherTest extends TestCase {
         
         out1.add(126, 388);
         out2.add(241, 126);
-        
-        /*
-        nearby region outside of corner's object changes greatly, so this is 
-        a good test point for theta within a contour, but is not matching 
-        the entire block because of the differences outside of object due 
-        to projection
-        out1.add(131, 339);
-        out2.add(292, 131);
-        */
-        
+      
         out1.add(78, 290);
         out2.add(339, 78);
         

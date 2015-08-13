@@ -628,7 +628,7 @@ if (true) {
             
             */
             
-            FeatureComparisonStat best = findBestMatch(features1, features2,
+            FeatureComparisonStat[] best = findBestMatch(features1, features2,
                 cornerRegion1, cornerRegions2, dither);
             
             //storeInMap(comparisonMap, p1, p2, best.getImg1RotInDegrees(),
@@ -936,11 +936,19 @@ if (true) {
         return best;
     }
 
-    protected FeatureComparisonStat findBestMatch(Features features1, 
+    protected FeatureComparisonStat[] findBestMatch(Features features1, 
         Features features2, CornerRegion cornerRegion1, 
         CornerRegion[] cornerRegions2, int dither) {
         
         FeatureComparisonStat best = null;
+        
+        /*
+        best3 ranks by intensity ssd only.  sometimes matches areas where
+        projection has cause foreground or background changes that appear
+        much more strongly in gradient and theta, so intensity alone may
+        match, but the other two might not.
+        */
+        FeatureComparisonStat best3 = null;
         
         for (int idx2 = 0; idx2 < cornerRegions2.length; ++idx2) {
 
@@ -1014,41 +1022,151 @@ if (true) {
                     stat = Features.calculateStats(iDesc1, gDesc1, tDesc1,
                         x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
 
-                    if (
-                        (stat.getSumIntensitySqDiff() <= stat.getImg2PointIntensityErr()) &&
-                        (stat.getSumGradientSqDiff() <= stat.getImg2PointGradientErr())
-                        && (stat.getSumThetaSqDiff() <= stat.getImg2PointThetaErr())
-                        ) {
-                                                 
 float diffRot = AngleUtil.getAngleDifference(rotD1, rotD2);
 log.info("diffRot=" + diffRot + " stat=" + stat.toString());
 
-                        //TRY best theta alone for fitness function
-                        if (best == null) {
-                            best = stat;
-                            best.setImg1PointRotInDegrees(rotD1);
-                            best.setImg2PointRotInDegrees(rotD2);
-                        } else {
-                            if (
-                                (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
-                                && 
-                                (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
-                                && (best.getSumThetaSqDiff() > stat.getSumThetaSqDiff())
-                                ) {
-                                best = stat;
-                                best.setImg1PointRotInDegrees(rotD1);
-                                best.setImg2PointRotInDegrees(rotD2);
-                            }
-                        }
+                    if (fitIsBetter(best, stat)) {
+                        best = stat;
+                        best.setImg1PointRotInDegrees(rotD1);
+                        best.setImg2PointRotInDegrees(rotD2);
+                    }
+                    
+                    if (fitIsBetter3(best3, stat)) {
+                        best3 = stat;
+                        best3.setImg1PointRotInDegrees(rotD1);
+                        best3.setImg2PointRotInDegrees(rotD2);
                     }
                 }
             } catch (CornerRegion.CornerRegionDegneracyException ex) {
                 //log.log(Level.SEVERE, null, ex);
             }
         }
-
-        return best;
         
+        int n = 0;
+        if (best != null) {
+            n++;
+        }
+        if (best3 != null) {
+            n++;
+        }
+        FeatureComparisonStat[] result = new FeatureComparisonStat[n];
+        n = 0;
+        if (best != null) {
+            result[n] = best;
+            n++;
+        }
+        if (best3 != null) {
+            result[n] = best3;
+            n++;
+        }
+
+        return result;
     }
 
+    /**
+     * compares best to stat and returns true if stat is better.
+     * comparison uses all 3 descriptors, that is intensity, gradient, and
+     * theta.
+     * @param best
+     * @param stat
+     * @return 
+     */
+    protected boolean fitIsBetter(FeatureComparisonStat best, 
+        FeatureComparisonStat stat) {
+        
+        if (stat == null) {
+            return false;
+        }
+        
+        if ((stat.getSumIntensitySqDiff() <= stat.getImg2PointIntensityErr()) &&
+            (stat.getSumGradientSqDiff() <= stat.getImg2PointGradientErr())
+            && (stat.getSumThetaSqDiff() <= stat.getImg2PointThetaErr())
+            ) {
+
+            if (best == null) {
+                return true;
+            } else {
+                if (
+                    (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                    && 
+                    (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                    && (best.getSumThetaSqDiff() > stat.getSumThetaSqDiff())
+                    ) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * compares best to stat and returns true if stat is better.
+     * comparison checks that all 3 descriptors are smaller than their errors,
+     * then uses intensity, gradient to find best.
+     * @param best
+     * @param stat
+     * @return 
+     */
+    protected boolean fitIsBetter2(FeatureComparisonStat best, 
+        FeatureComparisonStat stat) {
+        
+        if (stat == null) {
+            return false;
+        }
+        
+        if ((stat.getSumIntensitySqDiff() <= stat.getImg2PointIntensityErr()) &&
+            (stat.getSumGradientSqDiff() <= stat.getImg2PointGradientErr())
+            && (stat.getSumThetaSqDiff() <= stat.getImg2PointThetaErr())
+            ) {
+
+            if (best == null) {
+                return true;
+            } else {
+                if (
+                    (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                    && 
+                    (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff())
+                    ) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * compares best to stat and returns true if stat is better.
+     * comparison checks that all 3 descriptors are smaller than their errors,
+     * then uses intensity, gradient to find best.
+     * @param best
+     * @param stat
+     * @return 
+     */
+    protected boolean fitIsBetter3(FeatureComparisonStat best, 
+        FeatureComparisonStat stat) {
+        
+        if (stat == null) {
+            return false;
+        }
+        
+        if ((stat.getSumIntensitySqDiff() <= stat.getImg2PointIntensityErr()) &&
+            (stat.getSumGradientSqDiff() <= stat.getImg2PointGradientErr())
+            && (stat.getSumThetaSqDiff() <= stat.getImg2PointThetaErr())
+            ) {
+
+            if (best == null) {
+                return true;
+            } else {
+                if (
+                    (best.getSumIntensitySqDiff() >= stat.getSumIntensitySqDiff())
+                    ) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
 }
