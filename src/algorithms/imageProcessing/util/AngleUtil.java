@@ -197,129 +197,124 @@ public class AngleUtil {
         return theta;  
     }
     
-    public static float getAngleDifference(float rotDegrees0, float rotDegrees1) {
-         /*
-         I  |  0
-        ---------
-         II | III
-        */
-        int q0 = 0;
-        if (rotDegrees0 >= 270) {
-            q0 = 3;
-        } else if (rotDegrees0 >= 180) {
-            q0 = 2;
-        } else if (rotDegrees0 >= 90) {
-            q0 = 1;
+    protected static double[] correctForQuadrants(double rot0, double rot1, 
+        boolean useRadians) {
+        
+        if (rot0 < 0 || rot1 < 0) {
+            throw new IllegalArgumentException(
+                "rot0 and rot1 cannot be negative numbers");
         }
-        int q1 = 0;
-        if (rotDegrees1 >= 270) {
-            q1 = 3;
-        } else if (rotDegrees1 >= 180) {
-            q1 = 2;
-        } else if (rotDegrees1 >= 90) {
-            q1 = 1;
-        }
-
+        
         /*
-         I  |  0
-        ---------
-         II | III
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
         */
-        float angleDiff = -1;
-        if (q0 == 0){
-            if (q1 == 0) {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
+         
+        rot0 = rot0 % 360;
+        rot1 = rot1 % 360;
+        
+        double twoPI;
+        int q0, q1;
+        if (useRadians) {
+            twoPI = 2. * Math.PI;
+            q0 = getClockwiseQuadrantForRadians(rot0);
+            q1 = getClockwiseQuadrantForRadians(rot1);
+        } else {
+            twoPI = 360.;
+            q0 = getClockwiseQuadrantForDegrees(rot0);
+            q1 = getClockwiseQuadrantForDegrees(rot1);
+        }
+       
+        /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+        
+        if (q0 == 1) {
+            if (q1 == 3) {
+                double diff = rot1 - rot0;
+                if (diff > (twoPI/2.)) {
+                    rot0 += twoPI;
                 }
-            } else if (q1 == 1) {
-                angleDiff = (rotDegrees1 - rotDegrees0);
-            } else if (q1 == 2) {
-                float diff = rotDegrees1 - rotDegrees0;
-                if (diff > 180) {
-                    diff = 360 - diff;
-                }
-                angleDiff = diff;
-            } else {
-                angleDiff = Math.abs(360 - rotDegrees1 + rotDegrees0);
-            }
-        } else if (q0 == 1) {
-            /*
-             I  |  0
-             ---------
-             II | III
-             */
-            if (q1 == 0) {
-                angleDiff = (rotDegrees1 - rotDegrees0);
-            } else if (q1 == 1) {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
-                }
-            } else if (q1 == 2) {
-                angleDiff = (rotDegrees1 - rotDegrees0);
-            } else {
-                float diff = rotDegrees1 - rotDegrees0;
-                if (diff > 180) {
-                    diff = 360 - diff;
-                }
-                angleDiff = diff;
+            } else if (q1 == 4) {
+                rot0 += twoPI;
             }
         } else if (q0 == 2) {
             /*
-             I  |  0
-             ---------
-             II | III
-             */
-            if (q1 == 0) {
-                float diff = rotDegrees1 - rotDegrees0;
-                if (diff > 180) {
-                    diff = 360 - diff;
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 4) {
+                double diff = rot1 - rot0;
+                if (diff > (twoPI/2.)) {
+                    rot0 += twoPI;
                 }
-                angleDiff = diff;
-            } else if (q1 == 1) {
-                angleDiff = (rotDegrees0 - rotDegrees1);
-            } else if (q1 == 2) {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
-                }
-            } else {
-                angleDiff = (rotDegrees1 - rotDegrees0);
             }
         } else if (q0 == 3) {
             /*
-             I  |  0
-             ---------
-             II | III
-             */
-            if (q1 == 0) {
-                angleDiff = (360 - rotDegrees0 + rotDegrees1);
-            } else if (q1 == 1) {
-                float diff = (rotDegrees0 - rotDegrees1);
-                if (diff > 180) {
-                    diff = 360 - diff;
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                double diff = rot0 - rot1;
+                if (diff > (twoPI/2.)) {
+                    rot1 += twoPI;
                 }
-                angleDiff = diff;
+            }
+        } else if (q0 == 4) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                rot1 += twoPI;
             } else if (q1 == 2) {
-                angleDiff = (rotDegrees0 - rotDegrees1);
-            } else {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
+                double diff = (rot0 - rot1);
+                if (diff > (twoPI/2.)) {
+                    rot1 += twoPI;
                 }
             }
         }
-
-        if (angleDiff > 359) {
-            angleDiff = angleDiff - 360;
-        }
-
-        return angleDiff;
+        return new double[]{rot0, rot1};
+    }
+    
+    public static float getAngleDifference(float rotDegrees0, float rotDegrees1) {
+        
+        /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+         
+        /*
+        logic below is for rot0 and rot1 between 0 and 360 so temporarily
+        reduce angles to those ranges then add back the corrections.
+        */
+        double rot0Orig = rotDegrees0;
+        double rot1Orig = rotDegrees1;
+        
+        double[] rotations = correctForQuadrants(rotDegrees0,rotDegrees1, 
+            false);
+        
+        return (float)(rotations[0] - rotations[1]);
+       
     }
     
     public static float getAngleAverageInDegrees(float rotDegrees0, float rotDegrees1) {
@@ -431,84 +426,9 @@ public class AngleUtil {
         double rot0Orig = rot0;
         double rot1Orig = rot1;
         
-        rot0 = rot0 % 360;
-        rot1 = rot1 % 360;
+        double[] rotations = correctForQuadrants(rot0, rot1, useRadians);
         
-        double twoPI;
-        int q0, q1;
-        if (useRadians) {
-            twoPI = 2. * Math.PI;
-            q0 = getClockwiseQuadrantForRadians(rot0);
-            q1 = getClockwiseQuadrantForRadians(rot1);
-        } else {
-            twoPI = 360.;
-            q0 = getClockwiseQuadrantForDegrees(rot0);
-            q1 = getClockwiseQuadrantForDegrees(rot1);
-        }
-       
-        /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-        */
-        
-        if (q0 == 1) {
-            if (q1 == 3) {
-                double diff = rot1 - rot0;
-                if (diff > (twoPI/2.)) {
-                    rot0 += twoPI;
-                }
-            } else if (q1 == 4) {
-                rot0 += twoPI;
-            }
-        } else if (q0 == 2) {
-            /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-            */
-            if (q1 == 4) {
-                double diff = rot1 - rot0;
-                if (diff > (twoPI/2.)) {
-                    rot0 += twoPI;
-                }
-            }
-        } else if (q0 == 3) {
-            /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-            */
-            if (q1 == 1) {
-                double diff = rot0 - rot1;
-                if (diff > (twoPI/2.)) {
-                    rot1 += twoPI;
-                }
-            }
-        } else if (q0 == 4) {
-            /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-            */
-            if (q1 == 1) {
-                rot1 += twoPI;
-            } else if (q1 == 2) {
-                double diff = (rot0 - rot1);
-                if (diff > (twoPI/2.)) {
-                    rot1 += twoPI;
-                }
-            }
-        }
-        double angleSum = (rot0 + rot1);
+        double angleSum = (rotations[0] + rotations[1]);
         
         // add back any of the cycles in original values
         if (rot0 < rot0Orig) {
@@ -569,85 +489,18 @@ public class AngleUtil {
         }
         
         double twoPI;
-        int q0, q1;
         if (useRadians) {
             twoPI = 2. * Math.PI;
-            q0 = getClockwiseQuadrantForRadians(rot0);
-            q1 = getClockwiseQuadrantForRadians(rot1);
         } else {
             twoPI = 360.;
-            q0 = getClockwiseQuadrantForDegrees(rot0);
-            q1 = getClockwiseQuadrantForDegrees(rot1);
         }
        
-        /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-        */
+        double[] rotations = correctForQuadrants(rot0, rot1, useRadians);
+        outputQuadrantCorrected[0] = rotations[0];
+        outputQuadrantCorrected[1] = rotations[1];
+        rot0 = rotations[0];
+        rot1 = rotations[1];
         
-        if (q0 == 1) {
-            if (q1 == 3) {
-                double diff = rot1 - rot0;
-                if (diff > (twoPI/2.)) {
-                    rot0 += twoPI;
-                    outputQuadrantCorrected[0] = rot0;
-                }
-            } else if (q1 == 4) {
-                rot0 += twoPI;
-                outputQuadrantCorrected[0] = rot0;
-            }
-        } else if (q0 == 2) {
-            /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-            */
-            if (q1 == 4) {
-                double diff = rot1 - rot0;
-                if (diff > (twoPI/2.)) {
-                    rot0 += twoPI;
-                    outputQuadrantCorrected[0] = rot0;
-                }
-            }
-        } else if (q0 == 3) {
-            /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-            */
-            if (q1 == 1) {
-                double diff = rot0 - rot1;
-                if (diff > (twoPI/2.)) {
-                    rot1 += twoPI;
-                    outputQuadrantCorrected[1] = rot1;
-                }
-            }
-        } else if (q0 == 4) {
-            /*
-                  270
-               III | IV
-          180  --------- 0
-               II  |  I
-                   90
-            */
-            if (q1 == 1) {
-                rot1 += twoPI;
-                outputQuadrantCorrected[1] = rot1;
-            } else if (q1 == 2) {
-                double diff = (rot0 - rot1);
-                if (diff > (twoPI/2.)) {
-                    rot1 += twoPI;
-                    outputQuadrantCorrected[1] = rot1;
-                }
-            }
-        }
         double angleSum = (rot0 + rot1);
         
         // add back any of the cycles in original values if larger than 360

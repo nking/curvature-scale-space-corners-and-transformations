@@ -28,7 +28,7 @@ public class ShapeMatcherTest extends TestCase {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
-        float[][] offsets = matcher.createNeighborOffsets();
+        float[][] offsets = Misc.createNeighborOffsets(2);
 
         assertTrue(offsets.length == 25);
 
@@ -56,7 +56,7 @@ public class ShapeMatcherTest extends TestCase {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
-        float[][] offsets = matcher.createNeighborOffsets();
+        float[][] offsets = Misc.createNeighborOffsets(2);
 
         Transformer transformer = new Transformer();
 
@@ -212,7 +212,7 @@ public class ShapeMatcherTest extends TestCase {
                         translationX=-23.24295 translationY=-21.994938 originX=0.0 originY=0.0
             */
 
-    public void testFeatureMatching() throws Exception {
+    public void estFeatureMatching() throws Exception {
         PairIntArray points1, points2;
         String fileName1, fileName2;
         
@@ -243,7 +243,7 @@ public class ShapeMatcherTest extends TestCase {
         }
     }
     
-    public void runControlledListMatching(String fileName1, String fileName2,
+    protected void runControlledListMatching(String fileName1, String fileName2,
         PairIntArray points1, PairIntArray points2) throws Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -268,7 +268,7 @@ public class ShapeMatcherTest extends TestCase {
 
         ShapeMatcher matcher = new ShapeMatcher();
 
-        int blockHalfWidth = 2;//3;
+        int blockHalfWidth = 5;
         boolean useNormalizedIntensities = true;
 
         final GreyscaleImage gsImg1 = helper.getGreyscaleImage1();
@@ -462,6 +462,99 @@ public class ShapeMatcherTest extends TestCase {
         }
     }
 
+    public void testCorrespondenceFromFeatures() throws Exception {
+        PairIntArray points1, points2;
+        String fileName1, fileName2;
+        
+        for (int i = 0; i < 3; ++i) {
+            points1 = new PairIntArray();
+            points2 = new PairIntArray();
+            switch(i) {
+                case 0: {
+                    getBrownAndLoweFeatureCenters90(points1, points2);
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 1: {
+                    getVenturiFeatureCenters90(points1, points2);
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    break;
+                }
+                default: {
+                    getBooksFeatureCenters90(points1, points2);
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+            }
+            
+            runCorrespondenceFromFeatures(fileName1, fileName2, points1, points2);
+        }
+    }
+    
+    protected void runCorrespondenceFromFeatures(
+        String fileName1, String fileName2,
+        PairIntArray points1, PairIntArray points2) throws Exception {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+
+        /*
+        testing that a known list of matches are found as "matching" by the
+        algorithms.
+        */
+
+        BinSegmentationHelper helper = new BinSegmentationHelper(fileName1, fileName2);
+
+        if (fileName1.contains("books")) {
+            helper.applySteps1(false);
+        } else {
+            helper.applySteps1(true);
+        }
+
+        helper.createSortedCornerRegions();
+
+        int blockHalfWidth = 5;
+        boolean useNormalizedIntensities = true;
+
+        final GreyscaleImage gsImg1 = helper.getGreyscaleImage1();
+        final GreyscaleImage gXY1 = helper.getGXY1();
+        final GreyscaleImage theta1 = helper.getTheta1();
+        final GreyscaleImage gsImg2 = helper.getGreyscaleImage2();
+        final GreyscaleImage gXY2 = helper.getGXY2();
+        final GreyscaleImage theta2 = helper.getTheta2();
+
+        assertTrue(gsImg1.getWidth() == gXY1.getWidth());
+        assertTrue(gsImg1.getHeight() == gXY1.getHeight());
+        assertTrue(gsImg2.getWidth() == gXY2.getWidth());
+        assertTrue(gsImg2.getHeight() == gXY2.getHeight());
+        assertTrue(gsImg1.getWidth() == theta1.getWidth());
+        assertTrue(gsImg1.getHeight() == theta1.getHeight());
+        assertTrue(gsImg2.getWidth() == theta2.getWidth());
+        assertTrue(gsImg2.getHeight() == theta2.getHeight());
+
+        TransformationParameters params = tc.calulateEuclidean(
+            points1.getX(0), points1.getY(0), points1.getX(1), points1.getY(1),
+            points2.getX(0), points2.getY(0), points2.getX(1), points2.getY(1),
+            0, 0);
+
+        log.info("params=" + params);
+        
+        Set<CornerRegion> cornerRegions1 = helper.getCornerRegions1();
+        Set<CornerRegion> cornerRegions2 = helper.getCornerRegions2();
+        
+        ShapeMatcher matcher = new ShapeMatcher();
+        
+        matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
+            cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
+            gsImg2, gXY2, theta2,
+            cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]));
+    }
+    
     protected static void getBrownAndLoweFeatureCentersBinned(PairIntArray out1,
         PairIntArray out2) {
         out1.add(144, 67);
@@ -589,7 +682,7 @@ public class ShapeMatcherTest extends TestCase {
 
         try {
             //test.testCalculateStat2();
-            test.testFeatureMatching();
+            //test.testFeatureMatching();
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }

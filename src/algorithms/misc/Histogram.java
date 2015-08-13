@@ -3,6 +3,7 @@ package algorithms.misc;
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
@@ -194,6 +195,57 @@ public class Histogram {
         float[] xErrors = new float[xHist.length];
 
         calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);
+
+        HistogramHolder histogram = new HistogramHolder();
+        histogram.setXHist(xHist);
+        histogram.setYHist(yHist);
+        histogram.setYHistFloat(yHistFloat);
+        histogram.setYErrors(yErrors);
+        histogram.setXErrors(xErrors);
+        
+        return histogram;
+    }
+
+    public static HistogramHolder createSimpleHistogram(int binWidth, 
+        List<Integer> theValues) {
+
+        if (theValues == null || theValues.isEmpty()) {
+            
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
+        }
+        
+        float[] values = new float[theValues.size()];
+        for (int i = 0; i < theValues.size(); ++i) {
+            int v = theValues.get(i).intValue();
+            values[i] = v;
+        }
+        
+        float[] valueErrors = Errors.populateYErrorsBySqrt(values);
+        
+        float minX = MiscMath.findMin(values);
+        float maxX = MiscMath.findMax(values);
+        
+        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);
+
+        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
+        
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+        
+        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], 
+            xHist, yHist, binWidth);
+
+        float[] yHistFloat = new float[yHist.length];
+        for (int i = 0; i < yHist.length; i++) {
+            yHistFloat[i] = (float) yHist[i];
+        }
+
+        float[] yErrors = new float[xHist.length];
+        float[] xErrors = new float[xHist.length];
+
+        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, 
+            yErrors);
 
         HistogramHolder histogram = new HistogramHolder();
         histogram.setXHist(xHist);

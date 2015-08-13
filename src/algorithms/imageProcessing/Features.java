@@ -40,7 +40,8 @@ public class Features {
 
     /**
      * the half width of a block.  For example, to extract the 25 pixels
-     * centered on (xc, yc), bHalfW would be '2'
+     * centered on (xc, yc), bHalfW would be '2'.  a minimum of 5 seems to be
+     * necessary.
      */
     protected final int bHalfW;
 
@@ -48,6 +49,7 @@ public class Features {
 
     protected final boolean useNormalizedIntensities;
 
+    // can use as false with bHalfW=5
     protected final boolean useBinnedCellGradients = true;
     
     protected final boolean useBinnedCellIntensities = true;
@@ -302,7 +304,7 @@ public class Features {
                 frameOffsets);
         }
 
-        if (useNormalizedIntensities) {
+        if (useNormalizedIntensities && (descriptor != null)) {
             descriptor.applyNormalization();
         }
 
@@ -322,7 +324,7 @@ public class Features {
                 rotation);
         }
 
-        if (useNormalizedIntensities) {
+        if (useNormalizedIntensities && (descriptor != null)) {
             descriptor.applyNormalization();
         }
 
