@@ -212,7 +212,39 @@ public class ShapeMatcherTest extends TestCase {
                         translationX=-23.24295 translationY=-21.994938 originX=0.0 originY=0.0
             */
 
-    public void testRegionOrientation() throws Exception {
+    public void testFeatureMatching() throws Exception {
+        PairIntArray points1, points2;
+        String fileName1, fileName2;
+        
+        for (int i = 0; i < 3; ++i) {
+            points1 = new PairIntArray();
+            points2 = new PairIntArray();
+            switch(i) {
+                case 0: {
+                    getBrownAndLoweFeatureCenters90(points1, points2);
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 1: {
+                    getVenturiFeatureCenters90(points1, points2);
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    break;
+                }
+                default: {
+                    getBooksFeatureCenters90(points1, points2);
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+            }
+            runControlledListMatching(fileName1, fileName2, points1, points2);
+        }
+    }
+    
+    public void runControlledListMatching(String fileName1, String fileName2,
+        PairIntArray points1, PairIntArray points2) throws Exception {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -223,18 +255,6 @@ public class ShapeMatcherTest extends TestCase {
         testing that a known list of matches are found as "matching" by the
         algorithms.
         */
-
-        PairIntArray points1 = new PairIntArray();
-        PairIntArray points2 = new PairIntArray();
-        //getBrownAndLoweFeatureCenters90(points1, points2);
-        //String fileName1 = "brown_lowe_2003_image1.jpg";
-        //String fileName2 = "brown_lowe_2003_image2.jpg";
-        //String fileName1 = "venturi_mountain_j6_0001.png";
-        //String fileName2 = "venturi_mountain_j6_0010.png";
-        //getVenturiFeatureCenters90(points1, points2);
-        String fileName1 = "books_illum3_v0_695x555.png";
-        String fileName2 = "books_illum3_v6_695x555.png";
-        getBooksFeatureCenters90(points1, points2);
 
         BinSegmentationHelper helper = new BinSegmentationHelper(fileName1, fileName2);
 
@@ -426,14 +446,14 @@ public class ShapeMatcherTest extends TestCase {
 
             int diffX = best.getImg2Point().getX() - x2;
             int diffY = best.getImg2Point().getY() - y2;
+            
+            int diffX3 = best3.getImg2Point().getX() - x2;
+            int diffY3 = best3.getImg2Point().getY() - y2;
 
             log.info(ii + ") FINAL diffX,diffY=(" + diffX + "," + diffY
             + ") best for compare against all corners2=" + best.toString());
             
-            log.info(ii + ") FINAL diffX,diffY=(" + 
-                (best3.getImg2Point().getX() - x2)
-                + "," + 
-                (best3.getImg2Point().getY() - y2)
+            log.info(ii + ") FINAL diffX,diffY=(" + diffX3 + "," + diffY3
             + ") best3 for compare against all corners2=" + best3.toString());
         }
     }
@@ -565,7 +585,7 @@ public class ShapeMatcherTest extends TestCase {
 
         try {
             //test.testCalculateStat2();
-            test.testRegionOrientation();
+            test.testFeatureMatching();
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
@@ -590,9 +610,6 @@ public class ShapeMatcherTest extends TestCase {
 
     private void getBooksFeatureCenters90(PairIntArray out1, PairIntArray out2) {
         
-        out1.add(18, 222);
-        out2.add(410, 16);
-        
         out1.add(7, 57);
         out2.add(581, 8);
         
@@ -603,6 +620,10 @@ public class ShapeMatcherTest extends TestCase {
         a good test point for theta within a contour, but is not matching 
         the entire block because of the differences outside of object due 
         to projection
+        
+        out1.add(18, 222);
+        out2.add(410, 16);
+        
         out1.add(449, 163);
         out2.add(413, 449);
         
@@ -610,18 +631,15 @@ public class ShapeMatcherTest extends TestCase {
         out2.add(292, 131);
         */
         
-        //3
         out1.add(463, 268);
         out2.add(318, 464);
         
         out1.add(547, 334);
         out2.add(215, 547);
         
-        //5
         out1.add(488, 495);
         out2.add(67, 488);
         
-        //6
         out1.add(500, 487);
         out2.add(74, 500);
         
