@@ -20,6 +20,7 @@ import algorithms.util.ScatterPointPlotterPNG;
 import java.awt.Color;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -825,6 +826,21 @@ public class MiscDebug {
         
         Image imgW = ImageIOHelper.convertImage(imgGrey);
         ImageIOHelper.addCurveToImage(corners, imgW, 1, 255, 0, 0);
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 
+                + ".png", imgW);
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
+    
+    public static void plotCorners(GreyscaleImage imgGrey, 
+        Collection<PairInt> points, String fileNameSuffix, int pointSize) {
+        
+        Image imgW = ImageIOHelper.convertImage(imgGrey);
+        ImageIOHelper.addCurveToImage(points, imgW, pointSize, 255, 0, 0);
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 

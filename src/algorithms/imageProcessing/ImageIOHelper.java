@@ -13,6 +13,7 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -571,6 +572,46 @@ public class ImageIOHelper {
         for (int i = 0; i < edge.getN(); i++) {
             int x = edge.getX(i);
             int y = edge.getY(i);
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                
+                float xx = x + dx;
+                
+                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                        dy++) {
+                        
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * draw the edge over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param points
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addCurveToImage(Collection<PairInt> points, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (points == null || input == null) {
+            return;
+        }
+        
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
                 

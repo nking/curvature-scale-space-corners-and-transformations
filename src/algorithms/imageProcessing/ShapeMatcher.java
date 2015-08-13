@@ -548,8 +548,7 @@ if (true) {
         return bestFit;
     }
 
-    protected Map<PairInt, Map<PairInt, Set<FeatureComparisonStat>>> 
-    findSimilarFeatures(
+    protected CorrespondenceList findSimilarFeatures(
         GreyscaleImage img1, GreyscaleImage gXY1, GreyscaleImage theta1,
         CornerRegion[] cornerRegions1,
         GreyscaleImage img2, GreyscaleImage gXY2, GreyscaleImage theta2,
@@ -581,8 +580,9 @@ if (true) {
         }
         
         //TODO: need to solve for scale using the scale space curves that went 
-        // into making the coners
+        // into making the corners.
         // characteristic scale: Lindeberg (1998)
+        
         // until then, making an assumption of '1' here for limited use
         float scale = 1.f;
         
@@ -599,10 +599,14 @@ if (true) {
             findMatchingFeatures(features1, features2, cornerRegions1, 
                 cornerRegions2, blockHalfWidth, useNormalizedIntensities);
         
-        //pairwise euclidean calculations
-        MatchedPointsTransformationCalculator tc = new
-            MatchedPointsTransformationCalculator();
+        // a quick rough look at the most frequent parameters of euclidean
+        // transformations.
         
+        //TODO: this may need alot of adjustment, espec for histogram bin
+        // sizes.
+        
+        List<PairInt> points1 = new ArrayList<PairInt>();
+        List<PairInt> points2 = new ArrayList<PairInt>();
         List<Integer> rotations = new ArrayList<Integer>();
         List<Integer> translationsX = new ArrayList<Integer>();
         List<Integer> translationsY = new ArrayList<Integer>();
@@ -617,6 +621,9 @@ if (true) {
             for (Entry<PairInt, Set<FeatureComparisonStat>> entry2 : p2Map.entrySet()) {
                 
                 PairInt p2 = entry2.getKey();
+                
+                //TODO: consider only writing all best solutions if they
+                // are different here:
                 
                 for (FeatureComparisonStat stat : entry2.getValue()) {
                    
@@ -645,14 +652,21 @@ if (true) {
                     rotations.add(Integer.valueOf(Math.round(rotation)));
                     translationsX.add(Integer.valueOf(xt));
                     translationsY.add(Integer.valueOf(yt));
+                    points1.add(p1);
+                    points2.add(p2);
                 }
             }
         }
+        
+        List<PairInt> matched1 = new ArrayList<PairInt>();
+        List<PairInt> matched2 = new ArrayList<PairInt>();
         
         HistogramHolder rHist = Histogram.createSimpleHistogram(20, rotations);
         List<Integer> subsetRotation = new ArrayList<Integer>();
         List<Integer> subsetTransX = new ArrayList<Integer>();
         List<Integer> subsetTransY = new ArrayList<Integer>();
+        List<PairInt> subsetPoints1 = new ArrayList<PairInt>();
+        List<PairInt> subsetPoints2 = new ArrayList<PairInt>();
         int yMaxIdx = MiscMath.findYMaxIndex(rHist.getYHist());
         if (yMaxIdx != -1) {
             float rotMax = rHist.getXHist()[yMaxIdx];
@@ -662,6 +676,8 @@ if (true) {
                     subsetRotation.add(Math.round(rot));
                     subsetTransX.add(translationsX.get(i));
                     subsetTransY.add(translationsY.get(i));
+                    subsetPoints1.add(points1.get(i));
+                    subsetPoints2.add(points2.get(i));
                 }
             }
             // A general euclidean transformation (possibly varying across
@@ -677,7 +693,62 @@ if (true) {
             } catch (IOException ex) {
                 Logger.getLogger(ShapeMatcher.class.getName()).log(Level.SEVERE, null, ex);
             }
-            int z = 1;
+            int yMaxIdx2 = MiscMath.findYMaxIndex(txHist.getYHist());
+            if (yMaxIdx2 != -1) {
+                float txMax = txHist.getXHist()[yMaxIdx2];
+                float txFWHM = Histogram.measureFWHM(txHist, yMaxIdx2);
+                if (txFWHM < 50) {
+                    txFWHM = 50;
+                }
+                List<Integer> subset2Rotation = new ArrayList<Integer>();
+                List<Integer> subset2TransX = new ArrayList<Integer>();
+                List<Integer> subset2TransY = new ArrayList<Integer>();
+                List<PairInt> subset2Points1 = new ArrayList<PairInt>();
+                List<PairInt> subset2Points2 = new ArrayList<PairInt>();
+                for (int i = 0; i < subsetTransX.size(); ++i) {
+                    int tx = subsetTransX.get(i);
+                    if (Math.abs(tx - txMax) <= (txFWHM/2.f)) {
+                        subset2Rotation.add(subsetRotation.get(i));
+                        subset2TransX.add(tx);
+                        subset2TransY.add(subsetTransY.get(i));
+                        subset2Points1.add(subsetPoints1.get(i));
+                        subset2Points2.add(subsetPoints2.get(i));
+                    }
+                }
+                HistogramHolder tyHist = Histogram.createSimpleHistogram(50, subset2TransY);
+                try {
+                    tyHist.plotHistogram("translationY", MiscDebug.getCurrentTimeFormatted());
+                } catch (IOException ex) {
+                    Logger.getLogger(ShapeMatcher.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                int yMaxIdx3 = MiscMath.findYMaxIndex(tyHist.getYHist());
+                if (yMaxIdx3 != -1) {
+                    float tyMax = tyHist.getXHist()[yMaxIdx3];
+                    float tyFWHM = Histogram.measureFWHM(tyHist, yMaxIdx3);
+                    if (tyFWHM < 50) {
+                        tyFWHM = 50;
+                    }
+                    
+                    log.info("solution rotation=" + rotMax + "+-20 "
+                    + " translationX=" + txMax + "+-" + (txFWHM/2.)
+                    + " translationY=" + tyMax + "+=" + (tyFWHM/2.));
+                    for (int i = 0; i < subset2TransY.size(); ++i) {
+                        int ty = subset2TransY.get(i);
+                        if (Math.abs(ty - tyMax) <= (tyFWHM/2.f)) {
+                            matched1.add(subset2Points1.get(i));
+                            matched2.add(subset2Points2.get(i));
+                        }
+                    } 
+                   
+                    CorrespondenceList cl = new CorrespondenceList(
+                        scale, 
+                        Math.round(rotMax), Math.round(txMax), Math.round(tyMax),
+                        20, Math.round(txFWHM), Math.round(tyFWHM), 
+                        matched1, matched2);
+                    
+                    return cl;
+                }
+            }
         }
         
         return null;
@@ -1051,8 +1122,8 @@ if (true) {
                     stat = Features.calculateStats(iDesc1, gDesc1, tDesc1,
                         x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
 
-float diffRot = AngleUtil.getAngleDifference(rotD1, rotD2);
-log.info("diffRot=" + diffRot + " stat=" + stat.toString());
+//float diffRot = AngleUtil.getAngleDifference(rotD1, rotD2);
+//log.info("diffRot=" + diffRot + " stat=" + stat.toString());
 
                     if (fitIsBetter(best, stat)) {
                         best = stat;

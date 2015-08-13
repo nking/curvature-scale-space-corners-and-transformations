@@ -497,6 +497,11 @@ public class ShapeMatcherTest extends TestCase {
     protected void runCorrespondenceFromFeatures(
         String fileName1, String fileName2,
         PairIntArray points1, PairIntArray points2) throws Exception {
+        
+        int idx = fileName1.lastIndexOf(".");
+        String fileName1Root = fileName1.substring(0, idx);
+        idx = fileName2.lastIndexOf(".");
+        String fileName2Root = fileName2.substring(0, idx);
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -546,10 +551,26 @@ public class ShapeMatcherTest extends TestCase {
         
         ShapeMatcher matcher = new ShapeMatcher();
         
-        matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
+        CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
             cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
             gsImg2, gXY2, theta2,
             cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]));
+        
+        Collection<PairInt> m1 = cl.getPoints1();
+        Collection<PairInt> m2 = cl.getPoints2();
+        MiscDebug.plotCorners(gsImg1, m1, "1_" + fileName1Root  + "_matched", 2);
+        MiscDebug.plotCorners(gsImg2, m2, "2_" + fileName2Root + "_matched", 2);
+        
+        log.info(" " + m1.size() + " points for first correspondence");
+        
+        assertTrue(Math.abs(params.getRotationInDegrees() 
+            - cl.getRotationInDegrees()) < cl.getRangeRotation());
+        
+        assertTrue(Math.abs(params.getTranslationX()
+            - cl.getTranslationX()) < cl.getRangeTranslationX());
+        
+        assertTrue(Math.abs(params.getTranslationY()
+            - cl.getTranslationY()) < cl.getRangeTranslationY());
     }
     
     protected static void getBrownAndLoweFeatureCentersBinned(PairIntArray out1,
