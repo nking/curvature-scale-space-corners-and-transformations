@@ -623,8 +623,9 @@ if (true) {
                     float rotation = AngleUtil.getAngleDifference(
                         stat.getImg2PointRotInDegrees(), 
                         stat.getImg1PointRotInDegrees());
+                    
                     if (rotation < 0) {
-                        rotation = rotation - 360;
+                        rotation += 360;
                     }
                     double rotationRadians = rotation * Math.PI/180.;
                     
@@ -670,6 +671,13 @@ if (true) {
             // quick look at results to decide if need to use statistics of
             // fit here (as weights) or whether frequency of values is enough.
             
+            HistogramHolder txHist = Histogram.createSimpleHistogram(50, subsetTransX);
+            try {
+                txHist.plotHistogram("translationX", MiscDebug.getCurrentTimeFormatted());
+            } catch (IOException ex) {
+                Logger.getLogger(ShapeMatcher.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            int z = 1;
         }
         
         return null;

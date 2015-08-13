@@ -518,9 +518,6 @@ public class ShapeMatcherTest extends TestCase {
 
         helper.createSortedCornerRegions();
 
-        int blockHalfWidth = 5;
-        boolean useNormalizedIntensities = true;
-
         final GreyscaleImage gsImg1 = helper.getGreyscaleImage1();
         final GreyscaleImage gXY1 = helper.getGXY1();
         final GreyscaleImage theta1 = helper.getTheta1();
