@@ -580,8 +580,16 @@ if (true) {
         }
         
         //TODO: need to solve for scale using the scale space curves that went 
-        // into making the corners.
-        // characteristic scale: Lindeberg (1998)
+        // into making the corners. see doc/contours.pdf in this project.
+        // the creation of scale space maps for inflection points takes longer
+        // though, so might need to use what it exists less precisely.
+        // interestingly, to estimate scale well with scale space maps requires
+        // finding closed curves ("contours") and then matching the peaks of the
+        // scale space maps created from the inflection
+        // points and that solves for scale, and translation and rotation
+        // very quickly if there are contours in common with both frames and
+        // then one would not need this feature based matching.
+        // the combination of both is probably a very strong recognizer.
         
         // until then, making an assumption of '1' here for limited use
         float scale = 1.f;
