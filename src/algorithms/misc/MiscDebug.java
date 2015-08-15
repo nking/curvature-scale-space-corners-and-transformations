@@ -4,6 +4,8 @@ import algorithms.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CornerRegion;
+import algorithms.imageProcessing.CurvatureScaleSpaceContour;
+import algorithms.imageProcessing.CurvatureScaleSpaceImagePoint;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;
@@ -893,6 +895,87 @@ public class MiscDebug {
         ImageDisplayer.displayImage(label2, sImg2);
         
         int z = 1;
+    }
+    
+    public static void writeImage(Set<CornerRegion> cornerRegions, 
+        Image img, String fileSuffix) throws IOException {
+       
+        int rClr = 255;
+        int gClr = 0;
+        int bClr = 0;
+        
+        for (CornerRegion cr : cornerRegions) {
+            int kMaxIdx = cr.getKMaxIdx();
+            int x = cr.getX()[kMaxIdx];
+            int y = cr.getY()[kMaxIdx];
+            float k = cr.getK()[kMaxIdx];
+            int pointSize = 1 + Math.round((k - 0.1f)/0.1f);
+            if (pointSize < 0) {
+                pointSize = 1;
+            }
+            
+            for (int dx = (-1*pointSize); dx < (pointSize + 1); dx++) {
+                float xx = x + dx;
+                if ((xx > -1) && (xx < (img.getWidth() - 1))) {
+                    for (int dy = (-1*pointSize); dy < (pointSize + 1); dy++) {
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (img.getHeight() - 1))) {
+                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+        
+        String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
+        String sep = System.getProperty("file.separator");
+        ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + ".png", img);
+    }
+
+    public static void debugPlot(List<CurvatureScaleSpaceContour> result, ImageExt 
+        img, int xOffset, int yOffset, String fileSuffix) {
+        
+        if (result.isEmpty()) {
+            return;
+        }
+        
+        int nExtraForDot = 1;
+        int rClr = 255;
+        int gClr = 0;
+        int bClr = 0;
+        
+        for (int i = 0; i < result.size(); i++) {
+            
+            CurvatureScaleSpaceContour cssC = result.get(i);
+            
+            CurvatureScaleSpaceImagePoint[] peakDetails = cssC.getPeakDetails();
+            
+            for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {
+                int x = peakDetail.getXCoord() + xOffset;
+                int y = peakDetail.getYCoord() + yOffset;
+                for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                    float xx = x + dx;
+                    if ((xx > -1) && (xx < (img.getWidth() - 1))) {
+                        for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                            dy++) {
+                            float yy = y + dy;
+                            if ((yy > -1) && (yy < (img.getHeight() - 1))) {
+                                img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                            }
+                        }
+                    }
+                }
+            }            
+        }
+        
+        try {
+            
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.writeOutputImage(dirPath + "/contours_" 
+                + fileSuffix + ".png", img);
+        
+        } catch (IOException e) {}
     }
 
 }

@@ -24,7 +24,7 @@ public class FeatureMatcherTest extends TestCase {
     public FeatureMatcherTest() {
     }
 
-    public void estFeatureMatching() throws Exception {
+    public void testFeatureMatching() throws Exception {
         PairIntArray points1, points2;
         String fileName1, fileName2;
         
@@ -320,10 +320,7 @@ public class FeatureMatcherTest extends TestCase {
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 
-        /*
-        testing that a known list of matches are found as "matching" by the
-        algorithms.
-        */
+        //testing that a known list of matches are found as "matching" by the algorithms.
 
         BinSegmentationHelper helper = new BinSegmentationHelper(fileName1, fileName2);
 
@@ -370,8 +367,8 @@ public class FeatureMatcherTest extends TestCase {
         
         Collection<PairInt> m1 = cl.getPoints1();
         Collection<PairInt> m2 = cl.getPoints2();
-        MiscDebug.plotCorners(gsImg1, m1, "1_" + fileName1Root  + "_matched", 2);
-        MiscDebug.plotCorners(gsImg2, m2, "2_" + fileName2Root + "_matched", 2);
+        MiscDebug.plotCorners(gsImg1.copyImage(), m1, "1_" + fileName1Root  + "_matched", 2);
+        MiscDebug.plotCorners(gsImg2.copyImage(), m2, "2_" + fileName2Root + "_matched", 2);
         
         log.info(" " + m1.size() + " points for first correspondence");
         
@@ -383,6 +380,11 @@ public class FeatureMatcherTest extends TestCase {
         
         assertTrue(Math.abs(params.getTranslationY()
             - cl.getTranslationY()) < cl.getRangeTranslationY());
+        
+        MiscDebug.writeImage(cornerRegions1, ImageIOHelper.convertImage(gsImg1),
+            "1_" + fileName1Root + "_cr");
+        MiscDebug.writeImage(cornerRegions2, ImageIOHelper.convertImage(gsImg2), 
+            "2_" + fileName1Root + "_cr");
     }
     
     protected static void getBrownAndLoweFeatureCentersBinned(PairIntArray out1,

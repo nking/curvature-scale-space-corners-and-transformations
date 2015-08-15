@@ -1,15 +1,12 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.AngleUtil;
+import static algorithms.imageProcessing.FeatureMatcherTest.getBrownAndLoweFeatureCenters90;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -24,6 +21,40 @@ public class ShapeMatcherTest extends TestCase {
     public ShapeMatcherTest() {
     }
 
+    public void testBlobs() throws Exception {
+        String fileName1, fileName2;
+        
+        for (int i = 0; i < 3; ++i) {
+            switch(i) {
+                case 0: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    break;
+                }
+                default: {
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+            }
+            
+            BinSegmentationHelper helper = new BinSegmentationHelper(fileName1, 
+                fileName2);
+            
+            if (fileName1.contains("books")) {
+                helper.applySteps2(false);
+            } else {
+                helper.applySteps2(true);
+            }
+            
+        }
+    }
+    
     public void testCreateNeighborOffsets() throws Exception {
 
         ShapeMatcher matcher = new ShapeMatcher();

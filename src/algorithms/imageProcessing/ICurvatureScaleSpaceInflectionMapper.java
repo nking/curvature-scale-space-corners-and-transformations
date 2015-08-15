@@ -32,8 +32,8 @@ public interface ICurvatureScaleSpaceInflectionMapper {
 
     void useOutdoorMode();
     
-    public List<CurvatureScaleSpaceContour> getContours1();
+    public List<List<CurvatureScaleSpaceContour>> getContours1();
     
-    public List<CurvatureScaleSpaceContour> getContours2();
+    public List<List<CurvatureScaleSpaceContour>> getContours2();
     
 }

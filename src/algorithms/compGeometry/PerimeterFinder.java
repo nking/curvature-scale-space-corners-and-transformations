@@ -1,8 +1,11 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -1474,6 +1477,45 @@ public class PerimeterFinder {
         }
         
         return contigNonMembersConnectedToBounds;
+    }
+    
+    /**
+     * given the set of contiguous points, find the perimeter of them and order
+     * the points into a closed Edge.
+     * @param points a set of contiguous points, that is, all points must be
+     * reachable from any point (a sequence of adjacent points).
+     * @param width
+     * @param height
+     * @return 
+     */
+    public PairIntArrayWithColor findBorderEdge(Set<PairInt> points, int width, 
+        int height) {
+        
+        if (points == null) {
+            return null;
+        }
+        
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        int imageMaxColumn = width - 1;
+        int imageMaxRow = height - 1;
+       
+        int[] rowMinMax = new int[2];
+        
+        Map<Integer, List<PairInt>> rowColRanges = find(points, rowMinMax, 
+            imageMaxColumn, outputEmbeddedGapPoints);
+
+        // update the perimeter for "filling in" embedded points
+        updateRowColRangesForAddedPoints(rowColRanges, rowMinMax, 
+            imageMaxColumn, outputEmbeddedGapPoints);
+        
+        Set<PairInt> borderPixels = getBorderPixels(rowColRanges, rowMinMax, 
+            imageMaxColumn, imageMaxRow);
+                
+        PairIntArrayWithColor output = Misc.orderSequentially(borderPixels, 
+            width, height);
+        
+        return output;
     }
 
     static class Gap {

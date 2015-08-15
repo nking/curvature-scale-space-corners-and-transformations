@@ -67,7 +67,6 @@ public final class CurvatureScaleSpaceImageMaker extends
      * which there are no more values of k that equal 0, that is until no 
      * more inflection points are found on the extremely smoothed curve.  
      * 
-     
      */
     protected Map<PairIntArray, Map<Float, ScaleSpaceCurve> > 
         createScaleSpaceMetricsForInflectionPoints() {
@@ -204,66 +203,11 @@ public final class CurvatureScaleSpaceImageMaker extends
                    scale free axis t
         */
     
-        SortedMap<Float, ScaleSpaceCurve> sortedMap = 
-            new TreeMap<Float, ScaleSpaceCurve>(
-                new DescendingScaleSpaceComparator());
+        CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();
         
-        sortedMap.putAll(scaleSpaceMap);
-        
-        Float maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();
-        
-        if ((maxSigma != null) && 
-            sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {
-            
-            sortedMap.remove(maxSigma);
-            
-            maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();
-        }
-        
-        Iterator<Entry<Float, ScaleSpaceCurve> > iter = 
-            sortedMap.entrySet().iterator();
-        
-        int rowIdx = 0;
-        
-        ScaleSpaceCurveImage spaceImage = new ScaleSpaceCurveImage(
-            sortedMap.size());
-        
-        spaceImage.setEdgeNumber(edgeNumber);
-        
-        spaceImage.setEdgeSize(edgeLength);
-        
-        while (iter.hasNext()) {
-            
-            Entry<Float, ScaleSpaceCurve> entry = iter.next();
-            
-            float sigma = entry.getKey().floatValue();
-            
-            ScaleSpaceCurve scaleSpaceCurve = entry.getValue();
-            
-            int nPoints = scaleSpaceCurve.getSize();
-                            
-            int nz = scaleSpaceCurve.getKIsZeroIdxSize();
-                
-            float[] row = new float[nz];
-                        
-            for (int i = 0; i < nz; i++) {
-
-                int idx = scaleSpaceCurve.getKIsZeroIdx()[i];
-
-                float t = (float)idx/(float)nPoints;
-                
-                row[i] = t;                
-            }
-            
-            spaceImage.setRow(rowIdx, row);
-            
-            spaceImage.setSigma(rowIdx, sigma);
-            
-            spaceImage.setXYCoords(rowIdx, scaleSpaceCurve.getKIsZeroX(),
-                scaleSpaceCurve.getKIsZeroY());
-            
-            rowIdx++;
-        }
+        ScaleSpaceCurveImage spaceImage = 
+            csscMaker.convertScaleSpaceMapToSparseImage(
+            scaleSpaceMap, edgeNumber, edgeLength);
         
         return spaceImage;
     }
@@ -285,6 +229,8 @@ public final class CurvatureScaleSpaceImageMaker extends
      */
     protected Map<Float, ScaleSpaceCurve> createScaleSpaceMetricsForEdge2(
     PairIntArray edge) {
+ 
+        CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();
         
         // if use 2^(1/8) as a sigma factor should result in an error less than 10%
         // in determing the peak of a contour.  smaller factors have smaller
@@ -297,49 +243,9 @@ public final class CurvatureScaleSpaceImageMaker extends
               where t is the indexes normalized to the range 0 to 1.
         */
         
-        ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();
-            
-        Map<Float, ScaleSpaceCurve> scaleSpaceMap = new HashMap<Float,
-            ScaleSpaceCurve>();
-        
-        float sigma = SIGMA.getValue(SIGMA.ONE);
-
-        float resultingSigma = sigma;
-
-        boolean hasInflectionPoints = true;
-
-        ScaleSpaceCurve lastCurve = null;
-
-        while (hasInflectionPoints
-            && (resultingSigma < SIGMA.getValue(SIGMA.TWOHUNDREDANDFIFTYSIX))) {
-
-            ScaleSpaceCurve curve;
-            
-//log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffset);
-
-            if (lastCurve == null) {
-                curve = scaleSpaceHelper.computeCurvature(edge, sigma, 
-                    resultingSigma);
-            } else {
-                curve = scaleSpaceHelper.computeCurvature(
-                    lastCurve.getXYCurve(), sigma, resultingSigma);
-            }
-
-            scaleSpaceMap.put(sigma, curve);
-
-            hasInflectionPoints = (curve.getKIsZeroIdxSize() > 0);
-            
-            log.fine("sigma=" + sigma + " nZeros=" + curve.getKIsZeroIdxSize());
-
-            if (hasInflectionPoints) {
-                
-                sigma = resultingSigma;
-
-                resultingSigma *= factor;
-            }
-
-            lastCurve = curve;
-        }
+        Map<Float, ScaleSpaceCurve> scaleSpaceMap = 
+            csscMaker.createScaleSpaceMetricsForEdge(edge, factor,
+                SIGMA.ONE, SIGMA.TWOHUNDREDANDFIFTYSIX);
         
         return scaleSpaceMap;
     }
@@ -367,7 +273,7 @@ public final class CurvatureScaleSpaceImageMaker extends
         return closedCurves;
     }
     
-    private static class DescendingScaleSpaceComparator implements 
+    public static class DescendingScaleSpaceComparator implements 
         Comparator<Float> {
         
         @Override

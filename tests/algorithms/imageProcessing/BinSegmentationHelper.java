@@ -1,13 +1,16 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.misc.Histogram;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayDescendingComparator;
+import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -16,6 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -54,6 +58,9 @@ public class BinSegmentationHelper {
     private GreyscaleImage gXY2 = null;
     private GreyscaleImage theta1 = null;
     private GreyscaleImage theta2 = null;
+    
+    private String fileName1Root = null;
+    private String fileName2Root = null;
 
     public BinSegmentationHelper(String fileName1, String fileName2) throws IOException, Exception {
         this.fileName1 = fileName1;
@@ -65,30 +72,38 @@ public class BinSegmentationHelper {
         filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         img2Orig = ImageIOHelper.readImageExt(filePath2);
 
+        int idx = fileName1.lastIndexOf(".");
+        fileName1Root = fileName1.substring(0, idx);
+        idx = fileName2.lastIndexOf(".");
+        fileName2Root = fileName2.substring(0, idx);
     }
 
-    public void applySteps0() throws IOException, NoSuchAlgorithmException {
-
-        ImageHelperForTests helper = new ImageHelperForTests(img1Orig, true);
-        SkylineExtractor skylineExtractor = new SkylineExtractor();
-        PairIntArray outputSkyCentroid = new PairIntArray();
-        // sky are the zeros in this:
-        GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img1Orig,
-            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+    public void applySteps0(boolean performSkySubtraction) throws IOException, NoSuchAlgorithmException {
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.multiplyBinary(img1Orig, resultMask);
+        
+        ImageHelperForTests helper = new ImageHelperForTests(img1Orig, true);
+        
+        if (performSkySubtraction) {
+            SkylineExtractor skylineExtractor = new SkylineExtractor();
+            PairIntArray outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img1Orig,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
 
-        helper = new ImageHelperForTests(img2Orig, true);
-        skylineExtractor = new SkylineExtractor();
-        outputSkyCentroid = new PairIntArray();
-        // sky are the zeros in this:
-        resultMask = skylineExtractor.createBestSkyMask(
-            helper.getTheta(), helper.getGradientXY(), img2Orig,
-            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-        imageProcessor.multiplyBinary(img2Orig, resultMask);
+            imageProcessor.multiplyBinary(img1Orig, resultMask);
 
+            helper = new ImageHelperForTests(img2Orig, true);
+            skylineExtractor = new SkylineExtractor();
+            outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img2Orig,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+            imageProcessor.multiplyBinary(img2Orig, resultMask);
+        }
+        
         TransformationParameters params90 = new TransformationParameters();
         params90.setRotationInDegrees(90);
         params90.setOriginX(0);
@@ -599,6 +614,367 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
 
         MiscDebug.plotCorners(img1GreyOrig, corners1, "1_corners");
         MiscDebug.plotCorners(img2GreyOrig, corners2, "2_corners");
+
+    }
+
+    public void applySteps2(boolean performSkySubtraction) throws IOException,
+        NoSuchAlgorithmException {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        ImageHelperForTests helper = new ImageHelperForTests(img1Orig, true);
+
+        if (performSkySubtraction) {
+            SkylineExtractor skylineExtractor = new SkylineExtractor();
+            PairIntArray outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img1Orig,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+
+            imageProcessor.multiplyBinary(img1Orig, resultMask);
+
+            helper = new ImageHelperForTests(img2Orig, true);
+            skylineExtractor = new SkylineExtractor();
+            outputSkyCentroid = new PairIntArray();
+            // sky are the zeros in this:
+            resultMask = skylineExtractor.createBestSkyMask(
+                helper.getTheta(), helper.getGradientXY(), img2Orig,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+            imageProcessor.multiplyBinary(img2Orig, resultMask);
+        }
+        
+        //---------------
+
+        img1GreyOrig = img1Orig.copyToGreyscale();
+        img2GreyOrig = img2Orig.copyToGreyscale();
+
+        final boolean performBinning = true;
+        int binFactor1 = 1;
+
+        boolean performSegmentation = true;
+        int kN = 3;
+        boolean performBinarySegmentation = false;
+        if (performBinarySegmentation) {
+            kN = 2;
+        }
+
+        /*
+        one could start with essentially no limits here and then
+        looks at the distribution of resulting contiguous group
+        sizes to decide the range to keep.
+        For now, choosing limits.
+        */
+        int smallestGroupLimit = 100;
+        //TODO: consider scaling this by image size or by size and res if one
+        //  day that information is passed to this method
+        int largestGroupLimit = 5000;
+
+        ImageExt img1Cp = (ImageExt)img1Orig.copyImage();
+        ImageExt img2Cp = (ImageExt)img2Orig.copyImage();
+
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1GreyOrig, true);
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2GreyOrig, true);
+
+        log.info("stats1=" + stats1.toString());
+        log.info("stats2=" + stats2.toString());
+
+        boolean performHistEq = true;
+        /*
+        double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();
+        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();
+        double meanDivMedian2 = stats2.getMean()/stats2.getMedian();
+        if (
+            ((median1DivMedian2 > 1) && ((median1DivMedian2 - 1) > 0.2)) ||
+            ((median1DivMedian2 < 1) && (median1DivMedian2 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian1 > 1) && ((meanDivMedian1 - 1) > 0.2)) ||
+            ((meanDivMedian1 < 1) && (meanDivMedian1 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian2 > 1) && ((meanDivMedian2 - 1) > 0.2)) ||
+            ((meanDivMedian2 < 1) && (meanDivMedian2 < 0.8))) {
+            performHistEq = true;
+        }*/
+        if (performHistEq) {
+            log.info("use histogram equalization on the greyscale images");
+            HistogramEqualization hEq = new HistogramEqualization(img1GreyOrig);
+            hEq.applyFilter();
+            hEq = new HistogramEqualization(img2GreyOrig);
+            hEq.applyFilter();
+            /*HistogramEqualizationForColor hEqC = new HistogramEqualizationForColor(img1Cp);
+            hEqC.applyFilter();
+            hEqC = new HistogramEqualizationForColor(img2Cp);
+            hEqC.applyFilter();*/
+        }
+
+        if (performBinning) {
+            
+            binFactor1 = (int) Math.ceil(
+                Math.max((float)img1GreyOrig.getWidth()/200.f,
+                (float)img2GreyOrig.getHeight()/200.));
+            smallestGroupLimit /= (binFactor1*binFactor1);
+            largestGroupLimit /= (binFactor1*binFactor1);
+
+            log.info("binFactor1=" + binFactor1);
+
+            // prevent from being smaller than needed for a convex hull
+            if (smallestGroupLimit < 4) {
+                smallestGroupLimit = 4;
+            }
+            img1GreyOrig = imageProcessor.binImage(img1GreyOrig, binFactor1);
+            img2GreyOrig = imageProcessor.binImage(img2GreyOrig, binFactor1);
+            img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
+            img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
+        }
+
+        if (performSegmentation || performBinarySegmentation) {
+            imageProcessor.applyImageSegmentation(img1GreyOrig, kN);
+            imageProcessor.applyImageSegmentation(img2GreyOrig, kN);
+        }
+
+        // == contiguous regions within size limits become blobs of interest,
+        //    indexed by their intensity levels
+
+        Map<Integer, Integer> freqMap1 = Histogram.createAFrequencyMap(img1GreyOrig);
+        Map<Integer, Integer> freqMap2 = Histogram.createAFrequencyMap(img2GreyOrig);
+
+        Map<Integer, List<PairIntArray>> contigMap1
+            = new HashMap<Integer, List<PairIntArray>>();
+        Map<Integer, List<PairIntArray>> contigMap2
+            = new HashMap<Integer, List<PairIntArray>>();
+
+        Map<Integer, List<GrahamScan>> hulls1 =
+            new HashMap<Integer, List<GrahamScan>>();
+        Map<Integer, List<GrahamScan>> hulls2 =
+            new HashMap<Integer, List<GrahamScan>>();
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+        Map<Integer, PairIntArray> hullCentroids1Map =
+            new HashMap<Integer, PairIntArray>();
+        Map<Integer, PairIntArray> hullCentroids2Map =
+            new HashMap<Integer, PairIntArray>();
+        PairIntArray allHullCentroids1 = new PairIntArray();
+        PairIntArray allHullCentroids2 = new PairIntArray();
+
+        for (int im = 0; im < 2; ++im) {
+
+            Map<Integer, Integer> freqMap = freqMap1;
+            Map<Integer, List<PairIntArray>> contigMap = contigMap1;
+            Map<Integer, List<GrahamScan>> hulls = hulls1;
+            GreyscaleImage imgGrey = img1GreyOrig;
+            PairIntArray hullCentroids = allHullCentroids1;
+            Map<Integer, PairIntArray> hullCentroidsMap = hullCentroids1Map;
+            if (im == 1) {
+                freqMap = freqMap2;
+                contigMap = contigMap2;
+                hulls = hulls2;
+                hullCentroids = allHullCentroids2;
+                imgGrey = img2GreyOrig;
+                hullCentroidsMap = hullCentroids2Map;
+            }
+
+            for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
+
+                Integer pixValue = entry.getKey();
+
+                DFSContiguousValueFinder finder = new DFSContiguousValueFinder(
+                    imgGrey);
+                finder.setMinimumNumberInCluster(smallestGroupLimit);
+                finder.findGroups(pixValue.intValue());
+
+                int nGroups = finder.getNumberOfGroups();
+                List<PairIntArray> list = new ArrayList<PairIntArray>();
+                for (int i = 0; i < nGroups; i++) {
+                    PairIntArray xy = finder.getXY(i);
+                    if (xy.getN() < largestGroupLimit) {
+                        list.add(xy);
+                    }
+                }
+                Collections.sort(list, new PairIntArrayDescendingComparator());
+
+                // storing the centroids for this intensity level hulls separateley
+                PairIntArray pvHullCentroids = new PairIntArray();
+
+                // remove hulls with large area on image bounds
+                List<Integer> rm = new ArrayList<Integer>();
+
+                List<GrahamScan> listHulls = new ArrayList<GrahamScan>();
+                for (int i = 0; i < list.size(); ++i) {
+
+                    PairIntArray xy = list.get(i);
+
+                    GrahamScan scan = new GrahamScan();
+                    try {
+                        float[] x = new float[xy.getN()];
+                        float[] y = new float[x.length];
+                        for (int ii = 0; ii < x.length; ++ii) {
+                            x[ii] = xy.getX(ii);
+                            y[ii] = xy.getY(ii);
+                        }
+
+                        double[] centroidXY =
+                            curveHelper.calculateXYCentroids(x, y);
+
+                        scan.computeHull(x, y);
+
+                        // if more than one hull point touches the bounds of the
+                        // image, the hull is removed because it may be
+                        // incomplete.  may need to change this rule later
+                        // if it makes the solution too shallow in terms of
+                        // very close points
+
+                        int nBounds = 0;
+                        for (int ii = 0; ii < scan.getXHull().length; ++ii) {
+                            float xh = scan.getXHull()[ii];
+                            float yh = scan.getYHull()[ii];
+                            if ((xh == 0) || xh >= (imgGrey.getWidth() - 2) ||
+                                (yh == 0) || yh >= (imgGrey.getHeight() - 2)) {
+                                nBounds++;
+                            }
+                        }
+                        if (nBounds > 1) {
+                            rm.add(Integer.valueOf(i));
+                        } else {
+                            listHulls.add(scan);
+                            int xh = (int)Math.round(centroidXY[0]);
+                            int yh = (int)Math.round(centroidXY[1]);
+                            hullCentroids.add(xh, yh);
+                            pvHullCentroids.add(xh, yh);
+                        }
+
+                    } catch (GrahamScanTooFewPointsException e) {
+                        log.severe(e.getMessage());
+                    }
+                }
+
+                for (int i = (rm.size() - 1); i > -1; --i) {
+                    int rmIdx = rm.get(i).intValue();
+                    list.remove(rmIdx);
+                }
+
+                log.info("nHulls" + (im + 1) + "=" + listHulls.size() 
+                    + " for intensity=" + pixValue.toString());
+
+                contigMap.put(pixValue, list);
+                hulls.put(pixValue, listHulls);
+                hullCentroidsMap.put(pixValue, pvHullCentroids);
+            }
+        }
+        
+        MiscDebug.writeHullImages(img1GreyOrig, hulls1, "1_" + fileName1Root + "_binned_hulls");
+        MiscDebug.writeHullImages(img2GreyOrig, hulls2, "2_" + fileName2Root + "_binned_hulls");
+        MiscDebug.writeImage(img1Cp, "1_" + fileName1Root + "_binned_clr");
+        MiscDebug.writeImage(img2Cp, "2_" + fileName2Root + "_binned_clr");
+
+        
+        // iterate over contigMap to create scale space maps
+       
+        /*
+        for images close in time and from the same camera, can reduce the lists
+        to compare against by the keys of the contigMaps, but because the code
+        may be used on other conditions, will compare all values for all keys.
+        TODO: consider a flag in the final enclosing class to have streamlined
+        processes when one knows the images are stereo, etc.
+        */
+
+        float sigmaPowerFactor = 1.f/32.f; 
+        SIGMA sigmaStart = SIGMA.ONE;
+        SIGMA sigmaEnd = SIGMA.TWOHUNDREDANDFIFTYSIX;
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        CurvatureScaleSpaceCurvesMaker csscMaker = new 
+            CurvatureScaleSpaceCurvesMaker();
+                    
+        List<List<CurvatureScaleSpaceContour>> cssContours1 = 
+            new ArrayList<List<CurvatureScaleSpaceContour>>();
+        
+        List<List<CurvatureScaleSpaceContour>> cssContours2 = 
+            new ArrayList<List<CurvatureScaleSpaceContour>>();
+        
+        for (int type = 0; type < 2; ++type) {
+            
+            Map<Integer, List<PairIntArray>> contigMap = contigMap1;
+            GreyscaleImage imgGrey = img1GreyOrig;
+            List<List<CurvatureScaleSpaceContour>> cssContours = cssContours1;
+            if (type == 1) {
+                contigMap = contigMap2;
+                imgGrey = img2GreyOrig;
+                cssContours = cssContours2;
+            }
+            
+            int edgeNumber = 0;
+            
+            for (Entry<Integer, List<PairIntArray>> entry : contigMap.entrySet()) {
+               
+                List<PairIntArray> contiguousPixels = entry.getValue();
+                
+                for (PairIntArray contiguous : contiguousPixels) {
+                    
+                    Set<PairInt> points = Misc.convert(contiguous);
+                    
+                    PairIntArrayWithColor closedEdge = 
+                        perimeterFinder.findBorderEdge(points, 
+                        imgGrey.getWidth(), imgGrey.getHeight());
+                    
+                    Map<Float, ScaleSpaceCurve> scaleSpaceCurveMap =
+                        csscMaker.createScaleSpaceMetricsForEdge(
+                        closedEdge, sigmaPowerFactor, sigmaStart, sigmaEnd);
+                    
+                    ScaleSpaceCurveImage scaleSpaceCurveImage = 
+                        csscMaker.convertScaleSpaceMapToSparseImage(
+                        scaleSpaceCurveMap, edgeNumber, closedEdge.getN());
+                    
+     //MiscDebug.printScaleSpaceCurve(scaleSpaceCurveImage);
+                        
+                    ContourFinder contourFinder = new ContourFinder();
+                    
+                    // this list of contours belongs to one edge.  it holds
+                    // the peaks of the inflection points
+                    List<CurvatureScaleSpaceContour> cssContourList = 
+                        contourFinder.findContours(scaleSpaceCurveImage, 
+                        edgeNumber);
+                    
+                    boolean reversed = contourFinder.reverseIfClockwise(cssContourList);
+                    
+     //MiscDebug.printScaleSpaceContours(cssContourList);               
+                    
+                    cssContours.add(cssContourList);
+                    
+                    edgeNumber++;
+                }
+            }
+        }
+        
+        /*
+        List<List<CurvatureScaleSpaceContour>> cssContours1 = 
+            new ArrayList<List<CurvatureScaleSpaceContour>>();
+        
+        List<List<CurvatureScaleSpaceContour>> cssContours2 = 
+            new ArrayList<List<CurvatureScaleSpaceContour>>();
+        
+        For each List contours1 in cssContours1:            
+            For each List contours2 in cssContours2:
+                CurvatureScaleSpaceContourMatcher matcher = new CurvatureScaleSpaceContourMatcher();
+                matcher.matchContours(contours1, contours2);
+                List<CurvatureScaleSpaceContour> transAppliedTo1 = matcher.getSolutionMatchedContours1();
+                List<CurvatureScaleSpaceContour> transAppliedTo2 = matcher.getSolutionMatchedContours2();
+        
+            the lowest cost match for each contours1 should be the correct match
+            if any for it.
+        
+        Then evaluate all the matches against all points to derive the best
+        solution.
+        
+        The result is scale and if more than one match is obtained, rotation and 
+        translation are also solved.
+
+        The methods above have been tested only on simple shapes in images so 
+        may need some improvements.
+        */
 
     }
 

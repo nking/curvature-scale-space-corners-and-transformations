@@ -1,13 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 /**
@@ -30,8 +25,9 @@ import java.util.logging.Logger;
  * more inflection points.
  * t vs sigma "images" are created and the contours are extracted from those.
  * 
- * This code accepts the contours from two different images and maps the first
- * image to the other using the contours. 
+ * This code accepts the contours from an edge in image 1 and contours from
+ * an edge in image 2 and finds the best match of points between them calculating
+ * scale and shift and cost as state of the match.
  * 
  * @author nichole
  */
@@ -45,15 +41,16 @@ public final class CurvatureScaleSpaceContourMatcher {
      * which uses type long for its key (key is where cost is stored).
      * using 1E12 here
      */
-    protected final static long heapKeyFactor= 1000000000000l;
+    protected final static long heapKeyFactor = 1000000000000l;
     
-    protected List<CurvatureScaleSpaceContour> c1;
+    protected final List<CurvatureScaleSpaceContour> c1;
     
-    protected List<CurvatureScaleSpaceContour> c2;
+    protected final List<CurvatureScaleSpaceContour> c2;
     
-    protected Map<Integer, List<Integer> > curveIndexToC1;
-    
-    protected Map<Integer, List<Integer> > curveIndexToC2;
+    private float tMin1;
+    private float tMax1;
+    private float tMin2;
+    private float tMax2;
         
     private double solutionScale = Double.MAX_VALUE;
     
@@ -70,10 +67,11 @@ public final class CurvatureScaleSpaceContourMatcher {
     private boolean scalesSomeSmallerThanOne = false;
     
     /**
-     * constructor taking required contour lists as arguments.  note that the
+     * constructor taking required contour lists as arguments.  Note that the
      * contour lists should only be from one edge each.
+     * 
      * (Note, it should be possible to find shadows in an image too using this 
-     * on edges in same image).
+     * on edges in the same image).
      * 
      * constructor.  the creation of internal data structures in this method
      * has runtime complexity:
@@ -87,51 +85,66 @@ public final class CurvatureScaleSpaceContourMatcher {
      *                 than N.  
      * </pre>
      */
-    public CurvatureScaleSpaceContourMatcher() {
-    }
-    
-    private void initializeVariables(final List<CurvatureScaleSpaceContour> contours1, 
-        final List<CurvatureScaleSpaceContour> contours2) {
+    public CurvatureScaleSpaceContourMatcher(
+        final List<CurvatureScaleSpaceContour> contours1, 
+        final List<CurvatureScaleSpaceContour> contours2,
+        boolean contoursAreAlreadySorted) {
         
-        // then use collections synchronized and LongestEdgeComparator to
-        // sort the ordered list
-
-        c1 = new ArrayList<CurvatureScaleSpaceContour>(contours1);
+        c1 = new ArrayList<CurvatureScaleSpaceContour>(contours1.size());
         
-        c2 = new ArrayList<CurvatureScaleSpaceContour>(contours2);
+        c2 = new ArrayList<CurvatureScaleSpaceContour>(contours2.size());
         
-        Collections.sort(c1, new DescendingSigmaComparator());
+        initializeVariables(contours1, contours2);
         
-        Collections.sort(c2, new DescendingSigmaComparator());
+        if (!contoursAreAlreadySorted) {
+            Collections.sort(c1, new DescendingSigmaComparator());
         
-        curveIndexToC1 = new HashMap<Integer, List<Integer> >();
-        
-        curveIndexToC2 = new HashMap<Integer, List<Integer> >();
-        
-        for (int i = 0; i < c1.size(); i++) {
-            CurvatureScaleSpaceContour contour = c1.get(i);            
-            Integer curveIdx = Integer.valueOf(contour.getEdgeNumber());
-            List<Integer> indexes = curveIndexToC1.get(curveIdx);
-            if (indexes == null) {
-                indexes = new ArrayList<Integer>();
-                curveIndexToC1.put(curveIdx, indexes);
-            }
-            indexes.add(Integer.valueOf(i));            
-        }
-        
-        for (int i = 0; i < c2.size(); i++) {
-            CurvatureScaleSpaceContour contour = c2.get(i);            
-            Integer curveIdx = Integer.valueOf(contour.getEdgeNumber());
-            List<Integer> indexes = curveIndexToC2.get(curveIdx);
-            if (indexes == null) {
-                indexes = new ArrayList<Integer>();
-                curveIndexToC2.put(curveIdx, indexes);
-            }
-            indexes.add(Integer.valueOf(i));            
+            Collections.sort(c2, new DescendingSigmaComparator());
         }
         
         initializeHeapNodes();
     }
+    
+    private void initializeVariables(List<CurvatureScaleSpaceContour> contours1, 
+        List<CurvatureScaleSpaceContour> contours2) {
+        
+        c1.clear();
+        c2.clear();
+        c1.addAll(contours1);
+        c2.addAll(contours2);
+        
+        float minT = Float.MAX_VALUE;
+        float maxT = Float.MIN_VALUE;
+        for (int i = 0; i < c1.size(); i++) {
+            CurvatureScaleSpaceContour contour = c1.get(i);            
+            float t = contour.getPeakScaleFreeLength();
+            if (t < minT) {
+                minT = t;
+            }
+            if (t > maxT) {
+                maxT = t;
+            }
+        }
+        tMin1 = minT;
+        tMax1 = maxT;
+        
+        minT = Float.MAX_VALUE;
+        maxT = Float.MIN_VALUE;
+        for (int i = 0; i < c2.size(); i++) {
+            CurvatureScaleSpaceContour contour = c2.get(i);            
+            float t = contour.getPeakScaleFreeLength();
+            if (t < minT) {
+                minT = t;
+            }
+            if (t > maxT) {
+                maxT = t;
+            }
+        }
+        tMin2 = minT;
+        tMax2 = maxT;
+        
+    }
+    
     
     /**
     <pre>
@@ -170,53 +183,26 @@ public final class CurvatureScaleSpaceContourMatcher {
         // (1)  create initial scale and translate nodes from all possible 
         // contour combinations
        
-        for (int index1 = 0; index1 < c1.size(); index1++) {
+        for (int index1 = 0; index1 < c1.size(); ++index1) {
             
             CurvatureScaleSpaceContour contour1 = c1.get(index1);
             
-            // find this contour's place within the parent edge's contours
-            // to correct shift due to wrapping around 1 to 0 or vice versa                
-            float minT = Float.MAX_VALUE;
-            float maxT = Float.MIN_VALUE;
-            List<Integer> c1Indexes = curveIndexToC1.get(
-                Integer.valueOf(contour1.getEdgeNumber()));
-            for (int i = 0; i < c1Indexes.size(); i++) {
-                int c1Idx = c1Indexes.get(i);
-                CurvatureScaleSpaceContour ei = c1.get(c1Idx);
-                float t = ei.getPeakScaleFreeLength();
-                if (t < minT) {
-                    minT = t;
-                }
-                if (t > maxT) {
-                    maxT = t;
-                }
-            }
-            boolean contour1IsLast = (contour1.getPeakScaleFreeLength() == maxT);
-            boolean contour1IsFirst = (contour1.getPeakScaleFreeLength() == minT);
+            float ct1 = contour1.getPeakScaleFreeLength();
             
-            for (int index2 = 0; index2 < c2.size(); index2++) {
+            boolean contour1IsLast = (ct1 == tMax1);
+            boolean contour1IsFirst = (ct1 == tMin1);
+            
+            for (int index2 = 0; index2 < c2.size(); ++index2) {
             
                 CurvatureScaleSpaceContour contour2 = c2.get(index2);
                 
-                // find this contour's place within the parent edge's contours
-                // to correct shift due to wrapping around 1 to 0 or vice versa                
-                minT = Float.MAX_VALUE;
-                maxT = Float.MIN_VALUE;
-                for (Integer i
-                    : curveIndexToC2.get(Integer.valueOf(contour2.getEdgeNumber()))) {
-                    CurvatureScaleSpaceContour ei = c2.get(i.intValue());
-                    float t = ei.getPeakScaleFreeLength();
-                    if (t < minT) {
-                        minT = t;
-                    }
-                    if (t > maxT) {
-                        maxT = t;
-                    }
-                }
-                boolean contour2IsLast = (contour2.getPeakScaleFreeLength() == maxT);
-                boolean contour2IsFirst = (contour2.getPeakScaleFreeLength() == minT);
+                float ct2 = contour2.getPeakScaleFreeLength();
                 
-                TransformationPair obj = new TransformationPair(index1, index2);
+                boolean contour2IsLast = (ct2 == tMax2);
+                boolean contour2IsFirst = (ct2 == tMin2);
+                
+                TransformationPair transformationPair = new TransformationPair(
+                    index1, index2);
                 
                 /*
                 t2 = kScale * t1 + dShift
@@ -247,34 +233,24 @@ public final class CurvatureScaleSpaceContourMatcher {
                         (1 - contour2.getPeakScaleFreeLength()));
                 }
                 
-                obj.setScale(scale);
+                transformationPair.setScale(scale);
                 
-                obj.setShift(shift);
+                transformationPair.setShift(shift);
                 
-                List<CurvatureScaleSpaceContour> visited = new 
-                    ArrayList<CurvatureScaleSpaceContour>();
+                List<CurvatureScaleSpaceContour> visited = new ArrayList<CurvatureScaleSpaceContour>();
                 visited.add(contour1);
-                visited.add(contour2);
                 
-                NextContour nc = new NextContour(c1, true, curveIndexToC1,
-                    visited);
+                NextContour nc = new NextContour(c1, visited);
                 nc.addMatchedContours(contour1, contour2);
                 
-                obj.setNextContour(nc);
+                transformationPair.setNextContour(nc);
                 
                 double cost = 0;
                 
                 //(2) calc cost: apply to tallest contours from each curve
                 
-                Iterator<Entry<Integer, List<Integer> > > iter = 
-                    curveIndexToC1.entrySet().iterator();
+                for (int index1s = 0; index1s < c1.size(); ++index1s) {
                 
-                while (iter.hasNext()) {
-                
-                    List<Integer> indexes = iter.next().getValue();
-            
-                    int index1s = indexes.get(0);
-                    
                     CurvatureScaleSpaceContour contour1s = c1.get(index1s);
                     
                     while (nc.getMatchedContours1().contains(contour1s)
@@ -300,8 +276,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                         t2 = t2 - 1;
                     }
                     
-                    CurvatureScaleSpaceContour contour2s =
-                        findMatchingC2(contour1s.getEdgeNumber(),
+                    CurvatureScaleSpaceContour contour2s = findMatchingC2(
                         sigma2, t2, nc);
                  
                     if (contour2s != null) {
@@ -345,7 +320,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                 
                 HeapNode node = new HeapNode(costL);
                 
-                node.setData(obj);
+                node.setData(transformationPair);
                 
                 heap.insert(node);
             }
@@ -384,20 +359,15 @@ public final class CurvatureScaleSpaceContourMatcher {
      * shifts between the contour lists can be retrieved with getSolvedScale()
      * and getSolvedShift().  if a solution was found, returns true, else
      * returns false.
-     * @param contours1
-     * @param contours2
      * @return 
      */
-    public boolean matchContours(List<CurvatureScaleSpaceContour> contours1, 
-        List<CurvatureScaleSpaceContour> contours2) {
-        
-        initializeVariables(contours1, contours2);
-                
+    public boolean matchContours() {
+                        
         if (heap.n == 0) {            
             return swapOrderAndMatchContours();            
         }
         
-        matchContours();
+        matchTheContours();
         
         if (!scalesSomeSmallerThanOne) {
             if (solutionScale < Double.MAX_VALUE) {
@@ -420,12 +390,6 @@ public final class CurvatureScaleSpaceContourMatcher {
         List<CurvatureScaleSpaceContour> origOrderC2 = 
             new ArrayList<CurvatureScaleSpaceContour>(c2);
 
-        Map<Integer, List<Integer> > origOrderCurveIndexToC1 =
-            new HashMap<Integer, List<Integer> >(curveIndexToC1);
-
-        Map<Integer, List<Integer> > origOrderCurveIndexToC2 =
-            new HashMap<Integer, List<Integer> >(curveIndexToC2);
-            
         List<CurvatureScaleSpaceContour> origOrderSolutionMatchedContours1 = 
             new ArrayList<CurvatureScaleSpaceContour>(
             solutionMatchedContours1);
@@ -434,10 +398,10 @@ public final class CurvatureScaleSpaceContourMatcher {
             new ArrayList<CurvatureScaleSpaceContour>(
             solutionMatchedContours2);
     
-        initializeVariables(contours2, contours1);
+        initializeVariables(origOrderC2, origOrderC1);
         
         if (heap.n > 0) {
-            matchContours();
+            matchTheContours();
         }
           
         // compare solutions and re-order the variables
@@ -501,12 +465,18 @@ public final class CurvatureScaleSpaceContourMatcher {
         log.info("have solution.  swapping the datasets back and inverting"
             + " the solution for reference frame 1 to reference frame 2");
 
-        List<CurvatureScaleSpaceContour> swap = c1;
-        c1 = c2;
-        c2 = swap;
-        Map<Integer, List<Integer> > swap2 = curveIndexToC1;
-        curveIndexToC1 = curveIndexToC2;
-        curveIndexToC2 = swap2;
+        List<CurvatureScaleSpaceContour> swap = new ArrayList<CurvatureScaleSpaceContour>(c1);
+        c1.clear();
+        c1.addAll(c2);
+        c2.clear();
+        c2.addAll(swap);
+        
+        float swap2 = tMin1;
+        tMin1 = tMin2;
+        tMin2 = swap2;
+        swap2 = tMax1;
+        tMax1 = tMax2;
+        tMax2 = swap2;
         
         if (solutionScale < Double.MAX_VALUE) {
             return true;
@@ -519,7 +489,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         // swap the order of datasets and try again.
         log.info("initialization resulted in 0 nodes, presumably due to "
-            + " scale < 0, so swapping the order and trying again.");
+            + " scale < 1, so swapping the order and trying again.");
 
         List<CurvatureScaleSpaceContour> contours1 = 
             new ArrayList<CurvatureScaleSpaceContour>(c1);
@@ -529,19 +499,28 @@ public final class CurvatureScaleSpaceContourMatcher {
 
         initializeVariables(contours2, contours1);
         
-        matchContours();
+        initializeHeapNodes();
+        
+        matchTheContours();
         
         log.info("have solution.  swapping the datasets back and inverting"
             + " the solution for reference frame 1 to reference frame 2");
         
         boolean solved = (solutionScale < Double.MAX_VALUE);
         
-        List<CurvatureScaleSpaceContour> swap = c1;
-        c1 = c2;
-        c2 = swap;
-        Map<Integer, List<Integer>> swap2 = curveIndexToC1;
-        curveIndexToC1 = curveIndexToC2;
-        curveIndexToC2 = swap2;
+        List<CurvatureScaleSpaceContour> swap = new ArrayList<CurvatureScaleSpaceContour>(c1);
+        c1.clear();
+        c1.addAll(c2);
+        c2.clear();
+        c2.addAll(swap);
+        
+        float swap2 = tMin1;
+        tMin1 = tMin2;
+        tMin2 = swap2;
+        swap2 = tMax1;
+        tMax1 = tMax2;
+        tMax2 = swap2;
+        
         List<CurvatureScaleSpaceContour> swap3 = solutionMatchedContours1;
         solutionMatchedContours1 = solutionMatchedContours2;
         solutionMatchedContours2 = swap3;
@@ -558,7 +537,7 @@ public final class CurvatureScaleSpaceContourMatcher {
      * returns false.
      * @return 
      */
-    private void matchContours() {
+    private void matchTheContours() {
         
         solutionShift = Double.MAX_VALUE;
         solutionScale = Double.MAX_VALUE;
@@ -577,16 +556,16 @@ public final class CurvatureScaleSpaceContourMatcher {
             return;
         }
         
-        TransformationPair obj = (TransformationPair)minCost.getData();
+        TransformationPair transformationPair = (TransformationPair)minCost.getData();
         
-        float shift = (float)obj.getShift();
-        float scale = (float)obj.getScale();
+        float shift = (float)transformationPair.getShift();
+        float scale = (float)transformationPair.getScale();
      
         solutionShift = shift;
         solutionScale = scale;
         solutionCost = (double)(minCost.getKey()/heapKeyFactor);
   
-        NextContour nc = obj.getNextContour();
+        NextContour nc = transformationPair.getNextContour();
                 
         solutionMatchedContours1 = nc.getMatchedContours1();
         
@@ -614,7 +593,7 @@ public final class CurvatureScaleSpaceContourMatcher {
        The cost of the mid cost node is modified by the results of the 
        application of the transformation parameters to the candidate contour.
         
-       The process is repeated until there are no more admissable contours
+       The process is repeated until there are no more admissible contours
        for an extracted min cost node.
       
      * @return 
@@ -625,36 +604,27 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         while (u != null) {
             
-            TransformationPair obj = (TransformationPair)u.getData();
+            TransformationPair transformationPair = (TransformationPair)u.getData();
         
-            NextContour nc = obj.getNextContour();
+            NextContour nc = transformationPair.getNextContour();
             
-            CurvatureScaleSpaceContour c = c1.get(obj.getContourIndex1());
-            int curveIndex = c.getEdgeNumber();
+            CurvatureScaleSpaceContour c = c1.get(transformationPair.getContourIndex1());
             
             CurvatureScaleSpaceContour contour1s = 
-                nc.findTallestContourWithinAScaleSpace(curveIndex);
+                nc.findTallestContourWithinScaleSpace();
      
             if ((contour1s == null) || 
                 nc.getMatchedContours1().contains(contour1s)) {
                 
-                //TODO: refactor to improve handling of these indexes to remove
-                // possibilities of using them incorrectly
-                
-                int contourIndex = nc.origContours.indexOf(c);
-                
-                PairInt target = new PairInt(curveIndex, contourIndex);
-                
-                contour1s = nc.findTheNextSmallestUnvisitedSibling(target);
-                
+                contour1s = nc.findTheNextSmallestUnvisitedSibling(c);
             }
             
             if (contour1s == null) {                
                 return u;
             }
             
-            float shift = (float)obj.getShift();
-            float scale = (float)obj.getScale();
+            float shift = (float)transformationPair.getShift();
+            float scale = (float)transformationPair.getScale();
             
             /*
             t2 = kScale * t1 + dShift
@@ -669,8 +639,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                 t2 = t2 - 1;
             }
 
-            CurvatureScaleSpaceContour contour2s
-                = findMatchingC2(contour1s.getEdgeNumber(), sigma2, t2, nc);
+            CurvatureScaleSpaceContour contour2s = findMatchingC2(sigma2, t2, 
+                nc);
 
             if (contour2s != null) {
                 nc.addMatchedContours(contour1s, contour2s);
@@ -694,7 +664,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                 - contour1s.getPeakSigma();
             //cost2 += penalty;
             
-            u.setData(obj);
+            u.setData(transformationPair);
             
             u.setKey(u.getKey() + (long)(cost2 * heapKeyFactor));
             
@@ -738,39 +708,15 @@ public final class CurvatureScaleSpaceContourMatcher {
         return len;
     }
 
-    private CurvatureScaleSpaceContour findMatchingC2(
-        int edgeNumber1, double sigma2, double t2, NextContour nc) {
+    private CurvatureScaleSpaceContour findMatchingC2(final double sigma, 
+        final double scaleFreeLength, NextContour nc) {
         
-        int expectedEdgeNumber2 = nc.getMatchedEdgeNumber2(edgeNumber1);
-
-        int idx2;
+        //TODO: improve this and the datastructures.
+        // should be able to use binary search on an array for c2 to get
+        // the closest index to sigma, then small nearby search
+        // for the closest scaleFreeLength
         
-        if (expectedEdgeNumber2 == -1) {
-            
-            // choose from all of c2
-            idx2 = findClosestC2MatchOrderedSearch(sigma2, t2, 
-                nc.getMatchedContours2());
-            
-        } else {
-            
-            // choose from contours of expectedEdgeNumber2
-            List<Integer> indexes = curveIndexToC2.get(
-                Integer.valueOf(expectedEdgeNumber2));
-            
-            idx2 = findClosestC2MatchOrderedSearch(sigma2, t2, 
-                indexes, nc.getMatchedContours2());
-        }
-        
-        if (idx2 == -1) {
-            return null;
-        }
-
-        return c2.get(idx2);
-            
-    }
-
-    private int findClosestC2MatchOrderedSearch(double sigma, 
-        double scaleFreeLength, List<CurvatureScaleSpaceContour> exclude) {
+        List<CurvatureScaleSpaceContour> exclude = nc.getMatchedContours2();
         
         //TODO: use 0.1*sigma? current sigma factor peak center error
         double tolSigma = 0.04*sigma;
@@ -793,7 +739,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         double minDiffLen = Double.MAX_VALUE;
         int minDiffLenIdx = -1;
         
-        for (int i = 0; i < c2.size(); i++) {
+        for (int i = 0; i < c2.size(); ++i) {
         
             CurvatureScaleSpaceContour c = c2.get(i);
             
@@ -842,98 +788,24 @@ public final class CurvatureScaleSpaceContourMatcher {
         }
         
         if (minDiffS > 0.2*sigma) {
-            return minDiffLenIdx;
+            if (minDiffLenIdx == -1) {
+                return null;
+            }
+            return c2.get(minDiffLenIdx);
         }
         
         if (minDiffT <= minDiff2T) {
-            return idx;
+            if (idx == -1) {
+                return null;
+            }
+            return c2.get(idx);
         }
         
-        return minDiff2TIdx;
-    }
-    
-    private int findClosestC2MatchOrderedSearch(double sigma, 
-        double scaleFreeLength, List<Integer> c2Indexes,
-        List<CurvatureScaleSpaceContour> exclude) {
-        
-        //TODO: use a percentage of sigma
-        double tolSigma = 0.04*sigma;
-        if (tolSigma < 1E-2) {
-            tolSigma = 0.1;
+        if (minDiff2TIdx == -1) {
+            return null;
         }
         
-        // consider wrap around searches too, for scaleFreeLength > 0.5 or 
-        // scaleFreeLength < 0.5
-        double wrapScaleFreeLength = (scaleFreeLength > 0.5) ?
-            scaleFreeLength - 1 : 1 + scaleFreeLength;
-        
-        double minDiffS = Double.MAX_VALUE;
-        double minDiffT = Double.MAX_VALUE;
-        int idx = -1;
-        
-        double minDiff2T = Double.MAX_VALUE;
-        int minDiff2TIdx = -1;
-        
-        double minDiffLen = Double.MAX_VALUE;
-        int minDiffLenIdx = -1;
-        
-        for (Integer i : c2Indexes) {
-        
-            CurvatureScaleSpaceContour c = c2.get(i.intValue());
-            
-            if (exclude.contains(c)) {
-                continue;
-            }
-            
-            double diffS = Math.abs(c.getPeakSigma() - sigma);
-            double diffT = Math.abs(c.getPeakScaleFreeLength() - 
-                scaleFreeLength);
-            
-            double len = Math.sqrt(diffS * diffS + diffT * diffT);
-            if (len < minDiffLen) {
-                minDiffLen = len;
-                minDiffLenIdx = i;
-            }
-            
-            if ((diffS <= (minDiffS + tolSigma)) && (diffT <= minDiffT)) {
-                minDiffS = diffS;
-                minDiffT = diffT;
-                idx = i.intValue();                
-            } else if ((diffT < minDiff2T) && (diffS <= (minDiffS + 3*tolSigma))
-                ) {
-                minDiff2T = diffT;
-                minDiff2TIdx = i.intValue();
-            }
-            
-            diffT = Math.abs(c.getPeakScaleFreeLength() - 
-                wrapScaleFreeLength);
-            
-            len = Math.sqrt(diffS * diffS + diffT * diffT);
-            if (len < minDiffLen) {
-                minDiffLen = len;
-                minDiffLenIdx = i;
-            }
-            
-            if ((diffS <= (minDiffS + tolSigma)) && (diffT <= minDiffT)) {
-                minDiffS = diffS;
-                minDiffT = diffT;
-                idx = i.intValue();                
-            } else if ((diffT < minDiff2T) && (diffS <= (minDiffS + 3*tolSigma))
-                ) {
-                minDiff2T = diffT;
-                minDiff2TIdx = i.intValue();
-            }
-        }
-        
-        if (minDiffS > 0.2*sigma) {
-            return minDiffLenIdx;
-        }
-        
-        if (minDiffT <= minDiff2T) {
-            return idx;
-        }
-        
-        return minDiff2TIdx;
+        return c2.get(minDiff2TIdx);
     }
     
 }

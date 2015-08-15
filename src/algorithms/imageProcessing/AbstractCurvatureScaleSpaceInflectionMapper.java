@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -33,8 +34,8 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
     protected final int image2OriginalHeight;
     protected List<PairIntArray> edges1 = null;
     protected List<PairIntArray> edges2 = null;
-    protected List<CurvatureScaleSpaceContour> contours1 = new ArrayList<CurvatureScaleSpaceContour>();
-    protected List<CurvatureScaleSpaceContour> contours2 = new ArrayList<CurvatureScaleSpaceContour>();
+    protected List<List<CurvatureScaleSpaceContour>> contours1 = new ArrayList<List<CurvatureScaleSpaceContour>>();
+    protected List<List<CurvatureScaleSpaceContour>> contours2 = new ArrayList<List<CurvatureScaleSpaceContour>>();
     protected Map<Integer, PairIntArray> matchedXY1ByEdgeInOrigRefFrame = null;
     protected Map<Integer, PairIntArray> matchedXY2ByEdgeInOrigRefFrame = null;
     protected Map<Integer, List<Float>> matchedXY1ByEdgeWeights = null;
@@ -136,76 +137,56 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
             imgMaker.useOutdoorMode();
         }
         imgMaker.initialize();
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         edges1 = getEdges(imgMaker);
-        
-        boolean didReverse = false;
+        offsetImageX1 = imgMaker.getTrimmedXOffset();
+        offsetImageY1 = imgMaker.getTrimmedYOffset();
+                
         for (int i = 0; i < edges1.size(); i++) {
+            
             PairIntArray curve = edges1.get(i);
-            Map<Float, ScaleSpaceCurve> scaleSpaceMap = imgMaker.createScaleSpaceMetricsForEdge2(curve);
+            Map<Float, ScaleSpaceCurve> scaleSpaceMap = 
+                imgMaker.createScaleSpaceMetricsForEdge2(curve);
             ScaleSpaceCurveImage scaleSpaceImage = 
                 imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i,
                 curve.getN());
             
             ContourFinder contourFinder = new ContourFinder();
+            
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
-            PairIntArray testContour = new PairIntArray();
-            for (int j = 0; j < result.size(); j++) {
-                CurvatureScaleSpaceContour c = result.get(j);
-                CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();
-                for (int jj = 0; jj < points.length; jj++) {
-                    testContour.add(points[jj].getXCoord(), points[jj].getYCoord());
-                }
+            
+            boolean reversed = contourFinder.reverseIfClockwise(result);
+            
+            if (reversed) {
+                log.info("EDGES1: contour isCW=true");
+                
+                // these are extracted from contourFinder in order of decreasing
+                // sigma already, so only need to be sorted if the list was
+                // reversed
+                Collections.sort(result, new DescendingSigmaComparator());
             }
-            boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);
-            log.info("EDGES1: contour isCW=" + isCW);
-            if (isCW) {
-                didReverse = true;
-                for (int j = 0; j < result.size(); j++) {
-                    CurvatureScaleSpaceContour contour = result.get(j);
-                    CurvatureScaleSpaceContour reversed = 
-                        new CurvatureScaleSpaceContour(contour.getPeakSigma(), 
-                            1.0f - contour.getPeakScaleFreeLength());
-                    CurvatureScaleSpaceImagePoint[] points = contour.getPeakDetails();
-                    if (points.length > 1) {
-                        CurvatureScaleSpaceImagePoint tmp = points[0];
-                        points[0] = points[1];
-                        points[1] = tmp;
-                    }
-                    for (int jj = 0; jj < points.length; jj++) {
-                        points[jj].setScaleFreeLength(1.0f - points[jj].getScaleFreeLength());
-                    }
-                    reversed.setPeakDetails(points);
-                    reversed.setEdgeNumber(contour.getEdgeNumber());
-                    result.set(j, reversed);
-                }
-            }
-            contours1.addAll(result);
+            
+MiscDebug.debugPlot(result, (ImageExt)image1.copyImage(), offsetImageX1, offsetImageY1,
+    "_1_" + MiscDebug.getCurrentTimeFormatted());
+
+            contours1.add(result);
         }
                 
         if (contours1.isEmpty()) {
             log.info("no contours found in image 1");
             return;
         }
-        if ((edges1.size() > 1) || didReverse) {
-            Collections.sort(contours1, new DescendingSigmaComparator());
+        if (edges1.size() > 1) {
+            Collections.sort(contours1, new DescendingSigmaComparator2());
         }
-        /*float highestPeak1 = contours1.get(0).getPeakSigma();
-        float lowThresh1 = 0.15f * highestPeak1;
-        for (int i = (contours1.size() - 1); i > -1; i--) {
-        if (contours1.get(i).getPeakSigma() < lowThresh1) {
-        contours1.remove(i);
-        }
-        }*/
+       
         /*
         note that when modifying the contour lists in any way, one has to
         maintain decreasing order by sigma and when sigma is equal, the
         order must be by increasing scale free parameter.
         two of the search methods in the matcher depend upon those properties.
          */
-        offsetImageX1 = imgMaker.getTrimmedXOffset();
-        offsetImageY1 = imgMaker.getTrimmedYOffset();
+        
         imgMaker = new CurvatureScaleSpaceImageMaker(image2);
         if (useLineDrawingMode) {
             imgMaker.useLineDrawingMode();
@@ -216,8 +197,9 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
         imgMaker.initialize();
         
         edges2 = getEdges(imgMaker);
+        offsetImageX2 = imgMaker.getTrimmedXOffset();
+        offsetImageY2 = imgMaker.getTrimmedYOffset();
         
-        didReverse = false;
         for (int i = 0; i < edges2.size(); i++) {
             PairIntArray curve = edges2.get(i);
             Map<Float, ScaleSpaceCurve> scaleSpaceMap = imgMaker.createScaleSpaceMetricsForEdge2(curve);
@@ -226,59 +208,32 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
                 curve.getN());
             ContourFinder contourFinder = new ContourFinder();
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
-            PairIntArray testContour = new PairIntArray();
-            for (int j = 0; j < result.size(); j++) {
-                CurvatureScaleSpaceContour c = result.get(j);
-                CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();
-                for (int jj = 0; jj < points.length; jj++) {
-                    testContour.add(points[jj].getXCoord(), points[jj].getYCoord());
-                }
+            
+            boolean reversed = contourFinder.reverseIfClockwise(result);
+            
+            if (reversed) {
+                                
+                log.info("EDGES2: contour isCW=true");
+                
+                // these are extracted from contourFinder in order of decreasing
+                // sigma already, so only need to be sorted if the list was
+                // reversed
+                Collections.sort(result, new DescendingSigmaComparator());
             }
-            boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);
-            log.info("EDGES2: contour isCW=" + isCW);
-            if (isCW) {
-                didReverse = true;
-                for (int j = 0; j < result.size(); j++) {
-                    CurvatureScaleSpaceContour contour = result.get(j);
-                    CurvatureScaleSpaceContour reversed = 
-                        new CurvatureScaleSpaceContour(contour.getPeakSigma(), 
-                            1.0f - contour.getPeakScaleFreeLength());
-                    CurvatureScaleSpaceImagePoint[] points = contour.getPeakDetails();
-                    if (points.length > 1) {
-                        CurvatureScaleSpaceImagePoint tmp = points[0];
-                        points[0] = points[1];
-                        points[1] = tmp;
-                    }
-                    for (int jj = 0; jj < points.length; jj++) {
-                        points[jj].setScaleFreeLength(1.0f - points[jj].getScaleFreeLength());
-                    }
-                    reversed.setPeakDetails(points);
-                    reversed.setEdgeNumber(contour.getEdgeNumber());
-                    result.set(j, reversed);
-                }
-            }
-            contours2.addAll(result);
+            
+MiscDebug.debugPlot(result, (ImageExt)image2.copyImage(), offsetImageX2, offsetImageY2,
+    "_2_" + MiscDebug.getCurrentTimeFormatted());
+            
+            contours2.add(result);
         }
-        offsetImageX2 = imgMaker.getTrimmedXOffset();
-        offsetImageY2 = imgMaker.getTrimmedYOffset();
-        
-debugPlot(contours1, image1, offsetImageX1, offsetImageY1);
-debugPlot(contours2, image2, offsetImageX2, offsetImageY2);
-       
+      
         if (contours2.isEmpty()) {
             log.info("did not find contours in image 2");
             return;
         }
-        if ((edges2.size() > 1) || didReverse) {
-            Collections.sort(contours2, new DescendingSigmaComparator());
+        if (edges2.size() > 1) {
+            Collections.sort(contours2, new DescendingSigmaComparator2());
         }
-        /*float highestPeak2 = contours2.get(0).getPeakSigma();
-        float lowThresh2 = 0.15f * highestPeak2;
-        for (int i = (contours2.size() - 1); i > -1; i--) {
-        if (contours2.get(i).getPeakSigma() < lowThresh2) {
-        contours2.remove(i);
-        }
-        }*/
     }
 
     protected abstract void createMatchedPointArraysFromContourPeaks();
@@ -323,12 +278,12 @@ debugPlot(contours2, image2, offsetImageX2, offsetImageY2);
     }
 
     @Override
-    public List<CurvatureScaleSpaceContour> getContours1() {
+    public List<List<CurvatureScaleSpaceContour>> getContours1() {
         return contours1;
     }
 
     @Override
-    public List<CurvatureScaleSpaceContour> getContours2() {
+    public List<List<CurvatureScaleSpaceContour>> getContours2() {
         return contours2;
     }
 
@@ -463,49 +418,4 @@ debugPlot(contours2, image2, offsetImageX2, offsetImageY2);
     protected abstract List<PairIntArray> getEdges(
         CurvatureScaleSpaceImageMaker imgMaker);
    
-    private void debugPlot(List<CurvatureScaleSpaceContour> result, ImageExt 
-        img, int xOffset, int yOffset) {
-        
-        if (result.isEmpty()) {
-            return;
-        }
-        
-        int nExtraForDot = 1;
-        int rClr = 255;
-        int gClr = 0;
-        int bClr = 0;
-        
-        for (int i = 0; i < result.size(); i++) {
-            
-            CurvatureScaleSpaceContour cssC = result.get(i);
-            
-            CurvatureScaleSpaceImagePoint[] peakDetails = cssC.getPeakDetails();
-            
-            for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {
-                int x = peakDetail.getXCoord() + xOffset;
-                int y = peakDetail.getYCoord() + yOffset;
-                for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                    float xx = x + dx;
-                    if ((xx > -1) && (xx < (img.getWidth() - 1))) {
-                        for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                            dy++) {
-                            float yy = y + dy;
-                            if ((yy > -1) && (yy < (img.getHeight() - 1))) {
-                                img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                            }
-                        }
-                    }
-                }
-            }            
-        }
-        
-        try {
-            
-            String dirPath = ResourceFinder.findDirectory("bin");
-
-            ImageIOHelper.writeOutputImage(dirPath + "/contours_" 
-                + System.currentTimeMillis() + ".png", img);
-        
-        } catch (IOException e) {}
-    }
 }

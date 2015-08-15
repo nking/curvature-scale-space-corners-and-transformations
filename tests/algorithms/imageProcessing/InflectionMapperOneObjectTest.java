@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -52,7 +53,7 @@ public class InflectionMapperOneObjectTest extends TestCase {
         };
         
         for (boolean swapDueToScale : new boolean[]{true, false}) {
-        //boolean swapDueToScale = false;
+            //swapDueToScale = false;
             for (String rotDegrees : rotDegreesList) {
 
                 /*
@@ -84,12 +85,12 @@ public class InflectionMapperOneObjectTest extends TestCase {
 
                 CurvatureScaleSpaceInflectionMapper mapper = new 
                     CurvatureScaleSpaceInflectionMapper(img1, img2);
-
+                
                 mapper.useLineDrawingLineMode();
 
                 mapper.useDebugMode();
 
-                mapper.setToRefineTransformations();
+  //              mapper.setToRefineTransformations();
 
                 TransformationParameters transformationParams = 
                     mapper.createEuclideanTransformation();
@@ -126,7 +127,10 @@ public class InflectionMapperOneObjectTest extends TestCase {
                     + "\nEXPECTED=" + rotDegrees + " (" + expectedRotDeg + ")"
                     + " found=" + foundRotDeg);
 
-                assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
+                float diffRot = AngleUtil.getAngleDifference(
+                    (float)expectedRotDeg, (float)foundRotDeg);
+                
+                assertTrue(Math.abs(diffRot) < 10.f);
 
                 if (rotDegrees.equals("135")) {
                     assertTrue(Math.abs(scale - 1.0) < 0.15);

@@ -1,12 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairInt;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * A class to serve the purpose of an adjacency matrix (via rules to choose
@@ -15,185 +11,54 @@ import java.util.Map;
  * 
  * @author nichole
  */
-public class NextContour implements Comparator<PairInt> {
+public class NextContour {
     
     /**
      * a list of closed contours extracted from a digital image
      */
-    protected final List<CurvatureScaleSpaceContour> origContours;
+    protected final TreeSet<CurvatureScaleSpaceContour> origContours;
     
     /**
-     * A map w/ keys being curve index and values being a list of indexes to 
-     * origContours carrying contours from the given curve.   Note that the 
-     * lists are ordered by descending peak sigma.   Note also that the 
+     * A list of indexes to origContours carrying contours from the curve, that
+     * is, closed curve edge, given to the contour matcher.
+     * 
+     * Note that the lists are ordered by descending peak sigma.   Note also that the 
      * List<Integer> indexes are referred to as contour indexes.
      */
-    protected final Map<Integer, List<Integer> > curveIndexToOrigContours;
-    
-    /**
-     * A modifiable list ordered by descending contour peak sigma.  Items
-     * are removed as they are visited.  
-     * The PairInt holds the edge index and then the origContours index  
-     * to locate the contour as x and y, respectively.   
-     * The same PairInts in this data structure are also stored in curveList to 
-     * make removal of a PairInt easy when looked up from curveList.
-     */
-    protected final List<PairInt> contourIndex;
-        
-    /**
-     * A modifiable list to find the contours of a curve.  The index to
-     * curveList is the same index as origContours, so finding information
-     * for curveIndex = 0 accesses the first item in this array and in 
-     * origContours;
-     * The array of PairInts returned for the second dimension are how to
-     * find all of the remaining unsearched contours for a curveIndex.
-     * Each PairInt holds for x and y respectively, the curveIndex and the
-     * index of the contour in origContours.  Note that each instance
-     * of PairInt here are stored also in contourTree, to make it easier
-     * to remove/update contourTree at the same time.
-     */
-    protected final Map<Integer, List<PairInt> > curveList;
+    protected final TreeSet<CurvatureScaleSpaceContour> remainingContours;
     
     protected final List<CurvatureScaleSpaceContour> matchedContours1;
     protected final List<CurvatureScaleSpaceContour> matchedContours2;
     
-    protected final Map<Integer, Integer> matchedEdgeNumbers;
+    protected int matchedEdgeNumber1 = -1;
+    protected int matchedEdgeNumber2 = -1;
     
     public NextContour(final List<CurvatureScaleSpaceContour> contours,
-        final boolean alreadySorted, 
-        final Map<Integer, List<Integer> > edgeIndexToOrigContours,
         List<CurvatureScaleSpaceContour> alreadyVisited) {
-        
-        matchedEdgeNumbers = new HashMap<Integer, Integer>();
-        
-        origContours = contours;
-        
-        curveIndexToOrigContours = edgeIndexToOrigContours;
-        
-        curveList = new HashMap<Integer, List<PairInt> >();
-        
+                
+        origContours = new TreeSet<CurvatureScaleSpaceContour>(
+            new DescendingSigmaComparator());
+                        
         // populate with contours that haven't been visited
-        contourIndex = new ArrayList<PairInt>(origContours.size());
+        remainingContours = new TreeSet<CurvatureScaleSpaceContour>(
+            new DescendingSigmaComparator());
         
-        for (int i = 0; i < origContours.size(); i++) {
+        for (int i = 0; i < contours.size(); i++) {
             
-            CurvatureScaleSpaceContour contour = origContours.get(i);
+            CurvatureScaleSpaceContour contour = contours.get(i);
+            
+            origContours.add(contour);
             
             if (alreadyVisited.contains(contour)) {
                 continue;
             }
-                
-            int curveIndex = contour.getEdgeNumber();
-
-            PairInt ci = new PairInt(curveIndex, i);
-
-            contourIndex.add(ci);
-
-            Integer key = Integer.valueOf(curveIndex);
-            if (!curveList.containsKey(key)) {
-                curveList.put(key, new ArrayList<PairInt>());
-            }
-        }
-        
-        if (!alreadySorted) {
-            Collections.sort(contourIndex, this);
-        }
-        
-        // fill curveList.  items are already ordered by descending peak sigma
-        for (PairInt ci : contourIndex) {
             
-            int curveIndex = ci.getX();
-            
-            Integer key = Integer.valueOf(curveIndex);
-            
-            curveList.get(key).add(ci);
+            remainingContours.add(contour);
         }
-        
+
         matchedContours1 = new ArrayList<CurvatureScaleSpaceContour>();
         
         matchedContours2 = new ArrayList<CurvatureScaleSpaceContour>();
-    }
-    
-    /**
-     * find the largest sigma peak within the remaining un-searched contours
-     * for the curve found by curveIndex.  Note that the method has the 
-     * side-effect of removing the returned contour from the look-up data
-     * structures.
-     * 
-     * @param curveIndex
-     * @return 
-     */
-    public CurvatureScaleSpaceContour findTallestContourWithinAScaleSpace(
-        int curveIndex) {
-        
-        if ((curveIndex < 0) && (curveIndex > (origContours.size() - 1))) {
-            throw new IllegalStateException("curveIndex is out of bounds");
-        }
-        
-        List<PairInt> indexes = curveList.get(Integer.valueOf(curveIndex));
-        
-        if ((indexes == null) || indexes.isEmpty()) {
-            return null;
-        }
-        
-        for (int i = 0; i < indexes.size(); i++) {
-            
-            PairInt ci = indexes.get(i);
-            
-            if (ci == null) {
-                
-                continue;
-                
-            } else {
-                
-                //look up contour and remove this item from contourTree
-                // and curveList
-                int ocIdx = ci.getY();
-                
-                CurvatureScaleSpaceContour contour = origContours.get(ocIdx);
-                
-                indexes.remove(ci);
-                
-                nullifyIfEmpty(curveIndex);
-                
-                contourIndex.remove(ci);
-                                
-                return contour;
-            }
-        }
-        
-        return null;
-    }
-    
-    public void markAsVisited(CurvatureScaleSpaceContour contour) {
-        
-        int curveIndex = contour.getEdgeNumber();
-        
-        if (curveIndex == -1) {
-            return;
-        }
-        
-        PairInt ci = null;
-        List<PairInt> indexes = curveList.get(Integer.valueOf(curveIndex));
-        if ((indexes == null) || indexes.isEmpty()) {
-            return;
-        }
-        for (int i = 0; i < indexes.size(); i++) {
-            PairInt pi = indexes.get(i);
-            int cntrIdx = pi.getY();
-            if (origContours.get(cntrIdx).equals(contour)) {
-                indexes.remove(pi);
-                ci = pi;
-                break;
-            }
-        }
-        
-        if (ci != null) {
-            
-            nullifyIfEmpty(curveIndex);
-            
-            contourIndex.remove(ci);
-        }
     }
     
     public void addMatchedContours(CurvatureScaleSpaceContour contour1,
@@ -203,180 +68,87 @@ public class NextContour implements Comparator<PairInt> {
         
         matchedContours1.add(contour1);
         matchedContours2.add(contour2);
-        
-        Integer edgeNumber1 = Integer.valueOf(contour1.getEdgeNumber());
-        
-        Integer edgeNumber2 = matchedEdgeNumbers.get(edgeNumber1);
-        
-        if (edgeNumber2 != null) {
-            if (contour2.getEdgeNumber() != edgeNumber2.intValue()) {
-                throw new IllegalArgumentException(
-                "contour2 is from edge number " 
-                + String.valueOf(contour2.getEdgeNumber()) 
-                + " but edge number " + edgeNumber2.toString() 
-                + " has already been matched to " + edgeNumber1.toString()
-                + " in c1");
-            }
+
+        if (matchedEdgeNumber1 == -1) {
+            matchedEdgeNumber1 = contour1.getEdgeNumber();
         } else {
-            matchedEdgeNumbers.put(edgeNumber1, 
-                Integer.valueOf(contour2.getEdgeNumber()));
-        }
-    }
-    
-    public int getMatchedEdgeNumber2(int edgeNumber1) {
-        
-        Integer edgeNumber2 = matchedEdgeNumbers.get(edgeNumber1);
-        
-        if (edgeNumber2 == null) {
-            return -1;
+            assert(matchedEdgeNumber1 == contour1.getEdgeNumber());
         }
         
-        return edgeNumber2.intValue();
+        if (matchedEdgeNumber2 == -1) {
+            matchedEdgeNumber2 = contour2.getEdgeNumber();
+        } else {
+            assert(matchedEdgeNumber2 == contour2.getEdgeNumber());
+        }    
     }
     
     /**
-     * find the next smallest sigma peak out of all contours.  the sigma is
-     * found by looking up the contour that target references.  Note that
+     * find the largest sigma peak within the remaining un-searched contours.  
+     * Note that the method has the 
+     * side-effect of removing the returned contour from the look-up data
+     * structures.
+     * 
+     * @return 
+     */
+    public CurvatureScaleSpaceContour findTallestContourWithinScaleSpace() {
+        
+        if (remainingContours.isEmpty()) {
+            return null;
+        }
+        
+        CurvatureScaleSpaceContour contour = remainingContours.first();
+        
+        boolean removed = remainingContours.remove(contour);
+                
+        assert(removed == true);
+        
+        return contour;
+    }
+    
+    public void markAsVisited(CurvatureScaleSpaceContour contour) {
+        
+        remainingContours.remove(contour);
+    }
+    
+    public int getMatchedEdgeNumber2() {
+        return matchedEdgeNumber2;
+    }
+    public int getMatchedEdgeNumber1() {
+        return matchedEdgeNumber1;
+    }
+    
+    /**
+     * find the next smallest sigma peak out of all contours. Note that
      * this method has the side effect of removing the returned contour
      * from the internal look-up data structures.
      * 
-     * @param target holds edgeNumber as X and the origContours index as Y
+     * @param target the contour or which to find the next smallest contour
      * 
      * @return 
      */
     public CurvatureScaleSpaceContour findTheNextSmallestUnvisitedSibling(
-        PairInt target) { 
+        CurvatureScaleSpaceContour target) { 
 
         if (target == null) {
             return null;
         }
-
-        PairInt nextLower = findNextLower(target);
         
+        CurvatureScaleSpaceContour nextLower = origContours.higher(target);
+        
+        while ((nextLower != null) && !remainingContours.contains(nextLower)) {
+            nextLower = origContours.higher(nextLower);
+        }
+                
         if (nextLower != null) {
             
-            int originalContoursIndex = nextLower.getY();
-                
-            CurvatureScaleSpaceContour contour = 
-                origContours.get(originalContoursIndex);
-
-            PairInt i = findCurveList2ndIndex(nextLower);
+            boolean removed = remainingContours.remove(nextLower);
             
-            if (i != null) {
-                
-                List<PairInt> indexes = curveList.get(Integer.valueOf(
-                    nextLower.getX()));
-                
-                indexes.remove(i);
-                
-                nullifyIfEmpty(nextLower.getX());
-            }
-
-            contourIndex.remove(nextLower);
+            assert(removed);
             
-            return contour;
+            return nextLower;
         }
         
         return null;
-    }
-    
-    /**
-     * 
-     * @param target holds edgeNumber as X and the origContours index as Y
-     * @return 
-     */
-    private PairInt findCurveList2ndIndex(PairInt target) {
-                
-        List<PairInt> indexes = curveList.get(Integer.valueOf(target.getX()));
-            
-        if ((indexes != null) && !indexes.isEmpty()) {
-
-            for (int i = 0; i < indexes.size(); i++) {
-
-                PairInt ci = indexes.get(i);
-
-                if (ci != null) {
-
-                    if ((ci.getX() == target.getX()) && 
-                        (ci.getY() == target.getY())) {
-
-                        return ci;
-                    }
-                }
-            }
-        }
-        
-        return null;
-    }
-    
-    /**
-     * a comparator to use to make a descending peak sigma sort for contours
-     * in origContours referenced by o1 and o2.
-     * 
-     * @param o1 holds edgeNumber as X and the origContours index as Y
-     * @param o2 holds edgeNumber as X and the origContours index as Y
-     * @return 
-     */
-    @Override
-    public int compare(PairInt o1, PairInt o2) {
-        
-        CurvatureScaleSpaceContour c1 = origContours.get(o1.getY());
-        
-        CurvatureScaleSpaceContour c2 = origContours.get(o2.getY());
-        
-        return Float.compare(c2.getPeakSigma(), c1.getPeakSigma());
-    }
-
-    /**
-     * 
-     * @param target holds edgeNumber as X and the origContours index as Y
-     * @return 
-     */
-    private PairInt findNextLower(PairInt target) {
-        
-        int idx = contourIndex.indexOf(target);
-        
-        if (idx == - 1) {
-            
-            if (contourIndex.isEmpty()) {
-                
-                return null;
-            
-            } else {
-                
-                // this can happen at the         
-                int contourIdx = target.getY();
-                CurvatureScaleSpaceContour targetContour = 
-                    origContours.get(contourIdx);
-                
-                float sigma = targetContour.getPeakSigma();
-                
-                // look for any with same curveIndex number and then the
-                //    next after contourIndex
-                for (int i = 0; i < contourIndex.size(); i++) {
-                    PairInt ci = contourIndex.get(i);
-                    float sigma2 = origContours.get(ci.getY()).getPeakSigma();
-                    if (sigma2 < sigma) {
-                        return ci;
-                    }
-                }
-                
-                return null;
-            }
-        }
-        
-        if (idx == (contourIndex.size() - 1)) {
-            return null;
-        } else {
-            return contourIndex.get(idx + 1);
-        }
-    }
-
-    private void nullifyIfEmpty(int curveIndex) {
-        List<PairInt> indexes = curveList.get(Integer.valueOf(curveIndex));
-        if (indexes.isEmpty()) {
-            curveList.remove(Integer.valueOf(curveIndex));
-        }
     }
     
     public List<CurvatureScaleSpaceContour> getMatchedContours1() {
