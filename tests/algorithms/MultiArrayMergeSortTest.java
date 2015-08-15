@@ -11,6 +11,7 @@ import junit.framework.TestCase;
  * adapted from 
  * https://code.google.com/p/two-point-correlation/source/browse/src/test/java/algorithms/sorting/
  * under MIT License (MIT), Nichole King 2013
+ * and added to
  */
 public class MultiArrayMergeSortTest extends TestCase {
 
@@ -370,6 +371,105 @@ public class MultiArrayMergeSortTest extends TestCase {
         
         assertTrue(Arrays.equals(expectedA, a));
         assertTrue(Arrays.equals(expectedB, b));
+    }
+    
+    public void testSortBy1stDescThen2ndAsc() throws Exception {
+        
+        int[] nSimilarSummary = new int[2];
+        double[] costsSummary = new double[2];
+        Integer[][] indexesSummary = new Integer[2][];
+        int[] mainIndexSummary = new int[2];
+        
+        // ===================================
+        nSimilarSummary[0] = 1;
+        nSimilarSummary[1] = 4;
+        costsSummary[0] = 3.;
+        costsSummary[1] = 3;
+        indexesSummary[0] = new Integer[]{Integer.valueOf(0)};
+        indexesSummary[1] = new Integer[]{Integer.valueOf(1)};
+        mainIndexSummary[0] = 0;
+        mainIndexSummary[1] = 1;
+        
+        MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary,
+            indexesSummary, mainIndexSummary);
+        
+        assertTrue(nSimilarSummary[0] == 4);
+        assertTrue(costsSummary[0] == 3);
+        assertTrue(mainIndexSummary[0] == 1);
+        assertTrue(Arrays.equals(indexesSummary[0], new Integer[]{Integer.valueOf(1)}));
+        assertTrue(nSimilarSummary[1] == 1);
+        assertTrue(costsSummary[1] == 3);
+        assertTrue(mainIndexSummary[1] == 0);
+        assertTrue(Arrays.equals(indexesSummary[1], new Integer[]{Integer.valueOf(0)}));
+
+        // ================================
+        nSimilarSummary[1] = 1;
+        nSimilarSummary[0] = 4;
+        costsSummary[1] = 3.;
+        costsSummary[0] = 3;
+        indexesSummary[1] = new Integer[]{Integer.valueOf(0)};
+        indexesSummary[0] = new Integer[]{Integer.valueOf(1)};
+        mainIndexSummary[1] = 0;
+        mainIndexSummary[0] = 1;
+        
+        MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary,
+            indexesSummary, mainIndexSummary);
+        
+        assertTrue(nSimilarSummary[0] == 4);
+        assertTrue(costsSummary[0] == 3);
+        assertTrue(mainIndexSummary[0] == 1);
+        assertTrue(Arrays.equals(indexesSummary[0], new Integer[]{Integer.valueOf(1)}));
+        assertTrue(nSimilarSummary[1] == 1);
+        assertTrue(costsSummary[1] == 3);
+        assertTrue(mainIndexSummary[1] == 0);
+        assertTrue(Arrays.equals(indexesSummary[1], new Integer[]{Integer.valueOf(0)}));
+        
+        //====================================================
+        
+        nSimilarSummary[0] = 1;
+        nSimilarSummary[1] = 1;
+        costsSummary[0] = 3.;
+        costsSummary[1] = 400;
+        indexesSummary[0] = new Integer[]{Integer.valueOf(0)};
+        indexesSummary[1] = new Integer[]{Integer.valueOf(1)};
+        mainIndexSummary[0] = 0;
+        mainIndexSummary[1] = 1;
+        
+        MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary,
+            indexesSummary, mainIndexSummary);
+        
+        assertTrue(nSimilarSummary[0] == 1);
+        assertTrue(costsSummary[0] == 3);
+        assertTrue(mainIndexSummary[0] == 0);
+        assertTrue(Arrays.equals(indexesSummary[0], new Integer[]{Integer.valueOf(0)}));
+        
+        assertTrue(nSimilarSummary[1] == 1);
+        assertTrue(costsSummary[1] == 400);
+        assertTrue(mainIndexSummary[1] == 1);
+        assertTrue(Arrays.equals(indexesSummary[1], new Integer[]{Integer.valueOf(1)}));
+        
+        // ==== reverse order of input and assert same results ===
+        nSimilarSummary[1] = 1;
+        nSimilarSummary[0] = 1;
+        costsSummary[1] = 3.;
+        costsSummary[0] = 400;
+        indexesSummary[1] = new Integer[]{Integer.valueOf(0)};
+        indexesSummary[0] = new Integer[]{Integer.valueOf(1)};
+        mainIndexSummary[1] = 0;
+        mainIndexSummary[0] = 1;
+        
+        MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary,
+            indexesSummary, mainIndexSummary);
+        
+        assertTrue(nSimilarSummary[0] == 1);
+        assertTrue(costsSummary[0] == 3);
+        assertTrue(mainIndexSummary[0] == 0);
+        assertTrue(Arrays.equals(indexesSummary[0], new Integer[]{Integer.valueOf(0)}));
+        
+        assertTrue(nSimilarSummary[1] == 1);
+        assertTrue(costsSummary[1] == 400);
+        assertTrue(mainIndexSummary[1] == 1);
+        assertTrue(Arrays.equals(indexesSummary[1], new Integer[]{Integer.valueOf(1)}));
     }
     
     /**
