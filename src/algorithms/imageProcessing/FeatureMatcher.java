@@ -289,13 +289,13 @@ public class FeatureMatcher {
         int kMaxIdx1 = cornerRegion1.getKMaxIdx();
         final int x1 = cornerRegion1.getX()[kMaxIdx1];
         final int y1 = cornerRegion1.getY()[kMaxIdx1];
-        int rot1 = (int)Math.round(
+        int rot1 = Math.round(
             cornerRegion1.getRelativeOrientationInDegrees());
         
         int kMaxIdx2 = cornerRegion2.getKMaxIdx();
         final int x2 = cornerRegion2.getX()[kMaxIdx2];
         final int y2 = cornerRegion2.getY()[kMaxIdx2];
-        int rot2 = (int)Math.round(
+        int rot2 = Math.round(
             cornerRegion2.getRelativeOrientationInDegrees());
         
         FeatureComparisonStat best = null;

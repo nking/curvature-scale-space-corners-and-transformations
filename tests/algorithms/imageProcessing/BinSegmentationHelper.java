@@ -928,7 +928,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
                         csscMaker.convertScaleSpaceMapToSparseImage(
                         scaleSpaceCurveMap, edgeNumber, closedEdge.getN());
                     
-     //MiscDebug.printScaleSpaceCurve(scaleSpaceCurveImage);
+MiscDebug.printScaleSpaceCurve(scaleSpaceCurveImage, MiscDebug.getCurrentTimeFormatted());
                         
                     ContourFinder contourFinder = new ContourFinder();
                     
@@ -940,7 +940,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
                     
                     boolean reversed = contourFinder.reverseIfClockwise(cssContourList);
                     
-     //MiscDebug.printScaleSpaceContours(cssContourList);               
+//MiscDebug.printScaleSpaceContours(cssContourList);               
                     
                     cssContours.add(cssContourList);
                     

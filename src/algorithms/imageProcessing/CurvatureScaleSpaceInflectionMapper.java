@@ -98,18 +98,31 @@ public final class CurvatureScaleSpaceInflectionMapper extends
                     new CurvatureScaleSpaceContourMatcher(list1, list2, 
                     alreadySorted);
                 
-                matcher.matchContours();
+                boolean didMatch = matcher.matchContours();
+                
+                if (!didMatch) {
+                    continue;
+                }
                 
                 List<CurvatureScaleSpaceContour> m1 = matcher.getSolutionMatchedContours1();
                 List<CurvatureScaleSpaceContour> m2 = matcher.getSolutionMatchedContours2();
-                if (m1 == null || m2 == null) {
+                if (m1 == null || m2 == null || m1.isEmpty() || m2.isEmpty()) {
                     continue;
                 }
                 assert(m1.size() == m2.size());
+                                
+                /*
+                There may be insignificant low cost matches for very small
+                curves, so will only keep a solution when there are as few
+                as 2 contours in the match if there are no other matches.
+                */
+                if ((m1.size() == 2) && (bestM1 != null) && (bestM1.size() > 2)) {
+                    continue;
+                }
                 
                 double cost = matcher.getSolvedCost();
                 
-                if (cost < minCost) {
+                if ((cost < minCost) || ((bestM1 != null) && (m1.size() > 2) && (bestM1.size() < 3))) {
                     minCost = cost;
                     bestM1 = m1;
                     bestM2 = m2;

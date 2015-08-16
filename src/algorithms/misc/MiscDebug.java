@@ -12,11 +12,13 @@ import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.PixelColors;
+import algorithms.imageProcessing.ScaleSpaceCurveImage;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PointPairInt;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
 import java.awt.Color;
@@ -978,4 +980,41 @@ public class MiscDebug {
         } catch (IOException e) {}
     }
 
+    public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
+        int fileNumber) throws IOException {
+        
+        float[] sigmas = scaleSpaceImage.getImageSigmas();
+        
+        float[][] tVsSigma = scaleSpaceImage.getScaleSpaceImage();
+        
+        int n = 0;
+        for (int col = 0; col < tVsSigma.length; col++) {
+            n += tVsSigma[col].length;
+        }
+        
+        float[] x = new float[n];
+        float[] y = new float[n];
+        n = 0;
+        for (int col = 0; col < tVsSigma.length; col++) {
+            float sigma = sigmas[col];
+            for (int row = 0; row < tVsSigma[col].length; row++) {
+                y[n] = sigma;
+                x[n] = tVsSigma[col][row];
+                n++;
+            }
+        }
+        
+        float xMin = 0;
+        float xMax = 1.f;
+        float yMin = 0;
+        float yMax = 1.1f * algorithms.misc.MiscMath.findMax(y);
+            
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        
+        plotter.addPlot(xMin, xMax, yMin, yMax,
+            x, y, null, null, 
+            "t vs. sigma for inflection points");
+        
+        plotter.writeFile(fileNumber);
+    }
 }

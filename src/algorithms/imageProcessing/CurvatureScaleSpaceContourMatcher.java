@@ -269,9 +269,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                     double sigma2 = scale * contour1s.getPeakSigma();
                     double t2 = (scale * contour1s.getPeakScaleFreeLength()) 
                         + shift;
-                    //double t2 = contour1s.getPeakScaleFreeLength() + shift;
                     if (t2 < 0) {
-                        t2 = 1 + t2;
+                        t2 += 1;
                     } else if (t2 > 1) {
                         t2 = t2 - 1;
                     }
@@ -300,18 +299,6 @@ public final class CurvatureScaleSpaceContourMatcher {
                 image and is added to the cost of the match computed when a node
                 is created.
                 */
-                /*if (!isTallestPeakInEdge1) {
-                    
-                    int c1Idx = curveIndexToC1.get(
-                        Integer.valueOf(contour1.getEdgeNumber()))
-                        .get(0).intValue();
-                    
-                    CurvatureScaleSpaceContour ei = c1.get(c1Idx);
-                    
-                    double penalty = ei.getPeakSigma() - contour1.getPeakSigma();
-                    
-                    cost += penalty;
-                }*/
                 double penalty = c1.get(0).getPeakSigma() 
                     - contour1.getPeakSigma();
                 cost += penalty;
@@ -514,6 +501,11 @@ public final class CurvatureScaleSpaceContourMatcher {
         c2.clear();
         c2.addAll(swap);
         
+        // swap the matched
+        swap = solutionMatchedContours1;
+        solutionMatchedContours1 = solutionMatchedContours2;
+        solutionMatchedContours2 = swap;
+        
         float swap2 = tMin1;
         tMin1 = tMin2;
         tMin2 = swap2;
@@ -521,9 +513,6 @@ public final class CurvatureScaleSpaceContourMatcher {
         tMax1 = tMax2;
         tMax2 = swap2;
         
-        List<CurvatureScaleSpaceContour> swap3 = solutionMatchedContours1;
-        solutionMatchedContours1 = solutionMatchedContours2;
-        solutionMatchedContours2 = swap3;
         solutionScale = 1. / solutionScale;
         solutionShift = 1. - solutionShift;
         
@@ -677,8 +666,7 @@ public final class CurvatureScaleSpaceContourMatcher {
     }
     
     /**
-     * calculate the cost as the as the straight line difference between
-     * the closest found contour and the model's sigma and peak.
+     * 
      * @param contour
      * @param sigma
      * @param scaleFreeLength

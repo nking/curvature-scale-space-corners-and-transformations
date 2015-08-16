@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -151,6 +152,13 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
                 imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i,
                 curve.getN());
             
+try {
+    MiscDebug.printScaleSpaceCurve(scaleSpaceImage,
+        MiscDebug.getCurrentTimeFormatted());
+} catch (IOException ex) {
+    Logger.getLogger(AbstractCurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
+}
+
             ContourFinder contourFinder = new ContourFinder();
             
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
@@ -206,6 +214,14 @@ MiscDebug.debugPlot(result, (ImageExt)image1.copyImage(), offsetImageX1, offsetI
             ScaleSpaceCurveImage scaleSpaceImage = 
                 imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i,
                 curve.getN());
+            
+try {
+    MiscDebug.printScaleSpaceCurve(scaleSpaceImage,
+        MiscDebug.getCurrentTimeFormatted());
+} catch (IOException ex) {
+    Logger.getLogger(AbstractCurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
+}
+
             ContourFinder contourFinder = new ContourFinder();
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
             

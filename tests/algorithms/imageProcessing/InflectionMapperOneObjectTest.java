@@ -57,7 +57,7 @@ public class InflectionMapperOneObjectTest extends TestCase {
             for (String rotDegrees : rotDegreesList) {
 
                 /*
-                if (!rotDegrees.equals("60")) {
+                if (!rotDegrees.equals("45")) {
                     continue;
                 }
                 */
@@ -80,9 +80,6 @@ public class InflectionMapperOneObjectTest extends TestCase {
                 ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
                 ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
                 
-                double centroidX1 = img1.getWidth() >> 1;
-                double centroidY1 = img1.getHeight() >> 1;
-
                 CurvatureScaleSpaceInflectionMapper mapper = new 
                     CurvatureScaleSpaceInflectionMapper(img1, img2);
                 
