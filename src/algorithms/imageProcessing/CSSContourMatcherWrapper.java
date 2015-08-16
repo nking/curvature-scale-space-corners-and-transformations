@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-public final class CurvatureScaleSpaceContourMatcher {
+public final class CSSContourMatcherWrapper {
     
     protected Heap heap = null;
     
@@ -85,7 +85,7 @@ public final class CurvatureScaleSpaceContourMatcher {
      *                 than N.  
      * </pre>
      */
-    public CurvatureScaleSpaceContourMatcher(
+    public CSSContourMatcherWrapper(
         final List<CurvatureScaleSpaceContour> contours1, 
         final List<CurvatureScaleSpaceContour> contours2,
         boolean contoursAreAlreadySorted) {

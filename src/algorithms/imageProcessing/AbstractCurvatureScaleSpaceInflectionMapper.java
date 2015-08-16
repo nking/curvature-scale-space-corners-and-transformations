@@ -182,8 +182,8 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
                 
                 List<CurvatureScaleSpaceContour> contours2 = contourLists2.get(edge2Idx);
                 
-                CurvatureScaleSpaceContourMatcher matcher = 
-                    new CurvatureScaleSpaceContourMatcher(contours1, contours2, 
+                CSSContourMatcherWrapper matcher = 
+                    new CSSContourMatcherWrapper(contours1, contours2, 
                     alreadySorted);
               
                 boolean didMatch = matcher.matchContours();

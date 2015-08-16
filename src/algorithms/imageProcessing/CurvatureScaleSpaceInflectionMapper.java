@@ -9,8 +9,8 @@ import java.util.List;
  * be applied to the first to put it into the frame of the second.
  * 
  * The algorithm used for matching scale space image contours is documented in 
- * CurvatureScaleSpaceContourMatcher
- * @see algorithms.imageProcessing.CurvatureScaleSpaceContourMatcher
+ * CSSContourMatcherWrapper
+ * @see algorithms.imageProcessing.CSSContourMatcherWrapper
  * 
  * @author nichole
  */
