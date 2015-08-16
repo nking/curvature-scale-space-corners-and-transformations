@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -98,6 +99,11 @@ public class InflectionMapperOneObjectTest extends TestCase {
 
                 double scale = transformationParams.getScale();
 
+                int nEdges2 = mapper.getEdges2InOriginalReferenceFrame().size();
+                PairIntArray[] edges2 = 
+                    mapper.getEdges2InOriginalReferenceFrame().toArray(
+                    new PairIntArray[nEdges2]);
+                
                 int nEdges1 = mapper.getEdges1InOriginalReferenceFrame().size();
                 PairIntArray[] edges1 = 
                     mapper.getEdges1InOriginalReferenceFrame().toArray(
@@ -110,8 +116,11 @@ public class InflectionMapperOneObjectTest extends TestCase {
 
                 img2 = ImageIOHelper.readImageExt(filePath2);
 
-                debugDisplay(transformedEdges, img2, rotDegrees);
-
+                MiscDebug.writeImage(transformedEdges, img2, "transformed_edges_" + rotDegrees);
+/*
+MiscDebug.writeImage(edges1, img1, "check_1_" + rotDegrees + "_" + MiscDebug.getCurrentTimeFormatted());
+MiscDebug.writeImage(edges2, img2, "check_2_" + rotDegrees + "_" + MiscDebug.getCurrentTimeFormatted());
+*/
                 double expectedRotDeg = Float.valueOf(rotDegrees).floatValue();
 
                 if (!swapDueToScale) {
@@ -141,42 +150,7 @@ public class InflectionMapperOneObjectTest extends TestCase {
             }
         }
     }
-   
-    private void debugDisplay(PairIntArray[] transformedEdges,
-        Image img, String rotDegrees) throws IOException {
-        
-        for (int i = 0; i < transformedEdges.length; i++) {
-            PairIntArray edge = transformedEdges[i];
-            debugAddCurveToImage(edge, img, 0, 255, 255, 255);
-        }     
-        
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
-        ImageIOHelper.writeOutputImage(
-            dirPath + "/transformed_edges_" + rotDegrees + ".png", img);
-    }
     
-    private void debugAddCurveToImage(PairIntArray edge, Image input, 
-        int nExtraForDot, int rClr, int gClr, int bClr) {
-        
-        for (int i = 0; i < edge.getN(); i++) {
-            int x = edge.getX(i);
-            int y = edge.getY(i);
-            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                float xx = x + dx;
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                        dy++) {
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     public static void main(String[] args) {
         
         try {

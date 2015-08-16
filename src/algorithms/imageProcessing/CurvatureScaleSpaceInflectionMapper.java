@@ -1,8 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +13,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * class to map contours from one image to another and return the
@@ -144,15 +148,28 @@ public final class CurvatureScaleSpaceInflectionMapper extends
                 List<Float> weights2 = new ArrayList<Float>();
         
                 //xy1 and xy2 have the image offsets added
-                extract(bestM1, xy1, weights1);
-                extract(bestM2, xy2, weights2);
+                extract(bestM1, xy1, weights1, offsetImageX1, offsetImageY1);
+                extract(bestM2, xy2, weights2, offsetImageX2, offsetImageY2);
                 
                 if (xy1.getN() < 3) {
                     continue;
                 }
-                
+/*                
+try {
+    MiscDebug.writeImage(xy1, (ImageExt)image1.copyImage(),
+        "check_1_xy_" + MiscDebug.getCurrentTimeFormatted());
+} catch (IOException ex) {
+    Logger.getLogger(CurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
+}
+*/                
                 MatchedPointsTransformationCalculator tc = new 
                     MatchedPointsTransformationCalculator();
+                
+                /*
+                the xy1, xy2 coordinates are w.r.t. the original image coordinate
+                reference frame (the offsets have been added back in).
+                
+                */
                 
                 int centroidX1 = 0;
                 int centroidY1 = 0;
@@ -179,7 +196,21 @@ public final class CurvatureScaleSpaceInflectionMapper extends
                 if (reverseDatasetOrder && (params != null)) {
                     params = tc.swapReferenceFrames(params);            
                 }
-                
+/*
+try {
+    int flNumber = MiscDebug.getCurrentTimeFormatted();
+    MiscDebug.writeImage(xy1, (ImageExt)image1.copyImage(),
+        "check_1_xy_" + flNumber);
+    MiscDebug.writeImage(xy2, (ImageExt)image2.copyImage(),
+        "check_2_xy_" + flNumber);
+    Transformer transformer = new Transformer();
+    PairIntArray xy1Tr = transformer.applyTransformation(params, xy1);
+    MiscDebug.writeImage(xy1Tr, (ImageExt)image2.copyImage(),
+        "check_1_xy_tr_" + flNumber);
+} catch (IOException ex) {
+    Logger.getLogger(CurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
+}
+*/
                 Integer key = Integer.valueOf(i1);
                 
                 bestMatches1.put(key, bestM1);
@@ -463,7 +494,8 @@ public final class CurvatureScaleSpaceInflectionMapper extends
     }
 
     private void extract(List<CurvatureScaleSpaceContour> contours, 
-        PairIntArray outputXY, List<Float> outputSigmaWeights) {
+        PairIntArray outputXY, List<Float> outputSigmaWeights,
+        final int imageOffsetX, final int imageOffsetY) {
         
         float sumSigma = 0;
         
@@ -476,8 +508,8 @@ public final class CurvatureScaleSpaceInflectionMapper extends
                 CurvatureScaleSpaceImagePoint spaceImagePoint = 
                     c.getPeakDetails()[j];
                 
-                int x = spaceImagePoint.getXCoord() + offsetImageX1;
-                int y = spaceImagePoint.getYCoord() + offsetImageY1;
+                int x = spaceImagePoint.getXCoord() + imageOffsetX;
+                int y = spaceImagePoint.getYCoord() + imageOffsetY;
                 
                 outputXY.add(x, y);
                 outputSigmaWeights.add(Float.valueOf(c.getPeakSigma()));

@@ -1017,4 +1017,29 @@ public class MiscDebug {
         
         plotter.writeFile(fileNumber);
     }
+    
+    public static void writeImage(PairIntArray[] edges,
+        Image img, String suffix) throws IOException {
+        
+        for (int i = 0; i < edges.length; i++) {
+            PairIntArray edge = edges[i];
+            ImageIOHelper.addCurveToImage(edge, img, 0, 255, 0, 0);
+        }     
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/" + suffix + ".png", img);
+    }
+    
+    public static void writeImage(PairIntArray edge,
+        Image img, String suffix) throws IOException {
+        
+        ImageIOHelper.addCurveToImage(edge, img, 1, 255, 0, 0);
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/" + suffix + ".png", img);
+    }
 }

@@ -151,14 +151,14 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
             ScaleSpaceCurveImage scaleSpaceImage = 
                 imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i,
                 curve.getN());
-            
+/*            
 try {
     MiscDebug.printScaleSpaceCurve(scaleSpaceImage,
         MiscDebug.getCurrentTimeFormatted());
 } catch (IOException ex) {
     Logger.getLogger(AbstractCurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
 }
-
+*/
             ContourFinder contourFinder = new ContourFinder();
             
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
