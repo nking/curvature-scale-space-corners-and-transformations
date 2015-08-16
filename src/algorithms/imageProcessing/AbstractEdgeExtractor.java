@@ -98,6 +98,8 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         
         if (removeShorterEdges) {
             removeEdgesShorterThan(output, edgeSizeLowerLimit);
+        } else {
+            removeEdgesShorterThan(output, 1);
         }
         
         return output;

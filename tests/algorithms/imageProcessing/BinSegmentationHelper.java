@@ -869,6 +869,8 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         MiscDebug.writeImage(img1Cp, "1_" + fileName1Root + "_binned_clr");
         MiscDebug.writeImage(img2Cp, "2_" + fileName2Root + "_binned_clr");
 
+        List<PairIntArray> edges1 = new ArrayList<PairIntArray>();
+        List<PairIntArray> edges2 = new ArrayList<PairIntArray>();
         
         // iterate over contigMap to create scale space maps
        
@@ -900,14 +902,14 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
             Map<Integer, List<PairIntArray>> contigMap = contigMap1;
             GreyscaleImage imgGrey = img1GreyOrig;
             List<List<CurvatureScaleSpaceContour>> cssContours = cssContours1;
+            List<PairIntArray> edges = edges1;
             if (type == 1) {
                 contigMap = contigMap2;
                 imgGrey = img2GreyOrig;
                 cssContours = cssContours2;
+                edges = edges2;
             }
-            
-            int edgeNumber = 0;
-            
+                        
             for (Entry<Integer, List<PairIntArray>> entry : contigMap.entrySet()) {
                
                 List<PairIntArray> contiguousPixels = entry.getValue();
@@ -916,68 +918,50 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
                     
                     Set<PairInt> points = Misc.convert(contiguous);
                     
-                    PairIntArrayWithColor closedEdge = 
+                    PairIntArray closedEdge = 
                         perimeterFinder.findBorderEdge(points, 
                         imgGrey.getWidth(), imgGrey.getHeight());
                     
-                    Map<Float, ScaleSpaceCurve> scaleSpaceCurveMap =
-                        csscMaker.createScaleSpaceMetricsForEdge(
-                        closedEdge, sigmaPowerFactor, sigmaStart, sigmaEnd);
-                    
-                    ScaleSpaceCurveImage scaleSpaceCurveImage = 
-                        csscMaker.convertScaleSpaceMapToSparseImage(
-                        scaleSpaceCurveMap, edgeNumber, closedEdge.getN());
-                    
-MiscDebug.printScaleSpaceCurve(scaleSpaceCurveImage, MiscDebug.getCurrentTimeFormatted());
-                        
-                    ContourFinder contourFinder = new ContourFinder();
-                    
-                    // this list of contours belongs to one edge.  it holds
-                    // the peaks of the inflection points
-                    List<CurvatureScaleSpaceContour> cssContourList = 
-                        contourFinder.findContours(scaleSpaceCurveImage, 
-                        edgeNumber);
-                    
-                    boolean reversed = contourFinder.reverseIfClockwise(cssContourList);
-                    
-//MiscDebug.printScaleSpaceContours(cssContourList);               
-                    
-                    cssContours.add(cssContourList);
-                    
-                    edgeNumber++;
+                    if (closedEdge != null) {
+                        edges.add(closedEdge);
+                    }
                 }
             }
         }
         
-        /*
-        List<List<CurvatureScaleSpaceContour>> cssContours1 = 
-            new ArrayList<List<CurvatureScaleSpaceContour>>();
+        log.info("nEdges1=" + edges1.size() + " nEdges2=" + edges2.size());
+        Collections.sort(edges1, new PairIntArrayDescendingComparator());
+        Collections.sort(edges2, new PairIntArrayDescendingComparator());
         
-        List<List<CurvatureScaleSpaceContour>> cssContours2 = 
-            new ArrayList<List<CurvatureScaleSpaceContour>>();
+        // remove edges shorter than 20
+        removeEdgesShorterThan(edges1, 20);
+        removeEdgesShorterThan(edges2, 20);
         
-        For each List contours1 in cssContours1:            
-            For each List contours2 in cssContours2:
-                CurvatureScaleSpaceContourMatcher matcher = new CurvatureScaleSpaceContourMatcher();
-                matcher.matchContours(contours1, contours2);
-                List<CurvatureScaleSpaceContour> transAppliedTo1 = matcher.getSolutionMatchedContours1();
-                List<CurvatureScaleSpaceContour> transAppliedTo2 = matcher.getSolutionMatchedContours2();
-        
-            the lowest cost match for each contours1 should be the correct match
-            if any for it.
-        
-        Then evaluate all the matches against all points to derive the best
-        solution.
-        
-        The result is scale and if more than one match is obtained, rotation and 
-        translation are also solved.
+        CurvatureScaleSpaceInflectionEdgeMapper mapper = 
+            new CurvatureScaleSpaceInflectionEdgeMapper(edges1, edges2,
+            img1GreyOrig.getXRelativeOffset(), img1GreyOrig.getYRelativeOffset(),
+            img2GreyOrig.getXRelativeOffset(), img2GreyOrig.getYRelativeOffset());
+                 
+         mapper.useDebugMode();
 
-        The methods above have been tested only on simple shapes in images so 
-        may need some improvements.
-        */
+  //     mapper.setToRefineTransformations();
 
+         TransformationParameters transformationParams =
+             mapper.createEuclideanTransformation();
+
+         log.info("params from contours=" + transformationParams.toString());
     }
 
+    protected void removeEdgesShorterThan(List<PairIntArray> output, 
+        int minNumberOfPixelsInEdge) {
+        
+        for (int i = (output.size() - 1); i > -1; i--) {
+            if (output.get(i).getN() < minNumberOfPixelsInEdge) {
+                output.remove(i);
+            }
+        }
+    }
+    
     /**
      * @return the corners1
      */

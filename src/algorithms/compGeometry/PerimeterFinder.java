@@ -1,6 +1,7 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
+import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -1488,7 +1489,7 @@ public class PerimeterFinder {
      * @param height
      * @return 
      */
-    public PairIntArrayWithColor findBorderEdge(Set<PairInt> points, int width, 
+    public PairIntArray findBorderEdge(Set<PairInt> points, int width, 
         int height) {
         
         if (points == null) {
@@ -1511,9 +1512,11 @@ public class PerimeterFinder {
         
         Set<PairInt> borderPixels = getBorderPixels(rowColRanges, rowMinMax, 
             imageMaxColumn, imageMaxRow);
-                
-        PairIntArrayWithColor output = Misc.orderSequentially(borderPixels, 
-            width, height);
+               
+        EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
+        
+        PairIntArray output = extractor.extractAndOrderAsEdge(
+            borderPixels, width, height);
         
         return output;
     }

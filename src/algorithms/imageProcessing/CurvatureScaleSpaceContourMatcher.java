@@ -384,7 +384,8 @@ public final class CurvatureScaleSpaceContourMatcher {
         List<CurvatureScaleSpaceContour> origOrderSolutionMatchedContours2 =
             new ArrayList<CurvatureScaleSpaceContour>(
             solutionMatchedContours2);
-    
+//TODO: logic here regarding "scalesSomeSmallerThanOne" needs to be simplified
+        
         initializeVariables(origOrderC2, origOrderC1);
         
         if (heap.n > 0) {

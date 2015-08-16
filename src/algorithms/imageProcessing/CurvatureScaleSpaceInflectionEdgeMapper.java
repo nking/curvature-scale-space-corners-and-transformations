@@ -1,10 +1,11 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.List;
 
 /**
- * class to map contours from one image to another and return the
+ * class to map contours from edges from one image to another and return the
  * matched inflection points and a transformation matrix that can
  * be applied to the first to put it into the frame of the second.
  * 
@@ -14,9 +15,10 @@ import java.util.List;
  * 
  * @author nichole
  */
-public final class CurvatureScaleSpaceInflectionMapper extends 
+public final class CurvatureScaleSpaceInflectionEdgeMapper extends 
     AbstractCurvatureScaleSpaceInflectionMapper {
         
+    /*
     protected final ImageExt image1;
     protected final ImageExt image2;
     // for debugging, keeping a reference of originals
@@ -27,20 +29,19 @@ public final class CurvatureScaleSpaceInflectionMapper extends
     public final int image1OriginalHeight;
     protected final int image2OriginalWidth;
     protected final int image2OriginalHeight;
+    */
     
-    public CurvatureScaleSpaceInflectionMapper(ImageExt image1, ImageExt image2) {
+    public CurvatureScaleSpaceInflectionEdgeMapper(
+        List<PairIntArray> edges1, List<PairIntArray> edges2,
+        int offsetImageX1, int offsetImageY1, int offsetImageX2, int offsetImageY2) {
         
-        this.image1 = image1;
-        this.image2 = image2;
+        this.edges1 = edges1;
+        this.edges2 = edges2;
         
-        originalImage1 = (ImageExt)image1.copyImage();
-        originalImage2 = (ImageExt)image2.copyImage();
-        
-        image1OriginalWidth = image1.getWidth();
-        image1OriginalHeight = image1.getHeight();
-        image2OriginalWidth = image2.getWidth();
-        image2OriginalHeight = image2.getHeight();
-        
+        this.offsetImageX1 = offsetImageX1;
+        this.offsetImageY1 = offsetImageY1;
+        this.offsetImageX2 = offsetImageX2;
+        this.offsetImageY2 = offsetImageY2;
     }
    
     public TransformationParameters createEuclideanTransformationImpl() {
@@ -93,70 +94,17 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         return imgMaker.getClosedCurves();
     }
 
-    protected Image getImage1() {
-        return image1;
-    }
-
-    protected Image getImage2() {
-        return image2;
-    }
-
-    Image getOriginalImage1() {
-        return originalImage1;
-    }
-
-    Image getOriginalImage2() {
-        return originalImage2;
-    }
-
     @Override
     protected void createEdges1() {
         
-        // note that if the orientation of image2 with respect to image1 is
-        // more than 180 degrees, the code in the edge extractor will be forming
-        // the edges by reading in the reverse direction in x and y,
-        // so the edges will have opposite orientation.
-        // The code also reverses edges to append curves read in other directions,
-        // so in general, one cannot assure that the points are ordered in
-        // a clockwise or counterclockwise manner at this point.
-        // the curves tend to be ordered counter clockwise.
-        // because the closed curve shapes are not simple convex or concave
-        // shapes sometimes, it's not as easy to tell whether points are
-        // ordered clockwise in a curve.
-        // Tests so far show that testing the contour peak points
-        // (left and right) for clockwise order gives the right answer
-        // and is less work computationally
-        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image1);
-        if (useLineDrawingMode) {
-            imgMaker.useLineDrawingMode();
-        }
-        if (useOutdoorMode) {
-            imgMaker.useOutdoorMode();
-        }
-        imgMaker.initialize();
-        
-        edges1 = getEdges(imgMaker);
-        offsetImageX1 = imgMaker.getTrimmedXOffset();
-        offsetImageY1 = imgMaker.getTrimmedYOffset();
-                
+        // already given in constructor
+       
     }
 
     @Override
     protected void createEdges2() {
         
-        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image2);
-        if (useLineDrawingMode) {
-            imgMaker.useLineDrawingMode();
-        }
-        if (useOutdoorMode) {
-            imgMaker.useOutdoorMode();
-        }
-        imgMaker.initialize();
-        
-        edges2 = getEdges(imgMaker);
-        offsetImageX2 = imgMaker.getTrimmedXOffset();
-        offsetImageY2 = imgMaker.getTrimmedYOffset();
-        
+        // already given in constructor
     }
 
 }
