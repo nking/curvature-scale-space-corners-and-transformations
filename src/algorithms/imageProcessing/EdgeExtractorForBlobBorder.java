@@ -31,10 +31,7 @@ public class EdgeExtractorForBlobBorder {
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     public EdgeExtractorForBlobBorder() {
-        
-        //TODO: change this to be an edge extractor for a blob (it invokes PerimeterFinder, not vice versa
-            
-        //once have border points, look into a different sequential ordering algorithms than my edge extractor
+                    
     }
     
     /**
@@ -53,6 +50,13 @@ public class EdgeExtractorForBlobBorder {
             return null;
         }
         
+        // TODO: make a method for PerimeterFinder which takes the gap filled
+        // rowColRanges and follows the outside of it to make an ordered
+        // list of border points in format PairIntArray.
+        // not easy when there are spurs so may need to note that single 
+        // pixel width extensions will be trimmed for a sequential bordering
+        // curve.
+        
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
         
         int imageMaxColumn = imageWidth - 1;
@@ -65,7 +69,7 @@ public class EdgeExtractorForBlobBorder {
         Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
             contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
        
-        if (outputEmbeddedGapPoints.size() > 0) {
+        if (!outputEmbeddedGapPoints.isEmpty()) {
             // update the perimeter for "filling in" embedded points
             perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
                 rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
@@ -81,29 +85,28 @@ public class EdgeExtractorForBlobBorder {
         log.info("number of border points=" + borderPixels.size() + " nCavity="
             + nCavity);
         
-        if (discardWhenCavityIsSmallerThanBorder && (nCavity < borderPixels.size())) {
+        if (discardWhenCavityIsSmallerThanBorder && (nCavity < (borderPixels.size()/2))) {
             return null;
         }
+        
+GreyscaleImage img2 = new GreyscaleImage(imageWidth, imageHeight);
+for (PairInt p : borderPixels) {
+int x = p.getX();
+int y = p.getY();
+img2.setValue(x, y, 1);
+}
+MiscDebug.plotCorners(img2, borderPixels, "___" + MiscDebug.getCurrentTimeFormatted(), 0);
+ 
+        SpurRemover spurRm = new SpurRemover();
+        
+        spurRm.remove(borderPixels, imageWidth, imageHeight);
         
 MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
 MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
 
         //xMin, xMax, yMin, yMax
         int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);
-        
-        /*
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(borderPixels, minMaxXY[0], minMaxXY[1], 
-            minMaxXY[2], minMaxXY[3]);
-        
-MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
-        
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.correctForArtifacts(borderPixels, imageWidth, imageHeight);
-                
-MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-        */
-        
+       
         /*
            |     @   @
            |      @@@

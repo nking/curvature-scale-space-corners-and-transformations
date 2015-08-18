@@ -1074,16 +1074,6 @@ public class PerimeterFinder {
             } else if ((colMinMax[0] == 0) && (firstX > colMinMax[0])) {
                 borderPixels.add(new PairInt(firstX, row));
             }
-        }
-                    
-        for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
-
-            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-
-            if (colRanges == null || colRanges.isEmpty()) {
-                throw new IllegalStateException(
-                "each row should have a point in it, else not contiguous");
-            }
 
             int n = colRanges.size();
 

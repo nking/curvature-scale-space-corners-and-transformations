@@ -239,10 +239,6 @@ public class PairIntArray {
         int nMoveLen = (n - insertAtIndex);
         int dest0 = (nTotal - nMoveLen);
         
-int z0 = 1;
-int z1 = 1;
-int z2 = 1;
-        
         System.arraycopy(x, insertAtIndex, x, dest0, nMoveLen);
         System.arraycopy(y, insertAtIndex, y, dest0, nMoveLen);
         
