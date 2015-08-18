@@ -2,7 +2,9 @@ package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Logger;
 
 /**
  * class to create a map of rows with start and stop column bounds (inclusive)
@@ -29,6 +32,8 @@ import java.util.Stack;
  * @author nichole
  */
 public class PerimeterFinder {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     private boolean debug = true;
   
@@ -1478,47 +1483,6 @@ public class PerimeterFinder {
         }
         
         return contigNonMembersConnectedToBounds;
-    }
-    
-    /**
-     * given the set of contiguous points, find the perimeter of them and order
-     * the points into a closed Edge.
-     * @param points a set of contiguous points, that is, all points must be
-     * reachable from any point (a sequence of adjacent points).
-     * @param width
-     * @param height
-     * @return 
-     */
-    public PairIntArray findBorderEdge(Set<PairInt> points, int width, 
-        int height) {
-        
-        if (points == null) {
-            return null;
-        }
-        
-        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-        
-        int imageMaxColumn = width - 1;
-        int imageMaxRow = height - 1;
-       
-        int[] rowMinMax = new int[2];
-        
-        Map<Integer, List<PairInt>> rowColRanges = find(points, rowMinMax, 
-            imageMaxColumn, outputEmbeddedGapPoints);
-
-        // update the perimeter for "filling in" embedded points
-        updateRowColRangesForAddedPoints(rowColRanges, rowMinMax, 
-            imageMaxColumn, outputEmbeddedGapPoints);
-        
-        Set<PairInt> borderPixels = getBorderPixels(rowColRanges, rowMinMax, 
-            imageMaxColumn, imageMaxRow);
-               
-        EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
-        
-        PairIntArray output = extractor.extractAndOrderAsEdge(
-            borderPixels, width, height);
-        
-        return output;
     }
 
     static class Gap {

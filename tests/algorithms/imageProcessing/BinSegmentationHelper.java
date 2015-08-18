@@ -881,32 +881,17 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         TODO: consider a flag in the final enclosing class to have streamlined
         processes when one knows the images are stereo, etc.
         */
-
-        float sigmaPowerFactor = 1.f/32.f; 
-        SIGMA sigmaStart = SIGMA.ONE;
-        SIGMA sigmaEnd = SIGMA.TWOHUNDREDANDFIFTYSIX;
-        
-        PerimeterFinder perimeterFinder = new PerimeterFinder();
-        
-        CurvatureScaleSpaceCurvesMaker csscMaker = new 
-            CurvatureScaleSpaceCurvesMaker();
-                    
-        List<List<CurvatureScaleSpaceContour>> cssContours1 = 
-            new ArrayList<List<CurvatureScaleSpaceContour>>();
-        
-        List<List<CurvatureScaleSpaceContour>> cssContours2 = 
-            new ArrayList<List<CurvatureScaleSpaceContour>>();
+                
+        boolean discardWhenCavityIsSmallerThanBorder = true;
         
         for (int type = 0; type < 2; ++type) {
             
             Map<Integer, List<PairIntArray>> contigMap = contigMap1;
             GreyscaleImage imgGrey = img1GreyOrig;
-            List<List<CurvatureScaleSpaceContour>> cssContours = cssContours1;
             List<PairIntArray> edges = edges1;
             if (type == 1) {
                 contigMap = contigMap2;
                 imgGrey = img2GreyOrig;
-                cssContours = cssContours2;
                 edges = edges2;
             }
                         
@@ -918,10 +903,12 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
                     
                     Set<PairInt> points = Misc.convert(contiguous);
                     
-                    PairIntArray closedEdge = 
-                        perimeterFinder.findBorderEdge(points, 
-                        imgGrey.getWidth(), imgGrey.getHeight());
-                    
+                    EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
+        
+                    PairIntArray closedEdge = extractor.extractAndOrderTheBorder(
+                        points, imgGrey.getWidth(), imgGrey.getHeight(), 
+                        discardWhenCavityIsSmallerThanBorder);
+        
                     if (closedEdge != null) {
                         edges.add(closedEdge);
                     }
@@ -941,7 +928,9 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
             new CurvatureScaleSpaceInflectionEdgeMapper(edges1, edges2,
             img1GreyOrig.getXRelativeOffset(), img1GreyOrig.getYRelativeOffset(),
             img2GreyOrig.getXRelativeOffset(), img2GreyOrig.getYRelativeOffset());
-                 
+mapper.debugImg1 = img1GreyOrig;
+mapper.debugImg2 = img2GreyOrig;
+        
          mapper.useDebugMode();
 
   //     mapper.setToRefineTransformations();
@@ -949,7 +938,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
          TransformationParameters transformationParams =
              mapper.createEuclideanTransformation();
 
-         log.info("params from contours=" + transformationParams.toString());
+         //log.info("params from contours=" + transformationParams.toString());
     }
 
     protected void removeEdgesShorterThan(List<PairIntArray> output, 

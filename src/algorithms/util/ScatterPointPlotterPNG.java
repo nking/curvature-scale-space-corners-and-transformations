@@ -209,7 +209,7 @@ public class ScatterPointPlotterPNG {
         
         // in the absence of an X11 environment, may need to set this:
         System.setProperty("java.awt.headless", "true");
-               
+        
         imgToWrite = chart.createBufferedImage(500, 500, imageType, chartInfo);
     }
 

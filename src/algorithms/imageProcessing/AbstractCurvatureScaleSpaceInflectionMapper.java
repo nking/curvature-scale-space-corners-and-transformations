@@ -1,8 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,6 +136,9 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
         
     }
 
+//TMP DEBUGGING
+public GreyscaleImage debugImg1 = null;
+public GreyscaleImage debugImg2 = null;
      
     protected void createMatchedPointArraysFromContourPeaks() {
         
@@ -168,9 +173,9 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
         
         boolean alreadySorted = true;
         
-        for (int edge1Idx = 0; edge1Idx < contourLists1.size(); ++edge1Idx) {
+        for (int i1 = 0; i1 < contourLists1.size(); ++i1) {
             
-            List<CurvatureScaleSpaceContour> contours1 = contourLists1.get(edge1Idx);
+            List<CurvatureScaleSpaceContour> contours1 = contourLists1.get(i1);
             
             double minCost = Double.MAX_VALUE;
             List<CurvatureScaleSpaceContour> bestM1 = null;
@@ -178,9 +183,9 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
             double bestScale = 1;
             double bestCost = Double.MAX_VALUE;
             
-            for (int edge2Idx = 0; edge2Idx < contourLists2.size(); ++edge2Idx) {
+            for (int i2 = 0; i2 < contourLists2.size(); ++i2) {
                 
-                List<CurvatureScaleSpaceContour> contours2 = contourLists2.get(edge2Idx);
+                List<CurvatureScaleSpaceContour> contours2 = contourLists2.get(i2);
                 
                 CSSContourMatcherWrapper matcher = 
                     new CSSContourMatcherWrapper(contours1, contours2, 
@@ -209,6 +214,28 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
                 }
                 
                 double cost = matcher.getSolvedCost();
+          
+try {
+// plot xy of edge
+// plot contour points
+// plot space image
+int flNumber = MiscDebug.getCurrentTimeFormatted();
+int edgeIdx1 = m1.get(0).getEdgeNumber();
+int edgeIdx2 = m2.get(0).getEdgeNumber();
+PairIntArray txy1 = new PairIntArray(m1.size());
+PairIntArray txy2 = new PairIntArray(m2.size());
+List<Float> tweights1 = new ArrayList<Float>();
+List<Float> tweights2 = new ArrayList<Float>();
+extract(m1, txy1, tweights1, offsetImageX1, offsetImageY1);
+extract(m2, txy2, tweights2, offsetImageX2, offsetImageY2);
+MiscDebug.writeImage(txy1, ImageIOHelper.convertImage(debugImg1), "check_1_xy_edge_" + edgeIdx1 + "_" + flNumber);
+MiscDebug.writeImage(txy2, ImageIOHelper.convertImage(debugImg2), "check_2_xy_edge_" + edgeIdx2 + "_" + flNumber);
+MiscDebug.debugPlot(contours1, ImageIOHelper.convertImage(debugImg1), offsetImageX1, offsetImageY1, "1_edge_" + edgeIdx1 + "_" + String.valueOf(flNumber));
+MiscDebug.debugPlot(contours2, ImageIOHelper.convertImage(debugImg2), offsetImageX2, offsetImageY2, "2_edge_" + edgeIdx1 + "_" + String.valueOf(flNumber));
+int z = 1;
+} catch (IOException ex) {
+    
+}               
                 
                 if ((cost < minCost) || ((bestM1 != null) && (m1.size() > 2) && (bestM1.size() < 3))) {
                     minCost = cost;
@@ -295,7 +322,7 @@ try {
     Logger.getLogger(CurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
 }
 */
-                Integer key = Integer.valueOf(edge1Idx);
+                Integer key = Integer.valueOf(i1);
                 
                 bestMatches1.put(key, bestM1);
                 bestMatchesTo1.put(key, bestM2);
@@ -313,6 +340,11 @@ try {
                 bestCosts.get(key2).add(key);
             }
         }
+        
+//TODO: need to discard the solutions with only 2 contours above
+// or handle the comparison here.
+// would prefer keep them in case that is the only solution
+        
         
         /*
         compare the solutions, starting with the smallest cost solution.
@@ -715,14 +747,13 @@ try {
                 csscMaker.convertScaleSpaceMapToSparseImage(
                 scaleSpaceMap, i, edge.getN());
             
-            /*            
-             try {
-             MiscDebug.printScaleSpaceCurve(scaleSpaceImage,
-             MiscDebug.getCurrentTimeFormatted());
-             } catch (IOException ex) {
-             Logger.getLogger(AbstractCurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
-             }
-             */
+                       
+ try {
+ String fileSuffix = "edge_" + i + "_" + MiscDebug.getCurrentTimeFormatted();
+ MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);
+ int z = 1;
+ } catch (IOException ex) {
+ }
             
             ContourFinder contourFinder = new ContourFinder();
 

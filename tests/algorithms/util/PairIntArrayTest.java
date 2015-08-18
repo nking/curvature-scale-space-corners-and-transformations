@@ -327,5 +327,84 @@ public class PairIntArrayTest extends TestCase {
         }
         
     }
+    
+    public void testInsertAll() throws Exception {
+        
+        PairIntArray p = new PairIntArray(5);
+        for (int i = 0; i < 5; ++i) {
+            p.add(i, 10 + i);
+        }
+        
+        PairIntArray p2 = new PairIntArray(5);
+        for (int i = 0; i < 3; ++i) {
+            p2.add(100 + i, 200 + i);
+        }
+        
+        p.insertAll(1, p2);
+        
+        assertTrue(p.getN() == 8);
+        
+        assertTrue(p.getX(0) == 0);
+        assertTrue(p.getY(0) == 10);
+        
+        assertTrue(p.getX(1) == (100 + 0));
+        assertTrue(p.getY(1) == (200 + 0));
+        assertTrue(p.getX(2) == (100 + 1));
+        assertTrue(p.getY(2) == (200 + 1));
+        assertTrue(p.getX(3) == (100 + 2));
+        assertTrue(p.getY(3) == (200 + 2));
+        
+        assertTrue(p.getX(4) == (0 + 1));
+        assertTrue(p.getY(4) == (10 + 1));
+        assertTrue(p.getX(5) == (0 + 2));
+        assertTrue(p.getY(5) == (10 + 2));
+        assertTrue(p.getX(6) == (0 + 3));
+        assertTrue(p.getY(6) == (10 + 3));
+        assertTrue(p.getX(7) == (0 + 4));
+        assertTrue(p.getY(7) == (10 + 4));
+    }
+    
+    public void testInsertAll2() throws Exception {
+        
+        PairIntArray p = new PairIntArray(3);
+        for (int i = 0; i < 3; ++i) {
+            p.add(i, 10 + i);
+        }
+        
+        PairIntArray p2 = new PairIntArray(1);
+        for (int i = 0; i < 1; ++i) {
+            p2.add(100 + i, 200 + i);
+        }
+        
+        p.insertAll(3, p2);
+        
+        assertTrue(p.getN() == 4);
+        
+        assertTrue(p.getX(0) == 0);
+        assertTrue(p.getY(0) == 10);
+        assertTrue(p.getX(1) == (0 + 1));
+        assertTrue(p.getY(1) == (10 + 1));
+        assertTrue(p.getX(2) == (0 + 2));
+        assertTrue(p.getY(2) == (10 + 2));
+        
+        assertTrue(p.getX(3) == (100 + 0));
+        assertTrue(p.getY(3) == (200 + 0));
+        
+        boolean threwException = false;
+        try {
+            p.insertAll(-1, p2);
+        } catch(Throwable t) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            p.insertAll(1000, p2);
+        } catch(Throwable t) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+    }
 
 }

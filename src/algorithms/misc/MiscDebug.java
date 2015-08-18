@@ -758,6 +758,30 @@ public class MiscDebug {
         }
     }
 
+    public static void plotPoints(PairIntArray points,
+        int imageWidth, int imageHeight, int fileNumber) {
+        
+        float[] x1 = new float[points.getN()];
+        float[] y1 = new float[x1.length];
+        for (int i = 0; i < points.getN(); ++i) {
+            x1[i] = points.getX(i);
+            y1[i] = points.getY(i);
+            i++;
+        }
+        
+        try {
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            
+            plotter.plot(0, imageWidth, 0, imageHeight, 
+                x1, y1, "points", "X", "Y");
+            plotter.writeFile(Integer.valueOf(fileNumber));
+            
+        } catch (IOException e) {
+            
+            log.severe(e.getMessage());
+        }
+    }
+
     public static int getCurrentTimeFormatted() {
         double t0 = System.currentTimeMillis();
         double t = t0 - ((int)(t0/1.E9)) * 1E9;
@@ -981,7 +1005,7 @@ public class MiscDebug {
     }
 
     public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
-        int fileNumber) throws IOException {
+        String fileSuffix) throws IOException {
         
         float[] sigmas = scaleSpaceImage.getImageSigmas();
         
@@ -1015,7 +1039,7 @@ public class MiscDebug {
             x, y, null, null, 
             "t vs. sigma for inflection points");
         
-        plotter.writeFile(fileNumber);
+        plotter.writeFile(fileSuffix);
     }
     
     public static void writeImage(PairIntArray[] edges,

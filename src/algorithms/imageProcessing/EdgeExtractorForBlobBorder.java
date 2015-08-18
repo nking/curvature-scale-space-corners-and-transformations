@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PerimeterFinder;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
@@ -30,17 +32,77 @@ public class EdgeExtractorForBlobBorder {
     
     public EdgeExtractorForBlobBorder() {
         
+        //TODO: change this to be an edge extractor for a blob (it invokes PerimeterFinder, not vice versa
+            
+        //once have border points, look into a different sequential ordering algorithms than my edge extractor
     }
     
-    public PairIntArray extractAndOrderAsEdge(Set<PairInt> contiguousPoints,
-        int imageWidth, int imageHeight) {
+    /**
+     * given the set of contiguous points, find the perimeter of them and order
+     * the points into a closed single pixel width curve.
+     * @param contiguousPoints
+     * @param imageWidth
+     * @param imageHeight
+     * @param discardWhenCavityIsSmallerThanBorder
+     * @return 
+     */
+    public PairIntArray extractAndOrderTheBorder(Set<PairInt> contiguousPoints,
+        int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
         
-        // TODO: improve this by refactoring the edge extractors one day.
-        // for now, using the existing by making a small image large enough to
-        // hold these points, then will change the offsets
+        if (contiguousPoints == null) {
+            return null;
+        }
         
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        int imageMaxColumn = imageWidth - 1;
+        int imageMaxRow = imageHeight - 1;
+       
+        int[] rowMinMax = new int[2];
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+       
+        if (outputEmbeddedGapPoints.size() > 0) {
+            // update the perimeter for "filling in" embedded points
+            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+                rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        }
+        
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+        
+        int nBorder = borderPixels.size();
+        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()
+            - nBorder;
+               
+        log.info("number of border points=" + borderPixels.size() + " nCavity="
+            + nCavity);
+        
+        if (discardWhenCavityIsSmallerThanBorder && (nCavity < borderPixels.size())) {
+            return null;
+        }
+        
+MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
+MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
+
         //xMin, xMax, yMin, yMax
-        int[] minMaxXY = MiscMath.findMinMaxXY(contiguousPoints);
+        int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);
+        
+        /*
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(borderPixels, minMaxXY[0], minMaxXY[1], 
+            minMaxXY[2], minMaxXY[3]);
+        
+MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForArtifacts(borderPixels, imageWidth, imageHeight);
+                
+MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
+        */
         
         /*
            |     @   @
@@ -55,34 +117,72 @@ public class EdgeExtractorForBlobBorder {
         int h = minMaxXY[3] - minMaxXY[2] + 4;
         
         GreyscaleImage img = new GreyscaleImage(w, h);
-        for (PairInt p : contiguousPoints) {
+        for (PairInt p : borderPixels) {
             int x = p.getX() - xOffset;
             int y = p.getY() - yOffset;
             img.setValue(x, y, 1);
         }
         
+        
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
+        extractor.overrideMaxNumberIterationsJunctionSplice(10);
+        //List<PairIntArray> output = extractor.findEdges();
+        PairIntArray out = extractor.findAsSingleClosedEdge();
+        /*
+        EdgeExtractor extractor = new EdgeExtractor(img);
         List<PairIntArray> output = extractor.findEdges();
-                
-        if (output.isEmpty()) {
+        */
             
+        /*
+        if (output.isEmpty()) {
+            return null;
+        }
+        if (output.size() > 1) {            
+            Collections.sort(output, new PairIntArrayDescendingComparator());
+        }
+        */
+        
+        if (out == null) {
             return null;
         }
         
-        if (output.size() > 1) {
-            
-            Collections.sort(output, new PairIntArrayDescendingComparator());
-        }
-        
         // add the shifts back
-        PairIntArray out = output.get(0);
+        //PairIntArray out = output.get(0);
         
         for (int i = 0; i < out.getN(); ++i) {
             int x = out.getX(i) + xOffset;
             int y = out.getY(i) + yOffset;
             out.set(i, x, y);
         }
+/*    
+Image img2 = new Image(imageWidth, imageHeight);
+for (int i = 0; i < output.size(); ++i) {
+    PairIntArray pa = output.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i > 0) {
+            x += xOffset;
+            y += yOffset;
+        }
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img2, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img2, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img2, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+*/
         
+MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
+
         return out;
     }
     

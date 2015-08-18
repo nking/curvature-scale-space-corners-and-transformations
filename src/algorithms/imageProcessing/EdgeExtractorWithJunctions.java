@@ -3,13 +3,17 @@ package algorithms.imageProcessing;
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArrayComparator;
+import algorithms.util.PairIntArrayDescendingComparator;
 import algorithms.util.PointPairInt;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +71,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
      */
     private Map<Integer, PairInt> junctionLocationMap = new HashMap<Integer, PairInt>();
 
+    private int defaultMaxIterJunctionJoin = 1;
+    
+    private boolean singleClosedEdge = false;
+    
     /**
      * NOTE:  input should have a black (empty) background and edges should
      * have values > 125 counts.  Edges should also have width of 1 and no larger.
@@ -93,6 +101,13 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         final GreyscaleImage anEdgeGuideImage) {
        
         super(input, anEdgeGuideImage);
+    }
+    
+    public void overrideMaxNumberIterationsJunctionSplice(int nMaxIter) {
+        if (nMaxIter < 2) {
+            return;
+        }
+        defaultMaxIterJunctionJoin = nMaxIter;
     }
     
     /**
@@ -139,18 +154,24 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 img);
         }
         
+long nPointsBeforeJP = countPixelsInEdges(output);
+
         log.fine("edges.size()=" + output.size() + " before join-points");
         
         output = joinOnJoinPoints(joinPoints, output);
  
         log.fine("edges.size()=" + output.size() + " after join-points");
         
-        int nMaxIter = 1;
+        int nMaxIter = defaultMaxIterJunctionJoin;
         int nIter = 0;
         int nSplices = 0;
         
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
         
+            if (nSplices > 0) {
+                removeEdgesShorterThan(output, 1);
+            }
+            
             findJunctions(output);
         
         if (output.size() > 10000) {
@@ -167,9 +188,28 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 
             nSplices = spliceEdgesAtJunctionsIfImproves(output);
             
+            if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
+                // because re-order and insertion both need correction junction
+                // maps, cannot invoke both on this iteration unless the first
+                // did not alter anything.
+                boolean ins = ((nIter % 1) == 0);
+                if ((nIter % 1) == 1) {
+                    int nReordered = reorderPointsInEdgesForClosedCurve(output);
+                    nSplices += nReordered;
+                    if (nReordered == 0) {
+                        ins = true;
+                    }
+                }
+                if (ins) {
+                    int nIns = insertAdjacentForClosedCurve(output);
+                    nSplices += nIns;
+                }
+            }
+            
             ++nIter;
         }
         
+log.info("nIter=" + nIter);
         return output;
     }
     
@@ -760,7 +800,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         }
         QuickSort.sortBy1stArg(indexes, edgeJoins);
         
-        long nPointsBefore = countPixelsInEdges(edges);
+long nPointsBefore = countPixelsInEdges(edges);
         
         // put the edges in a map to remove and search updates faster
         Map<Integer, PairIntArray> edgesMap = createIndexedMap(edges);
@@ -1065,27 +1105,30 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         // value = pixel indexes.
         //   the pixel indexes are used to find values in junctionLocatorMap
         //   to update it as points are moved to and from edges.
-        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = 
-            new HashMap<Integer, Set<Integer>>();
-        
-        for (Entry<Integer, PairInt> entry : junctionLocationMap.entrySet()) {
-            Integer pixelIndex = entry.getKey();
-            PairInt loc = entry.getValue();
-            Integer edgeIndex = Integer.valueOf(loc.getX());
-            
-            Set<Integer> pixelIndexes = theEdgeToPixelIndexMap.get(edgeIndex);
-            if (pixelIndexes == null) {
-                pixelIndexes = new HashSet<Integer>();
-            }
-            pixelIndexes.add(pixelIndex);
-            theEdgeToPixelIndexMap.put(edgeIndex, pixelIndexes);
-        }
+        // key = edge index.  
+        // value = pixel indexes.
+        //   the pixel indexes are used to find values in junctionLocatorMap
+        //   to update it as points are moved to and from edges.
+        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();
         
         if (debug) {
             algorithms.misc.MiscDebug.assertConsistentEdgeCapacity(
                 theEdgeToPixelIndexMap, junctionLocationMap, junctionMap, 
                 edges);
         }
+        
+        /*
+        TODO: consider handling splices of edges of size 1 after this
+        block.  They can be inserted in a way that does not affect line
+        continuity
+        
+        For example:
+        
+            0
+             1 < where '<' can be inserted after 1 and before 2 or vice versa
+             2
+             3
+        */
         
         for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
                         
@@ -1140,7 +1183,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     count++;
                     continue;
                 }
-                
+               
                 foundAnotherEdge = true;
                 
                 Splice splice = new Splice(edges.get(loc.getX()));
@@ -1691,4 +1734,417 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         }
         
     }
+
+    public PairIntArray findAsSingleClosedEdge() {
+        
+        this.singleClosedEdge = true;
+        
+        List<PairIntArray> output = connectPixelsViaDFS();
+        
+        output = findEdgesIntermediateSteps(output);
+                
+Image img2 = ImageIOHelper.convertImage(img);
+for (int i = 0; i < output.size(); ++i) {
+    PairIntArray pa = output.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img2, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img2, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img2, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+
+        if (output.size() > 1) {
+            Collections.sort(output, new PairIntArrayDescendingComparator());            
+        }
+        
+        //TODO: check for adjacent endpoints and set this in an array with color = 1
+            
+        return output.get(0);
+    }
+    
+    private Map<Integer, Set<Integer>> createEdgeToPixelIndexMap() {
+        // key = edge index.  
+        // value = pixel indexes.
+        //   the pixel indexes are used to find values in junctionLocatorMap
+        //   to update it as points are moved to and from edges.
+        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = new HashMap<Integer, Set<Integer>>();
+        
+        for (Entry<Integer, PairInt> entry : junctionLocationMap.entrySet()) {
+            Integer pixelIndex = entry.getKey();
+            PairInt loc = entry.getValue();
+            Integer edgeIndex = Integer.valueOf(loc.getX());
+            Set<Integer> pixelIndexes = theEdgeToPixelIndexMap.get(edgeIndex);
+            if (pixelIndexes == null) {
+                pixelIndexes = new HashSet<Integer>();
+            }
+            pixelIndexes.add(pixelIndex);
+            theEdgeToPixelIndexMap.put(edgeIndex, pixelIndexes);
+        }
+        
+        return theEdgeToPixelIndexMap;
+    }
+
+    private int reorderPointsInEdgesForClosedCurve(List<PairIntArray> output) {
+        
+        if (output == null || output.isEmpty()) {
+            return 0;
+        }
+        
+        int maxEdgeIdx = 0;
+        int nMaxEdge = output.get(0).getN();
+        for (int i = 1; i < output.size(); ++i) {
+            int n = output.get(i).getN();
+            if (n > nMaxEdge) {
+                nMaxEdge = n;
+                maxEdgeIdx = i;
+            }
+        }
+        
+        int nChanged = 0;
+        
+        // key = edge index.  
+        // value = pixel indexes.
+        //   the pixel indexes are used to find values in junctionLocatorMap
+        //   to update it as points are moved to and from edges.
+        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();
+        
+        /**
+        * map with key = center of junction pixel coordinates; 
+        * value = set of adjacent pixels when there are more than the preceding 
+        * and next.
+        Map<Integer, Set<Integer>> junctionMap
+        
+        * map with key = pixel coordinates of all pixels involved in junctions;
+        * value = PairInt holding index of edge that pixel is located in and
+        * holding the index within that edge of the pixel.
+        * for example, a pixel located in edges(0) at offset=100
+        * would have PairInt(0, 100) as a value.
+        Map<Integer, PairInt> junctionLocationMap
+        */
+              
+Image img2 = ImageIOHelper.convertImage(img);
+for (int i = 0; i < output.size(); ++i) {
+    PairIntArray pa = output.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img2, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img2, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img2, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+int z0 = 1;
+
+        for (int i = 0; i < output.size(); ++i) {
+            
+            if (i == maxEdgeIdx || (output.get(i).getN() < 3)) {
+                continue;
+            }
+            
+            Map<PairInt, Set<PairInt>> edgeLocAdjToMax = new HashMap<PairInt, Set<PairInt>>();
+            
+            populateWithAdjacentLocations(theEdgeToPixelIndexMap, maxEdgeIdx, i, 
+                edgeLocAdjToMax);
+            
+            Set<PairInt> maxAdjToFirstPointLoc = null;
+            Set<PairInt> maxAdjToLastPointLoc = null;
+            
+            for (Entry<PairInt, Set<PairInt>> entry : edgeLocAdjToMax.entrySet()) {
+                PairInt edgeLoc = entry.getKey();
+                if (edgeLoc.getY() == 0) {
+                    maxAdjToFirstPointLoc = entry.getValue();
+                } else if (edgeLoc.getY() == (output.get(i).getN() - 1)) {
+                    maxAdjToLastPointLoc = entry.getValue();
+                }
+            }
+            
+            /*
+            sometimes, this edge is prevented from merging because of the order
+            of its points.
+            
+            For example, if the larger edge is '@''s and this edge is the 
+            numbers in current order, can see that the splice algorithm wont get 
+            the "potential added by merging line" correct because the line is not
+            well formed yet for a merge.
+            That splice algorithm will see that it could add 3 points and would
+            then dead end for merging this edge.  If this edge were re-ordered, 
+            the splice algorithm would see it could add 5 points.
+                               @ @ @ @
+                             @
+                           @
+                    0 1 2 @
+                    5 4 3 @
+                            @ @
+            
+            (The splice algorithm run twice should then merge on the remaining
+            part of the originally longer main edge.
+            
+            Note that if this re-ordered line is shorter than the segment on the
+            main line already part of the main line, the re-ordered line will 
+            not be chosen, so an insertion algorithm is needed after all splices).            
+            */
+            
+            // if this edge's first and last points are in the adj list,
+            // this is already well ordered and should instead
+            // be considered for insertion.
+            // the junction information gets changed so need an iterating
+            // wrapper and restart.
+            if ((maxAdjToFirstPointLoc == null) || (maxAdjToLastPointLoc != null)) {
+                
+                // re-order line if the adjacent edge pixels are next to one another
+                // possible and increment nChanged
+                
+                
+                int z = 1;
+            }
+            
+            int z = 1;
+        }
+        
+        return nChanged;
+    }
+    
+    private int insertAdjacentForClosedCurve(List<PairIntArray> output) {
+        
+        if (output == null || output.isEmpty()) {
+            return 0;
+        }
+        
+        int maxEdgeIdx = 0;
+        int nMaxEdge = output.get(0).getN();
+        for (int i = 1; i < output.size(); ++i) {
+            int n = output.get(i).getN();
+            if (n > nMaxEdge) {
+                nMaxEdge = n;
+                maxEdgeIdx = i;
+            }
+        }
+        PairIntArray maxEdge = output.get(maxEdgeIdx);
+        
+        // key = edge index.  
+        // value = pixel indexes.
+        //   the pixel indexes are used to find values in junctionLocatorMap
+        //   to update it as points are moved to and from edges.
+        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();
+        
+        /**
+        * map with key = center of junction pixel coordinates; 
+        * value = set of adjacent pixels when there are more than the preceding 
+        * and next.
+        Map<Integer, Set<Integer>> junctionMap
+        
+        * map with key = pixel coordinates of all pixels involved in junctions;
+        * value = PairInt holding index of edge that pixel is located in and
+        * holding the index within that edge of the pixel.
+        * for example, a pixel located in edges(0) at offset=100
+        * would have PairInt(0, 100) as a value.
+        Map<Integer, PairInt> junctionLocationMap
+        */
+             
+        int nChanged = 0;
+        
+        for (int i = 0; i < output.size(); ++i) {
+            
+            if (i == maxEdgeIdx || (output.get(i).getN() < 3)) {
+                continue;
+            }
+            
+            Map<PairInt, Set<PairInt>> edgeLocAdjToMax = new HashMap<PairInt, Set<PairInt>>();
+            
+            populateWithAdjacentLocations(theEdgeToPixelIndexMap, maxEdgeIdx, i, 
+                edgeLocAdjToMax);
+            
+            Set<PairInt> maxAdjToFirstPointLoc = null;
+            Set<PairInt> maxAdjToLastPointLoc = null;
+            
+            for (Entry<PairInt, Set<PairInt>> entry : edgeLocAdjToMax.entrySet()) {
+                PairInt edgeLoc = entry.getKey();
+                if (edgeLoc.getY() == 0) {
+                    maxAdjToFirstPointLoc = entry.getValue();
+                } else if (edgeLoc.getY() == (output.get(i).getN() - 1)) {
+                    maxAdjToLastPointLoc = entry.getValue();
+                }
+            }
+            
+            /*
+                               @ @ @ @
+                             @
+                           @
+                    2 1 0 @
+                    3 4 5 @
+                            @ @                      
+            */
+           
+            if ((maxAdjToFirstPointLoc != null) && (maxAdjToLastPointLoc != null)) {
+                
+                PairIntArray currentEdge = output.get(i);
+                
+                // if can insert, need to break and return because the
+                // junction maps need to be updated for this change
+                
+                /*
+                find if there is a set of adjacent points, one from 
+                maxAdjToFirstPointLoc and the other from maxAdjToLastPointLoc.
+                The closest of those is a potential insertion location.
+                
+                Since these are small sets, will use brute force comparisons
+                instead of closest pair, but should consider implementing
+                closest pair for n >= 3.
+                */
+                PairInt p1 = null;
+                PairInt pn = null;
+                double minDist = Integer.MAX_VALUE;
+                for (PairInt firstAdj : maxAdjToFirstPointLoc) {
+                    int xf = maxEdge.getX(firstAdj.getY());
+                    int yf = maxEdge.getY(firstAdj.getY());
+                    for (PairInt lastAdj : maxAdjToLastPointLoc) {
+                        if (firstAdj.equals(lastAdj)) {
+                            continue;
+                        }
+                        int xl = maxEdge.getX(lastAdj.getY());
+                        int yl = maxEdge.getY(lastAdj.getY());
+                        int diffX = Math.abs(xf - xl);
+                        int diffY = Math.abs(yf - yl);
+                        if (diffX > 1 || diffY > 1) {
+                            continue;
+                        }
+                        double dist = Math.sqrt((diffX*diffX) + (diffY*diffY));
+                        if (dist < minDist) {
+                            minDist = dist;
+                            p1 = firstAdj;
+                            pn = lastAdj;
+                        }
+                        // TODO: could consider == case and the order of 
+                        // points for a preferred best
+                    }
+                }
+                
+                if ((p1 != null) && (pn != null)) {
+                    
+                    if (p1.getY() < pn.getY()) {
+                        
+                        /*
+                                   @ @ @ @
+                                 @
+                               @
+                        2 1 0 @
+                        3 4 5 @
+                                @ @                      
+                        */
+                        
+                        maxEdge.insertAll(p1.getY() + 1, currentEdge);
+                        
+                    } else {
+                        
+                        /*
+                                   @ @ @ @
+                                 @5
+                               @4
+                        2 1 0 @3 p1
+                        3 4 5 @2 pn
+                                @ @ 0
+                        
+                        currentEdge's 0  adjacent to p1
+                        reversing currentEdge makes currentEdge's 0 adjacent to pn
+                        so would insert after pn
+                        */
+                        
+                        currentEdge.reverse();
+                        
+                        maxEdge.insertAll(pn.getY() + 1, currentEdge);
+                    }
+                        
+                    nChanged++;
+                    
+                    //TODO: consider a visit pattern where do not need to
+                    //  exit method for any change
+                    
+                    output.remove(i);
+                    
+                    return nChanged;
+                } 
+            }            
+        }
+        
+        return nChanged;
+    }
+    
+    /**
+     * populate the output lists with adjacent pixel locations for 
+     * the edge next to the reference edge (where reference edge is usually the
+     * one with largest number of points).
+     * 
+     * @param theEdgeToPixelIndexMap
+     * @param referenceEdgeIdx
+     * @param edgeIdx
+     * @param outputEdgeLocAdjToReference
+     */
+    private void populateWithAdjacentLocations(
+        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap, 
+        int referenceEdgeIdx, int edgeIdx, 
+        Map<PairInt, Set<PairInt>> outputEdgeLocAdjToReference) {
+        
+        Set<Integer> maxEdgePixelIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(referenceEdgeIdx));
+        
+        for (Integer pixIndex : maxEdgePixelIndexes) {
+            PairInt loc = junctionLocationMap.get(pixIndex);
+            // see if it is adjacent to this edge by looking for it in junctionMap
+            Set<Integer> adjToMax = junctionMap.get(pixIndex);
+            if (adjToMax == null) {
+                continue;
+            }
+            for (Integer adjToMaxPixIndex : adjToMax) {
+                PairInt adjToMaxLoc = junctionLocationMap.get(adjToMaxPixIndex);
+                if (adjToMaxLoc.getX() == edgeIdx) {
+                    // adjToMaxLoc is next to loc
+                    Set<PairInt> adjMax = outputEdgeLocAdjToReference.get(adjToMaxLoc);
+                    if (adjMax == null) {
+                        adjMax = new HashSet<PairInt>();
+                        outputEdgeLocAdjToReference.put(adjToMaxLoc, adjMax);
+                    }
+                    adjMax.add(loc);
+                }
+            }
+        }
+        for (Integer pixIndex : theEdgeToPixelIndexMap.get(Integer.valueOf(edgeIdx))) {
+            PairInt loc = junctionLocationMap.get(pixIndex);
+            // see if it is adjacent to this edge by looking for it in junctionMap
+            Set<Integer> adjToPix = junctionMap.get(pixIndex);
+            if (adjToPix == null) {
+                continue;
+            }
+            for (Integer adjToPixIndex : adjToPix) {
+                PairInt adjToLoc = junctionLocationMap.get(adjToPixIndex);
+                if (adjToLoc.getX() == referenceEdgeIdx) {
+                    Set<PairInt> adjMax = outputEdgeLocAdjToReference.get(loc);
+                    if (adjMax == null) {
+                        adjMax = new HashSet<PairInt>();
+                        outputEdgeLocAdjToReference.put(loc, adjMax);
+                    }
+                    adjMax.add(adjToLoc);
+                }
+            }
+        }
+    }
+    
 }

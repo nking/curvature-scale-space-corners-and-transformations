@@ -213,6 +213,63 @@ public class PairIntArray {
             y[idx2] = swap;
         }
     }
+
+    public void insertAll(int insertAtIndex, PairIntArray insert) {
+        
+        if (insertAtIndex < 0) {
+            throw new IllegalArgumentException("insertAtIndex must be >= 0");
+        } else if (insertAtIndex > n) {
+            throw new IllegalArgumentException("insertAtIndex is out of bounds of array");
+        }
+        
+        if (insertAtIndex == n) {
+            addAll(insert);
+            return;
+        }
+                
+        int nTotal = n + insert.getN();
+        
+        expandIfNeeded(nTotal);
+         
+        /*
+        copy everything at insertAtIndex           through  (n-1) 
+                        to (nTotal - insert.n - 1)    to    (nTotal - 1)
+        */
+        
+        int nMoveLen = (n - insertAtIndex);
+        int dest0 = (nTotal - nMoveLen);
+        
+int z0 = 1;
+int z1 = 1;
+int z2 = 1;
+        
+        System.arraycopy(x, insertAtIndex, x, dest0, nMoveLen);
+        System.arraycopy(y, insertAtIndex, y, dest0, nMoveLen);
+        
+        System.arraycopy(insert.x, 0, x, insertAtIndex, insert.n);
+        System.arraycopy(insert.y, 0, y, insertAtIndex, insert.n);
+        
+        n = nTotal;
+        
+        /*
+        n=5.  insIdx=1,  insert.n=3 --> nTotal=5+3=8
+        0 
+           <---
+        1
+        2
+        3
+        4
+        
+        0
+        1
+        2
+        3
+        4 <-- 1
+        5 <-- 2 (n-3)
+        6 <-- 3 (n-2)
+        7 <-- 4 (n-1)
+        */
+    }
     
     public PairIntArray copy() {
         
@@ -241,4 +298,5 @@ public class PairIntArray {
         }
         return sb.toString();
     }
+
 }

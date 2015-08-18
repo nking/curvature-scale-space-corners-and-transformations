@@ -82,5 +82,34 @@ public class Misc {
     
         return xyout;
     }
+
+    public static Set<Integer> findNeighborIndexes(PairIntArray edge, int idx) {
+        
+        Set<Integer> indexes = new HashSet<Integer>();
+        
+        int x = edge.getX(idx);
+        int y = edge.getY(idx);
+        
+        return findNeighborIndexes(edge, x, y);
+    }
+    public static Set<Integer> findNeighborIndexes(PairIntArray edge, int x, int y) {
+        
+        Set<Integer> indexes = new HashSet<Integer>();
+        
+        for (int i = 0; i < edge.getN(); ++i) {
+            int x2 = edge.getX(i);
+            int y2 = edge.getY(i);
+            if ((x2 == x) && (y2 == y)) {
+                continue;
+            }
+            int xDiff = Math.abs(x2 - x);
+            int yDiff = Math.abs(y2 - y);
+            if ((xDiff < 2) && (yDiff < 2)) {
+                indexes.add(Integer.valueOf(i));
+            }
+        }
+        
+        return indexes;
+    }
    
 }

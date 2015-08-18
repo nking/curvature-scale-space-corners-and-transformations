@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;

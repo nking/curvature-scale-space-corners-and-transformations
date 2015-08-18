@@ -361,6 +361,11 @@ public class PolygonAndPointPlotter {
             "points_and_polygon" + num.toString() +".html");
     }
     
+    public String writeFile(String fileSuffix) throws IOException {
+        return writeToFile(this.plotContent.toString(), 
+            "points_and_polygon_" + fileSuffix + ".html");
+    }
+    
     public String writeFile(long num) throws IOException {
         return writeToFile(this.plotContent.toString(), 
             "points_and_polygon" + Long.toString(num) +".html");
