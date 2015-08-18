@@ -1040,10 +1040,8 @@ public class PerimeterFinder {
             rows = new int[]{};
         }
         
-        for (int ir = 0; ir < rows.length; ++ir) {
-            
-            int row = rows[ir];
-            
+        for (int row : rows) {
+                        
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
             
             if (colRanges == null || colRanges.isEmpty()) {
@@ -1069,7 +1067,7 @@ public class PerimeterFinder {
 
             int firstX = colRanges.get(0).getX();
 
-            if ((colMinMax[0] > 0) && (firstX == colMinMax[0])) {
+            if ((colMinMax[0] > 0) && (firstX >= colMinMax[0])) {
                 borderPixels.add(new PairInt(firstX, row));
             } else if ((colMinMax[0] == 0) && (firstX > colMinMax[0])) {
                 borderPixels.add(new PairInt(firstX, row));
@@ -1079,7 +1077,7 @@ public class PerimeterFinder {
 
             int lastX = colRanges.get(n - 1).getY();
 
-            if ((colMinMax[1] < imageMaxColumn) && (lastX == colMinMax[1])) {
+            if ((colMinMax[1] < imageMaxColumn) && (lastX <= colMinMax[1])) {
                 borderPixels.add(new PairInt(lastX, row));
             } else if ((colMinMax[1] == imageMaxColumn) && (lastX < colMinMax[1])) {
                 borderPixels.add(new PairInt(lastX, row));
@@ -1381,10 +1379,8 @@ public class PerimeterFinder {
         // --- find the top and bottom row pixels not in colRanges and test memberships ---
         int[] rows = new int[]{rowMinMax[0], rowMinMax[1]};
         
-        for (int ir = 0; ir < rows.length; ++ir) {
-            
-            int row = rows[ir];
-            
+        for (int row : rows) {
+                        
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
             
             if ((colRanges == null) || colRanges.isEmpty()) {
@@ -1450,10 +1446,8 @@ public class PerimeterFinder {
         // --- in contigNonMembers
         int[] cols = new int[]{colMinMax[0], colMinMax[1]};
         
-        for (int ic = 0; ic < cols.length; ++ic) {
-            
-            int col = cols[ic];
-            
+        for (int col : cols) {
+                        
             for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
                 
                 PairInt t = new PairInt(col, row);
