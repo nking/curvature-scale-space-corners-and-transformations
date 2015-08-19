@@ -1481,7 +1481,7 @@ public class PerimeterFinder {
      * could copy this method and instead of back-tracking, add the previous
      * point in the linked list at the dead end and continue (for the spurs,
      * there will be the same points leading out and back composing the spur
-     * in the final curve - special care is needed for starter points whic
+     * in the final curve - special care is needed for starter points which
      * are spurs).
      * 
      * @param rowColRanges the column bounds for each row of a contiguous
