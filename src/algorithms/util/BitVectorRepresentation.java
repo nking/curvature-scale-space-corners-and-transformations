@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -26,9 +27,11 @@ public class BitVectorRepresentation {
      * @param subset
      * @return 
      */
-    public int createBitstring(Set<PairInt> subset) {
+    public BigInteger createBitstring(Set<PairInt> subset) {
         
-        int result = 0;
+        //TODO: replace with my VeryLongBitstring because it's mutable...
+        
+        BigInteger result = BigInteger.ZERO;
         
         for (PairInt p : subset) {
             Integer v = pointIndexLookup.get(p);
@@ -36,30 +39,10 @@ public class BitVectorRepresentation {
                 throw new IllegalArgumentException(
                     "a point in subset was not present in constructor's points");
             }
-            setBit(result, v.intValue());
+            result = result.setBit(v.intValue());
         }
         
         return result;
     }
     
-    protected void setBit(int bitstring, int nthBit) {
-        bitstring |= (1 << nthBit);
-    }
-    
-    protected void clearBit(int bitstring, int nthBit) {
-        bitstring &= ~(1 << nthBit);
-    }
-    
-    protected void toggleBit(int bitstring, int nthBit) {
-        bitstring ^= (1 << nthBit);
-    }
-    
-    protected boolean isSet(int bitstring, int nthBit) {
-        return ((bitstring & (1 << nthBit)) != 0);
-    }
-    
-    protected boolean isNotSet(int bitstring, int nthBit) {
-        return ((bitstring & (1 << nthBit)) == 0);
-    }
-  
 }

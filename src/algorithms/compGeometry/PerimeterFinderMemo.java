@@ -2,19 +2,13 @@ package algorithms.compGeometry;
 
 import algorithms.util.PairInt;
 import algorithms.util.PathStep;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Class to store backtracking nodes used by PerimeterFinder's
- * getOrderedBorderPixels algorithm and return a re-usable sublist when
- * possible.  The class is specific to that method and assumes an interaction
- * distance is (diffX lte 1 and diffY lte 1).
  * 
  * @author nichole
  */
