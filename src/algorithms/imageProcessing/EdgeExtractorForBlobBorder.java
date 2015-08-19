@@ -72,12 +72,7 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         
         PairIntArray out = perimeterFinder.getOrderedBorderPixels(
             contiguousPoints, rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
-        
-        /*
-        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
-            rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
-        */
-        
+  
         int nBorder = out.getN();
         int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()
             - nBorder;
@@ -87,8 +82,61 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
             return null;
         }
+       
+MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
+
+        return out;
+    }
+    
+    /**
+     * given the set of contiguous points, find the perimeter of them and order
+     * the points into a closed single pixel width curve.
+     * @param contiguousPoints
+     * @param imageWidth
+     * @param imageHeight
+     * @param discardWhenCavityIsSmallerThanBorder
+     * @return 
+     */
+    public PairIntArray extractAndOrderTheBorder0(Set<PairInt> contiguousPoints,
+        int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
         
-        /*
+        if (contiguousPoints == null) {
+            return null;
+        }
+        
+MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        int imageMaxColumn = imageWidth - 1;
+        int imageMaxRow = imageHeight - 1;
+       
+        int[] rowMinMax = new int[2];
+                
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+       
+        if (!outputEmbeddedGapPoints.isEmpty()) {
+            // update the perimeter for "filling in" embedded points
+            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+                rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        }
+       
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+        
+        int nBorder = borderPixels.size();
+        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()
+            - nBorder;
+               
+        log.info("number of border points=" + nBorder + " nCavity=" + nCavity);
+        
+        if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
+            return null;
+        }
+        
 GreyscaleImage img2 = new GreyscaleImage(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
 int x = p.getX();
@@ -135,8 +183,8 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
             int y = out.getY(i) + yOffset;
             out.set(i, x, y);
         }
-        */
-/*    
+       
+/*
 Image img2 = new Image(imageWidth, imageHeight);
 for (int i = 0; i < output.size(); ++i) {
     PairIntArray pa = output.get(i);

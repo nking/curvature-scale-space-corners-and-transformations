@@ -5,9 +5,11 @@ import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.util.PathStep;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.BitVectorRepresentation;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -31,105 +33,105 @@ import java.util.logging.Logger;
  * The data structure is somewhat like a concave hull.  It's used to help
  * quickly scan a region and not include the tops of mountains that the sky
  * concave hull is bent around, for example.
- * 
+ *
  * @author nichole
  */
 public class PerimeterFinder {
-    
+
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     private boolean debug = true;
-  
+
     /**
      * For the given points, find the ranges of columns that bound the points
-     * that are contiguous and the points that are completely 
+     * that are contiguous and the points that are completely
      * enclosed within points but not part of the set.
      * This returns an outline of the points attempting to correct for
      * concave portions of the hull, that is, it is roughly a concave hull
      * that includes embedded PairInts that are not in the set points.
-     * 
+     *
      * @param points
-     * @param outputRowMinMax output populated as the min and max of rows are 
+     * @param outputRowMinMax output populated as the min and max of rows are
      * determined.
      * @param imageMaxColumn maximum column index of image (used to understand
      * when a pixel is in the last column)
-     * @param outputEmbeddedGapPoints a return variable holding the found 
+     * @param outputEmbeddedGapPoints a return variable holding the found
      * embedded points that are not in the "points" set, but are enclosed by it.
      * @return map w/ key being row number, value being a list of column ranges
      * that inclusively bound the points in that row.
      */
-    public Map<Integer, List<PairInt>> find(Set<PairInt> points, 
-        int[] outputRowMinMax, int imageMaxColumn, 
+    public Map<Integer, List<PairInt>> find(Set<PairInt> points,
+        int[] outputRowMinMax, int imageMaxColumn,
         Set<PairInt> outputEmbeddedGapPoints) {
-        
+
         if (points == null) {
 	    	throw new IllegalArgumentException("points cannot be null");
         }
         if (outputRowMinMax == null) {
 	    	throw new IllegalArgumentException("outputRowMinMax cannot be null");
         }
-        
+
         //== O(N):
         int[] minMaxXY = MiscMath.findMinMaxXY(points);
         int minX = minMaxXY[0];
         int maxX = minMaxXY[1];
         int minY = minMaxXY[2];
         int maxY = minMaxXY[3];
-        
+
         outputRowMinMax[0] = minY;
-        outputRowMinMax[1] = maxY;       
-        
+        outputRowMinMax[1] = maxY;
+
         /*
         TODO: consider where can make changes to iterate over data by
         point in "points" instead of minX, maxX, minY, maxY to reduce the
         runtime and keep it easier to make polynomial estimate.
-        */ 
-        
+        */
+
         //== O((maxX-minX+1)*(maxY-minY+1)):
         // key holds row number
         // value holds (first column number, last column number) for points in the row
-        Map<Integer, List<PairInt>> rowColRanges = findRowColRanges(points, 
-            minX, maxX, minY, maxY);        
-       
+        Map<Integer, List<PairInt>> rowColRanges = findRowColRanges(points,
+            minX, maxX, minY, maxY);
+
         // runtime complexity is > O(m) where m is the number of contig gap ranges by row
         List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
             minX, maxX, minY, maxY);
 
         //runtime complexity is > O(m) where m is the number of contig gap ranges by row
-        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, 
+        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps,
             minY, maxY, imageMaxColumn, rowColRanges);
 
         // update the rowColRanges to encapsulate the truly embedded points too
         for (List<Gap> embeddedGroup : embeddedGapGroups) {
-            
-            updateRowColRangesForVerifiedEmbedded(rowColRanges, 
+
+            updateRowColRangesForVerifiedEmbedded(rowColRanges,
                 embeddedGroup, outputEmbeddedGapPoints);
 
         }
 
         return rowColRanges;
     }
-    
+
     /**
      * For the given points, find the ranges of columns that bound the points
-     * that are contiguous and the points that are completely 
+     * that are contiguous and the points that are completely
      * enclosed within points but not part of the set.
      * This returns an outline of the points attempting to correct for
      * concave portions of the hull, that is, it is roughly a concave hull
      * that includes embedded PairInts that are not in the set points.
-     * 
+     *
      */
-    public Set<PairInt> findEmbeddedGivenRowData( 
-        int[] rowMinMax, int imageMaxColumn, 
+    public Set<PairInt> findEmbeddedGivenRowData(
+        int[] rowMinMax, int imageMaxColumn,
         Map<Integer, List<PairInt>> rowColRanges) {
-        
+
         if (rowColRanges == null) {
 	    	throw new IllegalArgumentException("rowColRanges cannot be null");
         }
         if (rowMinMax == null) {
 	    	throw new IllegalArgumentException("outputRowMinMax cannot be null");
         }
-        
+
         int minX = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;
         for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
@@ -146,74 +148,74 @@ public class PerimeterFinder {
                 maxX = xf;
             }
         }
-       
+
         // runtime complexity is > O(m) where m is the number of contig gap ranges by row
         List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
             minX, maxX, rowMinMax[0], rowMinMax[1]);
 
         //runtime complexity is > O(m) where m is the number of contig gap ranges by row
-        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, 
+        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps,
             rowMinMax[0], rowMinMax[1], imageMaxColumn, rowColRanges);
 
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-        
+
         // update the rowColRanges to encapsulate the truly embedded points too
         for (List<Gap> embeddedGroup : embeddedGapGroups) {
-            
-            updateRowColRangesForVerifiedEmbedded(rowColRanges, 
+
+            updateRowColRangesForVerifiedEmbedded(rowColRanges,
                 embeddedGroup, outputEmbeddedGapPoints);
         }
 
         return outputEmbeddedGapPoints;
     }
-    
+
     boolean boundedByPointsInHigherRows(int row, int gapStart, int gapStop,
         int maxRow, int imageMaxColumn, Map<Integer, List<PairInt>> rowColRange) {
-        
+
         LinkedHashSet<Integer> gapRange = createRange(gapStart, gapStop);
-        
+
         List<Integer> remove = new ArrayList<Integer>();
-        
+
         for (int r = (row + 1); r <= maxRow; r++) {
-            
+
             List<PairInt> colRanges = rowColRange.get(Integer.valueOf(r));
-            
+
             boolean bounded = boundedByPoints(colRanges, imageMaxColumn,
                 gapRange, remove);
-            
+
             if (bounded) {
                 return true;
             }
         }
-        
+
         return gapRange.isEmpty();
     }
-    
+
     boolean boundedByPointsInLowerRows(int row, int gapStart, int gapStop,
         int minRow, int imageMaxColumn,
         Map<Integer, List<PairInt>> rowColRanges) {
-        
+
         LinkedHashSet<Integer> gapRange = createRange(gapStart, gapStop);
         List<Integer> remove = new ArrayList<Integer>();
-    
+
         for (int r = (row - 1); r >= minRow; r--) {
-            
+
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(r));
 
             boolean bounded = boundedByPoints(colRanges, imageMaxColumn,
                 gapRange, remove);
-            
+
             if (bounded) {
                 return true;
             }
         }
-        
+
         return gapRange.isEmpty();
     }
-    
+
     private boolean boundedByPoints(List<PairInt> colRanges, int imageMaxColumn,
         LinkedHashSet<Integer> gapRange, List<Integer> remove) {
-                            
+
         for (PairInt colRange : colRanges) {
 
             int col0 = colRange.getX();
@@ -224,7 +226,7 @@ public class PerimeterFinder {
                 int col = gapColumn.intValue();
 
                 if ((col >= col0) && (col <= col1)) {
-                    
+
                     remove.add(gapColumn);
                 }
             }
@@ -240,66 +242,66 @@ public class PerimeterFinder {
 
         return gapRange.isEmpty();
     }
-    
+
     LinkedHashSet<Integer> createRange(int start, int stopInclusive) {
-        
+
         int n = stopInclusive - start + 1;
-        
+
         LinkedHashSet<Integer> range = new LinkedHashSet<Integer>(n);
-        
+
         for (int i = 0; i < n; i++) {
-            
+
             Integer value = Integer.valueOf(start + i);
-            
+
             range.add(value);
         }
-        
+
         return range;
     }
-    
+
     /**
      * for the given points, find the ranges of contiguous columns and return
-     * that by row. 
+     * that by row.
      * runtime complexity is O((maxX-minX+1)*(maxY-minY+1)), so this is
      * larger than O(N) for points datasets that are less dense than the min
      * max range.
-     * 
+     *
      * @param points
-     * @param outputRowMinMax output populated as the min and max of rows are 
+     * @param outputRowMinMax output populated as the min and max of rows are
      * determined.
      * @return a map with key = row, value = list of contiguous points in the
      * row.
      */
-    Map<Integer, List<PairInt>> findRowColRanges(Set<PairInt> points, 
+    Map<Integer, List<PairInt>> findRowColRanges(Set<PairInt> points,
         int minX, int maxX, int minY, int maxY) {
-        
+
         if (points == null) {
 	    	throw new IllegalArgumentException("points cannot be null");
         }
-        
+
         /*
         TODO: consider where can make changes to iterate over data by
         point in "points" instead of minX, maxX, minY, maxY to reduce the
         runtime and keep it easier to make polynomial estimate.
-        */ 
-        
+        */
+
         // key holds row number
         // value holds (first column number, last column number) for points in the row
         Map<Integer, List<PairInt>> rowColRange = new HashMap<Integer, List<PairInt>>();
-       
+
         //O(N):
         for (int row = minY; row <= maxY; row++) {
-            
+
             List<PairInt> colRanges = new ArrayList<PairInt>();
             Integer key = Integer.valueOf(row);
             rowColRange.put(key, colRanges);
-            
+
             PairInt currentColRange = null;
-            
+
             for (int col = minX; col <= maxX; col++) {
-                
+
                 boolean contains = points.contains(new PairInt(col, row));
-                
+
                 if (currentColRange == null) {
                     if (contains) {
                         currentColRange = new PairInt(col, col);
@@ -318,88 +320,88 @@ public class PerimeterFinder {
                     }
                 }
             }
-            
+
             //store last currentColRange
             if (currentColRange != null) {
-                
+
                 if (colRanges.isEmpty()) {
-                    
+
                     colRanges.add(currentColRange);
-                    
-                } else if ( 
+
+                } else if (
                     !colRanges.get(colRanges.size() - 1).equals(currentColRange)) {
-                    
+
                     colRanges.add(currentColRange);
                 }
             }
         }
-        
+
         return rowColRange;
     }
 
     /**
-     * Find the gaps in rowColRanges and put them in same group if they are 
+     * Find the gaps in rowColRanges and put them in same group if they are
      * connected.  Note that diagonal pixels are not considered connected
      * (though this may change if test cases show they should be).
-     * 
+     *
      * @param rowColRanges
      * @param minX
      * @param maxX
      * @param minY
      * @param maxY
-     * @return 
+     * @return
      */
-    protected List<List<Gap>> findContiguousGaps(Map<Integer, List<PairInt>> 
+    protected List<List<Gap>> findContiguousGaps(Map<Integer, List<PairInt>>
         rowColRanges, int minX, int maxX, int minY, int maxY) {
-        
+
         // ---------------- store the gaps in a stack ---------------------
         // runtime complexity is
-        // O((maxY-minY+1)*k) where k is the number of contig ranges per row        
+        // O((maxY-minY+1)*k) where k is the number of contig ranges per row
         Stack<Gap> stack = findGaps(rowColRanges, minX, maxX, minY, maxY);
-        
-        // ----------------- find contiguous gaps ------------------------        
+
+        // ----------------- find contiguous gaps ------------------------
         List<List<Gap>> gapGroups = new ArrayList<List<Gap>>();
-        
+
         if (stack.isEmpty()) {
             return gapGroups;
         }
-        
+
         Map<Gap, Integer> gapToIndexMap = new HashMap<Gap, Integer>();
-        
+
         Map<Gap, Boolean> visited = new HashMap<Gap, Boolean>();
-                
+
         //TODO: add minimum and maximum runtime estimates here.
-        
+
         while (!stack.isEmpty()) {
-            
+
             Gap uNode = stack.pop();
-            
+
             if (visited.containsKey(uNode)) {
                 continue;
             }
-            
+
             visited.put(uNode, Boolean.TRUE);
-            
+
             int row = uNode.getRow();
             int uStart = uNode.getStart();
             int uStopIncl = uNode.getStopInclusive();
-            
+
             // search in row above for a neighbor.
             // to save space, just looking in rowColRanges
-            
+
             int vRow = row + 1;
-            
+
             if (vRow > maxY) {
                 continue;
             }
-            
+
             // ------ find the connected neighbors of u, below u ---------
-            
+
             List<Gap> vNodes = new ArrayList<Gap>();
-            
+
             // these are ordered by increasing range:
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(vRow));
-            
+
             /*
                   |----|    |----|
                 @@@@@@@@@            case 0
@@ -410,9 +412,9 @@ public class PerimeterFinder {
             for (int i = 1; i < colRanges.size(); i++) {
                 int gapStart = colRanges.get(i - 1).getY() + 1;
                 int gapStop = colRanges.get(i).getX() - 1;
-                
+
                 Gap vNode = null;
-                
+
                 // is any portion of uStart is within col0:col2
                 if ((uStart <= gapStart) && (uStopIncl >= gapStop)) {
                     vNode = new Gap(vRow, gapStart, gapStop);
@@ -421,15 +423,15 @@ public class PerimeterFinder {
                 } else if ((uStart >= gapStart) && (uStart <= gapStop)) {
                     vNode = new Gap(vRow, gapStart, gapStop);
                 }
-                                
+
                 if (vNode != null) {
-                    
-                    vNodes.add(vNode);                    
+
+                    vNodes.add(vNode);
                 }
             }
-            
+
             // ---------------- process the neighbors -----------------
-            
+
             for (Gap vNode : vNodes) {
                 // process each node.  add to existing group or start a new one
                 Integer uIdx = gapToIndexMap.get(uNode);
@@ -454,7 +456,7 @@ public class PerimeterFinder {
                             gapToIndexMap.put(g, moveTo);
                         }
                         gapGroups.get(moveTo).addAll(moveFromG);
-                        gapGroups.get(moveFrom).clear();                        
+                        gapGroups.get(moveFrom).clear();
                     }
                 } else if (uIdx != null) {
                     groupIdx = uIdx;
@@ -476,13 +478,13 @@ public class PerimeterFinder {
                     gapToIndexMap.put(uNode, groupIdx);
                     gapToIndexMap.put(vNode, groupIdx);
                 }
-                
-                //System.out.println(groupIdx + " ==> u " + uNode.toString() 
+
+                //System.out.println(groupIdx + " ==> u " + uNode.toString()
                 //    + " v " + vNode.toString());
-                
+
                 stack.push(vNode);
             }
-            
+
             if (vNodes.isEmpty()) {
                 // store u alone
                 Integer groupIdx = gapToIndexMap.get(uNode);
@@ -495,7 +497,7 @@ public class PerimeterFinder {
                 }
             }
         }
-        
+
         // condense:
         boolean hasAnEmpty = false;
         for (List<Gap> group : gapGroups) {
@@ -513,37 +515,37 @@ public class PerimeterFinder {
             }
             gapGroups = tmp;
         }
-        
+
         return gapGroups;
     }
-    
-    Stack<Gap> findGaps(Map<Integer, List<PairInt>> 
+
+    Stack<Gap> findGaps(Map<Integer, List<PairInt>>
         rowColRanges, int minX, int maxX, int minY, int maxY) {
-        
+
         // ------- store the gaps in a stack --------
         // runtime complexity is
         // O((maxY-minY+1)*k) where k is the number of contig ranges per row
-        
+
         // stack is lifo, so push in reverse order of desired use
         Stack<Gap> stack = new java.util.Stack<Gap>();
-        
+
         for (int row = maxY; row >= minY; row--) {
-            
+
             Integer key = Integer.valueOf(row);
-            
+
             List<PairInt> colRanges = rowColRanges.get(key);
-                        
+
             for (int i = (colRanges.size() - 1); i > 0; i--) {
-                
+
                 int gapStart = colRanges.get(i - 1).getY() + 1;
                 int gapStop = colRanges.get(i).getX() - 1;
-                
+
                 Gap gap = new Gap(row, gapStart, gapStop);
-                
+
                 stack.push(gap);
             }
         }
-        
+
         return stack;
     }
 
@@ -556,85 +558,85 @@ public class PerimeterFinder {
      * @param imageMaxColumn the maximum column index of the image
      * @param rowColRanges map with key = row number and value = list of column
      * ranges for the presence of points.
-     * @return subset of contiguousGapGroups that are completely bounded by 
+     * @return subset of contiguousGapGroups that are completely bounded by
      * rowColRanges
      */
-    protected List<List<Gap>> findBoundedGaps(List<List<Gap>> contiguousGapGroups, 
+    protected List<List<Gap>> findBoundedGaps(List<List<Gap>> contiguousGapGroups,
         int minY, int maxY, int imageMaxColumn,
         Map<Integer, List<PairInt>> rowColRanges) {
-        
+
         List<List<Gap>> contiguousBoundedGapGroups = new ArrayList<List<Gap>>();
 
         /* need a data structure to access all Gaps by row by number.
         Will use a Map with key=integer and value = set of Gaps.
         Since there are not usually very many Gaps per row, will not use
         a sorted list of Gaps as the value, but that might be something to
-        consider in the future with stats of the total number of gaps in 
+        consider in the future with stats of the total number of gaps in
         contiguousBoundedGapGroups compared to the number of pixels in sky.
         */
         Map<Integer, Set<Gap>> rowGapsMap = createRowMap(contiguousGapGroups);
 
         for (List<Gap> contiguousGap : contiguousGapGroups) {
-            
+
             boolean notBounded = false;
-            
+
             for (Gap gap : contiguousGap) {
 
                 int row = gap.getRow();
-                
+
                 /*
-                 check that the gap above it if any is not in a gap that 
+                 check that the gap above it if any is not in a gap that
                  continues to the image boundary
                 */
-                boolean adjRowGapIsUnbounded = 
-                    adjacentGapIsConnectedToImageBoundary(gap.getStart(), 
-                        gap.getStopInclusive(), 
+                boolean adjRowGapIsUnbounded =
+                    adjacentGapIsConnectedToImageBoundary(gap.getStart(),
+                        gap.getStopInclusive(),
                         rowGapsMap.get(Integer.valueOf(row + 1)),
                         rowColRanges.get(Integer.valueOf(row + 1)),
                         imageMaxColumn);
-                
+
                 if (adjRowGapIsUnbounded) {
                     notBounded = true;
                     break;
                 }
-                
+
                 /*
                  same check for row below
                 */
                 adjRowGapIsUnbounded = adjacentGapIsConnectedToImageBoundary(
-                    gap.getStart(), gap.getStopInclusive(), 
-                    rowGapsMap.get(Integer.valueOf(row - 1)), 
+                    gap.getStart(), gap.getStopInclusive(),
+                    rowGapsMap.get(Integer.valueOf(row - 1)),
                     rowColRanges.get(Integer.valueOf(row - 1)),
                     imageMaxColumn);
-                
+
                 if (adjRowGapIsUnbounded) {
                     notBounded = true;
                     break;
                 }
-                
-                boolean bounded = boundedByPointsInHigherRows(row, 
-                    gap.getStart(), gap.getStopInclusive(), maxY, 
+
+                boolean bounded = boundedByPointsInHigherRows(row,
+                    gap.getStart(), gap.getStopInclusive(), maxY,
                     imageMaxColumn, rowColRanges);
-                
+
                 if (!bounded) {
                     notBounded = true;
                     break;
                 }
-                
-                bounded = boundedByPointsInLowerRows(row, gap.getStart(), 
+
+                bounded = boundedByPointsInLowerRows(row, gap.getStart(),
                     gap.getStopInclusive(), minY, imageMaxColumn, rowColRanges);
-                
+
                 if (!bounded) {
                     notBounded = true;
                     break;
                 }
             }
-            
-            if (!notBounded) {                
+
+            if (!notBounded) {
                 contiguousBoundedGapGroups.add(contiguousGap);
             }
         }
-       
+
         return contiguousBoundedGapGroups;
     }
 
@@ -643,42 +645,42 @@ public class PerimeterFinder {
         Collection<PairInt> addedPoints) {
 
         boolean allAreWithinExistingRange = true;
-        
+
         // ------------------- update rowColRanges --------------------------
         for (PairInt p : addedPoints) {
-            
+
             int row = p.getY();
             Integer rowKey = Integer.valueOf(row);
-            
+
             int col = p.getX();
-            
+
             List<PairInt> colRanges = rowColRanges.get(rowKey);
-             
+
             /*
              cases:
                 no row or empty list for row in rowColRanges
-            
+
                 point is before first range in colRanges
                    adjacent to it or not
-                
+
                 point is after last range in colRanges
                    adjacent to it or not
-            
+
                 point is between ranges in colRanges
                    adjacent to a range or not
-            
+
                 point is within range in colRanges
-            
+
             Note that when the insert is adjacent to a range, have to consider
             whether it is adjacent on both sides, in which case it is a merge.
             */
-            
+
             if ((colRanges == null) || colRanges.isEmpty()) {
-                
+
                 // case: no row or empty list for row in rowColRanges
-                
+
                 allAreWithinExistingRange = false;
-                    
+
                 if (colRanges == null) {
                     colRanges = new ArrayList<PairInt>();
                     rowColRanges.put(rowKey, colRanges);
@@ -692,15 +694,15 @@ public class PerimeterFinder {
                 }
                 continue;
             }
-           
+
             int n = colRanges.size();
-            
+
             if (col < colRanges.get(0).getX()) {
-                
+
                 //case: point is before first range
-                
+
                 allAreWithinExistingRange = false;
-                
+
                 PairInt first = colRanges.get(0);
                 if (col == (first.getX() - 1)) {
                     first.setX(col);
@@ -709,13 +711,13 @@ public class PerimeterFinder {
                     colRanges.add(0, add);
                 }
             } else if (col > colRanges.get(n - 1).getY()) {
-                
+
                 //case: point is after last range
-                
+
                 allAreWithinExistingRange = false;
-                                
+
                 PairInt last = colRanges.get(n - 1);
-                
+
                 if (col == (last.getY() + 1)) {
                     last.setY(col);
                 } else {
@@ -723,46 +725,46 @@ public class PerimeterFinder {
                     colRanges.add(add);
                 }
             } else if (n == 1) {
-                // was not before or after the only range, so check within 
+                // was not before or after the only range, so check within
                 PairInt current = colRanges.get(0);
                 if (!((col >= current.getX()) && (col <= current.getY()))) {
                     // not in range.  this should not happen
-                    throw new IllegalStateException("error in algorithm: point " 
+                    throw new IllegalStateException("error in algorithm: point "
                         + col + ", " + row + " was not added to rowColRanges");
                 }
             } else {
-                
-                //case: point is between ranges in colRanges            
+
+                //case: point is between ranges in colRanges
                 // or
                 //case: point is within range in colRanges
-                
+
                 boolean added = false;
-                
+
                 for (int i = (colRanges.size() - 1); i > 0; i--) {
 
                     PairInt current = colRanges.get(i);
-                    
+
                     PairInt prev = colRanges.get(i - 1);
-                    
+
                     //case: point is within range in colRanges
                     if ((col >= current.getX()) && (col <= current.getY())) {
                         // no need to change range
                         added = true;
                         break;
-                    } else if ((i == 1) && 
+                    } else if ((i == 1) &&
                         (col >= prev.getX()) && (col <= prev.getY())) {
                         added = true;
                         break;
                     }
-                    
+
                     //case: point is between ranges in colRanges
-                    
+
                     allAreWithinExistingRange = false;
-                                        
+
                     if ((col >= prev.getY()) && (col <= current.getX())) {
-                        
+
                         if (col == (prev.getY() + 1)) {
-                            
+
                             //if adjacent to current range too, merge them
                             if (col == (current.getX() - 1)) {
                                 // extend prev to current end and remove current
@@ -777,7 +779,7 @@ public class PerimeterFinder {
                             current.setX(col);
                             added = true;
                             break;
-                        } else {                            
+                        } else {
                             PairInt add = new PairInt(col, col);
                             colRanges.add(i, add);
                             added = true;
@@ -786,11 +788,11 @@ public class PerimeterFinder {
                     }
                 }
                 if (!added) {
-                    
+
                     // find min and max of ranges:
-                    int[] minMaxCols = findMinMaxColumns(rowColRanges, 
+                    int[] minMaxCols = findMinMaxColumns(rowColRanges,
                         rowMinMax);
-                    
+
                      List<PairInt> colRanges0 = rowColRanges.get(
                          Integer.valueOf(p.getY()));
                      StringBuffer sb = new StringBuffer();
@@ -798,26 +800,26 @@ public class PerimeterFinder {
                          sb.append("colRange=" + cr.getX() + ":" + cr.getY());
                          sb.append("\n");
                      }
-                    
-                    throw new IllegalStateException("point " + p.toString() + 
+
+                    throw new IllegalStateException("point " + p.toString() +
                         " was not added to a colRange. " +
-                        " colRanges minX=" + minMaxCols[0] + 
+                        " colRanges minX=" + minMaxCols[0] +
                         " maxX=" + minMaxCols[1] + " minRow=" + rowMinMax[0] +
                         " maxRow=" + rowMinMax[1] + " " + sb.toString());
                 }
             }
         }
-        
+
         return allAreWithinExistingRange;
     }
 
     public void updateRowColRangesForAddedPoints(
-        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax, 
+        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax,
         int imageMaxColumn, Collection<PairInt> addedPoints) {
-       
+
         /*
         - update rowColRanges and rowMinMax for individual pixels.
-          This is faster to update rowColRanges rather than create it anew 
+          This is faster to update rowColRanges rather than create it anew
           from all points (not given in arguments).
           * runtime: O(N_addedPoints)
         - findContiguousGaps
@@ -825,19 +827,19 @@ public class PerimeterFinder {
         - findBoundedGaps
           * runtime: > O(m) where m is the number of contig gap ranges by row
         - update rowColRanges to include the truly embedded gaps just verified
-          * runtime: 
-        
+          * runtime:
+
         Note that can avoid the last 3 steps if the addedPoints all exist within
         existing ranges in rowColRanges.
         */
-        
+
         boolean allAreWithinExistingRange = updateForAddedPoints(
             rowColRanges, rowMinMax, addedPoints);
-        
+
         if (allAreWithinExistingRange) {
             return;
         }
-        
+
         // ------- find minX and maxX -------
         // runtime is O(rowColRanges.size)
         int minY = rowMinMax[0];
@@ -853,7 +855,7 @@ public class PerimeterFinder {
             PairInt cr = colRanges.get(0);
             if (cr.getX() < minX) {
                 minX = cr.getX();
-            } 
+            }
             if (n > 1) {
                 cr = colRanges.get(n - 1);
             }
@@ -861,29 +863,29 @@ public class PerimeterFinder {
                 maxX = cr.getY();
             }
         }
-        
+
         // runtime complexity is > O(m) where m is the number of contig gap ranges by row
         List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
             minX, maxX, minY, maxY);
-        
+
         //runtime complexity is > O(m) where m is the number of contig gap ranges by row
-        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, minY, 
+        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, minY,
             maxY, imageMaxColumn, rowColRanges);
-        
+
         // update the rowColRanges to encapsulate the truly embedded points too
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-        
+
         for (List<Gap> embeddedGroup : embeddedGapGroups) {
-            
-            updateRowColRangesForVerifiedEmbedded(rowColRanges, 
-                embeddedGroup, outputEmbeddedGapPoints);      
-        }        
+
+            updateRowColRangesForVerifiedEmbedded(rowColRanges,
+                embeddedGroup, outputEmbeddedGapPoints);
+        }
     }
 
     private void updateRowColRangesForVerifiedEmbedded(
-        Map<Integer, List<PairInt>> rowColRanges, 
+        Map<Integer, List<PairInt>> rowColRanges,
         Collection<Gap> embeddedGaps, Set<PairInt> outputEmbeddedGapPoints) {
-        
+
         for (Gap gap : embeddedGaps) {
 
             int row = gap.getRow();
@@ -905,19 +907,19 @@ public class PerimeterFinder {
 
                     colRanges.remove(i);
 
-                    for (int cIdx = gapStart; cIdx <= gapStop; cIdx++) {                     
+                    for (int cIdx = gapStart; cIdx <= gapStop; cIdx++) {
                         outputEmbeddedGapPoints.add(new PairInt(cIdx, row));
                     }
                 }
             }
         }
     }
-    
+
     /**
      * find the pixels which are the borders of rowColRanges including concave
      * pixels, but excluding any pixels that are the image border pixels.
      * Note that rowColRanges has to represent a contiguous point set.
-     * 
+     *
      * @param rowColRanges the column bounds for each row of a contiguous
      * point set.
      * @param rowMinMax the minimum and maximum rows present in the contiguous
@@ -926,32 +928,32 @@ public class PerimeterFinder {
      * point set was derived.
      * @param imageMaxRow the maximum row in the image from which the point
      * set was derived.
-     * @return 
+     * @return
      */
     public Set<PairInt> getBorderPixels(Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
-        
+
         Set<PairInt> borderPixels = new HashSet<PairInt>();
-        
+
         if (rowColRanges.isEmpty()) {
             return borderPixels;
         }
-        
+
         if (debug) {
-            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges, 
+            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,
                 rowMinMax, imageMaxColumn, imageMaxRow);
         }
-        
+
         /*
         Need to handle concave bounds:
            [][][][][][][][]
            [][]    [][]  [][]
-              [][][][][][]  
-             []     []      
-              [][]          
+              [][][][][][]
+             []     []
+              [][]
            [][]  [][]  [][] <--- the 2nd to last point should be found as border too
               [][]  [][][]  <--- same for 3rd to last here and 2nd in row
-        
+
           ___________________
           |[][][][][][][][]  |  Find the min and max column bounds for the
           |[][]    [][]  [][]|  region.  make a point set of all points that
@@ -966,57 +968,57 @@ public class PerimeterFinder {
         |     ___________________       a point in connectedToBounds.
         |     |[][][][][][][][]  |      If the point is connected, put it in the
         |     |[][]    [][]  [][]|  border points set.
-        |     |   [][][][][][]   |  
-        |     |  []     [][][]   |  Then, if the top row is > 0, add the top 
+        |     |   [][][][][][]   |
+        |     |  []     [][][]   |  Then, if the top row is > 0, add the top
         |     |   [][]           |  row colRange pixels to border points set.
-        |     |[][]  []  [][][]  |  
+        |     |[][]  []  [][][]  |
         |     |   [][]  [][][]   |  Then, if the bottow row is < max of image rows,
-        |     --------------------  add the bottom row colRange pixels to 
+        |     --------------------  add the bottom row colRange pixels to
         |                           border points.
-        ---------------------------- 
+        ----------------------------
                                     Then if any colRanges are equal to the leftmost
                                     region bounds and that is > 0,
                                     those points should be added to border pixels set.
-        
-        Then if any colRanges are equal to the rightmost region bounds and that 
+
+        Then if any colRanges are equal to the rightmost region bounds and that
         is < imageMaxColumn, those points should be added to border pixels set.
-        
-        */ 
-        
+
+        */
+
         int[] colMinMax = getMinMaxColumnsInRanges(rowColRanges, rowMinMax);
-        
+
         // ---- find nonMembers that are connected to the bounds of the -----
         // ---- region bounded by rowMinMax and colMinMax               -----
-      
+
         Set<PairInt> nonMembersConnectedToBounds =
-            findNonMembersConnectedToBounds(rowColRanges, rowMinMax, colMinMax, 
+            findNonMembersConnectedToBounds(rowColRanges, rowMinMax, colMinMax,
                 imageMaxColumn, imageMaxRow);
-        
+
         //int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         //int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
         int[] dxs = new int[]{-1, 0,  1, 0};
         int[] dys = new int[]{ 0, -1, 0, 1};
-        
+
         // --- for each member in colRanges, if it's adjacent to a point
         // --- in nonMembersConnectedToBounds it's a border point
         for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
-            
+
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
+
             if (colRanges == null || colRanges.isEmpty()) {
                 throw new IllegalStateException(
                 "each row should have a point in it, else not contiguous");
             }
-            
+
             for (PairInt colRange : colRanges) {
                 for (int col = colRange.getX(); col <= colRange.getY(); ++col) {
-                    
+
                     // test if adjacent to a point in nonMembersConnectedToBounds
                     for (int idx = 0; idx < dxs.length; ++idx) {
-                        
+
                         int x = col + dxs[idx];
                         int y = row + dys[idx];
-                        
+
                         PairInt t = new PairInt(x, y);
                         if (nonMembersConnectedToBounds.contains(t)) {
                             borderPixels.add(new PairInt(col, row));
@@ -1026,10 +1028,10 @@ public class PerimeterFinder {
                 }
             }
         }
-        
+
         // --- then add any pixels on the bounds if the bounds is not the
         //     same as the image bounds
-        
+
         int[] rows;
         if (rowMinMax[0] > 0) {
             if (rowMinMax[1] < imageMaxRow) {
@@ -1042,23 +1044,23 @@ public class PerimeterFinder {
         } else {
             rows = new int[]{};
         }
-        
+
         for (int row : rows) {
-                        
+
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
+
             if (colRanges == null || colRanges.isEmpty()) {
                 throw new IllegalStateException(
                 "each row should have a point in it, else not contiguous");
             }
-            
+
             for (PairInt colRange : colRanges) {
                 for (int col = colRange.getX(); col <= colRange.getY(); ++col) {
                     borderPixels.add(new PairInt(col, row));
                 }
             }
         }
-        
+
         for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
 
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
@@ -1086,10 +1088,10 @@ public class PerimeterFinder {
                 borderPixels.add(new PairInt(lastX, row));
             }
         }
-      
+
         return borderPixels;
     }
-    
+
     /**
      * get a point set of the points not in column ranges for the region bounded
      * by min row, max row, and the minimum of columns and the maximum of columns.
@@ -1097,29 +1099,29 @@ public class PerimeterFinder {
      * @param rowMinMax
      * @param imageMaxColumn
      * @param imageMaxRow
-     * @return 
+     * @return
      */
     public Set<PairInt> getVoidsInRectangularRegion(Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax, int[] colMinMax, int imageMaxColumn, int imageMaxRow) {
-        
+
         Set<PairInt> set = new HashSet<PairInt>();
-                
+
         for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
-            
+
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
+
             if ((colRanges == null) || colRanges.isEmpty()) {
                 continue;
             }
-            
+
             int n = colRanges.size();
-            
+
             PairInt colRange = colRanges.get(0);
-        
+
             for (int x = colMinMax[0]; x < colRange.getX(); ++x) {
                 set.add(new PairInt(x, row));
             }
-                        
+
             for (int i = 1; i < n; ++i) {
                 int lx = colRange.getY();
                 colRange = colRanges.get(i);
@@ -1128,33 +1130,33 @@ public class PerimeterFinder {
                     set.add(new PairInt(x, row));
                 }
             }
-            
+
             for (int x = (colRange.getY() + 1); x <= colMinMax[1]; ++x) {
                 set.add(new PairInt(x, row));
             }
         }
-        
+
         return set;
     }
-    
+
     public int[] getMinMaxColumnsInRanges(Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax) {
-                
+
         int minX = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;
-        
+
         for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
-            
+
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
+
             if ((colRanges == null) || colRanges.isEmpty()) {
                 continue;
             }
-            
+
             int n = colRanges.size();
-            
+
             int tc = colRanges.get(0).getX();
-            
+
             if (tc < minX) {
                 minX = tc;
             }
@@ -1163,10 +1165,10 @@ public class PerimeterFinder {
                 maxX = tc;
             }
         }
-        
+
         return new int[]{minX, maxX};
     }
-    
+
     protected Gap findLastGap(Set<Gap> gaps) {
         Gap lastGap = null;
         for (Gap gap : gaps) {
@@ -1180,7 +1182,7 @@ public class PerimeterFinder {
         }
         return lastGap;
     }
-    
+
     protected Gap findFirstGap(Set<Gap> gaps) {
         Gap firstGap = null;
         for (Gap gap : gaps) {
@@ -1198,11 +1200,11 @@ public class PerimeterFinder {
     protected boolean adjacentGapIsConnectedToImageBoundary(
         int startGap, int stopGapInclusive, Set<Gap> adjacentGaps,
         List<PairInt> adjacentColRanges, int imageMaxColumn) {
-        
+
         if ((adjacentColRanges == null) || adjacentColRanges.isEmpty()) {
             return true;
         }
-        
+
         /*
         check to see if the startGap:stopGapInclusive is adjacent to a
         row which has a leading or trailing gap which is connected to the image
@@ -1214,7 +1216,7 @@ public class PerimeterFinder {
                 if (stopGapInclusive >= (lastColRange.getY() + 1)) {
                     return true;
                 }
-            } 
+            }
         } else {
             Gap lastGap = findLastGap(adjacentGaps);
             if (lastColRange.getX() > lastGap.getStopInclusive()) {
@@ -1222,7 +1224,7 @@ public class PerimeterFinder {
                     if (stopGapInclusive >= (lastColRange.getY() + 1)) {
                         return true;
                     }
-                } 
+                }
             }
         }
         PairInt firstColRange = adjacentColRanges.get(0);
@@ -1239,14 +1241,14 @@ public class PerimeterFinder {
                     if (startGap <= (firstColRange.getX() - 1)) {
                         return true;
                     }
-                } 
+                }
             }
         }
-        
+
         if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {
             return false;
         }
-        
+
         for (int col = startGap; col <= stopGapInclusive; col++) {
             for (Gap gap : adjacentGaps) {
                 if ((col >= gap.getStart()) && (col <= gap.getStopInclusive())) {
@@ -1256,48 +1258,48 @@ public class PerimeterFinder {
                 }
             }
         }
-        
+
         return false;
     }
 
     protected Map<Integer, Set<Gap>> createRowMap(List<List<Gap>> gapLists) {
-        
+
         Map<Integer, Set<Gap>> rowSetsMap = new HashMap<Integer, Set<Gap>>();
-        
+
         for (List<Gap> gaps : gapLists) {
-            
+
             for (Gap gap : gaps) {
-                
+
                 Integer row = Integer.valueOf(gap.getRow());
-                
+
                 Set<Gap> set = rowSetsMap.get(row);
-                
+
                 if (set == null) {
                     set = new HashSet<Gap>();
                     rowSetsMap.put(row, set);
                 }
-                
+
                 set.add(gap);
             }
         }
-        
+
         return rowSetsMap;
     }
 
-    protected int findIndexOfOverlappingRange(List<PairInt> colRanges, 
+    protected int findIndexOfOverlappingRange(List<PairInt> colRanges,
         PairInt findColRange) {
-        
+
         if ((colRanges == null) || colRanges.isEmpty()) {
             return -1;
         }
         int fc0 = findColRange.getX();
         int fc1 = findColRange.getY();
-        
+
         for (int i = 0; i < colRanges.size(); i++) {
             PairInt colRange = colRanges.get(i);
             int c0 = colRange.getX();
             int c1 = colRange.getY();
-            
+
             if ((fc0 <= c0) && (fc1 >= c0)) {
                 return i;
             } else if ((fc0 >= c0) && (fc0 <= c1)) {
@@ -1309,7 +1311,7 @@ public class PerimeterFinder {
 
     private int[] findMinMaxColumns(Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax) {
-        
+
         // runtime is O(rowColRanges.size)
         int minY = rowMinMax[0];
         int maxY = rowMinMax[1];
@@ -1324,7 +1326,7 @@ public class PerimeterFinder {
             PairInt cr = colRanges.get(0);
             if (cr.getX() < minX) {
                 minX = cr.getX();
-            } 
+            }
             if (n > 1) {
                 cr = colRanges.get(n - 1);
             }
@@ -1332,45 +1334,45 @@ public class PerimeterFinder {
                 maxX = cr.getY();
             }
         }
-        
+
         return new int[]{minX, maxX};
     }
 
     private Map<Integer, List<PairInt>> copy(
         Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax) {
-        
+
          Map<Integer, List<PairInt>> output = new HashMap<Integer, List<PairInt>>();
          for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
-             
+
              Integer key = Integer.valueOf(row);
-             
+
              List<PairInt> colRanges = rowColRanges.get(key);
-             
+
              List<PairInt> outputColRanges = new ArrayList<PairInt>();
-             
+
              for (PairInt p : colRanges) {
                  outputColRanges.add(new PairInt(p.getX(), p.getY()));
              }
-             
+
              output.put(key, outputColRanges);
          }
-         
+
          return output;
     }
 
     public Set<PairInt> findNonMembersConnectedToBounds(
-        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax, 
+        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax,
         int[] colMinMax, int imageMaxColumn, int imageMaxRow) {
-        
+
         Set<PairInt> nonMembers = getVoidsInRectangularRegion(rowColRanges,
             rowMinMax, colMinMax, imageMaxColumn, imageMaxRow);
 
         //Find the contiguous groups among nonMembers.
         DFSConnectedGroupsFinder contigFinder = new DFSConnectedGroupsFinder();
         contigFinder.setMinimumNumberInCluster(1);
-        contigFinder.findConnectedPointGroups(nonMembers, imageMaxColumn, 
+        contigFinder.findConnectedPointGroups(nonMembers, imageMaxColumn,
             imageMaxRow);
-        
+
         Set<Set<PairInt>> contigNonMembers = new HashSet<Set<PairInt>>();
         for (int i = 0; i < contigFinder.getNumberOfGroups(); ++i) {
             Set<PairInt> group = contigFinder.getXY(i);
@@ -1378,22 +1380,22 @@ public class PerimeterFinder {
         }
 
         Set<PairInt> contigNonMembersConnectedToBounds = new HashSet<PairInt>();
-        
+
         // --- find the top and bottom row pixels not in colRanges and test memberships ---
         int[] rows = new int[]{rowMinMax[0], rowMinMax[1]};
-        
+
         for (int row : rows) {
-                        
+
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
+
             if ((colRanges == null) || colRanges.isEmpty()) {
                 continue;
             }
-            
+
             int n = colRanges.size();
-            
+
             PairInt colRange = colRanges.get(0);
-        
+
             for (int x = colMinMax[0]; x < colRange.getX(); ++x) {
                 PairInt t = new PairInt(x, row);
                 Set<PairInt> keep = null;
@@ -1408,7 +1410,7 @@ public class PerimeterFinder {
                     contigNonMembers.remove(keep);
                 }
             }
-                        
+
             for (int i = 1; i < n; ++i) {
                 int lx = colRange.getY();
                 colRange = colRanges.get(i);
@@ -1428,7 +1430,7 @@ public class PerimeterFinder {
                     }
                 }
             }
-            
+
             for (int x = (colRange.getY() + 1); x <= colMinMax[1]; ++x) {
                 PairInt t = new PairInt(x, row);
                 Set<PairInt> keep = null;
@@ -1444,15 +1446,15 @@ public class PerimeterFinder {
                 }
             }
         }
-        
+
         // --- scan the pixels in first and last columns and test membership ---
         // --- in contigNonMembers
         int[] cols = new int[]{colMinMax[0], colMinMax[1]};
-        
+
         for (int col : cols) {
-                        
+
             for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
-                
+
                 PairInt t = new PairInt(col, row);
                 Set<PairInt> keep = null;
                 for (Set<PairInt> set : contigNonMembers) {
@@ -1461,14 +1463,14 @@ public class PerimeterFinder {
                         break;
                     }
                 }
-                
+
                 if (keep != null) {
                     contigNonMembersConnectedToBounds.addAll(keep);
                     contigNonMembers.remove(keep);
                 }
             }
         }
-        
+
         return contigNonMembersConnectedToBounds;
     }
 
@@ -1483,7 +1485,7 @@ public class PerimeterFinder {
      * there will be the same points leading out and back composing the spur
      * in the final curve - special care is needed for starter points which
      * are spurs).
-     * 
+     *
      * @param rowColRanges the column bounds for each row of a contiguous
      * point set.
      * @param rowMinMax the minimum and maximum rows present in the contiguous
@@ -1492,29 +1494,65 @@ public class PerimeterFinder {
      * point set was derived.
      * @param imageMaxRow the maximum row in the image from which the point
      * set was derived.
-     * @return 
+     * @return
      */
     public PairIntArray getOrderedBorderPixels(Set<PairInt> points,
         Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
-        
+
+        PerimeterFinderMemo memo = new PerimeterFinderMemo();
+
+        BitVectorRepresentation bitVectorHelper = new BitVectorRepresentation(points);
+
         /*
-        NOTE:
-        adding memoization to the code for backtracking.
-        
-        In this example, can see that when the path reaches node 20, needs to 
+        the algorithm uses rowColRanges to make a starting point and add it
+        to the path of steps.
+
+        for each currentStep, the state at the time of instantiation is stored
+        in it's node.  the state is it's pixel location, a summary of all visited
+        nodes up to that point, and it's available moves.
+
+        it's available moves are adjacent points that have at least one non-point
+        neighbor (the goal is to find border points, so has to be on perimeter
+        of points) and have not been visited yet.
+
+        at each iteration, the currentStep is first checked against memo's list
+        of known "non-solution states".  if that exists, it backtracks (without
+        storing backtrack state again).
+        If the currentStep was not found by memo, its nextSteps are examined to
+        choose the next step if any is possible, else backtrack if none are
+        possible. (Note that backtracking stores the entire path in memo to
+        capture the state of nodes that led to "no solution" and then removes
+        currentStep from previous steps nextStep, removes it from visited too,
+        then removes currentStep from path and sets currentStep to last node in path).
+        (Note, that the responsibility of updating a step's nextNodes to remove
+        a point should only occur at backtrack stage after memoization in order
+        to allow correct recognition of state later to avoid "non-solution" states).
+
+        If a next step is possible (did not backtrack), a PathStep is created
+        for the nextStep and it is added to the path, border, and visited.
+
+        then iteration continues until an end state is reached.
+        end state is currentStep is adjacent to starter point after have left
+        the start region, or all points have been visited or all paths tried <--- review this
+        */
+
+        /*
+        example for memoization at backtracking.
+
+        In this example, can see that when the path reaches node 20, needs to
         backtrack to node 1 and choose 1->4 instead of 1->2->3->4.
-        
+
         Can see that nodes 5 to 18 are outside of an interaction distance with
-        those changed path nodes (1 through 4), so then, segment from 5 to 18 
+        those changed path nodes (1 through 4), so then, segment from 5 to 18
         can be saved and restored here instead of re-computing it.
-        
-        have not implemented that below, so the current implementation can 
-        take a very long time if backtracking to the beginning of the path is 
+
+        have not implemented that below, so the current implementation can
+        take a very long time if backtracking to the beginning of the path is
         needed.
-        
+
          see PerimeterFinderMemo.java,  in progress...
-        
+
         55
         54                     11   12
         53            9   10   14   13
@@ -1526,38 +1564,38 @@ public class PerimeterFinder {
         47       1    2    3
         46       0
            125  126  127  128  129  130
-                
+
         */
-        
-        
+
         PairIntArray border = new PairIntArray();
-        
+
         if (rowColRanges.isEmpty()) {
             return border;
         }
-        
+
         if (points.size() < 5) {
-            throw new IllegalArgumentException("points.size() needs to be a least 5 points");
+            throw new IllegalArgumentException(
+            "points.size() needs to be a least 5 points");
         }
-        
+
         if (debug) {
-            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges, 
+            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,
                 rowMinMax, imageMaxColumn, imageMaxRow);
         }
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+
         //xc,yc
         double[] xyCentroid = curveHelper.calculateXYCentroids(points);
-        
+
         Set<PairInt> visited = new HashSet<PairInt>();
         Set<PairInt> neighbors = new HashSet<PairInt>();
-        
+
         // ------- initialize with step 0 ------
         /*
-        step 0 should be the smallest row and col, 
-        but because it may be a single pixel width spur (which will not end in 
-        a closed curve), have to make sure that the added point has at least 
+        step 0 should be the smallest row and col,
+        but because it may be a single pixel width spur (which will not end in
+        a closed curve), have to make sure that the added point has at least
         2 neighbors, else discard it and continue forward until have found a
         starter point with 2 neighbors.
         */
@@ -1566,8 +1604,7 @@ public class PerimeterFinder {
         List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(y0));
         PairInt colRange = colRanges.get(0);
         int x0 = colRange.getX();
-        
-        
+
         /*
         storing the state of choices in a linked list.
            each choice holds the col,row of that pixel and the neighbor points
@@ -1576,211 +1613,234 @@ public class PerimeterFinder {
         */
         LinkedList<PathStep> path = new LinkedList<PathStep>();
         PathStep currentStep = null;
-        
-        curveHelper.findNeighbors(x0, y0, neighbors, points, visited, 
-            imageMaxColumn + 1, imageMaxRow + 1);
-        
+
+        curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0, neighbors,
+            points, visited, imageMaxColumn + 1, imageMaxRow + 1);
+
         if (neighbors.size() < 2) {
+
             while (neighbors.size() < 2) {
                 PairInt p = neighbors.iterator().next();
                 x0 = p.getX();
                 y0 = p.getY();
-                curveHelper.findNeighbors(x0, y0, neighbors, points, visited, 
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0,
+                    neighbors, points, visited,
                     imageMaxColumn + 1, imageMaxRow + 1);
             }
             border.add(x0, y0);
             visited.add(new PairInt(x0, y0));
-            
-            currentStep = new PathStep();
-            currentStep.coords = new PairInt(x0, y0);
-            currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+
+            currentStep = new PathStep(new PairInt(x0, y0), neighbors,
+                bitVectorHelper.createBitstring(visited));
+
             path.add(currentStep);
-            
+
             log.info("start point=(" + x0 + "," + y0 + ")");
-            
+
         } else {
-        
+
             border.add(x0, y0);
             visited.add(new PairInt(x0, y0));
 
-            currentStep = new PathStep();
-            currentStep.coords = new PairInt(x0, y0);
-            currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+            currentStep = new PathStep(new PairInt(x0, y0), neighbors,
+                bitVectorHelper.createBitstring(visited));
+
             path.add(currentStep);
-            
+
             log.info("start point=(" + x0 + "," + y0 + ")");
-            
+
             // --- take the 2nd step if colRange.getY() is > col, to make start
             //     direction clockwise ---
-            
+
             if (colRange.getY() > colRange.getX()) {
+
                 PairInt p = new PairInt(x0 + 1, y0);
                 border.add(x0 + 1, y0);
                 visited.add(p);
                 log.info("adding (" + (x0 + 1) + "," + y0 + ")");
-                
-                currentStep.nextSteps.remove(p);
-                
-                curveHelper.findNeighbors(x0 + 1, y0, neighbors, points, visited, 
+
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0 + 1, y0, 
+                    neighbors, points, visited,
                     imageMaxColumn + 1, imageMaxRow + 1);
-                
-                currentStep = new PathStep();
-                currentStep.coords = p;
-                currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+
+                currentStep = new PathStep(p, neighbors,
+                    bitVectorHelper.createBitstring(visited));
+
                 path.add(currentStep);
             }
         }
-       
+
         /* consider each move in all 8 directions in which move point is
            !visited.constains(point) && points.contains(point)
-        
+
         if more than one choice, prefer choice with fewer neighbors.
-        
+
         if there are zero choices, remove the latest point from border and try again.
-        
-        repeat while col,row is not adjacent to x0,y0 and visited.size < points.size. <=== this needs more thought        
+
+        repeat while col,row is not adjacent to x0,y0 and visited.size < points.size. <=== reviewing this when testing
         */
-        
+
         boolean search = true;
-        
+
         int earliestBacktrack = Integer.MAX_VALUE;
-        
+
         while (search) {
 
-            if (currentStep.nextSteps.isEmpty()) {
-                
-                while (currentStep.nextSteps.isEmpty()) {
-                
-                    log.info("   removing (" + currentStep.coords.getX() + "," 
-                        + currentStep.coords.getY() + ")");
-                
-         
-                    // a dead end spur, so remove last point
+            boolean currentIsNoSolution = memo.isANoSolutionState(currentStep);
+
+            if (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {
+
+                while (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {
+
+                    log.info("   removing (" + currentStep.getCoords().getX() + ","
+                        + currentStep.getCoords().getY() + ")"
+                        + " border.n=" + border.getN() + " path.size=" + path.size()
+                    );
+
+                    if (border.getN() == 0) {
+                        return null;
+                    }
+
+                    // no solution for this path, so store state and backtrack
+
+                    if (!currentIsNoSolution) {
+                        // if currentIsNoSolution, state has already been stored
+                        memo.storeNoSolutionState(path);
+                    }
+
+                    PathStep nextStep = path.peekLast();
+
+                    if (nextStep != null) {
+                        nextStep.getNextSteps().remove(currentStep.getCoords());
+                    }
+
                     border.removeRange(border.getN() - 1, border.getN() - 1);
-                
-                    visited.remove(currentStep.coords);
-                
-                    path.removeLast();
-                    
+
+                    visited.remove(currentStep.getCoords());
+
                     if (path.size() < earliestBacktrack) {
                         earliestBacktrack = path.size();
                         log.info("earliestBacktrack=" + earliestBacktrack);
                     }
-                
-                    currentStep = path.peekLast();
-                
+
+                    currentStep = nextStep;
+
                     if (currentStep == null) {
                         return border;
                     }
+
+                    currentIsNoSolution = memo.isANoSolutionState(currentStep);
                 }
-                               
-            } else if (currentStep.nextSteps.size() == 1) {
-                
-                PairInt p = currentStep.nextSteps.iterator().next();
+
+            } else if (currentStep.getNextSteps().size() == 1) {
+
+                PairInt p = currentStep.getNextSteps().iterator().next();
                 border.add(p.getX(), p.getY());
                 visited.add(p);
-                log.info("adding (" + p.getX() + "," + p.getY() + ")");
-                
-                currentStep.nextSteps.remove(p);
-                
-                curveHelper.findNeighbors(p.getX(), p.getY(), neighbors, points, 
+                log.info("adding (" + p.getX() + "," + p.getY() + ")"
+                    + " border.n=" + border.getN() + " path.size=" + path.size()
+                );
+
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), 
+                    p.getY(), neighbors, points,
                     visited, imageMaxColumn + 1, imageMaxRow + 1);
-                
-                currentStep = new PathStep();
-                currentStep.coords = p;
-                currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+
+                currentStep = new PathStep(p, neighbors,
+                    bitVectorHelper.createBitstring(visited));
+
                 path.add(currentStep);
-               
+
             } else {
-                
+
                 // choose the neighbor with the fewest neighbors and when there
                 // are ties, choose the one furthest from the centroid
-                
+
                 PairInt p = null;
                 int minNNeigbors = Integer.MAX_VALUE;
-                
-                for (PairInt pn : currentStep.nextSteps) {
-                    
+
+                for (PairInt pn : currentStep.getNextSteps()) {
+
                     int x2 = pn.getX();
                     int y2 = pn.getY();
-                    
-                    log.info("   compare " + " (" + x2 + "," + y2 + ")  to" 
-                        + " (" + currentStep.coords.getX() + "," 
-                        + currentStep.coords.getY() + ")");
-                    
-                    int nNeighbors = curveHelper.countNeighbors(x2, y2, points, 
+
+                    log.info("   compare " + " (" + x2 + "," + y2 + ")  to"
+                        + " (" + currentStep.getCoords().getX() + ","
+                        + currentStep.getCoords().getY() + ")");
+
+                    int nNeighbors = curveHelper.countNeighbors(x2, y2, points,
                         imageMaxColumn + 1, imageMaxRow + 1);
-                    
+
                     if (p == null) {
-                        
-                        minNNeigbors = nNeighbors;
-                        p = pn;                      
-                        
-                    } else if (nNeighbors < minNNeigbors) {
-                        
+
                         minNNeigbors = nNeighbors;
                         p = pn;
-                        
+
+                    } else if (nNeighbors < minNNeigbors) {
+
+                        minNNeigbors = nNeighbors;
+                        p = pn;
+
                     } else if (nNeighbors == minNNeigbors) {
-                        
+
                         double distC = Math.sqrt(
                             (p.getX() - xyCentroid[0])*(p.getX() - xyCentroid[0])
                             +
                             (p.getY() - xyCentroid[1])*(p.getY() - xyCentroid[1]));
-                        
+
                         double dist2 = Math.sqrt(
                             (x2 - xyCentroid[0])*(x2 - xyCentroid[0])
                             +
                             (y2 - xyCentroid[1])*(y2 - xyCentroid[1]));
-                    
+
                         if (dist2 > distC) {
                             p = pn;
                         }
                     }
                 }
-                
+
                 border.add(p.getX(), p.getY());
                 visited.add(p);
-                log.info("adding (" + p.getX() + "," + p.getY() + ")");
-                
-                currentStep.nextSteps.remove(p);
-                
-                curveHelper.findNeighbors(p.getX(), p.getY(), neighbors, points, 
+                log.info("adding (" + p.getX() + "," + p.getY() + ")"
+                    + " border.n=" + border.getN() + " path.size=" + path.size()
+                );
+
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), 
+                    p.getY(), neighbors, points,
                     visited, imageMaxColumn + 1, imageMaxRow + 1);
-                
-                currentStep = new PathStep();
-                currentStep.coords = p;
-                currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+
+                currentStep = new PathStep(p, neighbors,
+                    bitVectorHelper.createBitstring(visited));
+
                 path.add(currentStep);
-            
+
             }
-            
+
             // only eval if have left the region of start point.
             if (border.getN() > 4) {
-                if ((Math.abs(currentStep.coords.getX() - x0) < 2) 
-                    && (Math.abs(currentStep.coords.getY() - y0) < 2)) {
+                if ((Math.abs(currentStep.getCoords().getX() - x0) < 2)
+                    && (Math.abs(currentStep.getCoords().getY() - y0) < 2)) {
                     search = false;
                 }
             }
         }
-                
+
         return border;
     }
-    
+
     static class Gap {
-        
+
         private final int row;
-        
+
         private final int start;
-        
+
         private final int stopInclusive;
-                
+
         public Gap(int rowNumber, int startColumn, int stopColumnInclusive) {
             row = rowNumber;
             start = startColumn;
             stopInclusive = stopColumnInclusive;
         }
-        
+
         /**
          * @return the row
          */
@@ -1804,18 +1864,18 @@ public class PerimeterFinder {
 
         @Override
         public boolean equals(Object obj) {
-            
+
             if (!(obj instanceof Gap)) {
                 return false;
             }
-            
+
             Gap other = (Gap)obj;
-            
+
             if ((other.getRow() == row) && (other.getStart() == start) &&
                 (other.getStopInclusive() == stopInclusive)) {
                 return true;
             }
-            
+
             return false;
         }
 
@@ -1854,7 +1914,7 @@ public class PerimeterFinder {
             sum ^= i1;
 
             sum *= fnv32Prime;
-            
+
             sum ^= i2;
 
             sum *= fnv32Prime;
@@ -1866,18 +1926,14 @@ public class PerimeterFinder {
 
         @Override
         public String toString() {
-            
+
             StringBuilder sb = new StringBuilder();
             sb.append("row=").append(Integer.toString(row))
                 .append(" cols=").append(Integer.toString(start))
                 .append(":").append(Integer.toString(stopInclusive));
-            
+
             return sb.toString();
         }
     }
-    
-    public static class PathStep {
-        PairInt coords;
-        Set<PairInt> nextSteps;
-    }
+
 }

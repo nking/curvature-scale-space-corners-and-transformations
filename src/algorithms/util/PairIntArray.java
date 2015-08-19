@@ -61,10 +61,10 @@ public class PairIntArray {
     public void removeRange(int idxLo, int idxHi) {
         
         if ((idxLo < 0) || (idxLo > (n - 1))) {
-            throw new IllegalArgumentException("idxLo is out of range");
+            throw new IllegalArgumentException(idxLo + ", idxLo is out of range");
         }
         if ((idxHi < 0) || (idxHi > (n - 1))) {
-            throw new IllegalArgumentException("idxHi is out of range");
+            throw new IllegalArgumentException(idxHi + ",idxHi is out of range");
         }
         if (idxHi < idxLo) {
             throw new IllegalArgumentException("idxHi has to be >= idxLo");

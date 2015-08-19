@@ -3069,5 +3069,60 @@ for (int i = 0; i < edge.getN(); i++) {
         
         return edges;
     }
+    
+    public boolean hasAtLeastOneNonPointNeighbor(int x, int y, 
+        Set<PairInt> points, int imageWidth, int imageHeight) {
+    
+        for (int i = 0; i < eightNeighborsX.length; i++) {
+            
+            int x2 = x + eightNeighborsX[i];
+            int y2 = y + eightNeighborsY[i];
+            
+            if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
+                (y2 > (imageHeight - 1))) {
+                continue;
+            }
+            
+            if (!points.contains(new PairInt(x2, y2))) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    public void findNeighborsWithAtLeastOneNonPoint(int x, int y, 
+        Set<PairInt> outputNeighbors, Set<PairInt> points, 
+        Set<PairInt> excludePoints, int imageWidth, int imageHeight) {
+        
+        outputNeighbors.clear();
+                
+        for (int i = 0; i < eightNeighborsX.length; i++) {
+            
+            int x2 = x + eightNeighborsX[i];
+            int y2 = y + eightNeighborsY[i];
+            
+            if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
+                (y2 > (imageHeight - 1))) {
+                continue;
+            }
+            
+            boolean isPossiblyABorderPoint = hasAtLeastOneNonPointNeighbor(
+                x2, y2, points, imageWidth, imageHeight);
+            
+            if (!isPossiblyABorderPoint) {
+                continue;
+            }
+            
+            PairInt p2 = new PairInt(x2, y2);
+            
+            if (excludePoints.contains(p2)) {
+                continue;
+            }
+            if (points.contains(p2)) {
+                outputNeighbors.add(p2);
+            }
+        }
+    }
 
 }
