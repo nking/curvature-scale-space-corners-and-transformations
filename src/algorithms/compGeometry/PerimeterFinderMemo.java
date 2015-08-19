@@ -147,7 +147,7 @@ public class PerimeterFinderMemo {
             throw new IllegalStateException("removedNode was not found.  It's" +
                 " expected that method storeNode was used just before this.");
         }
-        if (nextNodeBTLIndex.intValue() <= rmNodeBTLIndex.intValue()) {
+        if (nextNodeBTLIndex.intValue() >= rmNodeBTLIndex.intValue()) {
             throw new IllegalStateException("removedNode is expected to have " +
                 " been a more recent backtrack than nextNode.");
         }
