@@ -1476,7 +1476,7 @@ public class PerimeterFinder {
 
     /** NOT READY FOR USE
      * Walk the border to find the perimeter border pixels.
-     * Note that rowColRanges has to represent a contiguous point set.
+     * Note that rowColRanges has to represent the contiguous point set called points.
      * Note also that this method removes spurs (single pixel width paths
      * without a turn around).
      * If wanted to keep the spurs and still have a connected sequential curve,
@@ -1484,7 +1484,7 @@ public class PerimeterFinder {
      * point in the linked list at the dead end and continue (for the spurs,
      * there will be the same points leading out and back composing the spur
      * in the final curve - special care is needed for starter points which
-     * are spurs).
+     * are spurs and storing "visited" for that altered algorithm).
      *
      * @param rowColRanges the column bounds for each row of a contiguous
      * point set.
@@ -1510,7 +1510,7 @@ public class PerimeterFinder {
 
         for each currentStep, the state at the time of instantiation is stored
         in it's node.  the state is it's pixel location, a summary of all visited
-        nodes up to that point, and it's available moves.
+        nodes at that moment, and the available moves for the pixel location.
 
         it's available moves are adjacent points that have at least one non-point
         neighbor (the goal is to find border points, so has to be on perimeter
@@ -1523,7 +1523,8 @@ public class PerimeterFinder {
         choose the next step if any is possible, else backtrack if none are
         possible. (Note that backtracking stores the entire path in memo to
         capture the state of nodes that led to "no solution" and then removes
-        currentStep from previous steps nextStep, removes it from visited too,
+        currentStep from previous step's nextSteps, removes currentStep from visited
+        and border,
         then removes currentStep from path and sets currentStep to last node in path).
         (Note, that the responsibility of updating a step's nextNodes to remove
         a point should only occur at backtrack stage after memoization in order
@@ -1544,12 +1545,13 @@ public class PerimeterFinder {
         backtrack to node 1 and choose 1->4 instead of 1->2->3->4.
 
         Can see that nodes 5 to 18 are outside of an interaction distance with
-        those changed path nodes (1 through 4), so then, segment from 5 to 18
-        can be saved and restored here instead of re-computing it.
+        path nodes 1 through 4, so then, segment from 5 to 18
+        can be saved and restored here instead of re-computing it when '4' is
+        next selected as the next node in a path.
 
-        have not implemented that below, so the current implementation can
-        take a very long time if backtracking to the beginning of the path is
-        needed.
+        have not implemented that below, but have implemented memoization
+        for states that lead to no-solution, and avoidance of continuing on
+        those paths in the future.
 
          see PerimeterFinderMemo.java,  in progress...
 
