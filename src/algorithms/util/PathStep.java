@@ -1,6 +1,5 @@
 package algorithms.util;
 
-import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -14,14 +13,14 @@ import java.util.Set;
 public class PathStep {
 
     // bit vector representing all nodes visited when instantiated
-    private final BigInteger totalVisitedAtInstantiation;
+    private final VeryLongBitString totalVisitedAtInstantiation;
     private final PairInt coords;
     private final Set<PairInt> nextSteps;
     // unmodifiable set holding all available moves when instantiated
     private final UnModifiableSet possibleStepsAtInstantiation;
 
     public PathStep(PairInt coordinates, Set<PairInt> availableMoves,
-        BigInteger totalVisitedBitVector) {
+        VeryLongBitString totalVisitedBitVector) {
         this.coords = coordinates;
         possibleStepsAtInstantiation = new UnModifiableSet(availableMoves);
         nextSteps = new HashSet<PairInt>(availableMoves);

@@ -25,11 +25,11 @@ public class BitVectorRepresentationTest extends TestCase {
         
         BitVectorRepresentation instance = new BitVectorRepresentation(set);
         
-        Set<BigInteger> bitstrings = new HashSet<BigInteger>();
+        Set<VeryLongBitString> bitstrings = new HashSet<VeryLongBitString>();
         
         while (!subset0.isEmpty()) {
         
-            BigInteger result = instance.createBitstring(subset0);
+            VeryLongBitString result = instance.createBitstring(subset0);
 
             assertFalse(bitstrings.contains(result));
         

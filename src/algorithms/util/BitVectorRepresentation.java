@@ -27,11 +27,9 @@ public class BitVectorRepresentation {
      * @param subset
      * @return 
      */
-    public BigInteger createBitstring(Set<PairInt> subset) {
-        
-        //TODO: replace with my VeryLongBitstring because it's mutable...
-        
-        BigInteger result = BigInteger.ZERO;
+    public VeryLongBitString createBitstring(Set<PairInt> subset) {
+                
+        VeryLongBitString result = new VeryLongBitString(pointIndexLookup.size());
         
         for (PairInt p : subset) {
             Integer v = pointIndexLookup.get(p);
@@ -39,7 +37,7 @@ public class BitVectorRepresentation {
                 throw new IllegalArgumentException(
                     "a point in subset was not present in constructor's points");
             }
-            result = result.setBit(v.intValue());
+            result.setBit(v.intValue());
         }
         
         return result;
