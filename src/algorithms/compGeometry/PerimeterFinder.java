@@ -1506,11 +1506,14 @@ public class PerimeterFinder {
         backtrack to node 1 and choose 1->4 instead of 1->2->3->4.
         
         Can see that nodes 5 to 18 are outside of an interaction distance with
-        those changes path, so that segment from 5 to 18 can be saved and 
-        restored here instead of re-computing it.
+        those changed path nodes (1 through 4), so then, segment from 5 to 18 
+        can be saved and restored here instead of re-computing it.
         
-        have not implemented that below, so the backtracking when the alternate
-        path is at the very beginning of the path, takes a very long time.
+        have not implemented that below, so the current implementation can 
+        take a very long time if backtracking to the beginning of the path is 
+        needed.
+        
+         see PerimeterFinderMemo.java,  in progress...
         
         55
         54                     11   12
@@ -1523,6 +1526,7 @@ public class PerimeterFinder {
         47       1    2    3
         46       0
            125  126  127  128  129  130
+                
         */
         
         
@@ -1748,7 +1752,7 @@ public class PerimeterFinder {
                 currentStep.coords = p;
                 currentStep.nextSteps = new HashSet<PairInt>(neighbors);
                 path.add(currentStep);
-int z = 1;                
+            
             }
             
             // only eval if have left the region of start point.
