@@ -1637,7 +1637,7 @@ public class PerimeterFinder {
 
             path.add(currentStep);
 
-            log.info("start point=(" + x0 + "," + y0 + ")");
+            log.fine("start point=(" + x0 + "," + y0 + ")");
 
         } else {
 
@@ -1649,7 +1649,7 @@ public class PerimeterFinder {
 
             path.add(currentStep);
 
-            log.info("start point=(" + x0 + "," + y0 + ")");
+            log.fine("start point=(" + x0 + "," + y0 + ")");
 
             // --- take the 2nd step if colRange.getY() is > col, to make start
             //     direction clockwise ---
@@ -1659,7 +1659,7 @@ public class PerimeterFinder {
                 PairInt p = new PairInt(x0 + 1, y0);
                 border.add(x0 + 1, y0);
                 visited.add(p);
-                log.info("adding (" + (x0 + 1) + "," + y0 + ")");
+                log.fine("adding (" + (x0 + 1) + "," + y0 + ")");
 
                 curveHelper.findNeighborsWithAtLeastOneNonPoint(x0 + 1, y0, 
                     neighbors, points, visited,
@@ -1689,12 +1689,12 @@ public class PerimeterFinder {
         while (search) {
 
             boolean currentIsNoSolution = memo.isANoSolutionState(currentStep);
-
+            
             if (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {
 
                 while (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {
 
-                    log.info("   removing (" + currentStep.getCoords().getX() + ","
+                    log.fine("   removing (" + currentStep.getCoords().getX() + ","
                         + currentStep.getCoords().getY() + ")"
                         + " border.n=" + border.getN() + " path.size=" + path.size()
                     );
@@ -1710,6 +1710,8 @@ public class PerimeterFinder {
                         memo.storeNoSolutionState(path);
                     }
 
+                    path.removeLast();
+                    
                     PathStep nextStep = path.peekLast();
 
                     if (nextStep != null) {
@@ -1739,7 +1741,7 @@ public class PerimeterFinder {
                 PairInt p = currentStep.getNextSteps().iterator().next();
                 border.add(p.getX(), p.getY());
                 visited.add(p);
-                log.info("adding (" + p.getX() + "," + p.getY() + ")"
+                log.fine("adding (" + p.getX() + "," + p.getY() + ")"
                     + " border.n=" + border.getN() + " path.size=" + path.size()
                 );
 
@@ -1765,7 +1767,7 @@ public class PerimeterFinder {
                     int x2 = pn.getX();
                     int y2 = pn.getY();
 
-                    log.info("   compare " + " (" + x2 + "," + y2 + ")  to"
+                    log.fine("   compare " + " (" + x2 + "," + y2 + ")  to"
                         + " (" + currentStep.getCoords().getX() + ","
                         + currentStep.getCoords().getY() + ")");
 
@@ -1802,7 +1804,7 @@ public class PerimeterFinder {
 
                 border.add(p.getX(), p.getY());
                 visited.add(p);
-                log.info("adding (" + p.getX() + "," + p.getY() + ")"
+                log.fine("adding (" + p.getX() + "," + p.getY() + ")"
                     + " border.n=" + border.getN() + " path.size=" + path.size()
                 );
 
@@ -1818,7 +1820,12 @@ public class PerimeterFinder {
             }
 
             // only eval if have left the region of start point.
-            if (border.getN() > 4) {
+            //TODO: refine this limit for very small point sets (e.g. 9).
+            //TODO: need a check on the innermost block that the points are
+            //      bounded, excepting spurs which should be stored. do not want
+            //      a path which turns around early, missing most of the points.
+            //      can use point in polygon test...or an area test or centroid test...
+            if (border.getN() > 8) {
                 if ((Math.abs(currentStep.getCoords().getX() - x0) < 2)
                     && (Math.abs(currentStep.getCoords().getY() - y0) < 2)) {
                     search = false;
