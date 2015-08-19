@@ -2,6 +2,8 @@ package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -14,6 +16,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1469,6 +1472,297 @@ public class PerimeterFinder {
         return contigNonMembersConnectedToBounds;
     }
 
+    /** NOT READY FOR USE
+     * Walk the border to find the perimeter border pixels.
+     * Note that rowColRanges has to represent a contiguous point set.
+     * Note also that this method removes spurs (single pixel width paths
+     * without a turn around).
+     * If wanted to keep the spurs and still have a connected sequential curve,
+     * could copy this method and instead of back-tracking, add the previous
+     * point in the linked list at the dead end and continue (for the spurs,
+     * there will be the same points leading out and back composing the spur
+     * in the final curve - special care is needed for starter points whic
+     * are spurs).
+     * 
+     * @param rowColRanges the column bounds for each row of a contiguous
+     * point set.
+     * @param rowMinMax the minimum and maximum rows present in the contiguous
+     * point set.
+     * @param imageMaxColumn the maximum column in the image from which the
+     * point set was derived.
+     * @param imageMaxRow the maximum row in the image from which the point
+     * set was derived.
+     * @return 
+     */
+    public PairIntArray getOrderedBorderPixels(Set<PairInt> points,
+        Map<Integer, List<PairInt>> rowColRanges,
+        int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
+        
+        /*
+        NOTE:
+        adding memoization to the code for backtracking.
+        
+        In this example, can see that when the path reaches node 20, needs to 
+        backtrack to node 1 and choose 1->4 instead of 1->2->3->4.
+        
+        Can see that nodes 5 to 18 are outside of an interaction distance with
+        those changes path, so that segment from 5 to 18 can be saved and 
+        restored here instead of re-computing it.
+        
+        have not implemented that below, so the backtracking when the alternate
+        path is at the very beginning of the path, takes a very long time.
+        
+        55
+        54                     11   12
+        53            9   10   14   13
+        52            8   15
+        51            7   16
+        50            6   17
+        49            5   20   18
+        48            4   19
+        47       1    2    3
+        46       0
+           125  126  127  128  129  130
+        */
+        
+        
+        PairIntArray border = new PairIntArray();
+        
+        if (rowColRanges.isEmpty()) {
+            return border;
+        }
+        
+        if (points.size() < 5) {
+            throw new IllegalArgumentException("points.size() needs to be a least 5 points");
+        }
+        
+        if (debug) {
+            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges, 
+                rowMinMax, imageMaxColumn, imageMaxRow);
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        //xc,yc
+        double[] xyCentroid = curveHelper.calculateXYCentroids(points);
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        Set<PairInt> neighbors = new HashSet<PairInt>();
+        
+        // ------- initialize with step 0 ------
+        /*
+        step 0 should be the smallest row and col, 
+        but because it may be a single pixel width spur (which will not end in 
+        a closed curve), have to make sure that the added point has at least 
+        2 neighbors, else discard it and continue forward until have found a
+        starter point with 2 neighbors.
+        */
+
+        int y0 = rowMinMax[0];
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(y0));
+        PairInt colRange = colRanges.get(0);
+        int x0 = colRange.getX();
+        
+        
+        /*
+        storing the state of choices in a linked list.
+           each choice holds the col,row of that pixel and the neighbor points
+              for paths not chosen.
+        backtracking removes last node and chooses from next to last node
+        */
+        LinkedList<PathStep> path = new LinkedList<PathStep>();
+        PathStep currentStep = null;
+        
+        curveHelper.findNeighbors(x0, y0, neighbors, points, visited, 
+            imageMaxColumn + 1, imageMaxRow + 1);
+        
+        if (neighbors.size() < 2) {
+            while (neighbors.size() < 2) {
+                PairInt p = neighbors.iterator().next();
+                x0 = p.getX();
+                y0 = p.getY();
+                curveHelper.findNeighbors(x0, y0, neighbors, points, visited, 
+                    imageMaxColumn + 1, imageMaxRow + 1);
+            }
+            border.add(x0, y0);
+            visited.add(new PairInt(x0, y0));
+            
+            currentStep = new PathStep();
+            currentStep.coords = new PairInt(x0, y0);
+            currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+            path.add(currentStep);
+            
+            log.info("start point=(" + x0 + "," + y0 + ")");
+            
+        } else {
+        
+            border.add(x0, y0);
+            visited.add(new PairInt(x0, y0));
+
+            currentStep = new PathStep();
+            currentStep.coords = new PairInt(x0, y0);
+            currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+            path.add(currentStep);
+            
+            log.info("start point=(" + x0 + "," + y0 + ")");
+            
+            // --- take the 2nd step if colRange.getY() is > col, to make start
+            //     direction clockwise ---
+            
+            if (colRange.getY() > colRange.getX()) {
+                PairInt p = new PairInt(x0 + 1, y0);
+                border.add(x0 + 1, y0);
+                visited.add(p);
+                log.info("adding (" + (x0 + 1) + "," + y0 + ")");
+                
+                currentStep.nextSteps.remove(p);
+                
+                curveHelper.findNeighbors(x0 + 1, y0, neighbors, points, visited, 
+                    imageMaxColumn + 1, imageMaxRow + 1);
+                
+                currentStep = new PathStep();
+                currentStep.coords = p;
+                currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+                path.add(currentStep);
+            }
+        }
+       
+        /* consider each move in all 8 directions in which move point is
+           !visited.constains(point) && points.contains(point)
+        
+        if more than one choice, prefer choice with fewer neighbors.
+        
+        if there are zero choices, remove the latest point from border and try again.
+        
+        repeat while col,row is not adjacent to x0,y0 and visited.size < points.size. <=== this needs more thought        
+        */
+        
+        boolean search = true;
+        
+        int earliestBacktrack = Integer.MAX_VALUE;
+        
+        while (search) {
+
+            if (currentStep.nextSteps.isEmpty()) {
+                
+                while (currentStep.nextSteps.isEmpty()) {
+                
+                    log.info("   removing (" + currentStep.coords.getX() + "," 
+                        + currentStep.coords.getY() + ")");
+                
+         
+                    // a dead end spur, so remove last point
+                    border.removeRange(border.getN() - 1, border.getN() - 1);
+                
+                    visited.remove(currentStep.coords);
+                
+                    path.removeLast();
+                    
+                    if (path.size() < earliestBacktrack) {
+                        earliestBacktrack = path.size();
+                        log.info("earliestBacktrack=" + earliestBacktrack);
+                    }
+                
+                    currentStep = path.peekLast();
+                
+                    if (currentStep == null) {
+                        return border;
+                    }
+                }
+                               
+            } else if (currentStep.nextSteps.size() == 1) {
+                
+                PairInt p = currentStep.nextSteps.iterator().next();
+                border.add(p.getX(), p.getY());
+                visited.add(p);
+                log.info("adding (" + p.getX() + "," + p.getY() + ")");
+                
+                currentStep.nextSteps.remove(p);
+                
+                curveHelper.findNeighbors(p.getX(), p.getY(), neighbors, points, 
+                    visited, imageMaxColumn + 1, imageMaxRow + 1);
+                
+                currentStep = new PathStep();
+                currentStep.coords = p;
+                currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+                path.add(currentStep);
+               
+            } else {
+                
+                // choose the neighbor with the fewest neighbors and when there
+                // are ties, choose the one furthest from the centroid
+                
+                PairInt p = null;
+                int minNNeigbors = Integer.MAX_VALUE;
+                
+                for (PairInt pn : currentStep.nextSteps) {
+                    
+                    int x2 = pn.getX();
+                    int y2 = pn.getY();
+                    
+                    log.info("   compare " + " (" + x2 + "," + y2 + ")  to" 
+                        + " (" + currentStep.coords.getX() + "," 
+                        + currentStep.coords.getY() + ")");
+                    
+                    int nNeighbors = curveHelper.countNeighbors(x2, y2, points, 
+                        imageMaxColumn + 1, imageMaxRow + 1);
+                    
+                    if (p == null) {
+                        
+                        minNNeigbors = nNeighbors;
+                        p = pn;                      
+                        
+                    } else if (nNeighbors < minNNeigbors) {
+                        
+                        minNNeigbors = nNeighbors;
+                        p = pn;
+                        
+                    } else if (nNeighbors == minNNeigbors) {
+                        
+                        double distC = Math.sqrt(
+                            (p.getX() - xyCentroid[0])*(p.getX() - xyCentroid[0])
+                            +
+                            (p.getY() - xyCentroid[1])*(p.getY() - xyCentroid[1]));
+                        
+                        double dist2 = Math.sqrt(
+                            (x2 - xyCentroid[0])*(x2 - xyCentroid[0])
+                            +
+                            (y2 - xyCentroid[1])*(y2 - xyCentroid[1]));
+                    
+                        if (dist2 > distC) {
+                            p = pn;
+                        }
+                    }
+                }
+                
+                border.add(p.getX(), p.getY());
+                visited.add(p);
+                log.info("adding (" + p.getX() + "," + p.getY() + ")");
+                
+                currentStep.nextSteps.remove(p);
+                
+                curveHelper.findNeighbors(p.getX(), p.getY(), neighbors, points, 
+                    visited, imageMaxColumn + 1, imageMaxRow + 1);
+                
+                currentStep = new PathStep();
+                currentStep.coords = p;
+                currentStep.nextSteps = new HashSet<PairInt>(neighbors);
+                path.add(currentStep);
+int z = 1;                
+            }
+            
+            // only eval if have left the region of start point.
+            if (border.getN() > 4) {
+                if ((Math.abs(currentStep.coords.getX() - x0) < 2) 
+                    && (Math.abs(currentStep.coords.getY() - y0) < 2)) {
+                    search = false;
+                }
+            }
+        }
+                
+        return border;
+    }
+    
     static class Gap {
         
         private final int row;
@@ -1576,5 +1870,10 @@ public class PerimeterFinder {
             
             return sb.toString();
         }
+    }
+    
+    public static class PathStep {
+        PairInt coords;
+        Set<PairInt> nextSteps;
     }
 }

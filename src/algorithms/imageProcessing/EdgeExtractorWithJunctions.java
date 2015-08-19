@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
@@ -13,6 +14,7 @@ import algorithms.util.PointPairInt;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,7 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Level;
+import thirdparty.HungarianAlgorithm;
 
 /**
  * Edge extractor operates on an image that has already been reduced to 
@@ -74,6 +78,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
     private int defaultMaxIterJunctionJoin = 1;
     
     private boolean singleClosedEdge = false;
+    
+    // ordered so that closest are first, then the diagonals
+    private static int[] dxs8 = new int[]{-1, 0, 1,  0, -1,   1, 1, -1};
+    private static int[] dys8 = new int[]{ 0, 1, 0, -1, -1,  -1, 1,  1};
     
     /**
      * NOTE:  input should have a black (empty) background and edges should
@@ -154,8 +162,6 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 img);
         }
         
-long nPointsBeforeJP = countPixelsInEdges(output);
-
         log.fine("edges.size()=" + output.size() + " before join-points");
         
         output = joinOnJoinPoints(joinPoints, output);
@@ -209,7 +215,6 @@ long nPointsBeforeJP = countPixelsInEdges(output);
             ++nIter;
         }
         
-log.info("nIter=" + nIter);
         return output;
     }
     
@@ -302,9 +307,6 @@ log.info("nIter=" + nIter);
         assert(endPointQueue.size() >= n);
         assert(endPointMap.size() >= 2*n);
         
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
         while (!endPointQueue.isEmpty()) {
             
             PairInt uXY = endPointQueue.poll();
@@ -324,9 +326,9 @@ log.info("nIter=" + nIter);
             int closestDistSq = Integer.MAX_VALUE;
             int vClosestCanBeReordered = -99;
             
-            for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                int vX = uX + dxs[nIdx];
-                int vY = uY + dys[nIdx];
+            for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                int vX = uX + dxs8[nIdx];
+                int vY = uY + dys8[nIdx];
                 if ((vX < 0) || (vX > (w - 1)) || (vY < 0) || (vY > (h - 1))) {
                     continue;
                 }
@@ -628,9 +630,6 @@ log.info("nIter=" + nIter);
         int w = img.getWidth();
         int h = img.getHeight();
         
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-                
         // 8 * O(N)
         for (int edgeIdx = 0; edgeIdx < n; edgeIdx++) {
             
@@ -645,10 +644,10 @@ log.info("nIter=" + nIter);
                 
                 Set<PairInt> neighbors = new HashSet<PairInt>();
                                 
-                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
                     
-                    int x = col + dxs[nIdx];
-                    int y = row + dys[nIdx];
+                    int x = col + dxs8[nIdx];
+                    int y = row + dys8[nIdx];
                     
                     if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
                         continue;
@@ -1855,6 +1854,8 @@ for (int i = 0; i < output.size(); ++i) {
 MiscDebug.writeImageCopy(img2, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 int z0 = 1;
 
+        PairIntArray maxEdge = output.get(maxEdgeIdx);
+        
         for (int i = 0; i < output.size(); ++i) {
             
             if (i == maxEdgeIdx || (output.get(i).getN() < 3)) {
@@ -1865,6 +1866,11 @@ int z0 = 1;
             
             populateWithAdjacentLocations(theEdgeToPixelIndexMap, maxEdgeIdx, i, 
                 edgeLocAdjToMax);
+           
+            // need at least 2 adjacencies
+            if (edgeLocAdjToMax.size() < 2) {
+                continue;
+            }
             
             Set<PairInt> maxAdjToFirstPointLoc = null;
             Set<PairInt> maxAdjToLastPointLoc = null;
@@ -1888,7 +1894,7 @@ int z0 = 1;
             well formed yet for a merge.
             That splice algorithm will see that it could add 3 points and would
             then dead end for merging this edge.  If this edge were re-ordered, 
-            the splice algorithm would see it could add 5 points.
+            the splice algorithm would see it could add 6 points.
                                @ @ @ @
                              @
                            @
@@ -1907,18 +1913,135 @@ int z0 = 1;
             // if this edge's first and last points are in the adj list,
             // this is already well ordered and should instead
             // be considered for insertion.
-            // the junction information gets changed so need an iterating
-            // wrapper and restart.
-            if ((maxAdjToFirstPointLoc == null) || (maxAdjToLastPointLoc != null)) {
-                
-                // re-order line if the adjacent edge pixels are next to one another
-                // possible and increment nChanged
-                
-                
-                int z = 1;
+            if ((maxAdjToFirstPointLoc != null) && (maxAdjToLastPointLoc != null)) {
+                // this can be handled in the insert algorithm
+                continue;
             }
             
-            int z = 1;
+            // find the 2 closest pairs in edgeLocAdjToMax and those will be
+            // the re-ordered first and last points.
+            // need to use optimal pairing
+            
+            // since these are small lists, will not use a set even though search is up to O(m)
+            List<PairInt> currentEdgePoints = new ArrayList<PairInt>();
+            List<PairInt> maxEdgePoints = new ArrayList<PairInt>();
+           
+            for (Entry<PairInt, Set<PairInt>> entry : edgeLocAdjToMax.entrySet()) {
+                PairInt p1 = entry.getKey();
+                if (!currentEdgePoints.contains(p1)) {
+                    currentEdgePoints.add(p1);
+                }
+                for (PairInt p2 : entry.getValue()) {
+                    if (!maxEdgePoints.contains(p2)) {
+                        maxEdgePoints.add(p2);
+                    }
+                }
+            }
+            
+            PairIntArray currentEdge = output.get(i);
+            
+            float[][] distances = new float[currentEdgePoints.size()][];
+            float[][] distancesCopy = new float[currentEdgePoints.size()][];
+            
+            for (int ii = 0; ii < currentEdgePoints.size(); ++ii) {
+                PairInt pLoc = currentEdgePoints.get(ii);
+                int x = currentEdge.getX(pLoc.getY());
+                int y = currentEdge.getY(pLoc.getY());
+                distances[ii] = new float[maxEdgePoints.size()];
+                distancesCopy[ii] = new float[maxEdgePoints.size()];
+                for (int jj = 0; jj < maxEdgePoints.size(); ++jj) {
+                    PairInt p2Loc = maxEdgePoints.get(jj);
+                    int x2 = maxEdge.getX(p2Loc.getY());
+                    int y2 = maxEdge.getY(p2Loc.getY());
+                    int diffX = Math.abs(x - x2);
+                    int diffY = Math.abs(y - y2);
+                    // if not adjacent, give a very large number
+                    if ((diffX > 1) || (diffY > 1)) {
+                        distances[ii][jj] = Float.MAX_VALUE;
+                        distancesCopy[ii][jj] = Float.MAX_VALUE;
+                    } else {
+                        float dist = (float)Math.sqrt((diffX*diffX) + (diffY*diffY));
+                        distances[ii][jj] = dist;
+                        distancesCopy[ii][jj] = dist;
+                    }
+                }
+            }
+            boolean transposed = false;
+            if (currentEdgePoints.size() > maxEdgePoints.size()) {
+                distancesCopy = MatrixUtil.transpose(distancesCopy);
+                transposed = true;
+            }
+            
+            HungarianAlgorithm hAlg = new HungarianAlgorithm();
+            int[][] match = hAlg.computeAssignments(distances);
+            
+            // idx1, idx2  dist  sort by smallest dist
+            PairInt[] idxs = new PairInt[match.length];
+            float[] d = new float[idxs.length];
+                        
+            int count = 0;
+            for (int ii = 0; ii < match.length; ii++) {
+                int idx1 = match[ii][0];
+                int idx2 = match[ii][1];
+                if (idx1 == -1 || idx2 == -1) {
+                    continue;
+                }
+                if (idx1 == Float.MAX_VALUE || idx2 == Float.MAX_VALUE) {
+                    continue;
+                }
+                if (transposed) {
+                    int swap = idx1;
+                    idx1 = idx2;
+                    idx2 = swap;
+                }
+                float dist = distancesCopy[idx1][idx2];
+                if (dist == Float.MAX_VALUE) {
+                    continue;
+                }
+                idxs[count] = new PairInt(idx1, idx2);
+                d[count] = dist;
+                
+                count++;
+            }
+            
+            if (count < 2) {
+                continue;
+            }
+            
+            idxs = Arrays.copyOf(idxs, count);
+            d = Arrays.copyOf(d, count);
+            
+            QuickSort.sortBy1stArg(d, idxs);
+
+            PairInt cFirstLoc = currentEdgePoints.get(idxs[0].getX());
+            PairInt mFirstLoc = maxEdgePoints.get(idxs[0].getY());
+            
+            PairInt cLastLoc = currentEdgePoints.get(idxs[1].getX());
+            PairInt mLastLoc = maxEdgePoints.get(idxs[1].getY());
+            
+            // reorder currentEdge to be between cFirstLoc and cLastLoc
+            PairIntArray reordered = reorder(currentEdge, cFirstLoc.getY(), 
+                cLastLoc.getY());
+          
+            if (reordered == null) {
+                continue;   
+            }   
+
+            //insert
+            if (mFirstLoc.getY() < mLastLoc.getY()) {
+                       
+                maxEdge.insertAll(mFirstLoc.getY() + 1, currentEdge);
+                        
+            } else {
+
+                currentEdge.reverse();
+
+                maxEdge.insertAll(mLastLoc.getY() + 1, currentEdge);
+            }
+            
+            nChanged++;
+            
+            return nChanged;
         }
         
         return nChanged;
@@ -2011,6 +2134,7 @@ int z0 = 1;
                 instead of closest pair, but should consider implementing
                 closest pair for n >= 3.
                 */
+                //p1 and pn are w.r.t. maxEdge
                 PairInt p1 = null;
                 PairInt pn = null;
                 double minDist = Integer.MAX_VALUE;
@@ -2145,6 +2269,205 @@ int z0 = 1;
                 }
             }
         }
+    }
+
+    private PairIntArray reorder(final PairIntArray edge, int firstIdx, int lastIdx) {
+        
+        /*
+        //note, single pixel wide spurs should have been removed already
+        */
+        
+        /*
+                             @ @ @ @
+                             @
+                           @
+                    0 1 2 @
+                    5 4 3 @
+                            @ @
+        */
+        
+        Set<PairInt> remainingPoints = Misc.convert(edge);
+        
+        Stack<PairInt> firstStack = new Stack<PairInt>();
+        Stack<PairInt> lastStack = new Stack<PairInt>();
+        
+        PairIntArray ordered = new PairIntArray(edge.getN());
+        
+        // setting the values with a DFS traversal, but walked from first to middle and
+        // last to middle, so initialize ordered with fake values
+        for (int i = 0; i < edge.getN(); ++i) {
+            ordered.add(-1, -1);
+        }
+        
+        int idx1 = 0;
+        int idxn = edge.getN();
+        int midIdx = idxn >> 1;
+        
+        while ((idx1 == 0) || !remainingPoints.isEmpty()) {
+                                            
+            if (idx1 == 0) {
+                
+                ordered.set(idx1, edge.getX(idx1), edge.getY(idx1));
+                remainingPoints.remove(new PairInt(edge.getX(idx1), edge.getY(idx1)));
+
+                ordered.set(idxn, edge.getX(idxn), edge.getY(idxn));
+                remainingPoints.remove(new PairInt(edge.getX(idxn), edge.getY(idxn)));
+
+                boolean added = false;
+                for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                    int vX = edge.getX(idx1) + dxs8[nIdx];
+                    int vY = edge.getY(idx1) + dys8[nIdx];
+                    PairInt p = new PairInt(vX, vY);
+                    if (remainingPoints.contains(p)) {
+                        firstStack.add(p);
+                        added = true;
+                        break;
+                    }
+                }
+                if (!added) {
+                    return null;
+                }
+                
+                added = false;
+                for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                    int vX = edge.getX(idxn) + dxs8[nIdx];
+                    int vY = edge.getY(idxn) + dys8[nIdx];
+                    PairInt p = new PairInt(vX, vY);
+                    if (remainingPoints.contains(p)) {
+                        lastStack.add(p);
+                        added = true;
+                        break;
+                    }
+                }
+                if (!added) {
+                    return null;
+                }
+
+                idx1++;
+                idxn--;
+                continue;
+            }
+            
+            if (!firstStack.isEmpty()) {
+                
+                PairInt xy = firstStack.pop();
+                if (remainingPoints.contains(xy)) {
+                    ordered.set(idx1, xy.getX(), xy.getY());
+                    remainingPoints.remove(xy);
+                    idx1++;
+                } else {
+                    // fetch the previously set value to use in finding next neighbor below
+                    xy = new PairInt(ordered.getX(idx1 - 1), ordered.getY(idx1 - 1));
+                }
+                
+                if (!lastStack.isEmpty()) {
+                    PairInt xy2 = lastStack.pop();
+                    if (remainingPoints.contains(xy2)) {
+                        ordered.set(idxn, xy2.getX(), xy2.getY());
+                        remainingPoints.remove(xy2);
+                        
+                        for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                            int vX = edge.getX(idxn) + dxs8[nIdx];
+                            int vY = edge.getY(idxn) + dys8[nIdx];
+                            PairInt p = new PairInt(vX, vY);
+                            if (remainingPoints.contains(p)) {
+                                lastStack.add(p);
+                                break;
+                            }
+                        }
+                        idxn--;
+                    } else {
+                        PairInt xy3 = new PairInt(ordered.getX(idxn - 1), ordered.getY(idxn - 1));
+                        for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                            int vX = xy3.getX() + dxs8[nIdx];
+                            int vY = xy3.getY() + dys8[nIdx];
+                            PairInt p = new PairInt(vX, vY);
+                            if (remainingPoints.contains(p)) {
+                                lastStack.add(p);
+                                break;
+                            }
+                        }
+                    } 
+                }
+                
+                for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                    int vX = xy.getX() + dxs8[nIdx];
+                    int vY = xy.getY() + dys8[nIdx];
+                    PairInt p = new PairInt(vX, vY);
+                    if (remainingPoints.contains(p)) {
+                        firstStack.add(p);
+                        break;
+                    }
+                }
+                
+            } else if (!lastStack.isEmpty()) {
+ 
+                PairInt xy = lastStack.pop();
+                if (remainingPoints.contains(xy)) {
+                    
+                    ordered.set(idxn, xy.getX(), xy.getY());
+                    remainingPoints.remove(xy);
+                    
+                    for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                        int vX = edge.getX(idxn) + dxs8[nIdx];
+                        int vY = edge.getY(idxn) + dys8[nIdx];
+                        PairInt p = new PairInt(vX, vY);
+                        if (remainingPoints.contains(p)) {
+                            lastStack.add(p);
+                            break;
+                        }
+                    }
+                    idxn--;
+                } else {
+                    PairInt xy2 = new PairInt(ordered.getX(idxn - 1), ordered.getY(idxn - 1));
+                    for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                        int vX = xy2.getX() + dxs8[nIdx];
+                        int vY = xy2.getY() + dys8[nIdx];
+                        PairInt p = new PairInt(vX, vY);
+                        if (remainingPoints.contains(p)) {
+                            lastStack.add(p);
+                            break;
+                        }
+                    }
+                }
+                
+            } else if (!remainingPoints.isEmpty()) {
+                
+                // look for an adj point to last entered for idx1 or idxn
+                if (idx1 <= midIdx) {
+                    PairInt xy = new PairInt(ordered.getX(idx1 - 1), ordered.getY(idx1 - 1));
+                    for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                        int vX = xy.getX() + dxs8[nIdx];
+                        int vY = xy.getY() + dys8[nIdx];
+                        PairInt p = new PairInt(vX, vY);
+                        if (remainingPoints.contains(p)) {
+                            firstStack.add(p);
+                            break;
+                        }
+                    }
+                    
+                } else if (idxn >= midIdx) {
+                    PairInt xy = new PairInt(ordered.getX(idxn + 1), ordered.getY(idxn + 1));
+                    for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                        int vX = xy.getX() + dxs8[nIdx];
+                        int vY = xy.getY() + dys8[nIdx];
+                        PairInt p = new PairInt(vX, vY);
+                        if (remainingPoints.contains(p)) {
+                            lastStack.add(p);
+                            break;
+                        }
+                    }
+                } else {
+                    throw new IllegalStateException("Error in algorithm!  indexes w.r.t. to midIdx have passed midpoint");
+                }
+                
+            } else {
+                return null;
+            }
+          
+        }
+        
+        return ordered;
     }
     
 }

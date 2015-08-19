@@ -5,6 +5,7 @@ import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -1421,6 +1422,37 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(idx == 0);
     }
     
+    public void testGetOrderedBorder() throws Exception {
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        int imageWidth = 500;
+        int imageHeight = 500;
+        
+        Set<PairInt> contiguousPoints = getPerimeter1Set();
+        
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        int imageMaxColumn = imageWidth - 1;
+        int imageMaxRow = imageHeight - 1;
+       
+        int[] rowMinMax = new int[2];
+                
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+       
+        if (!outputEmbeddedGapPoints.isEmpty()) {
+            // update the perimeter for "filling in" embedded points
+            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+                rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        }
+        
+        PairIntArray out = perimeterFinder.getOrderedBorderPixels(
+            contiguousPoints, rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+       
+        System.out.println("border size=" + out.getN());
+        int z = 1;
+    }
+    
     /*
     0: dense group of points w/o gaps
         @ @ @ @
@@ -1572,6 +1604,46 @@ public class PerimeterFinderTest extends TestCase {
                 points.add(new PairInt(col + xOffset, row + yOffset));
             }
         }
+        
+        return points;
+    }
+
+    private Set<PairInt> getPerimeter1Set() {
+        /*
+     55
+     54                     11   12
+     53            9   10   14   13
+     52            8   15
+     51            7   16
+     50            6   17
+     49            5   20   18
+     48            4   19
+     47       1    2    3<
+     46       0    
+         125  126  127  128  129  130
+        */
+        Set<PairInt> points = new HashSet<PairInt>();
+        points.add(new PairInt(126, 46));
+        points.add(new PairInt(126, 47));
+        points.add(new PairInt(127, 47));
+        points.add(new PairInt(128, 47));
+        points.add(new PairInt(127, 48));
+        points.add(new PairInt(127, 49));
+        points.add(new PairInt(127, 50));
+        points.add(new PairInt(127, 51));
+        points.add(new PairInt(127, 52));
+        points.add(new PairInt(127, 53));
+        points.add(new PairInt(128, 53));
+        points.add(new PairInt(129, 54));
+        points.add(new PairInt(130, 54));
+        points.add(new PairInt(130, 53));
+        points.add(new PairInt(129, 53));
+        points.add(new PairInt(128, 52));
+        points.add(new PairInt(128, 51));
+        points.add(new PairInt(128, 50));
+        points.add(new PairInt(129, 49));
+        points.add(new PairInt(128, 48));
+        points.add(new PairInt(128, 49));
         
         return points;
     }
