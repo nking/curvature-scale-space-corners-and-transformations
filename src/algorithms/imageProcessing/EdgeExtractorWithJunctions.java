@@ -2618,13 +2618,8 @@ int z0 = 1;
       
         if (closestPivotIdx > (out.getN() - closestPivotIdx - 1)) {
             // closest to end
-            /*
-             2  1
-           3      0
-           4     7   
-            5  6  8 
-                 9  
-            If point before closestPivotIdx is next to (xn, yn), can just 
+            /* 
+            If point before closestPivotIdx is next to (x1, y1), can just 
             reverse the points from closestPivotIdx to n-1.
             */
             int xPrev = out.getX(closestPivotIdx - 1);
@@ -2647,13 +2642,8 @@ int z0 = 1;
         } else {
             // closest to beginning
             /*
-             7  8
-           6      9
-           5     2   
-            4  3  1 
-                 0  
-            If point after closestPivotIdx is next to (x0, y0), can just 
-            reverse the points from 0 to nTo1ClosestIdx.
+            If point after closestPivotIdx is next to (xn, yn), can reverse the 
+            points from 0 to closestPivotIdx.
             */
             
             closestPivotIdx = -1;
@@ -2679,10 +2669,7 @@ int z0 = 1;
             if ((Math.abs(xNext - xn) > 1) || (Math.abs(yNext - yn) > 1)) {
                 return;
             }
-            /*
-            If point after closestPivotIdx is next to (xn, yn), can just 
-            reverse the points from 0 to nTo1ClosestIdx.
-            */
+            
             reverse0toIdx(out, closestPivotIdx);
         }
     }
