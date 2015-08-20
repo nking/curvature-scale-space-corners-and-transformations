@@ -905,7 +905,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
                     
                     EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
         
-                    PairIntArray closedEdge = extractor.extractAndOrderTheBorder(
+                    PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(
                         points, imgGrey.getWidth(), imgGrey.getHeight(), 
                         discardWhenCavityIsSmallerThanBorder);
         

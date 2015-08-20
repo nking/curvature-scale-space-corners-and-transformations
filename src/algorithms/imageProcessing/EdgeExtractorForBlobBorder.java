@@ -35,6 +35,7 @@ public class EdgeExtractorForBlobBorder {
     }
     
     /**
+     * NOT READY FOR USE.
      * given the set of contiguous points, find the perimeter of them and order
      * the points into a closed single pixel width curve.
      * @param contiguousPoints

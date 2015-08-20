@@ -1539,21 +1539,28 @@ public class PerimeterFinder {
         */
 
         /*
-        example for memoization at backtracking.
+        example for memoization and backtracking.
 
         In this example, can see that when the path reaches node 20, needs to
         backtrack to node 1 and choose 1->4 instead of 1->2->3->4.
 
         Can see that nodes 5 to 18 are outside of an interaction distance with
-        path nodes 1 through 4, so then, segment from 5 to 18
-        can be saved and restored here instead of re-computing it when '4' is
-        next selected as the next node in a path.
+        path nodes 1 through 4, so then, the paths from 5 to 18
+        can be saved and restored if needed later instead of re-computing them 
+        when '4' is next selected as the next node in a path.  the "next move" 
+        after '4' would skip forward to '18' in a choice of one of the saved 
+        paths from 5 to 18.
 
         have not implemented that below, but have implemented memoization
         for states that lead to no-solution, and avoidance of continuing on
         those paths in the future.
 
-         see PerimeterFinderMemo.java,  in progress...
+         see PerimeterFinderMemo.java, in progress...
+        
+        Reuse of successful paths is needed for this algorithm if the point sets
+        are larger than a couple dozen points, UNLESS the method is given 
+        points that are already an edge thinned to single pixel widths at all
+        locations, including the diagonals.
 
         55
         54                     11   12

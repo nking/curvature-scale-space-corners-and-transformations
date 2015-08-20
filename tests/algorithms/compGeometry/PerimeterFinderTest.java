@@ -2,11 +2,15 @@ package algorithms.compGeometry;
 
 import algorithms.compGeometry.PerimeterFinder.Gap;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
+import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1425,10 +1429,12 @@ public class PerimeterFinderTest extends TestCase {
     public void testGetOrderedBorder() throws Exception {
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         
-        int imageWidth = 500;
-        int imageHeight = 500;
+        int imageWidth = 175;
+        int imageHeight = 130;
         
-        Set<PairInt> contiguousPoints = getPerimeter1Set();
+        Set<PairInt> contiguousPoints = getPerimeter0Set();
+        
+        //Set<PairInt> contiguousPoints = getPerimeter1Set();
         
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
         
@@ -1448,9 +1454,62 @@ public class PerimeterFinderTest extends TestCase {
         
         PairIntArray out = perimeterFinder.getOrderedBorderPixels(
             contiguousPoints, rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
-       
+               
+        int rClr = 255;
+        int gClr = 255;
+        int bClr = 255;
+        int nExtraForDot = 0;
+        Image img = new Image(imageWidth, imageHeight);
+        
+        ImageIOHelper.addCurveToImage(contiguousPoints, img, 
+            nExtraForDot, rClr, gClr, bClr);
+        
+        ImageIOHelper.addCurveToImage(out, img, 
+            nExtraForDot, 255, 0, 0);
+            
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String outFilePath = dirPath + "/perimeter.png";
+        
+        ImageIOHelper.writeOutputImage(outFilePath, img);
+
         System.out.println("border size=" + out.getN());
-        int z = 1;
+    }
+    
+    public void testGetOrderedBorderE() throws Exception {
+  
+        EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
+        
+        int imageWidth = 175;
+        int imageHeight = 130;
+        
+        boolean discardWhenCavityIsSmallerThanBorder = false;
+        
+        Set<PairInt> contiguousPoints = getPerimeter0Set();
+        
+        //Set<PairInt> contiguousPoints = getPerimeter1Set();
+                
+        PairIntArray out = extractor.extractAndOrderTheBorder0(
+            contiguousPoints, imageWidth, imageHeight, 
+            discardWhenCavityIsSmallerThanBorder);
+               
+        int rClr = 255;
+        int gClr = 255;
+        int bClr = 255;
+        int nExtraForDot = 0;
+        Image img = new Image(imageWidth, imageHeight);
+        
+        ImageIOHelper.addCurveToImage(contiguousPoints, img, 
+            nExtraForDot, rClr, gClr, bClr);
+        
+        ImageIOHelper.addCurveToImage(out, img, 
+            nExtraForDot, 255, 0, 0);
+            
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String outFilePath = dirPath + "/perimeter.png";
+        
+        ImageIOHelper.writeOutputImage(outFilePath, img);
+
+        System.out.println("border size=" + out.getN());
     }
     
     /*
@@ -1608,7 +1667,7 @@ public class PerimeterFinderTest extends TestCase {
         return points;
     }
 
-    private Set<PairInt> getPerimeter1Set() {
+    private Set<PairInt> getPerimeter0Set() {
         /*
      55
      54                     11   12
@@ -1648,4 +1707,26 @@ public class PerimeterFinderTest extends TestCase {
         return points;
     }
     
+    private Set<PairInt> getPerimeter1Set() throws IOException, Exception {
+       
+        String fileName = "blob_1.png";
+        //String fileName = "blob_perimeter_1.png";
+        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        GreyscaleImage img = ImageIOHelper.readImage(filePath).copyToGreyscale();
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int col = 0; col < img.getWidth(); ++col) {
+            for (int row = 9; row < img.getHeight(); ++row) {
+                int v = img.getValue(col, row);
+                if (v > 125) {
+                    points.add(new PairInt(col, row));
+                }
+            }
+        }
+        
+        return points;
+    }
 }
