@@ -7,6 +7,21 @@ import java.util.logging.Logger;
   equalization on it, that is change the range of intensities to fill the
   possible range.
   
+  * <pre>
+  * new_clr = a * clr_orig + b
+    min_clr is the Min(clr_orig)
+    max_clr is the Max(clr_orig)
+
+    then to scale between 0 and 255:
+
+       0 = a * min_clr + b
+          and
+       255 = a * max_clr + b
+
+    therefore a = 255/(max_clr - min_clr)
+              b = - 255/(max_clr - min_clr)
+  * </pre>
+  * 
  * @author nichole
  */
 public class HistogramEqualization {
