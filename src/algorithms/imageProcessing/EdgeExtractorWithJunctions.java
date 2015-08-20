@@ -10,6 +10,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArrayComparator;
 import algorithms.util.PairIntArrayDescendingComparator;
+import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.PointPairInt;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -1789,9 +1790,17 @@ MiscDebug.writeImageCopy(img2, "output_" + MiscDebug.getCurrentTimeFormatted() +
             Collections.sort(output, new PairIntArrayDescendingComparator());            
         }
         
-        //TODO: check for adjacent endpoints and set this in an array with color = 1
-            
-        return output.get(0);
+        PairIntArray out = output.get(0);
+        
+        reorderEndpointsIfNeeded(out);
+                
+        if (endPointsAreAdjacent(out)) {
+            PairIntArrayWithColor p = new PairIntArrayWithColor(out);
+            p.setColor(1);
+            out = p;
+        }
+                    
+        return out;
     }
     
     private Map<Integer, Set<Integer>> createEdgeToPixelIndexMap() {
@@ -2490,6 +2499,145 @@ int z0 = 1;
         }
         
         return ordered;
+    }
+
+    private void reorderEndpointsIfNeeded(PairIntArray out) {
+        
+        if (out == null || out.getN() < 3) {
+            return;
+        }
+        
+        boolean endPointsAreAdjacent = endPointsAreAdjacent(out);
+
+        if (endPointsAreAdjacent) {
+            return;
+        }
+        
+        int x1 = out.getX(0);
+        int y1 = out.getY(0);
+        
+        int xn = out.getX(out.getN() - 1);
+        int yn = out.getY(out.getN() - 1);
+        
+        int closestPivotIdx = -1;
+        
+        for (int idx = (out.getN() - 2); idx > 0; --idx) {
+            
+            int x = out.getX(idx);
+            int y = out.getY(idx);
+            
+            if ((Math.abs(x - x1) < 2) && (Math.abs(y - y1) < 2)) {
+                closestPivotIdx = idx;
+                break;
+            }
+        }
+        
+        if (closestPivotIdx == -1) {
+            // it's not a closed curve
+            return;
+        }
+      
+        if (closestPivotIdx > (out.getN() - closestPivotIdx - 1)) {
+            // closest to end
+            /*
+             2  1
+           3      0
+           4     7   
+            5  6  8 
+                 9  
+            If point before closestPivotIdx is next to (xn, yn), can just 
+            reverse the points from closestPivotIdx to n-1.
+            */
+            int xPrev = out.getX(closestPivotIdx - 1);
+            int yPrev = out.getY(closestPivotIdx - 1);
+            if ((Math.abs(xPrev - xn) > 1) && (Math.abs(yPrev - yn) > 1)) {
+                return;
+            }
+            
+            int count = 0;
+            int nSep = (out.getN() - closestPivotIdx) >> 1;
+            for (int idx = closestPivotIdx; idx < (closestPivotIdx + nSep); ++idx) {
+                int idx2 = out.getN() - count - 1;
+                int swapX = out.getX(idx);
+                int swapY = out.getY(idx);
+                out.set(idx, out.getX(idx2), out.getY(idx2));
+                out.set(idx2, swapX, swapY);
+                count++;
+            }
+            
+        } else {
+            // closest to beginning
+            /*
+             7  8
+           6      9
+           5     2   
+            4  3  1 
+                 0  
+            If point after closestPivotIdx is next to (x0, y0), can just 
+            reverse the points from 0 to nTo1ClosestIdx.
+            */
+            
+            closestPivotIdx = -1;
+        
+            for (int idx = 1; idx < (out.getN() - 1); ++idx) {
+
+                int x = out.getX(idx);
+                int y = out.getY(idx);
+
+                if ((Math.abs(x - xn) < 2) && (Math.abs(y - yn) < 2)) {
+                    closestPivotIdx = idx;
+                    break;
+                }
+            }
+
+            if (closestPivotIdx == -1) {
+                // it's not a closed curve
+                return;
+            }
+            
+            int xNext = out.getX(closestPivotIdx + 1);
+            int yNext = out.getY(closestPivotIdx + 1);
+            if ((Math.abs(xNext - x1) > 1) && (Math.abs(yNext - y1) > 1)) {
+                return;
+            }
+            /*45, 15 <-- 0       99---> 45, 12
+              44, 15     1
+              45, 14     2
+              44, 13   <-- pivot
+            */
+            /*
+             8  9
+           7      10
+           6      3   
+            5  4  2 
+               1  0  
+            If point after closestPivotIdx is next to (x0, y0), can just 
+            reverse the points from 0 to nTo1ClosestIdx.
+            */
+            int nSep = (closestPivotIdx + 1) >> 1;
+            for (int idx = 0; idx < nSep; ++idx) {
+                int idx2 = closestPivotIdx - idx;
+                int swapX = out.getX(idx);
+                int swapY = out.getY(idx);
+                out.set(idx, out.getX(idx2), out.getY(idx2));
+                out.set(idx2, swapX, swapY);
+            }
+        }
+    }
+
+    private boolean endPointsAreAdjacent(PairIntArray out) {
+        
+        int x1 = out.getX(0);
+        int y1 = out.getY(0);
+        
+        int xn = out.getX(out.getN() - 1);
+        int yn = out.getY(out.getN() - 1);
+        
+        if ((Math.abs(x1 - xn) > 1) || (Math.abs(y1 - yn) > 1)) {
+            return false;
+        }
+        
+        return true;
     }
     
 }
