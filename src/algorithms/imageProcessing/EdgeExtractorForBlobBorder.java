@@ -139,6 +139,8 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
                
         log.info("number of border points=" + nBorder + " nCavity=" + nCavity);
         
+MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
+        
         if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
             return null;
         }
@@ -146,17 +148,18 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         // ----- remove spurs, merge curves, re-order points to form a 
         //       single closed curve if possible -------
         
-GreyscaleImage img2 = new GreyscaleImage(imageWidth, imageHeight);
-for (PairInt p : borderPixels) {
-int x = p.getX();
-int y = p.getY();
-img2.setValue(x, y, 1);
-}
-MiscDebug.plotCorners(img2, borderPixels, "_0_" + MiscDebug.getCurrentTimeFormatted(), 0);
-
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(borderPixels, 0, imageWidth, 0, imageHeight);
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);
+        
+MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
+        
         SpurRemover spurRm = new SpurRemover();
         
         spurRm.remove(borderPixels, imageWidth, imageHeight);
+        
+MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
         
         //xMin, xMax, yMin, yMax
         int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);

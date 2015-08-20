@@ -21,265 +21,41 @@ class SpurRemover {
      */
     public void remove(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
-        pattern1(curve, imageWidth, imageHeight);
-        
-        pattern2(curve, imageWidth, imageHeight);
-       
-        pattern3(curve, imageWidth, imageHeight);
-        
-        pattern4(curve, imageWidth, imageHeight);
-       
-        pattern5(curve, imageWidth, imageHeight);
-        
-        pattern6(curve, imageWidth, imageHeight);
-        
-        pattern7(curve, imageWidth, imageHeight);
-        
-        pattern8(curve, imageWidth, imageHeight);
+        pattern0(curve, imageWidth, imageHeight);
+               
     }
 
-    private void pattern1(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    private void pattern0(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         /*
-        
-               #           2
-            0  0  #        1
-            0 >#  #        0
-            0  0  0  #    -1
-        
-           -1  0  1  2  3
-        */
-        
+          0  #  0        1
+          0 >#  0        0
+          0  0  0       -1
+         -1  0  1  2  3
+         */
         Set<PairInt> ones = new HashSet<PairInt>();
         Set<PairInt> zeroes = new HashSet<PairInt>();
         Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1,  1)); 
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 1));
-        zeroes.add(new PairInt(1, -1));
-        
-        ones.add(new PairInt(0, 2)); 
-        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, 1));
-        ones.add(new PairInt(2, -1));
-        
-        changeToZeroes.add(new PairInt(0, 0));
-        
-        int nChanged = replacePatternSwapDirections(curve, 
-            imageWidth, imageHeight, zeroes, ones, changeToZeroes);
-        
-    }
-    
-    private void pattern2(Set<PairInt> curve, int imageWidth, int imageHeight) {
-        
-        /*
-        
-                  #        2
-            0  0  #        1
-            0 >#  #        0
-            0  0  0  #    -1
-           -1  0  1  2  3
-        */
-        
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1,  1)); 
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 1));
-        zeroes.add(new PairInt(1, -1));
-        
-        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, 1)); ones.add(new PairInt(1, 2)); 
-        ones.add(new PairInt(2, -1));
-        
-        changeToZeroes.add(new PairInt(0, 0));
-        
-        int nChanged = replacePatternSwapDirections(curve, 
-            imageWidth, imageHeight, zeroes, ones, changeToZeroes);
-    }
-    
-    private void pattern3(Set<PairInt> curve, int imageWidth, int imageHeight) {
-        
-        /*
-                     #      3
-            0  0  0  #      2
-            0 >#  #  #      1
-            0 >#  0         0
-            0  0  0        -1
-           -1  0  1  2  3
-        */
-        
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); 
-        zeroes.add(new PairInt(-1,  1)); zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, -1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
+
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, -1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 1));
         
         ones.add(new PairInt(0, 1)); 
-        ones.add(new PairInt(1, 1)); 
-        ones.add(new PairInt(2, 1)); ones.add(new PairInt(2, 2)); ones.add(new PairInt(2, 3)); 
         
         changeToZeroes.add(new PairInt(0, 0));
-        changeToZeroes.add(new PairInt(0, 1));
-    
-        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
-            imageHeight, zeroes, ones, changeToZeroes);
-    }
-    
-    private void pattern4(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
-        /*
-                            3
-            0  0  0  0      2
-            0 >#  #  0      1
-            0  #  0  0      0
-            #  0  #        -1
-           -1  0  1  2  3
-        */
+        int nChanged = 0;
+        int nMaxIter = 10;
+        int nIter = 0;
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1,  1)); zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 2));
-        
-        ones.add(new PairInt(-1, -1));
-        ones.add(new PairInt(0, 1)); 
-        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, 1)); 
-        
-        changeToZeroes.add(new PairInt(0, 1));
-        changeToZeroes.add(new PairInt(1, 1));
-    
-        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
-            imageHeight, zeroes, ones, changeToZeroes);
-    }
-    
-    private void pattern5(Set<PairInt> curve, int imageWidth, int imageHeight) {
-        
-        /*
-                            3
-            0  0  0  0      2
-            0 ># >#  0      1
-            #  #  0  0      0
-            #  0  #        -1
-           -1  0  1  2  3
-        */
-        
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1,  1)); zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 2));
-        
-        ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, 0));
-        ones.add(new PairInt(0, 1)); 
-        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, 1)); 
-        
-        changeToZeroes.add(new PairInt(0, 1));
-        changeToZeroes.add(new PairInt(1, 1));
-    
-        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
-            imageHeight, zeroes, ones, changeToZeroes);
-    }
-    
-    private void pattern6(Set<PairInt> curve, int imageWidth, int imageHeight) {
-        
-        /*
-                            3
-            0  0  0  0      2
-            0 ># >#  0      1
-            0  #  0  0      0
-               #           -1
-           -1  0  1  2  3
-        */
-        
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1,  0)); zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 2));
-        
-        ones.add(new PairInt(0, -1)); ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(1, 1)); 
-        
-        changeToZeroes.add(new PairInt(0, 1));
-        changeToZeroes.add(new PairInt(1, 1));
-    
-        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
-            imageHeight, zeroes, ones, changeToZeroes);
-    }
-    
-    private void pattern7(Set<PairInt> curve, int imageWidth, int imageHeight) {
-        
-        /*
-                            3
-            0  0  0         2
-            0 >#  #         1
-            0 >#  0  #      0
-            0  0  0        -1
-           -1  0  1  2  3
-        */
-        
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1,  -1)); zeroes.add(new PairInt(-1,  0)); 
-        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, -1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
-        
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(1, 1));
-        ones.add(new PairInt(2, 0));
-        
-        changeToZeroes.add(new PairInt(0, 0));
-        changeToZeroes.add(new PairInt(0, 1));
-    
-        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
-            imageHeight, zeroes, ones, changeToZeroes);
-    }
-    
-    private void pattern8(Set<PairInt> curve, int imageWidth, int imageHeight) {
-        
-        /*
-                            3
-            0  0  0  #      2
-            0 >#  #         1
-            0 >#  0         0
-            0  0  0        -1
-           -1  0  1  2  3
-        */
-        
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        
-        zeroes.add(new PairInt(-1,  -1)); zeroes.add(new PairInt(-1,  0)); 
-        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, -1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
-        
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(1, 1));
-        ones.add(new PairInt(2, 2));
-        
-        changeToZeroes.add(new PairInt(0, 0));
-        changeToZeroes.add(new PairInt(0, 1));
-    
-        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
-            imageHeight, zeroes, ones, changeToZeroes);
+        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
+                        
+            nChanged = replacePatternSwapDirections(curve, 
+                imageWidth, imageHeight, zeroes, ones, changeToZeroes);
+            
+            nIter++;
+        }
     }
     
     private int replacePattern(Set<PairInt> points, int imageWidth, 
