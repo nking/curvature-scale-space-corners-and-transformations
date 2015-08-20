@@ -1484,12 +1484,14 @@ public class PerimeterFinderTest extends TestCase {
         
         boolean discardWhenCavityIsSmallerThanBorder = false;
         
-        Set<PairInt> contiguousPoints = getPerimeter0Set();
+        //Set<PairInt> contiguousPoints = getPerimeter0Set();
         
-        //Set<PairInt> contiguousPoints = getPerimeter1Set();
+        Set<PairInt> contiguousPoints = getPerimeterSet(3);
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(contiguousPoints);
                 
         PairIntArray out = extractor.extractAndOrderTheBorder0(
-            contiguousPoints, imageWidth, imageHeight, 
+            contiguousPoints, minMaxXY[1] + 5, minMaxXY[3] + 5, 
             discardWhenCavityIsSmallerThanBorder);
                
         int rClr = 255;
@@ -1498,11 +1500,10 @@ public class PerimeterFinderTest extends TestCase {
         int nExtraForDot = 0;
         Image img = new Image(imageWidth, imageHeight);
         
-        ImageIOHelper.addCurveToImage(contiguousPoints, img, 
-            nExtraForDot, rClr, gClr, bClr);
+        ImageIOHelper.addCurveToImage(contiguousPoints, img, nExtraForDot, 
+            rClr, gClr, bClr);
         
-        ImageIOHelper.addCurveToImage(out, img, 
-            nExtraForDot, 255, 0, 0);
+        ImageIOHelper.addCurveToImage(out, img, nExtraForDot, 255, 0, 0);
             
         String dirPath = ResourceFinder.findDirectory("bin");
         String outFilePath = dirPath + "/perimeter.png";
@@ -1707,10 +1708,34 @@ public class PerimeterFinderTest extends TestCase {
         return points;
     }
     
-    private Set<PairInt> getPerimeter1Set() throws IOException, Exception {
+    /**
+     * n can be 0 through 4
+     * 
+     * @param n
+     * @return
+     * @throws IOException
+     * @throws Exception 
+     */
+    private Set<PairInt> getPerimeterSet(int n) throws IOException, Exception {
+        String fileName = null;
        
-        String fileName = "blob_1.png";
-        //String fileName = "blob_perimeter_1.png";
+        if (n == 0) {
+            return getPerimeter0Set();
+        }
+        
+        if (n == 1) {
+            fileName = "blob_1.png";
+            //fileName = "blob_perimeter_1.png";
+        } else if (n == 2) {
+            fileName = "blob_2.png";
+            //fileName = "blob_perimeter_2.png";
+        } else if (n == 3) {
+            fileName = "blob_3.png";
+            //fileName = "blob_perimeter_3.png";
+        } else if (n == 4) {
+            fileName = "blob_4.png";
+            //fileName = "blob_perimeter_4.png";
+        }
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
@@ -1719,14 +1744,14 @@ public class PerimeterFinderTest extends TestCase {
         Set<PairInt> points = new HashSet<PairInt>();
         
         for (int col = 0; col < img.getWidth(); ++col) {
-            for (int row = 9; row < img.getHeight(); ++row) {
+            for (int row = 0; row < img.getHeight(); ++row) {
                 int v = img.getValue(col, row);
-                if (v > 125) {
+                if (v > 1) {
                     points.add(new PairInt(col, row));
                 }
             }
         }
-        
+
         return points;
     }
 }

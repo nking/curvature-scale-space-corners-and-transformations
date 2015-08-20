@@ -195,7 +195,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 
             nSplices = spliceEdgesAtJunctionsIfImproves(output);
             
-            /*if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
+            if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
                 // because re-order and insertion both need corrected junction
                 // maps, cannot invoke both on this iteration unless the first
                 // did not alter anything.
@@ -212,11 +212,11 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     int nIns = insertAdjacentForClosedCurve(output);
                     nSplices += nIns;
                 }
-            }*/
+            }
             
             ++nIter;
         }
-        
+                
         return output;
     }
     
@@ -1761,7 +1761,7 @@ for (int i = 0; i < output.size(); ++i) {
         }
     }
 }
-MiscDebug.writeImageCopy(img0, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");       
+MiscDebug.writeImageCopy(img0, "output_before_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");       
         
         output = findEdgesIntermediateSteps(output);
                 
@@ -1784,7 +1784,7 @@ for (int i = 0; i < output.size(); ++i) {
         }
     }
 }
-MiscDebug.writeImageCopy(img2, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 
         if (output.size() > 1) {
             Collections.sort(output, new PairIntArrayDescendingComparator());            
@@ -2119,7 +2119,7 @@ int z0 = 1;
         
         for (int i = 0; i < output.size(); ++i) {
             
-            if (i == maxEdgeIdx || (output.get(i).getN() < 2)) {
+            if (i == maxEdgeIdx || (output.get(i).getN() < 1)) {
                 continue;
             }
             
@@ -2130,7 +2130,7 @@ int z0 = 1;
             
             Set<PairInt> maxAdjToFirstPointLoc = null;
             Set<PairInt> maxAdjToLastPointLoc = null;
-            
+
             for (Entry<PairInt, Set<PairInt>> entry : edgeLocAdjToMax.entrySet()) {
                 PairInt edgeLoc = entry.getKey();
                 if (edgeLoc.getY() == 0) {
@@ -2138,6 +2138,48 @@ int z0 = 1;
                 } else if (edgeLoc.getY() == (output.get(i).getN() - 1)) {
                     maxAdjToLastPointLoc = entry.getValue();
                 }
+            }
+            
+            if ((maxAdjToFirstPointLoc != null) && (maxAdjToLastPointLoc == null)) {
+                // see if points near the end can be re-ordered
+                int z = 1;
+            } else if ((maxAdjToFirstPointLoc == null) && (maxAdjToLastPointLoc != null)) {
+                // see if points near the beginning can be re-ordered
+                PairInt closestToZero = null;
+                Set<PairInt> maxAdjToFirstPointLocTmp = null;
+                int minIdx = Integer.MAX_VALUE;
+                for (Entry<PairInt, Set<PairInt>> entry : edgeLocAdjToMax.entrySet()) {
+                    PairInt edgeLoc = entry.getKey();
+                    if (edgeLoc.getY() < minIdx) {
+                        minIdx = edgeLoc.getY();
+                        closestToZero = edgeLoc;
+                        maxAdjToFirstPointLocTmp = entry.getValue();
+                    }
+                }
+                if (closestToZero != null) {
+                    int x1 = output.get(i).getX(0);
+                    int y1 = output.get(i).getY(0);
+                    /*
+                                  (18,21) maxEdge 0
+                                  (18,22) 2  ---closestToZero
+                   (17,23) 3      (18,23) 1
+                                  (18,24) 0
+                    
+                    if point loc at index closestToZero.getY() + 1 is adjacent
+                    to the point at idx=0
+                    can reverse the order of points from 0 to closestToZero.getY()
+                    and set maxAdjToFirstPointLoc to (closestToZero.getX(), 0)
+                    */
+                    int lastSwapIdx = closestToZero.getY();
+                    int xNext = output.get(i).getX(lastSwapIdx + 1);
+                    int yNext = output.get(i).getY(lastSwapIdx + 1);
+                    if ((Math.abs(xNext - x1) > 1) || (Math.abs(yNext - y1) > 1)) {
+                        continue;
+                    }
+                    reverse0toIdx(output.get(i), lastSwapIdx);
+                    maxAdjToFirstPointLoc = maxAdjToFirstPointLocTmp;
+                }
+                int z = 1;
             }
             
             /*
@@ -2152,6 +2194,16 @@ int z0 = 1;
             if ((maxAdjToFirstPointLoc != null) && (maxAdjToLastPointLoc != null)) {
                 
                 PairIntArray currentEdge = output.get(i);
+               
+                /*
+                can insert another line for 2 different cases:
+                (1) if the insertion point is 2 adjacent points on maxEdge
+                (2) OR, if maxEdge is not a closed curve and the insertion
+                points are it's endpoints. (Note that the possible insertion, 
+                if not at endpoint of the open curve, may indicate that the
+                open curve has a segment that needs to be reversed before this
+                stage.  
+                */
                 
                 // if can insert, need to break and return because the
                 // junction maps need to be updated for this change
@@ -2193,7 +2245,7 @@ int z0 = 1;
                         // points for a preferred best
                     }
                 }
-                
+      
                 if ((p1 != null) && (pn != null)) {
                     
                     if (p1.getY() < pn.getY()) {
@@ -2286,7 +2338,24 @@ int z0 = 1;
             // see if it is adjacent to this edge by looking for it in junctionMap
             Set<Integer> adjToPix = junctionMap.get(pixIndex);
             if (adjToPix == null) {
-                continue;
+                // search the 8 neighbors to see if any are in maxEdgePixelIndexes
+                int x = img.getCol(pixIndex);
+                int y = img.getRow(pixIndex);
+                adjToPix = new HashSet<Integer>();
+                for (int i = 0; i < dxs8.length; ++i) {
+                    int x2 = x + dxs8[i];
+                    int y2 = y + dys8[i];
+                    if (x2 < 0 || (y2 < 0) || (x2 > (img.getWidth() - 1) || (y2 > (img.getHeight() - 1)))) {
+                        continue;
+                    }
+                    int pixIdx2 = img.getIndex(x2, y2);
+                    if (maxEdgePixelIndexes.contains(Integer.valueOf(pixIdx2))) {
+                        adjToPix.add(Integer.valueOf(pixIdx2));
+                    }
+                }
+                if (adjToPix.isEmpty()) {
+                    continue;
+                }
             }
             for (Integer adjToPixIndex : adjToPix) {
                 PairInt adjToLoc = junctionLocationMap.get(adjToPixIndex);
@@ -2597,7 +2666,7 @@ int z0 = 1;
             
             int xNext = out.getX(closestPivotIdx + 1);
             int yNext = out.getY(closestPivotIdx + 1);
-            if ((Math.abs(xNext - x1) > 1) && (Math.abs(yNext - y1) > 1)) {
+            if ((Math.abs(xNext - x1) > 1) || (Math.abs(yNext - y1) > 1)) {
                 return;
             }
             /*45, 15 <-- 0       99---> 45, 12
@@ -2614,14 +2683,18 @@ int z0 = 1;
             If point after closestPivotIdx is next to (x0, y0), can just 
             reverse the points from 0 to nTo1ClosestIdx.
             */
-            int nSep = (closestPivotIdx + 1) >> 1;
-            for (int idx = 0; idx < nSep; ++idx) {
-                int idx2 = closestPivotIdx - idx;
-                int swapX = out.getX(idx);
-                int swapY = out.getY(idx);
-                out.set(idx, out.getX(idx2), out.getY(idx2));
-                out.set(idx2, swapX, swapY);
-            }
+            reverse0toIdx(out, closestPivotIdx);
+        }
+    }
+    
+    private void reverse0toIdx(PairIntArray out, int lastSwapIdx) {
+        int nSep = (lastSwapIdx + 1) >> 1;
+        for (int idx = 0; idx < nSep; ++idx) {
+            int idx2 = lastSwapIdx - idx;
+            int swapX = out.getX(idx);
+            int swapY = out.getY(idx);
+            out.set(idx, out.getX(idx2), out.getY(idx2));
+            out.set(idx2, swapX, swapY);
         }
     }
 
