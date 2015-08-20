@@ -172,6 +172,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         int nMaxIter = defaultMaxIterJunctionJoin;
         int nIter = 0;
         int nSplices = 0;
+        boolean ins = false;
         
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
         
@@ -194,14 +195,18 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             // edges which had changed (been spliced and fused on previous iter)
 
             nSplices = spliceEdgesAtJunctionsIfImproves(output);
-            /*
+            
+            if (nSplices > 0) {
+                removeEdgesShorterThan(output, 1);
+            }
+            
             if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
                 // because re-order and insertion both need corrected junction
                 // maps, cannot invoke both on this iteration unless the first
                 // did not alter anything.
                 findJunctions(output);
-                boolean ins = ((nIter % 1) == 0);
-                if ((nIter % 1) == 1) {
+                
+                if (!ins) {
                     int nReordered = reorderPointsInEdgesForClosedCurve(output);
                     nSplices += nReordered;
                     if (nReordered == 0) {
@@ -211,9 +216,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 if (ins) {
                     int nIns = insertAdjacentForClosedCurve(output);
                     nSplices += nIns;
+                    ins = !ins;
                 }
             }
-            */
+            
             ++nIter;
         }
                 
