@@ -1,10 +1,13 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.misc.Misc;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -398,6 +401,144 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             int y2 = edge.getY(0);
             return new PairInt(x2, y2);
         }
+    }
+    
+    /**
+     * find the edges and return as a list of points.  The method uses a
+     * DFS search through all points in the image with values > 0 to link
+     * adjacent sequential points into edges.
+     * As a side effect, the method also populates
+     * member variables edgeJunctionMap and outputIndexLocatorForJunctionPoints.
+     * 
+     * @return 
+     */
+    protected List<PairIntArray> connectPixelsViaDFSForBounds() {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
+        // DFS search for sequential neighbors.
+        
+        Stack<PairInt> stack = new Stack<PairInt>();
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+      
+        int thresh0 = 1;
+        
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                int v = img.getValue(i, j);
+                if (v >= thresh0) {
+                    PairInt p = new PairInt(i, j); 
+                    stack.add(p);
+                    points.add(p);
+                }
+            }
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        double[] xyCen = curveHelper.calculateXYCentroids(points);
+        
+        numberOfPixelsAboveThreshold = stack.size();
+        
+        log.log(Level.FINE, 
+            "Number of pixels that meet or exceed threshhold={0}", 
+            Long.toString(numberOfPixelsAboveThreshold));
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+        int[] uNodeEdgeIdx = new int[img.getWidth() * img.getHeight()];
+        Arrays.fill(uNodeEdgeIdx, -1);
+        
+        int[] neighborsX = new int[8];
+        int[] neighborsY = new int[8];
+        int[] neighborsNNon = new int[8];
+        double[] neighborsDistCen = new double[8];
+                   
+        // > O(N) and << O(N^2)
+        while (!stack.isEmpty()) {
+            
+            PairInt uNode = stack.pop();
+            
+            int uX = uNode.getX();
+            int uY = uNode.getY();
+            int uIdx = img.getIndex(uX, uY);
+            
+            int count = 0;
+            
+            for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                
+                int vX = dxs[nIdx] + uX;
+                int vY = dys[nIdx] + uY;
+
+                if ((vX < 0) || (vX > (w - 1)) || (vY < 0) || (vY > (h - 1))) {
+                    continue;
+                }
+
+                int vIdx = img.getIndex(vX, vY);
+                
+                if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx)) {
+                    continue;
+                }
+
+                if (img.getValue(vX, vY) < thresh0) {
+                    continue;
+                }
+                
+                int nc = curveHelper.countNeighbors(vX, vY, points, w, h);
+                
+                if (nc == 8) {
+                    // not a border pixel
+                    continue;
+                }
+                
+                neighborsX[count] = vX;
+                neighborsY[count] = vY;
+                neighborsNNon[count] = 8 - nc;
+                
+                double diffX = vX - xyCen[0];
+                double diffY = vY - xyCen[1];
+                neighborsDistCen[count] = Math.sqrt(diffX*diffX + diffY*diffY);
+                
+                count++;
+            }
+            
+            if (count == 0) {
+                continue;
+            }
+            
+            //sort ascending.  largest neighborsDistCen and largest neighborsNNon
+            // are near end of array at index count - 1
+            QuickSort.sortBy1stThen2nd(neighborsDistCen, 
+                neighborsNNon, neighborsX, neighborsY, 0, count - 1);
+            
+            // add only the preferred to the edge and stack
+            
+            int vIdx = img.getIndex(neighborsX[count - 1], neighborsY[count - 1]);
+                
+            processNeighbor(uX, uY, uIdx, neighborsX[count - 1], 
+                neighborsY[count - 1], vIdx, uNodeEdgeIdx, output);
+                
+            stack.add(new PairInt(neighborsX[count - 1], neighborsY[count - 1]));
+            
+        }
+        
+        log.fine(output.size() + " edges after DFS");
+        
+        // count the number of points in edges
+        long sum = countPixelsInEdges(output);
+        
+        log.log(Level.FINE, 
+            "==> {0} pixels are in edges out of {1} pixels > threshhold", 
+            new Object[]{Long.toString(sum), 
+                Long.toString(numberOfPixelsAboveThreshold)});
+        
+        log.log(Level.FINE, "there are {0} edges", 
+            Integer.toString(output.size()));
+        
+        return output;
     }
     
     protected void debugPrint(GreyscaleImage input, int xStart, int xStop,

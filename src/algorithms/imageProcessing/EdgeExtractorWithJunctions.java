@@ -194,10 +194,11 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 
             nSplices = spliceEdgesAtJunctionsIfImproves(output);
             
-            if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
-                // because re-order and insertion both need correction junction
+            /*if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
+                // because re-order and insertion both need corrected junction
                 // maps, cannot invoke both on this iteration unless the first
                 // did not alter anything.
+                findJunctions(output);
                 boolean ins = ((nIter % 1) == 0);
                 if ((nIter % 1) == 1) {
                     int nReordered = reorderPointsInEdgesForClosedCurve(output);
@@ -210,7 +211,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     int nIns = insertAdjacentForClosedCurve(output);
                     nSplices += nIns;
                 }
-            }
+            }*/
             
             ++nIter;
         }
@@ -1738,7 +1739,28 @@ long nPointsBefore = countPixelsInEdges(edges);
         
         this.singleClosedEdge = true;
         
-        List<PairIntArray> output = connectPixelsViaDFS();
+        List<PairIntArray> output = connectPixelsViaDFSForBounds();
+        
+Image img0 = ImageIOHelper.convertImage(img);
+for (int i = 0; i < output.size(); ++i) {
+    PairIntArray pa = output.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img0, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");       
         
         output = findEdgesIntermediateSteps(output);
                 
@@ -2088,7 +2110,7 @@ int z0 = 1;
         
         for (int i = 0; i < output.size(); ++i) {
             
-            if (i == maxEdgeIdx || (output.get(i).getN() < 3)) {
+            if (i == maxEdgeIdx || (output.get(i).getN() < 2)) {
                 continue;
             }
             

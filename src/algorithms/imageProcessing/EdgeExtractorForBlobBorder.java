@@ -184,33 +184,23 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
             int y = out.getY(i) + yOffset;
             out.set(i, x, y);
         }
-       
-/*
-Image img2 = new Image(imageWidth, imageHeight);
-for (int i = 0; i < output.size(); ++i) {
-    PairIntArray pa = output.get(i);
-    for (int j = 0; j < pa.getN(); ++j) {
-        int x = pa.getX(j);
-        int y = pa.getY(j);
-        if (i > 0) {
-            x += xOffset;
-            y += yOffset;
-        }
-        if (i == 0) {
-            if (j == 0 || (j == (pa.getN() - 1))) {
-                ImageIOHelper.addPointToImage(x, y, img2, 0, 200, 100, 0);
-            } else {
-                ImageIOHelper.addPointToImage(x, y, img2, 0, 255, 0, 0);
-            }
-        } else if (i == 1) {
-            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 255, 0);
-        } else {
-            ImageIOHelper.addPointToImage(x, y, img2, 0, 0, 0, 255);
-        }
+
+Image img3 = new Image(imageWidth, imageHeight);
+for (int j = 0; j < out.getN(); ++j) {
+    int x = out.getX(j);
+    int y = out.getY(j);
+    /*if (i > 0) {
+        x += xOffset;
+        y += yOffset;
+    }*/
+    if (j == 0 || (j == (out.getN() - 1))) {
+        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 100, 0);
+    } else {
+        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
     }
 }
-MiscDebug.writeImageCopy(img2, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-*/
+MiscDebug.writeImageCopy(img3, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+
         
 MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
 

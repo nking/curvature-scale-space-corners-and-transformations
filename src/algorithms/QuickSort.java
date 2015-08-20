@@ -398,6 +398,53 @@ public class QuickSort {
         }
     }
     
+    /**
+     * sort a from index idxLo to idxHi, inclusive, with ties sorted by b
+     * and all swap operations performed on all arrays. The sorts are
+     * ascending.
+     * Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param c
+     * @param d
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stThen2nd(double[] a, int[] b, int[] c, int[] d, 
+        int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length < 2) {
+            return;
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (c == null) {
+            throw new IllegalArgumentException("c cannot be null");
+        }
+        if (d == null) {
+            throw new IllegalArgumentException("d cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("a and b must be same length");
+        }
+        if (a.length != c.length) {
+            throw new IllegalArgumentException("a and c must be same length");
+        }
+        if (a.length != d.length) {
+            throw new IllegalArgumentException("a and d must be same length");
+        }
+        if (idxLo < idxHi) {
+            int idxMid = partitionBy1stThen2nd(a, b, c, d, idxLo, idxHi);
+            sortBy1stThen2nd(a, b, c, d, idxLo, idxMid - 1);
+            sortBy1stThen2nd(a, b, c, d, idxMid + 1, idxHi);
+        }
+    }
+    
     public static void sort(float[] a, float[] b, float[] c, int idxLo, 
         int idxHi) {
         
@@ -483,6 +530,53 @@ public class QuickSort {
         swap2 = c[store];
         c[store] = c[idxHi];
         c[idxHi] = swap2;
+        return store;
+    }
+    
+    private static int partitionBy1stThen2nd(double[] a, int[] b, int[] c,
+        int[] d, int idxLo, int idxHi) {
+        
+        double x = a[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a[i] < x) {
+                doSwap = true;
+            } else if (a[i] == x) {
+                if (b[i] < b[idxHi]) {
+                    doSwap = true;
+                }
+            }
+            if (doSwap) {
+                store++;
+                double swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+                int swap2 = b[store];
+                b[store] = b[i];
+                b[i] = swap2;
+                swap2 = c[store];
+                c[store] = c[i];
+                c[i] = swap2;
+                swap2 = d[store];
+                d[store] = d[i];
+                d[i] = swap2;
+            }
+        }
+        store++;
+        double swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
+        int swap2 = b[store];
+        b[store] = b[idxHi];
+        b[idxHi] = swap2;
+        swap2 = c[store];
+        c[store] = c[idxHi];
+        c[idxHi] = swap2;
+        swap2 = d[store];
+        d[store] = d[idxHi];
+        d[idxHi] = swap2;        
         return store;
     }
 }

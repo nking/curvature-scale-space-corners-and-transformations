@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -27,6 +26,10 @@ class SpurRemover {
         pattern2(curve, imageWidth, imageHeight);
        
         pattern3(curve, imageWidth, imageHeight);
+        
+        pattern4(curve, imageWidth, imageHeight);
+       
+        pattern5(curve, imageWidth, imageHeight);
     }
 
     private void pattern1(Set<PairInt> curve, int imageWidth, int imageHeight) {
@@ -114,6 +117,68 @@ class SpurRemover {
         
         changeToZeroes.add(new PairInt(0, 0));
         changeToZeroes.add(new PairInt(0, 1));
+    
+        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
+            imageHeight, zeroes, ones, changeToZeroes);
+    }
+    
+    private void pattern4(Set<PairInt> curve, int imageWidth, int imageHeight) {
+        
+        /*
+                            3
+            0  0  0  0      2
+            0 >#  #  0      1
+            0  #  0  0      0
+            #  0  #        -1
+           -1  0  1  2  3
+        */
+        
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
+        
+        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1,  1)); zeroes.add(new PairInt(-1, 2));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 2));
+        
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1)); 
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, 1)); 
+        
+        changeToZeroes.add(new PairInt(0, 1));
+        changeToZeroes.add(new PairInt(1, 1));
+    
+        int nChanged = replacePatternSwapDirections(curve, imageWidth, 
+            imageHeight, zeroes, ones, changeToZeroes);
+    }
+    
+    private void pattern5(Set<PairInt> curve, int imageWidth, int imageHeight) {
+        
+        /*
+                            3
+            0  0  0  0      2
+            0 ># >#  0      1
+            #  #  0  0      0
+            #  0  #        -1
+           -1  0  1  2  3
+        */
+        
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
+        
+        zeroes.add(new PairInt(-1,  1)); zeroes.add(new PairInt(-1, 2));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 2));
+        
+        ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(0, 1)); 
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, 1)); 
+        
+        changeToZeroes.add(new PairInt(0, 1));
+        changeToZeroes.add(new PairInt(1, 1));
     
         int nChanged = replacePatternSwapDirections(curve, imageWidth, 
             imageHeight, zeroes, ones, changeToZeroes);
