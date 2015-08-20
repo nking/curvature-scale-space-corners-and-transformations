@@ -129,7 +129,7 @@ public class DFSConnectedGroupsFinder {
             
             if (!foundANeighbor && (minimumNumberInCluster == 1)) {
                 
-                //process(uPoint);
+                process(uPoint);
             }
         }
     }
