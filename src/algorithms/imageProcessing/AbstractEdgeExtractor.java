@@ -414,6 +414,13 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
      */
     protected List<PairIntArray> connectPixelsViaDFSForBounds() {
         
+        /*
+        the choice among neighbors prefers in order:
+            large distance from centroid
+        or  fewer neighbors
+        */
+        boolean preferDistFromCentroid = false;
+        
         int w = img.getWidth();
         int h = img.getHeight();
         
@@ -454,7 +461,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         
         int[] neighborsX = new int[8];
         int[] neighborsY = new int[8];
-        int[] neighborsNNon = new int[8];
+        double[] neighborsNNon = new double[8];
         double[] neighborsDistCen = new double[8];
                    
         // > O(N) and << O(N^2)
@@ -511,8 +518,13 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             
             //sort ascending.  largest neighborsDistCen and largest neighborsNNon
             // are near end of array at index count - 1
-            QuickSort.sortBy1stThen2nd(neighborsDistCen, 
-                neighborsNNon, neighborsX, neighborsY, 0, count - 1);
+            if (preferDistFromCentroid) {
+                QuickSort.sortBy1stThen2nd(neighborsDistCen, neighborsNNon, 
+                    neighborsX, neighborsY, 0, count - 1);
+            } else {
+                QuickSort.sortBy1stThen2nd(neighborsNNon, neighborsDistCen, 
+                    neighborsX, neighborsY, 0, count - 1);
+            }
             
             // add only the preferred to the edge and stack
             

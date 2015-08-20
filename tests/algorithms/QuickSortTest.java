@@ -71,7 +71,7 @@ public class QuickSortTest extends TestCase {
             1  2  3
         */
         double[] a = new double[]{4, 4, 4, 1};
-        int[] b = new int[]{5, 6, 3, 2};
+        double[] b = new double[]{5, 6, 3, 2};
         int[] c = new int[]{6, 7, 1, 3};
         int[] d = new int[]{6, 7, 1, 3};
         

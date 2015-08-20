@@ -53,6 +53,8 @@ public class EdgeExtractorForBlobBorder {
         
 MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
         
+        // ------- define the perimeter of contiguousPoints ----------
+
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
@@ -71,6 +73,7 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
                 rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
         }
         
+        // --- walk around the boundary of contiguousPoints, forming a closed curve path ----------
         PairIntArray out = perimeterFinder.getOrderedBorderPixels(
             contiguousPoints, rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
   
@@ -106,7 +109,9 @@ MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeForma
         }
         
 MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-        
+
+        // ---- extract the border pixels from contiguousPoints ------
+
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
@@ -138,20 +143,21 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
             return null;
         }
         
+        // ----- remove spurs, merge curves, re-order points to form a 
+        //       single closed curve if possible -------
+        
 GreyscaleImage img2 = new GreyscaleImage(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
 int x = p.getX();
 int y = p.getY();
 img2.setValue(x, y, 1);
 }
-MiscDebug.plotCorners(img2, borderPixels, "___" + MiscDebug.getCurrentTimeFormatted(), 0);
+MiscDebug.plotCorners(img2, borderPixels, "_0_" + MiscDebug.getCurrentTimeFormatted(), 0);
 
         SpurRemover spurRm = new SpurRemover();
         
         spurRm.remove(borderPixels, imageWidth, imageHeight);
         
-MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
-
         //xMin, xMax, yMin, yMax
         int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);
       
@@ -194,15 +200,12 @@ for (int j = 0; j < out.getN(); ++j) {
         y += yOffset;
     }*/
     if (j == 0 || (j == (out.getN() - 1))) {
-        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 100, 0);
+        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
     } else {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
     }
 }
 MiscDebug.writeImageCopy(img3, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-
-        
-MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
 
         return out;
     }

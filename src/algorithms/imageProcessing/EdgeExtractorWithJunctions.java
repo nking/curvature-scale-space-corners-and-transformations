@@ -194,7 +194,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             // edges which had changed (been spliced and fused on previous iter)
 
             nSplices = spliceEdgesAtJunctionsIfImproves(output);
-            
+            /*
             if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
                 // because re-order and insertion both need corrected junction
                 // maps, cannot invoke both on this iteration unless the first
@@ -213,7 +213,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     nSplices += nIns;
                 }
             }
-            
+            */
             ++nIter;
         }
                 
@@ -1799,7 +1799,19 @@ MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTime
             p.setColor(1);
             out = p;
         }
-                    
+        
+img2 = ImageIOHelper.convertImage(img);
+for (int j = 0; j < out.getN(); ++j) {
+    int x = out.getX(j);
+    int y = out.getY(j);
+    if (j == 0 || (j == (out.getN() - 1))) {
+        ImageIOHelper.addPointToImage(x, y, img2, 0, 200, 100, 0);
+    } else {
+        ImageIOHelper.addPointToImage(x, y, img2, 0, 255, 0, 0);
+    }
+}
+MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");        
+        
         return out;
     }
     
@@ -2119,7 +2131,7 @@ int z0 = 1;
         
         for (int i = 0; i < output.size(); ++i) {
             
-            if (i == maxEdgeIdx || (output.get(i).getN() < 1)) {
+            if (i == maxEdgeIdx || (output.get(i).getN() == 0)) {
                 continue;
             }
             
@@ -2576,9 +2588,7 @@ int z0 = 1;
             return;
         }
         
-        boolean endPointsAreAdjacent = endPointsAreAdjacent(out);
-
-        if (endPointsAreAdjacent) {
+        if (endPointsAreAdjacent(out)) {
             return;
         }
         
@@ -2619,7 +2629,7 @@ int z0 = 1;
             */
             int xPrev = out.getX(closestPivotIdx - 1);
             int yPrev = out.getY(closestPivotIdx - 1);
-            if ((Math.abs(xPrev - xn) > 1) && (Math.abs(yPrev - yn) > 1)) {
+            if ((Math.abs(xPrev - xn) > 1) || (Math.abs(yPrev - yn) > 1)) {
                 return;
             }
             
@@ -2666,21 +2676,11 @@ int z0 = 1;
             
             int xNext = out.getX(closestPivotIdx + 1);
             int yNext = out.getY(closestPivotIdx + 1);
-            if ((Math.abs(xNext - x1) > 1) || (Math.abs(yNext - y1) > 1)) {
+            if ((Math.abs(xNext - xn) > 1) || (Math.abs(yNext - yn) > 1)) {
                 return;
             }
-            /*45, 15 <-- 0       99---> 45, 12
-              44, 15     1
-              45, 14     2
-              44, 13   <-- pivot
-            */
             /*
-             8  9
-           7      10
-           6      3   
-            5  4  2 
-               1  0  
-            If point after closestPivotIdx is next to (x0, y0), can just 
+            If point after closestPivotIdx is next to (xn, yn), can just 
             reverse the points from 0 to nTo1ClosestIdx.
             */
             reverse0toIdx(out, closestPivotIdx);

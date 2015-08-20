@@ -411,7 +411,7 @@ public class QuickSort {
      * @param idxLo
      * @param idxHi 
      */
-    public static void sortBy1stThen2nd(double[] a, int[] b, int[] c, int[] d, 
+    public static void sortBy1stThen2nd(double[] a, double[] b, int[] c, int[] d, 
         int idxLo, int idxHi) {
         
         if (a == null) {
@@ -533,7 +533,7 @@ public class QuickSort {
         return store;
     }
     
-    private static int partitionBy1stThen2nd(double[] a, int[] b, int[] c,
+    private static int partitionBy1stThen2nd(double[] a, double[] b, int[] c,
         int[] d, int idxLo, int idxHi) {
         
         double x = a[idxHi];
@@ -553,10 +553,10 @@ public class QuickSort {
                 double swap = a[store];
                 a[store] = a[i];
                 a[i] = swap;
-                int swap2 = b[store];
+                swap = b[store];
                 b[store] = b[i];
-                b[i] = swap2;
-                swap2 = c[store];
+                b[i] = swap;
+                int swap2 = c[store];
                 c[store] = c[i];
                 c[i] = swap2;
                 swap2 = d[store];
@@ -568,10 +568,10 @@ public class QuickSort {
         double swap = a[store];
         a[store] = a[idxHi];
         a[idxHi] = swap;
-        int swap2 = b[store];
+        swap = b[store];
         b[store] = b[idxHi];
-        b[idxHi] = swap2;
-        swap2 = c[store];
+        b[idxHi] = swap;
+        int swap2 = c[store];
         c[store] = c[idxHi];
         c[idxHi] = swap2;
         swap2 = d[store];
