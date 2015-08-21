@@ -161,6 +161,42 @@ public class RotateTest extends TestCase {
         assertTrue(Arrays.equals(expected, a));
     }
     
+    public void testRotate4Length() {
+               
+        int shift = 6;
+            
+        System.out.println("SHIFT=" + shift);
+
+        int[] a = new int[]{(int)'a', (int)'b', (int)'c', (int)'d', 0, 0, 0};
+
+        Rotate r = new Rotate();
+        r.rotate2(a, 4, shift);
+
+        int[] expected = new int[]{
+            (int)'c', (int)'d', (int)'a', (int)'b', 0, 0, 0
+        };
+
+        assertTrue(Arrays.equals(expected, a));
+    }
+    
+    public void testRotate4Length2() {
+               
+        int shift = 6;
+            
+        System.out.println("SHIFT=" + shift);
+
+        int[] a = new int[]{(int)'a', (int)'b', (int)'c', (int)'d', 0};
+
+        Rotate r = new Rotate();
+        r.rotate2(a, 4, shift);
+
+        int[] expected = new int[]{
+            (int)'c', (int)'d', (int)'a', (int)'b', 0
+        };
+
+        assertTrue(Arrays.equals(expected, a));
+    }
+    
     public void testReverse() {
                
         int[] a = new int[]{(int)'a', (int)'b', (int)'c', (int)'d'};
@@ -240,6 +276,60 @@ public class RotateTest extends TestCase {
         
         Rotate r = new Rotate();
         r.rotate2(a, shift);
+
+        int[] expected = new int[]{
+            (int)'d', (int)'a', (int)'b', (int)'c'
+        };
+
+        assertTrue(Arrays.equals(expected, a));
+    }
+    
+    public void testRotate5Length() {
+               
+        int shift = -5;
+            
+        System.out.println("SHIFT=" + shift);
+
+        int[] a = new int[]{(int)'a', (int)'b', (int)'c', (int)'d', 0, 0};
+
+        /*
+        a b c d   0
+        d a b c  -1
+        c d a b  -2
+        b c d a  -3
+        a b c d  -4
+        d a b c  -5
+        */        
+        
+        Rotate r = new Rotate();
+        r.rotate2(a, 4, shift);
+
+        int[] expected = new int[]{
+            (int)'d', (int)'a', (int)'b', (int)'c', 0, 0
+        };
+
+        assertTrue(Arrays.equals(expected, a));
+    }
+    
+    public void testRotate5Length2() {
+               
+        int shift = -5;
+            
+        System.out.println("SHIFT=" + shift);
+
+        int[] a = new int[]{(int)'a', (int)'b', (int)'c', (int)'d'};
+
+        /*
+        a b c d   0
+        d a b c  -1
+        c d a b  -2
+        b c d a  -3
+        a b c d  -4
+        d a b c  -5
+        */        
+        
+        Rotate r = new Rotate();
+        r.rotate2(a, 4, shift);
 
         int[] expected = new int[]{
             (int)'d', (int)'a', (int)'b', (int)'c'

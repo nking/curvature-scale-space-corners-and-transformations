@@ -2837,9 +2837,9 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         
         Rotate rotate = new Rotate();
         
-        rotate.rotate2(edge.getX(), positiveNumber);
+        rotate.rotate2(edge.getX(), edge.getN(), positiveNumber);
         
-        rotate.rotate2(edge.getY(), positiveNumber);
+        rotate.rotate2(edge.getY(), edge.getN(), positiveNumber);
     }
 
 }

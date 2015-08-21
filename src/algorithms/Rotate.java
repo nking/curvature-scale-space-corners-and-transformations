@@ -53,6 +53,10 @@ public class Rotate {
 
     }
     
+    public void rotate2(int[] a, int left) {
+        rotate2(a, a.length, left);
+    }
+    
     /**
      * The solution is O(N) and uses the pattern of moving the first element
      * out of the array and moving the subsequent shiftee's into forward
@@ -72,10 +76,11 @@ public class Rotate {
      * Chapter 2, Problem B.
      * 
      * @param a array of numbers treated as a circular array.
+     * @param n the number of items in the array to sort (i.e. ignoring beyond index n-1).
      * @param left the number of spaces for which to shift left the values 
      * within array a.
      */
-    public void rotate2(int[] a, int left) {
+    public void rotate2(int[] a, int n, int left) {
         
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -83,9 +88,7 @@ public class Rotate {
         if ((left == 0) || (left == a.length)) {
             return;
         }
-        
-        int n = a.length;
-        
+                
         boolean leftIsNegative = (left < 0);
         
         if (leftIsNegative) {
