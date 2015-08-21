@@ -2432,7 +2432,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                                    cIdx + 1  
             */
             
-            for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
+            for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
                 if (edge2Loc.getY() == 0) {
                     edge2.reverse();
                     edge1.addAll(edge2);
@@ -2448,7 +2448,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             // prefer the closest to the edge1 point
             PairInt closest = null;
             double closestDist = Integer.MAX_VALUE;
-            for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
+            for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
                 int x1 = edge1.getX(0);
                 int y1 = edge1.getY(0);
                 int x2 = edge2.getX(edge2Loc.getY());
@@ -2479,7 +2479,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             }
             
             // if arrived here, try the points in set that are not same as 'closest'
-            for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
+            for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
                 
                 if (edge2Loc.equals(closest)) {
                     continue;
