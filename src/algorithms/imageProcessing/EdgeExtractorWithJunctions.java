@@ -2510,8 +2510,9 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 
             } else {
                 
-               // --- if here, then edge2 closest points weren't endpoints so we
-               //     try to reorder it
+                // --- if here, then edge1 and edge2 closest points weren't 
+                //     endpoints so we try to reorder points to make the
+                //     curves joinable sequentially
         
                 boolean edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
                 
@@ -2530,13 +2531,15 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                     if (edge1EndIdx > -1) {                        
                         didReverse = reverseBottomIfPossible(edge1, edge1EndIdx);
                         if (didReverse) {
-                            edge1ALoc.setY(edge1.getN() - edge1ALoc.getY() + edge1EndIdx - 1);
-                            edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1EndIdx - 1);
+                            if (edge1ALoc.getY() > edge1EndIdx) {
+                                edge1ALoc.setY(edge1.getN() - edge1ALoc.getY() + edge1EndIdx - 1);
+                                edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1EndIdx - 1);
+                            }
                             edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
                             nReversed++;
                         }
                     }
-                    
+                   
                     if (!didReverse) {
                         
                         int edge1BeginIdx = findAdjacentToBottomAtTop(edge1);
@@ -2544,8 +2547,10 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                         if (edge1BeginIdx > -1) {
                             didReverse = reverseTopIfPossible(edge1, edge1BeginIdx);
                             if (didReverse) {
-                                //edge1ALoc.setY(edge1.getN() - edge1ALoc.getY() + edge1EndIdx - 1);
-                                //edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1EndIdx - 1);
+                                if (edge1ALoc.getY() < edge1BeginIdx) {
+                                    edge1ALoc.setY(edge1BeginIdx - edge1ALoc.getY());
+                                    edge1BLoc.setY(edge1BeginIdx - edge1BLoc.getY());
+                                }
                                 edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
                                 nReversed++;
                                 int z = 1;
@@ -2566,23 +2571,30 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                         
                         didReverse = reverseBottomIfPossible(edge2, edge2EndIdx);
                         if (didReverse) {
-                            edge2ALoc.setY(edge2.getN() - edge2ALoc.getY() + edge2EndIdx - 1);
-                            edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2EndIdx - 1);
+                            if (edge2ALoc.getY() > edge2EndIdx) {
+                                edge2ALoc.setY(edge2.getN() - edge2ALoc.getY() + edge2EndIdx - 1);
+                                edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2EndIdx - 1);
+                            }
                             edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
                             nReversed++;
                             int z = 1;
+                            
                         } else {
+                            
                             if (edge2EndIdx < (edge2.getN()/2)) {
                                 
-                                // an experiment to straighten out knots, but
+                                // an experiment to straighten out knots.
+                                // TODO: carry this to the other blocks above and below
                                 // that is attempted in replaceOpenCurvesIfPossibleToClose  
                                     
                                 if (reverseTopIfPossible(edge2, edge2EndIdx - 1)) {
+                                    if (edge2ALoc.getY() < (edge2EndIdx - 1)) {
+                                        edge2ALoc.setY(edge2EndIdx - 1 - edge2ALoc.getY());
+                                        edge2BLoc.setY(edge2EndIdx - 1 - edge2BLoc.getY());
+                                    }
                                     nReversed++;
                                     edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
-                                    //edit edge2ALoc and edge2BLoc
                                     int z = 1;
-                                    // edit loc variable
                                 }
                             }
                         }
@@ -3053,38 +3065,19 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
 
     private void replaceOpenCurvesIfPossibleToClose(List<PairIntArray> edges) {
         
-        // TODO: consider identifying knots in a curve as a junction that has
-        // more than two points in a curve and a possible loop that has
-        // direction opposite to nearby curve points (a crossing at the junction)
+        /*
+        TODO: may move the code in insert() which handles
+        reordering to join edge1ALoc to edge2ALoc and edge1BLoc to edge2BLoc
+        to here.
         
-        // key = edge index.  
-        // value = pixel indexes.
-        //   the pixel indexes are used to find values in junctionLocatorMap
-        //   to update it as points are moved to and from edges.
+        It's a means to untie knots too, but does not try to untie every knot.
+        
+        The knots can be found as junctions in an edge where the junction has
+        more than 2 points from that edge in it.
+        
+        can use this structure to make lookups faster:
         Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();
-        
-        for (int i = 0; i < edges.size(); ++i) {
-            
-            PairIntArray edge = edges.get(i);
-            
-            boolean isClosed = isAdjacent(edge, 0, edge.getN() - 1);
-            
-            if (isClosed) {
-                continue;
-            }
-            
-            Set<Integer> junctionPixIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(i));
-            
-            if (junctionPixIndexes.size() > 2) {
-                PairIntArray edgeCopy = edge.copy();
-                for (Integer pixIndex : junctionPixIndexes) {
-                    int x = img.getCol(pixIndex.intValue());
-                    int y = img.getRow(pixIndex.intValue());
-                    log.info("edge " + i + " (" + x + "," + y +")");
-                }
-                int z = 1;
-            }
-        }
+        */
         
     }
 }
