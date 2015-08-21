@@ -21,20 +21,32 @@ class SpurRemover {
      */
     public void remove(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
-        pattern0(curve, imageWidth, imageHeight);
+        int nChanged = 0;
+        int nMaxIter = 10;
+        int nIter = 0;
+
+        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
         
-        pattern00(curve, imageWidth, imageHeight);
-               
-        pattern1(curve, imageWidth, imageHeight);
+            nChanged = 0;
+            
+            nChanged += pattern0(curve, imageWidth, imageHeight);
+
+            nChanged += pattern00(curve, imageWidth, imageHeight);
+
+            nChanged += pattern1(curve, imageWidth, imageHeight);
+
+            nChanged += pattern2(curve, imageWidth, imageHeight);
+
+            nChanged += pattern3(curve, imageWidth, imageHeight);
+
+            nChanged += pattern4(curve, imageWidth, imageHeight);
+            
+            ++nIter;
+        }
         
-        pattern2(curve, imageWidth, imageHeight);
-        
-        pattern3(curve, imageWidth, imageHeight);
-        
-        pattern4(curve, imageWidth, imageHeight);
     }
 
-    private void pattern0(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    private int pattern0(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         /*
           0  #  0        1
@@ -55,29 +67,24 @@ class SpurRemover {
         changeToZeroes.add(new PairInt(0, 0));
         
         int nChanged = 0;
-        int nMaxIter = 10;
-        int nIter = 0;
         
-        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
-                        
-            /*
-            invoke pattern and then reversed for Y
-            */
-            
-            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
-                ones, changeToZeroes);
+        /*
+        invoke pattern and then reversed for Y
+        */
+
+        nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+            ones, changeToZeroes);
+
+        // ----- change the sign of x to handle other direction -----
+        reverseYs(zeroes, ones, changeToZeroes);
+
+        nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+            ones, changeToZeroes);
         
-            // ----- change the sign of x to handle other direction -----
-            reverseYs(zeroes, ones, changeToZeroes);
-        
-            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
-                ones, changeToZeroes);
-            
-            nIter++;
-        }
+        return nChanged;
     }
     
-    private void pattern00(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    private int pattern00(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         /*
           0  0  0        1
@@ -98,29 +105,20 @@ class SpurRemover {
         changeToZeroes.add(new PairInt(0, 0));
         
         int nChanged = 0;
-        int nMaxIter = 10;
-        int nIter = 0;
         
-        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
-            
-            /*
-            invoke pattern and then reversed for Y
-            */
-            
-            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
-                ones, changeToZeroes);
+        nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+            ones, changeToZeroes);
         
-            // ----- change the sign of x to handle other direction -----
-            reverseYs(zeroes, ones, changeToZeroes);
-        
-            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
-                ones, changeToZeroes);
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes);
+
+        nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+            ones, changeToZeroes);
             
-            nIter++;
-        }
+        return nChanged;
     }
     
-    private void pattern1(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    private int pattern1(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         /*
           #  #  0        1
@@ -142,19 +140,14 @@ class SpurRemover {
         changeToZeroes.add(new PairInt(0, 0));
         
         int nChanged = 0;
-        int nMaxIter = 10;
-        int nIter = 0;
         
-        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
-                        
-            nChanged = replacePatternSwapDirections(curve, 
-                imageWidth, imageHeight, zeroes, ones, changeToZeroes);
-            
-            nIter++;
-        }
+        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes);
+       
+        return nChanged;
     }
     
-    private void pattern2(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    private int pattern2(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         /*
           #              2
@@ -177,19 +170,14 @@ class SpurRemover {
         changeToZeroes.add(new PairInt(0, 0));
         
         int nChanged = 0;
-        int nMaxIter = 10;
-        int nIter = 0;
-        
-        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
-                        
-            nChanged = replacePatternSwapDirections(curve, 
-                imageWidth, imageHeight, zeroes, ones, changeToZeroes);
-            
-            nIter++;
-        }
+                                
+        nChanged = replacePatternSwapDirections(curve, 
+            imageWidth, imageHeight, zeroes, ones, changeToZeroes);
+           
+        return nChanged;
     }
     
-    private void pattern3(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    private int pattern3(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         /*
           0  0  #        1
@@ -210,19 +198,14 @@ class SpurRemover {
         changeToZeroes.add(new PairInt(0, 0));
         
         int nChanged = 0;
-        int nMaxIter = 10;
-        int nIter = 0;
         
-        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
-                        
-            nChanged = replacePatternSwapDirections(curve, 
-                imageWidth, imageHeight, zeroes, ones, changeToZeroes);
-            
-            nIter++;
-        }
+        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes);
+        
+        return nChanged;
     }
     
-    private void pattern4(Set<PairInt> curve, int imageWidth, int imageHeight) {
+    private int pattern4(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         /*
           0  0  0  #     1
@@ -244,16 +227,11 @@ class SpurRemover {
         changeToZeroes.add(new PairInt(0, 0));
         
         int nChanged = 0;
-        int nMaxIter = 10;
-        int nIter = 0;
-        
-        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
                         
-            nChanged = replacePatternSwapDirections(curve, 
-                imageWidth, imageHeight, zeroes, ones, changeToZeroes);
-            
-            nIter++;
-        }
+        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes);
+        
+        return nChanged;
     }
     
     private int replacePattern(Set<PairInt> points, int imageWidth, 
@@ -278,9 +256,6 @@ class SpurRemover {
                 
             boolean foundPattern = true;
             
-if ((Math.abs(col - 87) < 7) && (Math.abs(row - 89) < 4)) {
-    int z = 1;
-}           
             for (PairInt p2 : zeroes) {
                 int x = col + p2.getX();
                 int y = row + p2.getY();
