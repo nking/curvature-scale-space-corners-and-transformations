@@ -2537,6 +2537,24 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                             }
                             edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
                             nReversed++;
+                            
+                        } else {
+                            
+                            if (edge1EndIdx < (edge1.getN()/2)) {
+                                
+                                // an experiment to straighten out knots.
+                                // TODO: carry this to the other blocks above and below
+                                   
+                                if (reverseTopIfPossible(edge1, edge1EndIdx - 1)) {
+                                    if (edge1ALoc.getY() < (edge1EndIdx - 1)) {
+                                        edge1ALoc.setY(edge1EndIdx - 1 - edge1ALoc.getY());
+                                        edge1BLoc.setY(edge1EndIdx - 1 - edge1BLoc.getY());
+                                    }
+                                    nReversed++;
+                                    edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
+                                    int z = 1;
+                                }
+                            }
                         }
                     }
                    
@@ -2554,6 +2572,23 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                                 edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
                                 nReversed++;
                                 int z = 1;
+                            } else {
+                            
+                                if (edge1BeginIdx > (edge1.getN()/2)) {
+
+                                    // an experiment to straighten out knots.
+                                    // TODO: carry this to the other blocks above and below
+
+                                    if (reverseBottomIfPossible(edge1, edge1BeginIdx + 1)) {
+                                        if (edge1ALoc.getY() > (edge1BeginIdx + 1)) {
+                                            edge1ALoc.setY(edge1.getN() - edge1ALoc.getY() + edge1BeginIdx);
+                                            edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1BeginIdx);
+                                        }
+                                        nReversed++;
+                                        edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
+                                        int z = 1;
+                                    }
+                                }
                             }
                         }
                     }
@@ -2585,8 +2620,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                                 
                                 // an experiment to straighten out knots.
                                 // TODO: carry this to the other blocks above and below
-                                // that is attempted in replaceOpenCurvesIfPossibleToClose  
-                                    
+                                   
                                 if (reverseTopIfPossible(edge2, edge2EndIdx - 1)) {
                                     if (edge2ALoc.getY() < (edge2EndIdx - 1)) {
                                         edge2ALoc.setY(edge2EndIdx - 1 - edge2ALoc.getY());
