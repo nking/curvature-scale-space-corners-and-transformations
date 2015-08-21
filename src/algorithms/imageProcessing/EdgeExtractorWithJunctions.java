@@ -2648,6 +2648,22 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                                 edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
                                 nReversed++;
                                 int z = 1;
+                            } else {
+                                if (edge2BeginIdx > (edge2.getN()/2)) {
+
+                                    // an experiment to straighten out knots.
+                                    // TODO: carry this to the other blocks above and below
+
+                                    if (reverseBottomIfPossible(edge2, edge2BeginIdx + 1)) {
+                                        if (edge2ALoc.getY() > (edge2BeginIdx + 1)) {
+                                            edge2ALoc.setY(edge2.getN() - edge2ALoc.getY() + edge2BeginIdx);
+                                            edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2BeginIdx);
+                                        }
+                                        nReversed++;
+                                        edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
+                                        int z = 1;
+                                    }
+                                }
                             }
                         }
                     }
