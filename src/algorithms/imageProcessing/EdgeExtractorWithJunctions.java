@@ -170,7 +170,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
  
         log.fine("edges.size()=" + output.size() + " after join-points");
         
-        int nMaxIter = defaultMaxIterJunctionJoin;
+        final int nMaxIter = defaultMaxIterJunctionJoin;
         int nIter = 0;
         int nSplices = 0;
         
@@ -198,24 +198,38 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             
             if (nSplices > 0) {
                 removeEdgesShorterThan(output, 1);
-            }
-            
-            if (singleClosedEdge && ((nIter > (nMaxIter/2)) || (nSplices == 0))) {
-                // because re-order and insertion both need corrected junction
-                // maps, cannot invoke both on this iteration unless the first
-                // did not alter anything.
-                findJunctions(output);
-                
-                int nIns = insertAdjacentForClosedCurve(output);
-
-                nIns += insertBetweenAdjacentForClosedCurve(output);
-                
-                nSplices += nIns;
-            }
+            }            
             
             ++nIter;
         }
+             
+        log.info("nIter=" + nIter);
+        
+        nIter = 0;
+        nSplices = 0;
+        
+        while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
+        
+            if (nSplices > 0) {
+                removeEdgesShorterThan(output, 1);
+            }
+            
+            nSplices = 0;
+            
+            //TODO: this is handled in the methods invoked now so consider reducing number of times used
+            findJunctions(output);
+        
+            int nIns = insertAdjacentForClosedCurve(output);
+
+            //nIns += insertBetweenAdjacentForClosedCurve(output);
                 
+            nSplices += nIns;
+            
+            ++nIter;
+        }
+             
+        log.info("nIter=" + nIter);
+        
         return output;
     }
     
@@ -1903,7 +1917,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             }
             
             nMerged = 0;
-            
+         
             for (int i = 0; i < output.size(); ++i) {
                
                 //TODO: consider skipping single pixel edges because they're 
@@ -1920,48 +1934,11 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 int yn = curve.getY(curve.getN() - 1);
             
                 Set<PairInt> adjToFirstLoc = findAdjacentInOtherEdge(x1, y1, i);
-                                                
-                if (adjToFirstLoc.size() == 1) {
-                    PairInt mergeLoc = adjToFirstLoc.iterator().next();
-                    int edgeMergeIdx = mergeLoc.getX();
-                    int nMerge = output.get(edgeMergeIdx).getN();
-                    int nInserted;
-                    if (nMerge > curve.getN()) {
-                        nInserted = insert(theEdgeToPixelIndexMap, output, 
-                            edgeMergeIdx, i); 
-                    } else {
-                        nInserted = insert(theEdgeToPixelIndexMap, output, 
-                            i, edgeMergeIdx);
-                    }
-                    if (nInserted > 0) {
-                        nMerged += nInserted;
-                        nChanged += nMerged;
-                        break;
-                    }
-                }
-                
+                                   
                 Set<PairInt> adjToLastLoc = findAdjacentInOtherEdge(xn, yn, i);
-                if (adjToLastLoc.size() == 1) {
-                    PairInt mergeLoc = adjToLastLoc.iterator().next();
-                    int edgeMergeIdx = mergeLoc.getX();
-                    int nMerge = output.get(edgeMergeIdx).getN();
-                    int nInserted;
-                    if (nMerge > curve.getN()) {
-                        nInserted = insert(theEdgeToPixelIndexMap, output, 
-                            edgeMergeIdx, i); 
-                    } else {
-                        nInserted = insert(theEdgeToPixelIndexMap, output, 
-                            i, edgeMergeIdx);
-                    }
-                    if (nInserted > 0) {
-                        nMerged += nInserted;
-                        nChanged += nMerged;
-                        break;
-                    }
-                }
                 
                 /*
-                See if there's an unambiguous closest amount the 2 sets, 
+                See if there's an unambiguous closest among the 2 sets, 
                 and choose that if there is,
                 else, for now, skip it to let another operation merge with
                 more information.
@@ -1990,8 +1967,8 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                     for (PairInt loc : adjToLastLoc) {
                         int x = output.get(loc.getX()).getX(loc.getY());
                         int y = output.get(loc.getX()).getY(loc.getY());
-                        int diffX = x1 - x;
-                        int diffY = y1 - y;
+                        int diffX = xn - x;
+                        int diffY = yn - y;
                         double dist = Math.sqrt(diffX * diffX + diffY * diffY);
                         if (dist == minDist) {
                             // discard because of ambiguity
@@ -2018,9 +1995,48 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                     if (nInserted > 0) {
                         nMerged += nInserted;
                         nChanged += nMerged;
-                        break;
+                        
+                        // can only continue to iterate if rebuild the junction maps
+                        return nChanged;
                     }
                 }              
+                
+                for (PairInt mergeLoc2 : adjToFirstLoc) {
+                    
+                    int edgeMergeIdx = mergeLoc2.getX();
+                    
+                    Set<PairInt> set = new HashSet<PairInt>();
+                    set.add(mergeLoc2);
+                    
+                    int nInserted = insertForEdge1FirstLocation(output, 
+                        i, edgeMergeIdx, set);
+                    
+                    if (nInserted > 0) {
+                        nMerged += nInserted;
+                        nChanged += nMerged;
+                        
+                        // can only continue to iterate if rebuild the junction maps
+                        return nChanged;
+                    }
+                }
+                                
+                for (PairInt mergeLoc2 : adjToLastLoc) {
+                    
+                    int edgeMergeIdx = mergeLoc2.getX();
+                    
+                    Set<PairInt> set = new HashSet<PairInt>();
+                    set.add(mergeLoc2);
+                    int nInserted = insertForEdge1LastLocation(output, 
+                        i, edgeMergeIdx, set);
+                    
+                    if (nInserted > 0) {
+                        nMerged += nInserted;
+                        nChanged += nMerged;
+                        
+                        // can only continue to iterate if rebuild the junction maps
+                        return nChanged;
+                    }
+                }                
             }
             
             ++nIter;
@@ -2268,9 +2284,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         /*
         edge 1 is the one being inserted into by edge 2
         */
-        
-        int nChanged = 0;
-        
+                
         PairIntArray edge1 = output.get(edge1Idx);
         
         PairIntArray edge2 = output.get(edge2Idx);
@@ -2302,208 +2316,22 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         }
 
         if ((edge2LocForEdge1FirstLoc != null) && !edge2LocForEdge1FirstLoc.isEmpty()) {
-            
-            /*
-            have found locations in edge2 close to the first point in edge1
-            
-            (1) if edge2 location is an edge2 endpoint, the insert is simply
-                an append or a reverse and append
-            (2) ELSE try 2 tests for re-ordering edge2
 
-            (2a) reversing end of edge2:
-            
-                         ----  cIdx - 1 ---
-            edge1 0      edge2 cIdx          Can reverse segment cIdx to end if
-                               cIdx + 1      the point at n-1 is adjacent to 
-                               cIdx + 2      the point at cIdx - 1
-                               n - 1 
-            
-            (2a) reversing beginning of edge2:
-            
-                                  0          Can reverse segment 0 to cIdx if
-                                  1          the point at index 0 is 
-                                 cIdx - 1    adjacent to cIdx + 1
-            edge1 0      edge2   cIdx        
-                                 cIdx + 1  
-            */
-            
-            for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
-                if (edge2Loc.getY() == 0) {
-                    edge2.reverse();
-                    edge1.insertSpaceAtTopOfArrays(edge2.getN());
-                    edge1.insertAll(0, edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                } else if (edge2Loc.getY() == (edge2.getN() - 1)) {
-                    edge1.insertSpaceAtTopOfArrays(edge2.getN());
-                    edge1.insertAll(0, edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                }
+            int nIns = insertForEdge1FirstLocation(output, edge1Idx, edge2Idx, 
+                edge2LocForEdge1FirstLoc);
+ 
+            if (nIns > 0) {
+                return nIns;
             }
-            
-            // prefer the closest to the edge1 point
-            PairInt closest = null;
-            double closestDist = Integer.MAX_VALUE;
-            for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
-                int x1 = edge1.getX(0);
-                int y1 = edge1.getY(0);
-                int x2 = edge2.getX(edge2Loc.getY());
-                int y2 = edge2.getY(edge2Loc.getY());
-                int diffX = Math.abs(x1 - x2);
-                int diffY = Math.abs(y1 - y2);
-                double dist = Math.sqrt(diffX*diffX + diffY*diffY);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    closest = edge2Loc;
-                }
-            }
-            
-            boolean didReverse = reverseTopIfPossible(edge2, closest.getY());
-            
-            if (didReverse) {
-                edge2.reverse();
-                edge1.insertSpaceAtTopOfArrays(edge2.getN());
-                edge1.insertAll(0, edge2);
-                output.remove(edge2Idx);
-                return 1;
-            } else {
-                didReverse = reverseBottomIfPossible(edge2, closest.getY());
-                if (didReverse) {
-                    edge1.insertSpaceAtTopOfArrays(edge2.getN());
-                    edge1.insertAll(0, edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                }
-            }
-            
-            // if arrived here, try the points in set that are not same as 'closest'
-            for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
-                
-                if (edge2Loc.equals(closest)) {
-                    continue;
-                }
-                
-                int idx = edge2Loc.getY();
-                
-                // same checks for whether can re-order to have an endpoint 
-                didReverse = reverseTopIfPossible(edge2, idx);
 
-                if (didReverse) {
-                    edge2.reverse();
-                    edge1.insertSpaceAtTopOfArrays(edge2.getN());
-                    edge1.insertAll(0, edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                } else {
-                    didReverse = reverseBottomIfPossible(edge2, idx);
-                    if (didReverse) {
-                        edge1.insertSpaceAtTopOfArrays(edge2.getN());
-                        edge1.insertAll(0, edge2);
-                        output.remove(edge2Idx);
-                        return 1;
-                    }
-                }
-            }
-            
         } else if ((edge2LocForEdge1LastLoc != null) && !edge2LocForEdge1LastLoc.isEmpty()) {
+   
+            int nIns = insertForEdge1LastLocation(output, edge1Idx, edge2Idx, 
+                edge2LocForEdge1LastLoc);
             
-            /*
-            have found locations in edge2 close to the last point in edge1
-            
-            (1) if edge2 location is an edge2 endpoint, the insert is simply
-                an append or a reverse and append
-            (2) ELSE try 2 tests for re-ordering edge2
-
-            (2a) reversing end of edge2:
-            
-                           ----  cIdx - 1 ---
-            edge1 (n-1)    edge2 cIdx          Can reverse segment cIdx to end if
-                                 cIdx + 1      the point at n-1 is adjacent to 
-                                 cIdx + 2      the point at cIdx - 1
-                                  n - 1 
-            
-            (2a) reversing beginning of edge2:
-            
-                                      0          Can reverse segment 0 to cIdx if
-                                      1          the point at index 0 is 
-                                   cIdx - 1      adjacent to cIdx + 1
-            edge1 (n-1)    edge2   cIdx        
-                                   cIdx + 1  
-            */
-            
-            for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
-                if (edge2Loc.getY() == 0) {
-                    edge2.reverse();
-                    edge1.addAll(edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                } else if (edge2Loc.getY() == (edge2.getN() - 1)) {
-                    edge1.addAll(edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                }
+            if (nIns > 0) {
+                return nIns;
             }
-            
-            // prefer the closest to the edge1 point
-            PairInt closest = null;
-            double closestDist = Integer.MAX_VALUE;
-            for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
-                int x1 = edge1.getX(0);
-                int y1 = edge1.getY(0);
-                int x2 = edge2.getX(edge2Loc.getY());
-                int y2 = edge2.getY(edge2Loc.getY());
-                int diffX = Math.abs(x1 - x2);
-                int diffY = Math.abs(y1 - y2);
-                double dist = Math.sqrt(diffX*diffX + diffY*diffY);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    closest = edge2Loc;
-                }
-            }
-            
-            boolean didReverse = reverseTopIfPossible(edge2, closest.getY());
-            
-            if (didReverse) {
-                edge2.reverse();
-                edge1.addAll(edge2);
-                output.remove(edge2Idx);
-                return 1;
-            } else {
-                didReverse = reverseBottomIfPossible(edge2, closest.getY());
-                if (didReverse) {
-                    edge1.addAll(edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                }
-            }
-            
-            // if arrived here, try the points in set that are not same as 'closest'
-            for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
-                
-                if (edge2Loc.equals(closest)) {
-                    continue;
-                }
-                
-                int idx = edge2Loc.getY();
-                
-                // same checks for whether can re-order to have an endpoint 
-                didReverse = reverseTopIfPossible(edge2, idx);
-
-                if (didReverse) {
-                    edge2.reverse();
-                    edge1.addAll(edge2);
-                    output.remove(edge2Idx);
-                    return 1;
-                } else {
-                    didReverse = reverseBottomIfPossible(edge2, idx);
-                    if (didReverse) {
-                        edge1.addAll(edge2);
-                        output.remove(edge2Idx);
-                        return 1;
-                    }
-                }
-            }  
         } 
         
         /* 
@@ -2567,7 +2395,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 
                 int idxA = edge1ALocKeys.indexOf(edge1BLoc);
                 if (idxA > -1) {
-                    if (edge1ALocKeys.get(idxA).equals(edge1ALoc)) {
+                    if (edge1BLocKeys.get(idxA).equals(edge1ALoc)) {
                         continue;
                     }
                 }
@@ -2586,7 +2414,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         else have to see if can re-order edge 2 points so
         that the closest points are both placable at endpoints
         */
-          
+         
         List<PairInt> edge1ALocClosestEdge2Loc = new ArrayList<PairInt>();
         List<PairInt> edge1BLocClosestEdge2Loc = new ArrayList<PairInt>();
         
@@ -2633,7 +2461,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             }
             edge1BLocClosestEdge2Loc.add(closest);            
         }
-              
+            
         for (int i = 0; i < edge1ALocKeys.size(); ++i) {
             
             PairInt edge1ALoc = edge1ALocKeys.get(i);
@@ -2646,10 +2474,12 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 
                 if (edge1ALoc.getY() < edge1BLoc.getY()) {
                     edge1.insertAll(edge1ALoc.getY() + 1, edge2);
+                    output.remove(edge2Idx);
                     return 1;
                 } else {
                     edge2.reverse();
                     edge1.insertAll(edge1BLoc.getY() + 1, edge2);
+                    output.remove(edge2Idx);
                     return 1;
                 }
                 
@@ -2657,56 +2487,83 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 if (edge1ALoc.getY() < edge1BLoc.getY()) {
                     edge2.reverse();
                     edge1.insertAll(edge1ALoc.getY() + 1, edge2);
+                    output.remove(edge2Idx);
                     return 1;
                 } else {
                     edge1.insertAll(edge1BLoc.getY() + 1, edge2);
-                    return 1;
-                }
-            }
-        }
-        
-        // --- if here, then edge2 closest points weren't endpoints so we
-        //     try to reorder it
-        
-        boolean edge2IsAClosedCurve = isAdjacent(edge2, 0, edge2.getN() - 1);
-        
-        if (!edge2IsAClosedCurve) {
-            return 0;
-        }
-        
-        for (int i = 0; i < edge1ALocKeys.size(); ++i) {
-            
-            PairInt edge1ALoc = edge1ALocKeys.get(i);
-            PairInt edge1BLoc = edge1BLocKeys.get(i);
-            
-            PairInt edge2ALoc = edge1ALocClosestEdge2Loc.get(i);
-            PairInt edge2BLoc = edge1BLocClosestEdge2Loc.get(i);
-                        
-            if (edge1ALoc.getY() < edge1BLoc.getY()) {
-                if (edge2ALoc.getY() < edge2BLoc.getY()) {
-                    circularlyShift(edge2, edge2BLoc.getY());
-                    edge2.reverse();
-                    edge1.insertAll(edge1ALoc.getY() + 1, edge2);
-                    return 1;
-                } else {
-                    circularlyShift(edge2, edge2ALoc.getY());
-                    edge1.insertAll(edge1ALoc.getY() + 1, edge2); 
+                    output.remove(edge2Idx);
                     return 1;
                 }
             } else {
-                if (edge2ALoc.getY() < edge2BLoc.getY()) {
-                    circularlyShift(edge2, edge2ALoc.getY());
-                    edge2.reverse();
-                    edge1.insertAll(edge1BLoc.getY() + 1, edge2);
-                    return 1;
-                } else {
-                    circularlyShift(edge2, edge2BLoc.getY());
-                    edge1.insertAll(edge1BLoc.getY() + 1, edge2); 
-                    return 1;
+                
+               // --- if here, then edge2 closest points weren't endpoints so we
+               //     try to reorder it
+        
+                boolean edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
+                
+                boolean edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
+                
+                if (output.size() == 2 && !edge1IsClosed) {
+                    //NOT YET IMPLEMENTED
+                    // attempt to reorder and then set edge1IsClosed to true
+                    
+                    /*
+                    need to find closest pair between beginning and end of
+                    curve and see if can reorder a few points to place 
+                    the adj at endpoints
+                    */
+                    
+                } else if (output.size() == 2 && !edge1IsClosed) {
+                    //NOT YET IMPLEMENTED
+                    // attempt to reorder and the set edge2IsClosed to true
+                    
+                    /*
+                    need to find closest pair between beginning and end of
+                    curve and see if can reorder a few points to place 
+                    the adj at endpoints
+                    */
+                }
+                
+                if (edge1IsClosed && edge2IsClosed) {
+                    
+                    if (edge1ALoc.getY() > edge1BLoc.getY()) {
+                        if (edge2ALoc.getY() > edge2BLoc.getY()) {
+                            circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY() - 1));
+                            circularlyShift(edge2, (edge2.getN() - edge2BLoc.getY() - 1));
+                            edge2.reverse();
+                            edge1.addAll(edge2);
+                            output.remove(edge2Idx);
+                            return 1;
+                        } else {
+                            circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY() - 1));
+                            circularlyShift(edge2, (edge2.getN() - edge2BLoc.getY()));
+                            edge1.addAll(edge2);
+                            output.remove(edge2Idx);
+                            return 1;
+                        }
+                        
+                    } else {
+                        if (edge2ALoc.getY() > edge2BLoc.getY()) {
+                            circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY()));
+                            edge1.reverse();
+                            circularlyShift(edge2, (edge2.getN() - edge2BLoc.getY() - 1));
+                            edge2.reverse();
+                            edge1.addAll(edge2);
+                            output.remove(edge2Idx);
+                            return 1;
+                        } else {
+                            circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY()));
+                            edge1.reverse();
+                            circularlyShift(edge2, (edge2.getN() - edge2BLoc.getY()));
+                            edge1.addAll(edge2);
+                            output.remove(edge2Idx);
+                            return 1;
+                        }
+                    }
                 }
             }
         }
-        
+       
         return 0;
     }
 
@@ -2840,6 +2697,233 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         rotate.rotate2(edge.getX(), edge.getN(), positiveNumber);
         
         rotate.rotate2(edge.getY(), edge.getN(), positiveNumber);
+    }
+
+    private int insertForEdge1LastLocation(List<PairIntArray> edges, 
+        int edge1Idx, int edge2Idx, Set<PairInt> edge2LocForEdge1LastLoc) {
+        
+        PairIntArray edge1 = edges.get(edge1Idx);
+        
+        PairIntArray edge2 = edges.get(edge2Idx);
+        
+         /*
+         have found locations in edge2 close to the last point in edge1
+            
+         (1) if edge2 location is an edge2 endpoint, the insert is simply
+         an append or a reverse and append
+         (2) ELSE try 2 tests for re-ordering edge2
+
+         (2a) reversing end of edge2:
+            
+         ----  cIdx - 1 ---
+         edge1 (n-1)    edge2 cIdx          Can reverse segment cIdx to end if
+                              cIdx + 1      the point at n-1 is adjacent to 
+                              cIdx + 2      the point at cIdx - 1
+                              n - 1 
+            
+         (2a) reversing beginning of edge2:
+            
+                               0          Can reverse segment 0 to cIdx if
+                               1          the point at index 0 is 
+                              cIdx - 1      adjacent to cIdx + 1
+       edge1 (n-1)    edge2   cIdx        
+                              cIdx + 1  
+         */
+        for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
+            if (edge2Loc.getY() == 0) {
+                edge2.reverse();
+                edge1.addAll(edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            } else if (edge2Loc.getY() == (edge2.getN() - 1)) {
+                edge1.addAll(edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            }
+        }
+
+        // prefer the closest to the edge1 point
+        PairInt closest = null;
+        double closestDist = Integer.MAX_VALUE;
+        for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
+            int x1 = edge1.getX(0);
+            int y1 = edge1.getY(0);
+            int x2 = edge2.getX(edge2Loc.getY());
+            int y2 = edge2.getY(edge2Loc.getY());
+            int diffX = Math.abs(x1 - x2);
+            int diffY = Math.abs(y1 - y2);
+            double dist = Math.sqrt(diffX * diffX + diffY * diffY);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = edge2Loc;
+            }
+        }
+
+        boolean didReverse = reverseTopIfPossible(edge2, closest.getY());
+
+        if (didReverse) {
+            edge2.reverse();
+            edge1.addAll(edge2);
+            edges.remove(edge2Idx);
+            return 1;
+        } else {
+            didReverse = reverseBottomIfPossible(edge2, closest.getY());
+            if (didReverse) {
+                edge1.addAll(edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            }
+        }
+
+        // if arrived here, try the points in set that are not same as 'closest'
+        for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
+
+            if (edge2Loc.equals(closest)) {
+                continue;
+            }
+
+            int idx = edge2Loc.getY();
+
+            // same checks for whether can re-order to have an endpoint 
+            didReverse = reverseTopIfPossible(edge2, idx);
+
+            if (didReverse) {
+                edge2.reverse();
+                edge1.addAll(edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            } else {
+                didReverse = reverseBottomIfPossible(edge2, idx);
+                if (didReverse) {
+                    edge1.addAll(edge2);
+                    edges.remove(edge2Idx);
+                    return 1;
+                }
+            }
+        }
+        
+        return 0;
+    }
+
+    private int insertForEdge1FirstLocation(List<PairIntArray> edges, 
+        int edge1Idx, int edge2Idx, Set<PairInt> edge2LocForEdge1FirstLoc) {
+
+        PairIntArray edge1 = edges.get(edge1Idx);
+        
+        PairIntArray edge2 = edges.get(edge2Idx);
+        
+        /*
+        have found locations in edge2 close to the first point in edge1
+
+        (1) if edge2 location is an edge2 endpoint, the insert is simply
+            an append or a reverse and append
+        (2) ELSE try 2 tests for re-ordering edge2
+
+        (2a) reversing end of edge2:
+
+                     ----  cIdx - 1 ---
+        edge1 0      edge2 cIdx          Can reverse segment cIdx to end if
+                           cIdx + 1      the point at n-1 is adjacent to 
+                           cIdx + 2      the point at cIdx - 1
+                           n - 1 
+
+        (2a) reversing beginning of edge2:
+
+                              0          Can reverse segment 0 to cIdx if
+                              1          the point at index 0 is 
+                             cIdx - 1    adjacent to cIdx + 1
+        edge1 0      edge2   cIdx        
+                             cIdx + 1  
+        */
+
+        for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
+            if (edge2Loc.getY() == 0) {
+                edge2.reverse();
+                edge1.insertAll(0, edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            } else if (edge2Loc.getY() == (edge2.getN() - 1)) {
+                edge1.insertAll(0, edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            }
+        }
+
+        // prefer the closest to the edge1 point
+        PairInt closest = null;
+        double closestDist = Integer.MAX_VALUE;
+        for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
+            int x1 = edge1.getX(0);
+            int y1 = edge1.getY(0);
+            int x2 = edge2.getX(edge2Loc.getY());
+            int y2 = edge2.getY(edge2Loc.getY());
+            int diffX = Math.abs(x1 - x2);
+            int diffY = Math.abs(y1 - y2);
+            double dist = Math.sqrt(diffX*diffX + diffY*diffY);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = edge2Loc;
+            }
+        }
+
+        boolean didReverse = reverseTopIfPossible(edge2, closest.getY());
+
+        if (didReverse) {
+            edge2.reverse();
+            edge1.insertAll(0, edge2);
+            edges.remove(edge2Idx);
+            return 1;
+        } else {
+            didReverse = reverseBottomIfPossible(edge2, closest.getY());
+            if (didReverse) {
+                edge1.insertAll(0, edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            }
+        }
+
+        // if arrived here, try the points in set that are not same as 'closest'
+        for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
+
+            if (edge2Loc.equals(closest)) {
+                continue;
+            }
+
+            int idx = edge2Loc.getY();
+
+            // same checks for whether can re-order to have an endpoint 
+            didReverse = reverseTopIfPossible(edge2, idx);
+
+            if (didReverse) {
+                edge2.reverse();
+                edge1.insertAll(0, edge2);
+                edges.remove(edge2Idx);
+                return 1;
+            } else {
+                didReverse = reverseBottomIfPossible(edge2, idx);
+                if (didReverse) {
+                    edge1.insertAll(0, edge2);
+                    edges.remove(edge2Idx);
+                    return 1;
+                }
+            }
+        }
+        return 0;
+    }
+
+    private boolean find(List<PairIntArray> output, int x, int y) {
+        
+        for (int i = 0; i < output.size(); ++i) {
+            
+            PairIntArray p = output.get(i);
+            
+            for (int idx = 0; idx < p.getN(); ++idx) {
+                if ((p.getX(idx) == x) && (p.getY(idx) == y)) {
+                    return true;
+                }   
+            }
+        }
+        return false;
     }
 
 }
