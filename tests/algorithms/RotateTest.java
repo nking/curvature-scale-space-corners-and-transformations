@@ -30,6 +30,28 @@ public class RotateTest extends TestCase {
         assertTrue(Arrays.equals(expected, a));
     }
     
+    public void testRotate2Right() {
+       
+        int[] a = new int[]{1, 2, 3, 4, 5, 6, 7};
+        
+        Rotate r = new Rotate();
+        r.rotate2(a, -3);
+        
+        int[] expected = new int[]{5, 6, 7, 1, 2, 3, 4};
+        
+        assertTrue(Arrays.equals(expected, a));
+        
+        // rotate right w/ array larger than number of items to be moved
+        a = new int[]{1, 2, 3, 4, 5, 6, 7, 0, 0, 0};
+        
+        r = new Rotate();
+        r.rotate2(a, 7, -3);
+        
+        expected = new int[]{5, 6, 7, 1, 2, 3, 4, 0, 0, 0};
+        
+        assertTrue(Arrays.equals(expected, a));
+    }
+    
     public void testRotate1() {
 
         int shift = -3;

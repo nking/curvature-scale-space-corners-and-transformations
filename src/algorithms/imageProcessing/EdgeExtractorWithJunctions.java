@@ -2528,7 +2528,8 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                     
                     boolean didReverse = false;
                     
-                    if (edge1EndIdx > -1) {                        
+                    if (edge1EndIdx > -1) {
+   // TODO: invoke even if edge1EndIdx << (edge1.getN()/2) ?
                         didReverse = reverseBottomIfPossible(edge1, edge1EndIdx);
                         if (didReverse) {
                             if (edge1ALoc.getY() > edge1EndIdx) {
@@ -2840,10 +2841,12 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         }
         
         Rotate rotate = new Rotate();
+
+        //TODO: implement the faster logic for shift rights in rotate2
+        rotate.rotate2(edge.getX(), edge.getN(), -1*positiveNumber);
         
-        rotate.rotate2(edge.getX(), edge.getN(), positiveNumber);
+        rotate.rotate2(edge.getY(), edge.getN(), -1*positiveNumber);
         
-        rotate.rotate2(edge.getY(), edge.getN(), positiveNumber);
     }
 
     private int insertForEdge1LastLocation(List<PairIntArray> edges, 
