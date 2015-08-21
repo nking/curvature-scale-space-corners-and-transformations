@@ -5,11 +5,14 @@ import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import com.sun.glass.ui.InvokeLaterDispatcher;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -1273,65 +1276,6 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(colRange.getY() == 9);
     }
     
-    public void testGetBorderPixels_5() throws Exception {
-
-        PerimeterFinder perimeterFinder = new PerimeterFinder();
-
-        /*
-        5: group of points missing intersecting column and row in some places
-        0 1 2 3 4 5 6  
-        @ @ @ @   @ @  0
-          % %     % %  1
-        @ @ @ @   @ @  2
-        */        
-        Set<PairInt> points = getSet5();
-        points.add(new PairInt(1, 1));
-        points.add(new PairInt(2, 1));
-        points.add(new PairInt(5, 1));
-        points.add(new PairInt(6, 1));
-
-        int[] outputRowMinMax = new int[2];
-         
-        int imageMaxColumn = 10;
-        int imageMaxRow = 10;
-        
-        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-        
-        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
-            points, outputRowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
-        assertTrue(rowColRanges.size() == 3);
-       
-        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
-            rowColRanges, outputRowMinMax, imageMaxColumn, imageMaxRow);
-        
-        /*
-        0 1 2 3 4 5 6  
-        . @ @ .   . .  0
-          . .     . .  1
-        . . . .   . .  2
-        */
-        Set<PairInt> expected = new HashSet<PairInt>();
-        expected.add(new PairInt(1, 1));
-        expected.add(new PairInt(3, 0));
-        expected.add(new PairInt(2, 1));
-        expected.add(new PairInt(3, 2));
-        expected.add(new PairInt(2, 2));
-        expected.add(new PairInt(1, 2));
-        expected.add(new PairInt(0, 2));
-        expected.add(new PairInt(5, 0));
-        expected.add(new PairInt(5, 1));
-        expected.add(new PairInt(5, 2));
-        expected.add(new PairInt(6, 0));
-        expected.add(new PairInt(6, 1));
-        expected.add(new PairInt(6, 2));
-        
-        for (PairInt p : borderPixels) {
-            assertTrue(expected.remove(p));
-        }
-        assertTrue(expected.isEmpty());
-       
-    }
-    
     public void testGetBorderPixels_6() throws Exception {
 
         PerimeterFinder perimeterFinder = new PerimeterFinder();
@@ -1477,40 +1421,43 @@ public class PerimeterFinderTest extends TestCase {
     
     public void testGetOrderedBorderE() throws Exception {
   
-        EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
-        
-        int imageWidth = 175;
-        int imageHeight = 130;
-        
-        boolean discardWhenCavityIsSmallerThanBorder = false;
-        
-        //Set<PairInt> contiguousPoints = getPerimeter0Set();
-        
-        Set<PairInt> contiguousPoints = getPerimeterSet(3);
-        
-        int[] minMaxXY = MiscMath.findMinMaxXY(contiguousPoints);
-                
-        PairIntArray out = extractor.extractAndOrderTheBorder0(
-            contiguousPoints, minMaxXY[1] + 5, minMaxXY[3] + 5, 
-            discardWhenCavityIsSmallerThanBorder);
-               
-        int rClr = 255;
-        int gClr = 255;
-        int bClr = 255;
-        int nExtraForDot = 0;
-        Image img = new Image(imageWidth, imageHeight);
-        
-        ImageIOHelper.addCurveToImage(contiguousPoints, img, nExtraForDot, 
-            rClr, gClr, bClr);
-        
-        ImageIOHelper.addCurveToImage(out, img, nExtraForDot, 255, 0, 0);
+        for (int testSet = 0; testSet < 5; ++testSet) {
             
-        String dirPath = ResourceFinder.findDirectory("bin");
-        String outFilePath = dirPath + "/perimeter.png";
-        
-        ImageIOHelper.writeOutputImage(outFilePath, img);
+            EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
 
-        System.out.println("border size=" + out.getN());
+            int imageWidth = 175;
+            int imageHeight = 130;
+
+            boolean discardWhenCavityIsSmallerThanBorder = false;
+
+            //Set<PairInt> contiguousPoints = getPerimeter0Set();
+
+            Set<PairInt> contiguousPoints = getPerimeterSet(testSet);
+
+            int[] minMaxXY = MiscMath.findMinMaxXY(contiguousPoints);
+
+            PairIntArray out = extractor.extractAndOrderTheBorder0(
+                contiguousPoints, minMaxXY[1] + 5, minMaxXY[3] + 5, 
+                discardWhenCavityIsSmallerThanBorder);
+
+            int rClr = 255;
+            int gClr = 255;
+            int bClr = 255;
+            int nExtraForDot = 0;
+            Image img = new Image(imageWidth, imageHeight);
+
+            ImageIOHelper.addCurveToImage(contiguousPoints, img, nExtraForDot, 
+                rClr, gClr, bClr);
+
+            ImageIOHelper.addCurveToImage(out, img, nExtraForDot, 255, 0, 0);
+
+            String dirPath = ResourceFinder.findDirectory("bin");
+            String outFilePath = dirPath + "/perimeter_" + testSet + ".png";
+
+            ImageIOHelper.writeOutputImage(outFilePath, img);
+
+            System.out.println("border size=" + out.getN());
+        }
     }
     
     /*
