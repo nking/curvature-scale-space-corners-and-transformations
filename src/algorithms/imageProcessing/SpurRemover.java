@@ -22,6 +22,8 @@ class SpurRemover {
     public void remove(Set<PairInt> curve, int imageWidth, int imageHeight) {
         
         pattern0(curve, imageWidth, imageHeight);
+        
+        pattern00(curve, imageWidth, imageHeight);
                
         pattern1(curve, imageWidth, imageHeight);
         
@@ -58,8 +60,61 @@ class SpurRemover {
         
         while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
                         
-            nChanged = replacePatternSwapDirections(curve, 
-                imageWidth, imageHeight, zeroes, ones, changeToZeroes);
+            /*
+            invoke pattern and then reversed for Y
+            */
+            
+            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+                ones, changeToZeroes);
+        
+            // ----- change the sign of x to handle other direction -----
+            reverseYs(zeroes, ones, changeToZeroes);
+        
+            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+                ones, changeToZeroes);
+            
+            nIter++;
+        }
+    }
+    
+    private void pattern00(Set<PairInt> curve, int imageWidth, int imageHeight) {
+        
+        /*
+          0  0  0        1
+          0 >#  #        0
+          0  0  0       -1
+         -1  0  1  2  3
+         */
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
+
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, -1)); zeroes.add(new PairInt(1, 1));
+        
+        ones.add(new PairInt(1, 0)); 
+        
+        changeToZeroes.add(new PairInt(0, 0));
+        
+        int nChanged = 0;
+        int nMaxIter = 10;
+        int nIter = 0;
+        
+        while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
+            
+            /*
+            invoke pattern and then reversed for Y
+            */
+            
+            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+                ones, changeToZeroes);
+        
+            // ----- change the sign of x to handle other direction -----
+            reverseYs(zeroes, ones, changeToZeroes);
+        
+            nChanged += replacePattern(curve, imageWidth, imageHeight, zeroes, 
+                ones, changeToZeroes);
             
             nIter++;
         }
