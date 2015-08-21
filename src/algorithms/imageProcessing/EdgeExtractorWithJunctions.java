@@ -2607,8 +2607,10 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                         if (edge2BeginIdx > -1) {
                             didReverse = reverseTopIfPossible(edge2, edge2BeginIdx);
                             if (didReverse) {
-                                //edge2ALoc.setY(edge2.getN() - edge2ALoc.getY() + edge2EndIdx - 1);
-                                //edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2EndIdx - 1);
+                                if (edge2ALoc.getY() < edge2BeginIdx) {
+                                    edge2ALoc.setY(edge2BeginIdx - edge2ALoc.getY());
+                                    edge2BLoc.setY(edge2BeginIdx - edge2BLoc.getY());
+                                }
                                 edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
                                 nReversed++;
                                 int z = 1;
