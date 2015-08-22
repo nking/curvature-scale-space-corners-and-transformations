@@ -1,14 +1,12 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.QuickSort;
 import algorithms.compGeometry.NearestPoints;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.Misc;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -73,7 +71,7 @@ public class CurvatureScaleSpaceCornerDetector extends
     protected boolean performWholeImageCorners = true;
     
     protected boolean doStoreCornerRegions = true;
-    
+            
     public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
 
         super(input);
@@ -138,10 +136,10 @@ public class CurvatureScaleSpaceCornerDetector extends
         // while refactoring the public method returns and signatures
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
             findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
-
+        
         includeJunctionsInCorners();
     }
-
+    
     @Override
     protected void reinitializeSpecialization() {
         corners = new PairIntArray();
@@ -1321,7 +1319,17 @@ MultiArrayMergeSort.sortByYThenX(cp);
         if (!removeAmbiguousPeaks) {
             return getEdgeCornerRegions();
         }
+        
+        Map<Integer, Set<Integer> > theJunctionMap = new HashMap<Integer, Set<Integer>>();
 
+        Map<Integer, PairInt> theJunctionLocationMap = new HashMap<Integer, PairInt>();
+        
+        EdgeExtractorWithJunctions.findJunctions(edges, 
+            theJunctionMap, theJunctionLocationMap, img.getWidth(), img.getHeight());
+
+        this.junctionLocationMap = theJunctionLocationMap;
+        this.junctionMap = theJunctionMap;
+        
         Set<CornerRegion> set = new HashSet<CornerRegion>();
        
         for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
@@ -1445,16 +1453,20 @@ MultiArrayMergeSort.sortByYThenX(cp);
             PairInt edgeLocation1 = junctionLocationMap.get(pixIndex1);
             
             PairIntArray edge1 = edges.get(edgeLocation1.getX());
+            
+            //TODO: there's a bug in the junctionMap state!!!!  needs to be refactored
             int x1 = edge1.getX(edgeLocation1.getY());
             int y1 = edge1.getY(edgeLocation1.getY());
             
             for (int j = (i + 1); j < list.size(); ++j) {
                 
                 Integer pixIndex2 = list.get(j);
-                
+                                
                 PairInt edgeLocation2 = junctionLocationMap.get(pixIndex2);
                 
                 PairIntArray edge2 = edges.get(edgeLocation2.getX());
+                
+                //TODO: there's a bug in the junctionMap state!!!!
                 int x2 = edge2.getX(edgeLocation2.getY());
                 int y2 = edge2.getY(edgeLocation2.getY());
             

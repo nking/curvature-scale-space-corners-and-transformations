@@ -7,14 +7,17 @@ import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayDescendingComparator;
 import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -577,7 +580,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         MiscDebug.writeImage(gXY1, "1_gXY_trimmed");
         MiscDebug.writeImage(gXY2, "2_gXY_trimmed");
      
-        
+        /*
         //TEMP files to visualize an offset:
         GreyscaleImage theta1_tmp = theta1.copyImage();
         GreyscaleImage theta2_tmp = theta2.copyImage();
@@ -607,6 +610,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         }
         MiscDebug.writeImage(theta1_tmp, "1_theta360_tmp");
         MiscDebug.writeImage(theta2_tmp, "2_theta360_tmp");
+        */
         
             
         //log.info("corners1=" + corners1.toString());
@@ -615,6 +619,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         MiscDebug.plotCorners(img1GreyOrig, corners1, "1_corners");
         MiscDebug.plotCorners(img2GreyOrig, corners2, "2_corners");
 
+        int z = 1;
     }
 
     public void applySteps2(boolean performSkySubtraction) throws IOException,
@@ -652,9 +657,9 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         final boolean performBinning = true;
         int binFactor1 = 1;
 
-        boolean performSegmentation = true;
+        boolean performSegmentation = false;
         int kN = 3;
-        boolean performBinarySegmentation = false;
+        boolean performBinarySegmentation = true;
         if (performBinarySegmentation) {
             kN = 2;
         }
@@ -710,10 +715,10 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         }
 
         if (performBinning) {
-            
+            float minDimension = 300.f;//200.f
             binFactor1 = (int) Math.ceil(
-                Math.max((float)img1GreyOrig.getWidth()/200.f,
-                (float)img2GreyOrig.getHeight()/200.));
+                Math.max((float)img1GreyOrig.getWidth()/minDimension,
+                (float)img2GreyOrig.getHeight()/minDimension));
             smallestGroupLimit /= (binFactor1*binFactor1);
             largestGroupLimit /= (binFactor1*binFactor1);
 
@@ -920,10 +925,57 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         Collections.sort(edges1, new PairIntArrayDescendingComparator());
         Collections.sort(edges2, new PairIntArrayDescendingComparator());
         
-        // remove edges shorter than 20
-        removeEdgesShorterThan(edges1, 20);
-        removeEdgesShorterThan(edges2, 20);
+        removeEdgesShorterThan(edges1, 3);
+        removeEdgesShorterThan(edges2, 3);
+        /*
+        // only keep largest 510?
+        int n1 = (edges1.size() > 10) ? 10 : edges1.size();
+        int n2 = (edges2.size() > 10) ? 10 : edges2.size();
+        edges1 = edges1.subList(0, n1);
+        edges2 = edges2.subList(0, n2);
+        */
         
+Image img0 = ImageIOHelper.convertImage(img1GreyOrig);
+for (int i = 0; i < edges1.size(); ++i) {
+    PairIntArray pa = edges1.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img0, "blob_contours_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");       
+img0 = ImageIOHelper.convertImage(img2GreyOrig);
+for (int i = 0; i < edges2.size(); ++i) {
+    PairIntArray pa = edges2.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeFormatted() + ".png"); 
+
         CurvatureScaleSpaceInflectionEdgeMapper mapper = 
             new CurvatureScaleSpaceInflectionEdgeMapper(edges1, edges2,
             img1GreyOrig.getXRelativeOffset(), img1GreyOrig.getYRelativeOffset(),
@@ -938,7 +990,9 @@ mapper.debugImg2 = img2GreyOrig;
          TransformationParameters transformationParams =
              mapper.createEuclideanTransformation();
 
-         //log.info("params from contours=" + transformationParams.toString());
+         if (transformationParams != null) {
+             log.info("params from contours=" + transformationParams.toString());
+         }
     }
 
     protected void removeEdgesShorterThan(List<PairIntArray> output, 
@@ -1071,4 +1125,5 @@ mapper.debugImg2 = img2GreyOrig;
     public GreyscaleImage getTheta2() {
         return theta2;
     }
+
 }

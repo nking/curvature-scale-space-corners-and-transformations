@@ -1,10 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
-import algorithms.util.ScatterPointPlotterPNG;
-import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
@@ -120,6 +117,10 @@ public class ScaleSpaceCurvature {
            
             scaleSpaceCurve.setK(i, (float)curvature);
             
+            /*
+            if using ScaleSpaceCurve2 to capture the 2nd derivatives, set
+            them here.
+            */
         }
         
         calculateZeroCrossings(scaleSpaceCurve, curve);
@@ -181,9 +182,6 @@ public class ScaleSpaceCurvature {
             if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),
                 scaleSpaceCurve.getK(i))) {
 
-                //float p = (float)i/(float)curve.getN();
-                //System.out.println("sigma=" + resultingSigma 
-                //    + " t=" + p);
                 scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));
             }
         }

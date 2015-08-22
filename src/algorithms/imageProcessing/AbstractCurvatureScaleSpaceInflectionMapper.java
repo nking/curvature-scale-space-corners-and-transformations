@@ -1,11 +1,13 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -170,7 +172,7 @@ public GreyscaleImage debugImg2 = null;
         
         Map<Integer, List<Float>> bestMatchesXYWeights2 = new 
             HashMap<Integer, List<Float>>();
-        
+        //i1=4 i2=3
         boolean alreadySorted = true;
         
         for (int i1 = 0; i1 < contourLists1.size(); ++i1) {
@@ -182,7 +184,23 @@ public GreyscaleImage debugImg2 = null;
             List<CurvatureScaleSpaceContour> bestM2 = null;
             double bestScale = 1;
             double bestCost = Double.MAX_VALUE;
-            
+if (debug){           
+Image img3 = new Image(debugImg1.getWidth(), debugImg1.getHeight());
+for (int j = 0; j < edges1.get(i1).getN(); ++j) {
+    int x = edges1.get(i1).getX(j);
+    int y = edges1.get(i1).getY(j);
+    /*if (i > 0) {
+        x += xOffset;
+        y += yOffset;
+    }*/
+    if (j == 0 || (j == (edges1.get(i1).getN() - 1))) {
+        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
+    } else {
+        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
+    }
+}
+MiscDebug.writeImageCopy(img3, "edge1_" + i1 + "_.png"); 
+        }
             for (int i2 = 0; i2 < contourLists2.size(); ++i2) {
                 
                 List<CurvatureScaleSpaceContour> contours2 = contourLists2.get(i2);
@@ -190,7 +208,24 @@ public GreyscaleImage debugImg2 = null;
                 CSSContourMatcherWrapper matcher = 
                     new CSSContourMatcherWrapper(contours1, contours2, 
                     alreadySorted);
-              
+if (debug && (i1 == 0)) {                
+Image img3 = new Image(debugImg2.getWidth(), debugImg2.getHeight());
+for (int j = 0; j < edges2.get(i2).getN(); ++j) {
+    int x = edges2.get(i2).getX(j);
+    int y = edges2.get(i2).getY(j);
+    /*if (i > 0) {
+        x += xOffset;
+        y += yOffset;
+    }*/
+    if (j == 0 || (j == (edges2.get(i2).getN() - 1))) {
+        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
+    } else {
+        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
+    }
+}
+MiscDebug.writeImageCopy(img3, "edge2_" + i2 + "_.png");     
+}
+//i1=4 i2=3              
                 boolean didMatch = matcher.matchContours();
                 
                 if (!didMatch) {
@@ -214,7 +249,7 @@ public GreyscaleImage debugImg2 = null;
                 }
                 
                 double cost = matcher.getSolvedCost();
-          
+/*          
 try {
 // plot xy of edge
 // plot contour points
@@ -236,7 +271,15 @@ int z = 1;
 } catch (IOException ex) {
     
 }               
-                
+*/                
+if (
+((i1==5) && (i2==4))
+|| ((i1==0) && (i2==1))
+|| ((i1==9) && (i2==12))
+|| ((i1==11) && (i2==11))) {
+log.info("i1=" + i1  + " i2=" + i2 + " solvedScale="  +
+matcher.getSolvedScale() + " cost=" + matcher.getSolvedCost());                
+}
                 if ((cost < minCost) || ((bestM1 != null) && (m1.size() > 2) && (bestM1.size() < 3))) {
                     minCost = cost;
                     bestM1 = m1;
@@ -420,7 +463,7 @@ try {
         */
         MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary,
             indexesSummary, mainIndexSummary);
-        
+       
         int nSimilar = nSimilarSummary[0];
         Integer[] indexes = indexesSummary[0];
         int mainIndex = mainIndexSummary[0];

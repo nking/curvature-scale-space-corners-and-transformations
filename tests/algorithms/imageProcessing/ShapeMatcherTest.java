@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import static algorithms.imageProcessing.FeatureMatcherTest.getBrownAndLoweFeatureCenters90;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;

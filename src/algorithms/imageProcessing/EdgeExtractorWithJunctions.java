@@ -630,7 +630,29 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //         for example, a pixel located in edges(0) at offset=100
         //         would have PairInt(0, 100) as a value.
         Map<Integer, PairInt> theJunctionLocationMap = new HashMap<Integer, PairInt>();
-
+         
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        findJunctions(edges, theJunctionMap, theJunctionLocationMap, w, h);
+         
+        junctionMap = theJunctionMap;
+        junctionLocationMap = theJunctionLocationMap;
+    }
+    
+    /**
+     * Iterate over each point looking for its neighbors and noting when
+     * there are more than 2, and store the found junctions as member variables.
+     * 
+     * runtime complexity is O(N)
+     * 
+     * @param edges 
+     */
+    protected static void findJunctions(List<PairIntArray> edges, 
+        Map<Integer, Set<Integer> > theJunctionMap, 
+        Map<Integer, PairInt> theJunctionLocationMap,
+        int imageWidth, int imageHeight) {
+       
         int n = edges.size();
         
         // key = image pixel index, 
@@ -641,6 +663,9 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         // value = number of times this point is a value in the first theJunctionMap
         Map<Integer, Integer> theJunctionFrequencyMap = new HashMap<Integer, Integer>();
         
+        int w = imageWidth;
+        int h = imageHeight;
+        
         // O(N)
         for (int edgeIdx = 0; edgeIdx < n; edgeIdx++) {
             
@@ -648,15 +673,12 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             
             for (int uIdx = 0; uIdx < edge.getN(); uIdx++) {
                 
-                int pixIdx = img.getIndex(edge.getX(uIdx), edge.getY(uIdx));
+                int pixIdx = (edge.getY(uIdx) * w) + edge.getX(uIdx);
                 
                 pointLocator.put(Integer.valueOf(pixIdx), new PairInt(edgeIdx, 
                     uIdx));
             }
         }
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
         
         // 8 * O(N)
         for (int edgeIdx = 0; edgeIdx < n; edgeIdx++) {
@@ -668,7 +690,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 int col = edge.getX(iEdgeIdx);
                 int row = edge.getY(iEdgeIdx);
                 
-                int uIdx = img.getIndex(col, row);
+                int uIdx = (row * w) + col;
                 
                 Set<PairInt> neighbors = new HashSet<PairInt>();
                                 
@@ -681,7 +703,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                         continue;
                     }
                     
-                    int vIdx = img.getIndex(x, y);
+                    int vIdx = (y * w) + x;
                     
                     PairInt vLoc = pointLocator.get(Integer.valueOf(vIdx));
                     
@@ -701,8 +723,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                         
                         PairIntArray vEdge = edges.get(edge2Idx);
                         
-                        int vIdx = img.getIndex(vEdge.getX(iEdge2Idx), 
-                            vEdge.getY(iEdge2Idx));
+                        int vIdx = (vEdge.getY(iEdge2Idx) * w) + vEdge.getX(iEdge2Idx);
                         
                         Integer key = Integer.valueOf(vIdx);
                         
@@ -783,9 +804,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         for (Integer pixelIndex : remove) {
             theJunctionMap.remove(pixelIndex);
         }
-        
-        junctionMap = theJunctionMap;
-        junctionLocationMap = theJunctionLocationMap;
+       
     }
     
     private Map<Integer, PairIntArray> createIndexedMap(List<PairIntArray> edges) {
@@ -1768,6 +1787,7 @@ long nPointsBefore = countPixelsInEdges(edges);
         
         List<PairIntArray> output = connectPixelsViaDFSForBounds();
         
+if (debug) {        
 Image img0 = ImageIOHelper.convertImage(img);
 for (int i = 0; i < output.size(); ++i) {
     PairIntArray pa = output.get(i);
@@ -1788,9 +1808,10 @@ for (int i = 0; i < output.size(); ++i) {
     }
 }
 MiscDebug.writeImageCopy(img0, "output_before_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");       
-        
+}        
         output = findEdgesIntermediateSteps(output);
-                
+        
+if (debug) {                
 Image img2 = ImageIOHelper.convertImage(img);
 for (int i = 0; i < output.size(); ++i) {
     PairIntArray pa = output.get(i);
@@ -1811,7 +1832,7 @@ for (int i = 0; i < output.size(); ++i) {
     }
 }
 MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-
+}
         if (output.size() > 1) {
             Collections.sort(output, new PairIntArrayDescendingComparator());            
         }
@@ -1825,8 +1846,8 @@ MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTime
             p.setColor(1);
             out = p;
         }
-        
-img2 = ImageIOHelper.convertImage(img);
+if (debug) {        
+Image img2 = ImageIOHelper.convertImage(img);
 for (int j = 0; j < out.getN(); ++j) {
     int x = out.getX(j);
     int y = out.getY(j);
@@ -1837,7 +1858,7 @@ for (int j = 0; j < out.getN(); ++j) {
     }
 }
 MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");        
-        
+}
         return out;
     }
     

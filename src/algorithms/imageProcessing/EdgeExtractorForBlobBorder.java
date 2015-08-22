@@ -5,19 +5,10 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArrayComparator;
-import algorithms.util.PairIntArrayDescendingComparator;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -28,6 +19,8 @@ import java.util.logging.Logger;
  */
 public class EdgeExtractorForBlobBorder {
             
+    protected boolean debug = false;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     public EdgeExtractorForBlobBorder() {
@@ -37,22 +30,25 @@ public class EdgeExtractorForBlobBorder {
     /**
      * NOT READY FOR USE.
      * given the set of contiguous points, find the perimeter of them and order
-     * the points into a closed single pixel width curve.
+     * the points into a closed single pixel width curve.  
+     * use extractAndOrderTheBorder0() instead for now.
      * @param contiguousPoints
      * @param imageWidth
      * @param imageHeight
      * @param discardWhenCavityIsSmallerThanBorder
      * @return 
      */
-    public PairIntArray extractAndOrderTheBorder(Set<PairInt> contiguousPoints,
+    PairIntArray extractAndOrderTheBorder(Set<PairInt> contiguousPoints,
         int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
         
         if (contiguousPoints == null) {
             return null;
         }
-        
+   
+if (debug) {
 MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-        
+}
+
         // ------- define the perimeter of contiguousPoints ----------
 
         PerimeterFinder perimeterFinder = new PerimeterFinder();
@@ -86,15 +82,18 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
             return null;
         }
-       
+        
+if (debug) {       
 MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());
-
+}
         return out;
     }
     
     /**
      * given the set of contiguous points, find the perimeter of them and order
      * the points into a closed single pixel width curve.
+     * (Note, still testing this, but for structures without many junctions,
+     * the results looks good so far.)
      * @param contiguousPoints
      * @param imageWidth
      * @param imageHeight
@@ -107,8 +106,10 @@ MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeForma
         if (contiguousPoints == null) {
             return null;
         }
-        
+ 
+if (debug) {        
 MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
+}
 
         // ---- extract the border pixels from contiguousPoints ------
 
@@ -138,9 +139,11 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
             - nBorder;
                
         log.info("number of border points=" + nBorder + " nCavity=" + nCavity);
-        
+
+if (debug) {        
 MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-        
+}
+
         if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
             return null;
         }
@@ -153,14 +156,16 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);
         
+if (debug) {        
 MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-        
+}        
         SpurRemover spurRm = new SpurRemover();
         
         spurRm.remove(borderPixels, imageWidth, imageHeight);
-        
+
+if (debug) {        
 MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-        
+}        
         //xMin, xMax, yMin, yMax
         int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);
       
@@ -193,7 +198,7 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
             int y = out.getY(i) + yOffset;
             out.set(i, x, y);
         }
-
+if (debug) {
 Image img3 = new Image(imageWidth, imageHeight);
 for (int j = 0; j < out.getN(); ++j) {
     int x = out.getX(j);
@@ -209,7 +214,7 @@ for (int j = 0; j < out.getN(); ++j) {
     }
 }
 MiscDebug.writeImageCopy(img3, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-
+}
         return out;
     }
     
