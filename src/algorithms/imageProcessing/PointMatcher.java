@@ -4146,8 +4146,10 @@ if (compTol == 1) {
             log.info("bestFitNormalized=" + bestFitNormalized.toString());
             similarToBestFitNormalized.add(bestFitNormalized);
         }
-        log.info("bestFit(not normalized)=" + bestFit.toString());
-        similarToBestFitNormalized.add(0, bestFit);
+        if (bestFit != null) {
+            log.info("bestFit(not normalized)=" + bestFit.toString());
+            similarToBestFitNormalized.add(0, bestFit);
+        }
 
         return similarToBestFitNormalized;
     }
@@ -4581,8 +4583,10 @@ if (compTol == 1) {
             log.info("bestFitNormalized=" + bestFitNormalized.toString());
             similarToBestFitNormalized.add(bestFitNormalized);
         }
-        log.info("bestFit(not normalized)=" + bestFit.toString());
-        similarToBestFitNormalized.add(0, bestFit);
+        if (bestFit != null) {
+            log.info("bestFit(not normalized)=" + bestFit.toString());
+            similarToBestFitNormalized.add(0, bestFit);
+        }
 
         return similarToBestFitNormalized;
     }

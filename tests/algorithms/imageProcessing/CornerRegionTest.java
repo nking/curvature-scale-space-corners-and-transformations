@@ -22,7 +22,7 @@ public class CornerRegionTest extends TestCase {
         
         float orientation = cr.getRelativeOrientationInDegrees();
         
-        assertTrue(Math.abs(orientation - 24) < 1);
+        assertTrue(Math.abs(orientation - 24) < 2);
     }
     
     public void test1() throws Exception {

@@ -4,6 +4,7 @@ import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.logging.Logger;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,22 +14,13 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class InflectionMapperTwoObjectTest {
+public class InflectionMapperTwoObjectTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     public InflectionMapperTwoObjectTest() {
     }
     
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-
-    @Test
     public void testMap() throws Exception {
         
         String rootName = "closed_curve_translate_scale_rotate";
@@ -75,7 +67,8 @@ public class InflectionMapperTwoObjectTest {
 
                 mapper.useDebugMode();
 
-                mapper.setToRefineTransformations();
+                //TODO: this needs revision:
+                //mapper.setToRefineTransformations();
 
                 TransformationParameters transformationParams = 
                     mapper.createEuclideanTransformation();

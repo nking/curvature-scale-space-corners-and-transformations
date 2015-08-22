@@ -178,10 +178,10 @@ public class Gaussian1D {
     }
     
     protected static float[] getBinomialKernelSigmaZeroPointSevenOne() {
-        // 1 2 1,  norm = 1./2^2 = 0.25... actually was 0.33333
-        return new float[]{0.25f, 0.5f, 0.25f};
-        //return new float[]{0.3333333333333333f, 0.6666666666666666f,
-        //    0.3333333333333333f};
+        // 1 2 1
+        //return new float[]{0.25f, 0.5f, 0.25f};
+        return new float[]{0.3333333333333333f, 0.6666666666666666f,
+            0.3333333333333333f};
     }
     
     protected static float[] getBinomialKernelSigmaOne() {

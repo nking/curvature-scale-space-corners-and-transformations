@@ -212,9 +212,15 @@ public class AngleUtil {
                II  |  I
                    90
         */
-         
-        rot0 = rot0 % 360;
-        rot1 = rot1 % 360;
+        
+        // prefer to keep 360 instead of 0 because some of the invokers of this
+        // method might prefer a fraction times results to be > 0
+        if (rot0 != 360) {
+            rot0 = rot0 % 360;
+        }
+        if (rot1 != 360) {
+            rot1 = rot1 % 360;
+        }
         
         double twoPI;
         int q0, q1;

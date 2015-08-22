@@ -417,10 +417,10 @@
         </javadoc>
     </target>
 
-    <target name="runTests" if="junit.present" depends="clean,compileTests,JUnit">
+    <target name="runTests" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.out.dir}" />
-        <junit fork="yes" showoutput="false" filtertrace="off" 
+        <junit fork="yes" showoutput="true" filtertrace="off" 
             printsummary="yes" haltonerror="true" haltonfailure="true">
             
             <assertions enablesystemassertions="true">
@@ -439,6 +439,8 @@
 
             <jvmarg value="-enableassertions" />
 
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
                     <include name="**/*Test.class"/>

@@ -183,9 +183,10 @@ public class BinSegmentationHelper {
         }
 
         if (performBinning) {
+            float upperLimit = 300.f;
             binFactor1 = (int) Math.ceil(
-                Math.max((float)img1GreyOrig.getWidth()/200.f,
-                (float)img2GreyOrig.getHeight()/200.));
+                Math.max((float)img1GreyOrig.getWidth()/upperLimit,
+                (float)img2GreyOrig.getHeight()/upperLimit));
             smallestGroupLimit /= (binFactor1*binFactor1);
             largestGroupLimit /= (binFactor1*binFactor1);
 
@@ -654,14 +655,14 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         img1GreyOrig = img1Orig.copyToGreyscale();
         img2GreyOrig = img2Orig.copyToGreyscale();
 
-        final boolean performBinning = true;
+        final boolean performBinning = false;
         int binFactor1 = 1;
 
-        boolean performSegmentation = false;
-        int kN = 3;
+        boolean performSegmentation = true;
+        int kN2 = 3;
         boolean performBinarySegmentation = true;
         if (performBinarySegmentation) {
-            kN = 2;
+            kN2 = 2;
         }
 
         /*
@@ -735,8 +736,8 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         }
 
         if (performSegmentation || performBinarySegmentation) {
-            imageProcessor.applyImageSegmentation(img1GreyOrig, kN);
-            imageProcessor.applyImageSegmentation(img2GreyOrig, kN);
+            imageProcessor.applyImageSegmentation(img1GreyOrig, kN2);
+            imageProcessor.applyImageSegmentation(img2GreyOrig, kN2);
         }
 
         // == contiguous regions within size limits become blobs of interest,

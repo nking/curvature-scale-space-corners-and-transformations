@@ -29,6 +29,7 @@ public class ShapeMatcher {
     }
 
     /**
+     * NOT READY FOR USE
     method to extract general shapes from the images and compare them in order to 
     match points.  It returns a fit to a rough Euclidean transformation.
     NOTE that the images may need pre-processing steps before using this.  For example,
@@ -401,24 +402,6 @@ public class ShapeMatcher {
                 //MiscDebug.printCornerRegion(cr1);
                 //log.info("corner region2:");
                 //MiscDebug.printCornerRegion(cr2);
-//DEBUG before placing in tests 
-log.info("corner regions:");
-StringBuilder sb = new StringBuilder();
-for (int iii = 0; iii < cr1.length; ++iii) {
-    if ((cr1[iii] == null) || (cr2[iii] == null)) {
-        continue;
-    }
-    /*
-    try {
-        MiscDebug.display(cr1[iii], cr2[iii], img1Grey, img2Grey, 
-            String.valueOf(iii), 20);
-    } catch (Exception e) {
-        
-    }*/
-    sb.append("1) ").append(cr1[iii].toString()).append(" 2)").append(cr2[iii].toString());
-    int z = 1;
-}
-log.info(sb.toString());
                 /*
                 Map<PairInt, List<FeatureComparisonStat>> similar = 
                     findSimilarFeatures(

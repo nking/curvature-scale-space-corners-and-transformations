@@ -134,7 +134,8 @@ public class SunFinderTest extends TestCase {
                     Set<PairInt> exclude = new HashSet<PairInt>();
                     exclude.addAll(removedSets.getHighContrastRemoved());
                     int nAdded = skylineExtractor.addImageBoundaryEmbeddedSkyIfSimilar(
-                        skyPoints, exclude, img1, xOffset, yOffset, removedSets);
+                        skyPoints, exclude, img1, xOffset, yOffset, removedSets,
+                        !sFinder.getSunPoints().isEmpty());
 
                     sFinder.correctSkylineForSun(skyPoints, img1, xOffset,
                         yOffset, helper.getGradientXY());

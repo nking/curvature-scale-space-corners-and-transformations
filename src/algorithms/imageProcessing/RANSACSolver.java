@@ -33,6 +33,7 @@ public class RANSACSolver {
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
+     * NOT COMPLETELY READY FOR USE YET, BUT CLOSE
      * calculate the epipolar projection among the given points with the
      * assumption that some of the points in the matched lists are not
      * true matches.

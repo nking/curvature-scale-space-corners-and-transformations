@@ -184,7 +184,7 @@ public GreyscaleImage debugImg2 = null;
             List<CurvatureScaleSpaceContour> bestM2 = null;
             double bestScale = 1;
             double bestCost = Double.MAX_VALUE;
-if (debug){           
+if (debug && (debugImg1 != null)){           
 Image img3 = new Image(debugImg1.getWidth(), debugImg1.getHeight());
 for (int j = 0; j < edges1.get(i1).getN(); ++j) {
     int x = edges1.get(i1).getX(j);
@@ -208,7 +208,7 @@ MiscDebug.writeImageCopy(img3, "edge1_" + i1 + "_.png");
                 CSSContourMatcherWrapper matcher = 
                     new CSSContourMatcherWrapper(contours1, contours2, 
                     alreadySorted);
-if (debug && (i1 == 0)) {                
+if (debug && (i1 == 0) && (debugImg2 != null)){               
 Image img3 = new Image(debugImg2.getWidth(), debugImg2.getHeight());
 for (int j = 0; j < edges2.get(i2).getN(); ++j) {
     int x = edges2.get(i2).getX(j);
@@ -225,7 +225,7 @@ for (int j = 0; j < edges2.get(i2).getN(); ++j) {
 }
 MiscDebug.writeImageCopy(img3, "edge2_" + i2 + "_.png");     
 }
-//i1=4 i2=3              
+
                 boolean didMatch = matcher.matchContours();
                 
                 if (!didMatch) {
@@ -272,14 +272,7 @@ int z = 1;
     
 }               
 */                
-if (
-((i1==5) && (i2==4))
-|| ((i1==0) && (i2==1))
-|| ((i1==9) && (i2==12))
-|| ((i1==11) && (i2==11))) {
-log.info("i1=" + i1  + " i2=" + i2 + " solvedScale="  +
-matcher.getSolvedScale() + " cost=" + matcher.getSolvedCost());                
-}
+
                 if ((cost < minCost) || ((bestM1 != null) && (m1.size() > 2) && (bestM1.size() < 3))) {
                     minCost = cost;
                     bestM1 = m1;

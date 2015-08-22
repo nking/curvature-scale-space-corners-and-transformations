@@ -70,11 +70,16 @@ public class RainbowFinderTest extends TestCase {
                 helper.getCannyEdgeFilterSettings(), outputSkyCentroid, 
                 removedSets);    
         
+       
+            GroupPixelColors allSkyColor = new GroupPixelColors(points,
+                img1, helper.getGradientXY().getXRelativeOffset(), 
+                helper.getGradientXY().getYRelativeOffset());
+            
             rFinder.findRainbowInImage(points, 
                 removedSets.getReflectedSunRemoved(), img1, 
                 helper.getXOffset(), helper.getYOffset(), 
                 helper.getTheta().getWidth(), helper.getTheta().getHeight(), 
-                skyIsDarkGrey, removedSets);
+                skyIsDarkGrey, allSkyColor, removedSets);
             
             log.info(fileName + " rainbowCoeff=" + 
                 Arrays.toString(rFinder.getRainbowCoeff())
@@ -181,7 +186,7 @@ public class RainbowFinderTest extends TestCase {
                     removedSets.getReflectedSunRemoved(), img2, 
                     helper.getXOffset(), helper.getYOffset(), 
                     helper.getTheta().getWidth(), helper.getTheta().getHeight(), 
-                    skyIsDarkGrey, removedSets);
+                    skyIsDarkGrey, allSkyColor, removedSets);
 
                 rainbowPoints = rFinder.getRainbowPoints();
                 if (fileName.equals("brown_lowe_2003_image1.jpg")) {

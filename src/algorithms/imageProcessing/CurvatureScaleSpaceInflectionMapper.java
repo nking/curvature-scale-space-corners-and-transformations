@@ -57,7 +57,7 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         }
                 
         //TODO: temporarily disabling the refinement while fixing PointMatcher
-        if (doRefineTransformations) {
+        if (false && doRefineTransformations) {
             
             boolean reverseDatasetOrder = bestFittingParameters.getScale() < 1.0;
             

@@ -239,7 +239,7 @@ public class SkylineExtractorTest extends TestCase {
             //test.testOrderByIncreasingXThenY();
             //test.testPopulatePolygon();
             //test.testPopulatePolygon2();
-            test.testExtractAndSmoothSkylinePoints();
+            //test.testExtractAndSmoothSkylinePoints();
         
         } catch(Exception e) {
             e.printStackTrace();

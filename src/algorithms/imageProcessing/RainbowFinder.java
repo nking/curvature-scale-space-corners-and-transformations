@@ -67,12 +67,13 @@ public class RainbowFinder {
         Set<PairInt> reflectedSunRemoved,
         ImageExt colorImg, int xOffset, int yOffset, 
         int imageWidth, int imageHeight,
-        boolean skyIsDarkGrey, RemovedSets removedSets) {
-    
+        boolean skyIsDarkGrey, GroupPixelColors allSkyColor, 
+        RemovedSets removedSets) {
+
         rainbowCoeff = findRainbowPoints(skyPoints, 
             removedSets.getReflectedSunRemoved(), colorImg, 
             xOffset, yOffset, imageWidth, imageHeight,
-            skyIsDarkGrey, outputRainbowPoints);
+            skyIsDarkGrey, allSkyColor, outputRainbowPoints);
 
         if (outputRainbowPoints.size() < 10) {
             outputRainbowPoints.clear();
@@ -273,7 +274,7 @@ public class RainbowFinder {
         Set<PairInt> reflectedSunRemoved,
         ImageExt colorImg, int xOffset, int yOffset, 
         int imageWidth, int imageHeight,
-        boolean skyIsDarkGrey,
+        boolean skyIsDarkGrey, GroupPixelColors allSkyColor,
         Set<PairInt> outputRainbowPoints) {
 
         Set<PairInt> rainbowPoints = findRainbowColoredPoints(colorImg, 
@@ -285,6 +286,12 @@ public class RainbowFinder {
         
         if (rainbowPoints.size() < 12) {
             return null;
+        }
+        
+        if (rainbowPoints.size() > 0.25*(colorImg.getWidth()*colorImg.getHeight())) {
+            if ((allSkyColor.getAvgBlue()/allSkyColor.getAvgRed()) < 0.5) {
+                return null;
+            }
         }
         
         // fit a polynomial to rainbow points.  
@@ -543,9 +550,7 @@ MiscDebug.getCurrentTimeFormatted());
                 }
                 
                 int idx = colorImg.getInternalIndex(col, row);
-if (col==295 && row>= 173 && row <= 175) {
-  int z = 1;
-}      
+      
                 float cieX = colorImg.getCIEX(idx);
                 float cieY = colorImg.getCIEY(idx);
 

@@ -398,36 +398,6 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> points, Set<PairInt> excludeThesePoints, 
-        GreyscaleImage gradientXY) returning() :
-        execution(private void SkylineExtractor.growZeroValuePoints(Set<PairInt>, 
-        Set<PairInt>, GreyscaleImage))
-        && args(points, excludeThesePoints, gradientXY)
-	    && target(algorithms.imageProcessing.SkylineExtractor) {
-
-        Object[] args = (Object[])thisJoinPoint.getArgs();
-        GreyscaleImage gXY = (GreyscaleImage)args[2];
-
-        GreyscaleImage mask = gXY.createWithDimensions();
-        mask.fill(250);
-
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            mask.setValue(x, y, 0);
-        }
-
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_gxy_" + outImgNum + ".png", mask);
-        } catch (IOException e) {
-             e.printStackTrace();
-            log2.severe("ERROR: " + e.getMessage());
-        }
-
-    }
-
     before(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
         ImageExt clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey,
         Set<PairInt> sunPoints) :
@@ -550,13 +520,14 @@ private static int n3 = 0;
     after(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
         ImageExt colorImg, int xOffset, int yOffset,
         int imageWidth, int imageHeight,
-        boolean skyIsDarkGrey, SkylineExtractor.RemovedSets removedSets)
+        boolean skyIsDarkGrey, GroupPixelColors allSkyColor,
+        SkylineExtractor.RemovedSets removedSets)
         returning() :
         execution(public void RainbowFinder.findRainbowInImage(
         Set<PairInt>, Set<PairInt>, ImageExt, int, int,
-        int, int, boolean, SkylineExtractor.RemovedSets) )
+        int, int, boolean, GroupPixelColors, SkylineExtractor.RemovedSets) )
         && args(skyPoints, reflectedSunRemoved, colorImg, xOffset, yOffset, 
-        imageWidth, imageHeight, skyIsDarkGrey, removedSets)
+        imageWidth, imageHeight, skyIsDarkGrey, allSkyColor, removedSets)
 	    && target(algorithms.imageProcessing.RainbowFinder) {
 
         Object obj = thisJoinPoint.getThis();
@@ -637,7 +608,7 @@ private static int n3 = 0;
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_rainbow_colors_" + outImgNum + ".png", clr);
 
-            MiscDebug.plotSkyColor(rainbowColorPoints, colorImg, xOffset, yOffset);
+            //MiscDebug.plotSkyColor(rainbowColorPoints, colorImg, xOffset, yOffset);
 
         } catch (IOException e) {
              e.printStackTrace();
@@ -783,20 +754,17 @@ private static int n3 = 0;
         }
     }
 
-    after(GreyscaleImage gradientXY, Set<PairInt> skyPoints, 
-        Set<PairInt> excludeThesePoints)
+    after(GreyscaleImage gradientXY)
         returning() :
         execution(public GreyscaleImage SkylineExtractor.extractSkyFromGradientXY(
-            GreyscaleImage, Set<PairInt>, Set<PairInt>) )
-        && args(gradientXY, skyPoints, excludeThesePoints)
+            GreyscaleImage) )
+        && args(gradientXY)
 	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = gradientXY.copyImageToGreen();
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
-
-            ImageIOHelper.addToImage(skyPoints, 0, 0, clr);
 
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_from_gradientXY_" + outImgNum + ".png", clr);
@@ -866,63 +834,6 @@ private static int n3 = 0;
             log2.severe("ERROR: " + e.getMessage());
         }
 
-    }
-
-    after() returning() 
-        : execution(public void algorithms.imageProcessing.AbstractCurvatureScaleSpaceInflectionMapper*.initialize() ) 
-        && args()
-        && target(algorithms.imageProcessing.AbstractCurvatureScaleSpaceInflectionMapper) {
-    
-        Object obj = thisJoinPoint.getThis();
-
-        if (!(obj instanceof AbstractCurvatureScaleSpaceInflectionMapper)) {
-            return;
-        }
-
-        AbstractCurvatureScaleSpaceInflectionMapper instance = 
-            (AbstractCurvatureScaleSpaceInflectionMapper)obj;
-
-        List<CurvatureScaleSpaceContour> c1 = instance.getContours1();
-        List<CurvatureScaleSpaceContour> c2 = instance.getContours2();
-        PairIntArray xy1 = new PairIntArray();
-        PairIntArray xy2 = new PairIntArray();
-
-        for (int i = 0; i < c1.size(); i++) {
-            CurvatureScaleSpaceImagePoint[] cp = c1.get(i).getPeakDetails();
-            for (int j = 0; j < cp.length; j++) {
-                int x = cp[j].getXCoord() + instance.getOffsetImageX1();
-                int y = cp[j].getYCoord() + instance.getOffsetImageY1();
-                xy1.add(x, y);
-            }
-        }
-        for (int i = 0; i < c2.size(); i++) {
-            CurvatureScaleSpaceImagePoint[] cp = c2.get(i).getPeakDetails();
-            for (int j = 0; j < cp.length; j++) {
-                int x = cp[j].getXCoord() + instance.getOffsetImageX2();
-                int y = cp[j].getYCoord() + instance.getOffsetImageY2();
-                xy2.add(x, y);
-            }
-        }
-
-        try {
-
-            Image img1 = instance.getOriginalImage1().copyImage();
-            
-            ImageIOHelper.addCurveToImage(xy1, img1, 2, 255, 0, 0);
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/contour_peaks1.png", img1);
-
-            Image img2 = instance.getOriginalImage2().copyImage();
-            
-            ImageIOHelper.addCurveToImage(xy2, img2, 2, 255, 0, 0);
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/contour_peaks2.png", img2);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            log2.severe("ERROR: " + e.getMessage());
-        }
     }
 
     before(List<PairIntArray> edges) 

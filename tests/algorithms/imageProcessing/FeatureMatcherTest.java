@@ -28,7 +28,7 @@ public class FeatureMatcherTest extends TestCase {
         PairIntArray points1, points2;
         String fileName1, fileName2;
         
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 1;/*3;*/ ++i) {
             points1 = new PairIntArray();
             points2 = new PairIntArray();
             switch(i) {
@@ -57,9 +57,7 @@ public class FeatureMatcherTest extends TestCase {
     
     protected void runControlledListMatching(String fileName1, String fileName2,
         PairIntArray points1, PairIntArray points2) throws Exception {
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
+        
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 

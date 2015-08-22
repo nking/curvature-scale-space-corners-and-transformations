@@ -2,34 +2,22 @@ package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class CurvatureScaleSpaceInflectionMapperTest {
+public class CurvatureScaleSpaceInflectionMapperTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     public CurvatureScaleSpaceInflectionMapperTest() {
     }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
        
-    @Test
     public void testTransformerGreyscaleImage() throws Exception {
         
         String[] rotDegrees = new String[]{"225"};
@@ -170,7 +158,6 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         assertTrue(nBin < 7);
     }
     
-    @Test
     public void testTransformerImage() throws Exception {
         
         String[] rotDegrees = new String[]{"225"};
