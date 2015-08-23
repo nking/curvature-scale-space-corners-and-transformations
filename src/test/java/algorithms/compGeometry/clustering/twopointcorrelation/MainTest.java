@@ -3,6 +3,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import java.io.File;
 import java.net.URL;
 import java.util.Date;
+import java.util.Arrays;
 
 import junit.framework.TestCase;
 
@@ -35,9 +36,15 @@ public class MainTest extends TestCase {
         
         String projectPath = filePath.substring(0, idx + srchFor.length());
 
-        filePath = projectPath + sep + "tmpdata" + sep + "dbscan.txt";
+        filePath = projectPath + sep + "data" + sep + "dbscan.txt";
         
-        assertTrue(new File(filePath).exists());
+        boolean exists = new File(filePath).exists();
+
+        if (!exists) {
+            System.out.println("could not find " + filePath);
+        }
+
+        assertTrue(exists);
                 
         String[] args = new String[]{"--file", filePath};
         
@@ -48,6 +55,8 @@ public class MainTest extends TestCase {
         long lastModified = file.exists() ? file.lastModified() : 0;
         file.delete();
         
+        System.out.println("running Main with args=" + Arrays.toString(args));
+
         Main.main(args);
                 
         file = new File(expectedOutputPath);
