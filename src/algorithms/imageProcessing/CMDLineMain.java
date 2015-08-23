@@ -22,14 +22,12 @@ public class CMDLineMain {
     
     public static void printUsage() {
                 
-        System.out.print(eol + "There are two classes to invoke code from the ");
+        System.out.print(eol + "There are currently two wrapper classes to invoke code from the ");
         System.out.println("command line.");
-        System.out.println("One for the corner deteector and the other for the image transformer via");
-        System.out.println("inflection points.");
+        System.out.println(eol + "Image Transformer (NOT AVAILABLE):");
+        System.out.println("     java -classpath 'insert path to scalespace.jar' algorithms.imageProcessing.CMDLineInflectionUtil");
         System.out.println(eol + "Corner Detector:");
         System.out.println("     java -classpath 'insert path to scalespace.jar' algorithms.imageProcessing.CMDLineCornerDetector");
-        System.out.println(eol + "Image Transformer/Inflection Points Detector:");
-        System.out.println("     java -classpath 'insert path to scalespace.jar' algorithms.imageProcessing.CMDLineInflectionUtil");
         System.out.print(eol);
     }
     

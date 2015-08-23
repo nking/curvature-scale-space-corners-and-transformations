@@ -224,6 +224,12 @@ public class CMDLineInflectionUtil {
     }
     
     public static void main(String[] args) {
+        
+        if (true) {
+            System.out.println("temporarily disabled while refactoring this..." 
+            + " see InflectionMapperOneObjectTest for the contour matching portion that solves for scale.");
+        }
+        
         System.out.println(Arrays.toString(args));
         if (args == null || args.length == 0) {
             printUsage();
