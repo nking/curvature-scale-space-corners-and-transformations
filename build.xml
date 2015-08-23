@@ -108,8 +108,8 @@
         <path refid="compile.classpath"/>
     </path>
     <path id="aspect.classpath">
-        <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
-        <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+        <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
+        <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
         <pathelement location="${aspects.dir}/META-INF/"/>
     </path>
 
@@ -275,7 +275,7 @@
         <record name="${logfile}" append="yes" loglevel="debug"/>
 
         <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
-            classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+            classpath="${lib.dir}/aspectjtools-1.8.0.jar" />
 
         <!-- compile aspect .aj files -->
         <fileset id="ajFileSet" dir="${aspects.dir}" includes="**/*.aj"/>
@@ -297,7 +297,7 @@
                 <path refid="weave.path"/>
             </inpath>
             <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
             </classpath>
         </iajc>
 
@@ -345,7 +345,7 @@
         </fail>
 
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
-            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="aspect.classpath"/>
