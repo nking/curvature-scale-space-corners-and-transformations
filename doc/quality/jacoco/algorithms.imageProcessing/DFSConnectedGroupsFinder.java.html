@@ -99,7 +99,7 @@ public class DFSConnectedGroupsFinder {
                 }
                 
 <span class="fc bfc" id="L101" title="All 2 branches covered.">                for (int vY = (uY - 1); vY &lt;= (uY + 1); vY++) {</span>
-<span class="fc bfc" id="L102" title="All 4 branches covered.">                    if ((vY &lt; 0) || (vY &gt; (imageHeight - 1))) {</span>
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">                    if ((vY &lt; 0) || (vY &gt; (imageHeight - 1))) {</span>
 <span class="fc" id="L103">                        continue;</span>
                     }
                     
@@ -129,7 +129,7 @@ public class DFSConnectedGroupsFinder {
             
 <span class="fc bfc" id="L130" title="All 4 branches covered.">            if (!foundANeighbor &amp;&amp; (minimumNumberInCluster == 1)) {</span>
                 
-                //process(uPoint);
+<span class="fc" id="L132">                process(uPoint);</span>
             }
 <span class="fc" id="L134">        }</span>
 <span class="fc" id="L135">    }</span>
@@ -171,21 +171,21 @@ public class DFSConnectedGroupsFinder {
 
     protected void process(PairInt uPoint) {
                 
-<span class="nc" id="L174">        Integer groupId = pointToGroupMap.get(uPoint);</span>
+<span class="fc" id="L174">        Integer groupId = pointToGroupMap.get(uPoint);</span>
         
-<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (groupId == null) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (groupId == null) {</span>
                         
-<span class="nc" id="L178">            groupId = Integer.valueOf(groupMembership.size());</span>
+<span class="fc" id="L178">            groupId = Integer.valueOf(groupMembership.size());</span>
             
-<span class="nc" id="L180">            pointToGroupMap.put(uPoint, groupId);</span>
+<span class="fc" id="L180">            pointToGroupMap.put(uPoint, groupId);</span>
             
-<span class="nc" id="L182">            Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L183">            set.add(uPoint);</span>
+<span class="fc" id="L182">            Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L183">            set.add(uPoint);</span>
             
-<span class="nc" id="L185">            groupMembership.add(set);</span>
+<span class="fc" id="L185">            groupMembership.add(set);</span>
         }
         
-<span class="nc" id="L188">    }</span>
+<span class="fc" id="L188">    }</span>
     
     public List&lt;Set&lt;PairInt&gt; &gt; getGroupMembershipList() {
 <span class="fc" id="L191">        return new ArrayList&lt;Set&lt;PairInt&gt; &gt;(groupMembership);</span>

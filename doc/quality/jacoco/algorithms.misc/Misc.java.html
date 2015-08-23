@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Misc.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">Misc.java</span></div><h1>Misc.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Stack;
+
+/**
+ * miscellaneous boiler plate code
+ * 
+ * @author nichole
+ */
+<span class="nc" id="L18">public class Misc {</span>
+    
+<span class="fc" id="L20">    public static final int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
+<span class="fc" id="L21">    public static final int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
+        
+    public static Set&lt;PairInt&gt; convert(PairIntArray points) {
+        
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L26">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+        }
+        
+<span class="nc" id="L29">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
+<span class="nc" id="L32">            out.add(new PairInt(points.getX(i), points.getY(i)));</span>
+        }
+        
+<span class="nc" id="L35">        return out;</span>
+    }
+    
+    public static int calculateSumOfEightNeighbors(GreyscaleImage img, int x, int y) {
+        
+<span class="nc" id="L40">        int sum = 0;</span>
+        
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        for (int i = 0; i &lt; dx8.length; ++i) {</span>
+<span class="nc" id="L43">            int x1 = x + dx8[i];</span>
+<span class="nc" id="L44">            int y1 = y + dy8[i];</span>
+<span class="nc bnc" id="L45" title="All 6 branches missed.">            if (x1 &lt; 0 || y1 &lt; 0 || (x1 &gt; (img.getWidth() - 1)) || </span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">                (y1 &gt; (img.getHeight() - 1))) {</span>
+<span class="nc" id="L47">                continue;</span>
+            }
+<span class="nc" id="L49">            sum += img.getValue(x, y);</span>
+        }
+        
+<span class="nc" id="L52">        return sum;</span>
+    }
+    
+    /**
+     * create x and y offsets for the neighbor points within d pixel radius.
+     * The result is a two-dimensional array of length (2*d+1)^2 with the first
+     * dimension being the x array and the 2nd dimension being the y array.
+     * Note that the offset of (0,0) is in the middle of the arrays.
+     * @param d the half radius of square of offsets, beginning at
+     * (-d,-d), (-d, -d+1),... to make a (2d+1)^2 two dimensional array 
+     * of offsets.
+     * @return 
+     */
+    public static float[][] createNeighborOffsets(int radiusFromCenter) {
+        
+        //TODO: consider changing to use one dimensional array
+        
+<span class="fc" id="L69">        int n = 2*radiusFromCenter + 1;</span>
+        
+<span class="fc" id="L71">        float[][] xyout = new float[n*n][];</span>
+                
+<span class="fc" id="L73">        int count = 0;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int x = -radiusFromCenter; x &lt;= radiusFromCenter; ++x) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (int y = -radiusFromCenter; y &lt;= radiusFromCenter; ++y) {</span>
+                
+<span class="fc" id="L77">                xyout[count] = new float[]{x, y};</span>
+                
+<span class="fc" id="L79">                count++;</span>
+            }
+        }
+    
+<span class="fc" id="L83">        return xyout;</span>
+    }
+
+    public static Set&lt;Integer&gt; findNeighborIndexes(PairIntArray edge, int idx) {
+        
+<span class="nc" id="L88">        Set&lt;Integer&gt; indexes = new HashSet&lt;Integer&gt;();</span>
+        
+<span class="nc" id="L90">        int x = edge.getX(idx);</span>
+<span class="nc" id="L91">        int y = edge.getY(idx);</span>
+        
+<span class="nc" id="L93">        return findNeighborIndexes(edge, x, y);</span>
+    }
+    public static Set&lt;Integer&gt; findNeighborIndexes(PairIntArray edge, int x, int y) {
+        
+<span class="nc" id="L97">        Set&lt;Integer&gt; indexes = new HashSet&lt;Integer&gt;();</span>
+        
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); ++i) {</span>
+<span class="nc" id="L100">            int x2 = edge.getX(i);</span>
+<span class="nc" id="L101">            int y2 = edge.getY(i);</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">            if ((x2 == x) &amp;&amp; (y2 == y)) {</span>
+<span class="nc" id="L103">                continue;</span>
+            }
+<span class="nc" id="L105">            int xDiff = Math.abs(x2 - x);</span>
+<span class="nc" id="L106">            int yDiff = Math.abs(y2 - y);</span>
+<span class="nc bnc" id="L107" title="All 4 branches missed.">            if ((xDiff &lt; 2) &amp;&amp; (yDiff &lt; 2)) {</span>
+<span class="nc" id="L108">                indexes.add(Integer.valueOf(i));</span>
+            }
+        }
+        
+<span class="nc" id="L112">        return indexes;</span>
+    }
+   
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

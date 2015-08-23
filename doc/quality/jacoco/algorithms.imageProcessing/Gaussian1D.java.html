@@ -178,23 +178,22 @@
     }
     
     protected static float[] getBinomialKernelSigmaZeroPointSevenOne() {
-        // 1 2 1,  norm = 1./2^2 = 0.25... actually was 0.33333
+        // 1 2 1
         //return new float[]{0.25f, 0.5f, 0.25f};
 <span class="nc" id="L183">        return new float[]{0.3333333333333333f, 0.6666666666666666f,</span>
             0.3333333333333333f};
     }
     
     protected static float[] getBinomialKernelSigmaOne() {
-        // 1 4 6 4 1, norm=1/2^4=0.0625..correction is 1./15  
-<span class="fc" id="L189">        return new float[]{0.06666666666666667f, 0.26666666666666666f, 0.4f, </span>
-            0.26666666666666666f, 0.06666666666666667f};
+        // 1 4 6 4 1,
+<span class="fc" id="L189">        return new float[]{0.0625f, 0.25f, 0.375f, 0.25f, 0.0625f};</span>
     }
     
     protected static float[] getBinomialKernelSigmaOneSQRT2() {
         // 1     8    28       56      70        56      28      8     1
         // norm = 1./2^8 = 0.00390625
-<span class="fc" id="L196">        float a = 1.f/256.f;</span>
-<span class="fc" id="L197">        return new float[]{a*1, a*8, a*28, a*56, </span>
+<span class="fc" id="L195">        float a = 1.f/256.f;</span>
+<span class="fc" id="L196">        return new float[]{a*1, a*8, a*28, a*56, </span>
             a*70, a*56, a*28, a*8, 
             a*1};
     }
@@ -203,13 +202,13 @@
         // 1  9    36     84      126            126     84      36      9     1
         // edited to:
         // 1  5    22     66      126   &lt;160&gt;    126     66      22      5     1
-<span class="fc" id="L206">        float a = 1.f/600.f;</span>
-<span class="fc" id="L207">        return new float[]{a, 5*a, 22*a, 66*a, 126*a, 160*a, 126*a, 66*a, 22*a,</span>
+<span class="fc" id="L205">        float a = 1.f/600.f;</span>
+<span class="fc" id="L206">        return new float[]{a, 5*a, 22*a, 66*a, 126*a, 160*a, 126*a, 66*a, 22*a,</span>
             5*a, a};
     }
   
     protected static float[] getKernelSigmaTwo() {
-<span class="fc" id="L212">        return new float[]{(float)6.691511E-5, (float)4.3634136E-4, </span>
+<span class="fc" id="L211">        return new float[]{(float)6.691511E-5, (float)4.3634136E-4, </span>
             0.0022159242f, 0.008764151f, 0.026995484f, 0.0647588f, 0.12098537f, 
             0.17603266f, 0.19947115f, 0.17603266f, 0.12098537f, 0.0647588f, 
             0.026995484f, 0.008764151f, 0.0022159242f, (float)4.3634136E-4, 
@@ -217,7 +216,7 @@
     }
     
     protected static float[] getKernelSigmaTwoSQRT2() {
-<span class="fc" id="L220">        return new float[]{(float)7.3284624E-5, (float)2.722854E-4, </span>
+<span class="fc" id="L219">        return new float[]{(float)7.3284624E-5, (float)2.722854E-4, </span>
             (float)8.927895E-4, 0.002583372f, 0.006596873f, 0.014866283f, 
             0.029565137f, 0.051888432f, 0.08036638f, 0.10984783f, 0.13250177f, 
             0.1410474f, 0.13250177f, 0.10984783f, 0.08036638f, 0.051888432f,
@@ -226,7 +225,7 @@
     }
     
     protected static float[] getKernelSigmaThree() {
-<span class="fc" id="L229">        return new float[]{(float)4.4610075E-5, (float)1.6009022E-4, </span>
+<span class="fc" id="L228">        return new float[]{(float)4.4610075E-5, (float)1.6009022E-4, </span>
             (float)5.1409315E-4, 0.0014772828f, 0.003798662f, 0.008740629f, 
             0.01799699f, 0.033159047f, 0.054670025f, 0.08065691f, 0.10648267f, 
             0.12579441f, 0.13298076f, 0.12579441f, 0.10648267f, 0.08065691f, 
@@ -236,7 +235,7 @@
     }
     
     protected static float[] getKernelSigmaFour() {
-<span class="fc" id="L239">        return new float[]{(float)8.814892E-5, (float)2.1817068E-4, </span>
+<span class="fc" id="L238">        return new float[]{(float)8.814892E-5, (float)2.1817068E-4, </span>
             (float)5.07262E-4, 0.0011079621f, 0.0022733908f, 0.0043820753f, 
             0.007934913f, 0.013497742f, 0.02156933f, 0.0323794f, 0.04566227f, 
             0.060492683f, 0.075284354f, 0.08801633f, 0.09666703f, 0.09973557f, 
@@ -247,7 +246,7 @@
     }
     
     protected static float[] getKernelSigmaFourSQRT2() {
-<span class="fc" id="L250">        return new float[]{(float)3.6642312E-5, (float)7.1742164E-5, </span>
+<span class="fc" id="L249">        return new float[]{(float)3.6642312E-5, (float)7.1742164E-5, </span>
             (float)1.361427E-4, (float)2.5040476E-4, (float)4.4639476E-4, 
             (float)7.713009E-4, 0.001291686f, 0.0020966139f, 0.0032984365f, 
             0.0050295154f, 0.0074331416f, 0.010647485f, 0.014782568f, 
@@ -262,7 +261,7 @@
     }
     
     protected static float[] getKernelSigmaEight() {
-<span class="fc" id="L265">        return new float[]{(float)4.407446E-5, (float)6.988269E-5, </span>
+<span class="fc" id="L264">        return new float[]{(float)4.407446E-5, (float)6.988269E-5, </span>
             (float)1.0908534E-4, (float)1.6763987E-4, (float)2.53631E-4, 
             (float)3.7778224E-4, (float)5.5398105E-4, (float)7.9976505E-4, 
             0.0011366954f, 0.0015905226f, 0.0021910376f, 0.0029714876f, 
@@ -282,7 +281,7 @@
     
     protected static double[] getHalfKernelUsingBinomialFilterSigmaOne() {
         // 1, 4, 6, 4, 1  with normalization = 16
-<span class="fc" id="L285">        return new double[]{0.0625f, 0.25f, 0.375f};</span>
+<span class="fc" id="L284">        return new double[]{0.0625f, 0.25f, 0.375f};</span>
     }
     
     /*&lt;pre&gt;

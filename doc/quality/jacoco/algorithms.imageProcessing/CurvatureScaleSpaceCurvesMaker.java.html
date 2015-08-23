@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CurvatureScaleSpaceCurvesMaker.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CurvatureScaleSpaceCurvesMaker.java</span></div><h1>CurvatureScaleSpaceCurvesMaker.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairIntArray;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="nc" id="L15">public class CurvatureScaleSpaceCurvesMaker {</span>
+    
+<span class="nc" id="L17">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     * Create for an edge, 
+     * X(t,sigma), Y(t,sigma), k(t, sigma) for sigma=1 until sigma=the level at 
+     * which there are no more values of k that equal 0, that is until no 
+     * more inflection points are found on the extremely smoothed curve.  
+     * 
+     * Note that the method re-uses iterative convolution, so each interval
+     * of sigma is 2^(1/8) times the previous convolution result using a kernel
+     * of sigma = 2^(1/8) each time.  The error in determining the peak of
+     * a contour in the resulting scale space curve should be less than 10%.
+     * TODO: calculate error in peak determination....
+     * 
+     * Note that the method follows the Mokhtarian and Mackworth papers 
+     * referenced in the other classes.
+     * 
+     * @param edge
+     * @param sigmaPowerFactor power to use for base 2 in creating the next 
+     * larger kernel convolution.  a coarse grained set of intervals is (1./8.) 
+     * while a finer grained set of intervals is (1./32.)
+     * @param sigmaStart the starting sigma of the gaussian convolution operations
+     * @param sigmaEnd the last sigma of the gaussian convolution operations, 
+     * exclusive.
+     * @return 
+     */
+    public Map&lt;Float, ScaleSpaceCurve&gt; createScaleSpaceMetricsForEdge(
+    PairIntArray edge, float sigmaPowerFactor, SIGMA sigmaStart, SIGMA sigmaEnd) {
+        
+<span class="nc" id="L46">        ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();</span>
+            
+<span class="nc" id="L48">        Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap = new HashMap&lt;Float,</span>
+            ScaleSpaceCurve&gt;();
+        
+<span class="nc" id="L51">        float sigma = SIGMA.getValue(sigmaStart);</span>
+
+<span class="nc" id="L53">        float resultingSigma = sigma;</span>
+
+<span class="nc" id="L55">        boolean hasInflectionPoints = true;</span>
+
+<span class="nc" id="L57">        ScaleSpaceCurve lastCurve = null;</span>
+
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        while (hasInflectionPoints</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            &amp;&amp; (resultingSigma &lt; SIGMA.getValue(sigmaEnd))) {</span>
+
+            ScaleSpaceCurve curve;
+            
+//log.info(&quot;trimmedXOffset=&quot; + trimmedXOffset + &quot; trimmedYOffset=&quot; + trimmedYOffset);
+
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (lastCurve == null) {</span>
+<span class="nc" id="L67">                curve = scaleSpaceHelper.computeCurvature(edge, sigma, </span>
+                    resultingSigma);
+            } else {
+<span class="nc" id="L70">                curve = scaleSpaceHelper.computeCurvature(</span>
+<span class="nc" id="L71">                    lastCurve.getXYCurve(), sigma, resultingSigma);</span>
+            }
+
+<span class="nc" id="L74">            scaleSpaceMap.put(sigma, curve);</span>
+
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            hasInflectionPoints = (curve.getKIsZeroIdxSize() &gt; 0);</span>
+            
+<span class="nc" id="L78">            log.fine(&quot;sigma=&quot; + sigma + &quot; nZeros=&quot; + curve.getKIsZeroIdxSize());</span>
+
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (hasInflectionPoints) {</span>
+                
+<span class="nc" id="L82">                sigma = resultingSigma;</span>
+
+<span class="nc" id="L84">                resultingSigma *= sigmaPowerFactor;</span>
+            }
+
+<span class="nc" id="L87">            lastCurve = curve;</span>
+<span class="nc" id="L88">        }</span>
+        
+<span class="nc" id="L90">        return scaleSpaceMap;</span>
+    }
+ 
+    /**
+     * create a scale space curve image from the given sigma scale space inflection
+     * points.
+     * &lt;pre&gt;
+     *        |    *
+     * sigma  |   * *     **
+     *        |   * *     **
+     *        ----------------------
+     *          scale free axis t
+     * &lt;/pre&gt;
+     * @param scaleSpaceMap
+     * @param edgeNumber a number placed in the ScaleSpaceCurveImage to help
+     * identify the edge.
+     * @param edgeLength the length of the edge.  this is the number of points
+     * that went into the scale free length axis.
+     * @return 
+     */
+    public ScaleSpaceCurveImage convertScaleSpaceMapToSparseImage(
+        Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap, int edgeNumber,
+        int edgeLength) {
+        
+<span class="nc" id="L114">        SortedMap&lt;Float, ScaleSpaceCurve&gt; sortedMap = </span>
+            new TreeMap&lt;Float, ScaleSpaceCurve&gt;(
+                new CurvatureScaleSpaceImageMaker.DescendingScaleSpaceComparator());
+        
+<span class="nc" id="L118">        sortedMap.putAll(scaleSpaceMap);</span>
+        
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        Float maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();</span>
+        
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if ((maxSigma != null) &amp;&amp; </span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {</span>
+            
+<span class="nc" id="L125">            sortedMap.remove(maxSigma);</span>
+            
+<span class="nc bnc" id="L127" title="All 2 branches missed.">            maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();</span>
+        }
+        
+<span class="nc" id="L130">        Iterator&lt;Map.Entry&lt;Float, ScaleSpaceCurve&gt; &gt; iter = </span>
+<span class="nc" id="L131">            sortedMap.entrySet().iterator();</span>
+        
+<span class="nc" id="L133">        int rowIdx = 0;</span>
+        
+<span class="nc" id="L135">        ScaleSpaceCurveImage spaceImage = new ScaleSpaceCurveImage(</span>
+<span class="nc" id="L136">            sortedMap.size());</span>
+        
+<span class="nc" id="L138">        spaceImage.setEdgeNumber(edgeNumber);</span>
+        
+<span class="nc" id="L140">        spaceImage.setEdgeSize(edgeLength);</span>
+        
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+            
+<span class="nc" id="L144">            Map.Entry&lt;Float, ScaleSpaceCurve&gt; entry = iter.next();</span>
+            
+<span class="nc" id="L146">            float sigma = entry.getKey().floatValue();</span>
+            
+<span class="nc" id="L148">            ScaleSpaceCurve scaleSpaceCurve = entry.getValue();</span>
+            
+<span class="nc" id="L150">            int nPoints = scaleSpaceCurve.getSize();</span>
+                            
+<span class="nc" id="L152">            int nz = scaleSpaceCurve.getKIsZeroIdxSize();</span>
+                
+<span class="nc" id="L154">            float[] row = new float[nz];</span>
+                        
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            for (int i = 0; i &lt; nz; i++) {</span>
+
+<span class="nc" id="L158">                int idx = scaleSpaceCurve.getKIsZeroIdx()[i];</span>
+
+<span class="nc" id="L160">                float t = (float)idx/(float)nPoints;</span>
+                
+<span class="nc" id="L162">                row[i] = t;                </span>
+            }
+            
+<span class="nc" id="L165">            spaceImage.setRow(rowIdx, row);</span>
+            
+<span class="nc" id="L167">            spaceImage.setSigma(rowIdx, sigma);</span>
+            
+<span class="nc" id="L169">            spaceImage.setXYCoords(rowIdx, scaleSpaceCurve.getKIsZeroX(),</span>
+<span class="nc" id="L170">                scaleSpaceCurve.getKIsZeroY());</span>
+            
+<span class="nc" id="L172">            rowIdx++;</span>
+<span class="nc" id="L173">        }</span>
+        
+<span class="nc" id="L175">        return spaceImage;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

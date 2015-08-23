@@ -560,7 +560,7 @@ public class CannyEdgeFilter {
 <span class="nc" id="L560">            lineThinner = lineThinnerClass.newInstance();</span>
             
 <span class="nc bnc" id="L562" title="All 2 branches missed.">            if (gXY != null) {</span>
-<span class="nc bnc" id="L563" title="All 2 branches missed.">                if (shrinkToSize != null) {</span>
+<span class="nc bnc" id="L563" title="All 4 branches missed.">                if (shrinkToSize != null &amp;&amp; !gXY.isThisSize(shrinkToSize)) {                </span>
 <span class="nc" id="L564">                    GreyscaleImage gXY2 = gXY.copyImage();</span>
 <span class="nc" id="L565">                    ImageProcessor imageProcessor = new ImageProcessor();</span>
 <span class="nc" id="L566">                    imageProcessor.shrinkImage(gXY2, shrinkToSize);</span>

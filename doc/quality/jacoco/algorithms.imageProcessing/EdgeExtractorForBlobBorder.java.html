@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EdgeExtractorForBlobBorder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EdgeExtractorForBlobBorder.java</span></div><h1>EdgeExtractorForBlobBorder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.compGeometry.PerimeterFinder;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairInt;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ * 
+ * @see AbstractEdgeExtractor
+
+ * @author nichole
+ */
+public class EdgeExtractorForBlobBorder {
+            
+<span class="fc" id="L22">    protected boolean debug = false;</span>
+    
+<span class="fc" id="L24">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="fc" id="L26">    public EdgeExtractorForBlobBorder() {</span>
+                    
+<span class="fc" id="L28">    }</span>
+    
+    /**
+     * NOT READY FOR USE.
+     * given the set of contiguous points, find the perimeter of them and order
+     * the points into a closed single pixel width curve.  
+     * use extractAndOrderTheBorder0() instead for now.
+     * @param contiguousPoints
+     * @param imageWidth
+     * @param imageHeight
+     * @param discardWhenCavityIsSmallerThanBorder
+     * @return 
+     */
+    PairIntArray extractAndOrderTheBorder(Set&lt;PairInt&gt; contiguousPoints,
+        int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
+        
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (contiguousPoints == null) {</span>
+<span class="nc" id="L45">            return null;</span>
+        }
+   
+<span class="nc bnc" id="L48" title="All 2 branches missed.">if (debug) {</span>
+<span class="nc" id="L49">MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+}
+
+        // ------- define the perimeter of contiguousPoints ----------
+
+<span class="nc" id="L54">        PerimeterFinder perimeterFinder = new PerimeterFinder();</span>
+        
+<span class="nc" id="L56">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="nc" id="L58">        int imageMaxColumn = imageWidth - 1;</span>
+<span class="nc" id="L59">        int imageMaxRow = imageHeight - 1;</span>
+       
+<span class="nc" id="L61">        int[] rowMinMax = new int[2];</span>
+                
+<span class="nc" id="L63">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = perimeterFinder.find(</span>
+            contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+       
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (!outputEmbeddedGapPoints.isEmpty()) {</span>
+            // update the perimeter for &quot;filling in&quot; embedded points
+<span class="nc" id="L68">            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, </span>
+                rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        }
+        
+        // --- walk around the boundary of contiguousPoints, forming a closed curve path ----------
+<span class="nc" id="L73">        PairIntArray out = perimeterFinder.getOrderedBorderPixels(</span>
+            contiguousPoints, rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+  
+<span class="nc" id="L76">        int nBorder = out.getN();</span>
+<span class="nc" id="L77">        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()</span>
+            - nBorder;
+               
+<span class="nc" id="L80">        log.info(&quot;number of border points=&quot; + nBorder + &quot; nCavity=&quot; + nCavity);</span>
+        
+<span class="nc bnc" id="L82" title="All 4 branches missed.">        if (discardWhenCavityIsSmallerThanBorder &amp;&amp; (nCavity &lt; (0.5*nBorder))) {</span>
+<span class="nc" id="L83">            return null;</span>
+        }
+        
+<span class="nc bnc" id="L86" title="All 2 branches missed.">if (debug) {       </span>
+<span class="nc" id="L87">MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());</span>
+}
+<span class="nc" id="L89">        return out;</span>
+    }
+    
+    /**
+     * given the set of contiguous points, find the perimeter of them and order
+     * the points into a closed single pixel width curve.
+     * (Note, still testing this, but for structures without many junctions,
+     * the results looks good so far.)
+     * @param contiguousPoints
+     * @param imageWidth
+     * @param imageHeight
+     * @param discardWhenCavityIsSmallerThanBorder
+     * @return 
+     */
+    public PairIntArray extractAndOrderTheBorder0(Set&lt;PairInt&gt; contiguousPoints,
+        int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
+        
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (contiguousPoints == null) {</span>
+<span class="nc" id="L107">            return null;</span>
+        }
+ 
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L111">MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+}
+
+        // ---- extract the border pixels from contiguousPoints ------
+
+<span class="fc" id="L116">        PerimeterFinder perimeterFinder = new PerimeterFinder();</span>
+        
+<span class="fc" id="L118">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L120">        int imageMaxColumn = imageWidth - 1;</span>
+<span class="fc" id="L121">        int imageMaxRow = imageHeight - 1;</span>
+       
+<span class="fc" id="L123">        int[] rowMinMax = new int[2];</span>
+                
+<span class="fc" id="L125">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = perimeterFinder.find(</span>
+            contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+       
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (!outputEmbeddedGapPoints.isEmpty()) {</span>
+            // update the perimeter for &quot;filling in&quot; embedded points
+<span class="nc" id="L130">            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, </span>
+                rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        }
+       
+<span class="fc" id="L134">        Set&lt;PairInt&gt; borderPixels = perimeterFinder.getBorderPixels(</span>
+            rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+        
+<span class="fc" id="L137">        int nBorder = borderPixels.size();</span>
+<span class="fc" id="L138">        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()</span>
+            - nBorder;
+               
+<span class="fc" id="L141">        log.info(&quot;number of border points=&quot; + nBorder + &quot; nCavity=&quot; + nCavity);</span>
+
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L144">MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+}
+
+<span class="pc bpc" id="L147" title="3 of 4 branches missed.">        if (discardWhenCavityIsSmallerThanBorder &amp;&amp; (nCavity &lt; (0.5*nBorder))) {</span>
+<span class="nc" id="L148">            return null;</span>
+        }
+        
+        // ----- remove spurs, merge curves, re-order points to form a 
+        //       single closed curve if possible -------
+        
+<span class="fc" id="L154">        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();</span>
+<span class="fc" id="L155">        lt.applyLineThinner(borderPixels, 0, imageWidth, 0, imageHeight);</span>
+<span class="fc" id="L156">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
+<span class="fc" id="L157">        pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);</span>
+        
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L160">MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+}        
+<span class="fc" id="L162">        SpurRemover spurRm = new SpurRemover();</span>
+        
+<span class="fc" id="L164">        spurRm.remove(borderPixels, imageWidth, imageHeight);</span>
+
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L167">MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+}        
+        //xMin, xMax, yMin, yMax
+<span class="fc" id="L170">        int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);</span>
+      
+<span class="fc" id="L172">        int xOffset = minMaxXY[0] - 2;</span>
+<span class="fc" id="L173">        int yOffset = minMaxXY[2] - 2;</span>
+<span class="fc" id="L174">        int w = minMaxXY[1] - minMaxXY[0] + 4;</span>
+<span class="fc" id="L175">        int h = minMaxXY[3] - minMaxXY[2] + 4;</span>
+        
+<span class="fc" id="L177">        GreyscaleImage img = new GreyscaleImage(w, h);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (PairInt p : borderPixels) {</span>
+<span class="fc" id="L179">            int x = p.getX() - xOffset;</span>
+<span class="fc" id="L180">            int y = p.getY() - yOffset;</span>
+<span class="fc" id="L181">            img.setValue(x, y, 1);</span>
+<span class="fc" id="L182">        }</span>
+        
+<span class="fc" id="L184">        EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);</span>
+<span class="fc" id="L185">        extractor.overrideMaxNumberIterationsJunctionSplice(10);</span>
+        //List&lt;PairIntArray&gt; output = extractor.findEdges();
+<span class="fc" id="L187">        PairIntArray out = extractor.findAsSingleClosedEdge();</span>
+       
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (out == null) {</span>
+<span class="nc" id="L190">            return null;</span>
+        }
+        
+        // add the shifts back
+        //PairIntArray out = output.get(0);
+        
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (int i = 0; i &lt; out.getN(); ++i) {</span>
+<span class="fc" id="L197">            int x = out.getX(i) + xOffset;</span>
+<span class="fc" id="L198">            int y = out.getY(i) + yOffset;</span>
+<span class="fc" id="L199">            out.set(i, x, y);</span>
+        }
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">if (debug) {</span>
+<span class="nc" id="L202">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">for (int j = 0; j &lt; out.getN(); ++j) {</span>
+<span class="nc" id="L204">    int x = out.getX(j);</span>
+<span class="nc" id="L205">    int y = out.getY(j);</span>
+    /*if (i &gt; 0) {
+        x += xOffset;
+        y += yOffset;
+    }*/
+<span class="nc bnc" id="L210" title="All 4 branches missed.">    if (j == 0 || (j == (out.getN() - 1))) {</span>
+<span class="nc" id="L211">        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);</span>
+    } else {
+<span class="nc" id="L213">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
+    }
+}
+<span class="nc" id="L216">MiscDebug.writeImageCopy(img3, &quot;output_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+}
+<span class="fc" id="L218">        return out;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

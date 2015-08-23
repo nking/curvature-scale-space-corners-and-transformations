@@ -61,10 +61,10 @@ public class PairIntArray {
     public void removeRange(int idxLo, int idxHi) {
         
 <span class="pc bpc" id="L63" title="2 of 4 branches missed.">        if ((idxLo &lt; 0) || (idxLo &gt; (n - 1))) {</span>
-<span class="nc" id="L64">            throw new IllegalArgumentException(&quot;idxLo is out of range&quot;);</span>
+<span class="nc" id="L64">            throw new IllegalArgumentException(idxLo + &quot;, idxLo is out of range&quot;);</span>
         }
 <span class="pc bpc" id="L66" title="2 of 4 branches missed.">        if ((idxHi &lt; 0) || (idxHi &gt; (n - 1))) {</span>
-<span class="nc" id="L67">            throw new IllegalArgumentException(&quot;idxHi is out of range&quot;);</span>
+<span class="nc" id="L67">            throw new IllegalArgumentException(idxHi + &quot;,idxHi is out of range&quot;);</span>
         }
 <span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (idxHi &lt; idxLo) {</span>
 <span class="nc" id="L70">            throw new IllegalArgumentException(&quot;idxHi has to be &gt;= idxLo&quot;);</span>
@@ -213,33 +213,87 @@ public class PairIntArray {
 <span class="fc" id="L213">            y[idx2] = swap;</span>
         }
 <span class="fc" id="L215">    }</span>
+
+    public void insertAll(int insertAtIndex, PairIntArray insert) {
+        
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        if (insertAtIndex &lt; 0) {</span>
+<span class="fc" id="L220">            throw new IllegalArgumentException(&quot;insertAtIndex must be &gt;= 0&quot;);</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        } else if (insertAtIndex &gt; n) {</span>
+<span class="fc" id="L222">            throw new IllegalArgumentException(&quot;insertAtIndex is out of bounds of array&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        if (insertAtIndex == n) {</span>
+<span class="fc" id="L226">            addAll(insert);</span>
+<span class="fc" id="L227">            return;</span>
+        }
+                
+<span class="fc" id="L230">        int nTotal = n + insert.getN();</span>
+        
+<span class="fc" id="L232">        expandIfNeeded(nTotal);</span>
+         
+        /*
+        copy everything at insertAtIndex           through  (n-1) 
+                        to (nTotal - insert.n - 1)    to    (nTotal - 1)
+        */
+        
+<span class="fc" id="L239">        int nMoveLen = (n - insertAtIndex);</span>
+<span class="fc" id="L240">        int dest0 = (nTotal - nMoveLen);</span>
+        
+<span class="fc" id="L242">        System.arraycopy(x, insertAtIndex, x, dest0, nMoveLen);</span>
+<span class="fc" id="L243">        System.arraycopy(y, insertAtIndex, y, dest0, nMoveLen);</span>
+        
+<span class="fc" id="L245">        System.arraycopy(insert.x, 0, x, insertAtIndex, insert.n);</span>
+<span class="fc" id="L246">        System.arraycopy(insert.y, 0, y, insertAtIndex, insert.n);</span>
+        
+<span class="fc" id="L248">        n = nTotal;</span>
+        
+        /*
+        n=5.  insIdx=1,  insert.n=3 --&gt; nTotal=5+3=8
+        0 
+           &lt;---
+        1
+        2
+        3
+        4
+        
+        0
+        1
+        2
+        3
+        4 &lt;-- 1
+        5 &lt;-- 2 (n-3)
+        6 &lt;-- 3 (n-2)
+        7 &lt;-- 4 (n-1)
+        */
+<span class="fc" id="L268">    }</span>
     
     public PairIntArray copy() {
         
-<span class="fc" id="L219">        PairIntArray clone = new PairIntArray(n);</span>
+<span class="fc" id="L272">        PairIntArray clone = new PairIntArray(n);</span>
         
-<span class="fc" id="L221">        clone.insertSpaceAtTopOfArrays(n);</span>
-<span class="fc" id="L222">        System.arraycopy(x, 0, clone.x, 0, n);</span>
-<span class="fc" id="L223">        System.arraycopy(y, 0, clone.y, 0, n);</span>
-<span class="fc" id="L224">        clone.n = n;</span>
+<span class="fc" id="L274">        clone.insertSpaceAtTopOfArrays(n);</span>
+<span class="fc" id="L275">        System.arraycopy(x, 0, clone.x, 0, n);</span>
+<span class="fc" id="L276">        System.arraycopy(y, 0, clone.y, 0, n);</span>
+<span class="fc" id="L277">        clone.n = n;</span>
         
-<span class="fc" id="L226">        return clone;</span>
+<span class="fc" id="L279">        return clone;</span>
     }
     
     public PairFloatArray toPairFloatArray() {
-<span class="fc" id="L230">        PairFloatArray out = new PairFloatArray();</span>
-<span class="fc bfc" id="L231" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L232">            out.add(x[i], y[i]);</span>
+<span class="fc" id="L283">        PairFloatArray out = new PairFloatArray();</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L285">            out.add(x[i], y[i]);</span>
         }
-<span class="fc" id="L234">        return out;</span>
+<span class="fc" id="L287">        return out;</span>
     }
     
     public String toString() {
-<span class="nc" id="L238">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L239" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L240">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
+<span class="nc" id="L291">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L293">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
         }
-<span class="nc" id="L242">        return sb.toString();</span>
+<span class="nc" id="L295">        return sb.toString();</span>
     }
+
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

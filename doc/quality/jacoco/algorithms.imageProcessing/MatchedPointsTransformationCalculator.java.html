@@ -261,8 +261,7 @@ import java.util.logging.Logger;
     }
     
      /**
-     * coordinate transformations from pair 1 to pair 2 are calculated 
-     * given &quot;scale&quot;.
+     * coordinate transformations from pair 1 to pair 2 are calculated.
      * 
      * positive Y is up 
        positive X is right
@@ -280,7 +279,7 @@ import java.util.logging.Logger;
      * @param centroidY1
      * @return 
      */
-    public TransformationParameters calulateEuclideanGivenScale(
+    public TransformationParameters calulateEuclidean(
         final int set1X1, final int set1Y1, 
         final int set1X2, final int set1Y2,
         final int set2X1, final int set2Y1, 
@@ -308,21 +307,21 @@ import java.util.logging.Logger;
             rotation = theta_image1 - theta_image2 = 25 degrees
         */
         
-<span class="fc" id="L311">        AngleUtil angleUtil = new AngleUtil();</span>
+<span class="fc" id="L310">        AngleUtil angleUtil = new AngleUtil();</span>
         
-<span class="fc" id="L313">        double dx1 = set1X1 - set1X2;</span>
-<span class="fc" id="L314">        double dy1 = set1Y1 - set1Y2;</span>
+<span class="fc" id="L312">        double dx1 = set1X1 - set1X2;</span>
+<span class="fc" id="L313">        double dy1 = set1Y1 - set1Y2;</span>
         
-<span class="fc" id="L316">        double dx2 = set2X1 - set2X2;</span>
-<span class="fc" id="L317">        double dy2 = set2Y1 - set2Y2;</span>
+<span class="fc" id="L315">        double dx2 = set2X1 - set2X2;</span>
+<span class="fc" id="L316">        double dy2 = set2Y1 - set2Y2;</span>
         
-<span class="fc" id="L319">        double theta = angleUtil.subtract(dx1, dy1, dx2, dy2);</span>
+<span class="fc" id="L318">        double theta = angleUtil.subtract(dx1, dy1, dx2, dy2);</span>
         
-<span class="fc" id="L321">        double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));</span>
+<span class="fc" id="L320">        double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));</span>
         
-<span class="fc" id="L323">        double sep2 = Math.sqrt((dx2*dx2) + (dy2*dy2));</span>
+<span class="fc" id="L322">        double sep2 = Math.sqrt((dx2*dx2) + (dy2*dy2));</span>
         
-<span class="fc" id="L325">        double scale = sep2/sep1;</span>
+<span class="fc" id="L324">        double scale = sep2/sep1;</span>
         
         /*
         estimate translation:
@@ -333,45 +332,45 @@ import java.util.logging.Logger;
         transY = yt0 - yc*scale - ((-(x0-xc)*scale*math.sin(theta)) 
             + ((y0-yc)*scale*math.cos(theta)))
         */
-<span class="fc" id="L336">        double mc = Math.cos(theta);</span>
-<span class="fc" id="L337">        double ms = Math.sin(theta);</span>
+<span class="fc" id="L335">        double mc = Math.cos(theta);</span>
+<span class="fc" id="L336">        double ms = Math.sin(theta);</span>
         
-<span class="fc" id="L339">        double tr1X1 = centroidX1*scale + (((set1X1 - centroidX1) * scale*mc) </span>
+<span class="fc" id="L338">        double tr1X1 = centroidX1*scale + (((set1X1 - centroidX1) * scale*mc) </span>
             + ((set1Y1 - centroidY1) *scale*ms));
       
-<span class="fc" id="L342">        double tr1Y1 = centroidY1*scale + ((-(set1X1 - centroidX1) *scale*ms) </span>
+<span class="fc" id="L341">        double tr1Y1 = centroidY1*scale + ((-(set1X1 - centroidX1) *scale*ms) </span>
             + ((set1Y1 - centroidY1) *scale*mc));
         
-<span class="fc" id="L345">        double tr1X2 = centroidX1*scale + (((set1X2 - centroidX1) * scale*mc) </span>
+<span class="fc" id="L344">        double tr1X2 = centroidX1*scale + (((set1X2 - centroidX1) * scale*mc) </span>
             + ((set1Y2 - centroidY1) *scale*ms));
       
-<span class="fc" id="L348">        double tr1Y2 = centroidY1*scale + ((-(set1X2 - centroidX1) *scale*ms) </span>
+<span class="fc" id="L347">        double tr1Y2 = centroidY1*scale + ((-(set1X2 - centroidX1) *scale*ms) </span>
             + ((set1Y2 - centroidY1) *scale*mc));
         
-<span class="fc" id="L351">        double transX1 = (set2X1 - tr1X1);</span>
-<span class="fc" id="L352">        double transX2 = (set2X2 - tr1X2);</span>
-<span class="fc" id="L353">        double transY1 = (set2Y1 - tr1Y1);</span>
-<span class="fc" id="L354">        double transY2 = (set2Y2 - tr1Y2);</span>
+<span class="fc" id="L350">        double transX1 = (set2X1 - tr1X1);</span>
+<span class="fc" id="L351">        double transX2 = (set2X2 - tr1X2);</span>
+<span class="fc" id="L352">        double transY1 = (set2Y1 - tr1Y1);</span>
+<span class="fc" id="L353">        double transY2 = (set2Y2 - tr1Y2);</span>
         
-<span class="fc" id="L356">        double transX = 0.5 * (transX1 + transX2);</span>
+<span class="fc" id="L355">        double transX = 0.5 * (transX1 + transX2);</span>
 
-<span class="fc" id="L358">        double transY = 0.5 * (transY1 + transY2);</span>
+<span class="fc" id="L357">        double transY = 0.5 * (transY1 + transY2);</span>
         
-<span class="fc" id="L360">        TransformationParameters params = new TransformationParameters();</span>
-<span class="fc" id="L361">        params.setRotationInRadians((float)theta);</span>
-<span class="fc" id="L362">        params.setScale((float)scale);</span>
-<span class="fc" id="L363">        params.setTranslationX((float)transX);</span>
-<span class="fc" id="L364">        params.setTranslationY((float)transY);</span>
-<span class="fc" id="L365">        params.setOriginX((float)centroidX1);</span>
-<span class="fc" id="L366">        params.setOriginY((float)centroidY1);</span>
+<span class="fc" id="L359">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L360">        params.setRotationInRadians((float)theta);</span>
+<span class="fc" id="L361">        params.setScale((float)scale);</span>
+<span class="fc" id="L362">        params.setTranslationX((float)transX);</span>
+<span class="fc" id="L363">        params.setTranslationY((float)transY);</span>
+<span class="fc" id="L364">        params.setOriginX((float)centroidX1);</span>
+<span class="fc" id="L365">        params.setOriginY((float)centroidY1);</span>
         
-<span class="pc bpc" id="L368" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L369">            log.info(&quot;params: &quot; + params.toString());</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L368">            log.info(&quot;params: &quot; + params.toString());</span>
         }
         
-<span class="fc" id="L372">        return params;</span>
+<span class="fc" id="L371">        return params;</span>
     }
-    
+   
     /**
      * from a set of transformation parameters params that transform
      * points in reference frame 1 into reference frame 2, create
@@ -385,8 +384,8 @@ import java.util.logging.Logger;
     TransformationParameters swapReferenceFrames(TransformationParameters 
         params) {
         
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (params == null) {</span>
-<span class="nc" id="L389">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L388">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
         
         /*
@@ -400,39 +399,39 @@ import java.util.logging.Logger;
         yt_0 = yr_0 + transY = y1        
         */
      
-<span class="fc" id="L403">        double revRot = -1 * params.getRotationInRadians();</span>
-<span class="fc bfc" id="L404" title="All 2 branches covered.">        if (revRot &lt; 0) {</span>
-<span class="fc" id="L405">            revRot += 2. * Math.PI;</span>
+<span class="fc" id="L402">        double revRot = -1 * params.getRotationInRadians();</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">        if (revRot &lt; 0) {</span>
+<span class="fc" id="L404">            revRot += 2. * Math.PI;</span>
         }
-<span class="fc" id="L407">        double revScale = 1. / params.getScale();</span>
+<span class="fc" id="L406">        double revScale = 1. / params.getScale();</span>
 
-<span class="fc" id="L409">        double transformedXC =</span>
-<span class="fc" id="L410">            (params.getOriginX()*params.getScale()) + params.getTranslationX();</span>
+<span class="fc" id="L408">        double transformedXC =</span>
+<span class="fc" id="L409">            (params.getOriginX()*params.getScale()) + params.getTranslationX();</span>
         
-<span class="fc" id="L412">        double transformedYC =</span>
-<span class="fc" id="L413">            (params.getOriginY()*params.getScale()) + params.getTranslationY();</span>
+<span class="fc" id="L411">        double transformedYC =</span>
+<span class="fc" id="L412">            (params.getOriginY()*params.getScale()) + params.getTranslationY();</span>
         
-<span class="fc" id="L415">        TransformationParameters paramsRev = new TransformationParameters();</span>
-<span class="fc" id="L416">        paramsRev.setScale((float)revScale);</span>
-<span class="fc" id="L417">        paramsRev.setRotationInRadians((float)revRot);</span>
-<span class="fc" id="L418">        paramsRev.setTranslationX(0);</span>
-<span class="fc" id="L419">        paramsRev.setTranslationY(0);</span>
-<span class="fc" id="L420">        paramsRev.setOriginX((float)transformedXC);</span>
-<span class="fc" id="L421">        paramsRev.setOriginY((float)transformedYC);</span>
+<span class="fc" id="L414">        TransformationParameters paramsRev = new TransformationParameters();</span>
+<span class="fc" id="L415">        paramsRev.setScale((float)revScale);</span>
+<span class="fc" id="L416">        paramsRev.setRotationInRadians((float)revRot);</span>
+<span class="fc" id="L417">        paramsRev.setTranslationX(0);</span>
+<span class="fc" id="L418">        paramsRev.setTranslationY(0);</span>
+<span class="fc" id="L419">        paramsRev.setOriginX((float)transformedXC);</span>
+<span class="fc" id="L420">        paramsRev.setOriginY((float)transformedYC);</span>
         
         // transform the new origin, then the new translation is what is needed for it to equal the params origin
-<span class="fc" id="L424">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L423">        Transformer transformer = new Transformer();</span>
         
-<span class="fc" id="L426">        double[] revTransformedXYOrigin = transformer.applyTransformation(paramsRev, </span>
+<span class="fc" id="L425">        double[] revTransformedXYOrigin = transformer.applyTransformation(paramsRev, </span>
             transformedXC, transformedYC);
         
-<span class="fc" id="L429">        double revTransX = params.getOriginX() - revTransformedXYOrigin[0];</span>
-<span class="fc" id="L430">        double revTransY = params.getOriginY() - revTransformedXYOrigin[1];</span>
+<span class="fc" id="L428">        double revTransX = params.getOriginX() - revTransformedXYOrigin[0];</span>
+<span class="fc" id="L429">        double revTransY = params.getOriginY() - revTransformedXYOrigin[1];</span>
         
-<span class="fc" id="L432">        paramsRev.setTranslationX((float)revTransX);</span>
-<span class="fc" id="L433">        paramsRev.setTranslationY((float)revTransY);</span>
+<span class="fc" id="L431">        paramsRev.setTranslationX((float)revTransX);</span>
+<span class="fc" id="L432">        paramsRev.setTranslationY((float)revTransY);</span>
         
-<span class="fc" id="L435">        return paramsRev;</span>
+<span class="fc" id="L434">        return paramsRev;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

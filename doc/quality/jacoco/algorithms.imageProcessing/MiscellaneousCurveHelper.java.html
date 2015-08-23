@@ -662,23 +662,23 @@ import org.ejml.simple.*;
     
     public double[] calculateXYCentroids(Set&lt;PairInt&gt; points) {
         
-<span class="nc" id="L665">        double xc = 0;</span>
-<span class="nc" id="L666">        double yc = 0;</span>
+<span class="fc" id="L665">        double xc = 0;</span>
+<span class="fc" id="L666">        double yc = 0;</span>
         
-<span class="nc bnc" id="L668" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">        for (PairInt p : points) {</span>
             
-<span class="nc" id="L670">           int x = p.getX();</span>
-<span class="nc" id="L671">           int y = p.getY();</span>
+<span class="fc" id="L670">           int x = p.getX();</span>
+<span class="fc" id="L671">           int y = p.getY();</span>
                     
-<span class="nc" id="L673">            xc += x;</span>
-<span class="nc" id="L674">            yc += y;</span>
-<span class="nc" id="L675">        }</span>
+<span class="fc" id="L673">            xc += x;</span>
+<span class="fc" id="L674">            yc += y;</span>
+<span class="fc" id="L675">        }</span>
         
-<span class="nc" id="L677">        xc /= (double)(points.size());</span>
+<span class="fc" id="L677">        xc /= (double)(points.size());</span>
         
-<span class="nc" id="L679">        yc /= (double)(points.size());</span>
+<span class="fc" id="L679">        yc /= (double)(points.size());</span>
             
-<span class="nc" id="L681">        return new double[]{xc, yc};</span>
+<span class="fc" id="L681">        return new double[]{xc, yc};</span>
     }
         
     public double[] calculateXYCentroids(float[] x, float[] y) {
@@ -2992,32 +2992,138 @@ import org.ejml.simple.*;
             }
         }
 <span class="fc" id="L2994">    }</span>
+    
+    public void findNeighbors(int x, int y, Set&lt;PairInt&gt; outputNeighbors,
+        Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; excludePoints, int imageWidth, int imageHeight) {
+        
+<span class="nc" id="L2999">        outputNeighbors.clear();</span>
+                
+<span class="nc bnc" id="L3001" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+            
+<span class="nc" id="L3003">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L3004">            int y2 = y + eightNeighborsY[i];</span>
+            
+<span class="nc bnc" id="L3006" title="All 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) || </span>
+                (y2 &gt; (imageHeight - 1))) {
+<span class="nc" id="L3008">                continue;</span>
+            }
+            
+<span class="nc" id="L3011">            PairInt p2 = new PairInt(x2, y2);</span>
+            
+<span class="nc bnc" id="L3013" title="All 2 branches missed.">            if (excludePoints.contains(p2)) {</span>
+<span class="nc" id="L3014">                continue;</span>
+            }
+<span class="nc bnc" id="L3016" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L3017">                outputNeighbors.add(p2);</span>
+            }
+        }
+<span class="nc" id="L3020">    }</span>
+    
+    public int countNeighbors(int x, int y, Set&lt;PairInt&gt; points, int imageWidth, 
+        int imageHeight) {
+        
+<span class="fc" id="L3025">        int nn = 0;</span>
+                
+<span class="fc bfc" id="L3027" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+            
+<span class="fc" id="L3029">            int x2 = x + eightNeighborsX[i];</span>
+<span class="fc" id="L3030">            int y2 = y + eightNeighborsY[i];</span>
+            
+<span class="pc bpc" id="L3032" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) || </span>
+                (y2 &gt; (imageHeight - 1))) {
+<span class="nc" id="L3034">                continue;</span>
+            }
+            
+<span class="fc" id="L3037">            PairInt p2 = new PairInt(x2, y2);</span>
+            
+<span class="fc bfc" id="L3039" title="All 2 branches covered.">            if (points.contains(p2)) {</span>
+<span class="fc" id="L3040">                nn++;</span>
+            }
+        }
+        
+<span class="fc" id="L3044">        return nn;</span>
+    }
 
     public List&lt;PairIntArray&gt; smoothAndReExtractEdges(List&lt;PairIntArray&gt; edges,
         GreyscaleImage gradientXY, int smoothingFactor) {
         
-<span class="nc" id="L2999">        AverageUtil avgUtil = new AverageUtil();</span>
+<span class="nc" id="L3050">        AverageUtil avgUtil = new AverageUtil();</span>
         
-<span class="nc" id="L3001">        GreyscaleImage output = gradientXY.createWithDimensions();       </span>
+<span class="nc" id="L3052">        GreyscaleImage output = gradientXY.createWithDimensions();       </span>
         
-<span class="nc bnc" id="L3003" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); ++i) {</span>
-<span class="nc" id="L3004">            PairIntArray edge = edges.get(i);</span>
-<span class="nc bnc" id="L3005" title="All 2 branches missed.">            if (edge.getN() &gt;= smoothingFactor) {</span>
-<span class="nc" id="L3006">                edge = avgUtil.calculateBoxCarAverage(edges.get(i), smoothingFactor);</span>
-<span class="nc bnc" id="L3007" title="All 2 branches missed.">                for (int j = 0; j &lt; edge.getN(); ++j) {</span>
-<span class="nc" id="L3008">                    output.setValue(edge.getX(j), edge.getY(j), 1);</span>
+<span class="nc bnc" id="L3054" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); ++i) {</span>
+<span class="nc" id="L3055">            PairIntArray edge = edges.get(i);</span>
+<span class="nc bnc" id="L3056" title="All 2 branches missed.">            if (edge.getN() &gt;= smoothingFactor) {</span>
+<span class="nc" id="L3057">                edge = avgUtil.calculateBoxCarAverage(edges.get(i), smoothingFactor);</span>
+<span class="nc bnc" id="L3058" title="All 2 branches missed.">                for (int j = 0; j &lt; edge.getN(); ++j) {</span>
+<span class="nc" id="L3059">                    output.setValue(edge.getX(j), edge.getY(j), 1);</span>
                 }
             }
         }
         
-<span class="nc" id="L3013">        PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();</span>
-<span class="nc" id="L3014">        pslt.correctForArtifacts(output);        </span>
-<span class="nc" id="L3015">        IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(output);</span>
-<span class="nc" id="L3016">        edgeExtractor.removeShorterEdges(true);</span>
-<span class="nc" id="L3017">        edges = edgeExtractor.findEdges();     </span>
+<span class="nc" id="L3064">        PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();</span>
+<span class="nc" id="L3065">        pslt.correctForArtifacts(output);        </span>
+<span class="nc" id="L3066">        IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(output);</span>
+<span class="nc" id="L3067">        edgeExtractor.removeShorterEdges(true);</span>
+<span class="nc" id="L3068">        edges = edgeExtractor.findEdges();     </span>
         
-<span class="nc" id="L3019">        return edges;</span>
+<span class="nc" id="L3070">        return edges;</span>
     }
+    
+    public boolean hasAtLeastOneNonPointNeighbor(int x, int y, 
+        Set&lt;PairInt&gt; points, int imageWidth, int imageHeight) {
+    
+<span class="pc bpc" id="L3076" title="1 of 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+            
+<span class="fc" id="L3078">            int x2 = x + eightNeighborsX[i];</span>
+<span class="fc" id="L3079">            int y2 = y + eightNeighborsY[i];</span>
+            
+<span class="pc bpc" id="L3081" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) || </span>
+                (y2 &gt; (imageHeight - 1))) {
+<span class="nc" id="L3083">                continue;</span>
+            }
+            
+<span class="fc bfc" id="L3086" title="All 2 branches covered.">            if (!points.contains(new PairInt(x2, y2))) {</span>
+<span class="fc" id="L3087">                return true;</span>
+            }
+        }
+        
+<span class="nc" id="L3091">        return false;</span>
+    }
+
+    public void findNeighborsWithAtLeastOneNonPoint(int x, int y, 
+        Set&lt;PairInt&gt; outputNeighbors, Set&lt;PairInt&gt; points, 
+        Set&lt;PairInt&gt; excludePoints, int imageWidth, int imageHeight) {
+        
+<span class="fc" id="L3098">        outputNeighbors.clear();</span>
+                
+<span class="fc bfc" id="L3100" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+            
+<span class="fc" id="L3102">            int x2 = x + eightNeighborsX[i];</span>
+<span class="fc" id="L3103">            int y2 = y + eightNeighborsY[i];</span>
+            
+<span class="pc bpc" id="L3105" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) || </span>
+                (y2 &gt; (imageHeight - 1))) {
+<span class="nc" id="L3107">                continue;</span>
+            }
+            
+<span class="fc" id="L3110">            boolean isPossiblyABorderPoint = hasAtLeastOneNonPointNeighbor(</span>
+                x2, y2, points, imageWidth, imageHeight);
+            
+<span class="pc bpc" id="L3113" title="1 of 2 branches missed.">            if (!isPossiblyABorderPoint) {</span>
+<span class="nc" id="L3114">                continue;</span>
+            }
+            
+<span class="fc" id="L3117">            PairInt p2 = new PairInt(x2, y2);</span>
+            
+<span class="fc bfc" id="L3119" title="All 2 branches covered.">            if (excludePoints.contains(p2)) {</span>
+<span class="fc" id="L3120">                continue;</span>
+            }
+<span class="fc bfc" id="L3122" title="All 2 branches covered.">            if (points.contains(p2)) {</span>
+<span class="fc" id="L3123">                outputNeighbors.add(p2);</span>
+            }
+        }
+<span class="fc" id="L3126">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

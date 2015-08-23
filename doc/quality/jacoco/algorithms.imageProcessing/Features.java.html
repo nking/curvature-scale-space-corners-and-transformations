@@ -1,0 +1,1568 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Features.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Features.java</span></div><h1>Features.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * NOT READY FOR USE.  NOT TESTED YET.
+ * class to help extract and reuse feature descriptors.
+ * @author nichole
+ */
+public class Features {
+    
+    /**
+     * either gsImg or clrImg will be set by the constructor and they
+     * are the grey scale image or the color image, respectively.
+     */
+    protected final GreyscaleImage gsImg;
+
+    /**
+     * either gsImg or clrImg will be set by the constructor and they
+     * are the grey scale image or the color image, respectively.
+     */
+    protected final Image clrImg;
+
+    /**
+     * the gradient image of gsImg or clrImg.
+     */
+    protected final GreyscaleImage gradientImg;
+
+    /**
+     * the gradient orientation image
+     */
+    protected final GreyscaleImage thetaImg;
+
+    //TODO: add this to a setter:
+<span class="fc" id="L39">    protected final Image clrGradientImg = null;</span>
+
+    /**
+     * the half width of a block.  For example, to extract the 25 pixels
+     * centered on (xc, yc), bHalfW would be '2'.  a minimum of 5 seems to be
+     * necessary.
+     */
+    protected final int bHalfW;
+
+    protected final float[][] xyOffsets;
+
+    protected final boolean useNormalizedIntensities;
+
+    // can use as false with bHalfW=5
+<span class="fc" id="L53">    protected final boolean useBinnedCellGradients = true;</span>
+    
+<span class="fc" id="L55">    protected final boolean useBinnedCellIntensities = true;</span>
+
+    /*
+    for theta descriptors, 1 of 3 choices:
+       (1) PixelThetaDescriptor: each pixel in 5x5 block stored.
+           comparion is pixel by pixel angular differences
+       (2) PixelThetaDescriptor: pixels binned into 2x2 cells and 16 total
+           surrounding the center.
+           comparison is item by item angular differences
+       (3) HistogramThetaDescriptor: pixels within mxm cells are made into
+           histograms of w bin width, and 8 or 16 such cells surrounding the
+           center.
+           each histogram before compared is normalized by peak?
+           corrections for wrap around during comparisons?
+           comparisons are then similar to SSD?
+
+       Note that use of (1) does not have S/N correction and it requires
+       very good rotation alignment to achieve reasonable results, so the
+       &quot;dominant orientation&quot; as a stable relative angle for comparing frames
+       would need a refinement such as trying small degrees around it within
+       a range to find best match for better use of (1).
+    */
+<span class="fc" id="L77">    protected final int thetaType = 2;</span>
+
+    /**
+    key = pixel coordinates of center of frame;
+    value = map with key = rotation (in degrees) of the frame and value = the
+    *     extracted descriptor
+    */
+<span class="fc" id="L84">    protected Map&lt;PairInt, Map&lt;Integer, IntensityDescriptor&gt;&gt; intensityBlocks =</span>
+        new HashMap&lt;PairInt, Map&lt;Integer, IntensityDescriptor&gt;&gt;();
+
+    /**
+    key = pixel coordinates of center of frame;
+    value = map with key = rotation (in degrees) of the frame and value = the
+    *     extracted descriptor
+    */
+<span class="fc" id="L92">    protected Map&lt;PairInt, Map&lt;Integer, GradientDescriptor&gt;&gt; gradientBlocks =</span>
+        new HashMap&lt;PairInt, Map&lt;Integer, GradientDescriptor&gt;&gt;();
+
+    /**
+    key = pixel coordinates of center of frame;
+    value = map with key = rotation (in degrees) of the frame and value = the
+    *     extracted descriptor
+    */
+<span class="fc" id="L100">    protected Map&lt;PairInt, Map&lt;Integer, ThetaDescriptor&gt;&gt; thetaBlocks =</span>
+        new HashMap&lt;PairInt, Map&lt;Integer, ThetaDescriptor&gt;&gt;();
+
+    /**
+     *
+     * @param image
+     * @param theGradientImg gradient image of the image region (usually
+     * from the process of creating corners).
+     * @param theThetaImg the gradient orientation angle image
+     * @param blockHalfWidths the half width of a block.  For example, to
+     * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
+     * @param useNormalizedIntensities normalize the intensities extracted
+     * from image if true (NOT YET IMPLEMENTED)
+     */
+    public Features(final GreyscaleImage image, final GreyscaleImage theGradientImg,
+        final GreyscaleImage theThetaImg, final int blockHalfWidths,
+<span class="fc" id="L116">        final boolean useNormalizedIntensities) {</span>
+
+<span class="fc" id="L118">        this.gsImg = image;</span>
+<span class="fc" id="L119">        this.clrImg = null;</span>
+<span class="fc" id="L120">        this.bHalfW = blockHalfWidths;</span>
+<span class="fc" id="L121">        this.useNormalizedIntensities = useNormalizedIntensities;</span>
+<span class="fc" id="L122">        this.gradientImg = theGradientImg;</span>
+<span class="fc" id="L123">        this.thetaImg = theThetaImg;</span>
+<span class="fc" id="L124">        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);</span>
+<span class="fc" id="L125">    }</span>
+
+    /**
+     *
+     * @param image
+     * @param theGradientImg gradient image of the image region (usually
+     * from the process of creating corners).
+     * @param theThetaImg the gradient orientation angle image
+     * @param blockHalfWidths the half width of a block.  For example, to
+     * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
+     * @param useNormalizedIntensities normalize the intensities extracted
+     * from image if true (NOT YET IMPLEMENTED)
+     */
+    public Features(final Image image, final GreyscaleImage theGradientImg,
+        final GreyscaleImage theThetaImg, final int blockHalfWidths,
+<span class="fc" id="L140">        final boolean useNormalizedIntensities) {</span>
+
+<span class="fc" id="L142">        this.gsImg = null;</span>
+<span class="fc" id="L143">        this.clrImg = image;</span>
+<span class="fc" id="L144">        this.bHalfW = blockHalfWidths;</span>
+<span class="fc" id="L145">        this.useNormalizedIntensities = useNormalizedIntensities;</span>
+<span class="fc" id="L146">        this.gradientImg = theGradientImg;</span>
+<span class="fc" id="L147">        this.thetaImg = theThetaImg;</span>
+<span class="fc" id="L148">        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);</span>
+<span class="fc" id="L149">    }</span>
+
+    /**
+     * extract the intensity from the image for the given block center and
+     * return it in a descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return
+     */
+    public IntensityDescriptor extractIntensity(final int xCenter,
+        final int yCenter, final int rotation) {
+
+<span class="fc" id="L163">        checkBounds(xCenter, yCenter);</span>
+
+<span class="fc" id="L165">        PairInt p = new PairInt(xCenter, yCenter);</span>
+
+<span class="fc" id="L167">        Integer rotationKey = Integer.valueOf(rotation);</span>
+
+<span class="fc" id="L169">        Map&lt;Integer, IntensityDescriptor&gt; descriptors = intensityBlocks.get(p);</span>
+
+<span class="fc" id="L171">        IntensityDescriptor descriptor = null;</span>
+
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (descriptors != null) {</span>
+<span class="nc" id="L174">            descriptor = descriptors.get(rotationKey);</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            if (descriptor != null) {</span>
+<span class="nc" id="L176">                return descriptor;</span>
+            }
+        } else {
+<span class="fc" id="L179">            descriptors = new HashMap&lt;Integer, IntensityDescriptor&gt;();</span>
+<span class="fc" id="L180">            intensityBlocks.put(p, descriptors);</span>
+        }
+
+        if (useBinnedCellIntensities) {
+<span class="fc" id="L184">            descriptor = extractIntensityForCells(xCenter, yCenter, rotation);</span>
+        } else {
+            descriptor = extractIntensityForBlock(xCenter, yCenter, rotation);
+        }
+
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (descriptor != null) {</span>
+<span class="fc" id="L190">            descriptors.put(rotationKey, descriptor);</span>
+        }
+        
+<span class="fc" id="L193">        return descriptor;</span>
+    }
+
+    /**
+     *
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return descriptor holding gradient rotated.  NOTE that the method may
+     * return null if ant part of the center coordinate cell was was rotated
+     * out of the frame.
+     */
+    public GradientDescriptor extractGradient(int xCenter, int yCenter,
+        int rotation) {
+
+<span class="nc" id="L209">        checkBounds(xCenter, yCenter);</span>
+
+<span class="nc" id="L211">        PairInt p = new PairInt(xCenter, yCenter);</span>
+
+<span class="nc" id="L213">        Integer rotKey = Integer.valueOf(rotation);</span>
+
+<span class="nc" id="L215">        Map&lt;Integer, GradientDescriptor&gt; descriptors = gradientBlocks.get(p);</span>
+
+<span class="nc" id="L217">        GradientDescriptor descriptor = null;</span>
+
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (descriptors != null) {</span>
+<span class="nc" id="L220">            descriptor = descriptors.get(rotKey);</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            if (descriptor != null) {</span>
+<span class="nc" id="L222">                return descriptor;</span>
+            }
+        } else {
+<span class="nc" id="L225">            descriptors = new HashMap&lt;Integer, GradientDescriptor&gt;();</span>
+<span class="nc" id="L226">            gradientBlocks.put(p, descriptors);</span>
+        }
+
+        if (useBinnedCellGradients) {
+<span class="nc" id="L230">            descriptor = extractGsGradientForCells(xCenter, yCenter, rotation);</span>
+        } else {
+            descriptor = extractGsGradientForBlock(xCenter, yCenter, rotation);
+        }
+
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        if (descriptor != null) {</span>
+<span class="nc" id="L236">            descriptors.put(rotKey, descriptor);</span>
+        }
+
+<span class="nc" id="L239">        return descriptor;</span>
+    }
+
+    /**
+     * extract theta orientation from the image for (xCenter, yCenter) and
+     * return it in a descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return descriptor for theta extracted from the image.  NOTE that this
+     * method may return null if the (xCenter, yCenter) frame is rotated in
+     * part out of the frame.
+     */
+    public ThetaDescriptor extractTheta(final int xCenter, final int yCenter,
+        final int rotation) {
+
+<span class="nc" id="L256">        checkBounds(xCenter, yCenter);</span>
+
+<span class="nc" id="L258">        PairInt p = new PairInt(xCenter, yCenter);</span>
+
+<span class="nc" id="L260">        Integer rotationKey = Integer.valueOf(rotation);</span>
+
+<span class="nc" id="L262">        Map&lt;Integer, ThetaDescriptor&gt; descriptors = thetaBlocks.get(p);</span>
+
+<span class="nc" id="L264">        ThetaDescriptor descriptor = null;</span>
+
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if (descriptors != null) {</span>
+<span class="nc" id="L267">            descriptor = descriptors.get(rotationKey);</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">            if (descriptor != null) {</span>
+<span class="nc" id="L269">                return descriptor;</span>
+            }
+        } else {
+<span class="nc" id="L272">            descriptors = new HashMap&lt;Integer, ThetaDescriptor&gt;();</span>
+<span class="nc" id="L273">            thetaBlocks.put(p, descriptors);</span>
+        }
+
+        /*
+        this will be one of 3 types of theta descriptors and the
+        choice will be set in constructor
+        */
+
+<span class="nc" id="L281">        descriptor = extractThetaForType(xCenter, yCenter, rotation);</span>
+
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (descriptor != null) {</span>
+<span class="nc" id="L284">            descriptors.put(rotationKey, descriptor);</span>
+        }
+
+<span class="nc" id="L287">        return descriptor;</span>
+    }
+
+    private IntensityDescriptor extractIntensityForBlock(int xCenter,
+        int yCenter, int rotation) {
+
+<span class="nc" id="L293">        Transformer transformer = new Transformer();</span>
+
+<span class="nc" id="L295">        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);</span>
+
+        IntensityDescriptor descriptor;
+
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        if (gsImg != null) {</span>
+<span class="nc" id="L300">            descriptor = extractGsIntensityForBlock(xCenter, yCenter,</span>
+                frameOffsets);
+        } else {
+<span class="nc" id="L303">            descriptor = extractClrIntensityForBlock(xCenter, yCenter,</span>
+                frameOffsets);
+        }
+
+<span class="nc bnc" id="L307" title="All 4 branches missed.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
+<span class="nc" id="L308">            descriptor.applyNormalization();</span>
+        }
+
+<span class="nc" id="L311">        return descriptor;</span>
+    }
+    
+    private IntensityDescriptor extractIntensityForCells(int xCenter,
+        int yCenter, int rotation) {
+
+        IntensityDescriptor descriptor;
+
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">        if (gsImg != null) {</span>
+<span class="fc" id="L320">            descriptor = extractGsIntensityForCells(xCenter, yCenter,</span>
+                rotation);
+        } else {
+<span class="nc" id="L323">            descriptor = extractClrIntensityForCells(xCenter, yCenter,</span>
+                rotation);
+        }
+
+<span class="pc bpc" id="L327" title="3 of 4 branches missed.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
+<span class="nc" id="L328">            descriptor.applyNormalization();</span>
+        }
+
+<span class="fc" id="L331">        return descriptor;</span>
+    }
+
+    private GradientDescriptor extractGsGradientForBlock(int xCenter,
+        int yCenter, int rotation) {
+
+<span class="nc" id="L337">        Transformer transformer = new Transformer();</span>
+
+<span class="nc" id="L339">        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);</span>
+
+<span class="nc" id="L341">        GradientDescriptor descriptor = null;</span>
+
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        if (gradientImg != null) {</span>
+<span class="nc" id="L344">            descriptor = extractGsGradientForBlock(xCenter, yCenter,</span>
+                frameOffsets);
+        } /*else {
+            descriptor = extractClrGradientForBlock(xCenter, yCenter,
+                frameOffsets);
+        }*/
+
+<span class="nc" id="L351">        return descriptor;</span>
+    }
+
+    private ThetaDescriptor extractThetaForType(int xCenter,
+        int yCenter, int rotation) {
+
+<span class="nc" id="L357">        Transformer transformer = new Transformer();</span>
+
+<span class="nc" id="L359">        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);</span>
+
+<span class="nc" id="L361">        ThetaDescriptor descriptor = null;</span>
+
+        if (thetaType == 1) {
+            GradientDescriptor gradDesc = null;
+            if (useBinnedCellGradients) {
+                gradDesc = extractGsGradientForCells(xCenter, yCenter, rotation);
+            } else {
+                gradDesc = extractGradient(xCenter, yCenter, rotation);
+            }
+            if (gradDesc == null) {
+                return null;
+            }
+            descriptor = extractThetaForBlock(gradDesc, xCenter, yCenter,
+                rotation, frameOffsets);
+        } else if (thetaType == 2) {
+<span class="nc" id="L376">            descriptor = extractThetaForCells(xCenter, yCenter, rotation);</span>
+        } else if (thetaType == 3) {
+            throw new UnsupportedOperationException(&quot;not yet implemented&quot;);
+            //descriptor = extractThetaHistograms(xCenter, yCenter, rotation);
+        }
+
+<span class="nc" id="L382">        return descriptor;</span>
+    }
+
+    private void checkBounds(int x, int y) {
+
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (!isWithinXBounds(x)) {</span>
+<span class="nc" id="L388">            throw new IllegalArgumentException(&quot;x is out of bounds of image&quot;);</span>
+        }
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">        if (!isWithinYBounds(y)) {</span>
+<span class="nc" id="L391">            throw new IllegalArgumentException(&quot;y is out of bounds of image&quot;);</span>
+        }
+<span class="fc" id="L393">    }</span>
+
+    public boolean isWithinXBounds(int x) {
+
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        if (x &lt; 0) {</span>
+<span class="fc" id="L398">            return false;</span>
+        }
+
+<span class="fc bfc" id="L401" title="All 2 branches covered.">        if (gsImg != null) {</span>
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">            if (x &gt; (gsImg.getWidth() - 1)) {</span>
+<span class="nc" id="L403">                return false;</span>
+            }
+        } else {
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">            if (x &gt; (clrImg.getWidth() - 1)) {</span>
+<span class="nc" id="L407">                return false;</span>
+            }
+        }
+
+<span class="fc" id="L411">        return true;</span>
+    }
+
+    public boolean isWithinYBounds(int y) {
+
+<span class="fc bfc" id="L416" title="All 2 branches covered.">        if (y &lt; 0) {</span>
+<span class="fc" id="L417">            return false;</span>
+        }
+
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        if (gsImg != null) {</span>
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">            if (y &gt; (gsImg.getHeight() - 1)) {</span>
+<span class="nc" id="L422">                return false;</span>
+            }
+        } else {
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">            if (y &gt; (clrImg.getHeight() - 1)) {</span>
+<span class="nc" id="L426">                return false;</span>
+            }
+        }
+
+<span class="fc" id="L430">        return true;</span>
+    }
+
+    /**
+     * extract the intensity from the image and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @return
+     */
+    private IntensityDescriptor extractGsIntensityForBlock(int xCenter,
+        int yCenter, float[][] offsets) {
+
+<span class="nc" id="L444">        float[] output = new float[offsets.length];</span>
+
+<span class="nc" id="L446">        float sentinel = GsIntensityDescriptor.sentinel;</span>
+
+<span class="nc" id="L448">        int count = 0;</span>
+
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
+
+<span class="nc" id="L452">            float x1P = xCenter + offsets[i][0];</span>
+
+<span class="nc" id="L454">            float y1P = yCenter + offsets[i][1];</span>
+
+<span class="nc bnc" id="L456" title="All 6 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (gsImg.getWidth() - 1)) ||</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">                (y1P &lt; 0) || (Math.ceil(y1P) &gt; (gsImg.getHeight() - 1))) {</span>
+
+<span class="nc" id="L459">                output[count] = sentinel;</span>
+
+            } else {
+
+                //non-adaptive algorithms: nearest neighbor or bilinear
+
+                // bilinear:
+                //double v = imageProcessor.biLinearInterpolation(gsImg, x1P, y1P);
+
+                // nearest neighbor
+<span class="nc" id="L469">                double v = gsImg.getValue(Math.round(x1P), Math.round(y1P));</span>
+
+<span class="nc" id="L471">                output[count] = (int)Math.round(v);</span>
+            }
+
+<span class="nc" id="L474">            count++;</span>
+        }
+
+<span class="nc" id="L477">        IntensityDescriptor desc = new GsIntensityDescriptor(output,</span>
+            offsets.length &gt;&gt; 1);
+
+<span class="nc" id="L480">        return desc;</span>
+    }
+
+    /**
+     * extract theta orientation for the (xCenter, yCenter) region
+     * and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    private ThetaDescriptor extractThetaForBlock(GradientDescriptor gradientDesc,
+        int xCenter, int yCenter, int rotation, float[][] offsets) {
+
+<span class="nc bnc" id="L496" title="All 2 branches missed.">        if (gradientDesc == null) {</span>
+<span class="nc" id="L497">            throw new IllegalArgumentException(&quot;gradientDesc cannot be null&quot;);</span>
+        }
+
+<span class="nc" id="L500">        int centralPixelIndex = offsets.length &gt;&gt; 1;</span>
+
+<span class="nc" id="L502">        int[] output = new int[offsets.length];</span>
+
+<span class="nc" id="L504">        int sentinel = PixelThetaDescriptor.sentinel;</span>
+
+<span class="nc" id="L506">        int count = 0;</span>
+
+<span class="nc" id="L508">        int maxGradient = gradientDesc.getMaximum();</span>
+
+<span class="nc" id="L510">        float limitGradient = 0.1f * maxGradient;</span>
+
+<span class="nc bnc" id="L512" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
+
+<span class="nc" id="L514">            float x1P = xCenter + offsets[i][0];</span>
+
+<span class="nc" id="L516">            float y1P = yCenter + offsets[i][1];</span>
+
+<span class="nc bnc" id="L518" title="All 6 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (thetaImg.getWidth() - 1)) ||</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">                (y1P &lt; 0) || (Math.ceil(y1P) &gt; (thetaImg.getHeight() - 1))) {</span>
+
+<span class="nc bnc" id="L521" title="All 2 branches missed.">                if (count == centralPixelIndex) {</span>
+<span class="nc" id="L522">                    return null;</span>
+                }
+<span class="nc" id="L524">                output[count] = sentinel;</span>
+
+            } else {
+
+<span class="nc" id="L528">                double gradV = gradientImg.getValue(Math.round(x1P), Math.round(y1P));</span>
+<span class="nc" id="L529">                int gradientV = ((GsGradientDescriptor)gradientDesc).grey[count];</span>
+
+<span class="nc bnc" id="L531" title="All 2 branches missed.">                if (gradV &lt; limitGradient) {</span>
+
+<span class="nc bnc" id="L533" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+                        // warning, S/N is too low to calc auto-correlation error
+                        // and algorithm will find a neaighbor to use instead
+                    }
+
+<span class="nc" id="L538">                    output[count] = sentinel;</span>
+
+                } else {
+
+                    //non-adaptive algorithms: nearest neighbor or bilinear
+
+                    // bilinear: (needs to be adapted for angular addition)
+                    //double v = imageProcessor.biLinearInterpolation(thetaImg, x1P, y1P);
+
+                    // nearest neighbor
+<span class="nc" id="L548">                    double v = thetaImg.getValue(Math.round(x1P), Math.round(y1P));</span>
+
+                    // subtract &quot;dominant orientation&quot;
+<span class="nc" id="L551">                    v -= rotation;</span>
+
+<span class="nc bnc" id="L553" title="All 2 branches missed.">                    if (v &gt;= 360) {</span>
+<span class="nc" id="L554">                        v = v % 360;</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">                    } else if (v &lt; 0) {</span>
+<span class="nc bnc" id="L556" title="All 2 branches missed.">                        while (v &lt; 0) {</span>
+<span class="nc" id="L557">                            v += 360;</span>
+                        }
+                    }
+
+<span class="nc" id="L561">                    output[count] = (int)Math.round(v);</span>
+                }
+            }
+
+<span class="nc" id="L565">            count++;</span>
+        }
+
+<span class="nc" id="L568">        ThetaDescriptor desc = new PixelThetaDescriptor(output,</span>
+            offsets.length &gt;&gt; 1);
+
+<span class="nc" id="L571">        return desc;</span>
+    }
+
+    /**
+     * extract from the image and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    private GradientDescriptor extractGsGradientForBlock(int xCenter,
+        int yCenter, float[][] offsets) {
+
+<span class="nc" id="L586">        int sentinel = GsGradientDescriptor.sentinel;</span>
+
+<span class="nc" id="L588">        int[] output = new int[offsets.length];</span>
+
+<span class="nc" id="L590">        int count = 0;</span>
+
+<span class="nc bnc" id="L592" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
+
+<span class="nc" id="L594">            float x1P = xCenter + offsets[i][0];</span>
+
+<span class="nc" id="L596">            float y1P = yCenter + offsets[i][1];</span>
+
+<span class="nc bnc" id="L598" title="All 6 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (gradientImg.getWidth() - 1)) ||</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">                (y1P &lt; 0) || (Math.ceil(y1P) &gt; (gradientImg.getHeight() - 1))) {</span>
+
+<span class="nc" id="L601">                output[count] = sentinel;</span>
+
+            } else {
+
+                //non-adaptive algorithms: nearest neighbor or bilinear
+
+                // bilinear:
+                //double v = imageProcessor.biLinearInterpolation(gradientImg, x1P, y1P);
+
+                // nearest neighbor
+<span class="nc" id="L611">                double v = gradientImg.getValue(Math.round(x1P), Math.round(y1P));</span>
+
+<span class="nc" id="L613">                output[count] = (int)Math.round(v);</span>
+            }
+
+<span class="nc" id="L616">            count++;</span>
+        }
+
+<span class="nc" id="L619">        GradientDescriptor desc = new GsGradientDescriptor(output,</span>
+            offsets.length &gt;&gt; 1);
+
+<span class="nc" id="L622">        return desc;</span>
+    }
+
+    /**
+     * extract the gradient from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    private GradientDescriptor extractGsGradientForCells(int xCenter,
+        int yCenter, int rotation) {
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+
+          3
+          2  3     7    11     15
+          1
+          0  2     6   10@     14
+         -1
+         -2  1     5     9     13
+         -3
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3
+        */
+
+<span class="nc" id="L658">        int sentinel = GsGradientDescriptor.sentinel;</span>
+
+<span class="nc" id="L660">        int cellDim = 2;</span>
+<span class="nc" id="L661">        int nCellsAcross = 6;</span>
+<span class="nc" id="L662">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
+
+<span class="nc" id="L664">        int nColsHalf = (nCellsAcross/2);</span>
+<span class="nc" id="L665">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+        
+<span class="nc" id="L667">        int[] output = new int[nCellsAcross * nCellsAcross];</span>
+<span class="nc" id="L668">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="nc" id="L669">        float[] yT = new float[xT.length];</span>
+
+<span class="nc" id="L671">        int count = 0;</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
+<span class="nc bnc" id="L673" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
+
+                // --- calculate values for the cell ---
+<span class="nc" id="L676">                boolean withinBounds = transformCellCoordinates(</span>
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+<span class="nc" id="L678">                    gradientImg.getWidth(), gradientImg.getHeight(),</span>
+                    xT, yT);
+
+<span class="nc bnc" id="L681" title="All 2 branches missed.">                if (!withinBounds) {</span>
+<span class="nc bnc" id="L682" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+<span class="nc" id="L683">                        return null;</span>
+                    }
+<span class="nc" id="L685">                    output[count] = sentinel;</span>
+<span class="nc" id="L686">                    count++;</span>
+<span class="nc" id="L687">                    continue;</span>
+                }
+
+<span class="nc" id="L690">                int cCount = 0;</span>
+<span class="nc" id="L691">                int v = 0;</span>
+<span class="nc bnc" id="L692" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="nc" id="L693">                    int x = Math.round(xT[i]);</span>
+<span class="nc" id="L694">                    int y = Math.round(yT[i]);</span>
+<span class="nc" id="L695">                    v += gradientImg.getValue(x, y);</span>
+<span class="nc" id="L696">                    cCount++;</span>
+                }
+
+<span class="nc bnc" id="L699" title="All 2 branches missed.">                if (cCount == 0) {</span>
+<span class="nc" id="L700">                    output[count] = sentinel;</span>
+<span class="nc" id="L701">                    count++;</span>
+<span class="nc" id="L702">                    continue;</span>
+                }
+
+<span class="nc" id="L705">                v /= (float)cCount;</span>
+
+<span class="nc bnc" id="L707" title="All 2 branches missed.">                if (v &gt; 359) {</span>
+<span class="nc" id="L708">                    v = v % 360;</span>
+<span class="nc bnc" id="L709" title="All 2 branches missed.">                } else if (v &lt; 0) {</span>
+<span class="nc" id="L710">                    v = v + 360;</span>
+                }
+
+<span class="nc" id="L713">                output[count] = v;</span>
+
+<span class="nc" id="L715">                count++;</span>
+            }
+        }
+
+<span class="nc" id="L719">        GradientDescriptor desc = new GsGradientDescriptor(output,</span>
+            centralPixelIndex);
+
+<span class="nc" id="L722">        return desc;</span>
+    }
+
+    /**
+     * extract the intensity from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    private IntensityDescriptor extractGsIntensityForCells(int xCenter,
+        int yCenter, int rotation) {
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+
+          3
+          2  3     7    11     15
+          1
+          0  2     6   10@     14
+         -1
+         -2  1     5     9     13
+         -3
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3
+        */
+
+<span class="fc" id="L758">        float sentinel = GsIntensityDescriptor.sentinel;</span>
+
+<span class="fc" id="L760">        int cellDim = 2;</span>
+<span class="fc" id="L761">        int nCellsAcross = 6;</span>
+<span class="fc" id="L762">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
+
+<span class="fc" id="L764">        int nColsHalf = (nCellsAcross/2);</span>
+<span class="fc" id="L765">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+        
+<span class="fc" id="L767">        float[] output = new float[nCellsAcross * nCellsAcross];</span>
+<span class="fc" id="L768">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="fc" id="L769">        float[] yT = new float[xT.length];</span>
+
+<span class="fc" id="L771">        int count = 0;</span>
+<span class="fc bfc" id="L772" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
+<span class="fc bfc" id="L773" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
+
+                // --- calculate values for the cell ---
+<span class="fc" id="L776">                boolean withinBounds = transformCellCoordinates(</span>
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+<span class="fc" id="L778">                    gsImg.getWidth(), gsImg.getHeight(),</span>
+                    xT, yT);
+
+<span class="fc bfc" id="L781" title="All 2 branches covered.">                if (!withinBounds) {</span>
+<span class="pc bpc" id="L782" title="1 of 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+<span class="nc" id="L783">                        return null;</span>
+                    }
+<span class="fc" id="L785">                    output[count] = sentinel;</span>
+<span class="fc" id="L786">                    count++;</span>
+<span class="fc" id="L787">                    continue;</span>
+                }
+
+<span class="fc" id="L790">                int cCount = 0;</span>
+<span class="fc" id="L791">                int v = 0;</span>
+<span class="fc bfc" id="L792" title="All 2 branches covered.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="fc" id="L793">                    int x = Math.round(xT[i]);</span>
+<span class="fc" id="L794">                    int y = Math.round(yT[i]);</span>
+<span class="fc" id="L795">                    int v0 = gsImg.getValue(x, y);</span>
+<span class="fc" id="L796">                    v += v0;</span>
+<span class="fc" id="L797">                    cCount++;// img changed?  w=480,h=640</span>
+                }
+
+<span class="pc bpc" id="L800" title="1 of 2 branches missed.">                if (cCount == 0) {</span>
+<span class="nc" id="L801">                    output[count] = sentinel;</span>
+<span class="nc" id="L802">                    count++;</span>
+<span class="nc" id="L803">                    continue;</span>
+                }
+
+<span class="fc" id="L806">                v /= (float)cCount;</span>
+
+<span class="fc" id="L808">                output[count] = v;</span>
+
+<span class="fc" id="L810">                count++;</span>
+            }
+        }
+
+<span class="fc" id="L814">        IntensityDescriptor desc = new GsIntensityDescriptor(output,</span>
+            centralPixelIndex);
+
+<span class="fc" id="L817">        return desc;</span>
+    }
+
+    /**
+     * extract the intensity from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    private IntensityDescriptor extractClrIntensityForCells(int xCenter,
+        int yCenter, int rotation) {
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+
+          3
+          2  3     7    11     15
+          1
+          0  2     6   10@     14
+         -1
+         -2  1     5     9     13
+         -3
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3
+        */
+
+<span class="nc" id="L853">        int sentinel = ClrIntensityDescriptor.sentinel;</span>
+
+<span class="nc" id="L855">        int cellDim = 2;</span>
+<span class="nc" id="L856">        int nCellsAcross = 6;</span>
+<span class="nc" id="L857">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
+
+<span class="nc" id="L859">        int nColsHalf = (nCellsAcross/2);</span>
+<span class="nc" id="L860">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+        
+<span class="nc" id="L862">        int[] red = new int[nCellsAcross * nCellsAcross];</span>
+<span class="nc" id="L863">        int[] green = new int[red.length];</span>
+<span class="nc" id="L864">        int[] blue = new int[red.length];</span>
+<span class="nc" id="L865">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="nc" id="L866">        float[] yT = new float[xT.length];</span>
+
+<span class="nc" id="L868">        int count = 0;</span>
+<span class="nc bnc" id="L869" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
+<span class="nc bnc" id="L870" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
+
+                // --- calculate values for the cell ---
+<span class="nc" id="L873">                boolean withinBounds = transformCellCoordinates(</span>
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+<span class="nc" id="L875">                    clrImg.getWidth(), clrImg.getHeight(),</span>
+                    xT, yT);
+
+<span class="nc bnc" id="L878" title="All 2 branches missed.">                if (!withinBounds) {</span>
+<span class="nc bnc" id="L879" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+<span class="nc" id="L880">                        return null;</span>
+                    }
+<span class="nc" id="L882">                    red[count] = sentinel;</span>
+<span class="nc" id="L883">                    green[count] = sentinel;</span>
+<span class="nc" id="L884">                    blue[count] = sentinel;</span>
+<span class="nc" id="L885">                    count++;</span>
+<span class="nc" id="L886">                    continue;</span>
+                }
+
+<span class="nc" id="L889">                int cCount = 0;</span>
+<span class="nc" id="L890">                int r = 0;</span>
+<span class="nc" id="L891">                int g = 0;</span>
+<span class="nc" id="L892">                int b = 0;</span>
+<span class="nc bnc" id="L893" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="nc" id="L894">                    int x = Math.round(xT[i]);</span>
+<span class="nc" id="L895">                    int y = Math.round(yT[i]);</span>
+<span class="nc" id="L896">                    r += clrImg.getR(x, y);</span>
+<span class="nc" id="L897">                    g += clrImg.getG(x, y);</span>
+<span class="nc" id="L898">                    b += clrImg.getB(x, y);</span>
+<span class="nc" id="L899">                    cCount++;</span>
+                }
+
+<span class="nc bnc" id="L902" title="All 2 branches missed.">                if (cCount == 0) {</span>
+<span class="nc" id="L903">                    red[count] = sentinel;</span>
+<span class="nc" id="L904">                    green[count] = sentinel;</span>
+<span class="nc" id="L905">                    blue[count] = sentinel;</span>
+<span class="nc" id="L906">                    count++;</span>
+<span class="nc" id="L907">                    continue;</span>
+                }
+
+<span class="nc" id="L910">                r /= (float)cCount;</span>
+<span class="nc" id="L911">                g /= (float)cCount;</span>
+<span class="nc" id="L912">                b /= (float)cCount;</span>
+
+<span class="nc" id="L914">                red[count] = r;</span>
+<span class="nc" id="L915">                green[count] = g;</span>
+<span class="nc" id="L916">                blue[count] = b;</span>
+
+<span class="nc" id="L918">                count++;</span>
+            }
+        }
+
+<span class="nc" id="L922">        IntensityDescriptor desc = new ClrIntensityDescriptor(red, green, blue,</span>
+            centralPixelIndex);
+
+<span class="nc" id="L925">        return desc;</span>
+    }
+    
+    /**
+     * extract theta in angular degrees from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells, making the value correction for
+     * &quot;dominant orientation&quot; too.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return descriptor for the region given and orientation given.  NOTE
+     * that it can return null if the central region is shifted out of the
+     * image frame.  If any other cells excepting the center are shifted
+     * out, an object is returned with those cells holding the sentinel as a
+     * value (further code interprets those as a skip instruction).
+     */
+    private ThetaDescriptor extractThetaForCells(int xCenter, int yCenter,
+        int rotation) {
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+
+          3
+          2  3     7    11     15
+          1
+          0  2     6   10@     14
+         -1
+         -2  1     5     9     13
+         -3
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3
+        */
+
+<span class="nc" id="L966">        int sentinel = ThetaDescriptor.sentinel;</span>
+
+<span class="nc" id="L968">        int cellDim = 2;</span>
+<span class="nc" id="L969">        int nCellsAcross = 6;</span>
+<span class="nc" id="L970">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
+
+<span class="nc" id="L972">        int nColsHalf = (nCellsAcross/2);</span>
+<span class="nc" id="L973">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+        
+<span class="nc" id="L975">        int[] output = new int[nCellsAcross * nCellsAcross];</span>
+<span class="nc" id="L976">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="nc" id="L977">        float[] yT = new float[xT.length];</span>
+
+<span class="nc" id="L979">        int count = 0;</span>
+<span class="nc bnc" id="L980" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
+<span class="nc bnc" id="L981" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
+
+                // --- calculate values for the cell ---
+<span class="nc" id="L984">                boolean withinBounds = transformCellCoordinates(</span>
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+<span class="nc" id="L986">                    thetaImg.getWidth(), thetaImg.getHeight(),</span>
+                    xT, yT);
+
+<span class="nc bnc" id="L989" title="All 2 branches missed.">                if (!withinBounds) {</span>
+<span class="nc bnc" id="L990" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+<span class="nc" id="L991">                        return null;</span>
+                    }
+<span class="nc" id="L993">                    output[count] = sentinel;</span>
+<span class="nc" id="L994">                    count++;</span>
+<span class="nc" id="L995">                    continue;</span>
+                }
+
+<span class="nc" id="L998">                int maxGrd = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L999" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="nc" id="L1000">                    int x = Math.round(xT[i]);</span>
+<span class="nc" id="L1001">                    int y = Math.round(yT[i]);</span>
+<span class="nc" id="L1002">                    int v = gradientImg.getValue(x, y);</span>
+<span class="nc bnc" id="L1003" title="All 2 branches missed.">                    if (v &gt; maxGrd) {</span>
+<span class="nc" id="L1004">                        maxGrd = v;</span>
+                    }
+                }
+
+<span class="nc" id="L1008">                float lowLimit = 0.1f * maxGrd;</span>
+
+                /*
+                store the image values above the critical limit then
+                use angle util to average the values with consideration
+                for their quadrants.
+                */
+
+<span class="nc" id="L1016">                int cCount = 0;</span>
+
+<span class="nc" id="L1018">                int[] vs = new int[xT.length];</span>
+<span class="nc" id="L1019">                int[] gradients = new int[xT.length];</span>
+<span class="nc bnc" id="L1020" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="nc" id="L1021">                    int x = Math.round(xT[i]);</span>
+<span class="nc" id="L1022">                    int y = Math.round(yT[i]);</span>
+<span class="nc" id="L1023">                    int vGradient = gradientImg.getValue(x, y);</span>
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">                    if (vGradient &lt; lowLimit) {</span>
+<span class="nc" id="L1025">                        continue;</span>
+                    }
+<span class="nc" id="L1027">                    vs[cCount] = thetaImg.getValue(x, y);</span>
+<span class="nc" id="L1028">                    gradients[cCount] = vGradient;</span>
+<span class="nc" id="L1029">                    cCount++;</span>
+                }
+
+<span class="nc bnc" id="L1032" title="All 2 branches missed.">                if (cCount == 0) {</span>
+<span class="nc" id="L1033">                    output[count] = sentinel;</span>
+<span class="nc" id="L1034">                    count++;</span>
+<span class="nc" id="L1035">                    continue;</span>
+                }
+                
+                /* 
+                using the weighted values reduces the &quot;outlier&quot; differences
+                when comparing to another set of cells in other image.
+                */
+
+                //runtime complexity for the angular average is about 3 * O(cCount).
+                //float avg = AngleUtil.calculateAverageWithQuadrantCorrections(
+                //    vs, cCount - 1);
+
+<span class="nc" id="L1047">                float avg =</span>
+<span class="nc" id="L1048">                    AngleUtil.calculateWeightedAverageWithQuadrantCorrections(</span>
+                        vs, gradients, cCount - 1);
+
+                // subtract the &quot;dominant orientation&quot;
+<span class="nc" id="L1052">                avg -= rotation;</span>
+
+<span class="nc bnc" id="L1054" title="All 2 branches missed.">                if (avg &gt; 359) {</span>
+<span class="nc" id="L1055">                    avg = avg % 360;</span>
+<span class="nc bnc" id="L1056" title="All 2 branches missed.">                } else if (avg &lt; 0) {</span>
+<span class="nc" id="L1057">                    avg = avg + 360;</span>
+                }
+
+<span class="nc" id="L1060">                output[count] = Math.round(avg);</span>
+
+<span class="nc" id="L1062">                count++;</span>
+            }
+        }
+
+<span class="nc" id="L1066">        ThetaDescriptor desc = new PixelThetaDescriptor(output,</span>
+            centralPixelIndex);
+
+<span class="nc" id="L1069">        return desc;</span>
+    }
+
+    /**
+     * extract the gradient from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return an instance of ThetaHistogramDescriptor.  Note that it's
+     * internal array may contain null values if a cell was out of bounds
+     * so any comparison methods should check for null.
+     */
+    private ThetaDescriptor extractThetaHistograms(int xCenter, int yCenter,
+        int rotation) {
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+
+          3
+          2  3     7    11     15
+          1
+          0  2     6   10@     14
+         -1
+         -2  1     5     9     13
+         -3
+         -4  0     4     8     12
+            -4 -3 -2 -1  0  1  2  3
+        */
+
+        /*
+         theta' histogram is made for each group (subdivisions of the block)
+         for n=8 intervals of 45 degrees each.
+         group is 4x4... or so.  above, still using 2x2 which would be
+         too small for a histogram
+
+         S/N corrections:
+
+         consider discarding values that have gradientXY &lt; critical value
+         (suggested as 0.1 * maximum of gradientXY in this cell.  reference?)
+
+         create a weight for each pixel within the 4x4 group based upon the gradient value:
+         w[pix] = gXY[pix] / sqrt(sum of squares of gXY[pix] in 4x4 group) + eps)
+         where eps is a small number to avoid divide by zero errors
+
+         then the contribution of the pixel to the histogram bin is
+         weighted by that value, that is histogram increments are fractional
+         not integer.
+         (the bin the pixel is placed in is the same, just its contribution
+         that is weighted by fraction of total intensity).
+        */
+
+<span class="nc" id="L1129">        int sentinel = ThetaDescriptor.sentinel;</span>
+
+<span class="nc" id="L1131">        int cellDim = 2;</span>
+<span class="nc" id="L1132">        int nCellsAcross = 6;</span>
+<span class="nc" id="L1133">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
+
+<span class="nc" id="L1135">        int nColsHalf = (nCellsAcross/2);</span>
+<span class="nc" id="L1136">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+        
+<span class="nc" id="L1138">        int nHistBins = 36;</span>
+<span class="nc" id="L1139">        float binSize = 360.f/(float)nHistBins;</span>
+
+        // TODO: change the output here to be an array of histograms
+<span class="nc" id="L1142">        float[][] output = new float[nCellsAcross * nCellsAcross][];</span>
+
+<span class="nc" id="L1144">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="nc" id="L1145">        float[] yT = new float[xT.length];</span>
+
+<span class="nc" id="L1147">        int count = 0;</span>
+<span class="nc bnc" id="L1148" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
+<span class="nc bnc" id="L1149" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
+
+                // --- calculate values for the cell ---
+<span class="nc" id="L1152">                boolean withinBounds = transformCellCoordinates(</span>
+                    rotation, xCenter, yCenter, dx, dy, cellDim, 
+<span class="nc" id="L1154">                    thetaImg.getWidth(), thetaImg.getHeight(),</span>
+                    xT, yT);
+
+<span class="nc bnc" id="L1157" title="All 2 branches missed.">                if (!withinBounds) {</span>
+<span class="nc bnc" id="L1158" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+<span class="nc" id="L1159">                        return null;</span>
+                    }
+<span class="nc" id="L1161">                    output[count] = null;</span>
+<span class="nc" id="L1162">                    count++;</span>
+<span class="nc" id="L1163">                    continue;</span>
+                }
+
+<span class="nc" id="L1166">                int maxGrd = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L1167" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="nc" id="L1168">                    int x = Math.round(xT[i]);</span>
+<span class="nc" id="L1169">                    int y = Math.round(yT[i]);</span>
+<span class="nc" id="L1170">                    int v = gradientImg.getValue(x, y);</span>
+<span class="nc bnc" id="L1171" title="All 2 branches missed.">                    if (v &gt; maxGrd) {</span>
+<span class="nc" id="L1172">                        maxGrd = v;</span>
+                    }
+                }
+
+<span class="nc" id="L1176">                float lowLimit = 0.1f*maxGrd;</span>
+<span class="nc" id="L1177">                int cellGrdSum = 0;</span>
+<span class="nc" id="L1178">                int cCount = 0;</span>
+<span class="nc bnc" id="L1179" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="nc" id="L1180">                    int x = Math.round(xT[i]);</span>
+<span class="nc" id="L1181">                    int y = Math.round(yT[i]);</span>
+<span class="nc" id="L1182">                    int v = gradientImg.getValue(x, y);</span>
+<span class="nc bnc" id="L1183" title="All 2 branches missed.">                    if (v &lt; lowLimit) {</span>
+<span class="nc" id="L1184">                        continue;</span>
+                    }
+<span class="nc" id="L1186">                    cellGrdSum += v;</span>
+<span class="nc" id="L1187">                    cCount++;</span>
+                }
+
+<span class="nc bnc" id="L1190" title="All 2 branches missed.">                if (cCount == 0) {</span>
+<span class="nc" id="L1191">                    output[count] = null;</span>
+<span class="nc" id="L1192">                    count++;</span>
+<span class="nc" id="L1193">                    continue;</span>
+                }
+
+<span class="nc" id="L1196">                cCount = 0;</span>
+
+<span class="nc" id="L1198">                output[count] = new float[nHistBins];</span>
+
+<span class="nc bnc" id="L1200" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="nc" id="L1201">                    int x = Math.round(xT[i]);</span>
+<span class="nc" id="L1202">                    int y = Math.round(yT[i]);</span>
+<span class="nc" id="L1203">                    int vGradient = gradientImg.getValue(x, y);</span>
+<span class="nc bnc" id="L1204" title="All 2 branches missed.">                    if (vGradient &lt; lowLimit) {</span>
+<span class="nc" id="L1205">                        continue;</span>
+                    }
+
+                    // subtract &quot;dominant orientation&quot;
+<span class="nc" id="L1209">                    int v = thetaImg.getValue(x, y) - rotation;</span>
+<span class="nc bnc" id="L1210" title="All 2 branches missed.">                    if (v &lt; 0) {</span>
+<span class="nc" id="L1211">                        v += 360;</span>
+                    }
+
+<span class="nc" id="L1214">                    float weightedContrib = (float)vGradient/(float)cellGrdSum;</span>
+
+                    //TODO: add weightedContrib to the histogram
+                    //  bin the v belongs in
+
+<span class="nc" id="L1219">                    cCount++;</span>
+                }
+            }
+        }
+
+<span class="nc" id="L1224">        ThetaDescriptor desc = new HistogramThetaDescriptor(output,</span>
+            centralPixelIndex);
+
+<span class="nc" id="L1227">        return desc;</span>
+    }
+
+    /**
+     * extract the intensity from the image and place in the descriptor.
+     * Note that if the transformed pixel is out of bounds of the image,
+     * a sentinel is the value for that location in the descriptor.
+     * @param xCenter
+     * @param yCenter
+     * @param offsets
+     * @return
+     */
+    private IntensityDescriptor extractClrIntensityForBlock(int xCenter,
+        int yCenter, float[][] offsets) {
+
+<span class="nc" id="L1242">        int sentinel = ClrIntensityDescriptor.sentinel;</span>
+
+<span class="nc" id="L1244">        int[] outputR = new int[offsets.length];</span>
+<span class="nc" id="L1245">        int[] outputG = new int[outputR.length];</span>
+<span class="nc" id="L1246">        int[] outputB = new int[outputR.length];</span>
+
+<span class="nc" id="L1248">        int count = 0;</span>
+
+<span class="nc bnc" id="L1250" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
+
+<span class="nc" id="L1252">            float x1P = xCenter + offsets[i][0];</span>
+
+<span class="nc" id="L1254">            float y1P = yCenter + offsets[i][1];</span>
+
+<span class="nc bnc" id="L1256" title="All 6 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (clrImg.getWidth() - 1)) ||</span>
+<span class="nc bnc" id="L1257" title="All 2 branches missed.">                (y1P &lt; 0) || (Math.ceil(y1P) &gt; (clrImg.getHeight() - 1))) {</span>
+
+<span class="nc" id="L1259">                outputR[count] = sentinel;</span>
+<span class="nc" id="L1260">                outputG[count] = sentinel;</span>
+<span class="nc" id="L1261">                outputB[count] = sentinel;</span>
+
+            } else {
+
+                //non-adaptive algorithms: nearest neighbor or bilinear
+
+                // bilinear:
+                //double[] v = imageProcessor.biLinearInterpolation(clrImg, x1P, y1P);
+
+                // nearest neighbor
+<span class="nc" id="L1271">                int r = clrImg.getR(Math.round(x1P), Math.round(y1P));</span>
+
+<span class="nc" id="L1273">                int g = clrImg.getG(Math.round(x1P), Math.round(y1P));</span>
+
+<span class="nc" id="L1275">                int b = clrImg.getB(Math.round(x1P), Math.round(y1P));</span>
+
+<span class="nc" id="L1277">                outputR[count] = r;</span>
+<span class="nc" id="L1278">                outputG[count] = g;</span>
+<span class="nc" id="L1279">                outputB[count] = b;</span>
+            }
+
+<span class="nc" id="L1282">            count++;</span>
+        }
+
+<span class="nc" id="L1285">        IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG,</span>
+            outputB, offsets.length);
+
+<span class="nc" id="L1288">        return desc;</span>
+    }
+
+    /**
+     * extract the gradient from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param xCenter
+     * @param yCenter
+     * @param offsets
+     * @return
+     */
+    private GradientDescriptor extractClrGradientForCells(int xCenter,
+        int yCenter) {
+
+<span class="nc" id="L1302">        throw new UnsupportedOperationException(&quot;color gradient not yet implemented&quot;);</span>
+
+        /*
+          3 [-][-][.][.][-][-][.][.]
+          2 [-][-][.][.][-][-][.][.]
+          1 [.][.][-][-][.][.][-][-]
+          0 [.][.][-][-] @ [.][-][-]
+         -1 [-][-][.][.][-][-][.][.]
+         -2 [-][-][.][.][-][-][.][.]
+         -3 [.][.][-][-][.][.][-][-]
+         -4 [.][.][-][-][.][.][-][-]
+            -4 -3 -2 -1  0  1  2  3
+        */
+        /*
+        int[] red = new int[16];
+        int[] green = new int[16];
+        int[] blue = new int[16];
+
+        int sentinel = GsGradientDescriptor.sentinel;
+
+
+        GradientDescriptor desc = new ClrGradientDescriptor(red, green, blue);
+
+        return desc;
+        */
+    }
+
+    /**
+     * calculate the intensity based statistic (SSD) between the two descriptors
+     * with the caveat that the 2nd descriptor is the one used to calculate
+     * the error (so make sure that pattern is consistently used by invoker).
+     *
+     * @param desc1
+     * @param x1
+     * @param y1
+     * @param desc2
+     * @param x2
+     * @param y2
+     * @return
+     */
+    public static FeatureComparisonStat calculateIntensityStat(
+        IDescriptor desc1, final int x1, final int y1,
+        IDescriptor desc2, final int x2, final int y2) {
+
+<span class="pc bpc" id="L1346" title="1 of 2 branches missed.">        if (desc1 == null) {</span>
+<span class="nc" id="L1347">            throw new IllegalArgumentException(&quot;desc1 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L1349" title="1 of 2 branches missed.">        if (desc2 == null) {</span>
+<span class="nc" id="L1350">            throw new IllegalArgumentException(&quot;desc2 cannot be null&quot;);</span>
+        }
+
+<span class="fc" id="L1353">        float err2Sq = desc2.sumSquaredError();</span>
+
+<span class="fc" id="L1355">        float ssd = desc1.calculateSSD(desc2);</span>
+
+<span class="fc" id="L1357">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="fc" id="L1358">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="fc" id="L1359">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="fc" id="L1360">        stat.setSumIntensitySqDiff(ssd);</span>
+<span class="fc" id="L1361">        stat.setImg2PointIntensityErr(err2Sq);</span>
+
+<span class="fc" id="L1363">        return stat;</span>
+    }
+
+    /**
+     * calculate the intensity and gradient based statistics between the two
+     * descriptors with the caveat that the 2nd descriptor is the one used to
+     * calculate the error (so make sure that pattern is consistently used by
+     * invoker).
+     *
+     * @param descIntensity1
+     * @param descGradient1
+     * @param x1
+     * @param y1
+     * @param descIntensity2
+     * @param descGradient2
+     * @param x2
+     * @param y2
+     * @return
+     */
+    public static FeatureComparisonStat calculateStats(
+        IntensityDescriptor descIntensity1, GradientDescriptor descGradient1,
+        final int x1, final int y1,
+        IntensityDescriptor descIntensity2, GradientDescriptor descGradient2,
+        final int x2, final int y2) {
+
+<span class="nc bnc" id="L1388" title="All 2 branches missed.">        if (descIntensity1 == null) {</span>
+<span class="nc" id="L1389">            throw new IllegalArgumentException(&quot;descIntensity1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1391" title="All 2 branches missed.">        if (descGradient1 == null) {</span>
+<span class="nc" id="L1392">            throw new IllegalArgumentException(&quot;descGradient1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1394" title="All 2 branches missed.">        if (descIntensity2 == null) {</span>
+<span class="nc" id="L1395">            throw new IllegalArgumentException(&quot;descIntensity2 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1397" title="All 2 branches missed.">        if (descGradient2 == null) {</span>
+<span class="nc" id="L1398">            throw new IllegalArgumentException(&quot;descGradient2 cannot be null&quot;);</span>
+        }
+
+<span class="nc" id="L1401">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
+
+<span class="nc" id="L1403">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
+
+<span class="nc" id="L1405">        float err2SqGradient = descGradient2.sumSquaredError();</span>
+
+<span class="nc" id="L1407">        float ssdGradient = descGradient1.calculateSSD(descGradient2);</span>
+
+<span class="nc" id="L1409">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="nc" id="L1410">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="nc" id="L1411">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="nc" id="L1412">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
+<span class="nc" id="L1413">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
+<span class="nc" id="L1414">        stat.setSumGradientSqDiff(ssdGradient);</span>
+<span class="nc" id="L1415">        stat.setImg2PointGradientErr(err2SqGradient);</span>
+
+<span class="nc" id="L1417">        return stat;</span>
+    }
+
+    /**
+     * calculate the intensity and gradient based statistics between the two
+     * descriptors with the caveat that the 2nd descriptor is the one used to
+     * calculate the error (so make sure that pattern is consistently used by
+     * invoker).
+     *
+     * @param descGradient1
+     * @param x1
+     * @param y1
+     * @param descGradient2
+     * @param x2
+     * @param y2
+     * @return
+     */
+    public static FeatureComparisonStat calculateGradientStats(
+        GradientDescriptor descGradient1, final int x1, final int y1,
+        GradientDescriptor descGradient2, final int x2, final int y2) {
+
+<span class="nc bnc" id="L1438" title="All 2 branches missed.">        if (descGradient1 == null) {</span>
+<span class="nc" id="L1439">            throw new IllegalArgumentException(&quot;descGradient1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1441" title="All 2 branches missed.">        if (descGradient2 == null) {</span>
+<span class="nc" id="L1442">            throw new IllegalArgumentException(&quot;descGradient2 cannot be null&quot;);</span>
+        }
+
+<span class="nc" id="L1445">        float err2SqGradient = descGradient2.sumSquaredError();</span>
+
+<span class="nc" id="L1447">        float ssdGradient = descGradient1.calculateSSD(descGradient2);</span>
+
+<span class="nc" id="L1449">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="nc" id="L1450">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="nc" id="L1451">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="nc" id="L1452">        stat.setSumGradientSqDiff(ssdGradient);</span>
+<span class="nc" id="L1453">        stat.setImg2PointGradientErr(err2SqGradient);</span>
+
+<span class="nc" id="L1455">        return stat;</span>
+    }
+    
+    /**
+     * calculate the intensity and gradient based statistics between the two
+     * descriptors with the caveat that the 2nd descriptor is the one used to
+     * calculate the error (so make sure that pattern is consistently used by
+     * invoker).
+     *
+     * @param descIntensity1
+     * @param descGradient1
+     * @param descTheta1
+     * @param x1
+     * @param y1
+     * @param descIntensity2
+     * @param descGradient2
+     * @param descTheta2
+     * @param x2
+     * @param y2
+     * @return
+     */
+    public static FeatureComparisonStat calculateStats(
+        IntensityDescriptor descIntensity1, GradientDescriptor descGradient1,
+        ThetaDescriptor descTheta1,
+        final int x1, final int y1,
+        IntensityDescriptor descIntensity2, GradientDescriptor descGradient2,
+        ThetaDescriptor descTheta2,
+        final int x2, final int y2) {
+
+<span class="nc bnc" id="L1484" title="All 2 branches missed.">        if (descIntensity1 == null) {</span>
+<span class="nc" id="L1485">            throw new IllegalArgumentException(&quot;descIntensity1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1487" title="All 2 branches missed.">        if (descGradient1 == null) {</span>
+<span class="nc" id="L1488">            throw new IllegalArgumentException(&quot;descGradient1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1490" title="All 2 branches missed.">        if (descIntensity2 == null) {</span>
+<span class="nc" id="L1491">            throw new IllegalArgumentException(&quot;descIntensity2 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1493" title="All 2 branches missed.">        if (descGradient2 == null) {</span>
+<span class="nc" id="L1494">            throw new IllegalArgumentException(&quot;descGradient2 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1496" title="All 2 branches missed.">        if (descTheta1 == null) {</span>
+<span class="nc" id="L1497">            throw new IllegalArgumentException(&quot;descTheta1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L1499" title="All 2 branches missed.">        if (descTheta2 == null) {</span>
+<span class="nc" id="L1500">            throw new IllegalArgumentException(&quot;descTheta2 cannot be null&quot;);</span>
+        }
+
+<span class="nc" id="L1503">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
+
+<span class="nc" id="L1505">        float err1SqIntensity = descIntensity1.sumSquaredError();</span>
+        
+        //TODO: revisit this:
+        //float errSqIntensity = (err2SqIntensity &gt; err1SqIntensity) ?
+        //    err2SqIntensity : err1SqIntensity;
+
+<span class="nc" id="L1511">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
+
+<span class="nc" id="L1513">        float err2SqGradient = descGradient2.sumSquaredError();</span>
+
+<span class="nc" id="L1515">        float ssdGradient = descGradient1.calculateSSD(descGradient2);</span>
+
+<span class="nc" id="L1517">        float err2Theta = descTheta2.calculateError();</span>
+
+<span class="nc" id="L1519">        float compTheta = descTheta1.calculateDifference(descTheta2);</span>
+
+<span class="nc" id="L1521">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="nc" id="L1522">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="nc" id="L1523">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="nc" id="L1524">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
+<span class="nc" id="L1525">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
+<span class="nc" id="L1526">        stat.setSumGradientSqDiff(ssdGradient);</span>
+<span class="nc" id="L1527">        stat.setImg2PointGradientErr(err2SqGradient);</span>
+<span class="nc" id="L1528">        stat.setSumThetaSqDiff(compTheta);</span>
+<span class="nc" id="L1529">        stat.setImg2PointThetaErr(err2Theta);</span>
+
+<span class="nc" id="L1531">        return stat;</span>
+    }
+
+    protected boolean transformCellCoordinates(
+        int rotation,
+        int x0, int y0, int dx, int dy,
+        int cellDim, int imageWidth, int imageHeight,
+        float[] outputX, float[] outputY) {
+
+<span class="fc" id="L1540">        Transformer transformer = new Transformer();</span>
+
+<span class="fc" id="L1542">        int cCount = 0;</span>
+<span class="fc bfc" id="L1543" title="All 2 branches covered.">        for (int dxc = 0; dxc &lt; cellDim; ++dxc) {</span>
+<span class="fc bfc" id="L1544" title="All 2 branches covered.">            for (int dyc = 0; dyc &lt; cellDim; ++dyc) {</span>
+
+<span class="fc" id="L1546">                transformer.rotate(rotation, dx + dxc, dy + dyc,</span>
+                    outputX, outputY, cCount);
+
+<span class="fc" id="L1549">                outputX[cCount] += x0;</span>
+<span class="fc" id="L1550">                outputY[cCount] += y0;</span>
+
+<span class="fc bfc" id="L1552" title="All 2 branches covered.">                if ((outputX[cCount] &lt; 0)</span>
+<span class="fc bfc" id="L1553" title="All 4 branches covered.">                    || (Math.ceil(outputX[cCount]) &gt; (imageWidth - 1))</span>
+                    || (outputY[cCount] &lt; 0)
+<span class="fc bfc" id="L1555" title="All 2 branches covered.">                    || (Math.ceil(outputY[cCount]) &gt; (imageHeight - 1))) {</span>
+
+<span class="fc" id="L1557">                    return false;</span>
+                }
+
+<span class="fc" id="L1560">                cCount++;</span>
+            }
+        }
+
+<span class="fc" id="L1564">        return true;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

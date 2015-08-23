@@ -361,14 +361,19 @@ public class PolygonAndPointPlotter {
 <span class="nc" id="L361">            &quot;points_and_polygon&quot; + num.toString() +&quot;.html&quot;);</span>
     }
     
-    public String writeFile(long num) throws IOException {
+    public String writeFile(String fileSuffix) throws IOException {
 <span class="nc" id="L365">        return writeToFile(this.plotContent.toString(), </span>
-<span class="nc" id="L366">            &quot;points_and_polygon&quot; + Long.toString(num) +&quot;.html&quot;);</span>
+            &quot;points_and_polygon_&quot; + fileSuffix + &quot;.html&quot;);
+    }
+    
+    public String writeFile(long num) throws IOException {
+<span class="nc" id="L370">        return writeToFile(this.plotContent.toString(), </span>
+<span class="nc" id="L371">            &quot;points_and_polygon&quot; + Long.toString(num) +&quot;.html&quot;);</span>
     }
 
     protected String writeToFile(String fileContent, String fileName) throws IOException {
 
-<span class="nc" id="L371">        return ResourceFinder.writeToCWD(fileContent, fileName);</span>
+<span class="nc" id="L376">        return ResourceFinder.writeToCWD(fileContent, fileName);</span>
     }
 
 }

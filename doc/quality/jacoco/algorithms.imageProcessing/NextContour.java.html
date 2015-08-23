@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NextContour.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">NextContour.java</span></div><h1>NextContour.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
-import algorithms.util.PairInt;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * A class to serve the purpose of an adjacency matrix (via rules to choose
@@ -15,376 +11,152 @@ import java.util.Map;
  * 
  * @author nichole
  */
-public class NextContour implements Comparator&lt;PairInt&gt; {
+<span class="nc bnc" id="L14" title="All 2 branches missed.">public class NextContour {</span>
     
     /**
      * a list of closed contours extracted from a digital image
      */
-    protected final List&lt;CurvatureScaleSpaceContour&gt; origContours;
+    protected final TreeSet&lt;CurvatureScaleSpaceContour&gt; origContours;
     
     /**
-     * A map w/ keys being curve index and values being a list of indexes to 
-     * origContours carrying contours from the given curve.   Note that the 
-     * lists are ordered by descending peak sigma.   Note also that the 
+     * A list of indexes to origContours carrying contours from the curve, that
+     * is, closed curve edge, given to the contour matcher.
+     * 
+     * Note that the lists are ordered by descending peak sigma.   Note also that the 
      * List&lt;Integer&gt; indexes are referred to as contour indexes.
      */
-    protected final Map&lt;Integer, List&lt;Integer&gt; &gt; curveIndexToOrigContours;
-    
-    /**
-     * A modifiable list ordered by descending contour peak sigma.  Items
-     * are removed as they are visited.  
-     * The PairInt holds the edge index and then the origContours index  
-     * to locate the contour as x and y, respectively.   
-     * The same PairInts in this data structure are also stored in curveList to 
-     * make removal of a PairInt easy when looked up from curveList.
-     */
-    protected final List&lt;PairInt&gt; contourIndex;
-        
-    /**
-     * A modifiable list to find the contours of a curve.  The index to
-     * curveList is the same index as origContours, so finding information
-     * for curveIndex = 0 accesses the first item in this array and in 
-     * origContours;
-     * The array of PairInts returned for the second dimension are how to
-     * find all of the remaining unsearched contours for a curveIndex.
-     * Each PairInt holds for x and y respectively, the curveIndex and the
-     * index of the contour in origContours.  Note that each instance
-     * of PairInt here are stored also in contourTree, to make it easier
-     * to remove/update contourTree at the same time.
-     */
-    protected final Map&lt;Integer, List&lt;PairInt&gt; &gt; curveList;
+    protected final TreeSet&lt;CurvatureScaleSpaceContour&gt; remainingContours;
     
     protected final List&lt;CurvatureScaleSpaceContour&gt; matchedContours1;
     protected final List&lt;CurvatureScaleSpaceContour&gt; matchedContours2;
     
-    protected final Map&lt;Integer, Integer&gt; matchedEdgeNumbers;
+<span class="nc" id="L33">    protected int matchedEdgeNumber1 = -1;</span>
+<span class="nc" id="L34">    protected int matchedEdgeNumber2 = -1;</span>
     
     public NextContour(final List&lt;CurvatureScaleSpaceContour&gt; contours,
-        final boolean alreadySorted, 
-        final Map&lt;Integer, List&lt;Integer&gt; &gt; edgeIndexToOrigContours,
-<span class="nc" id="L65">        List&lt;CurvatureScaleSpaceContour&gt; alreadyVisited) {</span>
-        
-<span class="nc" id="L67">        matchedEdgeNumbers = new HashMap&lt;Integer, Integer&gt;();</span>
-        
-<span class="nc" id="L69">        origContours = contours;</span>
-        
-<span class="nc" id="L71">        curveIndexToOrigContours = edgeIndexToOrigContours;</span>
-        
-<span class="nc" id="L73">        curveList = new HashMap&lt;Integer, List&lt;PairInt&gt; &gt;();</span>
-        
+<span class="nc" id="L37">        List&lt;CurvatureScaleSpaceContour&gt; alreadyVisited) {</span>
+                
+<span class="nc" id="L39">        origContours = new TreeSet&lt;CurvatureScaleSpaceContour&gt;(</span>
+            new DescendingSigmaComparator());
+                        
         // populate with contours that haven't been visited
-<span class="nc" id="L76">        contourIndex = new ArrayList&lt;PairInt&gt;(origContours.size());</span>
+<span class="nc" id="L43">        remainingContours = new TreeSet&lt;CurvatureScaleSpaceContour&gt;(</span>
+            new DescendingSigmaComparator());
         
-<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (int i = 0; i &lt; origContours.size(); i++) {</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); i++) {</span>
             
-<span class="nc" id="L80">            CurvatureScaleSpaceContour contour = origContours.get(i);</span>
+<span class="nc" id="L48">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
             
-<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (alreadyVisited.contains(contour)) {</span>
-<span class="nc" id="L83">                continue;</span>
+<span class="nc" id="L50">            origContours.add(contour);</span>
+            
+<span class="nc bnc" id="L52" title="All 2 branches missed.">            if (alreadyVisited.contains(contour)) {</span>
+<span class="nc" id="L53">                continue;</span>
             }
-                
-<span class="nc" id="L86">            int curveIndex = contour.getEdgeNumber();</span>
+            
+<span class="nc" id="L56">            remainingContours.add(contour);</span>
+        }
 
-<span class="nc" id="L88">            PairInt ci = new PairInt(curveIndex, i);</span>
-
-<span class="nc" id="L90">            contourIndex.add(ci);</span>
-
-<span class="nc" id="L92">            Integer key = Integer.valueOf(curveIndex);</span>
-<span class="nc bnc" id="L93" title="All 2 branches missed.">            if (!curveList.containsKey(key)) {</span>
-<span class="nc" id="L94">                curveList.put(key, new ArrayList&lt;PairInt&gt;());</span>
-            }
-        }
+<span class="nc" id="L59">        matchedContours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
         
-<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (!alreadySorted) {</span>
-<span class="nc" id="L99">            Collections.sort(contourIndex, this);</span>
-        }
-        
-        // fill curveList.  items are already ordered by descending peak sigma
-<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (PairInt ci : contourIndex) {</span>
-            
-<span class="nc" id="L105">            int curveIndex = ci.getX();</span>
-            
-<span class="nc" id="L107">            Integer key = Integer.valueOf(curveIndex);</span>
-            
-<span class="nc" id="L109">            curveList.get(key).add(ci);</span>
-<span class="nc" id="L110">        }</span>
-        
-<span class="nc" id="L112">        matchedContours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
-        
-<span class="nc" id="L114">        matchedContours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
-<span class="nc" id="L115">    }</span>
-    
-    /**
-     * find the largest sigma peak within the remaining un-searched contours
-     * for the curve found by curveIndex.  Note that the method has the 
-     * side-effect of removing the returned contour from the look-up data
-     * structures.
-     * 
-     * @param curveIndex
-     * @return 
-     */
-    public CurvatureScaleSpaceContour findTallestContourWithinAScaleSpace(
-        int curveIndex) {
-        
-<span class="nc bnc" id="L129" title="All 4 branches missed.">        if ((curveIndex &lt; 0) &amp;&amp; (curveIndex &gt; (origContours.size() - 1))) {</span>
-<span class="nc" id="L130">            throw new IllegalStateException(&quot;curveIndex is out of bounds&quot;);</span>
-        }
-        
-<span class="nc" id="L133">        List&lt;PairInt&gt; indexes = curveList.get(Integer.valueOf(curveIndex));</span>
-        
-<span class="nc bnc" id="L135" title="All 4 branches missed.">        if ((indexes == null) || indexes.isEmpty()) {</span>
-<span class="nc" id="L136">            return null;</span>
-        }
-        
-<span class="nc bnc" id="L139" title="All 2 branches missed.">        for (int i = 0; i &lt; indexes.size(); i++) {</span>
-            
-<span class="nc" id="L141">            PairInt ci = indexes.get(i);</span>
-            
-<span class="nc bnc" id="L143" title="All 2 branches missed.">            if (ci == null) {</span>
-                
-<span class="nc" id="L145">                continue;</span>
-                
-            } else {
-                
-                //look up contour and remove this item from contourTree
-                // and curveList
-<span class="nc" id="L151">                int ocIdx = ci.getY();</span>
-                
-<span class="nc" id="L153">                CurvatureScaleSpaceContour contour = origContours.get(ocIdx);</span>
-                
-<span class="nc" id="L155">                indexes.remove(ci);</span>
-                
-<span class="nc" id="L157">                nullifyIfEmpty(curveIndex);</span>
-                
-<span class="nc" id="L159">                contourIndex.remove(ci);</span>
-                                
-<span class="nc" id="L161">                return contour;</span>
-            }
-        }
-        
-<span class="nc" id="L165">        return null;</span>
-    }
-    
-    public void markAsVisited(CurvatureScaleSpaceContour contour) {
-        
-<span class="nc" id="L170">        int curveIndex = contour.getEdgeNumber();</span>
-        
-<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (curveIndex == -1) {</span>
-<span class="nc" id="L173">            return;</span>
-        }
-        
-<span class="nc" id="L176">        PairInt ci = null;</span>
-<span class="nc" id="L177">        List&lt;PairInt&gt; indexes = curveList.get(Integer.valueOf(curveIndex));</span>
-<span class="nc bnc" id="L178" title="All 4 branches missed.">        if ((indexes == null) || indexes.isEmpty()) {</span>
-<span class="nc" id="L179">            return;</span>
-        }
-<span class="nc bnc" id="L181" title="All 2 branches missed.">        for (int i = 0; i &lt; indexes.size(); i++) {</span>
-<span class="nc" id="L182">            PairInt pi = indexes.get(i);</span>
-<span class="nc" id="L183">            int cntrIdx = pi.getY();</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (origContours.get(cntrIdx).equals(contour)) {</span>
-<span class="nc" id="L185">                indexes.remove(pi);</span>
-<span class="nc" id="L186">                ci = pi;</span>
-<span class="nc" id="L187">                break;</span>
-            }
-        }
-        
-<span class="nc bnc" id="L191" title="All 2 branches missed.">        if (ci != null) {</span>
-            
-<span class="nc" id="L193">            nullifyIfEmpty(curveIndex);</span>
-            
-<span class="nc" id="L195">            contourIndex.remove(ci);</span>
-        }
-<span class="nc" id="L197">    }</span>
+<span class="nc" id="L61">        matchedContours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
+<span class="nc" id="L62">    }</span>
     
     public void addMatchedContours(CurvatureScaleSpaceContour contour1,
         CurvatureScaleSpaceContour contour2) {
         
-<span class="nc" id="L202">        markAsVisited(contour1);</span>
+<span class="nc" id="L67">        markAsVisited(contour1);</span>
         
-<span class="nc" id="L204">        matchedContours1.add(contour1);</span>
-<span class="nc" id="L205">        matchedContours2.add(contour2);</span>
-        
-<span class="nc" id="L207">        Integer edgeNumber1 = Integer.valueOf(contour1.getEdgeNumber());</span>
-        
-<span class="nc" id="L209">        Integer edgeNumber2 = matchedEdgeNumbers.get(edgeNumber1);</span>
-        
-<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (edgeNumber2 != null) {</span>
-<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (contour2.getEdgeNumber() != edgeNumber2.intValue()) {</span>
-<span class="nc" id="L213">                throw new IllegalArgumentException(</span>
-                &quot;contour2 is from edge number &quot; 
-<span class="nc" id="L215">                + String.valueOf(contour2.getEdgeNumber()) </span>
-<span class="nc" id="L216">                + &quot; but edge number &quot; + edgeNumber2.toString() </span>
-<span class="nc" id="L217">                + &quot; has already been matched to &quot; + edgeNumber1.toString()</span>
-                + &quot; in c1&quot;);
-            }
+<span class="nc" id="L69">        matchedContours1.add(contour1);</span>
+<span class="nc" id="L70">        matchedContours2.add(contour2);</span>
+
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (matchedEdgeNumber1 == -1) {</span>
+<span class="nc" id="L73">            matchedEdgeNumber1 = contour1.getEdgeNumber();</span>
         } else {
-<span class="nc" id="L221">            matchedEdgeNumbers.put(edgeNumber1, </span>
-<span class="nc" id="L222">                Integer.valueOf(contour2.getEdgeNumber()));</span>
+<span class="nc bnc" id="L75" title="All 4 branches missed.">            assert(matchedEdgeNumber1 == contour1.getEdgeNumber());</span>
         }
-<span class="nc" id="L224">    }</span>
+        
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (matchedEdgeNumber2 == -1) {</span>
+<span class="nc" id="L79">            matchedEdgeNumber2 = contour2.getEdgeNumber();</span>
+        } else {
+<span class="nc bnc" id="L81" title="All 4 branches missed.">            assert(matchedEdgeNumber2 == contour2.getEdgeNumber());</span>
+        }    
+<span class="nc" id="L83">    }</span>
     
-    public int getMatchedEdgeNumber2(int edgeNumber1) {
+    /**
+     * find the largest sigma peak within the remaining un-searched contours.  
+     * Note that the method has the 
+     * side-effect of removing the returned contour from the look-up data
+     * structures.
+     * 
+     * @return 
+     */
+    public CurvatureScaleSpaceContour findTallestContourWithinScaleSpace() {
         
-<span class="nc" id="L228">        Integer edgeNumber2 = matchedEdgeNumbers.get(edgeNumber1);</span>
-        
-<span class="nc bnc" id="L230" title="All 2 branches missed.">        if (edgeNumber2 == null) {</span>
-<span class="nc" id="L231">            return -1;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (remainingContours.isEmpty()) {</span>
+<span class="nc" id="L96">            return null;</span>
         }
         
-<span class="nc" id="L234">        return edgeNumber2.intValue();</span>
+<span class="nc" id="L99">        CurvatureScaleSpaceContour contour = remainingContours.first();</span>
+        
+<span class="nc" id="L101">        boolean removed = remainingContours.remove(contour);</span>
+                
+<span class="nc bnc" id="L103" title="All 4 branches missed.">        assert(removed == true);</span>
+        
+<span class="nc" id="L105">        return contour;</span>
+    }
+    
+    public void markAsVisited(CurvatureScaleSpaceContour contour) {
+        
+<span class="nc" id="L110">        remainingContours.remove(contour);</span>
+<span class="nc" id="L111">    }</span>
+    
+    public int getMatchedEdgeNumber2() {
+<span class="nc" id="L114">        return matchedEdgeNumber2;</span>
+    }
+    public int getMatchedEdgeNumber1() {
+<span class="nc" id="L117">        return matchedEdgeNumber1;</span>
     }
     
     /**
-     * find the next smallest sigma peak out of all contours.  the sigma is
-     * found by looking up the contour that target references.  Note that
+     * find the next smallest sigma peak out of all contours. Note that
      * this method has the side effect of removing the returned contour
      * from the internal look-up data structures.
      * 
-     * @param target holds edgeNumber as X and the origContours index as Y
+     * @param target the contour or which to find the next smallest contour
      * 
      * @return 
      */
     public CurvatureScaleSpaceContour findTheNextSmallestUnvisitedSibling(
-        PairInt target) { 
+        CurvatureScaleSpaceContour target) { 
 
-<span class="nc bnc" id="L250" title="All 2 branches missed.">        if (target == null) {</span>
-<span class="nc" id="L251">            return null;</span>
-        }
-
-<span class="nc" id="L254">        PairInt nextLower = findNextLower(target);</span>
-        
-<span class="nc bnc" id="L256" title="All 2 branches missed.">        if (nextLower != null) {</span>
-            
-<span class="nc" id="L258">            int originalContoursIndex = nextLower.getY();</span>
-                
-<span class="nc" id="L260">            CurvatureScaleSpaceContour contour = </span>
-<span class="nc" id="L261">                origContours.get(originalContoursIndex);</span>
-
-<span class="nc" id="L263">            PairInt i = findCurveList2ndIndex(nextLower);</span>
-            
-<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (i != null) {</span>
-                
-<span class="nc" id="L267">                List&lt;PairInt&gt; indexes = curveList.get(Integer.valueOf(</span>
-<span class="nc" id="L268">                    nextLower.getX()));</span>
-                
-<span class="nc" id="L270">                indexes.remove(i);</span>
-                
-<span class="nc" id="L272">                nullifyIfEmpty(nextLower.getX());</span>
-            }
-
-<span class="nc" id="L275">            contourIndex.remove(nextLower);</span>
-            
-<span class="nc" id="L277">            return contour;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (target == null) {</span>
+<span class="nc" id="L133">            return null;</span>
         }
         
-<span class="nc" id="L280">        return null;</span>
+<span class="nc" id="L136">        CurvatureScaleSpaceContour nextLower = origContours.higher(target);</span>
+        
+<span class="nc bnc" id="L138" title="All 4 branches missed.">        while ((nextLower != null) &amp;&amp; !remainingContours.contains(nextLower)) {</span>
+<span class="nc" id="L139">            nextLower = origContours.higher(nextLower);</span>
+        }
+                
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (nextLower != null) {</span>
+            
+<span class="nc" id="L144">            boolean removed = remainingContours.remove(nextLower);</span>
+            
+<span class="nc bnc" id="L146" title="All 4 branches missed.">            assert(removed);</span>
+            
+<span class="nc" id="L148">            return nextLower;</span>
+        }
+        
+<span class="nc" id="L151">        return null;</span>
     }
-    
-    /**
-     * 
-     * @param target holds edgeNumber as X and the origContours index as Y
-     * @return 
-     */
-    private PairInt findCurveList2ndIndex(PairInt target) {
-                
-<span class="nc" id="L290">        List&lt;PairInt&gt; indexes = curveList.get(Integer.valueOf(target.getX()));</span>
-            
-<span class="nc bnc" id="L292" title="All 4 branches missed.">        if ((indexes != null) &amp;&amp; !indexes.isEmpty()) {</span>
-
-<span class="nc bnc" id="L294" title="All 2 branches missed.">            for (int i = 0; i &lt; indexes.size(); i++) {</span>
-
-<span class="nc" id="L296">                PairInt ci = indexes.get(i);</span>
-
-<span class="nc bnc" id="L298" title="All 2 branches missed.">                if (ci != null) {</span>
-
-<span class="nc bnc" id="L300" title="All 2 branches missed.">                    if ((ci.getX() == target.getX()) &amp;&amp; </span>
-<span class="nc bnc" id="L301" title="All 2 branches missed.">                        (ci.getY() == target.getY())) {</span>
-
-<span class="nc" id="L303">                        return ci;</span>
-                    }
-                }
-            }
-        }
-        
-<span class="nc" id="L309">        return null;</span>
-    }
-    
-    /**
-     * a comparator to use to make a descending peak sigma sort for contours
-     * in origContours referenced by o1 and o2.
-     * 
-     * @param o1 holds edgeNumber as X and the origContours index as Y
-     * @param o2 holds edgeNumber as X and the origContours index as Y
-     * @return 
-     */
-    @Override
-    public int compare(PairInt o1, PairInt o2) {
-        
-<span class="nc" id="L323">        CurvatureScaleSpaceContour c1 = origContours.get(o1.getY());</span>
-        
-<span class="nc" id="L325">        CurvatureScaleSpaceContour c2 = origContours.get(o2.getY());</span>
-        
-<span class="nc" id="L327">        return Float.compare(c2.getPeakSigma(), c1.getPeakSigma());</span>
-    }
-
-    /**
-     * 
-     * @param target holds edgeNumber as X and the origContours index as Y
-     * @return 
-     */
-    private PairInt findNextLower(PairInt target) {
-        
-<span class="nc" id="L337">        int idx = contourIndex.indexOf(target);</span>
-        
-<span class="nc bnc" id="L339" title="All 2 branches missed.">        if (idx == - 1) {</span>
-            
-<span class="nc bnc" id="L341" title="All 2 branches missed.">            if (contourIndex.isEmpty()) {</span>
-                
-<span class="nc" id="L343">                return null;</span>
-            
-            } else {
-                
-                // this can happen at the         
-<span class="nc" id="L348">                int contourIdx = target.getY();</span>
-<span class="nc" id="L349">                CurvatureScaleSpaceContour targetContour = </span>
-<span class="nc" id="L350">                    origContours.get(contourIdx);</span>
-                
-<span class="nc" id="L352">                float sigma = targetContour.getPeakSigma();</span>
-                
-                // look for any with same curveIndex number and then the
-                //    next after contourIndex
-<span class="nc bnc" id="L356" title="All 2 branches missed.">                for (int i = 0; i &lt; contourIndex.size(); i++) {</span>
-<span class="nc" id="L357">                    PairInt ci = contourIndex.get(i);</span>
-<span class="nc" id="L358">                    float sigma2 = origContours.get(ci.getY()).getPeakSigma();</span>
-<span class="nc bnc" id="L359" title="All 2 branches missed.">                    if (sigma2 &lt; sigma) {</span>
-<span class="nc" id="L360">                        return ci;</span>
-                    }
-                }
-                
-<span class="nc" id="L364">                return null;</span>
-            }
-        }
-        
-<span class="nc bnc" id="L368" title="All 2 branches missed.">        if (idx == (contourIndex.size() - 1)) {</span>
-<span class="nc" id="L369">            return null;</span>
-        } else {
-<span class="nc" id="L371">            return contourIndex.get(idx + 1);</span>
-        }
-    }
-
-    private void nullifyIfEmpty(int curveIndex) {
-<span class="nc" id="L376">        List&lt;PairInt&gt; indexes = curveList.get(Integer.valueOf(curveIndex));</span>
-<span class="nc bnc" id="L377" title="All 2 branches missed.">        if (indexes.isEmpty()) {</span>
-<span class="nc" id="L378">            curveList.remove(Integer.valueOf(curveIndex));</span>
-        }
-<span class="nc" id="L380">    }</span>
     
     public List&lt;CurvatureScaleSpaceContour&gt; getMatchedContours1() {
-<span class="nc" id="L383">        return matchedContours1;</span>
+<span class="nc" id="L155">        return matchedContours1;</span>
     }
     
     public List&lt;CurvatureScaleSpaceContour&gt; getMatchedContours2() {
-<span class="nc" id="L387">        return matchedContours2;</span>
+<span class="nc" id="L159">        return matchedContours2;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

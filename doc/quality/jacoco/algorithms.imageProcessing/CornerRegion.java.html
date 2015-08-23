@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CornerRegion.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CornerRegion.java</span></div><h1>CornerRegion.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.PairIntArray;
+import java.util.Arrays;
+
+/**
+ * class to hold a few details from the creation of corners that
+ * help later to match corners.  Note that the equals compares the
+ * contents of x and y only, so this corner can be used in Collections
+ * to establish equals or not, but does not have any other comparison 
+ * attributes.  Note also that the equals assumption means that the user
+ * has to manage possible conflicts if they place in the same 
+ * Set instances from more than one image.
+ *
+ * @author nichole
+ */
+public class CornerRegion {
+
+    protected final int edgeIdx;
+
+    protected final int kMaxIdx;
+
+    protected final float[] k;
+
+    protected final int[] x;
+
+    protected final int[] y;
+
+<span class="fc" id="L30">    protected double orientation = Double.MIN_VALUE;</span>
+    
+    //TODO: a temporary work around until the classes for curvature are refactored
+    // is that this instance may hold fake neighboring curvature values
+    // if set by the junction finding method.
+<span class="fc" id="L35">    protected boolean dummyValuesInKNeighbors = false;</span>
+
+    /**
+     * constructor with edge index, the index with the maximum curvature in it
+     * with respect to nPoints.  A minimum of 5 points is recommended and
+     * for nPoints=5, a minimum k of 0.2 is needed as the maximum curvature.
+     * &lt;pre&gt;
+     *   solid angle where r = radius of curvature.  k=1/r.
+     *             .
+     *            /|\
+     *           / | \
+     *          / r-h \r
+     *         /   |   \
+     *        .----|----.
+     *             -     bottom portion is a triangle           w
+     *                                                  .----.-----.
+     *                                                    .  |h .
+     *                                                       .
+     *   the curvature is too small to determine slopes from neighboring
+     *   points when h is less than 1 pixel and w is 3 or more.
+     * 
+     *   limit to k for h=1.0 and w=3:
+     * 
+     *        r^2 = (r-h)^2 + w^2
+     * 
+     *        r^2 = r^2 - 2*r*h + h^2 + w^2
+     *        2*r*h = h^2 + w^2
+     *          r = (h^2 + w^2)/(2*h)
+     *          r = 5  which is k = 0.2  
+     * 
+     * Therefore, for k smaller than 0.2 won't see changes in slope in the
+     * neighboring 2 points on either side.
+     * 
+     * &lt;/pre&gt;
+     * @param theEdgeIndex
+     * @param maxCurvatureIndex
+     * @param nPoints
+     */
+<span class="fc" id="L73">    public CornerRegion(int theEdgeIndex, int nPoints, int maxCurvatureIndex) {</span>
+
+<span class="fc" id="L75">        this.edgeIdx = theEdgeIndex;</span>
+
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (nPoints &lt; 0) {</span>
+<span class="nc" id="L78">            throw new IllegalArgumentException(&quot;nPoints must be 0 or larger&quot;);</span>
+        }
+
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (nPoints &gt; 0) {</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">            if (nPoints &lt; 3) {</span>
+<span class="nc" id="L83">                throw new IllegalArgumentException(</span>
+                &quot;nPoints, if larger than 0, must be at least 3&quot;);
+            }
+<span class="pc bpc" id="L86" title="2 of 4 branches missed.">            if ((maxCurvatureIndex == 0) || (maxCurvatureIndex &gt; (nPoints - 2))) {</span>
+<span class="nc" id="L87">                throw new IllegalArgumentException(</span>
+                    &quot;maxCurvatureIndex must be &gt; 0 and less than nPoints-1&quot;);
+            }
+        }
+
+<span class="fc" id="L92">        this.kMaxIdx = maxCurvatureIndex;</span>
+
+<span class="fc" id="L94">        k = new float[nPoints];</span>
+<span class="fc" id="L95">        x = new int[nPoints];</span>
+<span class="fc" id="L96">        y = new int[nPoints];        </span>
+<span class="fc" id="L97">    }</span>
+
+    public void set(int index, float kValue, int xCoordinate, int yCoordinate) {
+
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (index &lt; 0) {</span>
+<span class="nc" id="L102">            throw new IllegalArgumentException(&quot;index cannot be &lt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (index &gt; (x.length - 1)) {</span>
+<span class="nc" id="L105">            throw new IllegalArgumentException(&quot;index cannot be larger than &quot; +</span>
+                x.length);
+        }
+
+<span class="fc" id="L109">        k[index] = kValue;</span>
+<span class="fc" id="L110">        x[index] = xCoordinate;</span>
+<span class="fc" id="L111">        y[index] = yCoordinate;</span>
+<span class="fc" id="L112">    }</span>
+
+    public float[] getK() {
+<span class="nc" id="L115">        return k;</span>
+    }
+    public int[] getX() {
+<span class="nc" id="L118">        return x;</span>
+    }
+    public int[] getY() {
+<span class="nc" id="L121">        return y;</span>
+    }
+    public int getEdgeIdx() {
+<span class="nc" id="L124">        return edgeIdx;</span>
+    }
+    public int getKMaxIdx() {
+<span class="nc" id="L127">        return kMaxIdx;</span>
+    }
+    
+    public void setFlagThatNeighborsHoldDummyValues() {
+<span class="nc" id="L131">        dummyValuesInKNeighbors = true;</span>
+<span class="nc" id="L132">    }</span>
+    public boolean kValuesAreDummy() {
+<span class="nc" id="L134">        return dummyValuesInKNeighbors;</span>
+    }
+
+    /**
+     * get the relative angle of this corner (a.k.a. dominant orientation)
+     * that represents the angle perpendicular to the corner along the edge it
+     * was extracted from (units are radians)
+     * @return the angle perpendicular to the maximum of curvature at the
+     * location along the edge in units of degrees.
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
+     * an exception is thrown if the slopes are the same for all points owned
+     * by this instance, that is the points represent a line.  This can happen
+     * when the radius of curvature is very large (== a small k) and any
+     * change is over a larger number of pixels than present here.
+     */
+    public float getRelativeOrientationInDegrees() throws CornerRegionDegneracyException {
+
+<span class="fc" id="L151">        double rotRadians = getRelativeOrientation();</span>
+
+<span class="fc" id="L153">        return (float)(rotRadians * 180./Math.PI);</span>
+    }
+
+    /**
+     * get the relative angle of this corner (a.k.a. dominant orientation)
+     * that represents the angle perpendicular to the corner along the edge it
+     * was extracted from (units are radians)
+     * @return the angle perpendicular to the maximum of curvature at the
+     * location along the edge in units of radians.
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
+     * an exception is thrown if the slopes are the same for all points owned
+     * by this instance, that is the points represent a line.  This can happen
+     * when the radius of curvature is very large (== a small k) and any
+     * change is over a larger number of pixels than present here.
+     */
+    public double getRelativeOrientation() throws CornerRegionDegneracyException {
+
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (orientation == Double.MIN_VALUE) {</span>
+<span class="fc" id="L171">            orientation = calculateOrientation();</span>
+        }
+
+<span class="fc" id="L174">        return orientation;</span>
+    }
+
+    /**
+     * NOT READY FOR USE YET.  NEEDs MORE TESTING
+     * calculate the angle perpendicular to the maximum of curvature.
+     * The curvature has to be large enough so that a change in the neighboring
+     * points is present (slopes cannot both be the same on both sides of the
+     * maximum for all the points given) else an exception is thrown.
+     * @return the angle perpendicular to the maximum of curvature at the
+     * location along the edge in units of radians.
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException
+     * an exception is thrown if the slopes are the same for all points owned
+     * by this instance, that is the points represent a line.  This can happen
+     * when the radius of curvature is very large (== a small k) and any
+     * change is over a larger number of pixels than present here.
+     */
+    protected double calculateOrientation() throws
+        CornerRegionDegneracyException {
+
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (x.length == 0) {</span>
+<span class="nc" id="L195">            throw new IllegalStateException(&quot;this is an empty instance&quot;);</span>
+        }
+
+<span class="fc" id="L198">        int dx0 = x[kMaxIdx] - x[kMaxIdx - 1];</span>
+<span class="fc" id="L199">        int dy0 = y[kMaxIdx] - y[kMaxIdx - 1];</span>
+
+<span class="fc" id="L201">        double theta0 = AngleUtil.polarAngleCCW(dx0, dy0);</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (theta0 != 0) {</span>
+<span class="fc" id="L203">            theta0 = (2.*Math.PI) - theta0;</span>
+        }
+
+<span class="fc" id="L206">        int dx1 = x[kMaxIdx + 1] - x[kMaxIdx];</span>
+<span class="fc" id="L207">        int dy1 = y[kMaxIdx + 1] - y[kMaxIdx];</span>
+
+<span class="fc" id="L209">        double theta1 = AngleUtil.polarAngleCCW(dx1, dy1);</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">        if (theta1 != 0) {</span>
+<span class="fc" id="L211">            theta1 = (2.*Math.PI) - theta1;</span>
+        }
+
+        /* determine whether to add or subtract 90 for each vector:
+
+        the centroid of the middle and neighboring points determines the
+        opposite side of the vector pointing outwards from the edge.
+        */
+
+<span class="fc" id="L220">        PairIntArray xy = new PairIntArray(3);</span>
+<span class="fc" id="L221">        xy.add(x[kMaxIdx - 1], y[kMaxIdx - 1]);</span>
+<span class="fc" id="L222">        xy.add(x[kMaxIdx], y[kMaxIdx]);</span>
+<span class="fc" id="L223">        xy.add(x[kMaxIdx + 1], y[kMaxIdx + 1]);</span>
+
+<span class="fc" id="L225">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+
+<span class="fc" id="L227">        double[] centroidXY = curveHelper.calculateXYCentroids(xy);</span>
+
+<span class="pc bpc" id="L229" title="1 of 4 branches missed.">        if ((dx1 == dx0) &amp;&amp; (dy1 == dy0)) {</span>
+
+            // this is a straight line so far between points at kMaxIdx and
+            // either side of it
+
+<span class="fc" id="L234">            int ref0Idx = kMaxIdx - 1;</span>
+<span class="fc" id="L235">            int ref1Idx = kMaxIdx + 1;</span>
+<span class="fc" id="L236">            ref0Idx--;</span>
+<span class="fc" id="L237">            ref1Idx++;</span>
+
+<span class="pc bpc" id="L239" title="1 of 4 branches missed.">            if ((ref0Idx &lt; 0) &amp;&amp; (ref1Idx &gt; (x.length - 1))) {</span>
+<span class="fc" id="L240">                throw new CornerRegionDegneracyException(</span>
+                &quot;need more neighboring points because the slopes are all the same&quot;);
+            }
+
+<span class="pc bpc" id="L244" title="3 of 4 branches missed.">            while ((ref0Idx &gt; -1) || (ref1Idx &lt; x.length)) {</span>
+
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">                if (ref0Idx &gt; -1) {</span>
+<span class="fc" id="L247">                    int dxRef0 = x[kMaxIdx - 1] - x[ref0Idx];</span>
+<span class="fc" id="L248">                    int dyRef0 = y[kMaxIdx - 1] - y[ref0Idx];</span>
+<span class="pc bpc" id="L249" title="3 of 4 branches missed.">                    if ((dxRef0 != dx0) || (dyRef0 != dy0)) {</span>
+<span class="fc" id="L250">                        xy.add(x[ref0Idx], y[ref0Idx]);</span>
+<span class="fc" id="L251">                        centroidXY = curveHelper.calculateXYCentroids(xy);</span>
+<span class="fc" id="L252">                        break;</span>
+                    }
+<span class="nc" id="L254">                    ref0Idx--;</span>
+                }
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                if (ref1Idx &lt; x.length) {</span>
+<span class="nc" id="L257">                    int dxRef1 = x[ref1Idx] - x[kMaxIdx + 1];</span>
+<span class="nc" id="L258">                    int dyRef1 = y[ref1Idx] - y[kMaxIdx + 1];</span>
+<span class="nc bnc" id="L259" title="All 4 branches missed.">                    if ((dxRef1 != dx1) || (dyRef1 != dy1)) {</span>
+<span class="nc" id="L260">                        xy.add(x[ref1Idx], y[ref1Idx]);</span>
+<span class="nc" id="L261">                        centroidXY = curveHelper.calculateXYCentroids(xy);</span>
+<span class="nc" id="L262">                        break;</span>
+                    }
+<span class="nc" id="L264">                    ref1Idx++;</span>
+                }
+
+<span class="nc bnc" id="L267" title="All 4 branches missed.">                if ((ref0Idx &lt; 0) &amp;&amp; (ref1Idx &gt; (x.length - 1))) {</span>
+<span class="nc" id="L268">                    throw new CornerRegionDegneracyException(</span>
+                    &quot;need more neighboring points because the slopes are all the same&quot;);
+                }
+            }
+        }
+
+        /*
+        The angle vectors for theta0 and theta1 should point away from the
+        centroid.
+        */
+
+        //TODO: not sure will keep this weighting.  needs testing.
+        // weight by the respective adjacent curvature strengths
+<span class="fc" id="L281">        double k0 = k[kMaxIdx - 1];</span>
+<span class="fc" id="L282">        double k1 = k[kMaxIdx + 1];</span>
+<span class="fc" id="L283">        double kTot = k0 + k1;</span>
+
+        /*
+        // determine both angles separately, then calc weighted average:
+        double perp0 = calculatePerpendicularAngleAwayFromCentroid(theta0,
+            x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx], y[kMaxIdx], centroidXY);
+
+        double perp1 = calculatePerpendicularAngleAwayFromCentroid(theta1,
+            x[kMaxIdx], y[kMaxIdx], x[kMaxIdx + 1], y[kMaxIdx + 1], centroidXY);
+
+        double weighted = (float)(((k0/kTot)*perp0) + ((k1/kTot)*perp1));
+        */
+
+        /*
+        // determine weighted average theta first, then calculate the perpendicular
+        // angle pointing out from the edge at the maximum of curvature:
+        
+        /*needs to account for averaging when one angle is near 360 and the
+        other is 0 or greater
+        */
+
+<span class="fc" id="L304">        double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);</span>
+        
+<span class="fc" id="L306">        double perp = calculatePerpendicularAngleAwayFromCentroid(</span>
+            theta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx],
+            y[kMaxIdx], centroidXY);
+
+<span class="fc" id="L310">        return perp;</span>
+    }
+
+    /**
+     * given theta and the point (xp, yp), determine which direction and hence
+     * polar angle (clockwise) is perpendicular away from the centroid.
+     * The reference point (xm, ym) is the point from which theta was also
+     * calculated, which is probably the point for kMaxIdx.
+     * @param theta
+     * @param xp
+     * @param yp
+     * @param xm
+     * @param ym
+     * @param centroidXY
+     * @return
+     */
+    protected double calculatePerpendicularAngleAwayFromCentroid(
+        double theta, int xp, int yp, int xm, int ym, double[] centroidXY) {
+
+        /*
+        rotate the point (xm, ym) around (xp, yp) 90 degrees and -90 degrees.
+        The rotated point which is furthest from the centroid is the
+        direction of the vector pointing away from the centroid.
+        */
+
+        /*
+        math.cos(math.pi/2) = 0
+        math.sin(math.pi/2) = 1
+        math.sin(-math.pi/2) = -1
+
+        double xr = centroidX + ((y - centroidY) * sine(angle)));
+        double yr = centroidY + ((-(x - centroidX) * sine(angle)))
+        */
+
+<span class="fc" id="L344">        int xmRot90 = xp + (ym - yp);</span>
+<span class="fc" id="L345">        int ymRot90 = yp + (-(xm - xp));</span>
+
+<span class="fc" id="L347">        int xmRotNegative90 = xp  - (ym - yp);</span>
+<span class="fc" id="L348">        int ymRotNegative90 = yp + (xm - xp);</span>
+
+<span class="fc" id="L350">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
+            + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);
+
+<span class="fc" id="L353">        double distSqRotNegative90 =</span>
+            (xmRotNegative90 - centroidXY[0]) * (xmRotNegative90 - centroidXY[0])
+            + (ymRotNegative90 - centroidXY[1]) * (ymRotNegative90 - centroidXY[1]);
+
+<span class="fc" id="L357">        double perp = theta;</span>
+
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="fc" id="L360">            perp += Math.PI/2.;</span>
+        } else {
+<span class="nc" id="L362">            perp -= Math.PI/2.;</span>
+        }
+
+<span class="fc bfc" id="L365" title="All 2 branches covered.">        if (perp &gt;= 2*Math.PI) {</span>
+<span class="fc" id="L366">            perp = perp - 2*Math.PI;</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">        } else if (perp &lt; 0) {</span>
+<span class="nc" id="L368">            perp += 2*Math.PI;</span>
+        }
+
+<span class="fc" id="L371">        return perp;</span>
+    }
+    
+    public CornerRegion copy() {
+        
+<span class="nc" id="L376">        CornerRegion cr = new CornerRegion(edgeIdx, x.length, kMaxIdx);</span>
+<span class="nc" id="L377">        cr.orientation = orientation;</span>
+<span class="nc" id="L378">        System.arraycopy(k, 0, cr.getK(), 0, k.length);</span>
+<span class="nc" id="L379">        System.arraycopy(x, 0, cr.getX(), 0, x.length);</span>
+<span class="nc" id="L380">        System.arraycopy(y, 0, cr.getY(), 0, y.length);</span>
+        
+<span class="nc" id="L382">        return cr;</span>
+    }
+    
+    public String toString() {
+        
+<span class="nc" id="L387">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="nc bnc" id="L389" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L390">            sb.append(String.format(&quot;k[%d]=%.2f  x,y=(%d, %d)\n&quot;, i, k[i],</span>
+<span class="nc" id="L391">                x[i], y[i]));</span>
+        }
+        
+<span class="nc" id="L394">        return sb.toString();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        
+<span class="nc bnc" id="L400" title="All 2 branches missed.">        if (!(obj instanceof CornerRegion)) {</span>
+<span class="nc" id="L401">            return false;</span>
+        }
+            
+<span class="nc" id="L404">        CornerRegion other = (CornerRegion)obj;</span>
+            
+<span class="nc bnc" id="L406" title="All 2 branches missed.">        if (x.length != other.getX().length) {</span>
+<span class="nc" id="L407">            return false;</span>
+        }
+        
+<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (!Arrays.equals(x, other.getX())) {</span>
+<span class="nc" id="L411">            return false;</span>
+        }
+     
+<span class="nc" id="L414">        return Arrays.equals(y, other.getY());</span>
+    }
+    
+    @Override
+    public int hashCode() {
+
+<span class="nc" id="L420">        int hash = fnvHashCode();</span>
+
+<span class="nc" id="L422">        return hash;</span>
+    }
+
+<span class="fc" id="L425">    int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L426">    int fnv32Prime = 0x01000193;</span>
+
+    /**
+     * hash = offset_basis
+     * for each octet_of_data to be hashed
+     *     hash = hash xor octet_of_data
+     *     hash = hash * FNV_prime
+     * return hash
+     *
+     * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+     */
+    protected int fnvHashCode() {
+
+<span class="nc" id="L439">        int sum = fnv321aInit;</span>
+
+<span class="nc" id="L441">        sum = includeInHashSum(sum, edgeIdx);</span>
+        
+<span class="nc" id="L443">        sum = includeInHashSum(sum, kMaxIdx);</span>
+
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        for (int xCoord : x) {</span>
+<span class="nc" id="L446">            sum = includeInHashSum(sum, xCoord);</span>
+        }
+<span class="nc bnc" id="L448" title="All 2 branches missed.">        for (int yCoord : y) {</span>
+<span class="nc" id="L449">            sum = includeInHashSum(sum, yCoord);</span>
+        }
+<span class="nc bnc" id="L451" title="All 2 branches missed.">        for (float kValue : k) {</span>
+<span class="nc" id="L452">            int kBits = Float.floatToIntBits(kValue);</span>
+<span class="nc" id="L453">            sum = includeInHashSum(sum, kBits);</span>
+        }
+        
+        // not including orientation which may or may not be set because it's
+        // calculated only upon need
+        
+<span class="nc" id="L459">        return sum;</span>
+    }
+
+    private int includeInHashSum(int sum, int variable) {
+        
+        // xor the bottom with the current octet.
+<span class="nc" id="L465">        sum ^= variable;</span>
+
+        // multiply by the 32 bit FNV magic prime mod 2^32
+<span class="nc" id="L468">        sum *= fnv32Prime;</span>
+        
+<span class="nc" id="L470">        return sum;</span>
+    }
+
+    public static class CornerRegionDegneracyException extends Exception {
+
+        public CornerRegionDegneracyException(String message) {
+<span class="fc" id="L476">            super(message);</span>
+<span class="fc" id="L477">        }</span>
+
+        public CornerRegionDegneracyException(String message, Throwable cause) {
+<span class="nc" id="L480">            super(message, cause);</span>
+<span class="nc" id="L481">        }</span>
+
+        public CornerRegionDegneracyException(Throwable cause) {
+<span class="nc" id="L484">            super(cause);</span>
+<span class="nc" id="L485">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

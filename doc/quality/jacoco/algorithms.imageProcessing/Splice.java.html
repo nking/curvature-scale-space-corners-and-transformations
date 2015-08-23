@@ -11,20 +11,20 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="nc bnc" id="L14" title="All 2 branches missed.">public class Splice {</span>
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class Splice {</span>
     
     private final PairIntArray edge;
         
-<span class="nc" id="L18">    public Splice(PairIntArray theEdge) {</span>
-<span class="nc" id="L19">        edge = theEdge;</span>
-<span class="nc" id="L20">    }</span>
+<span class="fc" id="L18">    public Splice(PairIntArray theEdge) {</span>
+<span class="fc" id="L19">        edge = theEdge;</span>
+<span class="fc" id="L20">    }</span>
 
     public int getLengthOfLongestSide(final int spliceIndex) {
         // the count always includes the splice
-<span class="nc" id="L24">        int n0 = spliceIndex + 1;</span>
-<span class="nc" id="L25">        int n1 = edge.getN() - spliceIndex;</span>
-<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (n0 &gt; n1) {</span>
-<span class="nc" id="L27">            return n0;</span>
+<span class="fc" id="L24">        int n0 = spliceIndex + 1;</span>
+<span class="fc" id="L25">        int n1 = edge.getN() - spliceIndex;</span>
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        if (n0 &gt; n1) {</span>
+<span class="fc" id="L27">            return n0;</span>
         }
 <span class="nc" id="L29">        return n1;</span>
     }

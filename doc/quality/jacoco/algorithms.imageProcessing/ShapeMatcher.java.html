@@ -1,31 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ShapeMatcher.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ShapeMatcher.java</span></div><h1>ShapeMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.misc.Histogram;
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayDescendingComparator;
-import algorithms.util.ResourceFinder;
-import java.awt.Polygon;
-import java.awt.geom.PathIterator;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class ShapeMatcher {
 
-<span class="nc" id="L23">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="nc" id="L26">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="nc" id="L25">    public ShapeMatcher() {</span>
-<span class="nc" id="L26">    }</span>
+<span class="nc" id="L28">    public ShapeMatcher() {</span>
+<span class="nc" id="L29">    }</span>
 
     /**
+     * NOT READY FOR USE
     method to extract general shapes from the images and compare them in order to 
     match points.  It returns a fit to a rough Euclidean transformation.
     NOTE that the images may need pre-processing steps before using this.  For example,
@@ -39,14 +43,20 @@ public class ShapeMatcher {
     public TransformationPointFit findMatchingShapes(ImageExt image1, ImageExt image2,
     PairIntArray outputMatched1, PairIntArray outputMatched2) throws 
         IOException, NoSuchAlgorithmException {
+                
+<span class="nc" id="L47">        GreyscaleImage img1Grey = image1.copyToGreyscale();</span>
+<span class="nc" id="L48">        GreyscaleImage img2Grey = image2.copyToGreyscale();</span>
         
-<span class="nc" id="L43">        GreyscaleImage img1Grey = image1.copyToGreyscale();</span>
-<span class="nc" id="L44">        GreyscaleImage img2Grey = image2.copyToGreyscale();</span>
+<span class="nc" id="L50">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="nc" id="L46">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L52">        final boolean performBinning = false;</span>
+<span class="nc" id="L53">        int binFactor1 = 1;</span>
         
-<span class="nc" id="L48">        boolean performBinning = false;</span>
-<span class="nc" id="L49">        int binFactor1 = 1;</span>
+<span class="nc" id="L55">        int kN = 4;</span>
+<span class="nc" id="L56">        boolean performBinarySegmentation = true;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (performBinarySegmentation) {</span>
+<span class="nc" id="L58">            kN = 2;</span>
+        }
         
         /*
         one could start with essentially no limits here and then
@@ -54,199 +64,618 @@ public class ShapeMatcher {
         sizes to decide the range to keep.
         For now, choosing limits.
         */
-<span class="nc" id="L57">        int smallestGroupLimit = 50;</span>
-<span class="nc" id="L58">        int largestGroupLimit = 2000;</span>
+<span class="nc" id="L67">        int smallestGroupLimit = 100;</span>
+        //TODO: consider scaling this by image size or by size and res if one
+        //  day that information is passed to this method
+<span class="nc" id="L70">        int largestGroupLimit = 5000;</span>
         
-<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (performBinning) {</span>
-<span class="nc" id="L61">            binFactor1 = (int) Math.ceil(</span>
-<span class="nc" id="L62">                Math.max((float)img1Grey.getWidth()/200.f,</span>
-<span class="nc" id="L63">                (float)img2Grey.getHeight()/200.));</span>
-<span class="nc" id="L64">            smallestGroupLimit /= binFactor1;</span>
-<span class="nc" id="L65">            largestGroupLimit /= binFactor1;</span>
+<span class="nc" id="L72">        ImageExt img1Cp = (ImageExt)image1.copyImage();</span>
+<span class="nc" id="L73">        ImageExt img2Cp = (ImageExt)image2.copyImage();</span>
+        
+<span class="nc" id="L75">        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true); </span>
+<span class="nc" id="L76">        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true); </span>
+
+<span class="nc" id="L78">        log.info(&quot;stats1=&quot; + stats1.toString());</span>
+<span class="nc" id="L79">        log.info(&quot;stats2=&quot; + stats2.toString());</span>
+        
+<span class="nc" id="L81">        boolean performHistEq = false;        </span>
+<span class="nc" id="L82">        double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();</span>
+<span class="nc" id="L83">        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();        </span>
+<span class="nc" id="L84">        double meanDivMedian2 = stats2.getMean()/stats2.getMedian();</span>
+<span class="nc bnc" id="L85" title="All 8 branches missed.">        if (</span>
+            ((median1DivMedian2 &gt; 1) &amp;&amp; ((median1DivMedian2 - 1) &gt; 0.2)) ||
+            ((median1DivMedian2 &lt; 1) &amp;&amp; (median1DivMedian2 &lt; 0.8))) {
+<span class="nc" id="L88">            performHistEq = true;</span>
+<span class="nc bnc" id="L89" title="All 8 branches missed.">        } else if (</span>
+            ((meanDivMedian1 &gt; 1) &amp;&amp; ((meanDivMedian1 - 1) &gt; 0.2)) ||
+            ((meanDivMedian1 &lt; 1) &amp;&amp; (meanDivMedian1 &lt; 0.8))) {
+<span class="nc" id="L92">            performHistEq = true;</span>
+<span class="nc bnc" id="L93" title="All 8 branches missed.">        } else if (</span>
+            ((meanDivMedian2 &gt; 1) &amp;&amp; ((meanDivMedian2 - 1) &gt; 0.2)) ||
+            ((meanDivMedian2 &lt; 1) &amp;&amp; (meanDivMedian2 &lt; 0.8))) {
+<span class="nc" id="L96">            performHistEq = true;</span>
+        }
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (performHistEq) {</span>
+<span class="nc" id="L99">            log.info(&quot;use histogram equalization on the greyscale images&quot;);</span>
+<span class="nc" id="L100">            HistogramEqualization hEq = new HistogramEqualization(img1Grey);</span>
+<span class="nc" id="L101">            hEq.applyFilter();</span>
+<span class="nc" id="L102">            hEq = new HistogramEqualization(img2Grey);</span>
+<span class="nc" id="L103">            hEq.applyFilter();</span>
+            /*HistogramEqualizationForColor hEqC = new HistogramEqualizationForColor(img1Cp);
+            hEqC.applyFilter();
+            hEqC = new HistogramEqualizationForColor(img2Cp);
+            hEqC.applyFilter();*/
+        }
+        
+        if (performBinning) {
+            binFactor1 = (int) Math.ceil(
+                Math.max((float)img1Grey.getWidth()/200.f,
+                (float)img2Grey.getHeight()/200.));
+            smallestGroupLimit /= (binFactor1*binFactor1);
+            largestGroupLimit /= (binFactor1*binFactor1);
+            
+            log.info(&quot;binFactor1=&quot; + binFactor1);
             
             // prevent from being smaller than needed for a convex hull
-<span class="nc bnc" id="L68" title="All 2 branches missed.">            if (smallestGroupLimit &lt;= 3) {</span>
-<span class="nc" id="L69">                smallestGroupLimit = 4;</span>
+            if (smallestGroupLimit &lt; 4) {
+                smallestGroupLimit = 4;
             }
-<span class="nc" id="L71">            img1Grey = imageProcessor.binImage(img1Grey, binFactor1);</span>
-<span class="nc" id="L72">            img2Grey = imageProcessor.binImage(img2Grey, binFactor1);</span>
+            img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
+            img2Grey = imageProcessor.binImage(img2Grey, binFactor1);
+            img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
+            img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
-<span class="nc" id="L74">        imageProcessor.applyImageSegmentation(img1Grey, 3);</span>
-<span class="nc" id="L75">        imageProcessor.applyImageSegmentation(img2Grey, 3);</span>
-           
-<span class="nc" id="L77">        Map&lt;Integer, Integer&gt; freqMap1 = Histogram.createAFrequencyMap(img1Grey);</span>
-<span class="nc" id="L78">        Map&lt;Integer, Integer&gt; freqMap2 = Histogram.createAFrequencyMap(img2Grey);</span>
+
+<span class="nc" id="L129">        imageProcessor.applyImageSegmentation(img1Grey, kN);</span>
+<span class="nc" id="L130">        imageProcessor.applyImageSegmentation(img2Grey, kN);</span>
+
+        // == contiguous regions within size limits become blobs of interest,
+        //    indexed by their intensity levels
         
-<span class="nc" id="L80">        Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap1 </span>
+<span class="nc" id="L135">        Map&lt;Integer, Integer&gt; freqMap1 = Histogram.createAFrequencyMap(img1Grey);</span>
+<span class="nc" id="L136">        Map&lt;Integer, Integer&gt; freqMap2 = Histogram.createAFrequencyMap(img2Grey);</span>
+        
+<span class="nc" id="L138">        Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap1 </span>
             = new HashMap&lt;Integer, List&lt;PairIntArray&gt;&gt;();
-<span class="nc" id="L82">        Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap2 </span>
+<span class="nc" id="L140">        Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap2 </span>
             = new HashMap&lt;Integer, List&lt;PairIntArray&gt;&gt;();
         
-<span class="nc" id="L85">        Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls1 = </span>
+<span class="nc" id="L143">        Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls1 = </span>
             new HashMap&lt;Integer, List&lt;GrahamScan&gt;&gt;();
-<span class="nc" id="L87">        Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls2 = </span>
+<span class="nc" id="L145">        Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls2 = </span>
             new HashMap&lt;Integer, List&lt;GrahamScan&gt;&gt;();
         
-<span class="nc bnc" id="L90" title="All 2 branches missed.">        for (int im = 0; im &lt; 2; ++im) {</span>
+<span class="nc" id="L148">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="nc" id="L150">        Map&lt;Integer, PairIntArray&gt; hullCentroids1Map = </span>
+            new HashMap&lt;Integer, PairIntArray&gt;();
+<span class="nc" id="L152">        Map&lt;Integer, PairIntArray&gt; hullCentroids2Map = </span>
+            new HashMap&lt;Integer, PairIntArray&gt;();
+<span class="nc" id="L154">        PairIntArray allHullCentroids1 = new PairIntArray();</span>
+<span class="nc" id="L155">        PairIntArray allHullCentroids2 = new PairIntArray();</span>
+        
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        for (int im = 0; im &lt; 2; ++im) {</span>
             
-<span class="nc" id="L92">            Map&lt;Integer, Integer&gt; freqMap = freqMap1;</span>
-<span class="nc" id="L93">            Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap = contigMap1;</span>
-<span class="nc" id="L94">            Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls = hulls1;</span>
-<span class="nc" id="L95">            GreyscaleImage imgGrey = img1Grey;</span>
-            
-<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (im == 1) {</span>
-<span class="nc" id="L98">                freqMap = freqMap2;</span>
-<span class="nc" id="L99">                contigMap = contigMap2;</span>
-<span class="nc" id="L100">                hulls = hulls2;</span>
-<span class="nc" id="L101">                imgGrey = img2Grey;</span>
+<span class="nc" id="L159">            Map&lt;Integer, Integer&gt; freqMap = freqMap1;</span>
+<span class="nc" id="L160">            Map&lt;Integer, List&lt;PairIntArray&gt;&gt; contigMap = contigMap1;</span>
+<span class="nc" id="L161">            Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls = hulls1;</span>
+<span class="nc" id="L162">            GreyscaleImage imgGrey = img1Grey;</span>
+<span class="nc" id="L163">            PairIntArray hullCentroids = allHullCentroids1;</span>
+<span class="nc" id="L164">            Map&lt;Integer, PairIntArray&gt; hullCentroidsMap = hullCentroids1Map;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (im == 1) {</span>
+<span class="nc" id="L166">                freqMap = freqMap2;</span>
+<span class="nc" id="L167">                contigMap = contigMap2;</span>
+<span class="nc" id="L168">                hulls = hulls2;</span>
+<span class="nc" id="L169">                hullCentroids = allHullCentroids2;</span>
+<span class="nc" id="L170">                imgGrey = img2Grey;</span>
+<span class="nc" id="L171">                hullCentroidsMap = hullCentroids2Map;</span>
             }
-<span class="nc" id="L103"> Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
-<span class="nc" id="L104"> int c = 0;</span>
  
-<span class="nc bnc" id="L106" title="All 2 branches missed.">            for (Entry&lt;Integer, Integer&gt; entry : freqMap.entrySet()) {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            for (Entry&lt;Integer, Integer&gt; entry : freqMap.entrySet()) {</span>
 
-<span class="nc" id="L108">                Integer pixValue = entry.getKey();</span>
+<span class="nc" id="L176">                Integer pixValue = entry.getKey();</span>
 
-<span class="nc" id="L110">                DFSContiguousValueFinder finder = new DFSContiguousValueFinder(</span>
+<span class="nc" id="L178">                DFSContiguousValueFinder finder = new DFSContiguousValueFinder(</span>
                     imgGrey);
-<span class="nc" id="L112">                finder.setMinimumNumberInCluster(smallestGroupLimit);</span>
-<span class="nc" id="L113">                finder.findGroups(pixValue.intValue());</span>
+<span class="nc" id="L180">                finder.setMinimumNumberInCluster(smallestGroupLimit);</span>
+<span class="nc" id="L181">                finder.findGroups(pixValue.intValue());</span>
 
-<span class="nc" id="L115">                int nGroups = finder.getNumberOfGroups();</span>
-<span class="nc" id="L116">                List&lt;PairIntArray&gt; list = new ArrayList&lt;PairIntArray&gt;();</span>
-<span class="nc bnc" id="L117" title="All 2 branches missed.">                for (int i = 0; i &lt; nGroups; i++) {</span>
-<span class="nc" id="L118">                    PairIntArray xy = finder.getXY(i);</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">                    if (xy.getN() &lt; largestGroupLimit) {</span>
-<span class="nc" id="L120">                        list.add(xy);</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">if (c == 0) {</span>
-<span class="nc" id="L122">ImageIOHelper.addCurveToImage(xy, imgW, 0, 255, 0, 0);</span>
-<span class="nc bnc" id="L123" title="All 2 branches missed.">} else if (c == 1) {</span>
-<span class="nc" id="L124">ImageIOHelper.addCurveToImage(xy, imgW, 0, 200, 255, 150);</span>
-} else  {
-<span class="nc" id="L126">ImageIOHelper.addCurveToImage(xy, imgW, 0, 0, 0, 255);</span>
-}
+<span class="nc" id="L183">                int nGroups = finder.getNumberOfGroups();</span>
+<span class="nc" id="L184">                List&lt;PairIntArray&gt; list = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                for (int i = 0; i &lt; nGroups; i++) {</span>
+<span class="nc" id="L186">                    PairIntArray xy = finder.getXY(i);</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                    if (xy.getN() &lt; largestGroupLimit) {</span>
+<span class="nc" id="L188">                        list.add(xy);</span>
                     }
                 }
-<span class="nc" id="L130">                Collections.sort(list, new PairIntArrayDescendingComparator());</span>
-
-<span class="nc" id="L132">                contigMap.put(pixValue, list);</span>
+<span class="nc" id="L191">                Collections.sort(list, new PairIntArrayDescendingComparator());</span>
                 
-<span class="nc" id="L134">                List&lt;GrahamScan&gt; listHulls = new ArrayList&lt;GrahamScan&gt;();</span>
-<span class="nc bnc" id="L135" title="All 2 branches missed.">                for (PairIntArray xy : list) {</span>
-<span class="nc" id="L136">                    GrahamScan scan = new GrahamScan();</span>
+                // storing the centroids for this intensity level hulls separateley
+<span class="nc" id="L194">                PairIntArray pvHullCentroids = new PairIntArray();</span>
+                
+                // remove hulls with large area on image bounds
+<span class="nc" id="L197">                List&lt;Integer&gt; rm = new ArrayList&lt;Integer&gt;();</span>
+                
+<span class="nc" id="L199">                List&lt;GrahamScan&gt; listHulls = new ArrayList&lt;GrahamScan&gt;();</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                for (int i = 0; i &lt; list.size(); ++i) {</span>
+                    
+<span class="nc" id="L202">                    PairIntArray xy = list.get(i);</span>
+                    
+<span class="nc" id="L204">                    GrahamScan scan = new GrahamScan();</span>
                     try {
-<span class="nc" id="L138">                        float[] x = new float[xy.getN()];</span>
-<span class="nc" id="L139">                        float[] y = new float[x.length];</span>
-<span class="nc bnc" id="L140" title="All 2 branches missed.">                        for (int i = 0; i &lt; x.length; ++i) {</span>
-<span class="nc" id="L141">                            x[i] = xy.getX(i);</span>
-<span class="nc" id="L142">                            y[i] = xy.getY(i);</span>
+<span class="nc" id="L206">                        float[] x = new float[xy.getN()];</span>
+<span class="nc" id="L207">                        float[] y = new float[x.length];</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                        for (int ii = 0; ii &lt; x.length; ++ii) {</span>
+<span class="nc" id="L209">                            x[ii] = xy.getX(ii);</span>
+<span class="nc" id="L210">                            y[ii] = xy.getY(ii);</span>
                         }
+                        
+<span class="nc" id="L213">                        double[] centroidXY = </span>
+<span class="nc" id="L214">                            curveHelper.calculateXYCentroids(x, y);</span>
 
-<span class="nc" id="L145">                        scan.computeHull(x, y);</span>
+<span class="nc" id="L216">                        scan.computeHull(x, y);</span>
+                        
+                        // if more than one hull point touches the bounds of the
+                        // image, the hull is removed because it may be
+                        // incomplete.  may need to change this rule later
+                        // if it makes the solution too shallow in terms of 
+                        // very close points
+                        
+<span class="nc" id="L224">                        int nBounds = 0;</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                        for (int ii = 0; ii &lt; scan.getXHull().length; ++ii) {</span>
+<span class="nc" id="L226">                            float xh = scan.getXHull()[ii];</span>
+<span class="nc" id="L227">                            float yh = scan.getYHull()[ii];</span>
+<span class="nc bnc" id="L228" title="All 6 branches missed.">                            if ((xh == 0) || xh == (imgGrey.getWidth() - 1) ||</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">                                (yh == 0) || yh == (imgGrey.getHeight() - 1)) {</span>
+<span class="nc" id="L230">                                nBounds++;</span>
+                            }
+                        }
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                        if (nBounds &gt; 3) {                            </span>
+<span class="nc" id="L234">                            rm.add(Integer.valueOf(i));</span>
+                        } else {
+<span class="nc" id="L236">                            listHulls.add(scan);</span>
+<span class="nc" id="L237">                            int xh = (int)Math.round(centroidXY[0]);</span>
+<span class="nc" id="L238">                            int yh = (int)Math.round(centroidXY[1]);</span>
+<span class="nc" id="L239">                            hullCentroids.add(xh, yh);</span>
+<span class="nc" id="L240">                            pvHullCentroids.add(xh, yh);</span>
+                        }
+                        
+<span class="nc" id="L243">                    } catch (GrahamScanTooFewPointsException e) {</span>
+<span class="nc" id="L244">                        log.severe(e.getMessage());</span>
+<span class="nc" id="L245">                    }</span>
+                }
+                
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                for (int i = (rm.size() - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L249">                    int rmIdx = rm.get(i).intValue();</span>
+<span class="nc" id="L250">                    list.remove(rmIdx);</span>
+                }
 
-<span class="nc" id="L147">                        listHulls.add(scan);</span>
-<span class="nc" id="L148">                    } catch (GrahamScanTooFewPointsException e) {</span>
-<span class="nc" id="L149">                        log.severe(e.getMessage());</span>
-<span class="nc" id="L150">                    }                    </span>
-<span class="nc" id="L151">                }</span>
-<span class="nc" id="L152">                hulls.put(pixValue, listHulls);</span>
-<span class="nc" id="L153">c++;</span>
-<span class="nc" id="L154">            }</span>
- try {
-<span class="nc" id="L156">    String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="nc" id="L157">    ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + im + &quot;.png&quot;, imgW);</span>
-<span class="nc" id="L158">} catch (Exception e) {</span>
-<span class="nc" id="L159">     e.printStackTrace();</span>
-<span class="nc" id="L160">    log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="nc" id="L161">}</span>
- 
+<span class="nc" id="L253">                log.info(&quot;nHulls&quot; + (im + 1) + &quot;=&quot; + listHulls.size() + &quot; for intensity=&quot; + pixValue.toString());</span>
+                
+<span class="nc" id="L255">                contigMap.put(pixValue, list);</span>
+<span class="nc" id="L256">                hulls.put(pixValue, listHulls);</span>
+<span class="nc" id="L257">                hullCentroidsMap.put(pixValue, pvHullCentroids);</span>
+<span class="nc" id="L258">            }</span>
         }
         
-<span class="nc" id="L165">        Image img1W = ImageIOHelper.convertImage(img1Grey);</span>
-<span class="nc" id="L166">        Image img2W = ImageIOHelper.convertImage(img2Grey);</span>
-        
-<span class="nc" id="L168">        int c = 0;</span>
-<span class="nc bnc" id="L169" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;GrahamScan&gt;&gt; entry : hulls1.entrySet()) {</span>
-<span class="nc" id="L170">            List&lt;GrahamScan&gt; hulls = entry.getValue();</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">            for (GrahamScan hull : hulls) {</span>
-<span class="nc" id="L172">                int[] x = new int[hull.getXHull().length];</span>
-<span class="nc" id="L173">                int[] y = new int[x.length];</span>
-<span class="nc bnc" id="L174" title="All 2 branches missed.">                for (int i = 0; i &lt; x.length; ++i) {</span>
-<span class="nc" id="L175">                    x[i] = Math.round(hull.getXHull()[i]);</span>
-<span class="nc" id="L176">                    y[i] = Math.round(hull.getYHull()[i]);                   </span>
-                }
-<span class="nc bnc" id="L178" title="All 2 branches missed.">                if (c == 0) {</span>
-                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 255, 0, 0);
-<span class="nc" id="L180">                    ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 255, 0, 0);</span>
-<span class="nc bnc" id="L181" title="All 2 branches missed.">                } else if (c == 1) {</span>
-                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 0, 255, 0);
-<span class="nc" id="L183">                    ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 0, 255, 0);</span>
-                } else {
-                    //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 0, 0, 255);
-<span class="nc" id="L186">                    ImageIOHelper.drawLinesInImage(x, y, img1W, 1, 0, 0, 255);</span>
-                }
-<span class="nc" id="L188">            }</span>
-<span class="nc" id="L189">            c++;</span>
-<span class="nc" id="L190">        }</span>
-<span class="nc" id="L191">        c = 0;</span>
-<span class="nc bnc" id="L192" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;GrahamScan&gt;&gt; entry : hulls2.entrySet()) {</span>
-<span class="nc" id="L193">            List&lt;GrahamScan&gt; hulls = entry.getValue();</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">            for (GrahamScan hull : hulls) {</span>
-<span class="nc" id="L195">                int[] x = new int[hull.getXHull().length];</span>
-<span class="nc" id="L196">                int[] y = new int[x.length];</span>
-<span class="nc bnc" id="L197" title="All 2 branches missed.">                for (int i = 0; i &lt; x.length; ++i) {</span>
-<span class="nc" id="L198">                    x[i] = Math.round(hull.getXHull()[i]);</span>
-<span class="nc" id="L199">                    y[i] = Math.round(hull.getYHull()[i]);</span>
-                }
-<span class="nc bnc" id="L201" title="All 2 branches missed.">                if (c == 0) {</span>
-                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 255, 0, 0);
-<span class="nc" id="L203">                    ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 255, 0, 0);</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">                } else if (c == 1) {</span>
-                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 0, 255, 0);
-<span class="nc" id="L206">                    ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 0, 255, 0);</span>
-                } else {
-                    //ImageIOHelper.addCurveToImage(x, y, img2W, 1, 0, 0, 255);
-<span class="nc" id="L209">                    ImageIOHelper.drawLinesInImage(x, y, img2W, 1, 0, 0, 255);</span>
-                }
-<span class="nc" id="L211">            }</span>
-<span class="nc" id="L212">            c++;</span>
-<span class="nc" id="L213">        }</span>
+<span class="nc" id="L261">        MiscDebug.writeHullImages(img1Grey, hulls1, &quot;1_binned_hulls&quot;);</span>
+<span class="nc" id="L262">        MiscDebug.writeHullImages(img2Grey, hulls2, &quot;2_binned_hulls&quot;);</span>
+<span class="nc" id="L263">        MiscDebug.writeImage(img1Cp, &quot;1_binned_clr&quot;);</span>
+<span class="nc" id="L264">        MiscDebug.writeImage(img2Cp, &quot;2_binned_clr&quot;);</span>
        
-        try {
-<span class="nc" id="L216">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="nc" id="L217">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img1_binned.png&quot;, img1W);</span>
-<span class="nc" id="L218">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img2_binned.png&quot;, img2W);</span>
-<span class="nc" id="L219">        } catch (Exception e) {</span>
-<span class="nc" id="L220">             e.printStackTrace();</span>
-<span class="nc" id="L221">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="nc" id="L222">        }</span>
-<span class="nc" id="L223">        return null;</span>
-        //throw new UnsupportedOperationException(&quot;not yet implemented&quot;);
-    
+        // make corners
+        
+        if (!performBinning) {
+<span class="nc" id="L269">            imageProcessor.blur(img1Grey, 2);</span>
+<span class="nc" id="L270">            imageProcessor.blur(img2Grey, 2);</span>
+        }
+        
+<span class="nc" id="L273">        CurvatureScaleSpaceCornerDetector detector = new</span>
+            CurvatureScaleSpaceCornerDetector(img1Grey);
+<span class="nc" id="L275">        detector.doNotPerformHistogramEqualization();</span>
+<span class="nc" id="L276">        detector.findCorners();</span>
+<span class="nc" id="L277">        PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();</span>
+        
+<span class="nc" id="L279">        CurvatureScaleSpaceCornerDetector detector2 = new</span>
+            CurvatureScaleSpaceCornerDetector(img2Grey);
+<span class="nc" id="L281">        detector2.doNotPerformHistogramEqualization();</span>
+<span class="nc" id="L282">        detector2.findCorners();</span>
+<span class="nc" id="L283">        PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();</span>
+        
+<span class="nc" id="L285">        log.info(&quot;n1Corners=&quot; + corners1.getN() + &quot; n2Corners2=&quot; </span>
+<span class="nc" id="L286">            + corners2.getN());</span>
+        
+        // experimenting with a slightly different definition for theta:
+<span class="nc" id="L289">        GreyscaleImage theta1360 = imageProcessor.computeTheta360(</span>
+<span class="nc" id="L290">            detector.getGradientX(), detector.getGradientY());</span>
+<span class="nc" id="L291">        GreyscaleImage theta2360 = imageProcessor.computeTheta360(</span>
+<span class="nc" id="L292">            detector2.getGradientX(), detector2.getGradientY());</span>
+<span class="nc" id="L293">        MiscDebug.writeImage(theta1360, &quot;1_theta360&quot;);</span>
+<span class="nc" id="L294">        MiscDebug.writeImage(theta2360, &quot;2_theta360&quot;);</span>
+
+        
+        //log.info(&quot;corners1=&quot; + corners1.toString());
+        //log.info(&quot;corners2=&quot; + corners2.toString());
+
+<span class="nc" id="L300">        MiscDebug.plotCorners(img1Grey, corners1, &quot;1_corners&quot;);</span>
+<span class="nc" id="L301">        MiscDebug.plotCorners(img2Grey, corners2, &quot;2_corners&quot;);</span>
+        
         /*
-        -- segmentation by cieXY color into 3 bands
-        -- dfs contiguous find of each of the 3 intensity bands
-           -- convex hull of the groups
-           -- compare the hulls of one image to the hulls of the other image:  
-              -- by area and single pixel intensity?  (the cie xy histogram skipping
-                    algorithm may assign different colors to same feature, so should
-                    probably ignore intensity unless know the images are very similar).
-              -- by shape
-                -- furthest pairs?
-                -- a description of ellipticity?
-                -- points on the hull or centroid matching enough between 
-                   the 2 images to be used like &quot;corners&quot;?
-              -- by an increasing rotation and a fixed rotational range to
-                 only look at hulls that are within the projected beam of the
-                 hull in image1 under consideration?
-                 -- need to store the best for a hull and also the fits as the
-                    rotations are tried, that is, dynamic programming to avoid
-                    repeating calculations.
-                    -- then the best of each hull can be quickly looked up for
-                       the other hulls (i.e. was rotation=20 within top fits
-                       for the neighboring hulls and with consistent translation...)
-                       
+        If make an assumption that the histogram equalization and then color
+        segmentation leaves the images in consistent state w.r.t. similar 
+        colors and intensities being displayed similarly, then selection of
+        blobs in this way should lead to comparable lists (which are
+        subsets of the total, that is the blobs found for intensity level i0
+        in image 1 are the ones to match to similar intensity level in image 2).
+        
+        Using the blobs, that is the hulls above, has reduced the number of
+        regions to compare.
+        
+        Using the centroids of the blobs is appealling, but these will likely
+        be in regions free of large gradients so are difficult to distinguish.
+        
+        Corners filtered to be only those that cross those blob hulls, however,
+        should be good features to use.
+        
+        The problem is that the corners filtered to those lists are still too
+        many to use pairwise transformation calculation from every possible
+        pair (the process is approx n^4).
+        
+        So feature matching using patches surrounding the corners is needed and 
+        this is an N^2 process but accompanied by many steps for the comparisons.
+        
+        Note that feature matching instead of straight pairwise transformation
+        calculation unfortunately needs an assumption made about the
+        scale.
+        
+        TODO: For sets with &lt; a dozen or two dozen members each, could 
+        consider using pairwise calculation checked by feature matches.
+        
+        TODO: refactor to be able to use gaussian pyramids if scale=1 is not
+              known, then fit to find scale (for sets with large number of members).
+             see Lindenberg 1998 and Lowe 2004
         */
+        
+<span class="nc" id="L339">        List&lt;PairIntArray&gt; filteredCornersList1 = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc" id="L340">        List&lt;PairIntArray&gt; filteredCornersList2 = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc" id="L341">        filterCornersAndOrderByMatchingIntensity(</span>
+            corners1, hulls1,
+            corners2, hulls2, 
+            filteredCornersList1, filteredCornersList2);
+        
+<span class="nc" id="L346">        boolean useFiltered = true;</span>
+        
+<span class="nc" id="L348">        int nFiltered1Tot = 0;</span>
+<span class="nc" id="L349">        int nFiltered2Tot = 0;</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        for (PairIntArray p : filteredCornersList1) {</span>
+<span class="nc" id="L351">            nFiltered1Tot += p.getN();</span>
+<span class="nc" id="L352">        }</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">        for (PairIntArray p : filteredCornersList2) {</span>
+<span class="nc" id="L354">            nFiltered2Tot += p.getN();</span>
+<span class="nc" id="L355">        }</span>
+        
+<span class="nc bnc" id="L357" title="All 4 branches missed.">        if ((nFiltered1Tot &lt; 12) || (nFiltered2Tot &lt; 12)) {</span>
+<span class="nc" id="L358">            useFiltered = false;</span>
+        }
+        
+        /*
+        use feature description to find similar looking features within
+        image2 filtered corners.
+        */
+        
+        /*
+        key = intensity level of image 1 contiguous region
+        value = map with
+                key = point in filteredCorners1
+                value = list of similar looking points in filteredCorners2
+                        for the same intensity level.
+        */
+        
+<span class="nc" id="L374">        List&lt;Map&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt;&gt; similarCorners</span>
+            = new ArrayList&lt;Map&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt;&gt;();
+        
+<span class="nc bnc" id="L377" title="All 2 branches missed.">        if (useFiltered) {</span>
+            
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            for (int i = 0; i &lt; filteredCornersList1.size(); ++i) {</span>
+                // sets with keys pixValue1 and pixValues should hold common blobs
+                // and details
+<span class="nc" id="L382">                PairIntArray filtered1 = filteredCornersList1.get(i);</span>
+<span class="nc" id="L383">                PairIntArray filtered2 = filteredCornersList2.get(i);</span>
+
+<span class="nc" id="L385">                log.info(&quot;nFiltered1=&quot; + filtered1.getN());</span>
+<span class="nc" id="L386">                log.info(&quot;nFiltered2=&quot; + filtered2.getN());</span>
+
+<span class="nc" id="L388">                log.info(&quot;filtered1=&quot; + filtered1.toString());</span>
+<span class="nc" id="L389">                log.info(&quot;filtered2=&quot; + filtered2.toString());</span>
+
+<span class="nc" id="L391">                MiscDebug.plotCorners(img1Grey, filtered1, &quot;1_&quot; + i + &quot;_filtered&quot;);</span>
+<span class="nc" id="L392">                MiscDebug.plotCorners(img2Grey, filtered2, &quot;2_&quot; + i + &quot;_filtered&quot;);</span>
+
+<span class="nc" id="L394">                Set&lt;CornerRegion&gt; cornerRegions1 = </span>
+<span class="nc" id="L395">                    detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);</span>
+<span class="nc" id="L396">                CornerRegion[] cr1 = findCornerRegions(filtered1, cornerRegions1);</span>
+<span class="nc" id="L397">                Set&lt;CornerRegion&gt; cornerRegions2 = </span>
+<span class="nc" id="L398">                    detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);</span>
+<span class="nc" id="L399">                CornerRegion[] cr2 = findCornerRegions(filtered2, cornerRegions2);</span>
+                
+                //log.info(&quot;corner region1:&quot;);
+                //MiscDebug.printCornerRegion(cr1);
+                //log.info(&quot;corner region2:&quot;);
+                //MiscDebug.printCornerRegion(cr2);
+                /*
+                Map&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt; similar = 
+                    findSimilarFeatures(
+                        img1Cp, detector.getGradientXY(), theta1360, cr1,
+                        img2Cp, detector2.getGradientXY(), theta2360, cr2
+                    );
+                    findSimilarFeatures(img1Cp, 
+                        img2Cp, filtered1, filtered2);
+
+                similarCorners.add(similar);*/
+            }
+            
+        } else {
+            
+<span class="nc" id="L419">            Set&lt;CornerRegion&gt; cornerRegions1 = </span>
+<span class="nc" id="L420">                detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);</span>
+<span class="nc" id="L421">            CornerRegion[] cr1 = findCornerRegions(corners1, cornerRegions1);</span>
+<span class="nc" id="L422">            Set&lt;CornerRegion&gt; cornerRegions2 = </span>
+<span class="nc" id="L423">                detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);</span>
+<span class="nc" id="L424">            CornerRegion[] cr2 = findCornerRegions(corners2, cornerRegions2);</span>
+            
+            /*
+            Map&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt; similar = 
+                findSimilarFeatures(
+                    img1Cp, detector.getGradientXY(), theta1360, cr1,
+                    img2Cp, detector2.getGradientXY(), theta2360, cr2);
+                //findSimilarFeatures(img1Cp, img2Cp, corners1, corners2);
+
+            similarCorners.add(similar);*/
+        }
+        
+if (true) {
+<span class="nc" id="L437">    return null;</span>
+}        
+        
+        /*
+        if need to calculate for all hull centroids, can use the rotation 
+        and translation grid based search followed by downhill simplex:
+        
+        boolean useGreedyMatching = true;
+        boolean searchScaleToo = true;
+        float scale = 1;
+        TransformationPointFit[] starterPoints = pointMatcher.preSearch0Small(
+            allHullCentroids1, allHullCentroids2, scale,
+            0, 359, useGreedyMatching);
+        TransformationPointFit[] fits2 =
+            pointMatcher.refineTransformationWithDownhillSimplexWrapper(
+            starterPoints, allHullCentroids1, allHullCentroids2, searchScaleToo, 
+            useGreedyMatching);
+        
+        log.info(&quot;fit3=&quot; + fits2[0].toString());
+        */
+        
+        TransformationPointFit bestFit00 = null;
+
+        float toleranceTransX = 20;//30;
+        float toleranceTransY = toleranceTransX;
+        boolean useGreedyMatching = true;
+        boolean earlyConvergeReturn = true;
+        boolean setsAreMatched = false;
+        
+        log.info(&quot;nAllHulls1=&quot; + allHullCentroids1.getN() 
+            + &quot; nAllHulls2=&quot; + allHullCentroids2.getN());
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        
+        if ((bestFit00 == null) ||
+            (((float)bestFit00.getNumberOfMatchedPoints()
+            /(float)bestFit00.getNMaxMatchable()) &lt; 0.5)) {
+                        
+            // unfortunately, the quicker solution didn't work so need to try
+            // to solve it using all corners (though the internal implementation
+            // does not try all permutations).
+            
+            long t0 = System.currentTimeMillis();
+            List&lt;TransformationPointFit&gt; fits
+                = pointMatcher.calculateEuclideanTransformationUsingPairs(
+                    corners1, corners2, toleranceTransX, toleranceTransY,
+                    earlyConvergeReturn, useGreedyMatching);
+            long t1 = System.currentTimeMillis();
+            log.info(&quot;calculateEuclideanTransformationUsingPairs seconds=&quot;
+                + ((t1 - t0) * 1e-3));
+            
+            // the evaluation has already been tried against all corners
+            // so only need to compare the fits.
+            
+            // this finds best that is usually a scale that is not 1, so
+            // if one knows that the scale should be '1', should use the
+            // method that solves mostly vertical transformations specifically
+            
+            for (TransformationPointFit fit : fits) {
+                if (pointMatcher.fitIsBetter(bestFit00, fit)) {
+                    bestFit00 = fit;
+                }
+            }
+            log.info(&quot;best from all corners=&quot; + bestFit00.toString());
+        }
+        
+        // refine the solution 
+        float rotHalfRangeInDegrees = 20;
+        float rotDeltaInDegrees = 2;
+        float transXHalfRange = 40; 
+        float transXDelta = 4;
+        float transYHalfRange = transXHalfRange; 
+        float transYDelta = transXDelta;
+        
+        long t0 = System.currentTimeMillis();
+        TransformationPointFit bestFit = pointMatcher.refineTheTransformation(
+            bestFit00.getParameters(), corners1, corners2,
+            rotHalfRangeInDegrees, rotDeltaInDegrees,
+            transXHalfRange, transXDelta,
+            transYHalfRange, transYDelta,
+            useGreedyMatching);
+        long t1 = System.currentTimeMillis();
+        
+        log.info(((t1-t0)*1e-3) + &quot;seconds) refined solution=&quot; + bestFit.toString());
+        
+        //TODO: use the transformation to make matching corner lists, 
+        //   perhaps from larger images
+        
+        return bestFit;
+    }
+
+    private Map&lt;Integer, PairIntArray&gt; filterToHulls(PairIntArray corners, 
+        Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls) {
+        
+<span class="nc" id="L531">        PointInPolygon poly = new PointInPolygon();</span>
+        
+<span class="nc" id="L533">        Map&lt;Integer, PairIntArray&gt; filteredCorners = new HashMap&lt;Integer, PairIntArray&gt;();</span>
+                
+<span class="nc bnc" id="L535" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;GrahamScan&gt;&gt; entry : hulls.entrySet()) {</span>
+            
+<span class="nc" id="L537">            Integer pixValue = entry.getKey();</span>
+            
+<span class="nc" id="L539">            List&lt;GrahamScan&gt; hullList = entry.getValue();</span>
+           
+<span class="nc" id="L541">            Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+            
+<span class="nc" id="L543">            PairIntArray cornersH = new PairIntArray();</span>
+            
+<span class="nc bnc" id="L545" title="All 2 branches missed.">            for (GrahamScan scan : hullList) {</span>
+                
+<span class="nc bnc" id="L547" title="All 2 branches missed.">                for (int i = 0; i &lt; corners.getN(); ++i) {</span>
+                    
+<span class="nc" id="L549">                    int x = corners.getX(i);</span>
+<span class="nc" id="L550">                    int y = corners.getY(i);</span>
+                    
+<span class="nc" id="L552">                    PairInt p = new PairInt(x, y);</span>
+                    
+<span class="nc bnc" id="L554" title="All 2 branches missed.">                    if (added.contains(p)) {</span>
+<span class="nc" id="L555">                        continue;</span>
+                    }
+                    
+<span class="nc bnc" id="L558" title="All 2 branches missed.">                    if (poly.isInSimpleCurve(x, y, scan.getXHull(), </span>
+<span class="nc" id="L559">                        scan.getYHull(), scan.getXHull().length)) {</span>
+                        
+<span class="nc" id="L561">                        cornersH.add(x, y);</span>
+<span class="nc" id="L562">                        added.add(p);</span>
+                    } else {
+<span class="nc bnc" id="L564" title="All 2 branches missed.">                        for (int ii = 0; ii &lt; scan.getXHull().length; ++ii) {</span>
+<span class="nc" id="L565">                            float diffX = Math.abs(x - scan.getXHull()[ii]);</span>
+<span class="nc" id="L566">                            float diffY = Math.abs(y - scan.getYHull()[ii]);</span>
+<span class="nc bnc" id="L567" title="All 4 branches missed.">                            if (diffX &lt; 2 &amp;&amp; diffY &lt; 2) {</span>
+<span class="nc" id="L568">                                cornersH.add(x, y);</span>
+<span class="nc" id="L569">                                added.add(p);</span>
+<span class="nc" id="L570">                                break;</span>
+                            }
+                        }
+                    }
+                }
+<span class="nc" id="L575">            }</span>
+        
+            // because convex hulls are used, there may be some points that are
+            // in more than one map entry
+<span class="nc" id="L579">            filteredCorners.put(pixValue, cornersH);</span>
+<span class="nc" id="L580">        }</span>
+        
+<span class="nc" id="L582">        return filteredCorners;</span>
+    }
+
+    protected void filterCornersAndOrderByMatchingIntensity(
+        PairIntArray corners1, Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls1, 
+        PairIntArray corners2, Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls2, 
+        List&lt;PairIntArray&gt; outputFilteredCornersList1, 
+        List&lt;PairIntArray&gt; outputFilteredCornersList2) {
+        
+<span class="nc" id="L591">        Map&lt;Integer, PairIntArray&gt; filteredCorners1 = filterToHulls(</span>
+            corners1, hulls1);
+        
+<span class="nc" id="L594">        Map&lt;Integer, PairIntArray&gt; filteredCorners2 = filterToHulls(</span>
+            corners2, hulls2);
+        
+<span class="nc" id="L597">        Set&lt;Integer&gt; matchedFilter2Keys = new HashSet&lt;Integer&gt;();</span>
+        
+        // iterate over intensity keys to find the closest matching in intensities
+        // to compare those lists
+<span class="nc bnc" id="L601" title="All 2 branches missed.">        for (Entry&lt;Integer, PairIntArray&gt; entry : filteredCorners1.entrySet()) {</span>
+            
+<span class="nc" id="L603">            Integer pixValue1 = entry.getKey();</span>
+            
+            // find the closest value to it in the image2 map.  should be very
+            // similar if image content is similar and pre-processing the same.
+            // else, may need to use allHullCentroids1 and allHullCentroids2
+            // in one calculation
+            
+<span class="nc" id="L610">            Integer pixValue2 = null;</span>
+<span class="nc" id="L611">            Iterator&lt;Entry&lt;Integer, PairIntArray&gt;&gt; iter = </span>
+<span class="nc" id="L612">                filteredCorners2.entrySet().iterator();</span>
+<span class="nc bnc" id="L613" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L614">                Integer pV = iter.next().getKey();</span>
+<span class="nc bnc" id="L615" title="All 2 branches missed.">                if (matchedFilter2Keys.contains(pV)) {</span>
+<span class="nc" id="L616">                    continue;</span>
+                }
+<span class="nc bnc" id="L618" title="All 2 branches missed.">                if (pixValue2 == null) {</span>
+<span class="nc" id="L619">                    pixValue2 = pV;</span>
+                } else {
+<span class="nc" id="L621">                    int diff = Math.abs(pixValue1.intValue() - pixValue2.intValue());</span>
+<span class="nc" id="L622">                    int diffV = Math.abs(pV.intValue() - pixValue2.intValue());</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">                    if (diffV &lt; diff) {</span>
+<span class="nc" id="L624">                        pixValue2 = pV;</span>
+                    }
+                }
+<span class="nc" id="L627">            }</span>
+            
+<span class="nc bnc" id="L629" title="All 2 branches missed.">            if (pixValue2 == null) {</span>
+<span class="nc" id="L630">                continue;</span>
+            }
+<span class="nc" id="L632">            matchedFilter2Keys.add(pixValue2);</span>
+            
+            // sets with keys pixValue1 and pixValues should hold common blobs
+            // and details
+<span class="nc" id="L636">            PairIntArray filtered1 = entry.getValue();</span>
+<span class="nc" id="L637">            PairIntArray filtered2 = filteredCorners2.get(pixValue2);</span>
+            
+<span class="nc" id="L639">            outputFilteredCornersList1.add(filtered1);</span>
+<span class="nc" id="L640">            outputFilteredCornersList2.add(filtered2);</span>
+<span class="nc" id="L641">        }</span>
+        
+<span class="nc" id="L643">    } </span>
+
+    private CornerRegion[] findCornerRegions(PairIntArray corners, 
+        Set&lt;CornerRegion&gt; cornerRegions) {
+        
+<span class="nc" id="L648">        int n = corners.getN();</span>
+        
+<span class="nc" id="L650">        CornerRegion[] out = new CornerRegion[n];</span>
+        
+<span class="nc bnc" id="L652" title="All 2 branches missed.">        for (int i = 0; i &lt; corners.getN(); ++i) {</span>
+            
+<span class="nc" id="L654">            int x = corners.getX(i);</span>
+<span class="nc" id="L655">            int y = corners.getY(i);</span>
+            
+<span class="nc" id="L657">            CornerRegion cr = null;</span>
+<span class="nc" id="L658">            int diffSqMin = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">            for (CornerRegion cornerRegion : cornerRegions) {</span>
+<span class="nc" id="L660">                int kMaxIdx = cornerRegion.getKMaxIdx();</span>
+<span class="nc" id="L661">                int xcr = cornerRegion.getX()[kMaxIdx];</span>
+<span class="nc" id="L662">                int ycr = cornerRegion.getY()[kMaxIdx];</span>
+<span class="nc" id="L663">                int diffX = Math.abs(xcr - x);</span>
+<span class="nc" id="L664">                int diffY = Math.abs(ycr - y);</span>
+<span class="nc bnc" id="L665" title="All 4 branches missed.">                if (diffX &gt; 4 || diffY &gt; 4) {</span>
+<span class="nc" id="L666">                    continue;</span>
+                }
+<span class="nc" id="L668">                int diffSq = diffX * diffX + diffY * diffY;</span>
+<span class="nc bnc" id="L669" title="All 2 branches missed.">                if (diffSq &lt; diffSqMin) {</span>
+<span class="nc" id="L670">                    diffSqMin = diffSq;</span>
+<span class="nc" id="L671">                    cr = cornerRegion;</span>
+                }
+<span class="nc" id="L673">            }</span>
+            
+<span class="nc" id="L675">            out[i] = cr ;</span>
+        }
+        
+<span class="nc" id="L678">        return out;</span>
     }
 
 }

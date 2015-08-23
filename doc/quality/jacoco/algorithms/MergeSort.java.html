@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MergeSort.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">MergeSort.java</span></div><h1>MergeSort.java</h1><pre class="source lang-java linenums">package algorithms;
+
+import java.util.Arrays;
+
+/**
+ * @author nichole
+ */
+<span class="nc" id="L8">public class MergeSort {</span>
+
+    /**
+     * sort by decreasing value a1
+     *
+     * @param a array of points to be sorted
+     */
+    public static void sortByDecr(int[] a) {
+<span class="pc bpc" id="L16" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L17">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L21">            return;</span>
+        }
+        
+<span class="fc" id="L24">        sortByDecr(a, 0, a.length - 1);</span>
+              
+<span class="fc" id="L26">    }</span>
+    
+    public static void sortByDecr(int[] a, int idxLo, int idxHi) {
+
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L31">            return;</span>
+        }
+        
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L36">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+            
+<span class="fc" id="L38">            sortByDecr(a, idxLo, indexMid);</span>
+            
+<span class="fc" id="L40">            sortByDecr(a, indexMid + 1, idxHi);</span>
+            
+<span class="fc" id="L42">            mergeByDecr(a, idxLo, indexMid, idxHi);</span>
+        }
+<span class="fc" id="L44">    }</span>
+    
+    private static void mergeByDecr(int[] a1, int idxLo, 
+        int idxMid, int idxHi) {
+
+<span class="fc" id="L49">        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+        
+<span class="fc" id="L51">        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+        
+<span class="fc" id="L53">        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L54">        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;</span>
+        
+<span class="fc" id="L56">        int leftPos = 0;</span>
+<span class="fc" id="L57">        int rightPos = 0;</span>
+
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L60">            int l = a1Left[leftPos];</span>
+<span class="fc" id="L61">            int r = a1Right[rightPos];</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (l &gt; r) {</span>
+<span class="fc" id="L63">                a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L64">                leftPos++;</span>
+            } else {
+<span class="fc" id="L66">                a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L67">                rightPos++;</span>
+            }
+        }
+<span class="fc" id="L70">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
