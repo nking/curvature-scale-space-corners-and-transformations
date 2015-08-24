@@ -1,0 +1,21 @@
+Datasets from the 2003 datasets of
+http://vision.middlebury.edu/stereo/data/scenes2003/
+
+Note: These are already rectified.
+
+They are taken from equally-spaced viewpoints along the x-axis from left to right. 
+The images are rectified so that all image motion is purely horizontal. 
+To test a two-view stereo algorithm, the two reference views 
+im2 (left) and im6 (right) should be used. Ground-truth disparites with 
+quarter-pixel accuracy are provided for these two views. 
+Disparities are encoded using a scale factor 4 for gray levels 1 .. 255, 
+while gray level 0 means "unknown disparity".  Therefore, the encoded 
+disparity range is 0.25 .. 63.75 pixels.
+
+The paper:
+"High-Accuracy Stereo Depth Maps Using Structured Light"
+by Daniel Scharstein and Richard Szeliski
+In IEEE Computer Society Conference on Computer Vision and Pattern 
+Recognition (CVPR 2003), volume 1, pages 195-202, Madison, WI, June 2003.
+
+camera has 2048 x 768 pixels^2.
