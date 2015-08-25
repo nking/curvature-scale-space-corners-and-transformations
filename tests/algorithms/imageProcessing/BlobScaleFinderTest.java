@@ -6,7 +6,9 @@ import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
@@ -16,6 +18,8 @@ import junit.framework.TestCase;
  */
 public class BlobScaleFinderTest extends TestCase {
 
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
     public void estFindScale() throws Exception {
         
         String fileName1, fileName2;
@@ -195,6 +199,123 @@ public class BlobScaleFinderTest extends TestCase {
         }
         
         assertTrue(expected.isEmpty());
+    }
+    
+    public void testSumIntensity() throws Exception {
+        
+        boolean doNormalize = false;
+        
+        int width = 10;
+        int height = 10;
+        int xCenter = 10; 
+        int yCenter = 10;
+        Set<PairInt> rectangle10 = DataForTests.getRectangle(width, height, 
+            xCenter, yCenter);
+        
+        boolean toggle = true;
+        GreyscaleImage img = new GreyscaleImage(xCenter*2, yCenter*2);
+        for (PairInt p : rectangle10) {
+            if (toggle) {
+                img.setValue(p.getX(), p.getY(), 100 + 3);
+            } else {
+                img.setValue(p.getX(), p.getY(), 100 - 3);
+            }
+            toggle = !toggle;
+        }
+        // average = 100,  each of 36 will be +3 or -3 so sum should be 0
+        
+        BlobScaleFinder blobFinder = new BlobScaleFinder();
+        
+        int result = blobFinder.sumIntensity(img, rectangle10, doNormalize);
+        
+        int expected = doNormalize ? 0 : rectangle10.size()*100;
+        
+        log.info("expected=" + expected + " result=" + result);
+        
+        assertTrue(result == expected);
+        
+    }
+    
+    public void testFilterBlobsByFeatures() throws Exception {
+        
+        int width = 10;
+        int height = 10;
+        int xCenter = 10; 
+        int yCenter = 10;
+        Set<PairInt> rectangle10 = DataForTests.getRectangle(width, height, 
+            xCenter, yCenter);
+        
+        width = 15;
+        height = 15;
+        xCenter = 50; 
+        yCenter = 50;
+        Set<PairInt> rectangle50 = DataForTests.getRectangle(width, height, 
+            xCenter, yCenter);
+        
+        /*
+        filling rectangle10 and rectangle50 with values scaling from 100 to 136
+        in img1.
+        
+        Doing the same in img2 but adding 50 to each value.
+        */
+        
+        boolean doNormalize = false;
+        
+        int add = doNormalize ? 50 : 0;
+        
+        GreyscaleImage img1 = new GreyscaleImage(xCenter*2, yCenter*2);
+        int count = 0;
+        boolean toggle = true;
+        for (PairInt p : rectangle10) {
+            if (toggle) {
+                img1.setValue(p.getX(), p.getY(), 100 + count);
+            } else {
+                img1.setValue(p.getX(), p.getY(), 100 - count);
+            }
+            toggle = !toggle;
+            count++;
+        }
+        count = 0;
+        for (PairInt p : rectangle50) {
+            img1.setValue(p.getX(), p.getY(), 100 + count);
+            count++;
+        }
+        
+        GreyscaleImage img2 = new GreyscaleImage(xCenter*2, yCenter*2);
+        count = 0;
+        toggle = true;
+        for (PairInt p : rectangle10) {
+            if (toggle) {
+                img2.setValue(p.getX(), p.getY(), 100 + add + count);
+            } else {
+                img2.setValue(p.getX(), p.getY(), 100 + add - count);
+            }
+            toggle = !toggle;
+            count++;
+        }
+        count = 0;
+        for (PairInt p : rectangle50) {
+            img2.setValue(p.getX(), p.getY(), 100 + add + count);
+            count++;
+        }
+        
+        List<Set<PairInt>> blobs1 = new ArrayList<Set<PairInt>>();
+        blobs1.add(rectangle10);
+        blobs1.add(rectangle50);
+        List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
+        blobs2.add(rectangle10);
+        blobs2.add(rectangle50);
+                
+        BlobScaleFinder blobFinder = new BlobScaleFinder();
+        Map<Integer, List<Integer>> blobPairs = blobFinder.filterBlobsByFeatures(
+            img1, img2, blobs1, blobs2, doNormalize);
+        
+        assertTrue(blobPairs.size() == 2);
+        assertTrue(blobPairs.get(0).size() == 1);
+        assertTrue(blobPairs.get(0).get(0).intValue() == 0);
+        assertTrue(blobPairs.get(1).size() == 1);
+        assertTrue(blobPairs.get(1).get(0).intValue() == 1);
+        
     }
     
 }

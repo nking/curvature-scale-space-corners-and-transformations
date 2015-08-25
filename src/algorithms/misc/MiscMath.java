@@ -1,6 +1,9 @@
 package algorithms.misc;
 
 import algorithms.CountingSort;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -542,6 +545,32 @@ public class MiscMath {
         double stdDevX = Math.sqrt(sumX/(n - 1.0f));
         
         return new double[]{avgX, stdDevX};
+    }
+    
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @return 
+     */
+    public static double[] getAvgAndStDev(GreyscaleImage img, Set<PairInt> points) {
+        
+        int n = points.size();
+        double sum = 0;
+        for (PairInt p : points) {
+            sum += img.getValue(p.getX(), p.getY());
+        }
+        
+        double avg = sum/(double)n;
+        
+        sum = 0;
+        for (PairInt p : points) {
+            int v = img.getValue(p.getX(), p.getY());
+            double diffX = v - avg;
+            sum += (diffX * diffX);
+        }
+        double stdDevX = Math.sqrt(sum/(n - 1.0f));
+        
+        return new double[]{avg, stdDevX};
     }
     
     public static int[] add(int[] x, int amount) {
@@ -1405,9 +1434,10 @@ public class MiscMath {
 
     /**
      * Determine the sum squared error within this array using 
-     * auto-correlation and the assumption that the value at the middle index 
-     * is the value from the original central pixel.  Values the same as the
-     * sentinel are ignored and not included in the calculation.
+     * auto-correlation and a self reference value of the item at
+     * centralPixIdx in a.  Any item in a having value sentinel is ignored
+     * and not included in the calculation.
+     * 
      * @return 
      */
     public static float sumSquaredError(float[] a, float sentinel, int centralPixIdx) {
@@ -1433,6 +1463,52 @@ public class MiscMath {
             }
             
             float diff = a[i] - vc;
+        
+            sum += (diff * diff);
+            
+            count++;
+        }
+        
+        sum /= (double)count;
+                       
+        return (float)sum;
+    }
+
+    /**
+     * Determine the sum squared error within this array using 
+     * auto-correlation and a self reference value as the value at the centroid 
+     * of points.
+     * @param img
+     * @param points
+     * @return 
+     */
+    public static float sumSquaredError(GreyscaleImage img, Set<PairInt> points) {
+                        
+        if (img == null) {
+            throw new IllegalStateException("img cannot be null");
+        }
+        
+        if (points == null) {
+            throw new IllegalStateException("points cannot be null");
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        double[] xyCen = curveHelper.calculateXYCentroids(points);
+        int vCen = img.getValue((int)Math.round(xyCen[0]), 
+            (int)Math.round(xyCen[1]));
+        
+        int count = 0;
+        
+        double sum = 0;
+
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            int v = img.getValue(x, y);
+            
+            float diff = v - vCen;
         
             sum += (diff * diff);
             
