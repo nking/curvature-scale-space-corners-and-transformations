@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -496,6 +497,52 @@ public class BlobScaleFinder {
         int xRelativeOffset1, int yRelativeOffset1,
         int xRelativeOffset2, int yRelativeOffset2) {
 
+        Map<Integer, Map<Integer, TransformationParameters>> paramsMap =
+            new HashMap<Integer, Map<Integer, TransformationParameters>>();
+
+        for (Entry<Integer, List<Integer>> entry : filteredBlobMatches.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            
+            PairIntArray curve1 = bounds1.get(index1.intValue());
+                
+            List<Integer> blob2Indexes = entry.getValue();
+            
+            double bestCost = Double.MAX_VALUE;
+            int bestIdx2 = -1;
+            
+            for (Integer index2 : blob2Indexes) {
+                
+                PairIntArray curve2 = bounds2.get(index2.intValue());
+                
+                CurvatureScaleSpaceInflectionSingleEdgeMapper mapper = 
+                    new CurvatureScaleSpaceInflectionSingleEdgeMapper(
+                    curve1, index1.intValue(), curve2, index2.intValue(),
+                    xRelativeOffset1, yRelativeOffset1,
+                    xRelativeOffset2, yRelativeOffset2);
+                
+                TransformationParameters params = mapper.matchContours();
+                
+                if (params != null) {
+                    
+                    double cost = mapper.getMatcher().getSolvedCost();
+                    if (cost < bestCost) {
+                        bestCost = cost;
+                        bestIdx2 = index2.intValue();
+                    }
+                
+                    Map<Integer, TransformationParameters> map2 = 
+                        paramsMap.get(index1);
+                    
+                    if (map2 == null) {
+                        map2 = new HashMap<Integer, TransformationParameters>();
+                        paramsMap.put(index1, map2);
+                    }
+                    
+                    map2.put(index2, params);
+                }
+            }
+        }
 
         throw new UnsupportedOperationException("not yet implemented");
     }

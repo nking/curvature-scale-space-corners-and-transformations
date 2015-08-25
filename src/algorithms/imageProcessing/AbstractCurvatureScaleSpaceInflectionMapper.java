@@ -116,9 +116,11 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
     
     @Override
     public void initialize() {
+        
         if (initialized) {
             return;
         }
+        
         initialized = true;
         
         createEdges1();
@@ -142,6 +144,9 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
 public GreyscaleImage debugImg1 = null;
 public GreyscaleImage debugImg2 = null;
      
+    /**
+     * NOT READY FOR USE
+     */
     protected void createMatchedPointArraysFromContourPeaks() {
         
         if (matchedXY1 != null) {
@@ -531,6 +536,7 @@ try {
         
         return createEuclideanTransformationImpl();
     }
+    
     private void extract(List<CurvatureScaleSpaceContour> contours, 
         PairIntArray outputXY, List<Float> outputSigmaWeights,
         final int imageOffsetX, final int imageOffsetY) {
