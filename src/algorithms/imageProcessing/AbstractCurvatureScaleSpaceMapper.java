@@ -58,13 +58,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     protected HistogramHolder imgHistogram = null;
     
-    protected GreyscaleImage gradientXY = null;
-    
-    protected GreyscaleImage gradientX = null;
-    
-    protected GreyscaleImage gradientY = null;
-    
-    protected GreyscaleImage theta = null;
+    protected EdgeFilterProducts filterProducts = null;
     
     /**
      * map with key = center of junction pixel coordinates; 
@@ -229,8 +223,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
         } else {
                        
-            GreyscaleImage input = gradientXY.copyImage();
-            GreyscaleImage gTheta = theta;
+            GreyscaleImage input = filterProducts.getGradientXY().copyImage();
+            GreyscaleImage gTheta = filterProducts.getTheta();
             HistogramHolder hist = imgHistogram;
         
             reinitializeSpecialization();
@@ -254,18 +248,12 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 img = originalImg.copyToGreyscale();
                 
                 filter.applyFilter(img);
-        
-                gradientXY = filter.getGradientXY();
                 
-                gradientX = filter.getGradientX();
-                
-                gradientY = filter.getGradientY();
-        
-                theta = filter.getTheta();
+                filterProducts = filter.getEdgeFilterProducts();
         
                 imgHistogram = filter.getImgHistogram();
                 
-                img = gradientXY;
+                img = filterProducts.getGradientXY();
                 
             } else {
             
@@ -308,13 +296,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 
         filter.applyFilter(img);
         
-        gradientXY = filter.getGradientXY();
-        
-        gradientX = filter.getGradientX();
-        
-        gradientY = filter.getGradientY();
-        
-        theta = filter.getTheta();
+        filterProducts = filter.getEdgeFilterProducts();
         
         imgHistogram = filter.getImgHistogram();
                                 
@@ -339,8 +321,9 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             SkylineExtractor skylineExtractor = new SkylineExtractor();
             
             PairIntArray outputSkyCentroid = new PairIntArray();
-            GreyscaleImage out = skylineExtractor.createSkyline(theta, 
-                gradientXY, this.originalImg, settings, outputSkyCentroid);
+            GreyscaleImage out = skylineExtractor.createSkyline(
+                filterProducts.getTheta(), filterProducts.getGradientXY(),
+                this.originalImg, settings, outputSkyCentroid);
              
             List<PairIntArray> skyEdges = skylineExtractor.getSkylineEdges();
             
@@ -496,20 +479,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         return trimmedYOffset;
     }
    
-    public GreyscaleImage getTheta() {
-        return theta;
-    }
-    
-    public GreyscaleImage getGradientXY() {
-        return gradientXY;
-    }
-    
-    public GreyscaleImage getGradientX() {
-        return gradientX;
-    }
-    
-    public GreyscaleImage getGradientY() {
-        return gradientY;
+    public EdgeFilterProducts getEdgeFilterProducts() {
+        return filterProducts;
     }
     
     public Map<Integer, Set<Integer>> getJunctionMap() {        

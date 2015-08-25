@@ -9,6 +9,9 @@ package algorithms.compGeometry;
  * also known as the crossing number algorithm or the even-odd rule algorithm.
  * The implementation here is different, and includes logic for testing whether
  * the point is in the polygon lines too.
+ * 
+ * Many edits were made to handle cases such as point being same as a corner of
+ * the polygon or being on the polygon line.
  *
  * @author nichole
  */

@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
@@ -12,6 +13,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.HashSet;
+import java.util.Set;
 import org.ejml.simple.*;
     
 /**
@@ -843,4 +846,17 @@ public class DataForTests {
         return rot;
     }
     
+    public static Set<PairInt> getRectangle(int width, int height, int xCenter, 
+        int yCenter) {
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int x = (xCenter - (width/2)); x < (xCenter + (width/2)); ++x) {
+            for (int y = (yCenter - (height/2)); y < (yCenter + (height/2)); ++y) {
+                points.add(new PairInt(x, y));
+            }
+        }
+        
+        return points;
+    }
 }

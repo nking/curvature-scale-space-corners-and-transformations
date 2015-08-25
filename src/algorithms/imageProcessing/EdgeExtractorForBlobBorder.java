@@ -156,6 +156,9 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);
         
+        if (borderPixels.isEmpty()) {
+            return null;
+        }
 if (debug) {        
 MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
 }        
@@ -163,6 +166,10 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
         
         spurRm.remove(borderPixels, imageWidth, imageHeight);
 
+        if (borderPixels.isEmpty()) {
+            return null;
+        }
+        
 if (debug) {        
 MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
 }        

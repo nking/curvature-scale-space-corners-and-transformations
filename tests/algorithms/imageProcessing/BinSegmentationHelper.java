@@ -353,7 +353,7 @@ public class BinSegmentationHelper {
         corners1 = detector.getCornersInOriginalReferenceFrame();
         cornerRegions1 = detector.getEdgeCornerRegions(true);
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-        gXY1 = detector.getGradientXY();
+        gXY1 = detector.getEdgeFilterProducts().getGradientXY();
         img1Grey = img1GreyOrig.copyImage();
         imageProcessor.shrinkImage(img1Grey, 
             new int[]{gXY1.getXRelativeOffset(), gXY1.getYRelativeOffset(),
@@ -369,7 +369,7 @@ public class BinSegmentationHelper {
         corners2 = detector2.getCornersInOriginalReferenceFrame();
         cornerRegions2 = detector2.getEdgeCornerRegions(true);
         //cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-        gXY2 = detector2.getGradientXY();
+        gXY2 = detector2.getEdgeFilterProducts().getGradientXY();
         img2Grey = img2GreyOrig.copyImage();
         imageProcessor.shrinkImage(img2Grey, 
             new int[]{gXY2.getXRelativeOffset(), gXY2.getYRelativeOffset(),
@@ -382,9 +382,11 @@ public class BinSegmentationHelper {
 
         // experimenting with a slightly different definition for theta:
         theta1 = imageProcessor.computeTheta360(
-            detector.getGradientX(), detector.getGradientY());
+            detector.getEdgeFilterProducts().getGradientX(), 
+            detector.getEdgeFilterProducts().getGradientY());
         theta2 = imageProcessor.computeTheta360(
-            detector2.getGradientX(), detector2.getGradientY());
+            detector2.getEdgeFilterProducts().getGradientX(), 
+            detector2.getEdgeFilterProducts().getGradientY());
         MiscDebug.writeImage(theta1, "1_theta360");
         MiscDebug.writeImage(theta2, "2_theta360");
 
@@ -535,7 +537,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         corners1 = detector.getCornersInOriginalReferenceFrame();
         cornerRegions1 = detector.getEdgeCornerRegions(true);
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-        gXY1 = detector.getGradientXY();
+        gXY1 = detector.getEdgeFilterProducts().getGradientXY();
         img1Grey = img1GreyOrig.copyImage();
         imageProcessor.shrinkImage(img1Grey, 
             new int[]{gXY1.getXRelativeOffset(), gXY1.getYRelativeOffset(),
@@ -553,7 +555,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         corners2 = detector2.getCornersInOriginalReferenceFrame();
         cornerRegions2 = detector2.getEdgeCornerRegions(true);
         //cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-        gXY2 = detector2.getGradientXY();
+        gXY2 = detector2.getEdgeFilterProducts().getGradientXY();
         img2Grey = img2GreyOrig.copyImage();
         imageProcessor.shrinkImage(img2Grey, 
             new int[]{gXY2.getXRelativeOffset(), gXY2.getYRelativeOffset(),
@@ -568,9 +570,11 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
 
         // experimenting with a slightly different definition for theta:
         theta1 = imageProcessor.computeTheta360(
-            detector.getGradientX(), detector.getGradientY());
+            detector.getEdgeFilterProducts().getGradientX(), 
+            detector.getEdgeFilterProducts().getGradientY());
         theta2 = imageProcessor.computeTheta360(
-            detector2.getGradientX(), detector2.getGradientY());
+            detector2.getEdgeFilterProducts().getGradientX(), 
+            detector2.getEdgeFilterProducts().getGradientY());
         
         MiscDebug.writeImage(img1Grey, "1_greyscale_trimmed");
         MiscDebug.writeImage(img2Grey, "2_greyscale_trimmed");
@@ -632,22 +636,16 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
 
         if (performSkySubtraction) {
             SkylineExtractor skylineExtractor = new SkylineExtractor();
-            PairIntArray outputSkyCentroid = new PairIntArray();
             // sky are the zeros in this:
-            GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+            img1Orig = skylineExtractor.createSkyMaskedImage(
                 helper.getTheta(), helper.getGradientXY(), img1Orig,
-                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-
-            imageProcessor.multiplyBinary(img1Orig, resultMask);
+                helper.getCannyEdgeFilterSettings());
 
             helper = new ImageHelperForTests(img2Orig, true);
             skylineExtractor = new SkylineExtractor();
-            outputSkyCentroid = new PairIntArray();
-            // sky are the zeros in this:
-            resultMask = skylineExtractor.createBestSkyMask(
+            img2Orig = skylineExtractor.createSkyMaskedImage(
                 helper.getTheta(), helper.getGradientXY(), img2Orig,
-                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-            imageProcessor.multiplyBinary(img2Orig, resultMask);
+                helper.getCannyEdgeFilterSettings());
         }
         
         //---------------
@@ -983,17 +981,17 @@ MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeForm
             img2GreyOrig.getXRelativeOffset(), img2GreyOrig.getYRelativeOffset());
 mapper.debugImg1 = img1GreyOrig;
 mapper.debugImg2 = img2GreyOrig;
-        
-         mapper.useDebugMode();
 
-  //     mapper.setToRefineTransformations();
+        mapper.useDebugMode();
 
-         TransformationParameters transformationParams =
-             mapper.createEuclideanTransformation();
+  //    mapper.setToRefineTransformations();
 
-         if (transformationParams != null) {
-             log.info("params from contours=" + transformationParams.toString());
-         }
+        TransformationParameters transformationParams =
+            mapper.createEuclideanTransformation();
+
+        if (transformationParams != null) {
+            log.info("params from contours=" + transformationParams.toString());
+        }
     }
 
     protected void removeEdgesShorterThan(List<PairIntArray> output, 

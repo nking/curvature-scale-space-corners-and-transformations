@@ -2,10 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscDebug;
 import algorithms.util.Errors;
 import algorithms.misc.MiscMath;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -62,14 +60,8 @@ public class CannyEdgeFilter {
      */
     private float additionalImageBlurSigma = 0.0f;
     
-    private GreyscaleImage gXY = null;
+    private EdgeFilterProducts filterProducts = null;
     
-    private GreyscaleImage gX = null;
-    
-    private GreyscaleImage gY = null;
-    
-    private GreyscaleImage gTheta = null;
-        
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     // ErosionFilter
@@ -215,17 +207,11 @@ public class CannyEdgeFilter {
         applyHistogramEqualization(input);
 
         //[gX, gY, gXY, theta
-        GreyscaleImage[] gradientProducts = createGradientProducts(input);
+        EdgeFilterProducts gradientProducts = createGradientProducts(input);
         
-        gX = gradientProducts[0].copyImage();
-        
-        gY = gradientProducts[1].copyImage();
-        
-        gXY = gradientProducts[2].copyImage();
-        
-        gTheta = gradientProducts[3].copyImage();
+        this.filterProducts = gradientProducts;
                 
-        input.resetTo(gradientProducts[2]);
+        input.resetTo(filterProducts.getGradientXY());
          
         if (!useLineDrawingMode) {
             apply2LayerFilter(input);
@@ -559,14 +545,14 @@ public class CannyEdgeFilter {
             
             lineThinner = lineThinnerClass.newInstance();
             
-            if (gXY != null) {
-                if (shrinkToSize != null && !gXY.isThisSize(shrinkToSize)) {                
-                    GreyscaleImage gXY2 = gXY.copyImage();
+            if (filterProducts != null) {
+                if (shrinkToSize != null && !filterProducts.getGradientXY().isThisSize(shrinkToSize)) {                
+                    GreyscaleImage gXY2 = filterProducts.getGradientXY().copyImage();
                     ImageProcessor imageProcessor = new ImageProcessor();
                     imageProcessor.shrinkImage(gXY2, shrinkToSize);
                     lineThinner.setEdgeGuideImage(gXY2);
                 } else {
-                    lineThinner.setEdgeGuideImage(gXY);
+                    lineThinner.setEdgeGuideImage(filterProducts.getGradientXY());
                 }
             }
             
@@ -698,7 +684,7 @@ public class CannyEdgeFilter {
      * @param img
      * @return 
      */
-    protected GreyscaleImage[] createGradientProducts(final GreyscaleImage img) {
+    protected EdgeFilterProducts createGradientProducts(final GreyscaleImage img) {
         
         GreyscaleImage gX, gY, g, theta;
         
@@ -734,7 +720,13 @@ public class CannyEdgeFilter {
        
         }
         
-        return new GreyscaleImage[]{gX, gY, g, theta};
+        EdgeFilterProducts products = new EdgeFilterProducts();
+        products.setGradientX(gX);
+        products.setGradientY(gY);
+        products.setGradientXY(g);
+        products.setTheta(theta);
+        
+        return products;
     }
 
     protected void applyHistogramEqualization(final GreyscaleImage input) {
@@ -853,20 +845,8 @@ public class CannyEdgeFilter {
         return false;
     }
 
-    public GreyscaleImage getGradientX() {
-        return gX;
-    }
-    
-    public GreyscaleImage getGradientY() {
-        return gY;
-    }
-    
-    public GreyscaleImage getGradientXY() {
-        return gXY;
-    }
-    
-    public GreyscaleImage getTheta() {
-        return gTheta;
+    public EdgeFilterProducts getEdgeFilterProducts() {
+        return filterProducts;
     }
 
     /**

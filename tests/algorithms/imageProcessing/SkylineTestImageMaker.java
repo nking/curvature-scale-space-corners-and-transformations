@@ -15,7 +15,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -68,15 +67,16 @@ public class SkylineTestImageMaker {
             SkylineExtractor skylineExtr = new SkylineExtractor();
             
             int binFactor = skylineExtr.determineBinFactorForSkyMask(
-                detector.getTheta().getNPixels());
+                detector.getEdgeFilterProducts().getTheta().getNPixels());
         
             Set<PairInt> points = new HashSet<PairInt>();
         
             RemovedSets removedSets = skylineExtr.new RemovedSets();
         
             GreyscaleImage threshholdedGXY = skylineExtr.filterAndExtractSkyFromGradient(
-                (ImageExt)detector.getOriginalImage(), detector.getTheta(), 
-                detector.getGradientXY(), binFactor, points,
+                (ImageExt)detector.getOriginalImage(), 
+                detector.getEdgeFilterProducts().getTheta(), 
+                detector.getEdgeFilterProducts().getGradientXY(), binFactor, points,
                 removedSets);
 
             int idx = fileName.lastIndexOf(".");
@@ -791,7 +791,8 @@ public class SkylineTestImageMaker {
         PairIntArray outputSkyCentroid = new PairIntArray();
         
         Set<PairInt> points = skylineExtractor.extractSkyStarterPoints(
-            detector.getTheta(), detector.getGradientXY(), 
+            detector.getEdgeFilterProducts().getTheta(), 
+            detector.getEdgeFilterProducts().getGradientXY(), 
             img, detector.getCannyEdgeFilterSettings(), outputSkyCentroid,
             removedSets);
         
@@ -804,14 +805,14 @@ public class SkylineTestImageMaker {
         ANDedClauses[] clauses = skylineANDedClauses.getAllClauses();
         
         skylineExtractor.findClouds(points, excludePoints, img,
-            detector.getTheta(), clauses);
+            detector.getEdgeFilterProducts().getTheta(), clauses);
         
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageExt clr = (ImageExt) img.copyImage();
             ImageIOHelper.addToImage(points, 
-                detector.getTheta().getXRelativeOffset(),
-                detector.getTheta().getYRelativeOffset(), clr);
+                detector.getEdgeFilterProducts().getTheta().getXRelativeOffset(),
+                detector.getEdgeFilterProducts().getTheta().getYRelativeOffset(), clr);
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_after_find_clouds2_" + fileNameRoot + ".png", clr);
         } catch (IOException e) {

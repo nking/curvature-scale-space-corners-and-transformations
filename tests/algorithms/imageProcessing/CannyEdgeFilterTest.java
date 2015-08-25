@@ -83,7 +83,9 @@ public class CannyEdgeFilterTest extends TestCase {
             ImageIOHelper.writeOutputImage(dirPath 
                 + "/linethinned_" + fileNameRoot +".png", img);
         
-            GreyscaleImage gXY = filter.getGradientXY();
+            EdgeFilterProducts filterProducts = filter.getEdgeFilterProducts();
+            
+            GreyscaleImage gXY = filterProducts.getGradientXY();
             
             // ----- assert line width is 1 pix everywhere exception junctions.
             // ---- this tests results of the line thinner and post-line
@@ -187,7 +189,7 @@ public class CannyEdgeFilterTest extends TestCase {
         
         CannyEdgeFilter instance = new CannyEdgeFilter();
                 
-        GreyscaleImage[] result = instance.createGradientProducts(img);
+        EdgeFilterProducts filterProducts = instance.createGradientProducts(img);
         
         /*
         ImageIOHelper.writeOutputImage(dirPath + "/tmpGX.png", result[0]);
@@ -196,7 +198,7 @@ public class CannyEdgeFilterTest extends TestCase {
         ImageIOHelper.writeOutputImage(dirPath + "/tmpTheta.png", result[3]);
         */
         
-        GreyscaleImage theta = result[3];
+        GreyscaleImage theta = filterProducts.getTheta();
         for (int col = 0; col < theta.getWidth(); col++) {
             for (int row = 0; row < theta.getHeight(); row++) {
                 

@@ -64,29 +64,47 @@ public class SkylineExtractor {
         
         throw new UnsupportedOperationException("Not supported yet.");
     }
+
+    /**
+     * using the edge filter products and color and contrast rules, find the
+     * sky pixels in the image and extract the skyline from them.
+     * 
+     * @param theta
+     * @param gradientXY
+     * @param originalImage
+     * @param outputSkyCentroid container to hold the output centroid of 
+     * the sky.
+     * @param edgeSettings
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    public ImageExt createSkyMaskedImage(GreyscaleImage theta, 
+        GreyscaleImage gradientXY, ImageExt originalImage,
+        CannyEdgeFilterSettings edgeSettings) throws IOException, 
+        NoSuchAlgorithmException {        
+      
+        PairIntArray outputSkyCentroid = new PairIntArray();
+        
+        GreyscaleImage mask = createBestSkyMask(theta, gradientXY, originalImage, 
+            edgeSettings, outputSkyCentroid);
+       
+        if (mask == null) {
+            return null;
+        }
+        
+        ImageExt output = (ImageExt) originalImage.copyImage();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        imageProcessor.multiplyBinary(output, mask);
+        
+        return output;
+    }
     
      /**
-     * using the gradient's theta image, find the sky as the largest set of
-     * contiguous 0 values and apply the edge filter to it to reduce the
-     * boundary to a single pixel curve.  
-     * 
-     * NOTE that the theta image has a boundary that has been increased by 
-     * the original image blur and then the difference of gaussians to make 
-     * the gradient, so the distance of the skyline from the real image horizon 
-     * is several pixels.
-     * For example, the canny edge filter used in "outdoorMode" results in
-     * gaussian kernels applied twice to give an effective sigma of 
-     * sqrt(2*2 + 0.5*0.5) = 2.1.  The FWHM of such a spread is then 
-     * 2.355*2.1 = 6 pixels.   The theta image skyline is probably blurred to a 
-     * width larger than the combined FWHM, however, making it 7 or 8 pixels.  
-     * Therefore, it's recommended that the image returned from this be followed 
-     * with: edge extraction; then fit the edges to the intermediate canny edge 
-     * filter product (the output of the 2 layer filter) by making a translation
-     * of the extracted skyline edge until the correlation with the filter2
-     * image is highest (should be within 10 pixel shift).  Because this
-     * method does not assume orientation of the image, the invoker needs
-     * to also retrieve the centroid of the sky, so that is also returned 
-     * in an output variable given in the arguments.
+     * using the edge filter products and color and contrast rules, find the
+     * sky pixels in the image and extract the skyline from them.
      * 
      * @param theta
      * @param gradientXY
@@ -816,29 +834,6 @@ debugPlot(outputRemovedPoints, originalColorImage, xOffset, yOffset, "filtered_o
         return null;
     }
     
-    private void transformPointsToOriginalReferenceFrame(Set<PairInt> points,
-        GreyscaleImage theta, boolean makeCorrectionsAlongX, int addAmount) {
-        
-         // transform points to original color image frame
-        int totalXOffset = theta.getXRelativeOffset();
-        int totalYOffset = theta.getYRelativeOffset();
-
-        if (makeCorrectionsAlongX) {
-            totalXOffset += addAmount;
-        } else {
-            totalYOffset += addAmount;
-        }
-        
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            x += totalXOffset;
-            y += totalYOffset;
-            p.setX(x);
-            p.setY(y);
-        }
-    }
-
    /**
      * using adaptive "thresholding" to subtract intensity levels from
      * gradientXY

@@ -287,9 +287,11 @@ public class ShapeMatcher {
         
         // experimenting with a slightly different definition for theta:
         GreyscaleImage theta1360 = imageProcessor.computeTheta360(
-            detector.getGradientX(), detector.getGradientY());
+            detector.getEdgeFilterProducts().getGradientX(), 
+            detector.getEdgeFilterProducts().getGradientY());
         GreyscaleImage theta2360 = imageProcessor.computeTheta360(
-            detector2.getGradientX(), detector2.getGradientY());
+            detector2.getEdgeFilterProducts().getGradientX(), 
+            detector2.getEdgeFilterProducts().getGradientY());
         MiscDebug.writeImage(theta1360, "1_theta360");
         MiscDebug.writeImage(theta2360, "2_theta360");
 

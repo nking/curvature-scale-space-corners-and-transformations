@@ -1166,8 +1166,12 @@ MultiArrayMergeSort.sortByYThenX(cp);
         
         // smoothing does not make fewer points, so using min curvature factor
         
-        float nGoalCorners = (gradientXY.getNPixels() < 500000) ? 50.f : 
-            100.f;
+        if (filterProducts == null) {
+            throw new IllegalStateException("Error in use of method.  filterProducts should not be null.");
+        }
+        
+        float nGoalCorners = (filterProducts.getGradientXY().getNPixels() 
+            < 500000) ? 50.f : 100.f;
         
         // want about 50 points
         float factor = (float)theSkylineCorners.getN()/nGoalCorners;

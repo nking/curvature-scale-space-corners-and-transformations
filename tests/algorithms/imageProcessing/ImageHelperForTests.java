@@ -8,13 +8,7 @@ public class ImageHelperForTests {
     
     private GreyscaleImage img;
     
-    private GreyscaleImage gradientXY = null;
-    
-    private GreyscaleImage gradientX = null;
-    
-    private GreyscaleImage gradientY = null;
-    
-    private GreyscaleImage theta = null;
+    private EdgeFilterProducts edgeFilterProducts = null;
     
     private int trimmedXOffset = 0;
     
@@ -38,7 +32,7 @@ public class ImageHelperForTests {
         img = input.copyToGreyscale();
         
         init();
-    } 
+    }
     
     public ImageHelperForTests(ImageExt input, boolean useOutdoorMode, 
         boolean useLineDrawingMode) {
@@ -68,41 +62,48 @@ public class ImageHelperForTests {
                 
         filter.applyFilter(img);
         
-        gradientXY = filter.getGradientXY();
+        edgeFilterProducts = filter.getEdgeFilterProducts();
         
-        gradientX = filter.getGradientX();
-        
-        gradientY = filter.getGradientY();
-        
-        theta = filter.getTheta();        
     }
     
     /**
      * @return the gradientXY
      */
     public GreyscaleImage getGradientXY() {
-        return gradientXY;
+        if (edgeFilterProducts == null) {
+            return null;
+        }
+        return edgeFilterProducts.getGradientXY();
     }
 
     /**
      * @return the gradientX
      */
     public GreyscaleImage getGradientX() {
-        return gradientX;
+        if (edgeFilterProducts == null) {
+            return null;
+        }
+        return edgeFilterProducts.getGradientX();
     }
 
     /**
      * @return the gradientY
      */
     public GreyscaleImage getGradientY() {
-        return gradientY;
+        if (edgeFilterProducts == null) {
+            return null;
+        }
+        return edgeFilterProducts.getGradientY();
     }
-
+    
     /**
      * @return the theta
      */
     public GreyscaleImage getTheta() {
-        return theta;
+        if (edgeFilterProducts == null) {
+            return null;
+        }
+        return edgeFilterProducts.getTheta();
     }
 
     /**

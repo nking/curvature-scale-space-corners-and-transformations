@@ -116,7 +116,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
             detector.findCorners();
             
             images.add(img);
-            thetaImages.add(detector.getTheta());
+            thetaImages.add(detector.getEdgeFilterProducts().getTheta());
             
             SkylineExtractor skylineExtractor = new SkylineExtractor();
         
@@ -125,7 +125,8 @@ public class SkylineDownhillSimplexTest extends TestCase {
             PairIntArray outputSkyCentroid = new PairIntArray();
         
             Set<PairInt> points = skylineExtractor.extractSkyStarterPoints(
-                detector.getTheta(), detector.getGradientXY(), 
+                detector.getEdgeFilterProducts().getTheta(), 
+                detector.getEdgeFilterProducts().getGradientXY(), 
                 img, detector.getCannyEdgeFilterSettings(), outputSkyCentroid,
                 removedSets);
         
@@ -134,8 +135,9 @@ public class SkylineDownhillSimplexTest extends TestCase {
             Set<PairInt> embedded = new HashSet<PairInt>();
             Set<PairInt> borderPoints = new HashSet<PairInt>();
             SkylineExtractor.getEmbeddedAndBorderPoints(points,
-                detector.getTheta().getWidth(), 
-                detector.getTheta().getHeight(), embedded, borderPoints);
+                detector.getEdgeFilterProducts().getTheta().getWidth(), 
+                detector.getEdgeFilterProducts().getTheta().getHeight(), 
+                embedded, borderPoints);
             
             expectedBorderPoints.add(borderPoints);
             
