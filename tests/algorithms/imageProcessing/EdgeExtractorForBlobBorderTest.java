@@ -116,15 +116,15 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
         
         int[] minMaxXY = MiscMath.findMinMaxXY(blob);
 
-        MiscDebug.plotPoints(blob, minMaxXY[1] + 1, minMaxXY[3] + 1,
+        MiscDebug.plotPoints(blob, minMaxXY[1] + 10, minMaxXY[3] + 10,
             MiscDebug.getCurrentTimeFormatted());        
 
         boolean discardWhenCavityIsSmallerThanBorder = true;
         
         EdgeExtractorForBlobBorder instance = new EdgeExtractorForBlobBorder();
                 
-        PairIntArray result = instance.extractAndOrderTheBorder0(
-            blob, minMaxXY[1] + 1, minMaxXY[3] + 1, 
+        PairIntArray result = instance.extractAndOrderTheBorder0(blob, 
+            minMaxXY[1] + 10, minMaxXY[3] + 10, 
             discardWhenCavityIsSmallerThanBorder);
         
         Image img3 = new Image(minMaxXY[1] + 1, minMaxXY[3] + 1);

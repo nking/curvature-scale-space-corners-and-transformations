@@ -112,6 +112,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 
         super(input, anEdgeGuideImage);
     }
+    
+    public void setToDebug() {
+        debug = true;
+    }
 
     public void overrideMaxNumberIterationsJunctionSplice(int nMaxIter) {
         if (nMaxIter < 2) {
@@ -173,10 +177,16 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         final int nMaxIter = defaultMaxIterJunctionJoin;
         int nIter = 0;
         int nSplices = 0;
+        
+        findJunctions(output);
+        
+if (debug) {
+MiscDebug.writeEdges(output, img.copyImage(), "splice_before_pt1_"  + 
+MiscDebug.getCurrentTimeFormatted());
+int z = 1;
+}
 
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
-
-            findJunctions(output);
 
         if (output.size() > 10000) {
             return output;
@@ -193,7 +203,15 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             nSplices = spliceEdgesAtJunctionsIfImproves(output);
 
             if (nSplices > 0) {
+                
                 removeEdgesShorterThan(output, 1);
+                
+                findJunctions(output);
+                
+if (debug) {
+MiscDebug.writeEdges(output, img.copyImage(), "splice_pt1_"  + 
+MiscDebug.getCurrentTimeFormatted());
+}
             }
 
             ++nIter;
@@ -210,6 +228,11 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         nIter = 0;
         nSplices = 0;
 
+if (debug) {
+MiscDebug.writeEdges(output, img.copyImage(), "splice_afterpt1_" 
++ MiscDebug.getCurrentTimeFormatted());
+}
+
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
 
             if (nSplices > 0) {
@@ -219,11 +242,11 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 //TODO: this is handled in the methods invoked now so consider reducing number of times used
                 findJunctions(output);
 
-                /*
-                for edges that are not closed curves, try a DFS w/ preference
-                for distance, and if the result is a closed curve, replace
-                */
-                replaceOpenCurvesIfPossibleToClose(output);
+if (debug) {
+MiscDebug.writeEdges(output, img.copyImage(), "splice_pt2_" 
++ MiscDebug.getCurrentTimeFormatted());
+}
+
             }
 
             nSplices = 0;
@@ -3079,23 +3102,5 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         }
 
         return -1;
-    }
-
-    private void replaceOpenCurvesIfPossibleToClose(List<PairIntArray> edges) {
-
-        /*
-        TODO: may move the code in insert() which handles
-        reordering to join edge1ALoc to edge2ALoc and edge1BLoc to edge2BLoc
-        to here.
-
-        It's a means to untie knots too, but does not try to untie every knot.
-
-        The knots can be found as junctions in an edge where the junction has
-        more than 2 points from that edge in it.
-
-        can use this structure to make lookups faster:
-        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();
-        */
-
     }
 }

@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 public class EdgeExtractorForBlobBorder {
             
-    protected boolean debug = true;
+    protected boolean debug = false;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -141,7 +141,11 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         log.info("number of border points=" + nBorder + " nCavity=" + nCavity);
 
 if (debug) {        
-MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
+Image img3 = new Image(imageWidth, imageHeight);
+for (PairInt p : borderPixels) {
+    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "border_perimeter_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 }
 
         if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
@@ -159,9 +163,15 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
         if (borderPixels.isEmpty()) {
             return null;
         }
+        
 if (debug) {        
-MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-}        
+Image img3 = new Image(imageWidth, imageHeight);
+for (PairInt p : borderPixels) {
+    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "border_before_spur_removal_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}
+
         SpurRemover spurRm = new SpurRemover();
         
         spurRm.remove(borderPixels, imageWidth, imageHeight);
@@ -171,15 +181,20 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
         }
         
 if (debug) {        
-MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-}        
+Image img3 = new Image(imageWidth, imageHeight);
+for (PairInt p : borderPixels) {
+    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}
+
         //xMin, xMax, yMin, yMax
         int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);
       
-        int xOffset = minMaxXY[0] - 2;
-        int yOffset = minMaxXY[2] - 2;
-        int w = minMaxXY[1] - minMaxXY[0] + 4;
-        int h = minMaxXY[3] - minMaxXY[2] + 4;
+        int xOffset = minMaxXY[0] - 5;
+        int yOffset = minMaxXY[2] - 5;
+        int w = minMaxXY[1] - xOffset + 10;
+        int h = minMaxXY[3] - yOffset + 10;
         
         GreyscaleImage img = new GreyscaleImage(w, h);
         for (PairInt p : borderPixels) {
@@ -189,6 +204,7 @@ MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrent
         }
         
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
+        extractor.setToDebug();
         extractor.overrideMaxNumberIterationsJunctionSplice(10);
         //List<PairIntArray> output = extractor.findEdges();
         PairIntArray out = extractor.findAsSingleClosedEdge();
@@ -210,10 +226,6 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (int j = 0; j < out.getN(); ++j) {
     int x = out.getX(j);
     int y = out.getY(j);
-    /*if (i > 0) {
-        x += xOffset;
-        y += yOffset;
-    }*/
     if (j == 0 || (j == (out.getN() - 1))) {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
     } else {
