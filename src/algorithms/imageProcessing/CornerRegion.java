@@ -472,6 +472,8 @@ public class CornerRegion {
 
     public static class CornerRegionDegneracyException extends Exception {
 
+        protected static final long serialVersionUID = 456789;
+        
         public CornerRegionDegneracyException(String message) {
             super(message);
         }

@@ -1,10 +1,13 @@
 package algorithms.misc;
 
 import algorithms.util.Errors;
+import algorithms.util.PairInt;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
+import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -624,4 +627,5 @@ public class MiscMathTest extends TestCase {
             assertTrue(r == v);
         }
     }
+    
 }

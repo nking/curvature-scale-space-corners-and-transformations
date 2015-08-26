@@ -65,7 +65,9 @@ public class BinSegmentationHelper {
     private String fileName1Root = null;
     private String fileName2Root = null;
 
-    public BinSegmentationHelper(String fileName1, String fileName2) throws IOException, Exception {
+    public BinSegmentationHelper(String fileName1, String fileName2) throws 
+        IOException, Exception {
+        
         this.fileName1 = fileName1;
         this.fileName2 = fileName2;
 
@@ -81,7 +83,8 @@ public class BinSegmentationHelper {
         fileName2Root = fileName2.substring(0, idx);
     }
 
-    public void applySteps0(boolean performSkySubtraction) throws IOException, NoSuchAlgorithmException {
+    public void applySteps0(boolean performSkySubtraction) throws IOException,
+        NoSuchAlgorithmException {
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -653,12 +656,12 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         img1GreyOrig = img1Orig.copyToGreyscale();
         img2GreyOrig = img2Orig.copyToGreyscale();
 
-        final boolean performBinning = false;
+        final boolean performBinning = true;
         int binFactor1 = 1;
 
         boolean performSegmentation = true;
-        int kN2 = 3;
-        boolean performBinarySegmentation = false;
+        int kN2 = 4;
+        boolean performBinarySegmentation = true;
         if (performBinarySegmentation) {
             kN2 = 2;
         }
@@ -683,8 +686,8 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         log.info("stats1=" + stats1.toString());
         log.info("stats2=" + stats2.toString());
 
-        boolean performHistEq = true;
-        /*
+        boolean performHistEq = false;
+        
         double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();
         double meanDivMedian1 = stats1.getMean()/stats1.getMedian();
         double meanDivMedian2 = stats2.getMean()/stats2.getMedian();
@@ -700,7 +703,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
             ((meanDivMedian2 > 1) && ((meanDivMedian2 - 1) > 0.2)) ||
             ((meanDivMedian2 < 1) && (meanDivMedian2 < 0.8))) {
             performHistEq = true;
-        }*/
+        }
         if (performHistEq) {
             log.info("use histogram equalization on the greyscale images");
             HistogramEqualization hEq = new HistogramEqualization(img1GreyOrig);
@@ -908,7 +911,18 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
                     Set<PairInt> points = Misc.convert(contiguous);
                     
                     EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
-        
+/*
+// perist blobs to fix the edge extractor for one as a test:
+double[] xyCen = curveHelper.calculateXYCentroids(points);
+String fileName = String.format("_%d_%d.dat", (int)Math.round(xyCen[0]),
+(int)Math.round(xyCen[1]));
+if (type == 0) {
+    fileName = "blobs1" + fileName; 
+} else {
+    fileName = "blobs2" + fileName;
+}
+Misc.persistToFile(fileName, points);
+*/
                     PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(
                         points, imgGrey.getWidth(), imgGrey.getHeight(), 
                         discardWhenCavityIsSmallerThanBorder);

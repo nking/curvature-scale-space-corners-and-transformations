@@ -460,7 +460,7 @@ double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
 double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
 log.info(String.format("blob1=(%d,%d) blob2=(%d,%d) ssd=%.2f  sumSqErr=%.2f", 
 (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-(int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]), (float)ssd, (float)sumSquaredError1));
+(int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]), ssd, sumSquaredError1));
 
                 if (ssd < sumSquaredError1) {
                     similar2.add(Integer.valueOf(idx2));

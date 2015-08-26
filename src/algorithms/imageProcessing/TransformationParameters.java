@@ -134,6 +134,18 @@ public class TransformationParameters {
     }
 
     @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 31 * hash + Float.floatToIntBits(this.rotationInRadians);
+        hash = 31 * hash + Float.floatToIntBits(this.translationX);
+        hash = 31 * hash + Float.floatToIntBits(this.translationY);
+        hash = 31 * hash + Float.floatToIntBits(this.scale);
+        hash = 31 * hash + Float.floatToIntBits(this.originX);
+        hash = 31 * hash + Float.floatToIntBits(this.originY);
+        return hash;
+    }
+
+    @Override
     public String toString() {
         
         StringBuilder sb = new StringBuilder();

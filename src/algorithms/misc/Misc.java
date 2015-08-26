@@ -6,6 +6,16 @@ import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.ResourceFinder;
+import java.io.BufferedWriter;
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
@@ -33,6 +43,94 @@ public class Misc {
         }
         
         return out;
+    }
+    
+    public static String persistToFile(String fileName, Set<PairInt> points) 
+        throws IOException {
+        
+        if (points == null) {
+            throw new IllegalArgumentException("points cannot be null");
+        }
+                
+        String outFilePath = ResourceFinder.findDirectory("bin") + "/" +
+            fileName;
+        
+        FileOutputStream fs = null;
+        ObjectOutputStream os = null;
+        
+        try {
+            File file = new File(outFilePath);
+            file.delete();
+            file.createNewFile();
+
+            fs = new FileOutputStream(file);
+            os = new ObjectOutputStream(fs);
+                        
+            int count = 0;
+            
+            for (PairInt point : points) {
+                
+                os.writeInt(point.getX());
+                os.writeInt(point.getY());
+                
+                if ((count % 10) == 0) {
+                    os.flush();
+                }
+                
+                count++;
+            }
+
+            os.flush();
+
+        } finally {
+
+            if (os != null) {
+                os.close();
+            }
+            if (fs != null) {
+                fs.close();
+            }            
+        }
+        
+        return outFilePath;
+    }
+    
+    public static Set<PairInt> deserializeSetPairInt(String filePath) throws IOException {
+                    
+        FileInputStream fs = null;
+        ObjectInputStream os = null;
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        
+        try {
+            File file = new File(filePath);
+
+            fs = new FileInputStream(file);
+            os = new ObjectInputStream(fs);
+                        
+            while (true) {
+                
+                int x = os.readInt();
+                int y = os.readInt();
+                
+                PairInt p = new PairInt(x, y);
+                
+                set.add(p);
+            }
+            
+        } catch (EOFException e) {
+            // expected
+        } finally {
+
+            if (os != null) {
+                os.close();
+            }
+            if (fs != null) {
+                fs.close();
+            }            
+        }
+        
+        return set;
     }
     
     public static int calculateSumOfEightNeighbors(GreyscaleImage img, int x, int y) {

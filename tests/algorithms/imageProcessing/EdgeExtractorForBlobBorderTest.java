@@ -1,7 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -98,4 +102,46 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
         assertTrue(expected.isEmpty());
     }
     
+    public void testExtractAndOrderTheBorder0_1() throws Exception {
+        
+        String fileName = "blobs1_236_123.dat";
+        
+        String filePath = ResourceFinder.findDirectory("testresources") + "/" 
+            + fileName;
+        
+        Set<PairInt> blob = Misc.deserializeSetPairInt(filePath);
+        
+        assertNotNull(blob);
+        assertFalse(blob.isEmpty());
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(blob);
+
+        MiscDebug.plotPoints(blob, minMaxXY[1] + 1, minMaxXY[3] + 1,
+            MiscDebug.getCurrentTimeFormatted());        
+
+        boolean discardWhenCavityIsSmallerThanBorder = true;
+        
+        EdgeExtractorForBlobBorder instance = new EdgeExtractorForBlobBorder();
+                
+        PairIntArray result = instance.extractAndOrderTheBorder0(
+            blob, minMaxXY[1] + 1, minMaxXY[3] + 1, 
+            discardWhenCavityIsSmallerThanBorder);
+        
+        Image img3 = new Image(minMaxXY[1] + 1, minMaxXY[3] + 1);
+        for (int j = 0; j < result.getN(); ++j) {
+            int x = result.getX(j);
+            int y = result.getY(j);
+            if (j == 0 || (j == (result.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
+            }
+        }
+        MiscDebug.writeImageCopy(img3, "blob_ordered_perimeter_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        assertTrue(curveHelper.isAdjacent(result, 0, result.getN() - 1));
+
+    }
 }

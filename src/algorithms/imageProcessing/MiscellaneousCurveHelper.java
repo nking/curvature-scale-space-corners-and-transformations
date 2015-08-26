@@ -3125,4 +3125,22 @@ for (int i = 0; i < edge.getN(); i++) {
         }
     }
 
+    public boolean isAdjacent(PairIntArray edge, int idx1, int idx2) {
+
+        int x1 = edge.getX(idx1);
+        int y1 = edge.getY(idx1);
+
+        int x2 = edge.getX(idx2);
+        int y2 = edge.getY(idx2);
+
+        int diffX = Math.abs(x1 - x2);
+        int diffY = Math.abs(y1 - y2);
+
+        if ((diffX < 2) && (diffY < 2)) {
+            return true;
+        }
+
+        return false;
+    }
+
 }

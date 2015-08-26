@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 public class EdgeExtractorForBlobBorder {
             
-    protected boolean debug = false;
+    protected boolean debug = true;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
