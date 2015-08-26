@@ -658,7 +658,7 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
 
         boolean performSegmentation = true;
         int kN2 = 3;
-        boolean performBinarySegmentation = true;
+        boolean performBinarySegmentation = false;
         if (performBinarySegmentation) {
             kN2 = 2;
         }

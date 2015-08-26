@@ -176,10 +176,6 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
         
-            if (nSplices > 0) {
-                removeEdgesShorterThan(output, 1);
-            }
-            
             findJunctions(output);
         
         if (output.size() > 10000) {
@@ -202,6 +198,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             
             ++nIter;
         }
+        
+        findJunctions(output);
              
         log.info("nIter=" + nIter);
          
@@ -211,9 +209,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         
         nIter = 0;
         nSplices = 0;
-        
-        findJunctions(output);
-        
+                
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
         
             if (nSplices > 0) {
@@ -667,34 +663,37 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         int h = imageHeight;
         
         // O(N)
-        for (int edgeIdx = 0; edgeIdx < n; edgeIdx++) {
+        for (int edgeIdx = 0; edgeIdx < n; ++edgeIdx) {
             
             PairIntArray edge = edges.get(edgeIdx);
             
-            for (int uIdx = 0; uIdx < edge.getN(); uIdx++) {
+            for (int uIdx = 0; uIdx < edge.getN(); ++uIdx) {
                 
-                int pixIdx = (edge.getY(uIdx) * w) + edge.getX(uIdx);
+                int col = edge.getX(uIdx);
+                int row = edge.getY(uIdx);
                 
-                pointLocator.put(Integer.valueOf(pixIdx), new PairInt(edgeIdx, 
+                int uPixIdx = (row * w) + col;
+                
+                pointLocator.put(Integer.valueOf(uPixIdx), new PairInt(edgeIdx, 
                     uIdx));
             }
         }
         
         // 8 * O(N)
-        for (int edgeIdx = 0; edgeIdx < n; edgeIdx++) {
+        for (int edgeIdx = 0; edgeIdx < n; ++edgeIdx) {
             
             PairIntArray edge = edges.get(edgeIdx);
             
-            for (int iEdgeIdx = 0; iEdgeIdx < edge.getN(); iEdgeIdx++) {
+            for (int uIdx = 0; uIdx < edge.getN(); ++uIdx) {
                 
-                int col = edge.getX(iEdgeIdx);
-                int row = edge.getY(iEdgeIdx);
+                int col = edge.getX(uIdx);
+                int row = edge.getY(uIdx);
                 
-                int uIdx = (row * w) + col;
+                int uPixIdx = (row * w) + col;
                 
                 Set<PairInt> neighbors = new HashSet<PairInt>();
                                 
-                for (int nIdx = 0; nIdx < dxs8.length; nIdx++) {
+                for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
                     
                     int x = col + dxs8[nIdx];
                     int y = row + dys8[nIdx];
@@ -703,9 +702,9 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                         continue;
                     }
                     
-                    int vIdx = (y * w) + x;
+                    int vPixIdx = (y * w) + x;
                     
-                    PairInt vLoc = pointLocator.get(Integer.valueOf(vIdx));
+                    PairInt vLoc = pointLocator.get(Integer.valueOf(vPixIdx));
                     
                     if (vLoc != null) {
                         neighbors.add(vLoc);
@@ -719,13 +718,13 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     for (PairInt p : neighbors) {
                         
                         int edge2Idx = p.getX();
-                        int iEdge2Idx = p.getY();
+                        int vIdx = p.getY();
                         
                         PairIntArray vEdge = edges.get(edge2Idx);
                         
-                        int vIdx = (vEdge.getY(iEdge2Idx) * w) + vEdge.getX(iEdge2Idx);
+                        int vPixIdx = (vEdge.getY(vIdx) * w) + vEdge.getX(vIdx);
                         
-                        Integer key = Integer.valueOf(vIdx);
+                        Integer key = Integer.valueOf(vPixIdx);
                         
                         theJunctionLocationMap.put(key, p);
                         
@@ -740,12 +739,12 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                         }
                     }
                                         
-                    theJunctionMap.put(Integer.valueOf(uIdx), indexes);
+                    theJunctionMap.put(Integer.valueOf(uPixIdx), indexes);
                     
-                    theJunctionLocationMap.put(Integer.valueOf(uIdx), 
-                        new PairInt(edgeIdx, iEdgeIdx));
-                    
-                } 
+                    theJunctionLocationMap.put(Integer.valueOf(uPixIdx), 
+                        new PairInt(edgeIdx, uIdx));
+                }
+                
                 // if (neighbors.size() == 2) is handled in findJoinPoints
             }
         }
@@ -1863,10 +1862,11 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
     }
     
     private Map<Integer, Set<Integer>> createEdgeToPixelIndexMap() {
+        
         // key = edge index.  
         // value = pixel indexes.
-        //   the pixel indexes are used to find values in junctionLocatorMap
-        //   to update it as points are moved to and from edges.
+        //    the pixel indexes are used to find values in junctionLocatorMap
+        //    to update it as points are moved to and from edges.
         Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = new HashMap<Integer, Set<Integer>>();
         
         for (Entry<Integer, PairInt> entry : junctionLocationMap.entrySet()) {
@@ -1876,9 +1876,9 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             Set<Integer> pixelIndexes = theEdgeToPixelIndexMap.get(edgeIndex);
             if (pixelIndexes == null) {
                 pixelIndexes = new HashSet<Integer>();
+                theEdgeToPixelIndexMap.put(edgeIndex, pixelIndexes);
             }
             pixelIndexes.add(pixelIndex);
-            theEdgeToPixelIndexMap.put(edgeIndex, pixelIndexes);
         }
         
         return theEdgeToPixelIndexMap;
@@ -1900,12 +1900,14 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             }
         }
         
+        findJunctions(output);
+        
         // key = edge index.  
         // value = pixel indexes.
-        //   the pixel indexes are used to find values in junctionLocatorMap
-        //   to update it as points are moved to and from edges.
+        //     the pixel indexes are used to find values in junctionLocatorMap
+        //     to update it as points are moved to and from edges.
         Map<Integer, Set<Integer>> theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();
-    
+
         int nChanged = 0;
         
         for (int i = (output.size() - 1); i > -1; --i) {
@@ -1913,12 +1915,14 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             if (i == maxEdgeIdx || (output.get(i).getN() == 0)) {
                 continue;
             }
-            
+           
             // i may be merged into maxEdgeIdx
             int nInserted = insert(theEdgeToPixelIndexMap, output, maxEdgeIdx, i); 
             
             if (nInserted > 0) {
+                
                 findJunctions(output);
+                
                 theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();
             }
             
@@ -1942,6 +1946,8 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         if (output.size() > nMaxIter) {
             nMaxIter = output.size();
         }
+        
+//TODO: continue reviewing here        
         
         while ((nIter == 0) || ((nIter < nMaxIter) && (nMerged > 0))) {
                         
@@ -2180,7 +2186,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
      */
     private void populateWithAdjacentLocations(
         Map<Integer, Set<Integer>> theEdgeToPixelIndexMap, 
-        int edge1Idx, int edge2Idx, 
+        final int edge1Idx, final int edge2Idx, 
         Map<PairInt, Set<PairInt>> outputAdjacentToEdge1LocMap) {
                 
         Set<Integer> edge1PixIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(edge1Idx));
@@ -2308,7 +2314,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 return;
             }
             
-            reverse0toIdx(out, closestPivotIdx);
+            out.reverse0toIdx(closestPivotIdx);
         }
     }
     
@@ -2328,7 +2334,6 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         value is a set of locations in edge2 adjacent to the key
         */
         Map<PairInt, Set<PairInt>> adjToEdge1LocMap = new HashMap<PairInt, Set<PairInt>>();
-        
         populateWithAdjacentLocations(theEdgeToPixelIndexMap, edge1Idx, edge2Idx,
             adjToEdge1LocMap);
         
@@ -2344,7 +2349,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             PairInt edge1Loc = entry.getKey();
             if (edge1Loc.getY() == 0) {
                 edge2LocForEdge1FirstLoc = entry.getValue();
-            } else if (edge1Loc.getY() == (output.get(edge2Idx).getN() - 1)) {
+            } else if (edge1Loc.getY() == (edge1.getN() - 1)) {
                 edge2LocForEdge1LastLoc = entry.getValue();
             }
         }
@@ -2357,16 +2362,17 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             if (nIns > 0) {
                 return nIns;
             }
-
-        } else if ((edge2LocForEdge1LastLoc != null) && !edge2LocForEdge1LastLoc.isEmpty()) {
-   
+        }
+        
+        if ((edge2LocForEdge1LastLoc != null) && !edge2LocForEdge1LastLoc.isEmpty()) {
+ 
             int nIns = insertForEdge1LastLocation(output, edge1Idx, edge2Idx, 
                 edge2LocForEdge1LastLoc);
             
             if (nIns > 0) {
                 return nIns;
             }
-        } 
+        }
         
         /* 
         if have arrived here, the locations in edge1 are not at its endpoints.
@@ -2404,12 +2410,16 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             
             PairInt edge1ALoc = entryA.getKey();
             
+            assert(edge1ALoc.getX() == edge1Idx);
+            
             int xA = edge1.getX(edge1ALoc.getY());
             int yA = edge1.getY(edge1ALoc.getY());
             
             for (Entry<PairInt, Set<PairInt>> entryB : adjToEdge1LocMap.entrySet()) {
                 
                 PairInt edge1BLoc = entryB.getKey();
+                
+                assert(edge1BLoc.getX() == edge1Idx);
                 
                 if (edge1ALoc.equals(edge1BLoc)) {
                     continue;
@@ -2442,13 +2452,13 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         if (edge1ALocKeys.isEmpty()) {
             return 0;
         }
-        
+       
         /* 
         if edge2 are endpoints can simply insert
         else have to see if can re-order edge 2 points so
         that the closest points are both placable at endpoints
         */
-         
+
         List<PairInt> edge1ALocClosestEdge2Loc = new ArrayList<PairInt>();
         List<PairInt> edge1BLocClosestEdge2Loc = new ArrayList<PairInt>();
         
@@ -2546,15 +2556,17 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                     // attempt to reorder and then set edge1IsClosed to true
                     
                     int edge1EndIdx = findAdjacentToTopAtBottom(edge1);
-                    
+                
                     boolean didReverse = false;
-                    
+                 
                     if (edge1EndIdx > -1) {
    // TODO: invoke even if edge1EndIdx << (edge1.getN()/2) ?
                         didReverse = reverseBottomIfPossible(edge1, edge1EndIdx);
                         if (didReverse) {
                             if (edge1ALoc.getY() > edge1EndIdx) {
                                 edge1ALoc.setY(edge1.getN() - edge1ALoc.getY() + edge1EndIdx - 1);
+                            }
+                            if (edge1BLoc.getY() > edge1EndIdx) {
                                 edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1EndIdx - 1);
                             }
                             edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
@@ -2564,17 +2576,15 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                             
                             if (edge1EndIdx < (edge1.getN()/2)) {
                                 
-                                // an experiment to straighten out knots.
-                                // TODO: carry this to the other blocks above and below
-                                   
                                 if (reverseTopIfPossible(edge1, edge1EndIdx - 1)) {
                                     if (edge1ALoc.getY() < (edge1EndIdx - 1)) {
                                         edge1ALoc.setY(edge1EndIdx - 1 - edge1ALoc.getY());
+                                    }
+                                    if (edge1BLoc.getY() < (edge1EndIdx - 1)) {
                                         edge1BLoc.setY(edge1EndIdx - 1 - edge1BLoc.getY());
                                     }
                                     nReversed++;
                                     edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
-                                    int z = 1;
                                 }
                             }
                         }
@@ -2589,26 +2599,24 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                             if (didReverse) {
                                 if (edge1ALoc.getY() < edge1BeginIdx) {
                                     edge1ALoc.setY(edge1BeginIdx - edge1ALoc.getY());
+                                }
+                                if (edge1BLoc.getY() < edge1BeginIdx) {
                                     edge1BLoc.setY(edge1BeginIdx - edge1BLoc.getY());
                                 }
                                 edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
                                 nReversed++;
-                                int z = 1;
                             } else {
                             
                                 if (edge1BeginIdx > (edge1.getN()/2)) {
-
-                                    // an experiment to straighten out knots.
-                                    // TODO: carry this to the other blocks above and below
-
                                     if (reverseBottomIfPossible(edge1, edge1BeginIdx + 1)) {
                                         if (edge1ALoc.getY() > (edge1BeginIdx + 1)) {
                                             edge1ALoc.setY(edge1.getN() - edge1ALoc.getY() + edge1BeginIdx);
+                                        }
+                                        if (edge1BLoc.getY() > (edge1BeginIdx + 1)) {
                                             edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1BeginIdx);
                                         }
                                         nReversed++;
                                         edge1IsClosed = isAdjacent(edge1, 0, edge1.getN() - 1);
-                                        int z = 1;
                                     }
                                 }
                             }
@@ -2630,27 +2638,25 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                         if (didReverse) {
                             if (edge2ALoc.getY() > edge2EndIdx) {
                                 edge2ALoc.setY(edge2.getN() - edge2ALoc.getY() + edge2EndIdx - 1);
+                            }
+                            if (edge2BLoc.getY() > edge2EndIdx) {
                                 edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2EndIdx - 1);
                             }
                             edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
-                            nReversed++;
-                            int z = 1;
-                            
+                            nReversed++;                            
                         } else {
                             
                             if (edge2EndIdx < (edge2.getN()/2)) {
                                 
-                                // an experiment to straighten out knots.
-                                // TODO: carry this to the other blocks above and below
-                                   
                                 if (reverseTopIfPossible(edge2, edge2EndIdx - 1)) {
                                     if (edge2ALoc.getY() < (edge2EndIdx - 1)) {
                                         edge2ALoc.setY(edge2EndIdx - 1 - edge2ALoc.getY());
+                                    }
+                                    if (edge2BLoc.getY() < (edge2EndIdx - 1)) {
                                         edge2BLoc.setY(edge2EndIdx - 1 - edge2BLoc.getY());
                                     }
                                     nReversed++;
                                     edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
-                                    int z = 1;
                                 }
                             }
                         }
@@ -2665,25 +2671,23 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                             if (didReverse) {
                                 if (edge2ALoc.getY() < edge2BeginIdx) {
                                     edge2ALoc.setY(edge2BeginIdx - edge2ALoc.getY());
+                                }
+                                if (edge2BLoc.getY() < edge2BeginIdx) {
                                     edge2BLoc.setY(edge2BeginIdx - edge2BLoc.getY());
                                 }
                                 edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
                                 nReversed++;
-                                int z = 1;
                             } else {
                                 if (edge2BeginIdx > (edge2.getN()/2)) {
-
-                                    // an experiment to straighten out knots.
-                                    // TODO: carry this to the other blocks above and below
-
                                     if (reverseBottomIfPossible(edge2, edge2BeginIdx + 1)) {
                                         if (edge2ALoc.getY() > (edge2BeginIdx + 1)) {
                                             edge2ALoc.setY(edge2.getN() - edge2ALoc.getY() + edge2BeginIdx);
+                                        }
+                                        if (edge2BLoc.getY() > (edge2BeginIdx + 1)) {
                                             edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2BeginIdx);
                                         }
                                         nReversed++;
                                         edge2IsClosed = isAdjacent(edge2, 0, edge2.getN() - 1);
-                                        int z = 1;
                                     }
                                 }
                             }
@@ -2692,7 +2696,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 }
                 
                 if (edge1IsClosed && edge2IsClosed) {
-                    
+       
                     if (edge1ALoc.getY() > edge1BLoc.getY()) {
                         if (edge2ALoc.getY() > edge2BLoc.getY()) {
                             circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY() - 1));
@@ -2703,7 +2707,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                             return 1;
                         } else {
                             circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY() - 1));
-                            circularlyShift(edge2, (edge2.getN() - edge2BLoc.getY()));
+                            circularlyShift(edge2, (edge2.getN() - edge2ALoc.getY() - 1));
                             edge1.addAll(edge2);
                             output.remove(edge2Idx);
                             return 1;
@@ -2711,17 +2715,15 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                         
                     } else {
                         if (edge2ALoc.getY() > edge2BLoc.getY()) {
-                            circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY()));
-                            edge1.reverse();
+                            circularlyShift(edge1, (edge1.getN() - edge1ALoc.getY() - 1));
                             circularlyShift(edge2, (edge2.getN() - edge2BLoc.getY() - 1));
-                            edge2.reverse();
                             edge1.addAll(edge2);
                             output.remove(edge2Idx);
                             return 1;
                         } else {
-                            circularlyShift(edge1, (edge1.getN() - edge1BLoc.getY()));
-                            edge1.reverse();
-                            circularlyShift(edge2, (edge2.getN() - edge2BLoc.getY()));
+                            circularlyShift(edge1, (edge1.getN() - edge1ALoc.getY() - 1));
+                            circularlyShift(edge2, (edge2.getN() - edge2ALoc.getY() - 1));
+                            edge2.reverse();
                             edge1.addAll(edge2);
                             output.remove(edge2Idx);
                             return 1;
@@ -2796,8 +2798,8 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         boolean isAdjacent = isAdjacent(edge, 0, cIdx + 1);
         
         if (isAdjacent) {
-            
-            reverse0toIdx(edge, cIdx);
+        
+            edge.reverse0toIdx(cIdx);
             
             return true;
         }
@@ -2818,7 +2820,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         
         if (isAdjacent) {
             
-            reverseIdxtoEnd(edge, cIdx);
+            edge.reverseIdxtoEnd(cIdx);
             
             return true;
         }
@@ -2826,32 +2828,6 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         return false;
     }
     
-    
-    private void reverse0toIdx(PairIntArray out, int lastSwapIdx) {
-        int nSep = (lastSwapIdx + 1) >> 1;
-        for (int idx = 0; idx < nSep; ++idx) {
-            int idx2 = lastSwapIdx - idx;
-            int swapX = out.getX(idx);
-            int swapY = out.getY(idx);
-            out.set(idx, out.getX(idx2), out.getY(idx2));
-            out.set(idx2, swapX, swapY);
-        }
-    }
-    
-    private void reverseIdxtoEnd(PairIntArray out, int firstSwapIdx) {
-        
-        int count = 0;
-        int nSep = (out.getN() - firstSwapIdx) >> 1;
-        for (int idx = firstSwapIdx; idx < (firstSwapIdx + nSep); ++idx) {
-            int idx2 = out.getN() - count - 1;
-            int swapX = out.getX(idx);
-            int swapY = out.getY(idx);
-            out.set(idx, out.getX(idx2), out.getY(idx2));
-            out.set(idx2, swapX, swapY);
-            count++;
-        }
-    }
-
     private void circularlyShift(PairIntArray edge, int positiveNumber) {
         
         if (positiveNumber == 0) {
@@ -2871,7 +2847,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
     }
 
     private int insertForEdge1LastLocation(List<PairIntArray> edges, 
-        int edge1Idx, int edge2Idx, Set<PairInt> edge2LocForEdge1LastLoc) {
+        final int edge1Idx, final int edge2Idx, Set<PairInt> edge2LocForEdge1LastLoc) {
         
         PairIntArray edge1 = edges.get(edge1Idx);
         
@@ -2902,11 +2878,11 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
          */
         for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
             if (edge2Loc.getY() == 0) {
-                edge2.reverse();
                 edge1.addAll(edge2);
                 edges.remove(edge2Idx);
                 return 1;
             } else if (edge2Loc.getY() == (edge2.getN() - 1)) {
+                edge2.reverse();
                 edge1.addAll(edge2);
                 edges.remove(edge2Idx);
                 return 1;
@@ -2914,15 +2890,16 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         }
 
         // prefer the closest to the edge1 point
+        int xn = edge1.getX(edge1.getN() - 1);
+        int yn = edge1.getY(edge1.getN() - 1);
         PairInt closest = null;
         double closestDist = Integer.MAX_VALUE;
         for (PairInt edge2Loc : edge2LocForEdge1LastLoc) {
-            int x1 = edge1.getX(0);
-            int y1 = edge1.getY(0);
+            assert(edge2Loc.getX() == edge2Idx);
             int x2 = edge2.getX(edge2Loc.getY());
             int y2 = edge2.getY(edge2Loc.getY());
-            int diffX = Math.abs(x1 - x2);
-            int diffY = Math.abs(y1 - y2);
+            int diffX = Math.abs(xn - x2);
+            int diffY = Math.abs(yn - y2);
             double dist = Math.sqrt(diffX * diffX + diffY * diffY);
             if (dist < closestDist) {
                 closestDist = dist;
@@ -2933,13 +2910,13 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         boolean didReverse = reverseTopIfPossible(edge2, closest.getY());
 
         if (didReverse) {
-            edge2.reverse();
             edge1.addAll(edge2);
             edges.remove(edge2Idx);
             return 1;
         } else {
             didReverse = reverseBottomIfPossible(edge2, closest.getY());
             if (didReverse) {
+                edge2.reverse();
                 edge1.addAll(edge2);
                 edges.remove(edge2Idx);
                 return 1;
@@ -2959,13 +2936,13 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             didReverse = reverseTopIfPossible(edge2, idx);
 
             if (didReverse) {
-                edge2.reverse();
                 edge1.addAll(edge2);
                 edges.remove(edge2Idx);
                 return 1;
             } else {
                 didReverse = reverseBottomIfPossible(edge2, idx);
                 if (didReverse) {
+                    edge2.reverse();
                     edge1.addAll(edge2);
                     edges.remove(edge2Idx);
                     return 1;
@@ -2977,7 +2954,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
     }
 
     private int insertForEdge1FirstLocation(List<PairIntArray> edges, 
-        int edge1Idx, int edge2Idx, Set<PairInt> edge2LocForEdge1FirstLoc) {
+        final int edge1Idx, final int edge2Idx, Set<PairInt> edge2LocForEdge1FirstLoc) {
 
         PairIntArray edge1 = edges.get(edge1Idx);
         
@@ -2987,7 +2964,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         have found locations in edge2 close to the first point in edge1
 
         (1) if edge2 location is an edge2 endpoint, the insert is simply
-            an append or a reverse and append
+            and append or a reverse and append
         (2) ELSE try 2 tests for re-ordering edge2
 
         (2a) reversing end of edge2:
@@ -3014,18 +2991,20 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 edges.remove(edge2Idx);
                 return 1;
             } else if (edge2Loc.getY() == (edge2.getN() - 1)) {
-                edge1.insertAll(0, edge2);
+                edge2.addAll(edge1);
+                edges.set(edge1Idx, edge2);                
                 edges.remove(edge2Idx);
                 return 1;
             }
         }
 
         // prefer the closest to the edge1 point
+        int x1 = edge1.getX(0);
+        int y1 = edge1.getY(0);
         PairInt closest = null;
         double closestDist = Integer.MAX_VALUE;
         for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {
-            int x1 = edge1.getX(0);
-            int y1 = edge1.getY(0);
+            assert(edge2Loc.getX() == edge2Idx);
             int x2 = edge2.getX(edge2Loc.getY());
             int y2 = edge2.getY(edge2Loc.getY());
             int diffX = Math.abs(x1 - x2);
@@ -3047,7 +3026,8 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         } else {
             didReverse = reverseBottomIfPossible(edge2, closest.getY());
             if (didReverse) {
-                edge1.insertAll(0, edge2);
+                edge2.addAll(edge1);
+                edges.set(edge1Idx, edge2);                
                 edges.remove(edge2Idx);
                 return 1;
             }
@@ -3073,7 +3053,8 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             } else {
                 didReverse = reverseBottomIfPossible(edge2, idx);
                 if (didReverse) {
-                    edge1.insertAll(0, edge2);
+                    edge2.addAll(edge1);
+                    edges.set(edge1Idx, edge2);                
                     edges.remove(edge2Idx);
                     return 1;
                 }
@@ -3097,6 +3078,12 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         return false;
     }
 
+    /**
+     * find a point starting from the last index that is adjacent to the first
+     * index.  the method is used to learn whether there is a reversible section.
+     * @param edge
+     * @return 
+     */
     private int findAdjacentToTopAtBottom(PairIntArray edge) {
         
         int x1 = edge.getX(0);

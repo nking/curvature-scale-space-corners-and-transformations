@@ -407,4 +407,83 @@ public class PairIntArrayTest extends TestCase {
         assertTrue(threwException);
     }
 
+    public void testReverse0toIdx() throws Exception {
+        
+        PairIntArray pai = new PairIntArray(5);
+        
+        for (int i = 0; i < 5; ++i) {
+            pai.add(i, i + 10);
+        }
+        
+        pai.reverse0toIdx(3);
+        
+        assertTrue(pai.getX(0) == 3);
+        assertTrue(pai.getY(0) == 3 + 10);
+        
+        assertTrue(pai.getX(1) == 2);
+        assertTrue(pai.getY(1) == 2 + 10);
+        
+        assertTrue(pai.getX(2) == 1);
+        assertTrue(pai.getY(2) == 1 + 10);
+        
+        assertTrue(pai.getX(3) == 0);
+        assertTrue(pai.getY(3) == 0 + 10);
+       
+        assertTrue(pai.getX(4) == 4);
+        assertTrue(pai.getY(4) == 4 + 10);
+        
+        pai.reverse0toIdx(0);
+        
+        assertTrue(pai.getX(0) == 3);
+        assertTrue(pai.getY(0) == 3 + 10);
+        
+        pai = new PairIntArray(5);
+        
+        for (int i = 0; i < 5; ++i) {
+            pai.add(i, i + 10);
+        }
+        
+        pai.reverse0toIdx(4);
+        
+        int n = 5;
+        
+        for (int i = 0; i < 5; ++i) {
+            assertTrue(pai.getX(i) == (n - i - 1));
+            assertTrue(pai.getY(i) == (n - i - 1) + 10);
+        }
+    }
+    
+    public void testReverseIdxtoEnd() throws Exception {
+        
+        PairIntArray pai = new PairIntArray(5);
+        
+        for (int i = 0; i < 5; ++i) {
+            pai.add(i, i + 10);
+        }
+        
+        pai.reverseIdxtoEnd(3);
+      
+        assertTrue(pai.getX(3) == 4);
+        assertTrue(pai.getY(3) == 4 + 10);
+        assertTrue(pai.getX(4) == 3);
+        assertTrue(pai.getY(4) == 3 + 10);
+        
+        pai.reverseIdxtoEnd(4);
+        
+        assertTrue(pai.getX(4) == 3);
+        assertTrue(pai.getY(4) == 3 + 10);
+        
+        pai = new PairIntArray(5);
+        for (int i = 0; i < 5; ++i) {
+            pai.add(i, i + 10);
+        }
+        pai.reverseIdxtoEnd(0);
+        int n = 5;
+        for (int i = 0; i < 5; ++i) {
+            assertTrue(pai.getX(i) == (n - i - 1));
+            assertTrue(pai.getY(i) == (n - i - 1) + 10);
+        }
+        
+    }
+    
 }

@@ -267,6 +267,55 @@ public class PairIntArray {
         */
     }
     
+    /**
+     * reverse the indexes from 0 to lastSwapIdx, inclusive.
+     * 
+     * @param lastSwapIdx 
+     */
+    public void reverse0toIdx(int lastSwapIdx) {
+        
+        if ((lastSwapIdx < 0) || (lastSwapIdx > (n - 1))) {
+            throw new IllegalArgumentException("lastSwapIdx is out of bounds");
+        }
+        
+        int nSep = (lastSwapIdx + 1) >> 1;
+        
+        for (int idx = 0; idx < nSep; ++idx) {
+            int idx2 = lastSwapIdx - idx;
+            int swapX = x[idx];
+            int swapY = y[idx];
+            x[idx] = x[idx2];
+            y[idx] = y[idx2];
+            x[idx2] = swapX;
+            y[idx2] = swapY;
+        }
+    }
+    
+    /**
+     * reverse the values between index firstSwapIdx and the last index in arrays.
+     * 
+     * @param firstSwapIdx 
+     */
+    public void reverseIdxtoEnd(int firstSwapIdx) {
+        
+        if ((firstSwapIdx < 0) || (firstSwapIdx > (n - 1))) {
+            throw new IllegalArgumentException("firstSwapIdx is out of bounds");
+        }
+        
+        int count = 0;
+        int nSep = (n - firstSwapIdx) >> 1;
+        for (int idx = firstSwapIdx; idx < (firstSwapIdx + nSep); ++idx) {
+            int idx2 = n - count - 1;
+            int swapX = x[idx];
+            int swapY = y[idx];
+            x[idx] = x[idx2];
+            y[idx] = y[idx2];
+            x[idx2] = swapX;
+            y[idx2] = swapY;
+            count++;
+        }
+    }
+    
     public PairIntArray copy() {
         
         PairIntArray clone = new PairIntArray(n);

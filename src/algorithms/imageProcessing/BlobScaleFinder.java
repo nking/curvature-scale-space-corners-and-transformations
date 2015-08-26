@@ -108,6 +108,8 @@ public class BlobScaleFinder {
             (4e) if (there were no blobs returned from k=2), choose the top 10
                  longest contours
         */
+        bounds1.clear();
+        bounds2.clear();
         if (blobs1.size() < 10) {
             extractBlobsFromSegmentedImage(3, img1GreyBinned, blobs1, bounds1,
                 smallestGroupLimit, largestGroupLimit);
@@ -133,10 +135,15 @@ public class BlobScaleFinder {
         boolean doNormalize = false;
 
         Map<Integer, List<Integer>> filteredBlobMatches =
-            filterBlobsByFeatures(imageProcessor.binImage(img1Grey, binFactor),
+            filterBlobsByFeatures(
+            imageProcessor.binImage(img1Grey, binFactor),
             imageProcessor.binImage(img2Grey, binFactor), blobs1, blobs2,
             doNormalize);
 
+        if (filteredBlobMatches.isEmpty()) {
+            return null;
+        }
+        
         /*
         (6) solve for scale:
             (6a) use ContourMather to get scale solutions for each pairing
@@ -294,13 +301,15 @@ public class BlobScaleFinder {
 
         int tolerance = 10;
 
-        blobs = filterBlobsByFirstList(inOutBlobs, blobs,
-            tolerance);
+        blobs = filterBlobsByFirstList(inOutBlobs, blobs, tolerance);
 
         boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        extractBoundsOfBlobs(blobs, outBounds, img.getWidth(), img.getHeight(),
+        extractBoundsOfBlobs(blobs, outBounds, w, h,
             discardWhenCavityIsSmallerThanBorder);
+        
+        inOutBlobs.clear();
+        inOutBlobs.addAll(blobs);
     }
 
     /**
@@ -338,6 +347,7 @@ public class BlobScaleFinder {
                 double diffX = Math.abs(xyCen[0] - xyCen0[0]);
                 double diffY = Math.abs(xyCen[1] - xyCen0[1]);
                 double distSq = diffX * diffX + diffY * diffY;
+                
                 if (distSq < toleranceSq) {
                     keep.add(Integer.valueOf(i));
                     break;
@@ -422,6 +432,8 @@ public class BlobScaleFinder {
         GreyscaleImage img1Binned, GreyscaleImage img2Binned,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2, boolean doNormalize) {
 
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
         Map<Integer, List<Integer>> possiblePairs = new HashMap<Integer, List<Integer>>();
 
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
@@ -443,13 +455,21 @@ public class BlobScaleFinder {
                 float diff = sum1 - sum2;
 
                 float ssd = (diff * diff)/2.f;
+  
+double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
+double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
+log.info(String.format("blob1=(%d,%d) blob2=(%d,%d) ssd=%.2f  sumSqErr=%.2f", 
+(int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+(int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]), (float)ssd, (float)sumSquaredError1));
 
                 if (ssd < sumSquaredError1) {
                     similar2.add(Integer.valueOf(idx2));
                 }
             }
 
-            possiblePairs.put(Integer.valueOf(idx1), similar2);
+            if (!similar2.isEmpty()) {
+                possiblePairs.put(Integer.valueOf(idx1), similar2);
+            }
         }
 
         return possiblePairs;
@@ -499,6 +519,9 @@ public class BlobScaleFinder {
 
         Map<Integer, Map<Integer, TransformationParameters>> paramsMap =
             new HashMap<Integer, Map<Integer, TransformationParameters>>();
+        
+        Map<Integer, Map<Integer, Double>> costMap =
+            new HashMap<Integer, Map<Integer, Double>>();
 
         for (Entry<Integer, List<Integer>> entry : filteredBlobMatches.entrySet()) {
             
@@ -531,20 +554,26 @@ public class BlobScaleFinder {
                         bestIdx2 = index2.intValue();
                     }
                 
-                    Map<Integer, TransformationParameters> map2 = 
-                        paramsMap.get(index1);
-                    
+                    Map<Integer, TransformationParameters> map2 = paramsMap.get(index1);                    
                     if (map2 == null) {
                         map2 = new HashMap<Integer, TransformationParameters>();
                         paramsMap.put(index1, map2);
                     }
-                    
                     map2.put(index2, params);
+                    
+                    Map<Integer, Double> mapCosts2 = costMap.get(index1);
+                    if (mapCosts2 == null) {
+                        mapCosts2 = new HashMap<Integer, Double>();
+                        costMap.put(index1, mapCosts2);
+                    }
+                    costMap.put(index2, mapCosts2);
+                    
                 }
             }
+            int z = 1;
         }
 
-        throw new UnsupportedOperationException("not yet implemented");
+        return null;
     }
 
 }
