@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 public class EdgeExtractorForBlobBorder {
             
-    protected boolean debug = false;
+    protected boolean debug = true;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -204,7 +204,9 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurre
         }
         
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
-        extractor.setToDebug();
+        if (debug) {
+            extractor.setToDebug();
+        }
         extractor.overrideMaxNumberIterationsJunctionSplice(10);
         //List<PairIntArray> output = extractor.findEdges();
         PairIntArray out = extractor.findAsSingleClosedEdge();

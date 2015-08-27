@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.MultiArrayMergeSort;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -45,7 +46,7 @@ public class BlobScaleFinder {
      * @throws java.security.NoSuchAlgorithmException
      */
     public TransformationParameters calculateScale(ImageExt img1,
-        ImageExt img2) throws IOException, NoSuchAlgorithmException {
+        ImageExt img2) throws IOException, NoSuchAlgorithmException {                
 
         /*
         (1) applies histogram equalization to greyscale images of img1, img2
@@ -57,12 +58,17 @@ public class BlobScaleFinder {
         boolean didApplyHistEq = applyHistogramEqualizationIfNeeded(img1Grey,
             img2Grey);
 
+        final int k = 2;
         int smallestGroupLimit = 100;
         int largestGroupLimit = 5000;
+        
+        TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
+            smallestGroupLimit, largestGroupLimit);
+        
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img1Grey.getWidth()/minDimension,
-                (float)img2Grey.getHeight()/minDimension));
+            (float)img2Grey.getHeight()/minDimension));
         smallestGroupLimit /= (binFactor*binFactor);
         largestGroupLimit /= (binFactor*binFactor);
 
@@ -72,7 +78,7 @@ public class BlobScaleFinder {
         if (smallestGroupLimit < 4) {
             smallestGroupLimit = 4;
         }
-
+        
         ImageProcessor imageProcessor = new ImageProcessor();
 
         GreyscaleImage img1GreyBinned = imageProcessor.binImage(img1Grey,
@@ -80,83 +86,9 @@ public class BlobScaleFinder {
         GreyscaleImage img2GreyBinned = imageProcessor.binImage(img2Grey,
             binFactor);
 
-        /*
-        (3) extract the top 10 blobs and their contours from k=2 segmented image:
-            (3a) perform segmentation for k=2
-            (3b) find blobs w/ DFSContiguousValueFinder for each intensity level
-            (3c) use EdgeExtractorForBlobBorder to extract closed contour for
-                 each blob
-            (3d) return the top 10 longest contours and the blobs
-        */
-        List<Set<PairInt>> blobs1 = new ArrayList<Set<PairInt>>();
-        List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
-        List<PairIntArray> bounds1 = new ArrayList<PairIntArray>();
-        List<PairIntArray> bounds2 = new ArrayList<PairIntArray>();
-        extractBlobsFromSegmentedImage(2, img1GreyBinned, blobs1, bounds1,
-            smallestGroupLimit, largestGroupLimit);
-        extractBlobsFromSegmentedImage(2, img2GreyBinned, blobs2, bounds2,
-            smallestGroupLimit, largestGroupLimit);
-
-        /*
-        (4) extract the top 10 blobs and their contours from k=3 segmented image:
-            (4a) perform segmentation for k=3
-            (4b) find blobs w/ DFSContiguousValueFinder for each intensity level
-            (4c) if there were results from k=2, discard any blob whose centroid
-                 indicates it isn't in that list.
-            (4d) use EdgeExtractorForBlobBorder to extract closed contour for
-                 each blob
-            (4e) if (there were no blobs returned from k=2), choose the top 10
-                 longest contours
-        */
-        bounds1.clear();
-        bounds2.clear();
-        if (blobs1.size() < 10) {
-            extractBlobsFromSegmentedImage(3, img1GreyBinned, blobs1, bounds1,
-                smallestGroupLimit, largestGroupLimit);
-        } else {
-            extractGivenBlobsFromSegmentedImage(3, img1GreyBinned, blobs1,
-                bounds1, smallestGroupLimit, largestGroupLimit);
-        }
-        if (blobs2.size() < 10) {
-            extractBlobsFromSegmentedImage(3, img2GreyBinned, blobs2, bounds2,
-                smallestGroupLimit, largestGroupLimit);
-        } else {
-            extractGivenBlobsFromSegmentedImage(3, img2GreyBinned, blobs2,
-                bounds2, smallestGroupLimit, largestGroupLimit);
-        }
-
-        /*
-        (5) filter out dissimilar pairings:
-            (5a) given blobs from image1 and blobs from image 2, use feature
-                 matching to rule out possible pairings, resulting in possible
-                 matches for each.
-        */
-
-        boolean doNormalize = false;
-
-        Map<Integer, List<Integer>> filteredBlobMatches =
-            filterBlobsByFeatures(
-            imageProcessor.binImage(img1Grey, binFactor),
-            imageProcessor.binImage(img2Grey, binFactor), blobs1, blobs2,
-            doNormalize);
-
-        if (filteredBlobMatches.isEmpty()) {
-            return null;
-        }
+        TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
+            img2GreyBinned, k, smallestGroupLimit, largestGroupLimit);
         
-        /*
-        (6) solve for scale:
-            (6a) use ContourMather to get scale solutions for each pairing
-                 then statistical basis of combining the results and removing
-                 outliers.
-        */
-        TransformationParameters params = solveForScale(filteredBlobMatches,
-            blobs1, blobs2, bounds1, bounds2,
-            img1GreyBinned.getXRelativeOffset(),
-            img1GreyBinned.getYRelativeOffset(),
-            img2GreyBinned.getXRelativeOffset(),
-            img2GreyBinned.getYRelativeOffset());
-
         return params;
     }
 
@@ -414,7 +346,7 @@ public class BlobScaleFinder {
         List<Set<PairInt>> blobs = new ArrayList<Set<PairInt>>();
         List<PairIntArray> curves = new ArrayList<PairIntArray>();
 
-        int last = (inOutBlobs.size() > 10) ? 10 : inOutBlobs.size();
+        int last = (inOutBlobs.size() > 15) ? 15 : inOutBlobs.size();
         for (int i = 0; i < last; ++i) {
             int idx = indexes[i];
             blobs.add(inOutBlobs.get(idx));
@@ -429,40 +361,48 @@ public class BlobScaleFinder {
     }
 
     protected Map<Integer, List<Integer>> filterBlobsByFeatures(
-        GreyscaleImage img1Binned, GreyscaleImage img2Binned,
+        GreyscaleImage img1, GreyscaleImage img2,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2, boolean doNormalize) {
 
-MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        /*
+        using scale invariant properties to make smaller lists of possible
+        pairs:
+            -- the difference of the means of the blobs should be < standard deviation
+            -- roughly, the number of inflection points in the curve before the
+               contour matcher is used
+            may need to consider the feature descriptors used for corner regions...
+        */
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         Map<Integer, List<Integer>> possiblePairs = new HashMap<Integer, List<Integer>>();
-
+        
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
             Set<PairInt> blob1 = blobs1.get(idx1);
 
             List<Integer> similar2 = new ArrayList<Integer>();
 
-            float sumSquaredError1 = MiscMath.sumSquaredError(img1Binned, blob1);
-
-            int sum1 = sumIntensity(img1Binned, blob1, doNormalize);
+            double[] avgAndStDev1 = MiscMath.getAvgAndStDev(img1, blob1);
 
             for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
 
                 Set<PairInt> blob2 = blobs2.get(idx2);
 
-                int sum2 = sumIntensity(img2Binned, blob2, doNormalize);
-
-                float diff = sum1 - sum2;
-
-                float ssd = (diff * diff)/2.f;
+                double[] avgAndStDev2 = MiscMath.getAvgAndStDev(img2, blob2);
+                
+                double diff = Math.abs(avgAndStDev1[0] - avgAndStDev2[0]);
+                
+                double limit = Math.min(avgAndStDev1[1], avgAndStDev2[1])/2.;
   
 double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
 double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
-log.info(String.format("blob1=(%d,%d) blob2=(%d,%d) ssd=%.2f  sumSqErr=%.2f", 
-(int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-(int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]), ssd, sumSquaredError1));
+log.info(String.format("[%d] blob1=(%d,%d) [%d] blob2=(%d,%d) diffAvgs=%.2f stdv=%.2f stdv2=%.2f limit=%.2f", 
+idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]), 
+(float)diff, (float)avgAndStDev1[1], (float)avgAndStDev2[1], (float)limit));
 
-                if (ssd < sumSquaredError1) {
+                if (diff < limit) {
                     similar2.add(Integer.valueOf(idx2));
                 }
             }
@@ -479,11 +419,9 @@ log.info(String.format("blob1=(%d,%d) blob2=(%d,%d) ssd=%.2f  sumSqErr=%.2f",
      * sum the intensity of the points with an option to subtract the mean.
      * @param img
      * @param points
-     * @param doNormalize
      * @return
      */
-    protected int sumIntensity(GreyscaleImage img, Set<PairInt> points,
-        boolean doNormalize) {
+    protected double sumIntensity(GreyscaleImage img, Set<PairInt> points) {
 
         if (img == null) {
             throw new IllegalStateException("img cannot be null");
@@ -492,19 +430,14 @@ log.info(String.format("blob1=(%d,%d) blob2=(%d,%d) ssd=%.2f  sumSqErr=%.2f",
         if (points == null) {
             throw new IllegalStateException("points cannot be null");
         }
-
-        int sum = 0;
+        
+        double sum = 0;
 
         for (PairInt p : points) {
             int x = p.getX();
             int y = p.getY();
-            int v = img.getValue(x, y);
+            double v = img.getValue(x, y);
             sum += v;
-        }
-
-        if (doNormalize) {
-            double[] avgStDev = MiscMath.getAvgAndStDev(img, points);
-            sum -= (points.size() * avgStDev[0]);
         }
 
         return sum;
@@ -537,7 +470,9 @@ log.info(String.format("blob1=(%d,%d) blob2=(%d,%d) ssd=%.2f  sumSqErr=%.2f",
             for (Integer index2 : blob2Indexes) {
                 
                 PairIntArray curve2 = bounds2.get(index2.intValue());
-                
+               
+log.info("index1=" + index1.toString() + " index2=" + index2.toString());
+
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper = 
                     new CurvatureScaleSpaceInflectionSingleEdgeMapper(
                     curve1, index1.intValue(), curve2, index2.intValue(),
@@ -570,10 +505,104 @@ log.info(String.format("blob1=(%d,%d) blob2=(%d,%d) ssd=%.2f  sumSqErr=%.2f",
                     
                 }
             }
-            int z = 1;
         }
 
+        // TODO: analyze map
+        
         return null;
+    }
+
+    protected TransformationParameters calculateScale(GreyscaleImage img1, 
+        GreyscaleImage img2, int k, int smallestGroupLimit, 
+        int largestGroupLimit) throws IOException, NoSuchAlgorithmException {
+                
+        /*
+        extract the top 10 blobs and their contours from k=2 segmented image:
+        -- perform segmentation for k=2
+        -- find blobs w/ DFSContiguousValueFinder for each intensity level
+        -- use EdgeExtractorForBlobBorder to extract closed contour for each 
+           blob
+        -- return the top 10 longest contours and the blobs
+        */
+        List<Set<PairInt>> blobs1 = new ArrayList<Set<PairInt>>();
+        List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
+        List<PairIntArray> bounds1 = new ArrayList<PairIntArray>();
+        List<PairIntArray> bounds2 = new ArrayList<PairIntArray>();
+        extractBlobsFromSegmentedImage(2, img1, blobs1, bounds1,
+            smallestGroupLimit, largestGroupLimit);
+        extractBlobsFromSegmentedImage(2, img2, blobs2, bounds2,
+            smallestGroupLimit, largestGroupLimit);
+        
+        /*
+        filter out dissimilar pairings:
+        -- given blobs from image1 and blobs from image 2, use feature
+           matching to rule out possible pairings, resulting in possible
+           matches for each.
+        */
+        //ImageProcessor imageProcessor = new ImageProcessor();
+        
+Image img0 = ImageIOHelper.convertImage(img1);
+for (int i = 0; i < bounds1.size(); ++i) {
+    PairIntArray pa = bounds1.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img0, "blob_contours_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");       
+img0 = ImageIOHelper.convertImage(img2);
+for (int i = 0; i < bounds2.size(); ++i) {
+    PairIntArray pa = bounds2.get(i);
+    for (int j = 0; j < pa.getN(); ++j) {
+        int x = pa.getX(j);
+        int y = pa.getY(j);
+        if (i == 0) {
+            if (j == 0 || (j == (pa.getN() - 1))) {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+            }
+        } else if (i == 1) {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);
+        } else {
+            ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeFormatted() + ".png"); 
+        
+        boolean doNormalize = true;
+
+        Map<Integer, List<Integer>> filteredBlobMatches =
+            filterBlobsByFeatures(img1, img2, blobs1, blobs2, doNormalize);
+
+        if (filteredBlobMatches.isEmpty()) {
+            return null;
+        }
+        
+        /*
+        solve for scale:
+        -- use ContourMather to get scale solutions for each pairing then 
+           statistical basis of combining the results and removing
+           outliers.
+        */
+        TransformationParameters params = solveForScale(filteredBlobMatches,
+            blobs1, blobs2, bounds1, bounds2,
+            img1.getXRelativeOffset(), img1.getYRelativeOffset(),
+            img2.getXRelativeOffset(), img2.getYRelativeOffset());
+        
+        return params;
     }
 
 }

@@ -183,7 +183,6 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 if (debug) {
 MiscDebug.writeEdges(output, img.copyImage(), "splice_before_pt1_"  + 
 MiscDebug.getCurrentTimeFormatted());
-int z = 1;
 }
 
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
