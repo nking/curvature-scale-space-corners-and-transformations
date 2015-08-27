@@ -370,19 +370,32 @@ public class BlobScaleFinder {
         using scale invariant properties to make smaller lists of possible
         pairs:
             -- the difference of the means of the blobs should be < standard deviation
+               (caveat is that the averages are sensitive to the illumination)
             -- roughly, the number of inflection points in the curve before the
                contour matcher is used
             may need to consider the feature descriptors used for corner regions...
         
         TODO: can see that comparisons as detailed as feauture descriptors are
-        needed here to rule out false matches before contour matching.
+        needed to rule out false matches before contour matching.
         Because the blobs are chosen as regions of nearly constant color, would
         be better to compare the regions on the perimeters, such as corners
         or inflection points but as a group against similar properties of the
-        compared blob.
-            ... in progress
+        comparison blob rather than individually.
+            -- an average of the pixels just outside of the perimeter would be
+               more unique than the average of the blobs, but would still be
+               sensitive to illumination differences.
+            -- since the contours are using the inflection points to solve
+               for matching, could use feature descriptors on the inflection 
+               points.  determining the orientation would be a little different,
+               but still feasible.  the use of feature descriptors on a 
+               blob by blob basis should be less sensitive to illumination using
+               current Features implementation.
+        ==> so, will remove the use of this method which is more sensitive to
+            illumination and add a method to the contour matching which compares
+            feature descriptors before matching the contour points in curvature
+            scale space.
         */
-        
+      
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         Map<Integer, List<Integer>> possiblePairs = new HashMap<Integer, List<Integer>>();
