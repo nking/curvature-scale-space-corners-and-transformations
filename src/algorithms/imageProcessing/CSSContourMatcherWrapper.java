@@ -37,6 +37,8 @@ public final class CSSContourMatcherWrapper {
      */
     private final List<CurvatureScaleSpaceContour> contours2;
             
+    private final int nMaxMatchable;
+    
     private double solutionScale = Double.MAX_VALUE;
     
     private double solutionShift = Double.MAX_VALUE;
@@ -73,6 +75,9 @@ public final class CSSContourMatcherWrapper {
      * </pre>
      * Note that the order of items in contours1 and contours2 will be altered
      * if alreadySorted is false.
+     * @param contours1
+     * @param contours2
+     * @param contoursAreAlreadySorted
      */
     public CSSContourMatcherWrapper(
         final List<CurvatureScaleSpaceContour> contours1, 
@@ -89,6 +94,8 @@ public final class CSSContourMatcherWrapper {
         
             Collections.sort(this.contours2, new DescendingSigmaComparator());
         }
+        
+        nMaxMatchable = Math.min(contours1.size(), contours2.size());
         
         solutionMatchedContours1 = new ArrayList<CurvatureScaleSpaceContour>();
         
@@ -195,6 +202,10 @@ public final class CSSContourMatcherWrapper {
             
             return true;
         }  
+    }
+    
+    public int getNMaxMatchable() {
+        return nMaxMatchable;
     }
     
     public List<CurvatureScaleSpaceContour> getSolutionMatchedContours1() {

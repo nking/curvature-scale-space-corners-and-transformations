@@ -26,6 +26,8 @@ public class BlobScaleFinder {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    protected boolean debug = true;
+    
     /**
      * From the given images, determine the scale between them and roughly
      * estimate the rotation and translation too.  Note that image processing
@@ -371,6 +373,14 @@ public class BlobScaleFinder {
             -- roughly, the number of inflection points in the curve before the
                contour matcher is used
             may need to consider the feature descriptors used for corner regions...
+        
+        TODO: can see that comparisons as detailed as feauture descriptors are
+        needed here to rule out false matches before contour matching.
+        Because the blobs are chosen as regions of nearly constant color, would
+        be better to compare the regions on the perimeters, such as corners
+        or inflection points but as a group against similar properties of the
+        compared blob.
+            ... in progress
         */
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -481,7 +491,10 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                 
                 TransformationParameters params = mapper.matchContours();
                 
-                if (params != null) {
+                if ((params != null) && 
+                    (mapper.getMatcher().getSolutionMatchedContours1().size() > 2)) {
+                    
+                    int nMaxMatchable = mapper.getMatcher().getNMaxMatchable();
                     
                     double cost = mapper.getMatcher().getSolvedCost();
                     if (cost < bestCost) {
@@ -489,6 +502,26 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                         bestIdx2 = index2.intValue();
                     }
                 
+                    if ((nMaxMatchable 
+                        - mapper.getMatcher().getSolutionMatchedContours1().size()) == 0) {
+                        
+                        String str = String.format(
+                        "[%d] [%d] cost=%.1f scale=%.2f  nMatched=%d", 
+                        index1.intValue(), index2.intValue(), (float)cost, 
+                        (float)mapper.getMatcher().getSolvedScale(),
+                        mapper.getMatcher().getSolutionMatchedContours1().size());
+                        
+                        log.info(str);
+                    }
+if (
+((index1.intValue() == 2) && (index2.intValue() == 6)) ||
+((index1.intValue() == 7) && (index2.intValue() == 10))) {
+    int z = 1;
+    /*
+    scl=0.86, cost= 13.0  nMatched=9  nMaxMatchable=9
+    scl=1.07, cost=134.0          =3               =3
+    */
+}
                     Map<Integer, TransformationParameters> map2 = paramsMap.get(index1);                    
                     if (map2 == null) {
                         map2 = new HashMap<Integer, TransformationParameters>();
@@ -540,7 +573,8 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
            matches for each.
         */
         //ImageProcessor imageProcessor = new ImageProcessor();
-        
+ 
+if (debug) {
 Image img0 = ImageIOHelper.convertImage(img1);
 for (int i = 0; i < bounds1.size(); ++i) {
     PairIntArray pa = bounds1.get(i);
@@ -581,7 +615,8 @@ for (int i = 0; i < bounds2.size(); ++i) {
     }
 }
 MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeFormatted() + ".png"); 
-        
+}
+
         boolean doNormalize = true;
 
         Map<Integer, List<Integer>> filteredBlobMatches =
