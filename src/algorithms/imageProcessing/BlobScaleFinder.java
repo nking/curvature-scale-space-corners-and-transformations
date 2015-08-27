@@ -233,10 +233,6 @@ public class BlobScaleFinder {
         extractBlobsFromSegmentedImage(k, img, blobs, smallestGroupLimit,
             largestGroupLimit);
 
-        int tolerance = 10;
-
-        blobs = filterBlobsByFirstList(inOutBlobs, blobs, tolerance);
-
         boolean discardWhenCavityIsSmallerThanBorder = true;
 
         extractBoundsOfBlobs(blobs, outBounds, w, h,
@@ -244,57 +240,6 @@ public class BlobScaleFinder {
         
         inOutBlobs.clear();
         inOutBlobs.addAll(blobs);
-    }
-
-    /**
-     * given the original list of blobs origBlobs, find blobs in nextBlobs
-     * having same centroids within tolerance and return those.
-     *
-     * @param origBlobs
-     * @param nextBlobs
-     * @param tolerance
-     * @return
-     */
-    protected List<Set<PairInt>> filterBlobsByFirstList(
-        List<Set<PairInt>> origBlobs, List<Set<PairInt>> nextBlobs,
-        int tolerance) {
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        List<Integer> keep = new ArrayList<Integer>();
-
-        double[][] xyCentroids0 = new double[origBlobs.size()][];
-        for (int j = 0; j < origBlobs.size(); ++j) {
-            xyCentroids0[j] = curveHelper.calculateXYCentroids(origBlobs.get(j));
-        }
-
-        int toleranceSq = tolerance * tolerance;
-
-        for (int i = 0; i < nextBlobs.size(); ++i) {
-
-            Set<PairInt> blob = nextBlobs.get(i);
-
-            double[] xyCen = curveHelper.calculateXYCentroids(blob);
-
-            for (int j = 0; j < origBlobs.size(); ++j) {
-                double[] xyCen0 = xyCentroids0[j];
-                double diffX = Math.abs(xyCen[0] - xyCen0[0]);
-                double diffY = Math.abs(xyCen[1] - xyCen0[1]);
-                double distSq = diffX * diffX + diffY * diffY;
-                
-                if (distSq < toleranceSq) {
-                    keep.add(Integer.valueOf(i));
-                    break;
-                }
-            }
-        }
-
-        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
-        for (Integer index : keep) {
-            output.add(nextBlobs.get(index.intValue()));
-        }
-
-        return output;
     }
 
     /**
@@ -361,83 +306,7 @@ public class BlobScaleFinder {
         inOutBlobs.addAll(blobs);
         outputBounds.addAll(curves);
     }
-
-    protected Map<Integer, List<Integer>> filterBlobsByFeatures(
-        GreyscaleImage img1, GreyscaleImage img2,
-        List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2, boolean doNormalize) {
-
-        /*
-        using scale invariant properties to make smaller lists of possible
-        pairs:
-            -- the difference of the means of the blobs should be < standard deviation
-               (caveat is that the averages are sensitive to the illumination)
-            -- roughly, the number of inflection points in the curve before the
-               contour matcher is used
-            may need to consider the feature descriptors used for corner regions...
-        
-        TODO: can see that comparisons as detailed as feauture descriptors are
-        needed to rule out false matches before contour matching.
-        Because the blobs are chosen as regions of nearly constant color, would
-        be better to compare the regions on the perimeters, such as corners
-        or inflection points but as a group against similar properties of the
-        comparison blob rather than individually.
-            -- an average of the pixels just outside of the perimeter would be
-               more unique than the average of the blobs, but would still be
-               sensitive to illumination differences.
-            -- since the contours are using the inflection points to solve
-               for matching, could use feature descriptors on the inflection 
-               points.  determining the orientation would be a little different,
-               but still feasible.  the use of feature descriptors on a 
-               blob by blob basis should be less sensitive to illumination using
-               current Features implementation.
-        ==> so, will remove the use of this method which is more sensitive to
-            illumination and add a method to the contour matching which compares
-            feature descriptors before matching the contour points in curvature
-            scale space.
-        */
-      
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        Map<Integer, List<Integer>> possiblePairs = new HashMap<Integer, List<Integer>>();
-        
-        for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
-
-            Set<PairInt> blob1 = blobs1.get(idx1);
-
-            List<Integer> similar2 = new ArrayList<Integer>();
-
-            double[] avgAndStDev1 = MiscMath.getAvgAndStDev(img1, blob1);
-
-            for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
-
-                Set<PairInt> blob2 = blobs2.get(idx2);
-
-                double[] avgAndStDev2 = MiscMath.getAvgAndStDev(img2, blob2);
-                
-                double diff = Math.abs(avgAndStDev1[0] - avgAndStDev2[0]);
-                
-                double limit = Math.min(avgAndStDev1[1], avgAndStDev2[1])/2.;
-  
-double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
-double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
-log.info(String.format("[%d] blob1=(%d,%d) [%d] blob2=(%d,%d) diffAvgs=%.2f stdv=%.2f stdv2=%.2f limit=%.2f", 
-idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]), 
-(float)diff, (float)avgAndStDev1[1], (float)avgAndStDev2[1], (float)limit));
-
-                if (diff < limit) {
-                    similar2.add(Integer.valueOf(idx2));
-                }
-            }
-
-            if (!similar2.isEmpty()) {
-                possiblePairs.put(Integer.valueOf(idx1), similar2);
-            }
-        }
-
-        return possiblePairs;
-    }
-
+    
     /**
      * sum the intensity of the points with an option to subtract the mean.
      * @param img
@@ -467,7 +336,8 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
     }
 
     protected TransformationParameters solveForScale(
-        Map<Integer, List<Integer>> filteredBlobMatches,
+        GreyscaleImage img1, 
+        GreyscaleImage img2,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
         List<PairIntArray> bounds1, List<PairIntArray> bounds2,
         int xRelativeOffset1, int yRelativeOffset1,
@@ -479,21 +349,25 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
         Map<Integer, Map<Integer, Double>> costMap =
             new HashMap<Integer, Map<Integer, Double>>();
 
-        for (Entry<Integer, List<Integer>> entry : filteredBlobMatches.entrySet()) {
+        for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
+        
+            Integer index1 = Integer.valueOf(idx1);
             
-            Integer index1 = entry.getKey();
+            PairIntArray curve1 = bounds1.get(idx1);
             
-            PairIntArray curve1 = bounds1.get(index1.intValue());
+            Set<PairInt> blob1 = blobs1.get(idx1);
+            
+            for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
                 
-            List<Integer> blob2Indexes = entry.getValue();
+                Integer index2 = Integer.valueOf(idx2);
             
-            double bestCost = Double.MAX_VALUE;
-            int bestIdx2 = -1;
+                PairIntArray curve2 = bounds1.get(idx2);
             
-            for (Integer index2 : blob2Indexes) {
-                
-                PairIntArray curve2 = bounds2.get(index2.intValue());
-               
+                Set<PairInt> blob2 = blobs2.get(idx2);
+            
+                double bestCost = Double.MAX_VALUE;
+                int bestIdx2 = -1;
+                                           
 log.info("index1=" + index1.toString() + " index2=" + index2.toString());
 
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper = 
@@ -526,6 +400,12 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                         
                         log.info(str);
                     }
+                    
+                    /*
+                    TODO: compare feature descriptors of the inflection points to help
+                    remove false matches
+                    */
+                
 if (
 ((index1.intValue() == 2) && (index2.intValue() == 6)) ||
 ((index1.intValue() == 7) && (index2.intValue() == 10))) {
@@ -629,28 +509,18 @@ for (int i = 0; i < bounds2.size(); ++i) {
 }
 MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeFormatted() + ".png"); 
 }
-
-        boolean doNormalize = true;
-
-        Map<Integer, List<Integer>> filteredBlobMatches =
-            filterBlobsByFeatures(img1, img2, blobs1, blobs2, doNormalize);
-
-        if (filteredBlobMatches.isEmpty()) {
-            return null;
-        }
-        
         /*
         solve for scale:
         -- use ContourMather to get scale solutions for each pairing then 
            statistical basis of combining the results and removing
            outliers.
         */
-        TransformationParameters params = solveForScale(filteredBlobMatches,
+        TransformationParameters params = solveForScale(img1, img2,
             blobs1, blobs2, bounds1, bounds2,
             img1.getXRelativeOffset(), img1.getYRelativeOffset(),
             img2.getXRelativeOffset(), img2.getYRelativeOffset());
         
         return params;
     }
-
+    
 }
