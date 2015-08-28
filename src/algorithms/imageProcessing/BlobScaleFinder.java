@@ -281,16 +281,6 @@ public class BlobScaleFinder {
                 blob, width, height,
                 discardWhenCavityIsSmallerThanBorder);
 
-/*{
-try {
-double[] xyCen = curveHelper.calculateXYCentroids(blob);
-String fileName = "blob_" + (int)Math.round(xyCen[0]) + "_" + (int)Math.round(xyCen[1]) + ".dat";
-Misc.persistToFile(fileName, blob);
-log.info("writing " + fileName);
-} catch (IOException ex) {
-}
-}*/
-
             if (closedEdge != null) {
                 
                 if (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1)) {
@@ -309,8 +299,14 @@ for (int j = 0; j < closedEdge.getN(); ++j) {
     }
 }
 double[] xyCen = curveHelper.calculateXYCentroids(blob);
-String fileName = "closededge_" + (int)Math.round(xyCen[0]) + "_" + (int)Math.round(xyCen[1]) + ".dat";
+String fileName = "closededge_" + (int)Math.round(xyCen[0]) + "_" + (int)Math.round(xyCen[1]);
 MiscDebug.writeImageCopy(img3, fileName + ".png");
+try {
+fileName = fileName + ".dat";
+Misc.persistToFile(fileName, blob);
+log.info("writing " + fileName);
+} catch (IOException ex) {
+}
 }
 
                 }

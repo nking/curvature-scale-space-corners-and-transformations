@@ -105,6 +105,7 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
     public void testExtractAndOrderTheBorder0_1() throws Exception {
 
         String fileName = "blob2_55_126.dat";
+        fileName = "blob_196_314.dat";
         //String fileName = "blob2_122_253.dat";
         //String fileName = "blobs1_236_123.dat";
 

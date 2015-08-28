@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PerimeterFinder;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
@@ -219,6 +220,21 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurre
             return null;
         }
         
+        /*
+        some curves are originally composed of a single pixel width connector 
+        between more than one potentially closed curve and the algorithm 
+        eventually chooses the longest closed curve and follows the other out 
+        until it ends without being adjacent to another point in the larger 
+        curve.  in other words, these single pixel connections between
+        multiple curves sometimes end in a long spur that should be trimmed.
+        Note that the algorithm could be redesigned to look for such regions
+        first and discard the smaller half with a warning.
+        */
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+            trimEndpointSpursIfAny(out, img.getWidth(), img.getHeight());
+        }
+        
         // add the shifts back
         //PairIntArray out = output.get(0);
         
@@ -227,6 +243,7 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurre
             int y = out.getY(i) + yOffset;
             out.set(i, x, y);
         }
+
 if (debug) {
 Image img3 = new Image(imageWidth, imageHeight);
 for (int j = 0; j < out.getN(); ++j) {
@@ -240,7 +257,74 @@ for (int j = 0; j < out.getN(); ++j) {
 }
 MiscDebug.writeImageCopy(img3, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 }
+
         return out;
+    }
+
+    private void trimEndpointSpursIfAny(final PairIntArray curve, 
+        final int imageWidth, final int imageHeight) {
+
+        SpurRemover spurRemover = new SpurRemover();
+        
+        // try beginning of curve        
+        while (true) {
+            
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (int i = 0; i < curve.getN(); ++i) {
+    int x = curve.getX(i);
+    int y = curve.getY(i);
+    img3.setRGB(x, y, 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}      
+
+            Set<PairInt> points = Misc.convert(curve);
+            
+            int idx = 0;
+                
+            int x = curve.getX(idx);                
+            int y = curve.getY(idx);
+                
+            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,
+                imageHeight);
+                
+            if (isASpur) {
+                curve.removeRange(idx, idx);
+            } else {
+                break;
+            }
+        }
+        
+        // try end of curve        
+        while (true) {
+
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (int i = 0; i < curve.getN(); ++i) {
+    int x = curve.getX(i);
+    int y = curve.getY(i);
+    img3.setRGB(x, y, 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}
+
+            Set<PairInt> points = Misc.convert(curve);
+            
+            int idx = (curve.getN() - 1);
+                
+            int x = curve.getX(idx);                
+            int y = curve.getY(idx);
+                
+            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,
+                imageHeight);
+                
+            if (isASpur) {
+                curve.removeRange(idx, idx);
+            } else {
+                break;
+            }
+        }
     }
     
 }

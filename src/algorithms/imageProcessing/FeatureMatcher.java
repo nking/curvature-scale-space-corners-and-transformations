@@ -398,8 +398,11 @@ public class FeatureMatcher {
             return null;
         }
         
-        // TODO: could decide not to find best rotation here and just discard
-        // false matches due to wrong orientation at end of comparisons
+        /*
+        NOTE: best distinguisher for improved rotation angle is usually 
+        the gradient images because these are on edges.
+        */
+        
         int[] rotations = new int[10];
         int i = 0;
         for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
