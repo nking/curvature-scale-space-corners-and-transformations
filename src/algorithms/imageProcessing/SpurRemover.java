@@ -69,6 +69,8 @@ MiscDebug.writeImageCopy(img3, "spur_removal_" + nIter + "_"
             
             nChanged += pattern10(curve, imageWidth, imageHeight);
             
+            nChanged += pattern11(curve, imageWidth, imageHeight);
+            
             if ((nIter & 1) == 1) {
                 // not technically a spur:
                 nChanged += 
@@ -172,6 +174,13 @@ MiscDebug.writeImageCopy(img3, "spur_removal_" + nIter + "_"
             
         hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, 
             imageWidth, imageHeight, getPattern10());
+        
+        if (hasPattern) {
+            return true;
+        }
+            
+        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, 
+            imageWidth, imageHeight, getPattern11());
         
         return hasPattern;
     }
@@ -642,6 +651,46 @@ MiscDebug.writeImageCopy(img3, "spur_removal_" + nIter + "_"
         int nChanged = 0;
                     
         PatternReplacement pr = getPattern10();
+        
+        nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, 
+            pr);
+        
+        return nChanged;
+    }
+    
+    private PatternReplacement getPattern11() {
+         
+        /*
+             0  0  #        2
+             #  #  0  0     1
+             0  0 >#  0     0
+                0  0  0    -1
+            -2 -1  0  1  2  3
+         */
+        PatternReplacement pr = new PatternReplacement();
+        pr.ones = new HashSet<PairInt>();
+        pr.zeroes = new HashSet<PairInt>();
+        pr.changeToZeroes = new HashSet<PairInt>();
+
+        pr.zeroes.add(new PairInt(-2, 0)); pr.zeroes.add(new PairInt(-2, 2));
+        pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, 2));
+        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, 1));
+        pr.zeroes.add(new PairInt(1, -1)); pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, 1));
+        
+        pr.ones.add(new PairInt(-2, 1));
+        pr.ones.add(new PairInt(-1, 1)); 
+        pr.ones.add(new PairInt(0, 2)); 
+        
+        pr.changeToZeroes.add(new PairInt(0, 0));
+        
+        return pr;
+    }
+    
+    private int pattern11(Set<PairInt> curve, int imageWidth, int imageHeight) {
+       
+        int nChanged = 0;
+                    
+        PatternReplacement pr = getPattern11();
         
         nChanged = replacePatternSwapDirections(curve, imageWidth, imageHeight, 
             pr);
