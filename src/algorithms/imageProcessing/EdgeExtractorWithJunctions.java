@@ -2213,7 +2213,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         }
     }
 
-    private void reorderEndpointsIfNeeded(PairIntArray out) {
+    void reorderEndpointsIfNeeded(PairIntArray out) {
 
         if (out == null || out.getN() < 3) {
             return;
@@ -2296,10 +2296,12 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
                 // it's not a closed curve
                 return;
             }
+            
+            // if x[0],y[0] is adj to x[closestPivotIdx+1],y[closestPivotIdx+1]
 
             int xNext = out.getX(closestPivotIdx + 1);
             int yNext = out.getY(closestPivotIdx + 1);
-            if ((Math.abs(xNext - xn) > 1) || (Math.abs(yNext - yn) > 1)) {
+            if ((Math.abs(xNext - x1) > 1) || (Math.abs(yNext - y1) > 1)) {
                 return;
             }
 
