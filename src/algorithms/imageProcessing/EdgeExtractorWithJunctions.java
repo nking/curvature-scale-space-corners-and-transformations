@@ -218,7 +218,7 @@ MiscDebug.getCurrentTimeFormatted());
 
         findJunctions(output);
 
-        log.info("nIter=" + nIter);
+        log.fine("nIter=" + nIter);
 
         if (!this.singleClosedEdge) {
             return output;
@@ -259,7 +259,7 @@ MiscDebug.writeEdges(output, img.copyImage(), "splice_pt2_"
             ++nIter;
         }
 
-        log.info("nIter=" + nIter);
+        log.fine("nIter=" + nIter);
 
         return output;
     }

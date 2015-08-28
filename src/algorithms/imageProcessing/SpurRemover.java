@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;
@@ -11,6 +12,12 @@ import java.util.Set;
  * @author nichole
  */
 class SpurRemover {
+    
+    private boolean debug = false;
+    
+    public void setToDebug() {
+        debug = true;
+    }
     
     /**
      * an incomplete set of patterns are applied to the curve to remove spurs
@@ -27,6 +34,15 @@ class SpurRemover {
 
         while ((nIter == 0) || ((nChanged > 0) && (nIter < nMaxIter))) {
         
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (PairInt p : curve) {
+    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "spur_removal_" + nIter + "_" 
++ MiscDebug.getCurrentTimeFormatted() + ".png");
+}
+
             nChanged = 0;
             
             nChanged += pattern0(curve, imageWidth, imageHeight);
@@ -55,13 +71,23 @@ class SpurRemover {
             
             if ((nIter & 1) == 1) {
                 // not technically a spur:
-                PostLineThinnerCorrections.correctForHoleArtifacts00_10(curve, 
-                    imageWidth, imageHeight);
+                nChanged += 
+                    PostLineThinnerCorrections.correctForHoleArtifacts00_10(
+                    curve, imageWidth, imageHeight);
             }
             
             ++nIter;
         }
         
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (PairInt p : curve) {
+    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "spur_removal_" + nIter + "_" 
++ MiscDebug.getCurrentTimeFormatted() + ".png");
+}
+
     }
 
     private int pattern0(Set<PairInt> curve, int imageWidth, int imageHeight) {

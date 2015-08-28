@@ -36,8 +36,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
     private CSSContourMatcherWrapper matcherResults = null;
     
     public CurvatureScaleSpaceInflectionSingleEdgeMapper(
-        PairIntArray edge1, int edge1Index, 
-        PairIntArray edge2, int edge2Index,
+        PairIntArray edge1, int edge1Index, PairIntArray edge2, int edge2Index,
         int offsetImageX1, int offsetImageY1, int offsetImageX2, int offsetImageY2) {
         
         if (edge1 == null) {

@@ -3259,7 +3259,7 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
-    public static void correctForHoleArtifacts00_10(Set<PairInt> points, int imageWidth, 
+    public static int correctForHoleArtifacts00_10(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         
         int w = imageWidth;
@@ -3397,6 +3397,8 @@ public class PostLineThinnerCorrections {
         Logger.getLogger(PostLineThinnerCorrections.class.getName())
             .fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
+        
+        return nCorrections;
     }
 
     private void correctForCorrectionCreatedSquares(Set<PairInt> points, 
