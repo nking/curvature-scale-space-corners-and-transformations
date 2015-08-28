@@ -232,7 +232,13 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurre
         */
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
-            trimEndpointSpursIfAny(out, img.getWidth(), img.getHeight());
+            
+            boolean altered = trimEndpointSpursIfAny(out, img.getWidth(), 
+                img.getHeight());
+            
+            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+                extractor.reorderEndpointsIfNeeded(out);
+            }
         }
         
         // add the shifts back
@@ -261,9 +267,11 @@ MiscDebug.writeImageCopy(img3, "output_" + MiscDebug.getCurrentTimeFormatted() +
         return out;
     }
 
-    private void trimEndpointSpursIfAny(final PairIntArray curve, 
+    private boolean trimEndpointSpursIfAny(final PairIntArray curve, 
         final int imageWidth, final int imageHeight) {
 
+        boolean edited = false;
+        
         SpurRemover spurRemover = new SpurRemover();
         
         // try beginning of curve        
@@ -290,7 +298,11 @@ MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTi
                 imageHeight);
                 
             if (isASpur) {
+                
                 curve.removeRange(idx, idx);
+                
+                edited = true;
+                
             } else {
                 break;
             }
@@ -320,11 +332,17 @@ MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTi
                 imageHeight);
                 
             if (isASpur) {
+                
                 curve.removeRange(idx, idx);
+                
+                edited = true;
+                
             } else {
                 break;
             }
         }
+        
+        return edited;
     }
     
 }
