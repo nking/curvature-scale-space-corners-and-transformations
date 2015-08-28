@@ -4,7 +4,6 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -13,9 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -33,7 +30,7 @@ public class BlobScaleFinder {
      * From the given images, determine the scale between them and roughly
      * estimate the rotation and translation too.  Note that image processing
      * such as sky masks should be applied before using this method.
-     * Also not that it is expected that it will be followed by a more rigorous
+     * Also note that it is expected that it will be followed by a more rigorous
      * solver for Euclidean transforms such as the FeatureMatcher and then
      * the epipolar projection solver.
      *
@@ -72,14 +69,14 @@ public class BlobScaleFinder {
         int binFactor = (int) Math.ceil(
             Math.max((float)img1Grey.getWidth()/minDimension,
             (float)img2Grey.getHeight()/minDimension));
-        smallestGroupLimit /= (binFactor*binFactor);
-        largestGroupLimit /= (binFactor*binFactor);
+        int smallestGroupLimitBinned = smallestGroupLimit/(binFactor*binFactor);
+        int largestGroupLimitBinned = largestGroupLimit/(binFactor*binFactor);
 
         log.info("binFactor=" + binFactor);
 
         // prevent from being smaller than needed for a convex hull
-        if (smallestGroupLimit < 4) {
-            smallestGroupLimit = 4;
+        if (smallestGroupLimitBinned < 4) {
+            smallestGroupLimitBinned = 4;
         }
         
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -89,8 +86,10 @@ public class BlobScaleFinder {
         GreyscaleImage img2GreyBinned = imageProcessor.binImage(img2Grey,
             binFactor);
 
+        log.info("binned:");
+        
         TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
-            img2GreyBinned, k, smallestGroupLimit, largestGroupLimit);
+            img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned);
         
         return params;
     }
@@ -511,6 +510,10 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                     bestNMatched = mapper.getMatcher().getSolutionMatchedContours1().size();
                 }
             }
+            
+            if (bestTransformation == null) {
+                continue;
+            }
                         
             double[] xyCen2 = curveHelper.calculateXYCentroids(blobs2.get(bestIdx2));
             
@@ -529,14 +532,12 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
             }
             map2.put(bestIdx2, bestTransformation);
 
-            if (bestTransformation != null) {
-                if (bestStatSqSum < bestOverallStatSqSum) {
-                    bestOverallStatSqSum = bestStatSqSum;
-                    bestOverallIdx1 = index1.intValue();
-                    bestOverallIdx2 = bestIdx2;
-                    bestOverallTransformation = bestTransformation;
-                    bestOverallNMatched = bestNMatched;
-                }
+            if (bestStatSqSum < bestOverallStatSqSum) {
+                bestOverallStatSqSum = bestStatSqSum;
+                bestOverallIdx1 = index1.intValue();
+                bestOverallIdx2 = bestIdx2;
+                bestOverallTransformation = bestTransformation;
+                bestOverallNMatched = bestNMatched;
             }
         }
 
