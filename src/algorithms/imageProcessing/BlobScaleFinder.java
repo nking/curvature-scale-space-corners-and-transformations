@@ -175,6 +175,8 @@ public class BlobScaleFinder {
         List<Set<PairInt>> outputBlobs, int smallestGroupLimit,
         int largestGroupLimit) throws IOException, NoSuchAlgorithmException {
 
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         GreyscaleImage imgS = img.copyImage();
 
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -194,10 +196,20 @@ public class BlobScaleFinder {
             int nGroups = finder.getNumberOfGroups();
 
             for (int i = 0; i < nGroups; ++i) {
+                
                 PairIntArray xy = finder.getXY(i);
+                
                 if (xy.getN() < largestGroupLimit) {
+                    
                     Set<PairInt> points = Misc.convert(xy);
-                    outputBlobs.add(points);
+                    
+                    // skip blobs that are on the image boundaries because they
+                    // are incomplete
+                    if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3,
+                        points, img.getWidth(), img.getHeight())) {
+                    
+                        outputBlobs.add(points);
+                    }
                 }
             }
         }
@@ -275,15 +287,7 @@ public class BlobScaleFinder {
                 
                 outputBounds.add(closedEdge);
                 
-            } else {//i=12
-                if (i==12) {
-                    try {
-                        Misc.persistToFile("blob2_122_253.dat", blob);
-                    } catch (IOException ex) {
-                        Logger.getLogger(BlobScaleFinder.class.getName())
-                            .log(Level.SEVERE, null, ex);
-                    }
-                }
+            } else {
                 remove.add(Integer.valueOf(i));
             }
         }
@@ -356,6 +360,8 @@ public class BlobScaleFinder {
         int xRelativeOffset1, int yRelativeOffset1,
         int xRelativeOffset2, int yRelativeOffset2) {
         
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
         IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
         
@@ -363,12 +369,15 @@ public class BlobScaleFinder {
 
         int dither = 1;
         
+        double bestOverallStatSqSum = Double.MAX_VALUE;
+        int bestOverallIdx1 = -1;
+        int bestOverallIdx2 = -1;
+        TransformationParameters bestOverallTransformation = null;
+        int bestOverallNMatched = -1;
+            
         Map<Integer, Map<Integer, TransformationParameters>> paramsMap =
             new HashMap<Integer, Map<Integer, TransformationParameters>>();
         
-        Map<Integer, Map<Integer, Double>> costMap =
-            new HashMap<Integer, Map<Integer, Double>>();
-
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
         
             Integer index1 = Integer.valueOf(idx1);
@@ -376,6 +385,13 @@ public class BlobScaleFinder {
             PairIntArray curve1 = bounds1.get(idx1);
             
             Set<PairInt> blob1 = blobs1.get(idx1);
+            
+            double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
+            
+            double bestStatSqSum = Double.MAX_VALUE;
+            int bestIdx2 = -1;
+            TransformationParameters bestTransformation = null;
+            int bestNMatched = -1;
             
             for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
                 
@@ -385,9 +401,8 @@ public class BlobScaleFinder {
             
                 Set<PairInt> blob2 = blobs2.get(idx2);
             
-                double bestCost = Double.MAX_VALUE;
-                int bestIdx2 = -1;
-                                           
+                double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
+                                                           
 log.info("index1=" + index1.toString() + " index2=" + index2.toString());
 
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper = 
@@ -398,120 +413,134 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                 
                 TransformationParameters params = mapper.matchContours();
                 
-                if ((params != null) && 
-                    (mapper.getMatcher().getSolutionMatchedContours1().size() > 2)) {
+                if ((params == null) || 
+                    (mapper.getMatcher().getSolutionMatchedContours1().size() < 3)) {
                     
-                    int nMaxMatchable = mapper.getMatcher().getNMaxMatchable();
-                    
-                    double cost = mapper.getMatcher().getSolvedCost();
-                    
-                    if ((nMaxMatchable 
-                        - mapper.getMatcher().getSolutionMatchedContours1().size()) == 0) {
-                        
-                        String str = String.format(
-                        "[%d] [%d] cost=%.1f scale=%.2f  nMatched=%d", 
-                        index1.intValue(), index2.intValue(), (float)cost, 
-                        (float)mapper.getMatcher().getSolvedScale(),
-                        mapper.getMatcher().getSolutionMatchedContours1().size());
-                        
-                        log.info(str);
-                    }
-                    
-                    boolean doesMatch = true;
-                    
-                    List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
-                    
-                    for (int j = 0; j < mapper.getMatcher().getSolutionMatchedContours1().size(); ++j) {
-                        
-                        CurvatureScaleSpaceContour c1 = 
-                            mapper.getMatcher().getSolutionMatchedContours1().get(j);
-                        
-                        CurvatureScaleSpaceContour c2 = 
-                            mapper.getMatcher().getSolutionMatchedContours2().get(j);
-                        
-                        // the sizes of the peak details will be the same
-                        CurvatureScaleSpaceImagePoint[] details1 = c1.getPeakDetails();
-                        CurvatureScaleSpaceImagePoint[] details2 = c2.getPeakDetails();
-                        
-                        for (int jj = 0; jj < details1.length; ++jj) {
-                            
-                            int x1 = details1[jj].getXCoord();
-                            int y1 = details1[jj].getYCoord();
-                            int detailIdx1 = details1[jj].getCoordIdx();
-                            
-                            BlobPerimeterRegion region1 = extractBlobPerimeterRegion(
-                                index1.intValue(), x1, y1, detailIdx1, curve1, blob1
-                            );
-                            
-                            int x2 = details2[jj].getXCoord();
-                            int y2 = details2[jj].getYCoord();
-                            int detailIdx2 = details2[jj].getCoordIdx();
-                            
-                            BlobPerimeterRegion region2 = extractBlobPerimeterRegion(
-                                index2.intValue(), x2, y2, detailIdx2, curve2, blob2
-                            );
-                            
-                            FeatureComparisonStat compStat = 
-                                featureMatcher.ditherAndRotateForBestLocation(
-                                features1, features2, region1, region2, dither);
-                            
-                            if (compStat != null) {
-                                if (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr()) {
-                                    doesMatch = false;
-                                    break;
-                                } else {
-                                    stats.add(compStat);
-                                }
-                            }
-                        } // end details
-                        if (!doesMatch) {
-                            break;
-                        }
-                    }// end matching contours for index1, index2
+                    continue;
+                }
+               
+                double statSqSum = 0;
                 
-if (
-((index1.intValue() == 2) && (index2.intValue() == 6)) ||
-((index1.intValue() == 7) && (index2.intValue() == 10))) {
-    int z = 1;
-    /*
-    scl=0.86, cost= 13.0  nMatched=9  nMaxMatchable=9
-    scl=1.07, cost=134.0          =3               =3
-    */
-}
+                int nMaxMatchable = mapper.getMatcher().getNMaxMatchable();
+
+                double cost = mapper.getMatcher().getSolvedCost();
+
+                boolean doesMatch = true;
+
+                StringBuilder sb = new StringBuilder();
+                sb.append(String.format(
+                    "[%d](%d,%d) [%d](%d,%d) cost=%.1f scale=%.2f  nMatched=%d ", 
+                    index1.intValue(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+                    index2.intValue(), (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
+                    (float)cost, (float)mapper.getMatcher().getSolvedScale(),
+                    mapper.getMatcher().getSolutionMatchedContours1().size()));
+
+                for (int j = 0; j < mapper.getMatcher().getSolutionMatchedContours1().size(); ++j) {
+
+                    CurvatureScaleSpaceContour c1 = 
+                        mapper.getMatcher().getSolutionMatchedContours1().get(j);
+
+                    CurvatureScaleSpaceContour c2 = 
+                        mapper.getMatcher().getSolutionMatchedContours2().get(j);
+
+                    // the sizes of the peak details will be the same
+                    CurvatureScaleSpaceImagePoint[] details1 = c1.getPeakDetails();
+                    CurvatureScaleSpaceImagePoint[] details2 = c2.getPeakDetails();
+
+                    for (int jj = 0; jj < details1.length; ++jj) {
+
+                        int x1 = details1[jj].getXCoord();
+                        int y1 = details1[jj].getYCoord();
+                        int detailIdx1 = details1[jj].getCoordIdx();
+
+                        BlobPerimeterRegion region1 = extractBlobPerimeterRegion(
+                            index1.intValue(), x1, y1, detailIdx1, curve1, blob1
+                        );
+
+                        int x2 = details2[jj].getXCoord();
+                        int y2 = details2[jj].getYCoord();
+                        int detailIdx2 = details2[jj].getCoordIdx();
+
+                        BlobPerimeterRegion region2 = extractBlobPerimeterRegion(
+                            index2.intValue(), x2, y2, detailIdx2, curve2, blob2
+                        );
+
+                        FeatureComparisonStat compStat = 
+                            featureMatcher.ditherAndRotateForBestLocation(
+                            features1, features2, region1, region2, dither);
+
+                        if (compStat != null) {
+                            
+                            if (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr()) {
+
+                                doesMatch = false;
+
+                                break;
+
+                            } else {
+                                
+                                float sumIntSqDiff = compStat.getSumIntensitySqDiff();
+                                
+                                statSqSum += (sumIntSqDiff*sumIntSqDiff);
+                                
+                                sb.append(String.format(" %.1f(%.1f), ",
+                                    sumIntSqDiff,
+                                    compStat.getImg2PointIntensityErr()));
+                            }
+                        }
+                    } // end details
+                    
                     if (!doesMatch) {
-                        continue;
-                    }
-                    
-                    log.info("  does match");
-                    
-                    //TODO: combine stats and cost here to find best for index1
-                    
-                    if (cost < bestCost) {
-                        bestCost = cost;
-                        bestIdx2 = index2.intValue();
-                    }
-                    
-                    Map<Integer, TransformationParameters> map2 = paramsMap.get(index1);                    
-                    if (map2 == null) {
-                        map2 = new HashMap<Integer, TransformationParameters>();
-                        paramsMap.put(index1, map2);
-                    }
-                    map2.put(index2, params);
-                    
-                    Map<Integer, Double> mapCosts2 = costMap.get(index1);
-                    if (mapCosts2 == null) {
-                        mapCosts2 = new HashMap<Integer, Double>();
-                        costMap.put(index1, mapCosts2);
-                    }
-                    costMap.put(index2, mapCosts2);
-                    
+                        break;
+                    }                    
+
+                }// end matching contours for index1, index2
+
+                if (!doesMatch) {
+                    continue;
+                }
+
+                log.info(sb.toString());
+                
+                statSqSum = (statSqSum == 0) ? Double.MAX_VALUE : Math.sqrt(statSqSum);
+                
+                if (statSqSum < bestStatSqSum) {
+                    bestStatSqSum = statSqSum;
+                    bestIdx2 = index2.intValue();
+                    bestTransformation = params;
+                    bestNMatched = mapper.getMatcher().getSolutionMatchedContours1().size();
+                }
+            }
+                        
+            double[] xyCen2 = curveHelper.calculateXYCentroids(blobs2.get(bestIdx2));
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format(
+                "==>[%d](%d,%d) [%d](%d,%d) scale=%.2f  nMatched=%d  intSqDiff=%.1f", 
+                index1.intValue(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+                bestIdx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
+                bestTransformation.getScale(), bestNMatched, (float)bestStatSqSum));
+            log.info(sb.toString());
+            
+            Map<Integer, TransformationParameters> map2 = paramsMap.get(index1);                    
+            if (map2 == null) {
+                map2 = new HashMap<Integer, TransformationParameters>();
+                paramsMap.put(index1, map2);
+            }
+            map2.put(bestIdx2, bestTransformation);
+
+            if (bestTransformation != null) {
+                if (bestStatSqSum < bestOverallStatSqSum) {
+                    bestOverallStatSqSum = bestStatSqSum;
+                    bestOverallIdx1 = index1.intValue();
+                    bestOverallIdx2 = bestIdx2;
+                    bestOverallTransformation = bestTransformation;
+                    bestOverallNMatched = bestNMatched;
                 }
             }
         }
 
-        // TODO: analyze map
-        
-        return null;
+        return bestOverallTransformation;
     }
 
     protected TransformationParameters calculateScale(GreyscaleImage img1, 
@@ -625,13 +654,12 @@ MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeForm
             throw new IllegalArgumentException("blob cannot be null");
         }
 
-        if (x != perimeter.getX(perimeterIdx) || y != perimeter.getY(perimeterIdx)) {
-            int z = 1;
-        }
-        assert(x == perimeter.getX(perimeterIdx));
-        assert(y == perimeter.getY(perimeterIdx));
-        
+        // because of averaging for some peaks, sometimes perimeterIdx and
+        // (x, y) are off by 1 so using the perimeterIdx primarily
+      
         int xPrev, yPrev, xNext, yNext;
+        int xm = perimeter.getX(perimeterIdx);
+        int ym = perimeter.getY(perimeterIdx);
         
         if (perimeterIdx > 0) {
             
@@ -660,7 +688,7 @@ MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeForm
         }
   
         BlobPerimeterRegion region = new BlobPerimeterRegion(theEdgeIndex, 
-            xPrev, yPrev, x, y, xNext, yNext, blob);
+            xPrev, yPrev, xm, ym, xNext, yNext, blob);
 
         return region;
     }

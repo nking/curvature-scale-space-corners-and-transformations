@@ -3019,6 +3019,40 @@ for (int i = 0; i < edge.getN(); i++) {
         }
     }
     
+    /**
+     * iterate through points, counting the number of pixels on the image
+     * boundaries, and return true if the number reaches numberOfPixels.
+     * @param numberOfPixels the number of pixels for which to return true
+     * if they are on the image boundaries.
+     * @param points
+     * @param imageWidth
+     * @param imageHeight
+     * @return 
+     */
+    public boolean hasNumberOfPixelsOnImageBoundaries(int numberOfPixels,
+        Set<PairInt> points, int imageWidth, int imageHeight) {
+                 
+        int n = 0;
+        
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            if ((x == 0) || (y == 0) || (x == (imageWidth - 1)) || 
+                (y == (imageHeight - 1))) {
+                
+                n++;
+                
+                if (n == numberOfPixels) {
+                    return true;
+                }
+            }
+        }
+        
+        return (n >= numberOfPixels);
+    }
+    
     public int countNeighbors(int x, int y, Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         
