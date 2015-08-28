@@ -402,9 +402,10 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                     }
                     
                     /*
-                    TODO: compare feature descriptors of the inflection points to help
-                    remove false matches
+                    TODO: compare feature descriptors of the inflection points 
+                    to help remove false matches.
                     */
+                    
                 
 if (
 ((index1.intValue() == 2) && (index2.intValue() == 6)) ||

@@ -302,75 +302,14 @@ public class CornerRegion {
         */
 
         double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);
-        
-        double perp = calculatePerpendicularAngleAwayFromCentroid(
+                
+        double perp = curveHelper.calculatePerpendicularAngleAwayFromCentroid(
             theta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx],
             y[kMaxIdx], centroidXY);
 
         return perp;
     }
 
-    /**
-     * given theta and the point (xp, yp), determine which direction and hence
-     * polar angle (clockwise) is perpendicular away from the centroid.
-     * The reference point (xm, ym) is the point from which theta was also
-     * calculated, which is probably the point for kMaxIdx.
-     * @param theta
-     * @param xp
-     * @param yp
-     * @param xm
-     * @param ym
-     * @param centroidXY
-     * @return
-     */
-    protected double calculatePerpendicularAngleAwayFromCentroid(
-        double theta, int xp, int yp, int xm, int ym, double[] centroidXY) {
-
-        /*
-        rotate the point (xm, ym) around (xp, yp) 90 degrees and -90 degrees.
-        The rotated point which is furthest from the centroid is the
-        direction of the vector pointing away from the centroid.
-        */
-
-        /*
-        math.cos(math.pi/2) = 0
-        math.sin(math.pi/2) = 1
-        math.sin(-math.pi/2) = -1
-
-        double xr = centroidX + ((y - centroidY) * sine(angle)));
-        double yr = centroidY + ((-(x - centroidX) * sine(angle)))
-        */
-
-        int xmRot90 = xp + (ym - yp);
-        int ymRot90 = yp + (-(xm - xp));
-
-        int xmRotNegative90 = xp  - (ym - yp);
-        int ymRotNegative90 = yp + (xm - xp);
-
-        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])
-            + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);
-
-        double distSqRotNegative90 =
-            (xmRotNegative90 - centroidXY[0]) * (xmRotNegative90 - centroidXY[0])
-            + (ymRotNegative90 - centroidXY[1]) * (ymRotNegative90 - centroidXY[1]);
-
-        double perp = theta;
-
-        if (distSqRot90 > distSqRotNegative90) {
-            perp += Math.PI/2.;
-        } else {
-            perp -= Math.PI/2.;
-        }
-
-        if (perp >= 2*Math.PI) {
-            perp = perp - 2*Math.PI;
-        } else if (perp < 0) {
-            perp += 2*Math.PI;
-        }
-
-        return perp;
-    }
-    
     public CornerRegion copy() {
         
         CornerRegion cr = new CornerRegion(edgeIdx, x.length, kMaxIdx);
