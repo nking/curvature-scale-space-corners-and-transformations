@@ -378,7 +378,7 @@ public class FeatureMatcher {
      * @param dither
      * @return
      */
-    protected FeatureComparisonStat ditherAndRotateForBestLocation(
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
         BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) {
         

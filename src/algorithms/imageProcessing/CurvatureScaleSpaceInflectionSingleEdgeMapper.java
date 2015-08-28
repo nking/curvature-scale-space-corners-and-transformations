@@ -191,10 +191,10 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         }
         
         // the contours extracted from scale space images using a factor of
-        // 2^(1/8) for recursive convolution tend to not have a single
-        // peak, so the correction here for the single peak case is not
-        // usually needed.  for that rare case, the avg of the other peak
-        // is stored instead of both points
+        // 2^(1/8) for recursive convolution tend to not have a single peak,
+        // so the correction here for the single peak case is not usually
+        // needed.  for that rare case, the avg of the other peak is stored
+        // instead of both points
         
         for (int i = 0; i < matched1.size(); i++) {
             

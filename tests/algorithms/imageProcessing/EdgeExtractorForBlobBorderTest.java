@@ -104,10 +104,9 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
     
     public void testExtractAndOrderTheBorder0_1() throws Exception {
         
-        String fileName = "blobs1_236_123.dat";
+        String fileName = "blob2_122_253.dat";//"blobs1_236_123.dat";
         
-        String filePath = ResourceFinder.findDirectory("testresources") + "/" 
-            + fileName;
+        String filePath = ResourceFinder.findDirectory("testresources") + "/" + fileName;
         
         Set<PairInt> blob = Misc.deserializeSetPairInt(filePath);
         

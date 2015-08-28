@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -255,22 +256,34 @@ public class BlobScaleFinder {
         final List<PairIntArray> outputBounds, int width, int height,
         boolean discardWhenCavityIsSmallerThanBorder) {
 
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         List<Integer> remove = new ArrayList<Integer>();
 
         for (int i = 0; i < inOutBlobs.size(); ++i) {
 
             Set<PairInt> blob = inOutBlobs.get(i);
 
-            EdgeExtractorForBlobBorder extractor =
-                new EdgeExtractorForBlobBorder();
+            EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
 
             PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(
                 blob, width, height,
                 discardWhenCavityIsSmallerThanBorder);
 
-            if (closedEdge != null) {
+            if ((closedEdge != null) && 
+                (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1))) {
+                
                 outputBounds.add(closedEdge);
-            } else {
+                
+            } else {//i=12
+                if (i==12) {
+                    try {
+                        Misc.persistToFile("blob2_122_253.dat", blob);
+                    } catch (IOException ex) {
+                        Logger.getLogger(BlobScaleFinder.class.getName())
+                            .log(Level.SEVERE, null, ex);
+                    }
+                }
                 remove.add(Integer.valueOf(i));
             }
         }
@@ -342,7 +355,14 @@ public class BlobScaleFinder {
         List<PairIntArray> bounds1, List<PairIntArray> bounds2,
         int xRelativeOffset1, int yRelativeOffset1,
         int xRelativeOffset2, int yRelativeOffset2) {
+        
+        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
+        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        
+        FeatureMatcher featureMatcher = new FeatureMatcher();
 
+        int dither = 1;
+        
         Map<Integer, Map<Integer, TransformationParameters>> paramsMap =
             new HashMap<Integer, Map<Integer, TransformationParameters>>();
         
@@ -361,7 +381,7 @@ public class BlobScaleFinder {
                 
                 Integer index2 = Integer.valueOf(idx2);
             
-                PairIntArray curve2 = bounds1.get(idx2);
+                PairIntArray curve2 = bounds2.get(idx2);
             
                 Set<PairInt> blob2 = blobs2.get(idx2);
             
@@ -384,11 +404,7 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                     int nMaxMatchable = mapper.getMatcher().getNMaxMatchable();
                     
                     double cost = mapper.getMatcher().getSolvedCost();
-                    if (cost < bestCost) {
-                        bestCost = cost;
-                        bestIdx2 = index2.intValue();
-                    }
-                
+                    
                     if ((nMaxMatchable 
                         - mapper.getMatcher().getSolutionMatchedContours1().size()) == 0) {
                         
@@ -401,11 +417,57 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString());
                         log.info(str);
                     }
                     
-                    /*
-                    TODO: compare feature descriptors of the inflection points 
-                    to help remove false matches.
-                    */
+                    boolean doesMatch = true;
                     
+                    List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+                    
+                    for (int j = 0; j < mapper.getMatcher().getSolutionMatchedContours1().size(); ++j) {
+                        
+                        CurvatureScaleSpaceContour c1 = 
+                            mapper.getMatcher().getSolutionMatchedContours1().get(j);
+                        
+                        CurvatureScaleSpaceContour c2 = 
+                            mapper.getMatcher().getSolutionMatchedContours2().get(j);
+                        
+                        // the sizes of the peak details will be the same
+                        CurvatureScaleSpaceImagePoint[] details1 = c1.getPeakDetails();
+                        CurvatureScaleSpaceImagePoint[] details2 = c2.getPeakDetails();
+                        
+                        for (int jj = 0; jj < details1.length; ++jj) {
+                            
+                            int x1 = details1[jj].getXCoord();
+                            int y1 = details1[jj].getYCoord();
+                            int detailIdx1 = details1[jj].getCoordIdx();
+                            
+                            BlobPerimeterRegion region1 = extractBlobPerimeterRegion(
+                                index1.intValue(), x1, y1, detailIdx1, curve1, blob1
+                            );
+                            
+                            int x2 = details2[jj].getXCoord();
+                            int y2 = details2[jj].getYCoord();
+                            int detailIdx2 = details2[jj].getCoordIdx();
+                            
+                            BlobPerimeterRegion region2 = extractBlobPerimeterRegion(
+                                index2.intValue(), x2, y2, detailIdx2, curve2, blob2
+                            );
+                            
+                            FeatureComparisonStat compStat = 
+                                featureMatcher.ditherAndRotateForBestLocation(
+                                features1, features2, region1, region2, dither);
+                            
+                            if (compStat != null) {
+                                if (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr()) {
+                                    doesMatch = false;
+                                    break;
+                                } else {
+                                    stats.add(compStat);
+                                }
+                            }
+                        } // end details
+                        if (!doesMatch) {
+                            break;
+                        }
+                    }// end matching contours for index1, index2
                 
 if (
 ((index1.intValue() == 2) && (index2.intValue() == 6)) ||
@@ -416,6 +478,19 @@ if (
     scl=1.07, cost=134.0          =3               =3
     */
 }
+                    if (!doesMatch) {
+                        continue;
+                    }
+                    
+                    log.info("  does match");
+                    
+                    //TODO: combine stats and cost here to find best for index1
+                    
+                    if (cost < bestCost) {
+                        bestCost = cost;
+                        bestIdx2 = index2.intValue();
+                    }
+                    
                     Map<Integer, TransformationParameters> map2 = paramsMap.get(index1);                    
                     if (map2 == null) {
                         map2 = new HashMap<Integer, TransformationParameters>();
@@ -516,12 +591,78 @@ MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeForm
            statistical basis of combining the results and removing
            outliers.
         */
-        TransformationParameters params = solveForScale(img1, img2,
+        TransformationParameters params = solveForScale(
+            img1, img2,
             blobs1, blobs2, bounds1, bounds2,
             img1.getXRelativeOffset(), img1.getYRelativeOffset(),
             img2.getXRelativeOffset(), img2.getYRelativeOffset());
         
         return params;
+    }
+
+    /**
+     * extract the local points surrounding (x, y) on the 
+     * perimeter and return an object when creating descriptors.
+     * Note that the perimeter is expected to be a closed curve.
+     * @param theEdgeIndex
+     * @param x
+     * @param y
+     * @param perimeterIdx
+     * @param perimeter
+     * @param blob
+     * @return 
+     */
+    private BlobPerimeterRegion extractBlobPerimeterRegion(
+        int theEdgeIndex, int x, int y, int perimeterIdx, 
+        PairIntArray perimeter, Set<PairInt> blob) {
+        
+        if (perimeter == null || (perimeter.getN() < 3)) {
+            throw new IllegalArgumentException(
+            "perimeter cannot be null and must have at least 3 points");
+        }
+        
+        if (blob == null) {
+            throw new IllegalArgumentException("blob cannot be null");
+        }
+
+        if (x != perimeter.getX(perimeterIdx) || y != perimeter.getY(perimeterIdx)) {
+            int z = 1;
+        }
+        assert(x == perimeter.getX(perimeterIdx));
+        assert(y == perimeter.getY(perimeterIdx));
+        
+        int xPrev, yPrev, xNext, yNext;
+        
+        if (perimeterIdx > 0) {
+            
+            xPrev = perimeter.getX(perimeterIdx - 1);
+            yPrev = perimeter.getY(perimeterIdx - 1);
+                
+            if (perimeterIdx < (perimeter.getN() - 2)) {                
+                xNext = perimeter.getX(perimeterIdx + 1);
+                yNext = perimeter.getY(perimeterIdx + 1);
+            } else {
+                // it's a closed curve, but may need to assert it here.
+                xNext = perimeter.getX(perimeter.getN() - 1);
+                yNext = perimeter.getY(perimeter.getN() - 1);
+            }
+            
+        } else {
+            
+            assert(perimeterIdx == 0);
+            
+            // it's a closed curve, but may need to assert it here.
+            xPrev = perimeter.getX(perimeter.getN() - 1);
+            yPrev = perimeter.getY(perimeter.getN() - 1);
+            
+            xNext = perimeter.getX(perimeterIdx + 1);
+            yNext = perimeter.getY(perimeterIdx + 1);
+        }
+  
+        BlobPerimeterRegion region = new BlobPerimeterRegion(theEdgeIndex, 
+            xPrev, yPrev, x, y, xNext, yNext, blob);
+
+        return region;
     }
     
 }
