@@ -382,6 +382,7 @@ public class BlobScaleFinder {
         int bestOverallIdx2 = -1;
         TransformationParameters bestOverallTransformation = null;
         int bestOverallNMatched = -1;
+        List<FeatureComparisonStat> bestOverallCompStats = null;
 
         Map<Integer, Map<Integer, TransformationParameters>> paramsMap =
             new HashMap<Integer, Map<Integer, TransformationParameters>>();
@@ -400,6 +401,7 @@ public class BlobScaleFinder {
             int bestIdx2 = -1;
             TransformationParameters bestTransformation = null;
             int bestNMatched = -1;
+            List<FeatureComparisonStat> bestCompStats = null;
 
             for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
 
@@ -433,6 +435,8 @@ public class BlobScaleFinder {
                 int nMaxStats = 0;
                 int nStats = 0;
 
+                List<FeatureComparisonStat> compStats = new ArrayList<FeatureComparisonStat>();
+
                 double cost = mapper.getMatcher().getSolvedCost();
 
                 boolean doesMatch = true;
@@ -444,6 +448,25 @@ public class BlobScaleFinder {
                     index2.intValue(), (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
                     (float)cost, (float)mapper.getMatcher().getSolvedScale(),
                     mapper.getMatcher().getSolutionMatchedContours1().size()));
+
+if ((index1.intValue() == 0) && (index2.intValue() == 0)) {
+List<CurvatureScaleSpaceContour> list1 = new ArrayList<CurvatureScaleSpaceContour>();
+for (int j = 0; j < mapper.getMatcher().getSolutionMatchedContours1().size(); ++j) {
+    list1.add(mapper.getMatcher().getSolutionMatchedContours1().get(j));
+}
+ImageExt img1C = img1.createColorGreyscaleExt();
+MiscDebug.debugPlot(list1, img1C,
+img1.getXRelativeOffset(), img1.getYRelativeOffset(), "_1_ind0_ind0_");
+
+List<CurvatureScaleSpaceContour> list2 = new ArrayList<CurvatureScaleSpaceContour>();
+for (int j = 0; j < mapper.getMatcher().getSolutionMatchedContours2().size(); ++j) {
+    list2.add(mapper.getMatcher().getSolutionMatchedContours2().get(j));
+}
+ImageExt img2C = img2.createColorGreyscaleExt();
+MiscDebug.debugPlot(list2, img2C,
+img2.getXRelativeOffset(), img2.getYRelativeOffset(), "_2_ind0_ind0_");
+int z = 1;
+}
 
                 for (int j = 0; j < mapper.getMatcher().getSolutionMatchedContours1().size(); ++j) {
 
@@ -481,6 +504,13 @@ public class BlobScaleFinder {
                             featureMatcher.ditherAndRotateForBestLocation(
                             features1, features2, region1, region2, dither);
 
+sb.append(
+    String.format(" (%d,%d) theta1=%d   (%d,%d) theta2=%d",
+    region1.getX(), region1.getY(),
+    Math.round(region1.getRelativeOrientationInDegrees()),
+    region2.getX(), region2.getY(),
+    Math.round(region2.getRelativeOrientationInDegrees())));
+
                         if (compStat != null) {
 
                             if (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr()) {
@@ -495,9 +525,11 @@ public class BlobScaleFinder {
 
                                 statSqSum += (sumIntSqDiff*sumIntSqDiff);
 
-                                sb.append(String.format(" %.1f(%.1f), ",
+                                sb.append(String.format("  %.1f(%.1f), ",
                                     sumIntSqDiff,
                                     compStat.getImg2PointIntensityErr()));
+
+                                compStats.add(compStat);
 
                                 nStats++;
                             }
@@ -514,9 +546,8 @@ public class BlobScaleFinder {
                     continue;
                 }
 
-                sb.append(String.format(" nStats=(%d out of %d)", nStats, nMaxStats));
-
                 log.info(sb.toString());
+                sb = new StringBuilder();
 
                 statSqSum = (nStats == 0) ? Double.MAX_VALUE : Math.sqrt(statSqSum);
 
@@ -525,6 +556,14 @@ public class BlobScaleFinder {
                     bestIdx2 = index2.intValue();
                     bestTransformation = params;
                     bestNMatched = mapper.getMatcher().getSolutionMatchedContours1().size();
+                    bestCompStats = compStats;
+
+                    sb.append(String.format(
+                        "   intSqDiff=%.1f nStats=(%d out of %d) ",
+                        (float)bestStatSqSum, nStats, nMaxStats));
+                    log.info(sb.toString());
+
+                    int z = 1;
                 }
             }
 
@@ -555,6 +594,7 @@ public class BlobScaleFinder {
                 bestOverallIdx2 = bestIdx2;
                 bestOverallTransformation = bestTransformation;
                 bestOverallNMatched = bestNMatched;
+                bestOverallCompStats = bestCompStats;
             }
         }
 

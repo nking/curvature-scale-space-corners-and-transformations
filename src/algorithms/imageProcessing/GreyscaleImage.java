@@ -278,6 +278,17 @@ public class GreyscaleImage {
         return img2;
     }
     
+    public ImageExt createColorGreyscaleExt() {
+        
+        ImageExt img2 = new ImageExt(width, height);
+        
+        System.arraycopy(a, 0, img2.r, 0, nPixels);
+        System.arraycopy(a, 0, img2.g, 0, nPixels);
+        System.arraycopy(a, 0, img2.b, 0, nPixels);
+        
+        return img2;
+    }
+    
     public void resetTo(final GreyscaleImage copyThis) {
         
         if (copyThis.nPixels == nPixels) {
