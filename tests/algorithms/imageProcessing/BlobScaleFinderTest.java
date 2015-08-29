@@ -69,6 +69,8 @@ public class BlobScaleFinderTest extends TestCase {
             }
 
             BlobScaleFinder scaleFinder = new BlobScaleFinder();
+            
+            scaleFinder.setToDebug();
 
             TransformationParameters params = scaleFinder.calculateScale(
                 img1Orig, img2Orig);

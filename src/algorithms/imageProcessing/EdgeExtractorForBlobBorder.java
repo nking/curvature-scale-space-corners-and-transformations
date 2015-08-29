@@ -237,7 +237,15 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurre
                 img.getHeight());
             
             if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+                
                 extractor.reorderEndpointsIfNeeded(out);
+                
+                if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+                    
+                    trimForMultipleClosedCurves(extractor, out, img.getWidth(), 
+                        img.getHeight());
+                    
+                }
             }
         }
         
@@ -343,6 +351,142 @@ MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTi
         }
         
         return edited;
+    }
+
+    private boolean trimForMultipleClosedCurves(final EdgeExtractorWithJunctions 
+        extractor, final PairIntArray curve, int imageWidth, int imageHeight) {
+
+        int idxA = extractor.findAdjacentToTopAtBottom(curve);
+        
+        int idxB = extractor.findAdjacentToBottomAtTop(curve);
+        
+        if (idxA == -1 || idxB == -1) {
+            return false;
+        }
+        
+        /*
+        TODO:
+        revisit this...
+        
+        one case:
+           idxA and idxB are both closer to same endpoint and are not the same
+           number and the difference is small.
+           this is potentially a knot in the curve, separated by a single
+           width pixel curve (that therefore cannot be approaching the
+           knot and leaving the knot).  If there's a single pixel width
+           bottle neck in the region between them, can trim the whole
+           section off.
+        for idxA = 7 and idxB = 11,
+        looking for when the path between them only has one choice, that is
+        one neighbor other than the previous.  for that case, should be able
+        to trim off the end section.
+        
+        0  41, 27
+        1  41, 26
+        2  41, 25
+        3  40, 25
+        
+        6  39, 27
+        7  40, 28 =======
+        8  39, 28
+           38, 28  <- *
+        10 37, 29  <- *
+        11 36, 29 =======
+        12 36, 30
+        ...
+        n-1 35, 30
+        */
+        if (idxA == idxB) {
+            return false;
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        Set<PairInt> points = Misc.convert(curve);
+        
+        double limit = Math.sqrt(2);
+        
+        int mid = curve.getN() >> 1;
+        
+        boolean trimBeginning = ((idxA < mid) && (idxB < mid));
+        
+        boolean trimEnd = ((idxA > mid) && (idxB > mid));
+        
+        if (trimBeginning || trimEnd) {
+            
+            if (idxB < idxA) {
+                int swap = idxB;
+                idxB = idxA;
+                idxA = swap;
+            }
+            
+            // looking for the point between them where there is no
+            // other point within a circular radius of 1            
+            for (int i = idxA; i < idxB; ++i) {
+                
+                int x1 = curve.getX(i);
+                int y1 = curve.getY(i);
+                
+                Set<PairInt> neighbors1 = curveHelper.findNeighbors(x1, y1, 
+                    points, imageWidth, imageHeight);
+                
+                if (neighbors1.size() == 2) {
+                    curve.removeRange(0, (idxB - 1));
+                    return true;
+                }
+                
+                PairInt p1 = new PairInt(x1, y1);
+                                
+                for (PairInt p2 : neighbors1) {
+                    
+                    int x2 = p2.getX();
+                    int y2 = p2.getY();
+                    
+                    float xMidPt = (x1 + x2)/2.f;
+                    float yMidPt = (y1 + y2)/2.f;
+                    
+                    int nWithinR1 = 0;
+                    
+                    Set<PairInt> neighbors2 = curveHelper.findNeighbors(x2, y2, 
+                        points, imageWidth, imageHeight);
+                    Set<PairInt> neighborsTot = new HashSet<PairInt>(neighbors1);
+                    neighborsTot.addAll(neighbors2);
+                    
+                    for (PairInt pt : neighborsTot) {
+                        
+                        if (pt.equals(p1) || pt.equals(p2)) {
+                            continue;
+                        }
+                        
+                        float diffX = Math.abs(xMidPt - pt.getX());
+                        float diffY = Math.abs(yMidPt - pt.getY());
+                        double dist = Math.sqrt(diffX*diffX + diffY*diffY);
+
+                        if (dist <= limit) {
+                            nWithinR1++;
+                            if (nWithinR1 > 1) {
+                                break;
+                            }
+                        }
+                    }
+                       
+                    if (nWithinR1 == 0) {
+                        
+                        // only p1 and p2 within radius of 1 of midpt
+                        if (trimBeginning) {
+                            curve.removeRange(0, (idxB - 1));
+                        } else {
+                            curve.removeRange((idxB + 1), curve.getN() - 1);
+                        }
+                        
+                        trimEndpointSpursIfAny(curve, imageWidth, imageHeight);
+
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
     }
     
 }

@@ -2993,6 +2993,31 @@ for (int i = 0; i < edge.getN(); i++) {
         }
     }
     
+    public Set<PairInt> findNeighbors(int x, int y, Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+        
+        Set<PairInt> neighbors = new HashSet<PairInt>();
+                
+        for (int i = 0; i < eightNeighborsX.length; i++) {
+            
+            int x2 = x + eightNeighborsX[i];
+            int y2 = y + eightNeighborsY[i];
+            
+            if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
+                (y2 > (imageHeight - 1))) {
+                continue;
+            }
+            
+            PairInt p2 = new PairInt(x2, y2);
+            
+            if (points.contains(p2)) {
+                neighbors.add(p2);
+            }
+        }
+        
+        return neighbors;
+    }
+    
     public void findNeighbors(int x, int y, Set<PairInt> outputNeighbors,
         Set<PairInt> points, Set<PairInt> excludePoints, int imageWidth, int imageHeight) {
         

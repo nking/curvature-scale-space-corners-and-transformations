@@ -24,8 +24,12 @@ public class BlobScaleFinder {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    protected boolean debug = true;
+    protected boolean debug = false;
 
+    public void setToDebug() {
+        debug = true;
+    }
+    
     /**
      * From the given images, determine the scale between them and roughly
      * estimate the rotation and translation too.  Note that image processing
@@ -276,6 +280,10 @@ public class BlobScaleFinder {
             Set<PairInt> blob = inOutBlobs.get(i);
 
             EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
+            
+            if (debug) {
+                extractor.setToDebug();
+            }
 
             PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(
                 blob, width, height,
@@ -284,7 +292,9 @@ public class BlobScaleFinder {
             if (closedEdge != null) {
                 
                 if (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1)) {
+                    
                     outputBounds.add(closedEdge);
+                    
                 } else {
                     
 if (debug) {

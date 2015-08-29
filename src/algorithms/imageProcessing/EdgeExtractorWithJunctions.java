@@ -1856,6 +1856,7 @@ for (int i = 0; i < output.size(); ++i) {
 }
 MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 }
+
         if (output.size() > 1) {
             Collections.sort(output, new PairIntArrayDescendingComparator());
         }
@@ -1863,12 +1864,15 @@ MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTime
         PairIntArray out = output.get(0);
 
         reorderEndpointsIfNeeded(out);
-
-        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+        
+        boolean isAdjacent = curveHelper.isAdjacent(out, 0, out.getN() - 1);
+        
+        if (isAdjacent) {
             PairIntArrayWithColor p = new PairIntArrayWithColor(out);
             p.setColor(1);
             out = p;
         }
+
 if (debug) {
 Image img2 = ImageIOHelper.convertImage(img);
 for (int j = 0; j < out.getN(); ++j) {
@@ -1882,6 +1886,7 @@ for (int j = 0; j < out.getN(); ++j) {
 }
 MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 }
+
         return out;
     }
 
@@ -3063,7 +3068,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
      * @param edge
      * @return
      */
-    private int findAdjacentToTopAtBottom(PairIntArray edge) {
+    int findAdjacentToTopAtBottom(PairIntArray edge) {
 
         int x1 = edge.getX(0);
         int y1 = edge.getY(0);
@@ -3084,7 +3089,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         return -1;
     }
 
-    private int findAdjacentToBottomAtTop(PairIntArray edge) {
+    int findAdjacentToBottomAtTop(PairIntArray edge) {
 
         int xn = edge.getX(edge.getN() - 1);
         int yn = edge.getY(edge.getN() - 1);
