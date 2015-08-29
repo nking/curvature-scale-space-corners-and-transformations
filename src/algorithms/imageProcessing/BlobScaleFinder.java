@@ -29,7 +29,7 @@ public class BlobScaleFinder {
     public void setToDebug() {
         debug = true;
     }
-    
+
     /**
      * From the given images, determine the scale between them and roughly
      * estimate the rotation and translation too.  Note that image processing
@@ -169,8 +169,8 @@ public class BlobScaleFinder {
 
         boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        extractBoundsOfBlobs(outputBlobs, outputBounds, img.getWidth(), img.getHeight(),
-            discardWhenCavityIsSmallerThanBorder);
+        extractBoundsOfBlobs(outputBlobs, outputBounds, img.getWidth(), 
+            img.getHeight(), discardWhenCavityIsSmallerThanBorder);
 
     }
 
@@ -280,7 +280,7 @@ public class BlobScaleFinder {
             Set<PairInt> blob = inOutBlobs.get(i);
 
             EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
-            
+
             if (debug) {
                 extractor.setToDebug();
             }
@@ -289,39 +289,13 @@ public class BlobScaleFinder {
                 blob, width, height,
                 discardWhenCavityIsSmallerThanBorder);
 
-            if (closedEdge != null) {
-                
-                if (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1)) {
-                    
-                    outputBounds.add(closedEdge);
-                    
-                } else {
-                    
-if (debug) {
-Image img3 = new Image(width, height);
-for (int j = 0; j < closedEdge.getN(); ++j) {
-    int x = closedEdge.getX(j);
-    int y = closedEdge.getY(j);
-    if (j == 0 || (j == (closedEdge.getN() - 1))) {
-        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
-    } else {
-        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
-    }
-}
-double[] xyCen = curveHelper.calculateXYCentroids(blob);
-String fileName = "closededge_" + (int)Math.round(xyCen[0]) + "_" + (int)Math.round(xyCen[1]);
-MiscDebug.writeImageCopy(img3, fileName + ".png");
-try {
-fileName = fileName + ".dat";
-Misc.persistToFile(fileName, blob);
-log.info("writing " + fileName);
-} catch (IOException ex) {
-}
-}
+            if ((closedEdge != null) &&
+                (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1))) {
 
-                }
+                outputBounds.add(closedEdge);
 
-            } else {                
+            } else {
+
                 remove.add(Integer.valueOf(i));
             }
         }
