@@ -373,6 +373,21 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(Arrays.equals(expectedB, b));
     }
     
+    public void testSortByDecr2() throws Exception {
+        
+        double[] a = new double[]{1, 2, 3, 4, 5, 6};
+    	int[] b = new int[]{0, 1, 2, 3, 4, 5};
+
+    	MultiArrayMergeSort.sortByDecr(a, b);
+    	assertTrue(a.length == b.length);
+
+    	double[] expectedA = new double[]{6, 5, 4, 3, 2, 1};
+        int[] expectedB = new int[]{5, 4, 3, 2, 1, 0};
+        
+        assertTrue(Arrays.equals(expectedA, a));
+        assertTrue(Arrays.equals(expectedB, b));
+    }
+    
     public void testSortBy1stDescThen2ndAsc() throws Exception {
         
         int[] nSimilarSummary = new int[2];

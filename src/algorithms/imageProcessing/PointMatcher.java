@@ -4354,7 +4354,7 @@ if (compTol == 1) {
     }
 
     /**
-     * method to perform pairwise tranformation calculations on datasets that
+     * method to perform pairwise transformation calculations on datasets that
      * are to large to feasibly visit every permutation.
      * The name may change soon to better reflect the internal implementation
      * which is no longer partitions.

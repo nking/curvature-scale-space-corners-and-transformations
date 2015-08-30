@@ -5,12 +5,14 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,9 +70,9 @@ public class BlobScaleFinder {
         int smallestGroupLimit = 100;
         int largestGroupLimit = 5000;
 
-        //TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
-        //    smallestGroupLimit, largestGroupLimit);
-
+        TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
+            smallestGroupLimit, largestGroupLimit);
+        
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img1Grey.getWidth()/minDimension,
@@ -97,7 +99,7 @@ public class BlobScaleFinder {
         TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
             img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned);
 
-        return paramsBinned;
+        return params;
     }
 
     protected boolean applyHistogramEqualizationIfNeeded(GreyscaleImage image1,
@@ -378,12 +380,8 @@ public class BlobScaleFinder {
         double bestOverallStatSqSum = Double.MAX_VALUE;
         int bestOverallIdx1 = -1;
         int bestOverallIdx2 = -1;
-        TransformationParameters bestOverallTransformation = null;
         int bestOverallNMatched = -1;
         List<FeatureComparisonStat> bestOverallCompStats = null;
-
-        Map<Integer, Map<Integer, TransformationParameters>> paramsMap =
-            new HashMap<Integer, Map<Integer, TransformationParameters>>();
 
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
@@ -396,8 +394,8 @@ public class BlobScaleFinder {
             double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
 
             double bestStatSqSum = Double.MAX_VALUE;
+            double bestScale = -1;
             int bestIdx2 = -1;
-            TransformationParameters bestTransformation = null;
             int bestNMatched = -1;
             List<FeatureComparisonStat> bestCompStats = null;
 
@@ -430,7 +428,7 @@ public class BlobScaleFinder {
                     blob1, blob2, curve1, curve2, features1, features2,
                     mapper.getMatcher());
 
-                if (compStats.isEmpty()) {
+                if (compStats.size() < 2) {
                     continue;
                 }
 
@@ -439,18 +437,15 @@ public class BlobScaleFinder {
                 if (combinedStat < bestStatSqSum) {
                     bestStatSqSum = combinedStat;
                     bestIdx2 = index2.intValue();
-                    bestTransformation = params;
                     bestNMatched = mapper.getMatcher().getSolutionMatchedContours1().size();
                     bestCompStats = compStats;
-                    
+                    bestScale = mapper.getMatcher().getSolvedScale();
                     log.info("  new best for [" + index1.toString() + "] ["
-                        + index2.toString() + "]");
-
-                    int z = 1;
+                        + index2.toString() + "] combinedStat=" + combinedStat);
                 }
             }
 
-            if (bestTransformation == null) {
+            if (bestCompStats == null) {
                 continue;
             }
 
@@ -461,32 +456,29 @@ public class BlobScaleFinder {
                 "==>[%d](%d,%d) [%d](%d,%d) scale=%.2f  nMatched=%d  intSqDiff=%.1f",
                 index1.intValue(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
                 bestIdx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-                bestTransformation.getScale(), bestNMatched, (float)bestStatSqSum));
+                bestScale, bestNMatched, (float)bestStatSqSum));
             log.info(sb.toString());
-
-            Map<Integer, TransformationParameters> map2 = paramsMap.get(index1);
-            if (map2 == null) {
-                map2 = new HashMap<Integer, TransformationParameters>();
-                paramsMap.put(index1, map2);
-            }
-            map2.put(bestIdx2, bestTransformation);
 
             if (bestStatSqSum < bestOverallStatSqSum) {
                 bestOverallStatSqSum = bestStatSqSum;
                 bestOverallIdx1 = index1.intValue();
                 bestOverallIdx2 = bestIdx2;
-                bestOverallTransformation = bestTransformation;
                 bestOverallNMatched = bestNMatched;
                 bestOverallCompStats = bestCompStats;
                 
                 log.info("  best overall for [" + bestOverallIdx1 + "] [" +
-                    bestOverallIdx2 + "]");
-                
-                int z = 1;
+                    bestOverallIdx2 + "]");                
             }
         }
-
-        return bestOverallTransformation;
+        
+        if (bestOverallCompStats == null) {
+            return null;
+        }
+        
+        TransformationParameters params = calculateTransformation(
+            bestOverallCompStats, xRelativeOffset1, yRelativeOffset1);
+        
+        return params;
     }
 
     protected TransformationParameters calculateScale(GreyscaleImage img1,
@@ -738,6 +730,8 @@ sb.append(
             return compStats;
         }
 
+        log.info(sb.toString());
+        
         // if bestCompStat's difference in orientation is different than the
         // others', re-do the others to see if have an improved calculation.
         // the "re-do" should try a dither of 1 or 2
@@ -770,6 +764,8 @@ sb.append(
                 index2, blob1, blob2, curve1, curve2,
                 bestCompStat.getImg1PointRotInDegrees(),
                 bestCompStat.getImg2PointRotInDegrees(), matcher);
+            
+            log.info("redone: " + printToString(compStats));
         }
 
         return compStats;
@@ -783,6 +779,10 @@ sb.append(
         float theta1, float theta2,
         CSSContourMatcherWrapper matcher) {
 
+/*
+TODO: this section needs revision
+*/
+        
         FeatureMatcher featureMatcher = new FeatureMatcher();
         
         // for the redo, because the orientations are set rather than found,
@@ -847,6 +847,7 @@ sb.append(
         
         log.info(sb.toString());
         
+//if ((index1.intValue() == 2) && (index2.intValue() == 7)) {
 if ((index1.intValue() == 0) && (index2.intValue() == 0)) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
@@ -866,7 +867,13 @@ int z = 1;
 } catch(IOException e) {
 }
 }        
-        
+        //occassionally, there are very good matches on a contour and
+        // some very wrong matches due to the roughness of extracting
+        // contours as blob perimeters (in contrast to edges which are
+        // derived from gaussian smoothed images).
+        //TODO: consider improving the extraction of blob boundaries
+
+        removeOutliersIfFeasible(compStats);
         
         return compStats;
     }
@@ -903,6 +910,101 @@ int z = 1;
         sum /= (double)compStats.size();
         
         return sum;
+    }
+
+    private TransformationParameters calculateTransformation(
+        List<FeatureComparisonStat> compStats, int xOffset, int yOffset) {
+        
+        assert(compStats.isEmpty() == false);
+        
+        MatchedPointsTransformationCalculator tc = new 
+            MatchedPointsTransformationCalculator();
+         
+        int centroidX1 = 0;
+        int centroidY1 = 0;
+        
+        PairIntArray matchedXY1 = new PairIntArray();
+        PairIntArray matchedXY2 = new PairIntArray();
+        
+        float[] weights = new float[compStats.size()];
+        
+        double sum = 0;
+        
+        for (int i = 0; i < compStats.size(); ++i) {
+            
+            FeatureComparisonStat compStat = compStats.get(i);
+            
+            int x1 = compStat.getImg1Point().getX() + xOffset;
+            int y1 = compStat.getImg1Point().getY() + yOffset;
+            matchedXY1.add(x1, y1);
+            
+            int x2 = compStat.getImg2Point().getX() + xOffset;
+            int y2 = compStat.getImg2Point().getY() + yOffset;
+            matchedXY2.add(x2, y2);
+            
+            weights[i] = compStat.getSumIntensitySqDiff();
+            
+            sum += weights[i];
+        }
+        
+        double tot = 0;
+        for (int i = 0; i < compStats.size(); ++i) {
+            double div = (sum - weights[i])/((compStats.size() - 1) * sum);
+            weights[i] = (float)div;
+            tot += div;
+        } 
+
+        assert(Math.abs(tot - 1.) < 0.03);
+        
+        TransformationParameters params = tc.calulateEuclidean(
+            matchedXY1, matchedXY2, weights, centroidX1, centroidY1);
+
+        return params;
+    }
+
+    private void removeOutliersIfFeasible(List<FeatureComparisonStat> compStats) {
+        
+        if (compStats.size() < 2) {
+            return;
+        }
+        
+        /*
+        the largest SSD values are sometimes false matches.
+        
+        looking at the 2 smallest SSDs and removing anything > 2.5 times
+        their average.
+        */
+        
+        double[] values = new double[compStats.size()];
+        int[] indexes = new int[values.length];
+        
+        for (int i = 0; i < compStats.size(); ++i) {
+            
+            FeatureComparisonStat cStat = compStats.get(i);
+            
+            values[i] = cStat.getSumIntensitySqDiff();   
+            
+            indexes[i] = i;
+        }
+        
+        MultiArrayMergeSort.sortByDecr(values, indexes);
+        
+        double avgTop = (values[values.length - 1] + values[values.length - 2])/2.;
+        
+        List<FeatureComparisonStat> remove = new ArrayList<FeatureComparisonStat>();
+        for (int i = 0; i < values.length; ++i) {
+            double v = values[i];
+            double diff = Math.abs(v - avgTop);
+            if (diff > 2.5*avgTop) {
+                int idx = indexes[i];
+                remove.add(compStats.get(idx));
+            }
+        }
+        
+        for (FeatureComparisonStat rm : remove) {
+            compStats.remove(rm);
+        }
+        
     }
     
 }
