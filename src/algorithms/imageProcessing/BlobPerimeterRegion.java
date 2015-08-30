@@ -80,6 +80,11 @@ public class BlobPerimeterRegion {
         return orientation;
     }
     
+    public void overrideRelativeOrientation(final double thetaInRadians) {
+        
+        this.orientation = thetaInRadians;
+    }
+    
     /**
      * NOT READY FOR USE YET.  NEEDs MORE TESTING
      * calculate the angle perpendicular to the maximum of curvature.

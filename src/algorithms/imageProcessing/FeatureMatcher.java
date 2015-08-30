@@ -431,7 +431,7 @@ public class FeatureMatcher {
                         continue;
                     }
                     
-                    IntensityDescriptor desc1 = features1.extractIntensity(x1, y1, rot1);
+                    IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);
         
                     if (desc1 == null) {
                         return null;
@@ -452,6 +452,80 @@ public class FeatureMatcher {
                                 best.setImg1PointRotInDegrees(rotD1);
                                 best.setImg2PointRotInDegrees(rot2);
                             }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @return
+     */
+    public FeatureComparisonStat ditherForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) {
+        
+        final int x1 = region1.getX();
+        final int y1 = region1.getY();
+        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());
+        
+        final int x2 = region2.getX();
+        final int y2 = region2.getY();
+        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        FeatureComparisonStat best = null;
+        
+        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);
+        
+        if (desc2 == null) {
+            return null;
+        }
+                
+        /*
+        NOTE: best distinguisher for improved rotation angle is usually 
+        the gradient images because these are on edges.
+        */
+        
+        for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+            if (!features1.isWithinXBounds(x1d)) {
+                continue;
+            }
+            for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                if (!features1.isWithinYBounds(y1d)) {
+                    continue;
+                }
+                    
+                IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rot1);
+
+                if (desc1 == null) {
+                    return null;
+                }
+
+                FeatureComparisonStat stat = IntensityFeatures.calculateStats(
+                    desc1, x1d, y1d, desc2, x2, y2);
+
+                if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {
+
+                    if (best == null) {
+                        best = stat;
+                        best.setImg1PointRotInDegrees(rot1);
+                        best.setImg2PointRotInDegrees(rot2);
+                    } else {
+                        if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rot1);
+                            best.setImg2PointRotInDegrees(rot2);
                         }
                     }
                 }

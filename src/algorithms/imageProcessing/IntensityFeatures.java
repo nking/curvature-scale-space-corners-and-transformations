@@ -33,6 +33,7 @@ public class IntensityFeatures {
     protected final float[][] xyOffsets;
     protected final boolean useNormalizedIntensities;
     protected final boolean useBinnedCellIntensities = true;
+    
     /**
     key = pixel coordinates of center of frame;
     value = map with key = rotation (in degrees) of the frame and value = the
