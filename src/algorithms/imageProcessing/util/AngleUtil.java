@@ -1,17 +1,7 @@
 package algorithms.imageProcessing.util;
 
-import algorithms.CountingSort;
 import algorithms.MergeSort;
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.misc.MiscMath;
-import algorithms.util.PairInt;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  *
@@ -21,9 +11,28 @@ public class AngleUtil {
 
     /**
     calculates the difference of angles between pairs of points in set1 and 
-    set 2.  diffX1, diffX2 are the difference
+    set 2 ( angle of (diffX1, diffY1) - angle of (diffX2, diffY2).  
+    * diffX1, diffX2 are the difference
     * in x and y between 2 points in set 1, and diffX2, diffY2 are the 
-    * difference for the same matched point pair in set2.
+    * difference for the same matched point pair in set2.  The reference
+    * frame is polar clockwise.
+    * For example, (diffX1, diffY1) being (1, 4) and (diffX2, diffY2) being
+    * (3.536, 2.12) leads to angles 284 minus 329 = -45.  Note that to
+    * transform (diffX1, diffY1) to (diffX2, diffY2) one would apply 
+    * -1*result of this method.
+    * 
+    * <pre>
+    *       clockwise -->
+              +Y        V
+              270
+           III | IV
+       180 --------- 0   +X
+           II  |  I
+               90
+    * </pre>
+    * Note that the subtraction is from closest angles.
+    * For example, if point 1 is in qI and point 2 is in qIV, 360 is added to 
+    * point 1's angle, then the equation is (2*PI + point1 angle) - (point 2 angle).
 
      * @param diffX1
      * @param diffY1
@@ -34,99 +43,25 @@ public class AngleUtil {
     public double subtract(double diffX1, double diffY1, double diffX2, 
         double diffY2) {
         
-        double theta1 = (diffX1 == 0) ? Math.PI/2. : Math.atan(diffY1/diffX1);
-        double theta2 = (diffX2 == 0) ? Math.PI/2. : Math.atan(diffY2/diffX2);
+        /*  clockwise -->
+              +Y        V
+              270
+           III | IV
+       180 --------- 0   +X
+           II  |  I
+               90
+        */
+        
+        double theta1 = polarAngleCW(diffX1, diffY1);
+        
+        double theta2 = polarAngleCW(diffX2, diffY2);
+        
+        boolean useRadians = true;
 
-        // Q1, Q2, Q3, Q4
-        int q1 = 1;
-        if ((diffX1 < 0) && (diffY1 < 0)) {
-            q1 = 2;
-        } else if ((diffX1 < 0) && (diffY1 >= 0)) {
-            q1 = 3;
-        } else if ((diffX1 >= 0) && (diffY1 >= 0)) {
-            q1 = 4;
-        }
-        int q2 = 1;
-        if ((diffX2 < 0) && (diffY2 < 0)) {
-            q2 = 2;
-        } else if ((diffX2 < 0) && (diffY2 >= 0)) {
-            q2 = 3;
-        } else if ((diffX2 >= 0) && (diffY2 >= 0)) {
-            q2 = 4;
-        }
+        double[] quadCorrThetas = correctForQuadrants(theta1, theta2, 
+            useRadians);
         
-        /*
-                  +Y
-                 270
-        QIII      |       QIV
-                  |     
-                  |
-     180-------------------- +X  0, 360
-                  |   
-                  |      
-         QII      |       QI 
-                 90
-        */
-        
-        if (q1 == 1) {
-            // angle is (-)
-            theta1 *= -1;
-        } else if (q1 == 2) {
-            theta1 = Math.PI - theta1;
-        } else if (q1 == 3) {
-            // angle is (-)
-            theta1 = Math.PI - theta1;
-        } else if (q1 == 4) {
-            if (theta1 != 0) {
-                theta1 = 2.*Math.PI - theta1;
-            }
-        }
-        if (diffX1 == 0) {
-            if (diffY1 < 0) {
-                theta1 = Math.PI/2.;
-            } else {
-                theta1 = 3.*Math.PI/2.;
-            }
-        }
-        
-        if (q2 == 1) {
-            // angle is (-)
-            theta2 *= -1;
-        } else if (q2 == 2) {
-            theta2 = Math.PI - theta2;
-        } else if (q2 == 3) {
-            // angle is (-)
-            theta2 = Math.PI - theta2;
-        } else if (q2 == 4) {
-            if (theta2 != 0) {
-                theta2 = 2.*Math.PI - theta2;
-            }
-        }
-        if (diffX2 == 0) {
-            if (diffY2 < 0) {
-                theta2 = Math.PI/2.;
-            } else {
-                theta2 = 3.*Math.PI/2.;
-            }
-        }
-        
-        double t = theta1 - theta2;
-        
-        while (t < 0) {
-            t += 2.*Math.PI;
-        }
-        while (t > 2.*Math.PI) {
-            t -= 2.*Math.PI;
-        }
-        
-        /*
-        TODO: correction to a CCW system temporarily
-        */
-        if (t != 0) {
-            t = 2.*Math.PI - t;
-        }
-        
-        return t;  
+        return (quadCorrThetas[0] - quadCorrThetas[1]);        
     }
     
     /**
@@ -192,6 +127,58 @@ public class AngleUtil {
             theta += Math.PI;
         } else if (q == 4) {
             theta = 2*Math.PI + theta;
+        }
+        
+        return theta;  
+    }
+    
+    /**
+    calculates the polar theta in radians given x and y w.r.t. origin.  theta increases
+    * in value in a clockwise direction (CW).
+
+     * @param x
+     * @param y
+     * @return 
+     */
+    public static double polarAngleCW(double x, double y) {
+        /*        
+        
+        
+        */
+        /*
+                  +Y
+                 270
+        QIII      |       QIV
+                  |     
+                  |
+     180-------------------- +X  0, 360
+                  |   
+                  |      
+         QII      |       QI 
+                  90
+        */
+        
+        int q = getClockwiseQuadrant(x, y);
+                
+        assert((q > 0) && (q < 5));
+        
+        double theta = (x == 0) ? Math.PI/2. : Math.atan(y/x);
+        
+        if (x == 0) {
+            if (y == 0) {
+                theta = 0;
+            } else if (y > 0) {
+                theta = 3*Math.PI/2.;
+            }
+            // else Math.PI/2 is correct
+        } else if (q == 1) {
+            theta *= -1;
+        } else if (q == 2) {
+            theta = Math.PI - theta;
+        } else if (q == 3) {
+            theta = Math.PI - theta;
+        } else if (q == 4) {
+            theta = 2*Math.PI - theta;
         }
         
         return theta;  
@@ -741,6 +728,42 @@ public class AngleUtil {
         } else if (rotationInDegrees >= 90) {
             q = 2;
         }
+        return q;
+    }
+    
+    protected static int getClockwiseQuadrant(double xCoord, double yCoord) {
+        /*
+          III | IV
+          ---------
+          II  |  I
+        */
+        
+        int q = 1;
+        if (xCoord == 0) {
+            if (yCoord == 0) {
+                //TODO: might be more consistent for origin to be in 4
+                q = 1;
+            } else if (yCoord > 0) {
+                q = 4;
+            } else {
+                q = 1;
+            }
+        } else if (yCoord == 0) {
+            if (xCoord > 0) {
+                q = 1;
+            } else {
+                q = 3;
+            }            
+        } else if ((xCoord > 0) && (yCoord > 0)) {
+            q = 4;
+        } else if ((xCoord > 0) && (yCoord < 0)) {
+            q = 1;
+        } else if ((xCoord < 0) && (yCoord > 0)) {
+            q = 3;
+        } else if ((xCoord < 0) && (yCoord < 0)) {
+            q = 2;
+        }
+        
         return q;
     }
 }

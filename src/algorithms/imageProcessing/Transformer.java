@@ -16,7 +16,9 @@ public class Transformer {
     
     /**
      * transform the given edges using the given parameters.
-     * 
+     * Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+      * 
      * @param params
      * @param edges
      * @return 
@@ -41,7 +43,9 @@ public class Transformer {
      
      /**
      * transform the given edges using the given parameters.
-     * 
+     * Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+      * 
      * @param params
      * @param points
      * @return
@@ -66,7 +70,9 @@ public class Transformer {
      
      /**
      * transform the given edges using the given parameters.
-     * 
+     * Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+      * 
      * @param params
      * @param points
      * @return
@@ -92,7 +98,8 @@ public class Transformer {
      /**
       * transform the given edges using the given parameters. 
       * 
-      * @param rotInRadians rotation in radians
+      * @param rotInRadians rotation in radians.  Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
       * @param scale
       * @param translationX translation along x axis in pixels
       * @param translationY translation along y axis in pixels
@@ -130,7 +137,8 @@ public class Transformer {
     
     /**
       * transform the given edges using the given parameters. 
-      * 
+      * Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
       * @param params
       * @param edges
       * @return 
@@ -168,7 +176,8 @@ public class Transformer {
     /**
       * transform the given edges using the given parameters. 
       * 
-      * @param rotInRadians rotation in radians
+      * @param rotInRadians rotation in radians. Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
       * @param scale
       * @param translationX translation along x axis in pixels
       * @param translationY translation along y axis in pixels
@@ -205,7 +214,8 @@ public class Transformer {
      /**
       * transform the given edge using the given parameters. 
       * 
-      * @param rotInRadians rotation in radians
+      * @param rotInRadians rotation in radians.  Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
       * @param scale
       * @param translationX translation along x axis in pixels
       * @param translationY translation along y axis in pixels
@@ -231,6 +241,14 @@ public class Transformer {
                 
         /*
         scale, rotate, then translate.
+        
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
         */
         
         PairIntArray te = new PairIntArray();
@@ -240,13 +258,11 @@ public class Transformer {
             double x = edge.getX(i);
             double y = edge.getY(i);
 
-            double xr = centroidX * scale 
-                + (((x - centroidX) * scale * cos) 
-                + ((y - centroidY) * scale * sin));
+            double xr = centroidX * scale + ((x - centroidX) * scale * cos) 
+                + ((y - centroidY) * scale * sin);
 
-            double yr = centroidY * scale 
-                + ((-(x - centroidX) * scale * sin) 
-                + ((y - centroidY) * scale * cos));
+            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) 
+                + ((y - centroidY) * scale * cos);
 
             double xt = xr + translationX;
             double yt = yr + translationY;
@@ -263,7 +279,8 @@ public class Transformer {
     /**
       * transform the given edge using the given parameters. 
       * 
-      * @param rotInRadians rotation in radians
+      * @param rotInRadians rotation in radians. Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
       * @param scale
       * @param translationX translation along x axis in pixels
       * @param translationY translation along y axis in pixels
@@ -289,6 +306,14 @@ public class Transformer {
                 
         /*
         scale, rotate, then translate.
+        
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
         */
         
         PairFloatArray te = new PairFloatArray();
@@ -298,13 +323,11 @@ public class Transformer {
             double x = points.getX(i);
             double y = points.getY(i);
 
-            double xr = centroidX * scale 
-                + (((x - centroidX) * scale * cos) 
-                + ((y - centroidY) * scale * sin));
+            double xr = centroidX * scale + ((x - centroidX) * scale * cos) 
+                + ((y - centroidY) * scale * sin);
 
-            double yr = centroidY * scale 
-                + ((-(x - centroidX) * scale * sin) 
-                + ((y - centroidY) * scale * cos));
+            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) 
+                + ((y - centroidY) * scale * cos);
 
             double xt = xr + translationX;
             double yt = yr + translationY;
@@ -319,8 +342,8 @@ public class Transformer {
     }
     
     /**
-     * apply the parameters of transformation to point (xPt, yPt).  Note that
-     * the rotation is applied in clockwise is positive manner.
+     * apply the parameters of transformation to point (xPt, yPt). Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
      * 
      * @param params
      * @param xPt
@@ -341,12 +364,20 @@ public class Transformer {
         double originX = params.getOriginX();
         double originY = params.getOriginY();
         
-        double xr = originX * scale + (((xPt - originX) * scaleTimesCosine) 
-            + ((yPt - originY) * scaleTimesSine));
+        /*
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
 
-        double yr = originY * scale 
-            + ((-(xPt - originX) * scaleTimesSine) 
-            + ((yPt - originY) * scaleTimesCosine));
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        double xr = originX * scale + ((xPt - originX) * scaleTimesCosine) 
+            + ((yPt - originY) * scaleTimesSine);
+
+        double yr = originY * scale + (-(xPt - originX) * scaleTimesSine) 
+            + ((yPt - originY) * scaleTimesCosine);
 
         double xt = xr + params.getTranslationX();
         double yt = yr + params.getTranslationY();
@@ -354,6 +385,16 @@ public class Transformer {
         return new double[]{xt, yt};
     }
     
+    /**
+     * apply the transformation params to set1 and populate outputTrX and
+     * outputTrY.
+     * Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+     * @param params
+     * @param set1
+     * @param outputTrX
+     * @param outputTrY 
+     */
     public void applyTransformation(TransformationParameters params,
         PairIntArray set1, float[] outputTrX, float[] outputTrY) {
         
@@ -390,18 +431,26 @@ public class Transformer {
         float transX = params.getTranslationX();
         float transY = params.getTranslationY();
         
+        /*
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        
         for (int i = 0; i < set1.getN(); ++i) {
         
             int xPt = set1.getX(i);
             int yPt = set1.getY(i);
             
-            float xr = originX * scale 
-                + (((xPt - originX) * scaleTimesCosine) 
-                + ((yPt - originY) * scaleTimesSine));
+            float xr = originX * scale + ((xPt - originX) * scaleTimesCosine) 
+                + ((yPt - originY) * scaleTimesSine);
 
-            float yr = originY * scale 
-               + ((-(xPt - originX) * scaleTimesSine) 
-               + ((yPt - originY) * scaleTimesCosine));
+            float yr = originY * scale + (-(xPt - originX) * scaleTimesSine) 
+                + ((yPt - originY) * scaleTimesCosine);
 
             float xt = xr + transX;
             float yt = yr + transY;
@@ -411,6 +460,15 @@ public class Transformer {
         }
     }
     
+    /**
+     * apply transformation params to the image input.  Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+     * @param input
+     * @param params
+     * @param outputWidth
+     * @param outputHeight
+     * @return 
+     */
     public GreyscaleImage applyTransformation(final GreyscaleImage input, 
         TransformationParameters params, int outputWidth, int outputHeight) {
         
@@ -430,6 +488,16 @@ public class Transformer {
         double centroidX = params.getOriginX();
         double centroidY = params.getOriginY();
         
+        /*
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        
         GreyscaleImage output = new GreyscaleImage(outputWidth, 
             outputHeight);
         
@@ -440,13 +508,11 @@ public class Transformer {
                 
                 if (pix != 0) {
                     
-                    double xr = centroidX * scale 
-                        + (((x - centroidX) *scale * cos) 
-                        + ((y - centroidY) * scale * sin));
+                    double xr = centroidX * scale + ((x - centroidX) *scale * cos) 
+                        + ((y - centroidY) * scale * sin);
 
-                    double yr = centroidY * scale
-                        + ((-(x - centroidX) * scale * sin)
-                        + ((y - centroidY) * scale * cos));
+                    double yr = centroidY * scale + (-(x - centroidX) * scale * sin)
+                        + ((y - centroidY) * scale * cos);
 
                     double xt = xr + translationX;
                     double yt = yr + translationY;
@@ -466,6 +532,15 @@ public class Transformer {
         return output;
     }
     
+    /**
+     * apply transformation params to image input. Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+     * @param input
+     * @param params
+     * @param outputWidth
+     * @param outputHeight
+     * @return 
+     */
     public Image applyTransformation(Image input, 
         TransformationParameters params, int outputWidth, int outputHeight) {
         
@@ -488,6 +563,16 @@ public class Transformer {
         double centroidX = params.getOriginX();
         double centroidY = params.getOriginY();
         
+        /*
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        
         boolean isExt = (input instanceof ImageExt);
         
         Image output = isExt ? new ImageExt(outputWidth, outputHeight) :
@@ -496,13 +581,11 @@ public class Transformer {
         for (int x = 0; x < input.getWidth(); x++) {
             for (int y = 0; y < input.getHeight(); y++) {
                 
-                double xr = centroidX * scale 
-                    + (((x - centroidX) * scale * cos)
-                    + ((y - centroidY) * scale * sin));
+                double xr = centroidX * scale + ((x - centroidX) * scale * cos)
+                    + ((y - centroidY) * scale * sin);
 
-                double yr = centroidY * scale
-                    + ((-(x - centroidX) * scale * sin)
-                    + ((y - centroidY) * scale * cos));
+                double yr = centroidY * scale + (-(x - centroidX) * scale * sin)
+                    + ((y - centroidY) * scale * cos);
 
                 double xt = xr + translationX;
                 double yt = yr + translationY;
@@ -530,6 +613,13 @@ public class Transformer {
         return output;
     }
     
+    /**
+     * apply the scale transformation to the existing transformation 
+     * parameters params and return the result.
+     * @param params
+     * @param scale
+     * @return 
+     */
     public TransformationParameters applyScaleTransformation(
         TransformationParameters params, float scale) {
         
@@ -538,13 +628,13 @@ public class Transformer {
         }
         
         /*
-        double xr = centroidX * scale 
-                    + (((x - centroidX) * scale * cos)
-                    + ((y - centroidY) * scale * sin));
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
 
-                double yr = centroidY * scale
-                    + ((-(x - centroidX) * scale * sin)
-                    + ((y - centroidY) * scale * cos));
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
         */
         
         TransformationParameters tr2 = params.copy();
@@ -560,10 +650,10 @@ public class Transformer {
         tr2.setOriginX(ox * scale);
         tr2.setOriginY(oy * scale);
         
-        double tx2 = (ox * scale) + (((tx - ox) * scale * cosine) 
-            + ((ty - oy) * scale * sine));
-        double ty2 = (oy * scale) + ((-(tx - ox) * scale * sine)
-            + ((ty - oy) * scale * cosine));
+        double tx2 = (ox * scale) + ((tx - ox) * scale * cosine) 
+            + ((ty - oy) * scale * sine);
+        double ty2 = (oy * scale) + (-(tx - ox) * scale * sine)
+            + ((ty - oy) * scale * cosine);
         
         tr2.setTranslationX((float)tx2);
         tr2.setTranslationY((float)ty2);
@@ -573,7 +663,8 @@ public class Transformer {
     
     /**
      * given a two-dimensional array of x and y, apply rotation to them
-     * and return the result.
+     * and return the result.  Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
      * @param rotationInDegrees
      * @param xy
      * @return 
@@ -597,7 +688,15 @@ public class Transformer {
         double sin = Math.sin(rotationInRadians);
         
         float[][] transformed = new float[xy.length][];
-        
+        /*
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
         for (int i = 0; i < xy.length; ++i) {
             
             float x = xy[i][0];
@@ -614,7 +713,8 @@ public class Transformer {
     
     /**
      * given a two-dimensional array of x and y, apply rotation to them
-     * and return the result.
+     * and return the result. Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
      * @param rotationInDegrees
      * @param x
      * @param y
@@ -633,6 +733,19 @@ public class Transformer {
         return new float[]{(float)xr, (float)yr};
     }
 
+    /**
+     * apply rotationInDegrees to (x, y) and return the result in the arrays
+     * outputX and outputY.
+     * Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+      * 
+     * @param rotationInDegrees
+     * @param x
+     * @param y
+     * @param outputX
+     * @param outputY
+     * @param outputIndex 
+     */
     public void rotate(int rotationInDegrees, int x, int y, 
         float[] outputX, float[] outputY, int outputIndex) {
         

@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.util.PairIntArray;
 import junit.framework.TestCase;
 
 /**

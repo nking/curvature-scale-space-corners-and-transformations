@@ -49,10 +49,15 @@ public class AngleUtilTest extends TestCase {
                     double diffX2 = Double.valueOf(m.group(8)).doubleValue();
                     double diffY2 = Double.valueOf(m.group(9)).doubleValue();
                     
-                    double expected = Double.valueOf(m.group(5)).doubleValue();
+                    double expected = (2 * Math.PI) 
+                        - Double.valueOf(m.group(5)).doubleValue();
                     
                     double result = instance.subtract(diffX1, diffY1, diffX2, 
                         diffY2);
+                    
+                    if (result < 0) {
+                        result = (2 * Math.PI) + result;
+                    }
                     
                     System.out.println("line=" + line);
                     System.out.println("expected=" + expected + " result=" 
@@ -75,7 +80,7 @@ public class AngleUtilTest extends TestCase {
         
     }
     
-    public void testSubtract2() throws Exception {
+    public void testPolarAngleCCW() throws Exception {
         
         /*
                   +Y

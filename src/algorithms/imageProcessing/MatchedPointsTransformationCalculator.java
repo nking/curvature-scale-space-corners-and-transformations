@@ -29,11 +29,13 @@ public class MatchedPointsTransformationCalculator {
      * matching lists of x, y coordinates, and given "scale" as a starting
      * parameter.  Scale is determined roughly from the contour matcher,
      * so can be used to get a rough first solution.
-     *
+     * Note, the rotation, when applied, will result in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+     *<pre>
      * positive Y is up
        positive X is right
        positive theta starts from Y=0, X>=0 and proceeds CW
-                270
+             +Y 270
                  |
                  |
           180--------- 0   +X
@@ -47,7 +49,7 @@ public class MatchedPointsTransformationCalculator {
      * @param matchedXY2
      * @param centroidX1
      * @param centroidY1
-     * @return
+     * @return 
      */
     public TransformationParameters calulateEuclideanGivenScale(
         double scale, PairIntArray matchedXY1, PairIntArray matchedXY2,
@@ -125,6 +127,12 @@ public class MatchedPointsTransformationCalculator {
 
             double t = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);
 
+            t *= -1;
+            
+            if (t < 0) {
+                t = 2 * Math.PI + t;
+            }
+            
             thetas[i] = t;
 
             thetaSum += thetas[i];
@@ -216,10 +224,12 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         /*
         estimate translation:
 
-        transX = xt0 - xc*scale - (((x0-xc)*scale*math.cos(theta))
+        transX = xt0 - 
+            (xc*scale + (((x0-xc)*scale*math.cos(theta))
             + ((y0-yc)*scale*math.sin(theta)))
 
-        transY = yt0 - yc*scale - ((-(x0-xc)*scale*math.sin(theta))
+        transY = yt0 - 
+            (yc*scale + ((-(x0-xc)*scale*math.sin(theta))
             + ((y0-yc)*scale*math.cos(theta)))
         */
         double mc = Math.cos(theRotation);
@@ -232,11 +242,11 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             int xim2 = matchedXY2.getX(i);
             int yim2 = matchedXY2.getY(i);
 
-            double trX1 = centroidX1*scale + (((xim1 - centroidX1) * scale*mc)
-                + ((yim1 - centroidY1) *scale*ms));
+            double trX1 = centroidX1*scale + ((xim1 - centroidX1) * scale*mc)
+                + ((yim1 - centroidY1) *scale*ms);
 
-            double trY1 = centroidY1*scale + ((-(xim1 - centroidX1) * scale*ms)
-                + ((yim1 - centroidY1) * scale*mc));
+            double trY1 = centroidY1*scale + (-(xim1 - centroidX1) * scale*ms)
+                + ((yim1 - centroidY1) * scale*mc);
 
             double transX = xim2 - trX1;
 
@@ -319,6 +329,12 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         double dy2 = set2Y1 - set2Y2;
 
         double theta = angleUtil.subtract(dx1, dy1, dx2, dy2);
+        
+        theta *= -1;
+            
+        if (theta < 0) {
+            theta = 2 * Math.PI + theta;
+        }
 
         double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));
 
@@ -329,26 +345,28 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         /*
         estimate translation:
 
-        transX = xt0 - xc*scale - (((x0-xc)*scale*math.cos(theta))
-            + ((y0-yc)*scale*math.sin(theta)))
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) - ((y0-yc)*scale*math.sin(theta)))
 
-        transY = yt0 - yc*scale - ((-(x0-xc)*scale*math.sin(theta))
-            + ((y0-yc)*scale*math.cos(theta)))
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
         */
         double mc = Math.cos(theta);
         double ms = Math.sin(theta);
 
-        double tr1X1 = centroidX1*scale + (((set1X1 - centroidX1) * scale*mc)
-            + ((set1Y1 - centroidY1) *scale*ms));
+        double tr1X1 = centroidX1*scale + ((set1X1 - centroidX1) * scale*mc)
+            + ((set1Y1 - centroidY1) *scale*ms);
 
-        double tr1Y1 = centroidY1*scale + ((-(set1X1 - centroidX1) *scale*ms)
-            + ((set1Y1 - centroidY1) *scale*mc));
+        double tr1Y1 = centroidY1*scale + (-(set1X1 - centroidX1) *scale*ms)
+            + ((set1Y1 - centroidY1) *scale*mc);
 
-        double tr1X2 = centroidX1*scale + (((set1X2 - centroidX1) * scale*mc)
-            + ((set1Y2 - centroidY1) *scale*ms));
+        double tr1X2 = centroidX1*scale + ((set1X2 - centroidX1) * scale*mc)
+            + ((set1Y2 - centroidY1) *scale*ms);
 
-        double tr1Y2 = centroidY1*scale + ((-(set1X2 - centroidX1) *scale*ms)
-            + ((set1Y2 - centroidY1) *scale*mc));
+        double tr1Y2 = centroidY1*scale + (-(set1X2 - centroidX1) *scale*ms)
+            + ((set1Y2 - centroidY1) *scale*mc);
 
         double transX1 = (set2X1 - tr1X1);
         double transX2 = (set2X2 - tr1X2);
@@ -375,7 +393,11 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
     }
 
     /**
-     * coordinate transformations from pair 1 to pair 2 are calculated.
+     * coordinate transformations from pair 1 to pair 2 are calculated from
+     * the widest pairings of the given matched points.  Two solutions are
+     * returned for the invoker to evaluate, the first is from using the average
+     * solution from pairs of points after removing outliers, the second
+     * is from only the highest weighted pairing.
      *
      * positive Y is up
        positive X is right
@@ -396,9 +418,17 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * @param centroidY1
      * @return
      */
-    public TransformationParameters calulateEuclidean(
+    public TransformationParameters[] calulateEuclidean(
         PairIntArray matchedXY1, PairIntArray matchedXY2, float[] weights,
         final double centroidX1, final double centroidY1) {
+        
+        /*
+        Calculating 2 results and letting the invoker evaluate which is better.
+        The first result returned is from using pairs to calculate the averages
+        of scale, and translation and removing outliers from it.
+        The second result returned is from using only the highest weighted pair
+        (or pairs) to solve for scale, translation, and rotation.
+        */
         
         /*
         solve for rotation.
@@ -462,6 +492,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         double transXSum = 0;
         double transYSum = 0;
         
+        List<Integer> bestPairWeightIdxs = new ArrayList<Integer>();
+        double bestPairWeight = Double.MIN_VALUE;
+        
         for (int i = 0; i < match.length; i++) {
 
             int idx1 = match[i][0];
@@ -485,9 +518,15 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
 
             double dx2 = set2X1 - set2X2;
             double dy2 = set2Y1 - set2Y2;
-
+            
             double theta = angleUtil.subtract(dx1, dy1, dx2, dy2);
 
+            theta *= -1;
+            
+            if (theta < 0) {
+                theta = 2 * Math.PI + theta;
+            }
+            
             double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));
 
             double sep2 = Math.sqrt((dx2*dx2) + (dy2*dy2));
@@ -497,25 +536,27 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             /*
             estimate translation:
 
-            transX = xt0 - xc*scale - (((x0-xc)*scale*math.cos(theta))
-                + ((y0-yc)*scale*math.sin(theta)))
+            xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) - ((y0-yc)*scale*math.sin(theta)))
 
-            transY = yt0 - yc*scale - ((-(x0-xc)*scale*math.sin(theta))
-                + ((y0-yc)*scale*math.cos(theta)))
+            xt_0 = xr_0 + transX = x1
+
+            yr_0 = yc*scale + (((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+            yt_0 = yr_0 + transY = y1
             */
             double mc = Math.cos(theta);
             double ms = Math.sin(theta);
 
             double tr1X1 = centroidX1 * scale + (((set1X1 - centroidX1) * scale * mc)
-                - ((set1Y1 - centroidY1) * scale * ms));
+                + ((set1Y1 - centroidY1) * scale * ms));
 
-            double tr1Y1 = centroidY1 * scale + ((set1X1 - centroidX1) * scale * ms)
+            double tr1Y1 = centroidY1 * scale + (-(set1X1 - centroidX1) * scale * ms)
                 + ((set1Y1 - centroidY1) * scale * mc);
 
             double tr1X2 = centroidX1 * scale + (((set1X2 - centroidX1) * scale * mc)
-                - ((set1Y2 - centroidY1) * scale * ms));
+                + ((set1Y2 - centroidY1) * scale * ms));
 
-            double tr1Y2 = centroidY1 * scale + ((set1X2 - centroidX1) * scale * ms)
+            double tr1Y2 = centroidY1 * scale + (-(set1X2 - centroidX1) * scale * ms)
                 + ((set1Y2 - centroidY1) * scale * mc);
 
             double transX1 = (set2X1 - tr1X1);
@@ -538,6 +579,13 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             scaleSum += scale;
             transXSum += transX;
             transYSum += transY;
+            
+            if (pairWeight > bestPairWeight) {
+                bestPairWeight = pairWeight;
+                bestPairWeightIdxs.add(Integer.valueOf(pairWeights.size() - 1));
+            } else if (pairWeight == bestPairWeight) {
+                bestPairWeightIdxs.add(Integer.valueOf(pairWeights.size() - 1));
+            }
         }
         double nd = (double)scales.size();
         
@@ -560,6 +608,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         double transXStDev = Math.sqrt(transXSum/(nd - 1.0));
         double transYStDev = Math.sqrt(transYSum/(nd - 1.0));
         
+        //TODO: consider iterating this for more outlier removal
         // need to rescale weights too
         double weightsSum = 0;
         Set<Integer> remove = new HashSet<Integer>();
@@ -614,11 +663,49 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         params.setOriginX((float)centroidX1);
         params.setOriginY((float)centroidY1);
 
+        // calculate solution for highest weighted pair(s) only too:
+        TransformationParameters params2 = new TransformationParameters();
+        double bestPairScale = 0;
+        double bestPairTransX = 0;
+        double bestPairTransY = 0;
+        for (Integer bestPairWeightIdx : bestPairWeightIdxs) {
+            int idx = bestPairWeightIdx.intValue();
+            bestPairScale += scales.get(idx);
+            bestPairTransX += transXs.get(idx);
+            bestPairTransY += transYs.get(idx);
+        }
+        bestPairScale /= (double)bestPairWeightIdxs.size();
+        bestPairTransX /= (double)bestPairWeightIdxs.size();
+        bestPairTransY /= (double)bestPairWeightIdxs.size();
+        
+        quadrantCorrectedTheta = new double[2];
+        for (int i = 0; i < (bestPairWeightIdxs.size() - 1); ++i) {
+            int idx = bestPairWeightIdxs.get(i).intValue();
+            AngleUtil.calcAngleAddition(thetas.get(idx), thetas.get(idx + 1), 
+                true, quadrantCorrectedTheta);
+            thetas.set(idx, quadrantCorrectedTheta[0]);
+            thetas.set(idx + 1, quadrantCorrectedTheta[1]);
+        }
+        double bestPairTheta = 0;
+        for (int i = 0; i < bestPairWeightIdxs.size(); ++i) {
+            int idx = bestPairWeightIdxs.get(i).intValue();
+            bestPairTheta += thetas.get(idx);
+        }
+        bestPairTheta /= (double)bestPairWeightIdxs.size();
+        
+        params2.setRotationInRadians((float)bestPairTheta);
+        params2.setScale((float)bestPairScale);
+        params2.setTranslationX((float)bestPairTransX);
+        params2.setTranslationY((float)bestPairTransY);
+        params2.setOriginX((float)centroidX1);
+        params2.setOriginY((float)centroidY1);
+        
         if (debug) {
             log.info("params: " + params.toString());
+            log.info("highest weighted pairs params: " + params2.toString());
         }
 
-        return params;
+        return new TransformationParameters[]{params, params2};
     }
 
     /**
@@ -639,12 +726,11 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         }
 
         /*
-
         xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
 
         xt_0 = xr_0 + transX = x1
 
-        yr_0 = yc*scale + ((-(x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
 
         yt_0 = yr_0 + transY = y1
         */
