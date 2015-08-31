@@ -418,7 +418,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * @param centroidY1
      * @return
      */
-    public TransformationParameters[] calulateEuclidean(
+    public TransformationParameters calulateEuclidean(
         PairIntArray matchedXY1, PairIntArray matchedXY2, float[] weights,
         final double centroidX1, final double centroidY1) {
         
@@ -596,7 +596,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         scaleSum = 0;
         transXSum = 0;
         transYSum = 0;
-        for (int i = 0; i < thetas.size(); ++i) {
+        for (int i = 0; i < scales.size(); ++i) {
             double diff = scales.get(i) - scaleAvg;
             scaleSum += (diff * diff);
             diff = transXs.get(i) - transXAvg;
@@ -705,7 +705,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             log.info("highest weighted pairs params: " + params2.toString());
         }
 
-        return new TransformationParameters[]{params, params2};
+        return params;
     }
 
     /**

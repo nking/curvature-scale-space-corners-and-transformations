@@ -3305,11 +3305,11 @@ for (int i = 0; i < edge.getN(); i++) {
         int ymRotNegative90 = yp + (xm - xp);
         
         boolean rot90IsInPoints = points.contains(
-            new PairInt((int)Math.round(xmRot90), (int)Math.round(ymRot90)));
+            new PairInt(Math.round(xmRot90), Math.round(ymRot90)));
         
         boolean rotNegative90IsInPoints = points.contains(
-            new PairInt((int)Math.round(xmRotNegative90), 
-            (int)Math.round(ymRotNegative90)));
+            new PairInt(Math.round(xmRotNegative90), 
+            Math.round(ymRotNegative90)));
 
         double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])
             + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);

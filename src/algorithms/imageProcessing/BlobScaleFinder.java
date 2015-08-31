@@ -95,11 +95,19 @@ public class BlobScaleFinder {
         GreyscaleImage img2GreyBinned = imageProcessor.binImage(img2Grey,
             binFactor);
 
-        log.info("binned:");
-
+        //TODO: if binned params are chosen, the translation has to be scaled to full image frame:
         TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
             img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned);
+        /*
+        //evaluate params[0] and params[1] to choose between
+        TransformationParameters bestParam = evaluate(params, bounds1, bounds2,
+            img1.getWidth(), img1.getHeight(), img2.getWidth(), img2.getHeight());        
+        */
 
+        log.info("params: " + params.toString());
+        
+        log.info("binned params: " + paramsBinned.toString());
+        
         return params;
     }
 
@@ -473,18 +481,14 @@ public class BlobScaleFinder {
             return null;
         }
         
-        TransformationParameters params[] = calculateTransformation(
+        TransformationParameters params = calculateTransformation(
             bestOverallCompStats);
         
         if (params == null) {
             return null;
         }
         
-        // evaluate params[0] and params[1] to choose between
-        TransformationParameters bestParam = evaluate(params, bounds1, bounds2,
-            img1.getWidth(), img1.getHeight(), img2.getWidth(), img2.getHeight());
-        
-        return bestParam;
+        return params;
     }
 
     protected TransformationParameters calculateScale(GreyscaleImage img1,
@@ -940,7 +944,7 @@ int z = 1;
         return sum;
     }
 
-    private TransformationParameters[] calculateTransformation(
+    private TransformationParameters calculateTransformation(
         List<FeatureComparisonStat> compStats) {
         
         assert(compStats.isEmpty() == false);
@@ -984,7 +988,7 @@ int z = 1;
 
         assert(Math.abs(tot - 1.) < 0.03);
         
-        TransformationParameters[] params = tc.calulateEuclidean(
+        TransformationParameters params = tc.calulateEuclidean(
             matchedXY1, matchedXY2, weights, centroidX1, centroidY1);
 
         return params;
