@@ -1857,6 +1857,7 @@ private void writeTransformed(TransformationParameters parameters,
         return fit;
     }
 
+    @SuppressWarnings("fallthrough")
     TransformationPointFit[] refineTransformationWithDownhillSimplex(
         TransformationPointFit[] fits,
         PairIntArray set1, PairIntArray set2,
