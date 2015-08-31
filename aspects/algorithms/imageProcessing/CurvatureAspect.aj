@@ -82,7 +82,7 @@ public aspect CurvatureAspect {
         AbstractCurvatureScaleSpaceMapper instance = 
             (AbstractCurvatureScaleSpaceMapper)obj;
 
-        GreyscaleImage gXY2 = instance.getGradientXY().copyImage();
+        GreyscaleImage gXY2 = instance.getEdgeFilterProducts().getGradientXY().copyImage();
         PairIntArray gXYValues = Histogram.createADescendingSortByKeyArray(gXY2);
 
 //TODO: for images where significant number of pixels were "put back" in the
@@ -795,7 +795,7 @@ private static int n3 = 0;
     }
 
     after() returning() 
-        : execution(void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper*.createMatchedPointArraysFromContourPeaks() ) 
+        : execution(protected void algorithms.imageProcessing.AbstractCurvatureScaleSpaceInflectionMapper*.createMatchedPointArraysFromContourPeaks() ) 
         && args()
         && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper) {
     
@@ -1042,10 +1042,10 @@ private static int n3 = 0;
 
         debugDisplay(image, "after edge thinning");
 
-        GreyscaleImage cX = instance.getGradientX();
-        GreyscaleImage cY = instance.getGradientY();
-        GreyscaleImage cXY = instance.getGradientXY();
-        GreyscaleImage cTheta = instance.getTheta();
+        GreyscaleImage cX = instance.getEdgeFilterProducts().getGradientX();
+        GreyscaleImage cY = instance.getEdgeFilterProducts().getGradientY();
+        GreyscaleImage cXY = instance.getEdgeFilterProducts().getGradientXY();
+        GreyscaleImage cTheta = instance.getEdgeFilterProducts().getTheta();
 
         outImgNum++;
         n2 = 0;

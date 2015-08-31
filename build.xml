@@ -205,6 +205,8 @@
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <!-- jree needs the servlet jar -->
+                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
@@ -290,6 +292,8 @@
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <!-- jree needs the servlet jar -->
+                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
         	</inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
@@ -351,6 +355,8 @@
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <!-- jree needs the servlet jar -->
+                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
@@ -542,7 +548,9 @@
         <unjar src="${lib.dir}/ejml-0.25.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jfreechart-1.0.19.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jcommon-1.0.23.jar" dest="${classes.dir}/tmp"/>
-        
+        <!-- jfree needs the servlet jar -->
+        <unjar src="${lib.dir}/servlet-api-2.5.jar" dest="${classes.dir}/tmp"/>
+
         <jar destfile="${classes.dir}/scalespace_${TS}.jar" manifest="${jar.mf}">
             <fileset dir="${src.out.dir}" includes="**"/>
             <fileset dir="${resources.dir}" includes="*.html"/>
