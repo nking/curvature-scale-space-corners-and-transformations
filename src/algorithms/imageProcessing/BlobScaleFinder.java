@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -368,10 +369,8 @@ public class BlobScaleFinder {
         GreyscaleImage img1,
         GreyscaleImage img2,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
-        List<PairIntArray> bounds1, List<PairIntArray> bounds2,
-        int xRelativeOffset1, int yRelativeOffset1,
-        int xRelativeOffset2, int yRelativeOffset2) {
-
+        List<PairIntArray> bounds1, List<PairIntArray> bounds2) {
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
@@ -412,8 +411,7 @@ public class BlobScaleFinder {
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper =
                     new CurvatureScaleSpaceInflectionSingleEdgeMapper(
                     curve1, index1.intValue(), curve2, index2.intValue(),
-                    xRelativeOffset1, yRelativeOffset1,
-                    xRelativeOffset2, yRelativeOffset2);
+                    0, 0, 0, 0);
 
                 TransformationParameters params = mapper.matchContours();
 
@@ -475,10 +473,18 @@ public class BlobScaleFinder {
             return null;
         }
         
-        TransformationParameters params = calculateTransformation(
-            bestOverallCompStats, xRelativeOffset1, yRelativeOffset1);
+        TransformationParameters params[] = calculateTransformation(
+            bestOverallCompStats);
         
-        return params;
+        if (params == null) {
+            return null;
+        }
+        
+        // evaluate params[0] and params[1] to choose between
+        TransformationParameters bestParam = evaluate(params, bounds1, bounds2,
+            img1.getWidth(), img1.getHeight(), img2.getWidth(), img2.getHeight());
+        
+        return bestParam;
     }
 
     protected TransformationParameters calculateScale(GreyscaleImage img1,
@@ -560,11 +566,8 @@ MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeForm
            statistical basis of combining the results and removing
            outliers.
         */
-        TransformationParameters params = solveForScale(
-            img1, img2,
-            blobs1, blobs2, bounds1, bounds2,
-            img1.getXRelativeOffset(), img1.getYRelativeOffset(),
-            img2.getXRelativeOffset(), img2.getYRelativeOffset());
+        TransformationParameters params = solveForScale(img1, img2, blobs1, 
+            blobs2, bounds1, bounds2);
 
         return params;
     }
@@ -731,6 +734,27 @@ sb.append(
         }
 
         log.info(sb.toString());
+ 
+//if ((index1.intValue() == 2) && (index2.intValue() == 7)) {
+if ((index1.intValue() == 0) && (index2.intValue() == 0)) {
+try {
+ImageExt img1C = img1.createColorGreyscaleExt();
+ImageExt img2C = img2.createColorGreyscaleExt();
+for (FeatureComparisonStat compStat : compStats) {
+    int x1 = compStat.getImg1Point().getX();
+    int y1 = compStat.getImg1Point().getY();
+    int x2 = compStat.getImg2Point().getX();
+    int y2 = compStat.getImg2Point().getY();
+    img1C.setRGB(x1, y1, 255, 0, 0);
+    img2C.setRGB(x2, y2, 255, 0, 0);
+}
+String bin = ResourceFinder.findDirectory("bin");
+ImageIOHelper.writeOutputImage(bin + "/contours1_before_redo.png", img1C);
+ImageIOHelper.writeOutputImage(bin + "/contours2_before_redo.png", img2C);
+int z = 1;
+} catch(IOException e) {
+}
+}
         
         // if bestCompStat's difference in orientation is different than the
         // others', re-do the others to see if have an improved calculation.
@@ -827,7 +851,7 @@ TODO: this section needs revision
                 region2.overrideRelativeOrientation(theta2Radians);
 
                 FeatureComparisonStat compStat =
-                    featureMatcher.ditherForBestLocation(
+                    featureMatcher.ditherAndRotateForBestLocation(
                     features1, features2, region1, region2, dither);
                 
                 if (compStat != null) {
@@ -852,17 +876,21 @@ if ((index1.intValue() == 0) && (index2.intValue() == 0)) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();
+MiscDebug.debugPlot(matcher.getSolutionMatchedContours1(), img1C,
+    0, 0, "1_redone");
+MiscDebug.debugPlot(matcher.getSolutionMatchedContours2(), img2C,
+    0, 0, "2_redone");
 for (FeatureComparisonStat compStat : compStats) {
     int x1 = compStat.getImg1Point().getX();
     int y1 = compStat.getImg1Point().getY();
     int x2 = compStat.getImg2Point().getX();
     int y2 = compStat.getImg2Point().getY();
-    img1C.setRGB(x1, y1, 255, 0, 0);
-    img2C.setRGB(x2, y2, 255, 0, 0);
+    img1C.setRGB(x1, y1, 0, 255, 0);
+    img2C.setRGB(x2, y2, 0, 255, 0);
 }
 String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/contours1_redone.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/contours2_redone.png", img2C);
+ImageIOHelper.writeOutputImage(bin + "/contours_1_redone.png", img1C);
+ImageIOHelper.writeOutputImage(bin + "/contours_2_redone.png", img2C);
 int z = 1;
 } catch(IOException e) {
 }
@@ -912,8 +940,8 @@ int z = 1;
         return sum;
     }
 
-    private TransformationParameters calculateTransformation(
-        List<FeatureComparisonStat> compStats, int xOffset, int yOffset) {
+    private TransformationParameters[] calculateTransformation(
+        List<FeatureComparisonStat> compStats) {
         
         assert(compStats.isEmpty() == false);
         
@@ -934,12 +962,12 @@ int z = 1;
             
             FeatureComparisonStat compStat = compStats.get(i);
             
-            int x1 = compStat.getImg1Point().getX() + xOffset;
-            int y1 = compStat.getImg1Point().getY() + yOffset;
+            int x1 = compStat.getImg1Point().getX();
+            int y1 = compStat.getImg1Point().getY();
             matchedXY1.add(x1, y1);
             
-            int x2 = compStat.getImg2Point().getX() + xOffset;
-            int y2 = compStat.getImg2Point().getY() + yOffset;
+            int x2 = compStat.getImg2Point().getX();
+            int y2 = compStat.getImg2Point().getY();
             matchedXY2.add(x2, y2);
             
             weights[i] = compStat.getSumIntensitySqDiff();
@@ -956,7 +984,7 @@ int z = 1;
 
         assert(Math.abs(tot - 1.) < 0.03);
         
-        TransformationParameters params = tc.calulateEuclidean(
+        TransformationParameters[] params = tc.calulateEuclidean(
             matchedXY1, matchedXY2, weights, centroidX1, centroidY1);
 
         return params;
@@ -1006,5 +1034,186 @@ int z = 1;
         }
         
     }
+
+    protected TransformationParameters evaluate(TransformationParameters[] 
+        params, List<PairIntArray> bounds1, List<PairIntArray> bounds2,
+        int img1Width, int img1Height, int img2Width, int img2Height) {
+                
+        /*
+        using difference of centroids in the region of intersection defined by
+        the transformation.
+        */
+        
+        double tolerance = 10;
+        
+        double bestDist = Double.MAX_VALUE;
+        int bestDistIdx = -1;
+        
+        for (int i = 0; i < params.length; ++i) {
+            
+            TransformationParameters p = params[i];
+            
+            List<PairIntArray> trCurves1 = applyTransformForIntersection(p, 
+                bounds1, img2Width, img2Height);
+            
+            List<PairIntArray> trCurves2 = reverseTransformForIntersection(p, 
+                bounds2, img1Width, img1Height);
+            
+            double[][] centroidXY1s = calculateCentroids(trCurves1);
+            double[][] centroidXY2s = calculateCentroids(trCurves2);
+            
+            // using a greedy approach, find the SSD of the distances of the
+            // centroids
+            
+            int n1 = centroidXY1s.length;
+            int n2 = centroidXY2s.length;
+            
+            double distSum = 0;
+            int nMatched = 0;
+            
+            Set<Integer> chosen2 = new HashSet<Integer>();
+            
+            for (int idx1 = 0; idx1 < n1; ++idx1) {
+                
+                double[] xyCen1 = centroidXY1s[idx1];
+                
+                double minDiff = Double.MAX_VALUE;
+                int min2Idx = -1;
+                
+                for (int idx2 = 0; idx2 < n2; ++idx2) {
+                    
+                    if (chosen2.contains(Integer.valueOf(idx2))) {
+                        continue;
+                    }
+                    
+                    double[] xyCen2 = centroidXY2s[idx2];
+                    
+                    double diffX = xyCen1[0] - xyCen2[0];
+                    double diffY = xyCen1[1] - xyCen2[1];
+                    
+                    double dist = Math.sqrt(diffX*diffX + diffY*diffY);
+                    
+                    if (dist > tolerance) {
+                        continue;
+                    }
+                    
+                    if (dist < minDiff) {
+                        minDiff = dist;
+                        min2Idx = idx2;
+                    }
+                }
+                if (minDiff < Double.MAX_VALUE) {
+                    distSum = minDiff;
+                    nMatched++;
+                    chosen2.add(Integer.valueOf(min2Idx));
+                }
+            }
+            
+            distSum /= (double)nMatched;
+            
+            if (distSum < bestDist) {
+                bestDist = distSum;
+                bestDistIdx = i;
+            }
+        }
+        
+        return params[bestDistIdx];
+    }
     
+    protected List<PairIntArray> applyTransformForIntersection(
+        TransformationParameters params, List<PairIntArray> curves, 
+        int imgTrWidth, int imgTrHeight) {
+        
+        Transformer transformer = new Transformer();
+        
+        List<PairIntArray> trList = new ArrayList<PairIntArray>();
+        
+        for (int ii = 0; ii < curves.size(); ++ii) {
+            
+            PairIntArray tr = transformer.applyTransformation(params,
+                curves.get(ii));
+            
+            boolean allWithinBounds = true;
+            
+            for (int j = 0; j < tr.getN(); ++j) {
+                int x = tr.getX(j);
+                int y = tr.getY(j);
+                if ((x < 0) || (y < 0) || (x > (imgTrWidth - 1))
+                    || (y > (imgTrHeight - 1))) {
+                    
+                    allWithinBounds = false;
+                    
+                    break;
+                }
+            }
+            if (allWithinBounds) {
+                trList.add(tr);
+            }
+        }
+        
+        return trList;
+    }
+
+    private List<PairIntArray> reverseTransformForIntersection(
+        TransformationParameters params, List<PairIntArray> curves, 
+        int imgWidth, int imgHeight) {
+        
+        MatchedPointsTransformationCalculator tc = 
+            new MatchedPointsTransformationCalculator();
+        
+        TransformationParameters revParams = tc.swapReferenceFrames(params);
+        
+        Transformer transformer = new Transformer();
+
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int ii = 0; ii < curves.size(); ++ii) {
+            
+            PairIntArray tr = transformer.applyTransformation(revParams, 
+                curves.get(ii));
+                        
+            for (int j = 0; j < tr.getN(); ++j) {
+                
+                int x = tr.getX(j);
+                
+                int y = tr.getY(j);
+                
+                if ((x < 0) || (y < 0) || (x > (imgWidth - 1))
+                    || (y > (imgHeight - 1))) {
+                    
+                    remove.add(Integer.valueOf(ii));
+                    
+                    break;
+                }
+            }
+        }
+        
+        if (remove.isEmpty()) {
+            return curves;
+        }
+        
+        List<PairIntArray> filtered = new ArrayList<PairIntArray>(curves);
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i).intValue();
+            filtered.remove(idx);
+        }
+        
+        return filtered;
+    }
+    
+    protected double[][] calculateCentroids(List<PairIntArray> curves) {
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double[][] centroids = new double[curves.size()][];
+        
+        for (int i = 0; i < curves.size(); ++i) {
+            
+            centroids[i] = curveHelper.calculateXYCentroids(curves.get(i));
+        }
+        
+        return centroids;
+    }
+
 }
