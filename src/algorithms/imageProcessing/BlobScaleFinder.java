@@ -71,8 +71,7 @@ public class BlobScaleFinder {
 
         TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
             smallestGroupLimit, largestGroupLimit);
-
-        /*
+/*
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img1Grey.getWidth()/minDimension,
@@ -98,18 +97,24 @@ public class BlobScaleFinder {
         //full image frame:
         TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
             img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned);
-        */
+*/        
         /*
         //evaluate params[0] and params[1] to choose between
         TransformationParameters bestParam = evaluate(params, bounds1, bounds2,
             img1.getWidth(), img1.getHeight(), img2.getWidth(), img2.getHeight());
         */
 
-        log.info("params: " + params.toString());
+        if (params != null) {
+            log.info("params: " + params.toString());
+        }
 
-        //log.info("binned params: " + paramsBinned.toString());
+        /*
+        if (paramsBinned != null) {
+            log.info("binned params: " + paramsBinned.toString());
+        }
 
-       // return paramsBinned;
+        return paramsBinned;
+        */
         return params;
     }
 
@@ -440,7 +445,7 @@ public class BlobScaleFinder {
                 TransformationParameters params = mapper.matchContours();
 
                 if ((params == null) ||
-                    (mapper.getMatcher().getSolutionMatchedContours1().size() < 3)) {
+                    (mapper.getMatcher().getSolutionMatchedContours1().size() < 2)) {
                     
                     continue;
                 }
@@ -449,7 +454,7 @@ public class BlobScaleFinder {
                     filterContourPointsByFeatures(img1, img2, index1, index2,
                     blob1, blob2, curve1, curve2, features1, features2,
                     mapper.getMatcher());
-                
+
                 if (compStats.size() < 2) {
                     continue;
                 }
@@ -490,7 +495,7 @@ public class BlobScaleFinder {
                 bestOverallCompStats = bestCompStats;
 
                 log.info("  best overall for [" + bestOverallIdx1 + "] [" +
-                    bestOverallIdx2 + "]");
+                    bestOverallIdx2 + "]  combinedStat=" + bestOverallStatSqSum);
             }
         }
 
@@ -775,9 +780,9 @@ sb.append(
         log.info(sb.toString());
 
 // looking at idx=2, 7 for full image and idx=0, 0 for binned
-//if ((index1.intValue() == 2) && (index2.intValue() == 7)) {
-if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
-((index1.intValue() == 3) && (index2.intValue() == 3))) {
+if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
+//if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
+//((index1.intValue() == 3) && (index2.intValue() == 3))) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();
@@ -913,9 +918,9 @@ TODO: this section needs revision
         log.info(sb.toString());
 
 // looking at idx=2, 7 for full image and idx=0, 0 for binned
-//if ((index1.intValue() == 2) && (index2.intValue() == 7)) {
-if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
-((index1.intValue() == 3) && (index2.intValue() == 3))) {
+if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
+//if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
+//((index1.intValue() == 3) && (index2.intValue() == 3))) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();
@@ -938,11 +943,6 @@ int z = 1;
 } catch(IOException e) {
 }
 }
-        //occassionally, there are very good matches on a contour and
-        // some very wrong matches due to the roughness of extracting
-        // contours as blob perimeters (in contrast to edges which are
-        // derived from gaussian smoothed images).
-        //TODO: consider improving the extraction of blob boundaries
 
         removeOutliers(compStats);
 
@@ -956,9 +956,10 @@ int z = 1;
         for (FeatureComparisonStat compStat : compStats) {
 
             sb.append(String.format(
-                " (%d,%d) (%d,%d) intSqDiff=%.1f(%.1f)",
+                " (%d,%d) (%d,%d) theta1=%.0f theta2=%.0f intSqDiff=%.1f(%.1f)",
                 compStat.getImg1Point().getX(), compStat.getImg1Point().getY(),
                 compStat.getImg2Point().getX(), compStat.getImg2Point().getY(),
+                compStat.getImg1PointRotInDegrees(), compStat.getImg2PointRotInDegrees(),
                 compStat.getSumIntensitySqDiff(),
                 compStat.getImg2PointIntensityErr()));
         }
@@ -1039,12 +1040,17 @@ int z = 1;
             return;
         }
         
+        //TODO: improve w/ a more robust outlier removal
+       
+        double[] errDivInt = new double[compStats.size()];
+        
         float[] weights = new float[compStats.size()];
         double sum = 0;
         for (int i = 0; i < compStats.size(); ++i) {
             FeatureComparisonStat compStat = compStats.get(i);
             weights[i] = compStat.getSumIntensitySqDiff();
             sum += weights[i];
+            errDivInt[i] = compStat.getImg2PointIntensityErr()/compStat.getSumIntensitySqDiff();
         }
         for (int i = 0; i < compStats.size(); ++i) {
             double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
@@ -1052,6 +1058,27 @@ int z = 1;
         }
         float[] wghtsMeanAndStDev = MiscMath.getAvgAndStDev(weights);
         float maxWeight = MiscMath.findMax(weights);
+                
+        /*
+        if all stats have intensities < 5 times their errors and
+        if the stdev is approx 0.15 times the mean or less, should filter here
+        */
+        boolean doNotFilter = true;
+        if ((wghtsMeanAndStDev[1]/wghtsMeanAndStDev[0]) > 0.15) {
+            doNotFilter = false;
+        }
+        if (doNotFilter) {
+            for (int i = 0; i < errDivInt.length; ++i) {
+                if (errDivInt[i] < 5) {    
+                    doNotFilter = false;
+                    break;
+                }
+            }
+        }
+        //TODO: may need revision
+        if (doNotFilter && (weights.length <= 4)) {
+            return;
+        }
         
         List<FeatureComparisonStat> filteredCompStats = new ArrayList<FeatureComparisonStat>();
         for (int i = 0; i < compStats.size(); ++i) {
