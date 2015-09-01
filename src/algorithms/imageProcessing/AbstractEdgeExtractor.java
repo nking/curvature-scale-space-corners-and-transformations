@@ -235,6 +235,8 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         
         int nReplaced = 1;
         
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         int nMaxIter = 100;
         int nIter = 0;
       
@@ -250,65 +252,8 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                     continue;
                 }
 
-                int nEdgeReplaced = 0;
-                
-                /*
-                looking at the 8 neighbor region of each pixel for which the
-                pixel's preceding and next edge pixels remain connected for
-                   and among those, looking for a higher intensity pixel than
-                   the center and if found, change coords to that.
-                */
-                for (int i = 1; i < (edge.getN() - 1); i++) {
-                    int x = edge.getX(i);                
-                    int y = edge.getY(i);
-                    int prevX = edge.getX(i - 1);                
-                    int prevY = edge.getY(i - 1);
-                    int nextX = edge.getX(i + 1);                
-                    int nextY = edge.getY(i + 1);
-
-                    int maxValue = edgeGuideImage.getValue(x, y);
-                    int maxValueX = x;
-                    int maxValueY = y;
-                    boolean changed = false;
-
-                    for (int col = (prevX - 1); col <= (prevX + 1); col++) {
-
-                        if ((col < 0) || (col > (edgeGuideImage.getWidth() - 1))) {
-                            continue;
-                        }
-
-                        for (int row = (prevY - 1); row <= (prevY + 1); row++) {
-
-                            if ((row < 0) || (row > (edgeGuideImage.getHeight() - 1))) {
-                                continue;
-                            }
-                            if ((col == prevX) && (row == prevY)) {
-                                continue;
-                            }
-                            if ((col == nextX) && (row == nextY)) {
-                                continue;
-                            }
-
-                            // skip if pixel is not next to (nextX, nextY)
-                            int diffX = Math.abs(nextX - col);
-                            int diffY = Math.abs(nextY - row);
-                            if ((diffX > 1) || (diffY > 1)) {
-                                continue;
-                            }
-
-                            if (edgeGuideImage.getValue(col, row) > maxValue) {
-                                maxValue = edgeGuideImage.getValue(col, row);
-                                maxValueX = col;
-                                maxValueY = row;
-                                changed = true;
-                            }
-                        }
-                    }
-                    if (changed) {
-                        nEdgeReplaced++;
-                        edge.set(i, maxValueX, maxValueY);
-                    }                    
-                }
+                int nEdgeReplaced = curveHelper.adjustEdgesTowardsBrightPixels(
+                    edge, edgeGuideImage);
                 
                 nReplaced += nEdgeReplaced;
             }
@@ -317,8 +262,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
 
             nIter++;
         }
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         curveHelper.removeRedundantPoints(tmpEdges);
         

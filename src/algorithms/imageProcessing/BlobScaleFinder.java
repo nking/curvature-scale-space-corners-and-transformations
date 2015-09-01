@@ -5,6 +5,7 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -71,6 +72,7 @@ public class BlobScaleFinder {
         TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
             smallestGroupLimit, largestGroupLimit);
 
+        /*
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img1Grey.getWidth()/minDimension,
@@ -96,7 +98,7 @@ public class BlobScaleFinder {
         //full image frame:
         TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
             img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned);
-
+        */
         /*
         //evaluate params[0] and params[1] to choose between
         TransformationParameters bestParam = evaluate(params, bounds1, bounds2,
@@ -105,8 +107,9 @@ public class BlobScaleFinder {
 
         log.info("params: " + params.toString());
 
-        log.info("binned params: " + paramsBinned.toString());
+        //log.info("binned params: " + paramsBinned.toString());
 
+       // return paramsBinned;
         return params;
     }
 
@@ -181,7 +184,7 @@ public class BlobScaleFinder {
 
         boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        extractBoundsOfBlobs(outputBlobs, outputBounds, img.getWidth(),
+        extractBoundsOfBlobs(img, outputBlobs, outputBounds, img.getWidth(),
             img.getHeight(), discardWhenCavityIsSmallerThanBorder);
 
     }
@@ -263,7 +266,7 @@ public class BlobScaleFinder {
 
         boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        extractBoundsOfBlobs(blobs, outBounds, w, h,
+        extractBoundsOfBlobs(img, blobs, outBounds, w, h,
             discardWhenCavityIsSmallerThanBorder);
 
         inOutBlobs.clear();
@@ -279,7 +282,8 @@ public class BlobScaleFinder {
      * @param height
      * @param discardWhenCavityIsSmallerThanBorder
      */
-    protected void extractBoundsOfBlobs(final List<Set<PairInt>> inOutBlobs,
+    protected void extractBoundsOfBlobs(final GreyscaleImage img, 
+        final List<Set<PairInt>> inOutBlobs,
         final List<PairIntArray> outputBounds, int width, int height,
         boolean discardWhenCavityIsSmallerThanBorder) {
 
@@ -304,6 +308,18 @@ public class BlobScaleFinder {
             if ((closedEdge != null) &&
                 (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1))) {
 
+                int nChanged = curveHelper.adjustEdgesTowardsBrightPixels(
+                    closedEdge, img);
+                
+                if (nChanged > 0) {
+                    
+                    curveHelper.removeRedundantPoints(closedEdge);
+        
+                    curveHelper.pruneAdjacentNeighborsTo2(closedEdge);
+        
+                    curveHelper.correctCheckeredSegments(closedEdge);
+                }
+                
                 outputBounds.add(closedEdge);
 
             } else {
@@ -373,8 +389,7 @@ public class BlobScaleFinder {
     }
 
     protected TransformationParameters solveForScale(
-        GreyscaleImage img1,
-        GreyscaleImage img2,
+        GreyscaleImage img1, GreyscaleImage img2,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
         List<PairIntArray> bounds1, List<PairIntArray> bounds2) {
 
@@ -383,6 +398,8 @@ public class BlobScaleFinder {
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
         IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
 
+//TODO: changing to keep top k best overall
+        
         double bestOverallStatSqSum = Double.MAX_VALUE;
         int bestOverallIdx1 = -1;
         int bestOverallIdx2 = -1;
@@ -424,7 +441,7 @@ public class BlobScaleFinder {
 
                 if ((params == null) ||
                     (mapper.getMatcher().getSolutionMatchedContours1().size() < 3)) {
-
+                    
                     continue;
                 }
 
@@ -432,13 +449,14 @@ public class BlobScaleFinder {
                     filterContourPointsByFeatures(img1, img2, index1, index2,
                     blob1, blob2, curve1, curve2, features1, features2,
                     mapper.getMatcher());
-
+                
                 if (compStats.size() < 2) {
                     continue;
                 }
 
                 double combinedStat = calculateCombinedIntensityStat(compStats);
 
+                //TODO: consider keeping top k instead of 1
                 if (combinedStat < bestStatSqSum) {
                     bestStatSqSum = combinedStat;
                     bestIdx2 = index2.intValue();
@@ -564,6 +582,7 @@ for (int i = 0; i < bounds2.size(); ++i) {
 MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 int z = 1;
 }
+
         /*
         solve for scale:
         -- use ContourMather to get scale solutions for each pairing then
@@ -757,7 +776,8 @@ sb.append(
 
 // looking at idx=2, 7 for full image and idx=0, 0 for binned
 //if ((index1.intValue() == 2) && (index2.intValue() == 7)) {
-if ((index1.intValue() == 0) && (index2.intValue() == 0)) {
+if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
+((index1.intValue() == 3) && (index2.intValue() == 3))) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();
@@ -894,7 +914,8 @@ TODO: this section needs revision
 
 // looking at idx=2, 7 for full image and idx=0, 0 for binned
 //if ((index1.intValue() == 2) && (index2.intValue() == 7)) {
-if ((index1.intValue() == 0) && (index2.intValue() == 0)) {
+if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
+((index1.intValue() == 3) && (index2.intValue() == 3))) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();
@@ -923,7 +944,7 @@ int z = 1;
         // derived from gaussian smoothed images).
         //TODO: consider improving the extraction of blob boundaries
 
-        removeOutliersIfFeasible(compStats);
+        removeOutliers(compStats);
 
         return compStats;
     }
@@ -1012,49 +1033,38 @@ int z = 1;
         return params;
     }
 
-    private void removeOutliersIfFeasible(List<FeatureComparisonStat> compStats) {
+    private void removeOutliers(List<FeatureComparisonStat> compStats) {
 
         if (compStats.size() < 2) {
             return;
         }
-
-        /*
-        the largest SSD values are sometimes false matches.
-
-        looking at the 2 smallest SSDs and removing anything > 2.5 times
-        their average.
-        */
-
-        double[] values = new double[compStats.size()];
-        int[] indexes = new int[values.length];
-
+        
+        float[] weights = new float[compStats.size()];
+        double sum = 0;
         for (int i = 0; i < compStats.size(); ++i) {
-
-            FeatureComparisonStat cStat = compStats.get(i);
-
-            values[i] = cStat.getSumIntensitySqDiff();
-
-            indexes[i] = i;
+            FeatureComparisonStat compStat = compStats.get(i);
+            weights[i] = compStat.getSumIntensitySqDiff();
+            sum += weights[i];
         }
-
-        MultiArrayMergeSort.sortByDecr(values, indexes);
-
-        double avgTop = (values[values.length - 1] + values[values.length - 2])/2.;
-
-        List<FeatureComparisonStat> remove = new ArrayList<FeatureComparisonStat>();
-        for (int i = 0; i < values.length; ++i) {
-            double v = values[i];
-            double diff = Math.abs(v - avgTop);
-            if (diff > 2.5*avgTop) {
-                int idx = indexes[i];
-                remove.add(compStats.get(idx));
+        for (int i = 0; i < compStats.size(); ++i) {
+            double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
+            weights[i] = (float) div;
+        }
+        float[] wghtsMeanAndStDev = MiscMath.getAvgAndStDev(weights);
+        float maxWeight = MiscMath.findMax(weights);
+        
+        List<FeatureComparisonStat> filteredCompStats = new ArrayList<FeatureComparisonStat>();
+        for (int i = 0; i < compStats.size(); ++i) {
+            float w = weights[i];
+            float diffW = Math.abs(maxWeight - w);
+            if (diffW < (1.5 * wghtsMeanAndStDev[1])) {
+                filteredCompStats.add(compStats.get(i));
             }
         }
+        
+        compStats.clear();
 
-        for (FeatureComparisonStat rm : remove) {
-            compStats.remove(rm);
-        }
-
+        compStats.addAll(filteredCompStats);
     }
 
     protected TransformationParameters evaluate(TransformationParameters[]

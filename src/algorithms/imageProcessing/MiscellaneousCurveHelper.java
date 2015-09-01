@@ -751,40 +751,50 @@ public class MiscellaneousCurveHelper {
             
             PairIntArray edge = tmpEdges.get(i);
             
-            for (int j = (edge.getN() - 1); j > -1; j--) {
-                
-                String str = String.format("%d:%d", edge.getX(j), 
-                    edge.getY(j));
-                
-                int idx = points.indexOf(str);
-                
-                if (idx > -1) {
-                    
-                    //TODO: consider a limit for (pIdx - j)
-                    
-                    int pIdx = edge.getN() - idx - 1;
-                    
-                    edge.removeRange(j, pIdx - 1);
-                    
-                    // restart comparison? if we remove same region from points, we don't have to restart
-                    points.clear();
-                    
-                    j = edge.getN();
-                    
-                } else {
-                    
-                    points.add(str);
-                }
-            }
+            removeRedundantPoints(edge);
         }      
+    }
+    
+    public void removeRedundantPoints(PairIntArray edge) {
+        
+        log.fine("removeRedundantPoints");
+        
+        // if there are redundant points, remove the points in between
+        
+        //TODO: replace w/ faster algorithm...
+                    
+        List<String> points = new ArrayList<String>();
+
+        for (int j = (edge.getN() - 1); j > -1; j--) {
+
+            String str = String.format("%d:%d", edge.getX(j), 
+                edge.getY(j));
+
+            int idx = points.indexOf(str);
+
+            if (idx > -1) {
+
+                //TODO: consider a limit for (pIdx - j)
+
+                int pIdx = edge.getN() - idx - 1;
+
+                edge.removeRange(j, pIdx - 1);
+
+                // restart comparison? if we remove same region from points, we don't have to restart
+                points.clear();
+
+                j = edge.getN();
+
+            } else {
+
+                points.add(str);
+            }
+        }
     }
 
     public void pruneAdjacentNeighborsTo2(List<PairIntArray> tmpEdges) {
        
         log.fine("pruneAdjacentNeighborsTo2");
-        
-        // this will usually only have 2 in it, and most expected is 3
-        int[] outputAdjacentNeighbors = new int[8];
         
         for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
             
@@ -793,22 +803,33 @@ public class MiscellaneousCurveHelper {
             
             PairIntArray edge = tmpEdges.get(lIdx);
             
-            for (int eIdx = 0; eIdx < edge.getN(); eIdx++) {
-                
-                int nNeighbors = getAdjacentNeighbors(edge, eIdx,
-                    outputAdjacentNeighbors);
-                
-                if ((nNeighbors > 2)) {
+            pruneAdjacentNeighborsTo2(edge);
+        }
+    }
+    
+    public void pruneAdjacentNeighborsTo2(PairIntArray edge) {
+       
+        log.fine("pruneAdjacentNeighborsTo2");
+        
+        // this will usually only have 2 in it, and most expected is 3
+        int[] outputAdjacentNeighbors = new int[8];
                     
-                    boolean pruned = pruneAdjacentNeighborsTo2(edge, eIdx, 
-                        outputAdjacentNeighbors, nNeighbors);
-   
-                    if (pruned) {
-                        // restart iteration for easier maintenance
-                        eIdx = -1;
-                        //237,201  edge0
-                        log.finest("removed a point from edge=" + lIdx);
-                    }
+        // quick check for whether an edged has 3 neighbors, then
+        // compare with patterns
+
+        for (int eIdx = 0; eIdx < edge.getN(); eIdx++) {
+
+            int nNeighbors = getAdjacentNeighbors(edge, eIdx,
+                outputAdjacentNeighbors);
+
+            if ((nNeighbors > 2)) {
+
+                boolean pruned = pruneAdjacentNeighborsTo2(edge, eIdx, 
+                    outputAdjacentNeighbors, nNeighbors);
+
+                if (pruned) {
+                    // restart iteration for easier maintenance
+                    eIdx = -1;
                 }
             }
         }
@@ -1115,17 +1136,29 @@ public class MiscellaneousCurveHelper {
         So far, only seen in horizontal or vertical segments.
         */
         
-        int[] xs = new int[2];
-        int[] ys = new int[2];
-        
         for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
             
             PairIntArray edge = tmpEdges.get(lIdx);
             
-            for (int i = 0; i < edge.getN(); i++) {
-                
-                correctCheckeredSegments(edge, i, xs, ys);
-            }
+            correctCheckeredSegments(edge);
+        }
+    }
+    
+    public void correctCheckeredSegments(PairIntArray edge) {
+        
+        /*
+        there are sometimes sections in the line where one pixel is displaced
+               @      @ @ @@@@@@@@@
+        @@@@@@@ @@@@@@ @ @ 
+        
+        So far, only seen in horizontal or vertical segments.
+        */
+        
+        int[] xs = new int[2];
+        int[] ys = new int[2];
+                                
+        for (int i = 0; i < edge.getN(); i++) {
+            correctCheckeredSegments(edge, i, xs, ys);
         }
     }
     
@@ -3345,4 +3378,70 @@ for (int i = 0; i < edge.getN(); i++) {
         return perp;
     }
     
+    public int adjustEdgesTowardsBrightPixels(PairIntArray edge,
+        GreyscaleImage edgeGuideImage) {
+     
+        int nEdgeReplaced = 0;
+                
+        /*
+        looking at the 8 neighbor region of each pixel for which the
+        pixel's preceding and next edge pixels remain connected for
+           and among those, looking for a higher intensity pixel than
+           the center and if found, change coords to that.
+        */
+        for (int i = 1; i < (edge.getN() - 1); i++) {
+            int x = edge.getX(i);                
+            int y = edge.getY(i);
+            int prevX = edge.getX(i - 1);                
+            int prevY = edge.getY(i - 1);
+            int nextX = edge.getX(i + 1);                
+            int nextY = edge.getY(i + 1);
+
+            int maxValue = edgeGuideImage.getValue(x, y);
+            int maxValueX = x;
+            int maxValueY = y;
+            boolean changed = false;
+
+            for (int col = (prevX - 1); col <= (prevX + 1); col++) {
+
+                if ((col < 0) || (col > (edgeGuideImage.getWidth() - 1))) {
+                    continue;
+                }
+
+                for (int row = (prevY - 1); row <= (prevY + 1); row++) {
+
+                    if ((row < 0) || (row > (edgeGuideImage.getHeight() - 1))) {
+                        continue;
+                    }
+                    if ((col == prevX) && (row == prevY)) {
+                        continue;
+                    }
+                    if ((col == nextX) && (row == nextY)) {
+                        continue;
+                    }
+
+                    // skip if pixel is not next to (nextX, nextY)
+                    int diffX = Math.abs(nextX - col);
+                    int diffY = Math.abs(nextY - row);
+                    if ((diffX > 1) || (diffY > 1)) {
+                        continue;
+                    }
+
+                    if (edgeGuideImage.getValue(col, row) > maxValue) {
+                        maxValue = edgeGuideImage.getValue(col, row);
+                        maxValueX = col;
+                        maxValueY = row;
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                nEdgeReplaced++;
+                edge.set(i, maxValueX, maxValueY);
+            }                    
+        }
+                
+        return nEdgeReplaced;
+    }
+        
 }

@@ -426,15 +426,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
     public TransformationParameters calulateEuclidean(
         PairIntArray matchedXY1, PairIntArray matchedXY2, float[] weights,
         final double centroidX1, final double centroidY1) {
-        
-        /*
-        Calculating 2 results and letting the invoker evaluate which is better.
-        The first result returned is from using pairs to calculate the averages
-        of scale, and translation and removing outliers from it.
-        The second result returned is from using only the highest weighted pair
-        (or pairs) to solve for scale, translation, and rotation.
-        */
-        
+       
         /*
         solve for rotation.
 
@@ -455,52 +447,26 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
 
             rotation = theta_image1 - theta_image2 = 25 degrees
         */
-        
-        // first, filter the points by their weights to remove the worst matches.
-        float[] wghtsMeanAndStDev = MiscMath.getAvgAndStDev(weights);
-        float maxWeight = MiscMath.findMax(weights);
-
-        // then, from the remaining matched points, make pairs of points that
-        // are chosen to maximize the distance between them
-        
-        PairIntArray filteredXY1 = new PairIntArray(); 
-        PairIntArray filteredXY2 = new PairIntArray();
-        float[] filteredWeights = new float[weights.length];
-        float totW = 0;
-        for (int i = 0; i < weights.length; ++i) {
-            float w = weights[i];
-            float diffW = Math.abs(maxWeight - w);
-            if (diffW < (1.5*wghtsMeanAndStDev[1])) {
-                filteredWeights[filteredXY1.getN()] = weights[i];
-                totW += weights[i];
-                filteredXY1.add(matchedXY1.getX(i), matchedXY1.getY(i));
-                filteredXY2.add(matchedXY2.getX(i), matchedXY2.getY(i));
-            }
-        }
-        filteredWeights = Arrays.copyOfRange(filteredWeights, 0, filteredXY1.getN());
-        for (int i = 0; i < filteredWeights.length; ++i) {
-            filteredWeights[i] /= totW;
-        }
-        
+            
         /*
         choosing pairs of points by optimal pairing for maximum distance.
         since hungarian algorithm is set for min cost,
             using 1/distance, and when i1==i2, using max value.
         TODO: clean up redundant pairings
         */
-        float[][] invDist = new float[filteredXY1.getN()][filteredXY1.getN()];
+        float[][] invDist = new float[matchedXY1.getN()][matchedXY1.getN()];
 
-        for (int i1 = 0; i1 < filteredXY1.getN(); ++i1) {
-            int x1 = filteredXY1.getX(i1);
-            int y1 = filteredXY1.getY(i1);
-            invDist[i1] = new float[filteredXY1.getN()];
-            for (int i2 = 0; i2 < filteredXY1.getN(); ++i2) {
+        for (int i1 = 0; i1 < matchedXY1.getN(); ++i1) {
+            int x1 = matchedXY1.getX(i1);
+            int y1 = matchedXY1.getY(i1);
+            invDist[i1] = new float[matchedXY1.getN()];
+            for (int i2 = 0; i2 < matchedXY1.getN(); ++i2) {
                 if (i1 == i2) {
                     invDist[i1][i2] = Float.MAX_VALUE;
                     continue;
                 }
-                int x2 = filteredXY1.getX(i2);
-                int y2 = filteredXY1.getY(i2);
+                int x2 = matchedXY1.getX(i2);
+                int y2 = matchedXY1.getY(i2);
                 int diffX = x1 - x2;
                 int diffY = y1 - y2;
                 double dist = Math.sqrt(diffX*diffX + diffY*diffY);
@@ -531,18 +497,18 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
 
         AngleUtil angleUtil = new AngleUtil();
 
-        totW = 0;
+        float totW = 0;
         for (PairInt pairIndex : pairIndexes) {
             int idx1 = pairIndex.getX();
             int idx2 = pairIndex.getY();            
-            float pairWeight = (filteredWeights[idx1] + filteredWeights[idx2]);
+            float pairWeight = (weights[idx1] + weights[idx2]);
             totW += pairWeight;
         }
         Map<PairInt, Float> pairWeights = new HashMap<PairInt, Float>();
         for (PairInt pairIndex : pairIndexes) {
             int idx1 = pairIndex.getX();
             int idx2 = pairIndex.getY();            
-            float pairWeight = (filteredWeights[idx1] + filteredWeights[idx2])/totW;
+            float pairWeight = (weights[idx1] + weights[idx2])/totW;
             pairWeights.put(pairIndex, Float.valueOf(pairWeight));
         }
         
@@ -558,15 +524,15 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             int idx1 = pairIndex.getX();
             int idx2 = pairIndex.getY();
 
-            int set1X1 = filteredXY1.getX(idx1);
-            int set1Y1 = filteredXY1.getY(idx1);
-            int set1X2 = filteredXY1.getX(idx2);
-            int set1Y2 = filteredXY1.getY(idx2);
+            int set1X1 = matchedXY1.getX(idx1);
+            int set1Y1 = matchedXY1.getY(idx1);
+            int set1X2 = matchedXY1.getX(idx2);
+            int set1Y2 = matchedXY1.getY(idx2);
 
-            int set2X1 = filteredXY2.getX(idx1);
-            int set2Y1 = filteredXY2.getY(idx1);
-            int set2X2 = filteredXY2.getX(idx2);
-            int set2Y2 = filteredXY2.getY(idx2);
+            int set2X1 = matchedXY2.getX(idx1);
+            int set2Y1 = matchedXY2.getY(idx1);
+            int set2X2 = matchedXY2.getX(idx2);
+            int set2Y2 = matchedXY2.getY(idx2);
 
             double dx1 = set1X1 - set1X2;
             double dy1 = set1Y1 - set1Y2;
