@@ -85,6 +85,13 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
             expected.add(new PairInt(54, y));
         }
         assertTrue(expected.size() == 36);
+        
+        // subtract the 4 corners that spur remover now removes for unambiguous
+        // sequence
+        expected.remove(new PairInt(45, 45));
+        expected.remove(new PairInt(54, 45));
+        expected.remove(new PairInt(54, 54));
+        expected.remove(new PairInt(45, 54));
 
         EdgeExtractorForBlobBorder instance = new EdgeExtractorForBlobBorder();
 

@@ -12,15 +12,18 @@ import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
 /**
  * determine scale between 2 image using blob contours.
- *
+ * NOT READY FOR USE YET.
+ * 
  * @author nichole
  */
 public class BlobScaleFinder {
@@ -34,6 +37,7 @@ public class BlobScaleFinder {
     }
 
     /**
+     * NOT READY FOR USE YET.
      * From the given images, determine the scale between them and roughly
      * estimate the rotation and translation too.  Note that image processing
      * such as sky masks should be applied before using this method.
@@ -69,9 +73,9 @@ public class BlobScaleFinder {
         int smallestGroupLimit = 100;
         int largestGroupLimit = 5000;
 
-        TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
-            smallestGroupLimit, largestGroupLimit);
-/*
+        //TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
+        //    smallestGroupLimit, largestGroupLimit);
+
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img1Grey.getWidth()/minDimension,
@@ -97,25 +101,25 @@ public class BlobScaleFinder {
         //full image frame:
         TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
             img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned);
-*/        
+        
         /*
         //evaluate params[0] and params[1] to choose between
         TransformationParameters bestParam = evaluate(params, bounds1, bounds2,
             img1.getWidth(), img1.getHeight(), img2.getWidth(), img2.getHeight());
         */
 
-        if (params != null) {
+        /*if (params != null) {
             log.info("params: " + params.toString());
-        }
+        }*/
 
-        /*
+        
         if (paramsBinned != null) {
             log.info("binned params: " + paramsBinned.toString());
         }
 
         return paramsBinned;
-        */
-        return params;
+        
+        //return params;
     }
 
     protected boolean applyHistogramEqualizationIfNeeded(GreyscaleImage image1,
@@ -958,9 +962,9 @@ TODO: this section needs revision
         log.info(sb.toString());
 
 // looking at idx=2, 7 for full image and idx=0, 0 for binned
-if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
-//if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
-//((index1.intValue() == 3) && (index2.intValue() == 3))) {
+//if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
+if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
+((index1.intValue() == 3) && (index2.intValue() == 3))) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();

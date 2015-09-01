@@ -1421,10 +1421,11 @@ public class PerimeterFinderTest extends TestCase {
     
     public void testGetOrderedBorderE() throws Exception {
   
-        for (int testSet = 0; testSet < 5; ++testSet) {
+        for (int testSet = 1; testSet < 4; ++testSet) {
             
             EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
-
+            extractor.setToDebug();
+            
             int imageWidth = 175;
             int imageHeight = 130;
 
@@ -1671,15 +1672,12 @@ public class PerimeterFinderTest extends TestCase {
         }
         
         if (n == 1) {
-            fileName = "blob_1.png";
-            //fileName = "blob_perimeter_1.png";
-        } else if (n == 2) {
             fileName = "blob_2.png";
             //fileName = "blob_perimeter_2.png";
-        } else if (n == 3) {
+        } else if (n == 2) {
             fileName = "blob_3.png";
             //fileName = "blob_perimeter_3.png";
-        } else if (n == 4) {
+        } else if (n == 3) {
             fileName = "blob_4.png";
             //fileName = "blob_perimeter_4.png";
         }

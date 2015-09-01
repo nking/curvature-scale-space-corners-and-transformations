@@ -1857,6 +1857,10 @@ for (int i = 0; i < output.size(); ++i) {
 MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 }
 
+        if (output.isEmpty()) {
+            return null;
+        }
+        
         if (output.size() > 1) {
             Collections.sort(output, new PairIntArrayDescendingComparator());
         }
