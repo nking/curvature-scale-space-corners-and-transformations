@@ -56,8 +56,8 @@ public class DFSContiguousValueFinder {
 <span class="fc" id="L56">    }</span>
         
     public void setMinimumNumberInCluster(int n) {
-<span class="nc" id="L59">        this.minimumNumberInCluster = n;</span>
-<span class="nc" id="L60">    }</span>
+<span class="fc" id="L59">        this.minimumNumberInCluster = n;</span>
+<span class="fc" id="L60">    }</span>
     
     public void setDebug(boolean setDebugToTrue) {
 <span class="nc" id="L63">        this.debug = setDebugToTrue;</span>
@@ -155,8 +155,8 @@ public class DFSContiguousValueFinder {
 <span class="fc" id="L155">                int vX = uX + dxs[i];</span>
 <span class="fc" id="L156">                int vY = uY + dys[i];</span>
             
-<span class="pc bpc" id="L158" title="1 of 8 branches missed.">                if ((vX &lt; 0) || (vX &gt; (width - 1)) || (vY &lt; 0) || (vY &gt; (height - 1))) {</span>
-<span class="nc" id="L159">                    continue;</span>
+<span class="fc bfc" id="L158" title="All 8 branches covered.">                if ((vX &lt; 0) || (vX &gt; (width - 1)) || (vY &lt; 0) || (vY &gt; (height - 1))) {</span>
+<span class="fc" id="L159">                    continue;</span>
                 }
 
 <span class="fc" id="L162">                int vIndex = (vY * width) + vX;</span>
@@ -191,13 +191,13 @@ public class DFSContiguousValueFinder {
                 
 <span class="fc" id="L192">        Integer groupId = pointToGroupMap.get(uIdx);</span>
         
-<span class="pc bpc" id="L194" title="1 of 4 branches missed.">        if ((groupId != null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
+<span class="fc bfc" id="L194" title="All 4 branches covered.">        if ((groupId != null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
                     
 <span class="fc" id="L196">            groupMembership.get(groupId).add(vIdx);</span>
             
 <span class="fc" id="L198">            pointToGroupMap.put(vIdx, groupId);</span>
                         
-<span class="pc bpc" id="L200" title="2 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) != null)) {</span>
+<span class="pc bpc" id="L200" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) != null)) {</span>
 
 <span class="nc" id="L202">            groupId = pointToGroupMap.get(vIdx);</span>
 
@@ -205,7 +205,7 @@ public class DFSContiguousValueFinder {
             
 <span class="nc" id="L206">            pointToGroupMap.put(uIdx, groupId);</span>
             
-<span class="pc bpc" id="L208" title="2 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
+<span class="pc bpc" id="L208" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
                         
 <span class="fc" id="L210">            groupId = Integer.valueOf(groupMembership.size());</span>
             

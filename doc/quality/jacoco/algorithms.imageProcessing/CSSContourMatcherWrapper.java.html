@@ -37,19 +37,21 @@ import java.util.logging.Logger;
      */
     private final List&lt;CurvatureScaleSpaceContour&gt; contours2;
             
-<span class="nc" id="L40">    private double solutionScale = Double.MAX_VALUE;</span>
+    private final int nMaxMatchable;
     
-<span class="nc" id="L42">    private double solutionShift = Double.MAX_VALUE;</span>
+<span class="nc" id="L42">    private double solutionScale = Double.MAX_VALUE;</span>
     
-<span class="nc" id="L44">    private double solutionCost = Double.MAX_VALUE;</span>
+<span class="nc" id="L44">    private double solutionShift = Double.MAX_VALUE;</span>
+    
+<span class="nc" id="L46">    private double solutionCost = Double.MAX_VALUE;</span>
     
     private final List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours1;
     
     private final List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours2;
     
-<span class="nc" id="L50">    private boolean solverHasFinished = false;</span>
+<span class="nc" id="L52">    private boolean solverHasFinished = false;</span>
     
-<span class="nc" id="L52">    private boolean debug = true;</span>
+<span class="nc" id="L54">    private boolean debug = true;</span>
     
     /**
      * constructor taking required contour lists as arguments.  Note that the
@@ -73,27 +75,32 @@ import java.util.logging.Logger;
      * &lt;/pre&gt;
      * Note that the order of items in contours1 and contours2 will be altered
      * if alreadySorted is false.
+     * @param contours1
+     * @param contours2
+     * @param contoursAreAlreadySorted
      */
     public CSSContourMatcherWrapper(
         final List&lt;CurvatureScaleSpaceContour&gt; contours1, 
         final List&lt;CurvatureScaleSpaceContour&gt; contours2,
-<span class="nc" id="L80">        boolean contoursAreAlreadySorted) {</span>
+<span class="nc" id="L85">        boolean contoursAreAlreadySorted) {</span>
         
-<span class="nc" id="L82">        this.contours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours1);</span>
+<span class="nc" id="L87">        this.contours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours1);</span>
         
-<span class="nc" id="L84">        this.contours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours2);</span>
+<span class="nc" id="L89">        this.contours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours2);</span>
                 
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (!contoursAreAlreadySorted) {</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (!contoursAreAlreadySorted) {</span>
             
-<span class="nc" id="L88">            Collections.sort(this.contours1, new DescendingSigmaComparator());</span>
+<span class="nc" id="L93">            Collections.sort(this.contours1, new DescendingSigmaComparator());</span>
         
-<span class="nc" id="L90">            Collections.sort(this.contours2, new DescendingSigmaComparator());</span>
+<span class="nc" id="L95">            Collections.sort(this.contours2, new DescendingSigmaComparator());</span>
         }
         
-<span class="nc" id="L93">        solutionMatchedContours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
+<span class="nc" id="L98">        nMaxMatchable = Math.min(contours1.size(), contours2.size());</span>
         
-<span class="nc" id="L95">        solutionMatchedContours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
-<span class="nc" id="L96">    }</span>
+<span class="nc" id="L100">        solutionMatchedContours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
+        
+<span class="nc" id="L102">        solutionMatchedContours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
+<span class="nc" id="L103">    }</span>
    
      /**
      * match contours from the first list to the second.  the best scale and
@@ -104,105 +111,109 @@ import java.util.logging.Logger;
      */
     public boolean matchContours() {
         
-<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (solverHasFinished) {</span>
-<span class="nc" id="L108">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="nc" id="L115">            throw new IllegalArgumentException(</span>
             &quot;matchContours cannot be invoked more than once&quot;);
         }
         
-<span class="nc bnc" id="L112" title="All 4 branches missed.">        assert(this.solutionMatchedContours1.isEmpty());</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">        assert(this.solutionMatchedContours1.isEmpty());</span>
         
-<span class="nc bnc" id="L114" title="All 4 branches missed.">        assert(this.solutionMatchedContours2.isEmpty());</span>
+<span class="nc bnc" id="L121" title="All 4 branches missed.">        assert(this.solutionMatchedContours2.isEmpty());</span>
         
-<span class="nc" id="L116">        solverHasFinished = true;</span>
+<span class="nc" id="L123">        solverHasFinished = true;</span>
         
-<span class="nc" id="L118">        boolean contoursAreAlreadySorted = true;</span>
+<span class="nc" id="L125">        boolean contoursAreAlreadySorted = true;</span>
         
-<span class="nc" id="L120">        CSSContourMatcher mDefault = new CSSContourMatcher(contours1, contours2, </span>
+<span class="nc" id="L127">        CSSContourMatcher mDefault = new CSSContourMatcher(contours1, contours2, </span>
             contoursAreAlreadySorted);
         
         // ------- invoke reverse if needed and analyze all results -----
         
-<span class="nc bnc" id="L125" title="All 2 branches missed.">        boolean solved = mDefault.matchContours() &amp;&amp; </span>
-<span class="nc bnc" id="L126" title="All 2 branches missed.">            (mDefault.getSolvedScale() &lt; Double.MAX_VALUE);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        boolean solved = mDefault.matchContours() &amp;&amp; </span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            (mDefault.getSolvedScale() &lt; Double.MAX_VALUE);</span>
                 
-<span class="nc bnc" id="L128" title="All 4 branches missed.">        if (solved &amp;&amp; !mDefault.scaleIsPossiblyAmbiguous()) {</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">        if (solved &amp;&amp; !mDefault.scaleIsPossiblyAmbiguous()) {</span>
                         
-<span class="nc" id="L130">            setSolutionToDefault(mDefault);</span>
+<span class="nc" id="L137">            setSolutionToDefault(mDefault);</span>
             
-<span class="nc" id="L132">            return true;</span>
+<span class="nc" id="L139">            return true;</span>
         }
            
         // ----- possibly ambiguous default solution or no default solution ----
         
-<span class="nc" id="L137">        CSSContourMatcher mReverse = new CSSContourMatcher(contours2, contours1, </span>
+<span class="nc" id="L144">        CSSContourMatcher mReverse = new CSSContourMatcher(contours2, contours1, </span>
             contoursAreAlreadySorted);
             
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        boolean solvedReverse = mReverse.matchContours() &amp;&amp;</span>
-<span class="nc bnc" id="L141" title="All 2 branches missed.">            (mReverse.getSolvedScale() &lt; Double.MAX_VALUE);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        boolean solvedReverse = mReverse.matchContours() &amp;&amp;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            (mReverse.getSolvedScale() &lt; Double.MAX_VALUE);</span>
         
-<span class="nc bnc" id="L143" title="All 4 branches missed.">        if (!solvedReverse &amp;&amp; solved) {</span>
+<span class="nc bnc" id="L150" title="All 4 branches missed.">        if (!solvedReverse &amp;&amp; solved) {</span>
             
             // take the possibly ambiguous default solution            
-<span class="nc" id="L146">            setSolutionToDefault(mDefault);</span>
+<span class="nc" id="L153">            setSolutionToDefault(mDefault);</span>
             
-<span class="nc" id="L148">            return true;</span>
+<span class="nc" id="L155">            return true;</span>
             
-<span class="nc bnc" id="L150" title="All 2 branches missed.">        } else if (!solvedReverse) {</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        } else if (!solvedReverse) {</span>
             
-<span class="nc" id="L152">            return false;</span>
+<span class="nc" id="L159">            return false;</span>
         }
                                             
-<span class="nc" id="L155">        double solutionScaleRevRev = 1. / mReverse.getSolvedScale();</span>
-<span class="nc" id="L156">        double solutionShiftRevRev = 1. - mReverse.getSolvedShift();</span>
+<span class="nc" id="L162">        double solutionScaleRevRev = 1. / mReverse.getSolvedScale();</span>
+<span class="nc" id="L163">        double solutionShiftRevRev = 1. - mReverse.getSolvedShift();</span>
                 
-<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (!solved) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (!solved) {</span>
             
             // reversed is solution
-<span class="nc" id="L161">            this.solutionCost = mReverse.getSolvedCost();</span>
-<span class="nc" id="L162">            this.solutionScale = solutionScaleRevRev;</span>
-<span class="nc" id="L163">            this.solutionShift = solutionShiftRevRev;</span>
+<span class="nc" id="L168">            this.solutionCost = mReverse.getSolvedCost();</span>
+<span class="nc" id="L169">            this.solutionScale = solutionScaleRevRev;</span>
+<span class="nc" id="L170">            this.solutionShift = solutionShiftRevRev;</span>
                     
-<span class="nc" id="L165">            this.solutionMatchedContours1.addAll(mReverse.getSolutionMatchedContours2());</span>
-<span class="nc" id="L166">            this.solutionMatchedContours2.addAll(mReverse.getSolutionMatchedContours1());</span>
+<span class="nc" id="L172">            this.solutionMatchedContours1.addAll(mReverse.getSolutionMatchedContours2());</span>
+<span class="nc" id="L173">            this.solutionMatchedContours2.addAll(mReverse.getSolutionMatchedContours1());</span>
             
-<span class="nc" id="L168">            return true;</span>
+<span class="nc" id="L175">            return true;</span>
         }
         
         // ----- compare default solution to reversed solution ---------
                             
         //TODO: normalize by some factor to prefer more matches?
 
-<span class="nc" id="L175">        double costDefault = mDefault.getSolvedCost();</span>
+<span class="nc" id="L182">        double costDefault = mDefault.getSolvedCost();</span>
 
-<span class="nc" id="L177">        double costReversed = mReverse.getSolvedCost();</span>
+<span class="nc" id="L184">        double costReversed = mReverse.getSolvedCost();</span>
 
-<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (costDefault &lt; costReversed) {</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        if (costDefault &lt; costReversed) {</span>
             // default is solution
             
-<span class="nc" id="L182">            setSolutionToDefault(mDefault);</span>
+<span class="nc" id="L189">            setSolutionToDefault(mDefault);</span>
             
-<span class="nc" id="L184">            return true;</span>
+<span class="nc" id="L191">            return true;</span>
             
         } else {
             // reversed is solution
             
-<span class="nc" id="L189">            this.solutionCost = mReverse.getSolvedCost();</span>
-<span class="nc" id="L190">            this.solutionScale = solutionScaleRevRev;</span>
-<span class="nc" id="L191">            this.solutionShift = solutionShiftRevRev;</span>
+<span class="nc" id="L196">            this.solutionCost = mReverse.getSolvedCost();</span>
+<span class="nc" id="L197">            this.solutionScale = solutionScaleRevRev;</span>
+<span class="nc" id="L198">            this.solutionShift = solutionShiftRevRev;</span>
                     
-<span class="nc" id="L193">            this.solutionMatchedContours1.addAll(mReverse.getSolutionMatchedContours2());</span>
-<span class="nc" id="L194">            this.solutionMatchedContours2.addAll(mReverse.getSolutionMatchedContours1());</span>
+<span class="nc" id="L200">            this.solutionMatchedContours1.addAll(mReverse.getSolutionMatchedContours2());</span>
+<span class="nc" id="L201">            this.solutionMatchedContours2.addAll(mReverse.getSolutionMatchedContours1());</span>
             
-<span class="nc" id="L196">            return true;</span>
+<span class="nc" id="L203">            return true;</span>
         }  
     }
     
+    public int getNMaxMatchable() {
+<span class="nc" id="L208">        return nMaxMatchable;</span>
+    }
+    
     public List&lt;CurvatureScaleSpaceContour&gt; getSolutionMatchedContours1() {
-<span class="nc" id="L201">        return solutionMatchedContours1;</span>
+<span class="nc" id="L212">        return solutionMatchedContours1;</span>
     }
     
     public List&lt;CurvatureScaleSpaceContour&gt; getSolutionMatchedContours2() {
-<span class="nc" id="L205">        return solutionMatchedContours2;</span>
+<span class="nc" id="L216">        return solutionMatchedContours2;</span>
     }
      
     /**
@@ -211,7 +222,7 @@ import java.util.logging.Logger;
      * @return 
      */
     public double getSolvedScale() {
-<span class="nc" id="L214">        return solutionScale;</span>
+<span class="nc" id="L225">        return solutionScale;</span>
     }
     
     /**
@@ -220,7 +231,7 @@ import java.util.logging.Logger;
      * @return 
      */
     public double getSolvedShift() {
-<span class="nc" id="L223">        return solutionShift;</span>
+<span class="nc" id="L234">        return solutionShift;</span>
     }
     
     /**
@@ -229,22 +240,22 @@ import java.util.logging.Logger;
      * @return 
      */
     public double getSolvedCost() {
-<span class="nc" id="L232">        return solutionCost;</span>
+<span class="nc" id="L243">        return solutionCost;</span>
     }
 
     private void setSolutionToDefault(CSSContourMatcher matcher) {
         
-<span class="nc bnc" id="L237" title="All 2 branches missed.">        if (matcher == null) {</span>
-<span class="nc" id="L238">            return;</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (matcher == null) {</span>
+<span class="nc" id="L249">            return;</span>
         }
         
-<span class="nc" id="L241">        this.solutionCost = matcher.getSolvedCost();</span>
-<span class="nc" id="L242">        this.solutionScale = matcher.getSolvedScale();</span>
-<span class="nc" id="L243">        this.solutionShift = matcher.getSolvedShift();</span>
+<span class="nc" id="L252">        this.solutionCost = matcher.getSolvedCost();</span>
+<span class="nc" id="L253">        this.solutionScale = matcher.getSolvedScale();</span>
+<span class="nc" id="L254">        this.solutionShift = matcher.getSolvedShift();</span>
                     
-<span class="nc" id="L245">        this.solutionMatchedContours1.addAll(matcher.getSolutionMatchedContours1());</span>
-<span class="nc" id="L246">        this.solutionMatchedContours2.addAll(matcher.getSolutionMatchedContours2());</span>
-<span class="nc" id="L247">    }</span>
+<span class="nc" id="L256">        this.solutionMatchedContours1.addAll(matcher.getSolutionMatchedContours1());</span>
+<span class="nc" id="L257">        this.solutionMatchedContours2.addAll(matcher.getSolutionMatchedContours2());</span>
+<span class="nc" id="L258">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

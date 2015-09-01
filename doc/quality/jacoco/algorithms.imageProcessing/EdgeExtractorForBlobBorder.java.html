@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EdgeExtractorForBlobBorder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EdgeExtractorForBlobBorder.java</span></div><h1>EdgeExtractorForBlobBorder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PerimeterFinder;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
@@ -19,13 +20,17 @@ import java.util.logging.Logger;
  */
 public class EdgeExtractorForBlobBorder {
             
-<span class="fc" id="L22">    protected boolean debug = false;</span>
+<span class="fc" id="L23">    protected boolean debug = false;</span>
     
-<span class="fc" id="L24">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L25">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="fc" id="L26">    public EdgeExtractorForBlobBorder() {</span>
+<span class="fc" id="L27">    public EdgeExtractorForBlobBorder() {</span>
                     
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L29">    }</span>
+    
+    public void setToDebug() {
+<span class="fc" id="L32">        debug = true;</span>
+<span class="fc" id="L33">    }</span>
     
     /**
      * NOT READY FOR USE.
@@ -41,52 +46,52 @@ public class EdgeExtractorForBlobBorder {
     PairIntArray extractAndOrderTheBorder(Set&lt;PairInt&gt; contiguousPoints,
         int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
         
-<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (contiguousPoints == null) {</span>
-<span class="nc" id="L45">            return null;</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (contiguousPoints == null) {</span>
+<span class="nc" id="L50">            return null;</span>
         }
    
-<span class="nc bnc" id="L48" title="All 2 branches missed.">if (debug) {</span>
-<span class="nc" id="L49">MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">if (debug) {</span>
+<span class="nc" id="L54">MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
 }
 
         // ------- define the perimeter of contiguousPoints ----------
 
-<span class="nc" id="L54">        PerimeterFinder perimeterFinder = new PerimeterFinder();</span>
+<span class="fc" id="L59">        PerimeterFinder perimeterFinder = new PerimeterFinder();</span>
         
-<span class="nc" id="L56">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L61">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L58">        int imageMaxColumn = imageWidth - 1;</span>
-<span class="nc" id="L59">        int imageMaxRow = imageHeight - 1;</span>
+<span class="fc" id="L63">        int imageMaxColumn = imageWidth - 1;</span>
+<span class="fc" id="L64">        int imageMaxRow = imageHeight - 1;</span>
        
-<span class="nc" id="L61">        int[] rowMinMax = new int[2];</span>
+<span class="fc" id="L66">        int[] rowMinMax = new int[2];</span>
                 
-<span class="nc" id="L63">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = perimeterFinder.find(</span>
+<span class="fc" id="L68">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = perimeterFinder.find(</span>
             contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
        
-<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (!outputEmbeddedGapPoints.isEmpty()) {</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (!outputEmbeddedGapPoints.isEmpty()) {</span>
             // update the perimeter for &quot;filling in&quot; embedded points
-<span class="nc" id="L68">            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, </span>
+<span class="nc" id="L73">            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, </span>
                 rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
         }
         
         // --- walk around the boundary of contiguousPoints, forming a closed curve path ----------
-<span class="nc" id="L73">        PairIntArray out = perimeterFinder.getOrderedBorderPixels(</span>
+<span class="fc" id="L78">        PairIntArray out = perimeterFinder.getOrderedBorderPixels(</span>
             contiguousPoints, rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
   
-<span class="nc" id="L76">        int nBorder = out.getN();</span>
-<span class="nc" id="L77">        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()</span>
+<span class="fc" id="L81">        int nBorder = out.getN();</span>
+<span class="fc" id="L82">        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()</span>
             - nBorder;
                
-<span class="nc" id="L80">        log.info(&quot;number of border points=&quot; + nBorder + &quot; nCavity=&quot; + nCavity);</span>
+<span class="fc" id="L85">        log.info(&quot;number of border points=&quot; + nBorder + &quot; nCavity=&quot; + nCavity);</span>
         
-<span class="nc bnc" id="L82" title="All 4 branches missed.">        if (discardWhenCavityIsSmallerThanBorder &amp;&amp; (nCavity &lt; (0.5*nBorder))) {</span>
-<span class="nc" id="L83">            return null;</span>
+<span class="pc bpc" id="L87" title="2 of 4 branches missed.">        if (discardWhenCavityIsSmallerThanBorder &amp;&amp; (nCavity &lt; (0.5*nBorder))) {</span>
+<span class="nc" id="L88">            return null;</span>
         }
         
-<span class="nc bnc" id="L86" title="All 2 branches missed.">if (debug) {       </span>
-<span class="nc" id="L87">MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">if (debug) {       </span>
+<span class="nc" id="L92">MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());</span>
 }
-<span class="nc" id="L89">        return out;</span>
+<span class="fc" id="L94">        return out;</span>
     }
     
     /**
@@ -103,119 +108,385 @@ public class EdgeExtractorForBlobBorder {
     public PairIntArray extractAndOrderTheBorder0(Set&lt;PairInt&gt; contiguousPoints,
         int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
         
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (contiguousPoints == null) {</span>
-<span class="nc" id="L107">            return null;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (contiguousPoints == null) {</span>
+<span class="nc" id="L112">            return null;</span>
         }
  
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">if (debug) {        </span>
-<span class="nc" id="L111">MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L116">MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
 }
 
         // ---- extract the border pixels from contiguousPoints ------
 
-<span class="fc" id="L116">        PerimeterFinder perimeterFinder = new PerimeterFinder();</span>
+<span class="fc" id="L121">        PerimeterFinder perimeterFinder = new PerimeterFinder();</span>
         
-<span class="fc" id="L118">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L123">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L120">        int imageMaxColumn = imageWidth - 1;</span>
-<span class="fc" id="L121">        int imageMaxRow = imageHeight - 1;</span>
+<span class="fc" id="L125">        int imageMaxColumn = imageWidth - 1;</span>
+<span class="fc" id="L126">        int imageMaxRow = imageHeight - 1;</span>
        
-<span class="fc" id="L123">        int[] rowMinMax = new int[2];</span>
+<span class="fc" id="L128">        int[] rowMinMax = new int[2];</span>
                 
-<span class="fc" id="L125">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = perimeterFinder.find(</span>
+<span class="fc" id="L130">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = perimeterFinder.find(</span>
             contiguousPoints, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
        
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (!outputEmbeddedGapPoints.isEmpty()) {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (!outputEmbeddedGapPoints.isEmpty()) {</span>
             // update the perimeter for &quot;filling in&quot; embedded points
-<span class="nc" id="L130">            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, </span>
+<span class="nc" id="L135">            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, </span>
                 rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
         }
        
-<span class="fc" id="L134">        Set&lt;PairInt&gt; borderPixels = perimeterFinder.getBorderPixels(</span>
+<span class="fc" id="L139">        Set&lt;PairInt&gt; borderPixels = perimeterFinder.getBorderPixels(</span>
             rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
         
-<span class="fc" id="L137">        int nBorder = borderPixels.size();</span>
-<span class="fc" id="L138">        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()</span>
+<span class="fc" id="L142">        int nBorder = borderPixels.size();</span>
+<span class="fc" id="L143">        int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()</span>
             - nBorder;
                
-<span class="fc" id="L141">        log.info(&quot;number of border points=&quot; + nBorder + &quot; nCavity=&quot; + nCavity);</span>
+<span class="fc" id="L146">        log.info(&quot;number of border points=&quot; + nBorder + &quot; nCavity=&quot; + nCavity);</span>
 
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">if (debug) {        </span>
-<span class="nc" id="L144">MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L149">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">for (PairInt p : borderPixels) {</span>
+<span class="nc" id="L151">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
+<span class="nc" id="L152">}</span>
+<span class="nc" id="L153">MiscDebug.writeImageCopy(img3, &quot;border_perimeter_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
 }
 
-<span class="pc bpc" id="L147" title="3 of 4 branches missed.">        if (discardWhenCavityIsSmallerThanBorder &amp;&amp; (nCavity &lt; (0.5*nBorder))) {</span>
-<span class="nc" id="L148">            return null;</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">        if (discardWhenCavityIsSmallerThanBorder &amp;&amp; (nCavity &lt; (0.5*nBorder))) {</span>
+<span class="nc" id="L157">            return null;</span>
         }
         
         // ----- remove spurs, merge curves, re-order points to form a 
         //       single closed curve if possible -------
         
-<span class="fc" id="L154">        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();</span>
-<span class="fc" id="L155">        lt.applyLineThinner(borderPixels, 0, imageWidth, 0, imageHeight);</span>
-<span class="fc" id="L156">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
-<span class="fc" id="L157">        pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);</span>
+<span class="fc" id="L163">        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();</span>
+<span class="fc" id="L164">        lt.applyLineThinner(borderPixels, 0, imageWidth, 0, imageHeight);</span>
+<span class="fc" id="L165">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
+<span class="fc" id="L166">        pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);</span>
         
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">if (debug) {        </span>
-<span class="nc" id="L160">MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
-}        
-<span class="fc" id="L162">        SpurRemover spurRm = new SpurRemover();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (borderPixels.isEmpty()) {</span>
+<span class="nc" id="L169">            return null;</span>
+        }
         
-<span class="fc" id="L164">        spurRm.remove(borderPixels, imageWidth, imageHeight);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L173">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">for (PairInt p : borderPixels) {</span>
+<span class="nc" id="L175">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
+<span class="nc" id="L176">}</span>
+<span class="nc" id="L177">MiscDebug.writeImageCopy(img3, &quot;border_before_spur_removal_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+}
 
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">if (debug) {        </span>
-<span class="nc" id="L167">MiscDebug.plotPoints(borderPixels, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        </span>
-}        
+<span class="fc" id="L180">        SpurRemover spurRm = new SpurRemover();</span>
+        
+<span class="fc" id="L182">        spurRm.remove(borderPixels, imageWidth, imageHeight);</span>
+
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (borderPixels.isEmpty()) {</span>
+<span class="nc" id="L185">            return null;</span>
+        }
+        
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L189">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">for (PairInt p : borderPixels) {</span>
+<span class="nc" id="L191">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
+<span class="nc" id="L192">}</span>
+<span class="nc" id="L193">MiscDebug.writeImageCopy(img3, &quot;border_after_spur_removal_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+}
+
         //xMin, xMax, yMin, yMax
-<span class="fc" id="L170">        int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);</span>
+<span class="fc" id="L197">        int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);</span>
       
-<span class="fc" id="L172">        int xOffset = minMaxXY[0] - 2;</span>
-<span class="fc" id="L173">        int yOffset = minMaxXY[2] - 2;</span>
-<span class="fc" id="L174">        int w = minMaxXY[1] - minMaxXY[0] + 4;</span>
-<span class="fc" id="L175">        int h = minMaxXY[3] - minMaxXY[2] + 4;</span>
+<span class="fc" id="L199">        int xOffset = minMaxXY[0] - 5;</span>
+<span class="fc" id="L200">        int yOffset = minMaxXY[2] - 5;</span>
+<span class="fc" id="L201">        int w = minMaxXY[1] - xOffset + 10;</span>
+<span class="fc" id="L202">        int h = minMaxXY[3] - yOffset + 10;</span>
         
-<span class="fc" id="L177">        GreyscaleImage img = new GreyscaleImage(w, h);</span>
-<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (PairInt p : borderPixels) {</span>
-<span class="fc" id="L179">            int x = p.getX() - xOffset;</span>
-<span class="fc" id="L180">            int y = p.getY() - yOffset;</span>
-<span class="fc" id="L181">            img.setValue(x, y, 1);</span>
-<span class="fc" id="L182">        }</span>
+<span class="fc" id="L204">        GreyscaleImage img = new GreyscaleImage(w, h);</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        for (PairInt p : borderPixels) {</span>
+<span class="fc" id="L206">            int x = p.getX() - xOffset;</span>
+<span class="fc" id="L207">            int y = p.getY() - yOffset;</span>
+<span class="fc" id="L208">            img.setValue(x, y, 1);</span>
+<span class="fc" id="L209">        }</span>
         
-<span class="fc" id="L184">        EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);</span>
-<span class="fc" id="L185">        extractor.overrideMaxNumberIterationsJunctionSplice(10);</span>
+<span class="fc" id="L211">        EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L213">            extractor.setToDebug();</span>
+        }
+<span class="fc" id="L215">        extractor.overrideMaxNumberIterationsJunctionSplice(10);</span>
         //List&lt;PairIntArray&gt; output = extractor.findEdges();
-<span class="fc" id="L187">        PairIntArray out = extractor.findAsSingleClosedEdge();</span>
+<span class="fc" id="L217">        PairIntArray out = extractor.findAsSingleClosedEdge();</span>
        
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (out == null) {</span>
-<span class="nc" id="L190">            return null;</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">        if (out == null) {</span>
+<span class="nc" id="L220">            return null;</span>
+        }
+        
+        /*
+        some curves are originally composed of a single pixel width connector 
+        between more than one potentially closed curve and the algorithm 
+        eventually chooses the longest closed curve and follows the other out 
+        until it ends without being adjacent to another point in the larger 
+        curve.  in other words, these single pixel connections between
+        multiple curves sometimes end in a long spur that should be trimmed.
+        Note that the algorithm could be redesigned to look for such regions
+        first and discard the smaller half with a warning.
+        */
+<span class="fc" id="L233">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
+            
+<span class="nc" id="L236">            boolean altered = trimEndpointSpursIfAny(out, img.getWidth(), </span>
+<span class="nc" id="L237">                img.getHeight());</span>
+            
+<span class="nc bnc" id="L239" title="All 2 branches missed.">            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
+                
+<span class="nc" id="L241">                extractor.reorderEndpointsIfNeeded(out);</span>
+                
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
+                    
+<span class="nc" id="L245">                    trimForMultipleClosedCurves(extractor, out, img.getWidth(), </span>
+<span class="nc" id="L246">                        img.getHeight());</span>
+                    
+                }
+            }
         }
         
         // add the shifts back
         //PairIntArray out = output.get(0);
         
-<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (int i = 0; i &lt; out.getN(); ++i) {</span>
-<span class="fc" id="L197">            int x = out.getX(i) + xOffset;</span>
-<span class="fc" id="L198">            int y = out.getY(i) + yOffset;</span>
-<span class="fc" id="L199">            out.set(i, x, y);</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        for (int i = 0; i &lt; out.getN(); ++i) {</span>
+<span class="fc" id="L256">            int x = out.getX(i) + xOffset;</span>
+<span class="fc" id="L257">            int y = out.getY(i) + yOffset;</span>
+<span class="fc" id="L258">            out.set(i, x, y);</span>
         }
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">if (debug) {</span>
-<span class="nc" id="L202">Image img3 = new Image(imageWidth, imageHeight);</span>
-<span class="nc bnc" id="L203" title="All 2 branches missed.">for (int j = 0; j &lt; out.getN(); ++j) {</span>
-<span class="nc" id="L204">    int x = out.getX(j);</span>
-<span class="nc" id="L205">    int y = out.getY(j);</span>
-    /*if (i &gt; 0) {
-        x += xOffset;
-        y += yOffset;
-    }*/
-<span class="nc bnc" id="L210" title="All 4 branches missed.">    if (j == 0 || (j == (out.getN() - 1))) {</span>
-<span class="nc" id="L211">        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);</span>
+
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">if (debug) {</span>
+<span class="nc" id="L262">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">for (int j = 0; j &lt; out.getN(); ++j) {</span>
+<span class="nc" id="L264">    int x = out.getX(j);</span>
+<span class="nc" id="L265">    int y = out.getY(j);</span>
+<span class="nc bnc" id="L266" title="All 4 branches missed.">    if (j == 0 || (j == (out.getN() - 1))) {</span>
+<span class="nc" id="L267">        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);</span>
     } else {
-<span class="nc" id="L213">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
+<span class="nc" id="L269">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
     }
 }
-<span class="nc" id="L216">MiscDebug.writeImageCopy(img3, &quot;output_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+<span class="nc" id="L272">MiscDebug.writeImageCopy(img3, &quot;output_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
 }
-<span class="fc" id="L218">        return out;</span>
+
+<span class="fc" id="L275">        return out;</span>
+    }
+
+    private boolean trimEndpointSpursIfAny(final PairIntArray curve, 
+        final int imageWidth, final int imageHeight) {
+
+<span class="nc" id="L281">        boolean edited = false;</span>
+        
+<span class="nc" id="L283">        SpurRemover spurRemover = new SpurRemover();</span>
+        
+        // try beginning of curve        
+        while (true) {
+            
+<span class="nc bnc" id="L288" title="All 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L289">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">for (int i = 0; i &lt; curve.getN(); ++i) {</span>
+<span class="nc" id="L291">    int x = curve.getX(i);</span>
+<span class="nc" id="L292">    int y = curve.getY(i);</span>
+<span class="nc" id="L293">    img3.setRGB(x, y, 255, 0, 0);</span>
+}
+<span class="nc" id="L295">MiscDebug.writeImageCopy(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+}      
+
+<span class="nc" id="L298">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
+            
+<span class="nc" id="L300">            int idx = 0;</span>
+                
+<span class="nc" id="L302">            int x = curve.getX(idx);                </span>
+<span class="nc" id="L303">            int y = curve.getY(idx);</span>
+                
+<span class="nc" id="L305">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
+                imageHeight);
+                
+<span class="nc bnc" id="L308" title="All 2 branches missed.">            if (isASpur) {</span>
+                
+<span class="nc" id="L310">                curve.removeRange(idx, idx);</span>
+                
+<span class="nc" id="L312">                edited = true;</span>
+                
+            } else {
+                break;
+            }
+<span class="nc" id="L317">        }</span>
+        
+        // try end of curve        
+        while (true) {
+
+<span class="nc bnc" id="L322" title="All 2 branches missed.">if (debug) {        </span>
+<span class="nc" id="L323">Image img3 = new Image(imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">for (int i = 0; i &lt; curve.getN(); ++i) {</span>
+<span class="nc" id="L325">    int x = curve.getX(i);</span>
+<span class="nc" id="L326">    int y = curve.getY(i);</span>
+<span class="nc" id="L327">    img3.setRGB(x, y, 255, 0, 0);</span>
+}
+<span class="nc" id="L329">MiscDebug.writeImageCopy(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+}
+
+<span class="nc" id="L332">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
+            
+<span class="nc" id="L334">            int idx = (curve.getN() - 1);</span>
+                
+<span class="nc" id="L336">            int x = curve.getX(idx);                </span>
+<span class="nc" id="L337">            int y = curve.getY(idx);</span>
+                
+<span class="nc" id="L339">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
+                imageHeight);
+                
+<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (isASpur) {</span>
+                
+<span class="nc" id="L344">                curve.removeRange(idx, idx);</span>
+                
+<span class="nc" id="L346">                edited = true;</span>
+                
+            } else {
+                break;
+            }
+<span class="nc" id="L351">        }</span>
+        
+<span class="nc" id="L353">        return edited;</span>
+    }
+
+    private boolean trimForMultipleClosedCurves(final EdgeExtractorWithJunctions 
+        extractor, final PairIntArray curve, int imageWidth, int imageHeight) {
+
+<span class="nc" id="L359">        int idxA = extractor.findAdjacentToTopAtBottom(curve);</span>
+        
+<span class="nc" id="L361">        int idxB = extractor.findAdjacentToBottomAtTop(curve);</span>
+        
+<span class="nc bnc" id="L363" title="All 4 branches missed.">        if (idxA == -1 || idxB == -1) {</span>
+<span class="nc" id="L364">            return false;</span>
+        }
+        
+        /*
+        TODO:
+        revisit this...
+        
+        one case:
+           idxA and idxB are both closer to same endpoint and are not the same
+           number and the difference is small.
+           this is potentially a knot in the curve, separated by a single
+           width pixel curve (that therefore cannot be approaching the
+           knot and leaving the knot).  If there's a single pixel width
+           bottle neck in the region between them, can trim the whole
+           section off.
+        for idxA = 7 and idxB = 11,
+        looking for when the path between them only has one choice, that is
+        one neighbor other than the previous.  for that case, should be able
+        to trim off the end section.
+        
+        0  41, 27
+        1  41, 26
+        2  41, 25
+        3  40, 25
+        
+        6  39, 27
+        7  40, 28 =======
+        8  39, 28
+           38, 28  &lt;- *
+        10 37, 29  &lt;- *
+        11 36, 29 =======
+        12 36, 30
+        ...
+        n-1 35, 30
+        */
+<span class="nc bnc" id="L399" title="All 2 branches missed.">        if (idxA == idxB) {</span>
+<span class="nc" id="L400">            return false;</span>
+        }
+        
+<span class="nc" id="L403">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L404">        Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
+        
+<span class="nc" id="L406">        double limit = Math.sqrt(2);</span>
+        
+<span class="nc" id="L408">        int mid = curve.getN() &gt;&gt; 1;</span>
+        
+<span class="nc bnc" id="L410" title="All 4 branches missed.">        boolean trimBeginning = ((idxA &lt; mid) &amp;&amp; (idxB &lt; mid));</span>
+        
+<span class="nc bnc" id="L412" title="All 4 branches missed.">        boolean trimEnd = ((idxA &gt; mid) &amp;&amp; (idxB &gt; mid));</span>
+        
+<span class="nc bnc" id="L414" title="All 4 branches missed.">        if (trimBeginning || trimEnd) {</span>
+            
+<span class="nc bnc" id="L416" title="All 2 branches missed.">            if (idxB &lt; idxA) {</span>
+<span class="nc" id="L417">                int swap = idxB;</span>
+<span class="nc" id="L418">                idxB = idxA;</span>
+<span class="nc" id="L419">                idxA = swap;</span>
+            }
+            
+            // looking for the point between them where there is no
+            // other point within a circular radius of 1            
+<span class="nc bnc" id="L424" title="All 2 branches missed.">            for (int i = idxA; i &lt; idxB; ++i) {</span>
+                
+<span class="nc" id="L426">                int x1 = curve.getX(i);</span>
+<span class="nc" id="L427">                int y1 = curve.getY(i);</span>
+                
+<span class="nc" id="L429">                Set&lt;PairInt&gt; neighbors1 = curveHelper.findNeighbors(x1, y1, </span>
+                    points, imageWidth, imageHeight);
+                
+<span class="nc bnc" id="L432" title="All 2 branches missed.">                if (neighbors1.size() == 2) {</span>
+<span class="nc" id="L433">                    curve.removeRange(0, (idxB - 1));</span>
+<span class="nc" id="L434">                    return true;</span>
+                }
+                
+<span class="nc" id="L437">                PairInt p1 = new PairInt(x1, y1);</span>
+                                
+<span class="nc bnc" id="L439" title="All 2 branches missed.">                for (PairInt p2 : neighbors1) {</span>
+                    
+<span class="nc" id="L441">                    int x2 = p2.getX();</span>
+<span class="nc" id="L442">                    int y2 = p2.getY();</span>
+                    
+<span class="nc" id="L444">                    float xMidPt = (x1 + x2)/2.f;</span>
+<span class="nc" id="L445">                    float yMidPt = (y1 + y2)/2.f;</span>
+                    
+<span class="nc" id="L447">                    int nWithinR1 = 0;</span>
+                    
+<span class="nc" id="L449">                    Set&lt;PairInt&gt; neighbors2 = curveHelper.findNeighbors(x2, y2, </span>
+                        points, imageWidth, imageHeight);
+<span class="nc" id="L451">                    Set&lt;PairInt&gt; neighborsTot = new HashSet&lt;PairInt&gt;(neighbors1);</span>
+<span class="nc" id="L452">                    neighborsTot.addAll(neighbors2);</span>
+                    
+<span class="nc bnc" id="L454" title="All 2 branches missed.">                    for (PairInt pt : neighborsTot) {</span>
+                        
+<span class="nc bnc" id="L456" title="All 4 branches missed.">                        if (pt.equals(p1) || pt.equals(p2)) {</span>
+<span class="nc" id="L457">                            continue;</span>
+                        }
+                        
+<span class="nc" id="L460">                        float diffX = Math.abs(xMidPt - pt.getX());</span>
+<span class="nc" id="L461">                        float diffY = Math.abs(yMidPt - pt.getY());</span>
+<span class="nc" id="L462">                        double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+
+<span class="nc bnc" id="L464" title="All 2 branches missed.">                        if (dist &lt;= limit) {</span>
+<span class="nc" id="L465">                            nWithinR1++;</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">                            if (nWithinR1 &gt; 1) {</span>
+<span class="nc" id="L467">                                break;</span>
+                            }
+                        }
+<span class="nc" id="L470">                    }</span>
+                       
+<span class="nc bnc" id="L472" title="All 2 branches missed.">                    if (nWithinR1 == 0) {</span>
+                        
+                        // only p1 and p2 within radius of 1 of midpt
+<span class="nc bnc" id="L475" title="All 2 branches missed.">                        if (trimBeginning) {</span>
+<span class="nc" id="L476">                            curve.removeRange(0, (idxB - 1));</span>
+                        } else {
+<span class="nc" id="L478">                            curve.removeRange((idxB + 1), curve.getN() - 1);</span>
+                        }
+                        
+<span class="nc" id="L481">                        trimEndpointSpursIfAny(curve, imageWidth, imageHeight);</span>
+
+<span class="nc" id="L483">                        return true;</span>
+                    }
+<span class="nc" id="L485">                }</span>
+            }
+        }
+        
+<span class="nc" id="L489">        return false;</span>
     }
     
 }

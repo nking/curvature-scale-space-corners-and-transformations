@@ -134,20 +134,32 @@
     }
 
     @Override
+    public int hashCode() {
+<span class="nc" id="L138">        int hash = 7;</span>
+<span class="nc" id="L139">        hash = 31 * hash + Float.floatToIntBits(this.rotationInRadians);</span>
+<span class="nc" id="L140">        hash = 31 * hash + Float.floatToIntBits(this.translationX);</span>
+<span class="nc" id="L141">        hash = 31 * hash + Float.floatToIntBits(this.translationY);</span>
+<span class="nc" id="L142">        hash = 31 * hash + Float.floatToIntBits(this.scale);</span>
+<span class="nc" id="L143">        hash = 31 * hash + Float.floatToIntBits(this.originX);</span>
+<span class="nc" id="L144">        hash = 31 * hash + Float.floatToIntBits(this.originY);</span>
+<span class="nc" id="L145">        return hash;</span>
+    }
+
+    @Override
     public String toString() {
         
-<span class="fc" id="L139">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L151">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L141">        sb.append(&quot;rotationInRadians=&quot;).append(rotationInRadians)</span>
-<span class="fc" id="L142">            .append(&quot; rotationInDegrees=&quot;).append(rotationInRadians*180./Math.PI)</span>
-<span class="fc" id="L143">            .append(&quot; scale=&quot;).append(scale)</span>
-<span class="fc" id="L144">            .append(&quot;\ntranslationX=&quot;).append(translationX)</span>
-<span class="fc" id="L145">            .append(&quot; translationY=&quot;).append(translationY)</span>
-<span class="fc" id="L146">            .append(&quot; originX=&quot;).append(originX)</span>
-<span class="fc" id="L147">            .append(&quot; originY=&quot;).append(originY)</span>
+<span class="fc" id="L153">        sb.append(&quot;rotationInRadians=&quot;).append(rotationInRadians)</span>
+<span class="fc" id="L154">            .append(&quot; rotationInDegrees=&quot;).append(rotationInRadians*180./Math.PI)</span>
+<span class="fc" id="L155">            .append(&quot; scale=&quot;).append(scale)</span>
+<span class="fc" id="L156">            .append(&quot;\ntranslationX=&quot;).append(translationX)</span>
+<span class="fc" id="L157">            .append(&quot; translationY=&quot;).append(translationY)</span>
+<span class="fc" id="L158">            .append(&quot; originX=&quot;).append(originX)</span>
+<span class="fc" id="L159">            .append(&quot; originY=&quot;).append(originY)</span>
             ;
         
-<span class="fc" id="L150">        return sb.toString();</span>
+<span class="fc" id="L162">        return sb.toString();</span>
     }
 
 }

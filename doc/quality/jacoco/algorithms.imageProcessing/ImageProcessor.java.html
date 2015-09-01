@@ -760,37 +760,37 @@ import java.util.logging.Logger;
     public void applyImageSegmentation(GreyscaleImage input, int kBands)
         throws IOException, NoSuchAlgorithmException {
 
-<span class="nc" id="L763">        KMeansPlusPlus instance = new KMeansPlusPlus();</span>
-<span class="nc" id="L764">        instance.computeMeans(kBands, input);</span>
+<span class="fc" id="L763">        KMeansPlusPlus instance = new KMeansPlusPlus();</span>
+<span class="fc" id="L764">        instance.computeMeans(kBands, input);</span>
 
-<span class="nc" id="L766">        int[] binCenters = instance.getCenters();</span>
+<span class="fc" id="L766">        int[] binCenters = instance.getCenters();</span>
 
-<span class="nc bnc" id="L768" title="All 2 branches missed.">        for (int col = 0; col &lt; input.getWidth(); col++) {</span>
+<span class="fc bfc" id="L768" title="All 2 branches covered.">        for (int col = 0; col &lt; input.getWidth(); col++) {</span>
 
-<span class="nc bnc" id="L770" title="All 2 branches missed.">            for (int row = 0; row &lt; input.getHeight(); row++) {</span>
+<span class="fc bfc" id="L770" title="All 2 branches covered.">            for (int row = 0; row &lt; input.getHeight(); row++) {</span>
 
-<span class="nc" id="L772">                int v = input.getValue(col, row);</span>
+<span class="fc" id="L772">                int v = input.getValue(col, row);</span>
 
-<span class="nc bnc" id="L774" title="All 2 branches missed.">                for (int i = 0; i &lt; binCenters.length; i++) {</span>
+<span class="pc bpc" id="L774" title="1 of 2 branches missed.">                for (int i = 0; i &lt; binCenters.length; i++) {</span>
 
-<span class="nc" id="L776">                    int vc = binCenters[i];</span>
+<span class="fc" id="L776">                    int vc = binCenters[i];</span>
 
-<span class="nc bnc" id="L778" title="All 2 branches missed.">                    int bisectorBelow = ((i - 1) &gt; -1) ?</span>
+<span class="fc bfc" id="L778" title="All 2 branches covered.">                    int bisectorBelow = ((i - 1) &gt; -1) ?</span>
                         ((binCenters[i - 1] + vc) / 2) : 0;
 
-<span class="nc bnc" id="L781" title="All 2 branches missed.">                    int bisectorAbove = ((i + 1) &gt; (binCenters.length - 1)) ?</span>
+<span class="fc bfc" id="L781" title="All 2 branches covered.">                    int bisectorAbove = ((i + 1) &gt; (binCenters.length - 1)) ?</span>
                         255 : ((binCenters[i + 1] + vc) / 2);
 
-<span class="nc bnc" id="L784" title="All 4 branches missed.">                    if ((v &gt;= bisectorBelow) &amp;&amp; (v &lt;= bisectorAbove)) {</span>
+<span class="pc bpc" id="L784" title="1 of 4 branches missed.">                    if ((v &gt;= bisectorBelow) &amp;&amp; (v &lt;= bisectorAbove)) {</span>
 
-<span class="nc" id="L786">                        input.setValue(col, row, vc);</span>
+<span class="fc" id="L786">                        input.setValue(col, row, vc);</span>
 
-<span class="nc" id="L788">                        break;</span>
+<span class="fc" id="L788">                        break;</span>
                     }
                 }
             }
         }
-<span class="nc" id="L793">    }</span>
+<span class="fc" id="L793">    }</span>
 
     public void convertToBinaryImage(GreyscaleImage input) {
 <span class="nc bnc" id="L796" title="All 2 branches missed.">        for (int col = 0; col &lt; input.getWidth(); col++) {</span>

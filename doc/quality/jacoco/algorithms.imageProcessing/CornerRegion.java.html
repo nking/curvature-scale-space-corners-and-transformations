@@ -302,128 +302,67 @@ public class CornerRegion {
         */
 
 <span class="fc" id="L304">        double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);</span>
-        
-<span class="fc" id="L306">        double perp = calculatePerpendicularAngleAwayFromCentroid(</span>
+                
+<span class="fc" id="L306">        double perp = curveHelper.calculatePerpendicularAngleAwayFromCentroid(</span>
             theta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx],
             y[kMaxIdx], centroidXY);
 
 <span class="fc" id="L310">        return perp;</span>
     }
 
-    /**
-     * given theta and the point (xp, yp), determine which direction and hence
-     * polar angle (clockwise) is perpendicular away from the centroid.
-     * The reference point (xm, ym) is the point from which theta was also
-     * calculated, which is probably the point for kMaxIdx.
-     * @param theta
-     * @param xp
-     * @param yp
-     * @param xm
-     * @param ym
-     * @param centroidXY
-     * @return
-     */
-    protected double calculatePerpendicularAngleAwayFromCentroid(
-        double theta, int xp, int yp, int xm, int ym, double[] centroidXY) {
-
-        /*
-        rotate the point (xm, ym) around (xp, yp) 90 degrees and -90 degrees.
-        The rotated point which is furthest from the centroid is the
-        direction of the vector pointing away from the centroid.
-        */
-
-        /*
-        math.cos(math.pi/2) = 0
-        math.sin(math.pi/2) = 1
-        math.sin(-math.pi/2) = -1
-
-        double xr = centroidX + ((y - centroidY) * sine(angle)));
-        double yr = centroidY + ((-(x - centroidX) * sine(angle)))
-        */
-
-<span class="fc" id="L344">        int xmRot90 = xp + (ym - yp);</span>
-<span class="fc" id="L345">        int ymRot90 = yp + (-(xm - xp));</span>
-
-<span class="fc" id="L347">        int xmRotNegative90 = xp  - (ym - yp);</span>
-<span class="fc" id="L348">        int ymRotNegative90 = yp + (xm - xp);</span>
-
-<span class="fc" id="L350">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
-            + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);
-
-<span class="fc" id="L353">        double distSqRotNegative90 =</span>
-            (xmRotNegative90 - centroidXY[0]) * (xmRotNegative90 - centroidXY[0])
-            + (ymRotNegative90 - centroidXY[1]) * (ymRotNegative90 - centroidXY[1]);
-
-<span class="fc" id="L357">        double perp = theta;</span>
-
-<span class="pc bpc" id="L359" title="1 of 2 branches missed.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
-<span class="fc" id="L360">            perp += Math.PI/2.;</span>
-        } else {
-<span class="nc" id="L362">            perp -= Math.PI/2.;</span>
-        }
-
-<span class="fc bfc" id="L365" title="All 2 branches covered.">        if (perp &gt;= 2*Math.PI) {</span>
-<span class="fc" id="L366">            perp = perp - 2*Math.PI;</span>
-<span class="pc bpc" id="L367" title="1 of 2 branches missed.">        } else if (perp &lt; 0) {</span>
-<span class="nc" id="L368">            perp += 2*Math.PI;</span>
-        }
-
-<span class="fc" id="L371">        return perp;</span>
-    }
-    
     public CornerRegion copy() {
         
-<span class="nc" id="L376">        CornerRegion cr = new CornerRegion(edgeIdx, x.length, kMaxIdx);</span>
-<span class="nc" id="L377">        cr.orientation = orientation;</span>
-<span class="nc" id="L378">        System.arraycopy(k, 0, cr.getK(), 0, k.length);</span>
-<span class="nc" id="L379">        System.arraycopy(x, 0, cr.getX(), 0, x.length);</span>
-<span class="nc" id="L380">        System.arraycopy(y, 0, cr.getY(), 0, y.length);</span>
+<span class="nc" id="L315">        CornerRegion cr = new CornerRegion(edgeIdx, x.length, kMaxIdx);</span>
+<span class="nc" id="L316">        cr.orientation = orientation;</span>
+<span class="nc" id="L317">        System.arraycopy(k, 0, cr.getK(), 0, k.length);</span>
+<span class="nc" id="L318">        System.arraycopy(x, 0, cr.getX(), 0, x.length);</span>
+<span class="nc" id="L319">        System.arraycopy(y, 0, cr.getY(), 0, y.length);</span>
         
-<span class="nc" id="L382">        return cr;</span>
+<span class="nc" id="L321">        return cr;</span>
     }
     
     public String toString() {
         
-<span class="nc" id="L387">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L326">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc bnc" id="L389" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; ++i) {</span>
-<span class="nc" id="L390">            sb.append(String.format(&quot;k[%d]=%.2f  x,y=(%d, %d)\n&quot;, i, k[i],</span>
-<span class="nc" id="L391">                x[i], y[i]));</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L329">            sb.append(String.format(&quot;k[%d]=%.2f  x,y=(%d, %d)\n&quot;, i, k[i],</span>
+<span class="nc" id="L330">                x[i], y[i]));</span>
         }
         
-<span class="nc" id="L394">        return sb.toString();</span>
+<span class="nc" id="L333">        return sb.toString();</span>
     }
 
     @Override
     public boolean equals(Object obj) {
         
-<span class="nc bnc" id="L400" title="All 2 branches missed.">        if (!(obj instanceof CornerRegion)) {</span>
-<span class="nc" id="L401">            return false;</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        if (!(obj instanceof CornerRegion)) {</span>
+<span class="nc" id="L340">            return false;</span>
         }
             
-<span class="nc" id="L404">        CornerRegion other = (CornerRegion)obj;</span>
+<span class="nc" id="L343">        CornerRegion other = (CornerRegion)obj;</span>
             
-<span class="nc bnc" id="L406" title="All 2 branches missed.">        if (x.length != other.getX().length) {</span>
-<span class="nc" id="L407">            return false;</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">        if (x.length != other.getX().length) {</span>
+<span class="nc" id="L346">            return false;</span>
         }
         
-<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (!Arrays.equals(x, other.getX())) {</span>
-<span class="nc" id="L411">            return false;</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">        if (!Arrays.equals(x, other.getX())) {</span>
+<span class="nc" id="L350">            return false;</span>
         }
      
-<span class="nc" id="L414">        return Arrays.equals(y, other.getY());</span>
+<span class="nc" id="L353">        return Arrays.equals(y, other.getY());</span>
     }
     
     @Override
     public int hashCode() {
 
-<span class="nc" id="L420">        int hash = fnvHashCode();</span>
+<span class="nc" id="L359">        int hash = fnvHashCode();</span>
 
-<span class="nc" id="L422">        return hash;</span>
+<span class="nc" id="L361">        return hash;</span>
     }
 
-<span class="fc" id="L425">    int fnv321aInit = 0x811c9dc5;</span>
-<span class="fc" id="L426">    int fnv32Prime = 0x01000193;</span>
+<span class="fc" id="L364">    int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L365">    int fnv32Prime = 0x01000193;</span>
 
     /**
      * hash = offset_basis
@@ -436,53 +375,55 @@ public class CornerRegion {
      */
     protected int fnvHashCode() {
 
-<span class="nc" id="L439">        int sum = fnv321aInit;</span>
+<span class="nc" id="L378">        int sum = fnv321aInit;</span>
 
-<span class="nc" id="L441">        sum = includeInHashSum(sum, edgeIdx);</span>
+<span class="nc" id="L380">        sum = includeInHashSum(sum, edgeIdx);</span>
         
-<span class="nc" id="L443">        sum = includeInHashSum(sum, kMaxIdx);</span>
+<span class="nc" id="L382">        sum = includeInHashSum(sum, kMaxIdx);</span>
 
-<span class="nc bnc" id="L445" title="All 2 branches missed.">        for (int xCoord : x) {</span>
-<span class="nc" id="L446">            sum = includeInHashSum(sum, xCoord);</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">        for (int xCoord : x) {</span>
+<span class="nc" id="L385">            sum = includeInHashSum(sum, xCoord);</span>
         }
-<span class="nc bnc" id="L448" title="All 2 branches missed.">        for (int yCoord : y) {</span>
-<span class="nc" id="L449">            sum = includeInHashSum(sum, yCoord);</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">        for (int yCoord : y) {</span>
+<span class="nc" id="L388">            sum = includeInHashSum(sum, yCoord);</span>
         }
-<span class="nc bnc" id="L451" title="All 2 branches missed.">        for (float kValue : k) {</span>
-<span class="nc" id="L452">            int kBits = Float.floatToIntBits(kValue);</span>
-<span class="nc" id="L453">            sum = includeInHashSum(sum, kBits);</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">        for (float kValue : k) {</span>
+<span class="nc" id="L391">            int kBits = Float.floatToIntBits(kValue);</span>
+<span class="nc" id="L392">            sum = includeInHashSum(sum, kBits);</span>
         }
         
         // not including orientation which may or may not be set because it's
         // calculated only upon need
         
-<span class="nc" id="L459">        return sum;</span>
+<span class="nc" id="L398">        return sum;</span>
     }
 
     private int includeInHashSum(int sum, int variable) {
         
         // xor the bottom with the current octet.
-<span class="nc" id="L465">        sum ^= variable;</span>
+<span class="nc" id="L404">        sum ^= variable;</span>
 
         // multiply by the 32 bit FNV magic prime mod 2^32
-<span class="nc" id="L468">        sum *= fnv32Prime;</span>
+<span class="nc" id="L407">        sum *= fnv32Prime;</span>
         
-<span class="nc" id="L470">        return sum;</span>
+<span class="nc" id="L409">        return sum;</span>
     }
 
     public static class CornerRegionDegneracyException extends Exception {
 
+        protected static final long serialVersionUID = 456789;
+        
         public CornerRegionDegneracyException(String message) {
-<span class="fc" id="L476">            super(message);</span>
-<span class="fc" id="L477">        }</span>
+<span class="fc" id="L417">            super(message);</span>
+<span class="fc" id="L418">        }</span>
 
         public CornerRegionDegneracyException(String message, Throwable cause) {
-<span class="nc" id="L480">            super(message, cause);</span>
-<span class="nc" id="L481">        }</span>
+<span class="nc" id="L421">            super(message, cause);</span>
+<span class="nc" id="L422">        }</span>
 
         public CornerRegionDegneracyException(Throwable cause) {
-<span class="nc" id="L484">            super(cause);</span>
-<span class="nc" id="L485">        }</span>
+<span class="nc" id="L425">            super(cause);</span>
+<span class="nc" id="L426">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

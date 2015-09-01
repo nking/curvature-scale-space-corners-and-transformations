@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EdgeFilterProducts.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EdgeFilterProducts.java</span></div><h1>EdgeFilterProducts.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ * a wrapper to hold the results of an edge image filter, specifically the
+ * gradient X, gradient Y, the combined gradients XY, and the theta image.
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L9">public class EdgeFilterProducts {</span>
+    
+<span class="fc" id="L11">    private GreyscaleImage gradientXY = null;</span>
+        
+<span class="fc" id="L13">    private GreyscaleImage gradientX = null;</span>
+        
+<span class="fc" id="L15">    private GreyscaleImage gradientY = null;</span>
+        
+<span class="fc" id="L17">    private GreyscaleImage theta = null;</span>
+
+    /**
+     * @return the gradientXY
+     */
+    public GreyscaleImage getGradientXY() {
+<span class="nc" id="L23">        return gradientXY;</span>
+    }
+
+    /**
+     * @param gradientXY the gradientXY to set
+     */
+    public void setGradientXY(GreyscaleImage gradientXY) {
+<span class="fc" id="L30">        this.gradientXY = gradientXY;</span>
+<span class="fc" id="L31">    }</span>
+
+    /**
+     * @return the gradientX
+     */
+    public GreyscaleImage getGradientX() {
+<span class="nc" id="L37">        return gradientX;</span>
+    }
+
+    /**
+     * @param gradientX the gradientX to set
+     */
+    public void setGradientX(GreyscaleImage gradientX) {
+<span class="fc" id="L44">        this.gradientX = gradientX;</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * @return the gradientY
+     */
+    public GreyscaleImage getGradientY() {
+<span class="nc" id="L51">        return gradientY;</span>
+    }
+
+    /**
+     * @param gradientY the gradientY to set
+     */
+    public void setGradientY(GreyscaleImage gradientY) {
+<span class="fc" id="L58">        this.gradientY = gradientY;</span>
+<span class="fc" id="L59">    }</span>
+
+    /**
+     * @return the theta
+     */
+    public GreyscaleImage getTheta() {
+<span class="fc" id="L65">        return theta;</span>
+    }
+
+    /**
+     * @param theta the theta to set
+     */
+    public void setTheta(GreyscaleImage theta) {
+<span class="fc" id="L72">        this.theta = theta;</span>
+<span class="fc" id="L73">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

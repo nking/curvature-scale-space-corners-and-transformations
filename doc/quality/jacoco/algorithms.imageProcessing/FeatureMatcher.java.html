@@ -270,7 +270,7 @@ public class FeatureMatcher {
 <span class="nc" id="L270">    }</span>
 
     /**
-     * comparison of gradients to tune the center of cornerRegion1 and the
+     * comparison of descriptors to tune the center of cornerRegion1 and the
      * orientation.  This doesn't compare the other descriptors to get overall
      * best.
      * @param features1
@@ -367,11 +367,179 @@ public class FeatureMatcher {
 <span class="nc" id="L367">        return best;</span>
     }
 
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @return
+     */
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) {
+        
+<span class="nc" id="L385">        final int x1 = region1.getX();</span>
+<span class="nc" id="L386">        final int y1 = region1.getY();</span>
+<span class="nc" id="L387">        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
+        
+<span class="nc" id="L389">        final int x2 = region2.getX();</span>
+<span class="nc" id="L390">        final int y2 = region2.getY();</span>
+<span class="nc" id="L391">        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
+        
+<span class="nc" id="L393">        FeatureComparisonStat best = null;</span>
+        
+<span class="nc" id="L395">        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);</span>
+        
+<span class="nc bnc" id="L397" title="All 2 branches missed.">        if (desc2 == null) {</span>
+<span class="nc" id="L398">            return null;</span>
+        }
+        
+        /*
+        NOTE: best distinguisher for improved rotation angle is usually 
+        the gradient images because these are on edges.
+        */
+        
+<span class="nc" id="L406">        int[] rotations = new int[10];</span>
+<span class="nc" id="L407">        int i = 0;</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        for (int rotD1 = (rot1 - 30); rotD1 &lt;= (rot1 + 30); rotD1 += 10) {</span>
+<span class="nc" id="L409">            rotations[i] = rotD1;</span>
+<span class="nc" id="L410">            i++;</span>
+        }
+<span class="nc" id="L412">        rotations[i] = rot1 + 90;</span>
+<span class="nc" id="L413">        i++;</span>
+<span class="nc" id="L414">        rotations[i] = rot1 + 180;</span>
+<span class="nc" id="L415">        i++;</span>
+<span class="nc" id="L416">        rotations[i] = rot1 + 270;</span>
+<span class="nc" id="L417">        i++;</span>
+        
+<span class="nc bnc" id="L419" title="All 2 branches missed.">        for (int rotD1 : rotations) {</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">            if (rotD1 &gt; 359) {</span>
+<span class="nc" id="L421">                rotD1 = rotD1 - 360;</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">            } else if (rotD1 &lt; 0) {</span>
+<span class="nc" id="L423">                rotD1 += 360;</span>
+            }
+<span class="nc bnc" id="L425" title="All 2 branches missed.">            for (int x1d = (x1 - dither); x1d &lt;= (x1 + dither); ++x1d) {</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                if (!features1.isWithinXBounds(x1d)) {</span>
+<span class="nc" id="L427">                    continue;</span>
+                }
+<span class="nc bnc" id="L429" title="All 2 branches missed.">                for (int y1d = (y1 - dither); y1d &lt;= (y1 + dither); ++y1d) {</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">                    if (!features1.isWithinYBounds(y1d)) {</span>
+<span class="nc" id="L431">                        continue;</span>
+                    }
+                    
+<span class="nc" id="L434">                    IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);</span>
+        
+<span class="nc bnc" id="L436" title="All 2 branches missed.">                    if (desc1 == null) {</span>
+<span class="nc" id="L437">                        return null;</span>
+                    }
+                    
+<span class="nc" id="L440">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
+                        desc1, x1d, y1d, desc2, x2, y2);
+                   
+<span class="nc bnc" id="L443" title="All 2 branches missed.">                    if (stat.getSumIntensitySqDiff() &lt; stat.getImg2PointIntensityErr()) {</span>
+                       
+<span class="nc bnc" id="L445" title="All 2 branches missed.">                        if (best == null) {</span>
+<span class="nc" id="L446">                            best = stat;</span>
+<span class="nc" id="L447">                            best.setImg1PointRotInDegrees(rotD1);</span>
+<span class="nc" id="L448">                            best.setImg2PointRotInDegrees(rot2);</span>
+                        } else {
+<span class="nc bnc" id="L450" title="All 2 branches missed.">                            if (best.getSumIntensitySqDiff() &gt; stat.getSumIntensitySqDiff()) {</span>
+<span class="nc" id="L451">                                best = stat;</span>
+<span class="nc" id="L452">                                best.setImg1PointRotInDegrees(rotD1);</span>
+<span class="nc" id="L453">                                best.setImg2PointRotInDegrees(rot2);</span>
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+<span class="nc" id="L461">        return best;</span>
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @return
+     */
+    public FeatureComparisonStat ditherForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) {
+        
+<span class="nc" id="L479">        final int x1 = region1.getX();</span>
+<span class="nc" id="L480">        final int y1 = region1.getY();</span>
+<span class="nc" id="L481">        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
+        
+<span class="nc" id="L483">        final int x2 = region2.getX();</span>
+<span class="nc" id="L484">        final int y2 = region2.getY();</span>
+<span class="nc" id="L485">        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
+        
+<span class="nc" id="L487">        FeatureComparisonStat best = null;</span>
+        
+<span class="nc" id="L489">        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);</span>
+        
+<span class="nc bnc" id="L491" title="All 2 branches missed.">        if (desc2 == null) {</span>
+<span class="nc" id="L492">            return null;</span>
+        }
+                
+        /*
+        NOTE: best distinguisher for improved rotation angle is usually 
+        the gradient images because these are on edges.
+        */
+        
+<span class="nc bnc" id="L500" title="All 2 branches missed.">        for (int x1d = (x1 - dither); x1d &lt;= (x1 + dither); ++x1d) {</span>
+<span class="nc bnc" id="L501" title="All 2 branches missed.">            if (!features1.isWithinXBounds(x1d)) {</span>
+<span class="nc" id="L502">                continue;</span>
+            }
+<span class="nc bnc" id="L504" title="All 2 branches missed.">            for (int y1d = (y1 - dither); y1d &lt;= (y1 + dither); ++y1d) {</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">                if (!features1.isWithinYBounds(y1d)) {</span>
+<span class="nc" id="L506">                    continue;</span>
+                }
+                    
+<span class="nc" id="L509">                IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rot1);</span>
+
+<span class="nc bnc" id="L511" title="All 2 branches missed.">                if (desc1 == null) {</span>
+<span class="nc" id="L512">                    return null;</span>
+                }
+
+<span class="nc" id="L515">                FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
+                    desc1, x1d, y1d, desc2, x2, y2);
+
+<span class="nc bnc" id="L518" title="All 2 branches missed.">                if (stat.getSumIntensitySqDiff() &lt; stat.getImg2PointIntensityErr()) {</span>
+
+<span class="nc bnc" id="L520" title="All 2 branches missed.">                    if (best == null) {</span>
+<span class="nc" id="L521">                        best = stat;</span>
+<span class="nc" id="L522">                        best.setImg1PointRotInDegrees(rot1);</span>
+<span class="nc" id="L523">                        best.setImg2PointRotInDegrees(rot2);</span>
+                    } else {
+<span class="nc bnc" id="L525" title="All 2 branches missed.">                        if (best.getSumIntensitySqDiff() &gt; stat.getSumIntensitySqDiff()) {</span>
+<span class="nc" id="L526">                            best = stat;</span>
+<span class="nc" id="L527">                            best.setImg1PointRotInDegrees(rot1);</span>
+<span class="nc" id="L528">                            best.setImg2PointRotInDegrees(rot2);</span>
+                        }
+                    }
+                }
+            }
+        }
+        
+<span class="nc" id="L535">        return best;</span>
+    }
+    
     protected FeatureComparisonStat[] findBestMatch(Features features1, 
         Features features2, CornerRegion cornerRegion1, 
         CornerRegion[] cornerRegions2, int dither) {
         
-<span class="nc" id="L374">        FeatureComparisonStat best = null;</span>
+<span class="nc" id="L542">        FeatureComparisonStat best = null;</span>
         
         /*
         best3 ranks by intensity ssd only.  sometimes matches areas where
@@ -379,14 +547,14 @@ public class FeatureMatcher {
         much more strongly in gradient and theta, so intensity alone may
         match, but the other two might not.
         */
-<span class="nc" id="L382">        FeatureComparisonStat best3 = null;</span>
+<span class="nc" id="L550">        FeatureComparisonStat best3 = null;</span>
         
-<span class="nc bnc" id="L384" title="All 2 branches missed.">        for (int idx2 = 0; idx2 &lt; cornerRegions2.length; ++idx2) {</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">        for (int idx2 = 0; idx2 &lt; cornerRegions2.length; ++idx2) {</span>
 
-<span class="nc" id="L386">            CornerRegion cornerRegion2 = cornerRegions2[idx2];</span>
+<span class="nc" id="L554">            CornerRegion cornerRegion2 = cornerRegions2[idx2];</span>
 
-<span class="nc bnc" id="L388" title="All 2 branches missed.">            if (cornerRegion2 == null) {</span>
-<span class="nc" id="L389">                continue;</span>
+<span class="nc bnc" id="L556" title="All 2 branches missed.">            if (cornerRegion2 == null) {</span>
+<span class="nc" id="L557">                continue;</span>
             }
 
             try {
@@ -397,101 +565,101 @@ public class FeatureMatcher {
                  best centering and rotation to minimize the differences
                  in gradient descriptors between cornerRegion1 and cornerRegion2.
                  */
-<span class="nc" id="L400">                FeatureComparisonStat stat = ditherAndRotateForCorner1Location(</span>
+<span class="nc" id="L568">                FeatureComparisonStat stat = ditherAndRotateForCorner1Location(</span>
                     features1, features2, cornerRegion1, cornerRegion2,
                     dither);
                 
-<span class="nc bnc" id="L404" title="All 2 branches missed.">                if (stat != null) {</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">                if (stat != null) {</span>
 
                     //compare all descriptors to find best
-<span class="nc" id="L407">                    int x1 = stat.getImg1Point().getX();</span>
-<span class="nc" id="L408">                    int y1 = stat.getImg1Point().getY();</span>
-<span class="nc" id="L409">                    int rotD1 = Math.round(stat.getImg1PointRotInDegrees());</span>
+<span class="nc" id="L575">                    int x1 = stat.getImg1Point().getX();</span>
+<span class="nc" id="L576">                    int y1 = stat.getImg1Point().getY();</span>
+<span class="nc" id="L577">                    int rotD1 = Math.round(stat.getImg1PointRotInDegrees());</span>
 
-<span class="nc" id="L411">                    int kMaxIdx2 = cornerRegion2.getKMaxIdx();</span>
-<span class="nc" id="L412">                    int x2 = cornerRegion2.getX()[kMaxIdx2];</span>
-<span class="nc" id="L413">                    int y2 = cornerRegion2.getY()[kMaxIdx2];</span>
-<span class="nc" id="L414">                    int rotD2 = Math.round(</span>
-<span class="nc" id="L415">                        cornerRegion2.getRelativeOrientationInDegrees());</span>
+<span class="nc" id="L579">                    int kMaxIdx2 = cornerRegion2.getKMaxIdx();</span>
+<span class="nc" id="L580">                    int x2 = cornerRegion2.getX()[kMaxIdx2];</span>
+<span class="nc" id="L581">                    int y2 = cornerRegion2.getY()[kMaxIdx2];</span>
+<span class="nc" id="L582">                    int rotD2 = Math.round(</span>
+<span class="nc" id="L583">                        cornerRegion2.getRelativeOrientationInDegrees());</span>
 
-<span class="nc" id="L417">                    IntensityDescriptor iDesc1 = features1.extractIntensity(</span>
+<span class="nc" id="L585">                    IntensityDescriptor iDesc1 = features1.extractIntensity(</span>
                         x1, y1, rotD1);
-<span class="nc bnc" id="L419" title="All 2 branches missed.">                    if (iDesc1 == null) {</span>
-<span class="nc" id="L420">                        continue;</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">                    if (iDesc1 == null) {</span>
+<span class="nc" id="L588">                        continue;</span>
                     }
 
-<span class="nc" id="L423">                    ThetaDescriptor tDesc1 = features1.extractTheta(</span>
+<span class="nc" id="L591">                    ThetaDescriptor tDesc1 = features1.extractTheta(</span>
                         x1, y1, rotD1);
-<span class="nc bnc" id="L425" title="All 2 branches missed.">                    if (tDesc1 == null) {</span>
-<span class="nc" id="L426">                        continue;</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">                    if (tDesc1 == null) {</span>
+<span class="nc" id="L594">                        continue;</span>
                     }
 
-<span class="nc" id="L429">                    GradientDescriptor gDesc1 = features1.extractGradient(</span>
+<span class="nc" id="L597">                    GradientDescriptor gDesc1 = features1.extractGradient(</span>
                         x1, y1, rotD1);
-<span class="nc bnc" id="L431" title="All 2 branches missed.">                    if (gDesc1 == null) {</span>
-<span class="nc" id="L432">                        continue;</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">                    if (gDesc1 == null) {</span>
+<span class="nc" id="L600">                        continue;</span>
                     }
 
-<span class="nc" id="L435">                    IntensityDescriptor iDesc2 = features2.extractIntensity(</span>
+<span class="nc" id="L603">                    IntensityDescriptor iDesc2 = features2.extractIntensity(</span>
                         x2, y2, rotD2);
-<span class="nc bnc" id="L437" title="All 2 branches missed.">                    if (iDesc2 == null) {</span>
-<span class="nc" id="L438">                        continue;</span>
+<span class="nc bnc" id="L605" title="All 2 branches missed.">                    if (iDesc2 == null) {</span>
+<span class="nc" id="L606">                        continue;</span>
                     }
 
-<span class="nc" id="L441">                    ThetaDescriptor tDesc2 = features2.extractTheta(</span>
+<span class="nc" id="L609">                    ThetaDescriptor tDesc2 = features2.extractTheta(</span>
                         x2, y2, rotD2);
-<span class="nc bnc" id="L443" title="All 2 branches missed.">                    if (tDesc2 == null) {</span>
-<span class="nc" id="L444">                        continue;</span>
+<span class="nc bnc" id="L611" title="All 2 branches missed.">                    if (tDesc2 == null) {</span>
+<span class="nc" id="L612">                        continue;</span>
                     }
 
-<span class="nc" id="L447">                    GradientDescriptor gDesc2 = features2.extractGradient(</span>
+<span class="nc" id="L615">                    GradientDescriptor gDesc2 = features2.extractGradient(</span>
                         x2, y2, rotD2);
-<span class="nc bnc" id="L449" title="All 2 branches missed.">                    if (gDesc2 == null) {</span>
-<span class="nc" id="L450">                        continue;</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">                    if (gDesc2 == null) {</span>
+<span class="nc" id="L618">                        continue;</span>
                     }
 
-<span class="nc" id="L453">                    stat = Features.calculateStats(iDesc1, gDesc1, tDesc1,</span>
+<span class="nc" id="L621">                    stat = Features.calculateStats(iDesc1, gDesc1, tDesc1,</span>
                         x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
 
 //float diffRot = AngleUtil.getAngleDifference(rotD1, rotD2);
 //log.info(&quot;diffRot=&quot; + diffRot + &quot; stat=&quot; + stat.toString());
 
-<span class="nc bnc" id="L459" title="All 2 branches missed.">                    if (fitIsBetter(best, stat)) {</span>
-<span class="nc" id="L460">                        best = stat;</span>
-<span class="nc" id="L461">                        best.setImg1PointRotInDegrees(rotD1);</span>
-<span class="nc" id="L462">                        best.setImg2PointRotInDegrees(rotD2);</span>
+<span class="nc bnc" id="L627" title="All 2 branches missed.">                    if (fitIsBetter(best, stat)) {</span>
+<span class="nc" id="L628">                        best = stat;</span>
+<span class="nc" id="L629">                        best.setImg1PointRotInDegrees(rotD1);</span>
+<span class="nc" id="L630">                        best.setImg2PointRotInDegrees(rotD2);</span>
                     }
                     
-<span class="nc bnc" id="L465" title="All 2 branches missed.">                    if (fitIsBetter3(best3, stat)) {</span>
-<span class="nc" id="L466">                        best3 = stat;</span>
-<span class="nc" id="L467">                        best3.setImg1PointRotInDegrees(rotD1);</span>
-<span class="nc" id="L468">                        best3.setImg2PointRotInDegrees(rotD2);</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">                    if (fitIsBetter3(best3, stat)) {</span>
+<span class="nc" id="L634">                        best3 = stat;</span>
+<span class="nc" id="L635">                        best3.setImg1PointRotInDegrees(rotD1);</span>
+<span class="nc" id="L636">                        best3.setImg2PointRotInDegrees(rotD2);</span>
                     }
                 }
-<span class="nc" id="L471">            } catch (CornerRegion.CornerRegionDegneracyException ex) {</span>
+<span class="nc" id="L639">            } catch (CornerRegion.CornerRegionDegneracyException ex) {</span>
                 //log.log(Level.SEVERE, null, ex);
-<span class="nc" id="L473">            }</span>
+<span class="nc" id="L641">            }</span>
         }
         
-<span class="nc" id="L476">        int n = 0;</span>
-<span class="nc bnc" id="L477" title="All 2 branches missed.">        if (best != null) {</span>
-<span class="nc" id="L478">            n++;</span>
+<span class="nc" id="L644">        int n = 0;</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">        if (best != null) {</span>
+<span class="nc" id="L646">            n++;</span>
         }
-<span class="nc bnc" id="L480" title="All 2 branches missed.">        if (best3 != null) {</span>
-<span class="nc" id="L481">            n++;</span>
+<span class="nc bnc" id="L648" title="All 2 branches missed.">        if (best3 != null) {</span>
+<span class="nc" id="L649">            n++;</span>
         }
-<span class="nc" id="L483">        FeatureComparisonStat[] result = new FeatureComparisonStat[n];</span>
-<span class="nc" id="L484">        n = 0;</span>
-<span class="nc bnc" id="L485" title="All 2 branches missed.">        if (best != null) {</span>
-<span class="nc" id="L486">            result[n] = best;</span>
-<span class="nc" id="L487">            n++;</span>
+<span class="nc" id="L651">        FeatureComparisonStat[] result = new FeatureComparisonStat[n];</span>
+<span class="nc" id="L652">        n = 0;</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">        if (best != null) {</span>
+<span class="nc" id="L654">            result[n] = best;</span>
+<span class="nc" id="L655">            n++;</span>
         }
-<span class="nc bnc" id="L489" title="All 2 branches missed.">        if (best3 != null) {</span>
-<span class="nc" id="L490">            result[n] = best3;</span>
-<span class="nc" id="L491">            n++;</span>
+<span class="nc bnc" id="L657" title="All 2 branches missed.">        if (best3 != null) {</span>
+<span class="nc" id="L658">            result[n] = best3;</span>
+<span class="nc" id="L659">            n++;</span>
         }
 
-<span class="nc" id="L494">        return result;</span>
+<span class="nc" id="L662">        return result;</span>
     }
 
     /**
@@ -505,30 +673,30 @@ public class FeatureMatcher {
     protected boolean fitIsBetter(FeatureComparisonStat best, 
         FeatureComparisonStat stat) {
         
-<span class="nc bnc" id="L508" title="All 2 branches missed.">        if (stat == null) {</span>
-<span class="nc" id="L509">            return false;</span>
+<span class="nc bnc" id="L676" title="All 2 branches missed.">        if (stat == null) {</span>
+<span class="nc" id="L677">            return false;</span>
         }
         
-<span class="nc bnc" id="L512" title="All 2 branches missed.">        if ((stat.getSumIntensitySqDiff() &lt;= stat.getImg2PointIntensityErr()) &amp;&amp;</span>
-<span class="nc bnc" id="L513" title="All 2 branches missed.">            (stat.getSumGradientSqDiff() &lt;= stat.getImg2PointGradientErr())</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">            &amp;&amp; (stat.getSumThetaSqDiff() &lt;= stat.getImg2PointThetaErr())</span>
+<span class="nc bnc" id="L680" title="All 2 branches missed.">        if ((stat.getSumIntensitySqDiff() &lt;= stat.getImg2PointIntensityErr()) &amp;&amp;</span>
+<span class="nc bnc" id="L681" title="All 2 branches missed.">            (stat.getSumGradientSqDiff() &lt;= stat.getImg2PointGradientErr())</span>
+<span class="nc bnc" id="L682" title="All 2 branches missed.">            &amp;&amp; (stat.getSumThetaSqDiff() &lt;= stat.getImg2PointThetaErr())</span>
             ) {
 
-<span class="nc bnc" id="L517" title="All 2 branches missed.">            if (best == null) {</span>
-<span class="nc" id="L518">                return true;</span>
+<span class="nc bnc" id="L685" title="All 2 branches missed.">            if (best == null) {</span>
+<span class="nc" id="L686">                return true;</span>
             } else {
-<span class="nc" id="L520">                if (</span>
-<span class="nc bnc" id="L521" title="All 2 branches missed.">                    (best.getSumIntensitySqDiff() &gt;= stat.getSumIntensitySqDiff())</span>
+<span class="nc" id="L688">                if (</span>
+<span class="nc bnc" id="L689" title="All 2 branches missed.">                    (best.getSumIntensitySqDiff() &gt;= stat.getSumIntensitySqDiff())</span>
                     &amp;&amp; 
-<span class="nc bnc" id="L523" title="All 2 branches missed.">                    (best.getSumGradientSqDiff() &gt; stat.getSumGradientSqDiff())</span>
-<span class="nc bnc" id="L524" title="All 2 branches missed.">                    &amp;&amp; (best.getSumThetaSqDiff() &gt; stat.getSumThetaSqDiff())</span>
+<span class="nc bnc" id="L691" title="All 2 branches missed.">                    (best.getSumGradientSqDiff() &gt; stat.getSumGradientSqDiff())</span>
+<span class="nc bnc" id="L692" title="All 2 branches missed.">                    &amp;&amp; (best.getSumThetaSqDiff() &gt; stat.getSumThetaSqDiff())</span>
                     ) {
-<span class="nc" id="L526">                    return true;</span>
+<span class="nc" id="L694">                    return true;</span>
                 }
             }
         }
         
-<span class="nc" id="L531">        return false;</span>
+<span class="nc" id="L699">        return false;</span>
     }
 
     /**
@@ -542,29 +710,29 @@ public class FeatureMatcher {
     protected boolean fitIsBetter2(FeatureComparisonStat best, 
         FeatureComparisonStat stat) {
         
-<span class="nc bnc" id="L545" title="All 2 branches missed.">        if (stat == null) {</span>
-<span class="nc" id="L546">            return false;</span>
+<span class="nc bnc" id="L713" title="All 2 branches missed.">        if (stat == null) {</span>
+<span class="nc" id="L714">            return false;</span>
         }
         
-<span class="nc bnc" id="L549" title="All 2 branches missed.">        if ((stat.getSumIntensitySqDiff() &lt;= stat.getImg2PointIntensityErr()) &amp;&amp;</span>
-<span class="nc bnc" id="L550" title="All 2 branches missed.">            (stat.getSumGradientSqDiff() &lt;= stat.getImg2PointGradientErr())</span>
-<span class="nc bnc" id="L551" title="All 2 branches missed.">            &amp;&amp; (stat.getSumThetaSqDiff() &lt;= stat.getImg2PointThetaErr())</span>
+<span class="nc bnc" id="L717" title="All 2 branches missed.">        if ((stat.getSumIntensitySqDiff() &lt;= stat.getImg2PointIntensityErr()) &amp;&amp;</span>
+<span class="nc bnc" id="L718" title="All 2 branches missed.">            (stat.getSumGradientSqDiff() &lt;= stat.getImg2PointGradientErr())</span>
+<span class="nc bnc" id="L719" title="All 2 branches missed.">            &amp;&amp; (stat.getSumThetaSqDiff() &lt;= stat.getImg2PointThetaErr())</span>
             ) {
 
-<span class="nc bnc" id="L554" title="All 2 branches missed.">            if (best == null) {</span>
-<span class="nc" id="L555">                return true;</span>
+<span class="nc bnc" id="L722" title="All 2 branches missed.">            if (best == null) {</span>
+<span class="nc" id="L723">                return true;</span>
             } else {
-<span class="nc" id="L557">                if (</span>
-<span class="nc bnc" id="L558" title="All 2 branches missed.">                    (best.getSumIntensitySqDiff() &gt;= stat.getSumIntensitySqDiff())</span>
+<span class="nc" id="L725">                if (</span>
+<span class="nc bnc" id="L726" title="All 2 branches missed.">                    (best.getSumIntensitySqDiff() &gt;= stat.getSumIntensitySqDiff())</span>
                     &amp;&amp; 
-<span class="nc bnc" id="L560" title="All 2 branches missed.">                    (best.getSumGradientSqDiff() &gt; stat.getSumGradientSqDiff())</span>
+<span class="nc bnc" id="L728" title="All 2 branches missed.">                    (best.getSumGradientSqDiff() &gt; stat.getSumGradientSqDiff())</span>
                     ) {
-<span class="nc" id="L562">                    return true;</span>
+<span class="nc" id="L730">                    return true;</span>
                 }
             }
         }
         
-<span class="nc" id="L567">        return false;</span>
+<span class="nc" id="L735">        return false;</span>
     }
     
     /**
@@ -578,27 +746,27 @@ public class FeatureMatcher {
     protected boolean fitIsBetter3(FeatureComparisonStat best, 
         FeatureComparisonStat stat) {
         
-<span class="nc bnc" id="L581" title="All 2 branches missed.">        if (stat == null) {</span>
-<span class="nc" id="L582">            return false;</span>
+<span class="nc bnc" id="L749" title="All 2 branches missed.">        if (stat == null) {</span>
+<span class="nc" id="L750">            return false;</span>
         }
         
-<span class="nc bnc" id="L585" title="All 2 branches missed.">        if ((stat.getSumIntensitySqDiff() &lt;= stat.getImg2PointIntensityErr()) &amp;&amp;</span>
-<span class="nc bnc" id="L586" title="All 2 branches missed.">            (stat.getSumGradientSqDiff() &lt;= stat.getImg2PointGradientErr())</span>
-<span class="nc bnc" id="L587" title="All 2 branches missed.">            &amp;&amp; (stat.getSumThetaSqDiff() &lt;= stat.getImg2PointThetaErr())</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">        if ((stat.getSumIntensitySqDiff() &lt;= stat.getImg2PointIntensityErr()) &amp;&amp;</span>
+<span class="nc bnc" id="L754" title="All 2 branches missed.">            (stat.getSumGradientSqDiff() &lt;= stat.getImg2PointGradientErr())</span>
+<span class="nc bnc" id="L755" title="All 2 branches missed.">            &amp;&amp; (stat.getSumThetaSqDiff() &lt;= stat.getImg2PointThetaErr())</span>
             ) {
 
-<span class="nc bnc" id="L590" title="All 2 branches missed.">            if (best == null) {</span>
-<span class="nc" id="L591">                return true;</span>
+<span class="nc bnc" id="L758" title="All 2 branches missed.">            if (best == null) {</span>
+<span class="nc" id="L759">                return true;</span>
             } else {
-<span class="nc" id="L593">                if (</span>
-<span class="nc bnc" id="L594" title="All 2 branches missed.">                    (best.getSumIntensitySqDiff() &gt;= stat.getSumIntensitySqDiff())</span>
+<span class="nc" id="L761">                if (</span>
+<span class="nc bnc" id="L762" title="All 2 branches missed.">                    (best.getSumIntensitySqDiff() &gt;= stat.getSumIntensitySqDiff())</span>
                     ) {
-<span class="nc" id="L596">                    return true;</span>
+<span class="nc" id="L764">                    return true;</span>
                 }
             }
         }
         
-<span class="nc" id="L601">        return false;</span>
+<span class="nc" id="L769">        return false;</span>
     }
 
     protected Map&lt;PairInt, Map&lt;PairInt, Set&lt;FeatureComparisonStat&gt;&gt;&gt; 
@@ -607,30 +775,30 @@ public class FeatureMatcher {
         int blockHalfWidth, boolean useNormalizedIntensities) {
         
         Map&lt;PairInt, Map&lt;PairInt, Set&lt;FeatureComparisonStat&gt;&gt;&gt;
-<span class="nc" id="L610">            comparisonMap = new HashMap&lt;PairInt, Map&lt;PairInt, </span>
+<span class="nc" id="L778">            comparisonMap = new HashMap&lt;PairInt, Map&lt;PairInt, </span>
             Set&lt;FeatureComparisonStat&gt;&gt;&gt;();
                     
-<span class="nc" id="L613">        final int dither = 1;</span>
+<span class="nc" id="L781">        final int dither = 1;</span>
                 
-<span class="nc bnc" id="L615" title="All 2 branches missed.">        for (int idx1 = 0; idx1 &lt; cornerRegions1.length; ++idx1) {</span>
+<span class="nc bnc" id="L783" title="All 2 branches missed.">        for (int idx1 = 0; idx1 &lt; cornerRegions1.length; ++idx1) {</span>
             
-<span class="nc" id="L617">            CornerRegion cornerRegion1 = cornerRegions1[idx1];</span>
+<span class="nc" id="L785">            CornerRegion cornerRegion1 = cornerRegions1[idx1];</span>
             
-<span class="nc bnc" id="L619" title="All 2 branches missed.">            if (cornerRegion1 == null) {</span>
-<span class="nc" id="L620">                continue;</span>
+<span class="nc bnc" id="L787" title="All 2 branches missed.">            if (cornerRegion1 == null) {</span>
+<span class="nc" id="L788">                continue;</span>
             }
             
-<span class="nc" id="L623">            FeatureComparisonStat[] best = findBestMatch(features1, features2,</span>
+<span class="nc" id="L791">            FeatureComparisonStat[] best = findBestMatch(features1, features2,</span>
                 cornerRegion1, cornerRegions2, dither);
             
-<span class="nc bnc" id="L626" title="All 4 branches missed.">            if ((best != null) &amp;&amp; (best.length &gt; 0)) {</span>
-<span class="nc bnc" id="L627" title="All 2 branches missed.">                for (FeatureComparisonStat stat : best) {</span>
-<span class="nc" id="L628">                    storeInMap(comparisonMap, stat);</span>
+<span class="nc bnc" id="L794" title="All 4 branches missed.">            if ((best != null) &amp;&amp; (best.length &gt; 0)) {</span>
+<span class="nc bnc" id="L795" title="All 2 branches missed.">                for (FeatureComparisonStat stat : best) {</span>
+<span class="nc" id="L796">                    storeInMap(comparisonMap, stat);</span>
                 }
             }
         }
         
-<span class="nc" id="L633">        return comparisonMap;</span>
+<span class="nc" id="L801">        return comparisonMap;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

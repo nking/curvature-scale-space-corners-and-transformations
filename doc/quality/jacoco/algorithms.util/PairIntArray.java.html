@@ -267,32 +267,81 @@ public class PairIntArray {
         */
 <span class="fc" id="L268">    }</span>
     
+    /**
+     * reverse the indexes from 0 to lastSwapIdx, inclusive.
+     * 
+     * @param lastSwapIdx 
+     */
+    public void reverse0toIdx(int lastSwapIdx) {
+        
+<span class="pc bpc" id="L277" title="2 of 4 branches missed.">        if ((lastSwapIdx &lt; 0) || (lastSwapIdx &gt; (n - 1))) {</span>
+<span class="nc" id="L278">            throw new IllegalArgumentException(&quot;lastSwapIdx is out of bounds&quot;);</span>
+        }
+        
+<span class="fc" id="L281">        int nSep = (lastSwapIdx + 1) &gt;&gt; 1;</span>
+        
+<span class="fc bfc" id="L283" title="All 2 branches covered.">        for (int idx = 0; idx &lt; nSep; ++idx) {</span>
+<span class="fc" id="L284">            int idx2 = lastSwapIdx - idx;</span>
+<span class="fc" id="L285">            int swapX = x[idx];</span>
+<span class="fc" id="L286">            int swapY = y[idx];</span>
+<span class="fc" id="L287">            x[idx] = x[idx2];</span>
+<span class="fc" id="L288">            y[idx] = y[idx2];</span>
+<span class="fc" id="L289">            x[idx2] = swapX;</span>
+<span class="fc" id="L290">            y[idx2] = swapY;</span>
+        }
+<span class="fc" id="L292">    }</span>
+    
+    /**
+     * reverse the values between index firstSwapIdx and the last index in arrays.
+     * 
+     * @param firstSwapIdx 
+     */
+    public void reverseIdxtoEnd(int firstSwapIdx) {
+        
+<span class="pc bpc" id="L301" title="2 of 4 branches missed.">        if ((firstSwapIdx &lt; 0) || (firstSwapIdx &gt; (n - 1))) {</span>
+<span class="nc" id="L302">            throw new IllegalArgumentException(&quot;firstSwapIdx is out of bounds&quot;);</span>
+        }
+        
+<span class="fc" id="L305">        int count = 0;</span>
+<span class="fc" id="L306">        int nSep = (n - firstSwapIdx) &gt;&gt; 1;</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        for (int idx = firstSwapIdx; idx &lt; (firstSwapIdx + nSep); ++idx) {</span>
+<span class="fc" id="L308">            int idx2 = n - count - 1;</span>
+<span class="fc" id="L309">            int swapX = x[idx];</span>
+<span class="fc" id="L310">            int swapY = y[idx];</span>
+<span class="fc" id="L311">            x[idx] = x[idx2];</span>
+<span class="fc" id="L312">            y[idx] = y[idx2];</span>
+<span class="fc" id="L313">            x[idx2] = swapX;</span>
+<span class="fc" id="L314">            y[idx2] = swapY;</span>
+<span class="fc" id="L315">            count++;</span>
+        }
+<span class="fc" id="L317">    }</span>
+    
     public PairIntArray copy() {
         
-<span class="fc" id="L272">        PairIntArray clone = new PairIntArray(n);</span>
+<span class="fc" id="L321">        PairIntArray clone = new PairIntArray(n);</span>
         
-<span class="fc" id="L274">        clone.insertSpaceAtTopOfArrays(n);</span>
-<span class="fc" id="L275">        System.arraycopy(x, 0, clone.x, 0, n);</span>
-<span class="fc" id="L276">        System.arraycopy(y, 0, clone.y, 0, n);</span>
-<span class="fc" id="L277">        clone.n = n;</span>
+<span class="fc" id="L323">        clone.insertSpaceAtTopOfArrays(n);</span>
+<span class="fc" id="L324">        System.arraycopy(x, 0, clone.x, 0, n);</span>
+<span class="fc" id="L325">        System.arraycopy(y, 0, clone.y, 0, n);</span>
+<span class="fc" id="L326">        clone.n = n;</span>
         
-<span class="fc" id="L279">        return clone;</span>
+<span class="fc" id="L328">        return clone;</span>
     }
     
     public PairFloatArray toPairFloatArray() {
-<span class="fc" id="L283">        PairFloatArray out = new PairFloatArray();</span>
-<span class="fc bfc" id="L284" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L285">            out.add(x[i], y[i]);</span>
+<span class="fc" id="L332">        PairFloatArray out = new PairFloatArray();</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L334">            out.add(x[i], y[i]);</span>
         }
-<span class="fc" id="L287">        return out;</span>
+<span class="fc" id="L336">        return out;</span>
     }
     
     public String toString() {
-<span class="nc" id="L291">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L292" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L293">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
+<span class="nc" id="L340">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L342">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
         }
-<span class="nc" id="L295">        return sb.toString();</span>
+<span class="nc" id="L344">        return sb.toString();</span>
     }
 
 }
