@@ -16,7 +16,7 @@ jacocoJar=${JACOCO_HOME}/lib/jacocoant.jar
 
 emmaJar=${cwd}/lib/emma/emma.jar
 
-jarFiles3=$ANT_HOME/lib/ant.jar:~/.m2/repository/cglib/cglib-nodep/2.1_3/cglib-nodep-2.1_3.jar:$JAVA_HOME/lib/tools.jar:${cwd}/lib/junit.jar:lib/ejml-0.25.jar:lib/jfreechart-1.0.19.jar:jcommon-1.0.23.jar:lib/servlet-api-2.5.jar
+jarFiles3=$ANT_HOME/lib/ant.jar:~/.m2/repository/cglib/cglib-nodep/2.1_3/cglib-nodep-2.1_3.jar:$JAVA_HOME/lib/tools.jar:${cwd}/lib/junit.jar:${cwd}/lib/ejml-0.25.jar:${cwd}/lib/jfreechart-1.0.19.jar:jcommon-1.0.23.jar:${lib}/lib/servlet-api-2.5.jar
 
 classPath=$emmaJar:$jarFiles3
 
