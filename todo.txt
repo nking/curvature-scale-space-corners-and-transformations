@@ -1,37 +1,30 @@
--- summary of learned best practices so far for creating matching point lists between 2 images:
-    -- determining scale:
-       (1) use k=2 segmentation and binning to < 300x300 to find the top 10 blobs in each image
-           where top 10 is defined by being the longest closed contours.
-           (note, may be able to take short cut to use area instead of the full curve and extraction)
-       (2) find those same blobs in the same k=2 but for full image size.
-           if blobs weren't found in (1), the top 10 are chosen from here.
-           (a) for each possible blob pairing:
-               compare feature descriptors, that is intensity (and perhaps gradient too).
-               if the blobs look similar, use contour matcher to solve for the
-               match.  the solution provides cost, scale, and matching points (points are
-               inflection points from the contours).
-       (3) when finished, may only have one or two solutions.
-           from those, the low cost and longest curves are what to choose as solution.
-           stdev and mean of weighted solutions and discarding outliers...
-    -- find matching points between images using feature matches:
-       (1) find corners and use their edge information to determine an orientation for the 
-           descriptors.
-           (NOTE that the descriptor region sizes in one of the images should be adjusted by scale
-           if the scales are not the same.  One needs to consider the pixel size (resolution) also
-           for best comparison of similar region sizes).
-       (2) extract intensity, gradient (and maybe theta) desciptors around the corners
-           and find best matches amond the features by comparing the SSD of descriptors
-       (3) from the matches and knowing the scale, determine rotation and translation for each.
-           use frequency of parameters to find the best rotation, then translation in X and Y.
-           The points that went into the final transformation solutions are then the 
-           correspondence list which can be used as input to the epipolar projection solver.
 
-     Most of this as a sequence of operations is present in a temporary form in 
-     BinSegmentationHelper but will be refactored soon.
+-- run the venturi tests for blob scale
+-- run the books tests for blob scale
+-- for the blob scale tests, consider rotating an image by 90 degrees.
+   shouldn't result in a change of solution...
+-- in blob calculation
+   -- need to transform the binned transformation solution by the binFactor.
+      (just the transformation I think... scale and rotation are invariant because
+      the binning affects both similarly).
+   -- check on image offsets. did the pre-processed image lose information
+      when passing in the sky masked image?
+   -- decide how to evaluate if the binned image solution is enough of
+      a good answer or whether the full image solution should be performed
+      afterwards to provide a solution
+-- complete a runner that finds scale, then uses that with the Feature Matcher
+   to make a correspondence list then uses the epipolar projection solver.
+-- add tests, and bring coverage up
+-- update the command line runners.
+-- begin outline for rectification code
 
-     -- make the wrappers and tests for the above and add it to the cmd line invokers in the dist jar
+-- consider replacing aspectj with something like nanning aop
+
+-- make an executable jar for the two-point correlation code and a link to
+   it from the wiki
 
 -- finish the PointMatchers and remove unused experimental code everywhere.
+-- revisit kmeansplusplus...
 
 -- make the method to combine 2 skyline masks to decide what is sky and what
    is land when there are differences.
