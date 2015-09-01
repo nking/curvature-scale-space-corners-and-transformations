@@ -2183,6 +2183,10 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
 
         Set<Integer> edge1PixIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(edge1Idx));
 
+        if (edge1PixIndexes == null || edge1PixIndexes.isEmpty()) {
+            return;
+        }
+        
         for (Integer edge1PixIndex : edge1PixIndexes) {
 
             PairInt edge1Loc = junctionLocationMap.get(edge1PixIndex);

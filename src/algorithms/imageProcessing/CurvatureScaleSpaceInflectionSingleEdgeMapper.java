@@ -107,8 +107,6 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
                 
         TransformationParameters params = null;
                                    
-        correctPeaks(m1, m2);
-
         PairIntArray xy1 = new PairIntArray(m1.size());
         PairIntArray xy2 = new PairIntArray(m2.size());
 
@@ -177,16 +175,36 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
             // reversed
             Collections.sort(result, new DescendingSigmaComparator());
         }
+        
+        correctPeaks(result);
 
         return result;
     }
 
-    protected void correctPeaks(List<CurvatureScaleSpaceContour> matched1, 
-        List<CurvatureScaleSpaceContour> matched2) {
+    /**
+     * when peak details has more than one point, this averages them and
+     * replaces the details with a single point.  Note, that using the
+     * peak detail to estimate a local orientation for a descriptor subsequently
+     * needs to account for this when can see that the average does not
+     * equal the curve point at the detail idx.
+     * 
+     * <pre>
+     * For example, for a section of the curve with indexes:
+     *  7  8  9  10  11  
+     * if idx=9, 10 are the peak details that have been averaged to one value 
+     * reported at idx=9, the surrounding points used for determining the
+     * tangent to the peak should be idx=8 and idx=11.
+      * </pre>
+     * @param contours 
+     */
+    protected void correctPeaks(List<CurvatureScaleSpaceContour> contours) {
         
-        if (matched1.size() != matched2.size()) {
-            throw new IllegalArgumentException("lengths of matched1" 
-            + " and matchedContours2 must be the same");
+        if (contours == null) {
+            throw new IllegalArgumentException("contours cannot be null");
+        }
+        
+        if (contours.isEmpty()) {
+            return;
         }
         
         // the contours extracted from scale space images using a factor of
@@ -195,41 +213,24 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         // needed.  for that rare case, the avg of the other peak is stored
         // instead of both points
         
-        for (int i = 0; i < matched1.size(); i++) {
+        for (int i = 0; i < contours.size(); i++) {
             
-            CurvatureScaleSpaceContour c1 = matched1.get(i);
-            CurvatureScaleSpaceContour c2 = matched2.get(i);
+            CurvatureScaleSpaceContour c1 = contours.get(i);
             
-            if (c1.getPeakDetails().length != c2.getPeakDetails().length) {
-                if (c1.getPeakDetails().length == 1) {
-                    CurvatureScaleSpaceImagePoint p0 = c2.getPeakDetails()[0];
-                    CurvatureScaleSpaceImagePoint p1 = c2.getPeakDetails()[1];
-                    float t = p0.getScaleFreeLength();
-                    float s = p0.getSigma();
-                    int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
-                    int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
-                    CurvatureScaleSpaceImagePoint pAvg =
-                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
-                        p0.getCoordIdx());
-                    CurvatureScaleSpaceImagePoint[] p =
-                        new CurvatureScaleSpaceImagePoint[]{pAvg};
-                    c2.setPeakDetails(p);
-                    matched2.set(i, c2);
-                }  else if (c2.getPeakDetails().length == 1) {
-                    CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];
-                    CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];
-                    float t = p0.getScaleFreeLength();
-                    float s = p0.getSigma();
-                    int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
-                    int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
-                    CurvatureScaleSpaceImagePoint pAvg =
-                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
-                        p0.getCoordIdx());
-                    CurvatureScaleSpaceImagePoint[] p =
-                        new CurvatureScaleSpaceImagePoint[]{pAvg};
-                    c1.setPeakDetails(p);
-                    matched1.set(i, c1);
-                }
+            if (c1.getPeakDetails().length > 1) {                
+                CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];
+                CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];
+                float t = p0.getScaleFreeLength();
+                float s = p0.getSigma();
+                int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
+                int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
+                CurvatureScaleSpaceImagePoint pAvg =
+                    new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
+                    p0.getCoordIdx());
+                CurvatureScaleSpaceImagePoint[] p =
+                    new CurvatureScaleSpaceImagePoint[]{pAvg};
+                c1.setPeakDetails(p);
+                contours.set(i, c1);
             }
         }        
     }

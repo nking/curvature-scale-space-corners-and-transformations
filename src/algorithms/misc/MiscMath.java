@@ -438,7 +438,7 @@ public class MiscMath {
             double diffX = x[i] - avgX;
             sumX += (diffX * diffX);
         }
-        float stdDevX = (float)(Math.sqrt(sumX/(n - 1.0f)));
+        float stdDevX = (float)(Math.sqrt(sumX/((float)n - 1.0f)));
         
         return new float[]{avgX, stdDevX};
     }
