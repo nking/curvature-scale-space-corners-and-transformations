@@ -402,8 +402,9 @@ public class BlobScaleFinder {
 
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
         IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
-
-//TODO: changing to keep top k best overall
+        
+        FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1 =
+            new FixedSizeSortedVector<>(2, IntensityFeatureComparisonStats.class);
         
         double bestOverallStatSqSum = Double.MAX_VALUE;
         int bestOverallIdx1 = -1;
@@ -486,7 +487,11 @@ public class BlobScaleFinder {
                 bestIdx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
                 bestScale, bestNMatched, (float)bestStatSqSum));
             log.info(sb.toString());
-
+            
+            IntensityFeatureComparisonStats stats = new IntensityFeatureComparisonStats();
+            stats.addAll(bestCompStats);
+            topForIndex1.add(stats);
+            
             if (bestStatSqSum < bestOverallStatSqSum) {
                 bestOverallStatSqSum = bestStatSqSum;
                 bestOverallIdx1 = index1.intValue();
@@ -501,6 +506,41 @@ public class BlobScaleFinder {
 
         if (bestOverallCompStats == null) {
             return null;
+        }
+        
+        /*
+        add to bestOverallCompStats for solutions similar to best
+        */
+        float rotationBest = calculateRotationDifferences(bestOverallCompStats);
+        
+        for (int i = 0; i < topForIndex1.getNumberOfItems(); ++i) {
+            
+            IntensityFeatureComparisonStats cStats = topForIndex1.getArray()[i];
+            
+            List<FeatureComparisonStat> stats = cStats.getComparisonStats();
+            
+            if (stats.equals(bestOverallCompStats)) {
+                continue;
+            }
+            
+            boolean similar = true;
+            
+            for (FeatureComparisonStat stat : stats) {
+                
+                float rot1 = stat.getImg1PointRotInDegrees(); 
+                float rot2 = stat.getImg2PointRotInDegrees();
+                    
+                float rot = AngleUtil.getAngleDifference(rot1, rot2);
+                
+                if (Math.abs(rot - rotationBest) > 30) {
+                    similar = false;
+                    break;
+                }
+            }
+            
+            if (similar) {
+                bestOverallCompStats.addAll(stats);
+            }
         }
 
         TransformationParameters params = calculateTransformation(
@@ -780,9 +820,9 @@ sb.append(
         log.info(sb.toString());
 
 // looking at idx=2, 7 for full image and idx=0, 0 for binned
-if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
-//if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
-//((index1.intValue() == 3) && (index2.intValue() == 3))) {
+//if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
+if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
+((index1.intValue() == 3) && (index2.intValue() == 3))) {
 try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();
@@ -968,10 +1008,6 @@ int z = 1;
     }
 
     private double calculateCombinedIntensityStat(List<FeatureComparisonStat> compStats) {
-
-        /*
-        these are square roots of sums of squared differences.
-        */
 
         double sum = 0;
 
@@ -1273,6 +1309,26 @@ int z = 1;
         }
 
         return centroids;
+    }
+
+    private float calculateRotationDifferences(List<FeatureComparisonStat> 
+        compStats) {
+        
+        if (compStats == null || compStats.isEmpty()) {
+            return Float.POSITIVE_INFINITY;
+        }
+        
+        double sumDiff = 0;
+        
+        for (FeatureComparisonStat stat : compStats) {
+            
+            float diff = AngleUtil.getAngleDifference(stat.getImg1PointRotInDegrees(), 
+                stat.getImg2PointRotInDegrees());
+            
+            sumDiff += diff;
+        }
+        
+        return (float)(sumDiff/(double)compStats.size());
     }
 
 }
