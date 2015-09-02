@@ -12,6 +12,7 @@ import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +24,7 @@ import java.util.logging.Logger;
 /**
  * determine scale between 2 image using blob contours.
  * NOT READY FOR USE YET.
- * 
+ *
  * @author nichole
  */
 public class BlobScaleFinder {
@@ -69,37 +70,41 @@ public class BlobScaleFinder {
         boolean didApplyHistEq = applyHistogramEqualizationIfNeeded(img1Grey,
             img2Grey);
 
+        // TODO: when solution not found (or stdev=NaN) for k=2 binned and unbinned,
+        //   increase k or consider corners in contours
+
+        //TODO: could consider whether invoker should use a black or white sky mask
+
         final int k = 2;
         int smallestGroupLimit = 100;
         int largestGroupLimit = 5000;
-        
+
         float[] outputScaleRotTransXYStDev0 = new float[4];
-        
+
         TransformationParameters paramsBinned = binAndCalculateScale(
-            img1Grey.copyImage(), img2Grey.copyImage(), k, smallestGroupLimit, 
+            img1Grey.copyImage(), img2Grey.copyImage(), k, smallestGroupLimit,
             largestGroupLimit, outputScaleRotTransXYStDev0);
-                
+
         if (paramsBinned != null) {
-            
+
             log.info("binned params: " + paramsBinned.toString());
-            
+
             log.info(String.format(
                 "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
                 outputScaleRotTransXYStDev0[0], outputScaleRotTransXYStDev0[1],
                 outputScaleRotTransXYStDev0[2], outputScaleRotTransXYStDev0[3]));
-            
+
             if (
                 (outputScaleRotTransXYStDev0[0]/paramsBinned.getScale()) > 0.2) {
-                            
+
             } else {
                 return paramsBinned;
             }
-                
         }
-        
+
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        TransformationParameters params = calculateScale(img1Grey, img2Grey, 
+        TransformationParameters params = calculateScale(img1Grey, img2Grey,
             k, smallestGroupLimit, largestGroupLimit,
             outputScaleRotTransXYStDev);
 
@@ -113,10 +118,10 @@ public class BlobScaleFinder {
                 outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
 
             if (paramsBinned != null) {
-                
+
                 float stat0 = (outputScaleRotTransXYStDev0[0]/paramsBinned.getScale());
                 float stat1 = (outputScaleRotTransXYStDev[0]/params.getScale());
-                
+
                 if (stat1 < stat0) {
                     return params;
                 } else {
@@ -126,13 +131,13 @@ public class BlobScaleFinder {
 
             return params;
         }
-        
+
         //TODO: if do not have a solution due to no contours from inflection
         // points, could consider extracting corners from the blob perimeters
         // that requires keeping a handle on the perimeters at this level
         // or as an instance variable
-        
-        return paramsBinned;        
+
+        return paramsBinned;
     }
 
     protected boolean applyHistogramEqualizationIfNeeded(GreyscaleImage image1,
@@ -186,13 +191,13 @@ public class BlobScaleFinder {
      * @param largestGroupLimit
      * @return
      * @throws IOException
-     * @throws NoSuchAlgorithmException 
+     * @throws NoSuchAlgorithmException
      */
     protected TransformationParameters binAndCalculateScale(GreyscaleImage img1,
         GreyscaleImage img2, int k, int smallestGroupLimit,
-        int largestGroupLimit, float[] outputScaleRotTransXYStDev) 
+        int largestGroupLimit, float[] outputScaleRotTransXYStDev)
         throws IOException, NoSuchAlgorithmException {
-        
+
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img1.getWidth()/minDimension,
@@ -217,26 +222,26 @@ public class BlobScaleFinder {
         TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
             img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned,
             outputScaleRotTransXYStDev);
-        
+
         if (paramsBinned == null) {
             return null;
         }
-        
+
         // put back into unbinned image reference frame
         float transX = paramsBinned.getTranslationX();
         float transY = paramsBinned.getTranslationY();
-        
+
         transX *= binFactor;
         transY *= binFactor;
-        
+
         if (outputScaleRotTransXYStDev != null) {
             outputScaleRotTransXYStDev[2] *= binFactor;
             outputScaleRotTransXYStDev[3] *= binFactor;
         }
-        
+
         paramsBinned.setTranslationX(transX);
         paramsBinned.setTranslationY(transY);
-        
+
         return paramsBinned;
     }
 
@@ -319,7 +324,7 @@ public class BlobScaleFinder {
                 }
             }
         }
-        
+
 if (debug) {
 Image img0 = ImageIOHelper.convertImage(imgS);
 int c = 0;
@@ -329,13 +334,13 @@ for (int i = 0; i < outputBlobs.size(); ++i) {
     for (PairInt p : blobSet) {
         int x = p.getX();
         int y = p.getY();
-        ImageIOHelper.addPointToImage(x, y, img0, 0, clr);        
+        ImageIOHelper.addPointToImage(x, y, img0, 0, clr);
     }
     c++;
 }
-MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + ".png");    
-}        
-        
+MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}
+
     }
 
     /**
@@ -387,7 +392,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
      * @param height
      * @param discardWhenCavityIsSmallerThanBorder
      */
-    protected void extractBoundsOfBlobs(final GreyscaleImage img, 
+    protected void extractBoundsOfBlobs(final GreyscaleImage img,
         final List<Set<PairInt>> inOutBlobs,
         final List<PairIntArray> outputBounds, int width, int height,
         boolean discardWhenCavityIsSmallerThanBorder) {
@@ -413,18 +418,25 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
             if ((closedEdge != null) &&
                 (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1))) {
 
-                int nChanged = curveHelper.adjustEdgesTowardsBrightPixels(
-                    closedEdge, img);
-                
+                int nChanged = 0;
+
+                if (blobIsDarkerThanExterior(blob, closedEdge, img)) {
+                    nChanged = curveHelper.adjustEdgesTowardsBrighterPixels(
+                        closedEdge, img);
+                } else {
+                    nChanged = curveHelper.adjustEdgesTowardsDarkerPixels(
+                        closedEdge, img);
+                }
+
                 if (nChanged > 0) {
-                    
+
                     curveHelper.removeRedundantPoints(closedEdge);
-        
+
                     curveHelper.pruneAdjacentNeighborsTo2(closedEdge);
-        
+
                     curveHelper.correctCheckeredSegments(closedEdge);
                 }
-                
+
                 outputBounds.add(closedEdge);
 
             } else {
@@ -463,7 +475,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
 
         inOutBlobs.addAll(blobs);
         outputBounds.addAll(curves);
-        
+
     }
 
     /**
@@ -497,17 +509,17 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
     protected TransformationParameters solveForScale(
         GreyscaleImage img1, GreyscaleImage img2,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
-        List<PairIntArray> bounds1, List<PairIntArray> bounds2, 
+        List<PairIntArray> bounds1, List<PairIntArray> bounds2,
         float[] outputScaleRotTransXYStDev) {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
         IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
-        
+
         FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1 =
             new FixedSizeSortedVector<>(2, IntensityFeatureComparisonStats.class);
-        
+
         double bestOverallStatSqSum = Double.MAX_VALUE;
         int bestOverallIdx1 = -1;
         int bestOverallIdx2 = -1;
@@ -549,7 +561,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
 
                 if ((params == null) ||
                     (mapper.getMatcher().getSolutionMatchedContours1().size() < 2)) {
-                    
+
                     continue;
                 }
 
@@ -589,11 +601,11 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
                 bestIdx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
                 bestScale, bestNMatched, (float)bestStatSqSum));
             log.info(sb.toString());
-            
+
             IntensityFeatureComparisonStats stats = new IntensityFeatureComparisonStats();
             stats.addAll(bestCompStats);
             topForIndex1.add(stats);
-            
+
             if (bestStatSqSum < bestOverallStatSqSum) {
                 bestOverallStatSqSum = bestStatSqSum;
                 bestOverallIdx1 = index1.intValue();
@@ -609,37 +621,37 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
         if (bestOverallCompStats == null) {
             return null;
         }
-        
+
         /*
         add to bestOverallCompStats for solutions similar to best
         */
         float rotationBest = calculateRotationDifferences(bestOverallCompStats);
-        
+
         for (int i = 0; i < topForIndex1.getNumberOfItems(); ++i) {
-            
+
             IntensityFeatureComparisonStats cStats = topForIndex1.getArray()[i];
-            
+
             List<FeatureComparisonStat> stats = cStats.getComparisonStats();
-            
+
             if (stats.equals(bestOverallCompStats)) {
                 continue;
             }
-            
+
             boolean similar = true;
-            
+
             for (FeatureComparisonStat stat : stats) {
-                
-                float rot1 = stat.getImg1PointRotInDegrees(); 
+
+                float rot1 = stat.getImg1PointRotInDegrees();
                 float rot2 = stat.getImg2PointRotInDegrees();
-                    
+
                 float rot = AngleUtil.getAngleDifference(rot1, rot2);
-                
+
                 if (Math.abs(rot - rotationBest) > 30) {
                     similar = false;
                     break;
                 }
             }
-            
+
             if (similar) {
                 bestOverallCompStats.addAll(stats);
             }
@@ -657,7 +669,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
 
     protected TransformationParameters calculateScale(GreyscaleImage img1,
         GreyscaleImage img2, int k, int smallestGroupLimit,
-        int largestGroupLimit, float[] outputScaleRotTransXYStDev) 
+        int largestGroupLimit, float[] outputScaleRotTransXYStDev)
         throws IOException, NoSuchAlgorithmException {
 
         /*
@@ -673,14 +685,14 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
         List<PairIntArray> bounds1 = new ArrayList<PairIntArray>();
         List<PairIntArray> bounds2 = new ArrayList<PairIntArray>();
         log.info("image1:");
-        extractBlobsFromSegmentedImage(2, img1, blobs1, bounds1,
+        extractBlobsFromSegmentedImage(k, img1, blobs1, bounds1,
             smallestGroupLimit, largestGroupLimit);
         log.info("image2:");
-        extractBlobsFromSegmentedImage(2, img2, blobs2, bounds2,
+        extractBlobsFromSegmentedImage(k, img2, blobs2, bounds2,
             smallestGroupLimit, largestGroupLimit);
-        
+
         log.info("nBounds1=" + bounds1.size());
-        
+
         log.info("nBounds2=" + bounds2.size());
 
         /*
@@ -690,7 +702,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
            matches for each.
         */
         //ImageProcessor imageProcessor = new ImageProcessor();
-        
+
 //TODO: put debug sections in AOP for special build after replace aspectj
 if (debug) {
 Image img0 = ImageIOHelper.convertImage(img1);
@@ -748,7 +760,7 @@ int z = 1;
 
         return params;
     }
-    
+
     /**
      * extract the local points surrounding (x, y) on the
      * perimeter and return an object when creating descriptors.
@@ -1182,11 +1194,11 @@ int z = 1;
         if (compStats.size() < 2) {
             return;
         }
-        
+
         //TODO: improve w/ a more robust outlier removal
-       
+
         double[] errDivInt = new double[compStats.size()];
-        
+
         float[] weights = new float[compStats.size()];
         double sum = 0;
         for (int i = 0; i < compStats.size(); ++i) {
@@ -1201,7 +1213,7 @@ int z = 1;
         }
         float[] wghtsMeanAndStDev = MiscMath.getAvgAndStDev(weights);
         float maxWeight = MiscMath.findMax(weights);
-                
+
         /*
         if all stats have intensities < 5 times their errors and
         if the stdev is approx 0.15 times the mean or less, should filter here
@@ -1212,7 +1224,7 @@ int z = 1;
         }
         if (doNotFilter) {
             for (int i = 0; i < errDivInt.length; ++i) {
-                if (errDivInt[i] < 5) {    
+                if (errDivInt[i] < 5) {
                     doNotFilter = false;
                     break;
                 }
@@ -1222,7 +1234,7 @@ int z = 1;
         if (doNotFilter && (weights.length <= 4)) {
             return;
         }
-        
+
         List<FeatureComparisonStat> filteredCompStats = new ArrayList<FeatureComparisonStat>();
         for (int i = 0; i < compStats.size(); ++i) {
             float w = weights[i];
@@ -1231,7 +1243,7 @@ int z = 1;
                 filteredCompStats.add(compStats.get(i));
             }
         }
-        
+
         compStats.clear();
 
         compStats.addAll(filteredCompStats);
@@ -1418,24 +1430,81 @@ int z = 1;
         return centroids;
     }
 
-    private float calculateRotationDifferences(List<FeatureComparisonStat> 
+    private float calculateRotationDifferences(List<FeatureComparisonStat>
         compStats) {
-        
+
         if (compStats == null || compStats.isEmpty()) {
             return Float.POSITIVE_INFINITY;
         }
-        
+
         double sumDiff = 0;
-        
+
         for (FeatureComparisonStat stat : compStats) {
-            
-            float diff = AngleUtil.getAngleDifference(stat.getImg1PointRotInDegrees(), 
+
+            float diff = AngleUtil.getAngleDifference(stat.getImg1PointRotInDegrees(),
                 stat.getImg2PointRotInDegrees());
-            
+
             sumDiff += diff;
         }
-        
+
         return (float)(sumDiff/(double)compStats.size());
+    }
+
+    private boolean blobIsDarkerThanExterior(Set<PairInt> blob, PairIntArray
+        closedEdge, GreyscaleImage img) {
+
+        long sumExterior = 0;
+
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+
+        Set<PairInt> added = new HashSet<PairInt>();
+
+        for (int i = 0; i < closedEdge.getN(); ++i) {
+
+            int x = closedEdge.getX(i);
+            int y = closedEdge.getY(i);
+
+            for (int ii = 0; ii < dxs8.length; ++ii) {
+
+                int x2 = x + dxs8[ii];
+                int y2 = y + dys8[ii];
+
+                if ((x2 < 0) || (y2 < 0) || (x2 > (img.getWidth() - 1)) ||
+                    (y2 > (img.getHeight() - 1))) {
+                    continue;
+                }
+
+                PairInt p2 = new PairInt(x2, y2);
+
+                if (!blob.contains(p2) && !added.contains(p2)) {
+                   sumExterior += img.getValue(x2, y2);
+                   added.add(p2);
+                }
+            }
+        }
+
+        float avgExterior = (float)sumExterior/(float)added.size();
+
+        float avgInterior = mean(blob, img)/(float)blob.size();
+
+        return (avgInterior < avgExterior);
+    }
+
+    private float mean(Set<PairInt> blob, GreyscaleImage img) {
+
+        long sum = 0;
+
+        for (PairInt p : blob) {
+            int x = p.getX();
+            int y = p.getY();
+            int v = img.getValue(x, y);
+            sum += v;
+        }
+
+        float mean = (float)sum/(float)blob.size();
+
+        return mean;
     }
 
 }

@@ -252,7 +252,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                     continue;
                 }
 
-                int nEdgeReplaced = curveHelper.adjustEdgesTowardsBrightPixels(
+                int nEdgeReplaced = curveHelper.adjustEdgesTowardsBrighterPixels(
                     edge, edgeGuideImage);
                 
                 nReplaced += nEdgeReplaced;
