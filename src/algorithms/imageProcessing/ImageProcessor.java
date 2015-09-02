@@ -3202,8 +3202,10 @@ public class ImageProcessor {
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
         final int kColors) throws IOException, NoSuchAlgorithmException {
 
-        int nReserved = 254 - kColors;
-        int nBins = 256 - nReserved - 1;
+        //TODO: assert kColors.  The invoker is reserving 2 bands for 
+        // B & W, so nBins should probably be (kColors - 2)...
+        // correct this when testing
+        int nBins = kColors;
         
         KMeansPlusPlusFloat kmpp = new KMeansPlusPlusFloat();
         kmpp.computeMeans(nBins, thetaValues);

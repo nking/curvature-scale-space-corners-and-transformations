@@ -405,6 +405,11 @@ public class KMeansPlusPlusFloat {
 
         int chosenIndex = -1;
 
+//TODO:  need to change this. 
+// min and max for some uses such as cieXY theta are 0 and 6.28
+// which may be smaller than the number of bins,
+// so this method is not correct for floats now...
+        
         int nDistDistr = 0;
         for (int i = 0; i < distOfSeeds.length; i++) {            
             int nValues = (int)Math.ceil(distOfSeeds[i]);
