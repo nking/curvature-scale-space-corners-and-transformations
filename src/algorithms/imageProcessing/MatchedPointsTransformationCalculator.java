@@ -421,11 +421,41 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * @param weights
      * @param centroidX1
      * @param centroidY1
+     * @param outputScaleRotTransXYStDev output standard deviation of
+     * the scale, rotation, and translations in X and Y. If null, calculations
+     * are not performed for standard deviation from mean.
      * @return
      */
     public TransformationParameters calulateEuclidean(
         PairIntArray matchedXY1, PairIntArray matchedXY2, float[] weights,
-        final double centroidX1, final double centroidY1) {
+        final double centroidX1, final double centroidY1,
+        float[] outputScaleRotTransXYStDev) {
+        
+        if (matchedXY1 == null) {
+            throw new IllegalArgumentException("matchedXY1 cannot be null");
+        }
+        if (matchedXY2 == null) {
+            throw new IllegalArgumentException("matchedXY2 cannot be null");
+        }
+        if (weights == null) {
+            throw new IllegalArgumentException("weights cannot be null");
+        }
+        if (matchedXY1.getN() != matchedXY2.getN()) {
+            throw new IllegalArgumentException(
+            "matchedXY1 must be the same length as matchedXY2");
+        }
+        if (matchedXY1.getN() != weights.length) {
+            throw new IllegalArgumentException(
+            "weights must be the same length as matchedXY1");
+        }
+        if (matchedXY1.getN() < 2) {
+            throw new IllegalArgumentException(
+            "matchedXY1 must have at least 2 points");
+        }
+        if ((outputScaleRotTransXYStDev != null) && (outputScaleRotTransXYStDev.length < 4)) {
+            throw new IllegalArgumentException(
+            "outputScaleRotTransXYStDev has to be at least 4 in length if not null");
+        }
        
         /*
         solve for rotation.
@@ -452,7 +482,6 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         choosing pairs of points by optimal pairing for maximum distance.
         since hungarian algorithm is set for min cost,
             using 1/distance, and when i1==i2, using max value.
-        TODO: clean up redundant pairings
         */
         float[][] invDist = new float[matchedXY1.getN()][matchedXY1.getN()];
 
@@ -518,6 +547,10 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         double scaleAvg = 0;
         double transXAvg = 0;
         double transYAvg = 0;
+        
+        List<Float> scales = new ArrayList<Float>();
+        List<Float> transXs = new ArrayList<Float>();
+        List<Float> transYs = new ArrayList<Float>();
                 
         for (PairInt pairIndex : pairIndexes) {
 
@@ -596,6 +629,10 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             
             thetas.add(Double.valueOf(theta));
             thetasWeights.add(Float.valueOf(pairWeight));
+            
+            scales.add((float)scale);
+            transXs.add((float)transX);
+            transYs.add((float)transY);
         }
                 
         List<Double> thetaCorr = new ArrayList<Double>(thetas);        
@@ -611,6 +648,36 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         for (int i = 0; i < thetaCorr.size(); ++i) {
             thetaAvg += thetaCorr.get(i) * thetasWeights.get(i);
         }      
+        
+        // ----- determine standard deviations ----
+        if (outputScaleRotTransXYStDev != null) {
+            double scaleSum = 0;
+            double thetaSum = 0;
+            double transXSum = 0;
+            double transYSum = 0;
+            for (int i = 0; i < scales.size(); ++i) {
+                double diff = scales.get(i) - scaleAvg;
+                scaleSum += (diff * diff);
+                
+                diff = thetaCorr.get(i) - thetaAvg;
+                thetaSum += (diff * diff);
+                
+                diff = transXs.get(i) - transXAvg;
+                transXSum += (diff * diff);
+                
+                diff = transYs.get(i) - transYAvg;
+                transYSum += (diff * diff);
+            }
+            double scaleStDv = Math.sqrt(scaleSum/((double)scales.size() - 1.));
+            double thetaStDv = Math.sqrt(thetaSum/((double)scales.size() - 1.));
+            double transXStDv = Math.sqrt(transXSum/((double)scales.size() - 1.));
+            double transYStDv = Math.sqrt(transYSum/((double)scales.size() - 1.));
+            
+            outputScaleRotTransXYStDev[0] = (float)scaleStDv;
+            outputScaleRotTransXYStDev[1] = (float)thetaStDv;
+            outputScaleRotTransXYStDev[2] = (float)transXStDv;
+            outputScaleRotTransXYStDev[3] = (float)transYStDv;
+        }
                 
         TransformationParameters params = new TransformationParameters();
         params.setRotationInRadians((float)thetaAvg);

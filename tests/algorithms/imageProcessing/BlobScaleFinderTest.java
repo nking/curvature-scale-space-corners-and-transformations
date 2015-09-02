@@ -25,7 +25,7 @@ public class BlobScaleFinderTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 0; i < 1;/*3;*/ ++i) {
+        for (int i = 1; i < 2;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -83,7 +83,7 @@ public class BlobScaleFinderTest extends TestCase {
 
     }
 
-    public void testExtractBoundsOfBlobs() throws Exception {
+    public void estExtractBoundsOfBlobs() throws Exception {
 
         int width = 10;
         int height = 10;
@@ -126,7 +126,7 @@ public class BlobScaleFinderTest extends TestCase {
 
     }
 
-    public void testExtractBlobsFromSegmentedImage() throws Exception {
+    public void estExtractBlobsFromSegmentedImage() throws Exception {
 
         int width = 10;
         int height = 10;
@@ -194,7 +194,7 @@ public class BlobScaleFinderTest extends TestCase {
         assertTrue(expected.isEmpty());
     }
 
-    public void testSumIntensity() throws Exception {
+    public void estSumIntensity() throws Exception {
 
         int width = 10;
         int height = 10;

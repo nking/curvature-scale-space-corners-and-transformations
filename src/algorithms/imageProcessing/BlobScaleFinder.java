@@ -72,54 +72,67 @@ public class BlobScaleFinder {
         final int k = 2;
         int smallestGroupLimit = 100;
         int largestGroupLimit = 5000;
-
-        //TransformationParameters params = calculateScale(img1Grey, img2Grey, k,
-        //    smallestGroupLimit, largestGroupLimit);
-
-        float minDimension = 300.f;//200.f
-        int binFactor = (int) Math.ceil(
-            Math.max((float)img1Grey.getWidth()/minDimension,
-            (float)img2Grey.getHeight()/minDimension));
-        int smallestGroupLimitBinned = smallestGroupLimit/(binFactor*binFactor);
-        int largestGroupLimitBinned = largestGroupLimit/(binFactor*binFactor);
-
-        log.info("binFactor=" + binFactor);
-
-        // prevent from being smaller than needed for a convex hull
-        if (smallestGroupLimitBinned < 4) {
-            smallestGroupLimitBinned = 4;
-        }
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        GreyscaleImage img1GreyBinned = imageProcessor.binImage(img1Grey,
-            binFactor);
-        GreyscaleImage img2GreyBinned = imageProcessor.binImage(img2Grey,
-            binFactor);
-
-        //TODO: if binned params are chosen, the translation has to be scaled to
-        //full image frame:
-        TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
-            img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned);
         
-        /*
-        //evaluate params[0] and params[1] to choose between
-        TransformationParameters bestParam = evaluate(params, bounds1, bounds2,
-            img1.getWidth(), img1.getHeight(), img2.getWidth(), img2.getHeight());
-        */
-
-        /*if (params != null) {
-            log.info("params: " + params.toString());
-        }*/
-
+        float[] outputScaleRotTransXYStDev0 = new float[4];
         
+        TransformationParameters paramsBinned = binAndCalculateScale(
+            img1Grey.copyImage(), img2Grey.copyImage(), k, smallestGroupLimit, 
+            largestGroupLimit, outputScaleRotTransXYStDev0);
+                
         if (paramsBinned != null) {
+            
             log.info("binned params: " + paramsBinned.toString());
+            
+            log.info(String.format(
+                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
+                outputScaleRotTransXYStDev0[0], outputScaleRotTransXYStDev0[1],
+                outputScaleRotTransXYStDev0[2], outputScaleRotTransXYStDev0[3]));
+            
+            if (
+                (outputScaleRotTransXYStDev0[0]/paramsBinned.getScale()) > 0.2) {
+                            
+            } else {
+                return paramsBinned;
+            }
+                
         }
-
-        return paramsBinned;
         
-        //return params;
+        float[] outputScaleRotTransXYStDev = new float[4];
+
+        TransformationParameters params = calculateScale(img1Grey, img2Grey, 
+            k, smallestGroupLimit, largestGroupLimit,
+            outputScaleRotTransXYStDev);
+
+        if (params != null) {
+
+            log.info("params: " + params.toString());
+
+            log.info(String.format(
+                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
+                outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
+                outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
+
+            if (paramsBinned != null) {
+                
+                float stat0 = (outputScaleRotTransXYStDev0[0]/paramsBinned.getScale());
+                float stat1 = (outputScaleRotTransXYStDev[0]/params.getScale());
+                
+                if (stat1 < stat0) {
+                    return params;
+                } else {
+                    return paramsBinned;
+                }
+            }
+
+            return params;
+        }
+        
+        //TODO: if do not have a solution due to no contours from inflection
+        // points, could consider extracting corners from the blob perimeters
+        // that requires keeping a handle on the perimeters at this level
+        // or as an instance variable
+        
+        return paramsBinned;        
     }
 
     protected boolean applyHistogramEqualizationIfNeeded(GreyscaleImage image1,
@@ -159,6 +172,72 @@ public class BlobScaleFinder {
         }
 
         return performHistEq;
+    }
+
+    /**
+     * bin the image to calculate scale and rough transformation between images.
+     * The returned result is in the reference frame of the unbinned img1, and
+     * when applied to it, the result is in the reference frame of the unbinned
+     * img2.
+     * @param img1
+     * @param img2
+     * @param k
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    protected TransformationParameters binAndCalculateScale(GreyscaleImage img1,
+        GreyscaleImage img2, int k, int smallestGroupLimit,
+        int largestGroupLimit, float[] outputScaleRotTransXYStDev) 
+        throws IOException, NoSuchAlgorithmException {
+        
+        float minDimension = 300.f;//200.f
+        int binFactor = (int) Math.ceil(
+            Math.max((float)img1.getWidth()/minDimension,
+            (float)img2.getHeight()/minDimension));
+        int smallestGroupLimitBinned = smallestGroupLimit/(binFactor*binFactor);
+        int largestGroupLimitBinned = largestGroupLimit/(binFactor*binFactor);
+
+        log.info("binFactor=" + binFactor);
+
+        // prevent from being smaller than needed for a convex hull
+        if (smallestGroupLimitBinned < 4) {
+            smallestGroupLimitBinned = 4;
+        }
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        GreyscaleImage img1GreyBinned = imageProcessor.binImage(img1,
+            binFactor);
+        GreyscaleImage img2GreyBinned = imageProcessor.binImage(img2,
+            binFactor);
+
+        TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
+            img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned,
+            outputScaleRotTransXYStDev);
+        
+        if (paramsBinned == null) {
+            return null;
+        }
+        
+        // put back into unbinned image reference frame
+        float transX = paramsBinned.getTranslationX();
+        float transY = paramsBinned.getTranslationY();
+        
+        transX *= binFactor;
+        transY *= binFactor;
+        
+        if (outputScaleRotTransXYStDev != null) {
+            outputScaleRotTransXYStDev[2] *= binFactor;
+            outputScaleRotTransXYStDev[3] *= binFactor;
+        }
+        
+        paramsBinned.setTranslationX(transX);
+        paramsBinned.setTranslationY(transY);
+        
+        return paramsBinned;
     }
 
     /**
@@ -240,6 +319,23 @@ public class BlobScaleFinder {
                 }
             }
         }
+        
+if (debug) {
+Image img0 = ImageIOHelper.convertImage(imgS);
+int c = 0;
+for (int i = 0; i < outputBlobs.size(); ++i) {
+    Set<PairInt> blobSet = outputBlobs.get(i);
+    int clr = ImageIOHelper.getNextColorRGB(c);
+    for (PairInt p : blobSet) {
+        int x = p.getX();
+        int y = p.getY();
+        ImageIOHelper.addPointToImage(x, y, img0, 0, clr);        
+    }
+    c++;
+}
+MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + ".png");    
+}        
+        
     }
 
     /**
@@ -367,6 +463,7 @@ public class BlobScaleFinder {
 
         inOutBlobs.addAll(blobs);
         outputBounds.addAll(curves);
+        
     }
 
     /**
@@ -400,7 +497,8 @@ public class BlobScaleFinder {
     protected TransformationParameters solveForScale(
         GreyscaleImage img1, GreyscaleImage img2,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
-        List<PairIntArray> bounds1, List<PairIntArray> bounds2) {
+        List<PairIntArray> bounds1, List<PairIntArray> bounds2, 
+        float[] outputScaleRotTransXYStDev) {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
@@ -415,7 +513,7 @@ public class BlobScaleFinder {
         int bestOverallIdx2 = -1;
         int bestOverallNMatched = -1;
         List<FeatureComparisonStat> bestOverallCompStats = null;
-
+//[5][3]
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
             Integer index1 = Integer.valueOf(idx1);
@@ -548,7 +646,7 @@ public class BlobScaleFinder {
         }
 
         TransformationParameters params = calculateTransformation(
-            bestOverallCompStats);
+            bestOverallCompStats, outputScaleRotTransXYStDev);
 
         if (params == null) {
             return null;
@@ -559,7 +657,8 @@ public class BlobScaleFinder {
 
     protected TransformationParameters calculateScale(GreyscaleImage img1,
         GreyscaleImage img2, int k, int smallestGroupLimit,
-        int largestGroupLimit) throws IOException, NoSuchAlgorithmException {
+        int largestGroupLimit, float[] outputScaleRotTransXYStDev) 
+        throws IOException, NoSuchAlgorithmException {
 
         /*
         extract the top 10 blobs and their contours from k=2 segmented image:
@@ -579,6 +678,10 @@ public class BlobScaleFinder {
         log.info("image2:");
         extractBlobsFromSegmentedImage(2, img2, blobs2, bounds2,
             smallestGroupLimit, largestGroupLimit);
+        
+        log.info("nBounds1=" + bounds1.size());
+        
+        log.info("nBounds2=" + bounds2.size());
 
         /*
         filter out dissimilar pairings:
@@ -587,7 +690,8 @@ public class BlobScaleFinder {
            matches for each.
         */
         //ImageProcessor imageProcessor = new ImageProcessor();
-
+        
+//TODO: put debug sections in AOP for special build after replace aspectj
 if (debug) {
 Image img0 = ImageIOHelper.convertImage(img1);
 for (int i = 0; i < bounds1.size(); ++i) {
@@ -638,12 +742,13 @@ int z = 1;
            statistical basis of combining the results and removing
            outliers.
         */
+
         TransformationParameters params = solveForScale(img1, img2, blobs1,
-            blobs2, bounds1, bounds2);
+            blobs2, bounds1, bounds2, outputScaleRotTransXYStDev);
 
         return params;
     }
-
+    
     /**
      * extract the local points surrounding (x, y) on the
      * perimeter and return an object when creating descriptors.
@@ -893,10 +998,6 @@ redoStats = true;
         float theta1, float theta2,
         CSSContourMatcherWrapper matcher) {
 
-/*
-TODO: this section needs revision
-*/
-
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
         // for the redo, because the orientations are set rather than found,
@@ -1025,7 +1126,8 @@ int z = 1;
     }
 
     private TransformationParameters calculateTransformation(
-        List<FeatureComparisonStat> compStats) {
+        List<FeatureComparisonStat> compStats,
+        float[] outputScaleRotTransXYStDev) {
 
         assert(compStats.isEmpty() == false);
 
@@ -1069,7 +1171,8 @@ int z = 1;
         assert(Math.abs(tot - 1.) < 0.03);
 
         TransformationParameters params = tc.calulateEuclidean(
-            matchedXY1, matchedXY2, weights, centroidX1, centroidY1);
+            matchedXY1, matchedXY2, weights, centroidX1, centroidY1,
+            outputScaleRotTransXYStDev);
 
         return params;
     }

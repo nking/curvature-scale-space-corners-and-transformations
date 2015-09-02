@@ -827,6 +827,35 @@ int z1 = 1;
             }
         }
     }
+    /**
+     * draw the point over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param x of point
+     * @param y of point
+     * @param input
+     * @param nExtraForDot
+     * @param rgbClr
+     */
+    public static void addPointToImage(int x, int y, Image input, 
+        int nExtraForDot, int rgbClr) {
+        
+        for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+
+            int xx = x + dx;
+
+            if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                    dy++) {
+
+                    int yy = y + dy;
+                    if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                        input.setRGB(xx, yy, rgbClr);
+                    }
+                }
+            }
+        }
+    }
     
     /**
      * draw the point over the image using the given rgb colors and the size
@@ -940,6 +969,40 @@ int z1 = 1;
             input);
     }
     
+    public static int getNextColorRGB(int clr) {
+        
+        if (clr > 5) {
+            clr = 0;
+        } else if (clr == -1) {
+            clr = 0;
+        }
+        int c = Color.BLUE.getRGB();
+        switch (clr) {
+            case 0:
+                c = Color.BLUE.getRGB();
+                break;
+            case 1:
+                c = Color.PINK.getRGB();
+                break;
+            case 2:
+                c = Color.GREEN.getRGB();
+                break;
+            case 3:
+                c = Color.RED.getRGB();
+                break;
+            case 4:
+                c = Color.CYAN.getRGB();
+                break;
+            case 5:
+                c = Color.MAGENTA.getRGB();
+                break;
+            default:
+                break;
+        }
+        
+        return c;
+    }
+    
     public static void addAlternatingColorCurvesToImage(
         PairIntArray[] curves, Image input) throws IOException {
         
@@ -950,30 +1013,11 @@ int z1 = 1;
         int clr = 0;
         
         for (int i = 0; i < curves.length; i++) {
+            
             PairIntArray edge = curves[i];
-            if (clr > 5) {
-                clr = 0;
-            }
-            int c = Color.BLUE.getRGB();
-            switch(clr) {
-                case 1:
-                    c = Color.PINK.getRGB();
-                    break;
-                case 2:
-                    c = Color.GREEN.getRGB();
-                    break;
-                case 3:
-                    c = Color.RED.getRGB();
-                    break;
-                case 4:
-                    c = Color.CYAN.getRGB();
-                    break;
-                case 5:
-                    c = Color.MAGENTA.getRGB();
-                    break;
-                default:
-                    break;
-            }
+            
+            int c = getNextColorRGB(clr);
+            
             for (int ii = 0; ii < edge.getN(); ii++) {
                 
                 int col = edge.getX(ii);
@@ -1000,30 +1044,11 @@ int z1 = 1;
         int clr = 0;
         
         for (int i = 0; i < pointSets.size(); i++) {
+            
             Set<PairInt> points = pointSets.get(i);
-            if (clr > 5) {
-                clr = 0;
-            }
-            int c = Color.BLUE.getRGB();
-            switch(clr) {
-                case 1:
-                    c = Color.PINK.getRGB();
-                    break;
-                case 2:
-                    c = Color.GREEN.getRGB();
-                    break;
-                case 3:
-                    c = Color.RED.getRGB();
-                    break;
-                case 4:
-                    c = Color.CYAN.getRGB();
-                    break;
-                case 5:
-                    c = Color.MAGENTA.getRGB();
-                    break;
-                default:
-                    break;
-            }
+            
+            int c = getNextColorRGB(clr);
+            
             for (PairInt p : points) {
                 
                 int col = p.getX() + xOffset;
