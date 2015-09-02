@@ -1406,16 +1406,16 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         assertTrue(!edges.isEmpty());
     }
     
-    public void estFindEdges2() throws Exception {
+    public void testFindEdges2() throws Exception {
                 
         //String fileName = "house.gif";
-        String fileName = "lab.gif";
+        //String fileName = "lab.gif";
         //String fileName = "susan-in.gif";
         //String fileName = "susan-in_plus.png";
         //String fileName = "africa2.png";
         //String fileName = "valve_gaussian.png";
         //String fileName = "lena.jpg";
-        //String fileName = "middlebury_cones_im2.png";
+        String fileName = "middlebury_cones_im2.png";
         
         log.info("fileName=" + fileName);
         
@@ -1430,7 +1430,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         // to experiment w/ a color mapping instead of intensity:
-        if (false && !fileName.equals("house.gif")) {//cannot use on B&W images
+        if (fileName.contains("cones")) {//cannot use on B&W images
             ImageProcessor imageProcessor = new ImageProcessor();
             ImageExt clrImg = ImageIOHelper.readImageExt(filePath);
             img = imageProcessor.createGreyscaleFromColorSegmentation(clrImg);

@@ -10,6 +10,7 @@ import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
 import algorithms.util.Errors;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -2430,7 +2431,7 @@ public class ImageProcessor {
      */
     public GreyscaleImage createGreyscaleFromColorSegmentation(ImageExt input) {
 
-        int kColors = 8;//253;
+        int kColors = 8;
 
         return createGreyscaleFromColorSegmentation(input, kColors);
     }
@@ -2438,7 +2439,7 @@ public class ImageProcessor {
     /**
      * create an image segmented by color...useful for experimenting with corners
      * due to color differences rather than original intensity differences.
-     * The default provided here uses 8 color segmentation.
+     * Internally, is using a blur of '1' on the image before segmentation.
      * @param input
      * @param kColors the number of colors to bin the image by.  max allowed value
      * is 253.
@@ -2446,6 +2447,24 @@ public class ImageProcessor {
      */
     public GreyscaleImage createGreyscaleFromColorSegmentation(ImageExt input,
         int kColors) {
+
+        boolean useBlur = true;
+
+        return createGreyscaleFromColorSegmentation(input, kColors, useBlur);
+    }
+    
+    /**
+     * create an image segmented by color...useful for experimenting with corners
+     * due to color differences rather than original intensity differences.
+     * Internally, is using a blur of '1' on the image before segmentation.
+     * @param input
+     * @param kColors the number of colors to bin the image by.  max allowed value
+     * is 253.
+     * @param useBlur
+     * @return
+     */
+    public GreyscaleImage createGreyscaleFromColorSegmentation(ImageExt input,
+        int kColors, boolean useBlur) {
 
         if (kColors > 253) {
             throw new IllegalArgumentException("kColors must be <= 253");
@@ -2457,8 +2476,6 @@ public class ImageProcessor {
         GreyscaleImage img;
 
         int minNeighborLimit;
-
-        boolean useBlur = true;
 
         if (useBlur) {
 
@@ -2588,13 +2605,10 @@ public class ImageProcessor {
            -- for regions that are very spotty, might consider using the
               intensity image to help define the region and take the highest
               number density color in that region and assign it to all.
-
         */
 
         int w = input.getWidth();
         int h = input.getHeight();
-
-        int nReserved = 254 - kColors;
 
         float[] tmpColorBuffer = new float[2];
 
@@ -2642,68 +2656,10 @@ public class ImageProcessor {
         }
 
         thetaValues = Arrays.copyOf(thetaValues, thetaCount);
-
-        float minValue = MiscMath.findMin(thetaValues);
-        float maxValue = MiscMath.findMax(thetaValues);
-
-        log.fine("minTheta=" + (minValue * 180./Math.PI) +
-            " maxTheta=" + (maxValue * 180./Math.PI));
-
-        HistogramHolder hist = Histogram.createSimpleHistogram(minValue,
-            maxValue, (256 - nReserved - 1), thetaValues,
-            Errors.populateYErrorsBySqrt(thetaValues));
-
-        /*try {
-            hist.plotHistogram("cie XY theta histogram", 76543);
-        } catch (Exception e) {}
-        */
-
-        int nonZeroCount = 0;
-        for (int i = 0; i < hist.getXHist().length; i++) {
-            int c = hist.getYHist()[i];
-            if (c > 0) {
-                nonZeroCount++;
-            }
-        }
-
-        float[] startBins = new float[nonZeroCount];
-
-        float halfBinWidth = (hist.getXHist()[1] - hist.getXHist()[0])/2.f;
-
-        nonZeroCount = 0;
-        for (int i = 0; i < hist.getXHist().length; i++) {
-            int c = hist.getYHist()[i];
-            if (c > 0) {
-                startBins[nonZeroCount] = hist.getXHist()[i] - halfBinWidth;
-                nonZeroCount++;
-            }
-        }
-
-        Iterator<Entry<PairInt, Float> > iter = pixThetaMap.entrySet().iterator();
-
-        // O(N * lg_2(N))
-        while (iter.hasNext()) {
-
-            Entry<PairInt, Float> entry = iter.next();
-
-            PairInt p = entry.getKey();
-
-            float theta = entry.getValue().floatValue();
-
-            int idx = Arrays.binarySearch(startBins, theta);
-
-            // if it's negative, (-(insertion point) - 1)
-            if (idx < 0) {
-                // idx = -*idx2 - 1
-                idx = -1*(idx + 1);
-            }
-
-            int mappedValue = 255 - startBins.length + idx;
-
-            output.setValue(p.getX(), p.getY(), mappedValue);
-        }
-
-        return output;
+        
+        createAndApplyHistMapping(output, pixThetaMap, thetaValues, kColors);
+        
+        return output;        
     }
 
     /**
@@ -2944,6 +2900,73 @@ public class ImageProcessor {
         double b = v1Y2Frac * b1 + v1Y1Frac * b2;
         
         return new double[]{r, g, b};
+    }
+
+    private void createAndApplyHistMapping(GreyscaleImage output, 
+        Map<PairInt, Float> pixThetaMap, float[] thetaValues,
+        final int kColors) {
+        
+        float minValue = MiscMath.findMin(thetaValues);
+        float maxValue = MiscMath.findMax(thetaValues);
+
+        log.fine("minTheta=" + (minValue * 180./Math.PI) +
+            " maxTheta=" + (maxValue * 180./Math.PI));
+
+        int nReserved = 254 - kColors;
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(minValue,
+            maxValue, (256 - nReserved - 1), thetaValues,
+            Errors.populateYErrorsBySqrt(thetaValues));
+
+        /*try {
+            hist.plotHistogram("cie XY theta histogram", 76543);
+        } catch (Exception e) {}
+        */
+
+        int nonZeroCount = 0;
+        for (int i = 0; i < hist.getXHist().length; i++) {
+            int c = hist.getYHist()[i];
+            if (c > 0) {
+                nonZeroCount++;
+            }
+        }
+
+        float[] startBins = new float[nonZeroCount];
+
+        float halfBinWidth = (hist.getXHist()[1] - hist.getXHist()[0])/2.f;
+
+        nonZeroCount = 0;
+        for (int i = 0; i < hist.getXHist().length; i++) {
+            int c = hist.getYHist()[i];
+            if (c > 0) {
+                startBins[nonZeroCount] = hist.getXHist()[i] - halfBinWidth;
+                nonZeroCount++;
+            }
+        }
+
+        Iterator<Entry<PairInt, Float> > iter = pixThetaMap.entrySet().iterator();
+
+        // O(N * lg_2(N))
+        while (iter.hasNext()) {
+
+            Entry<PairInt, Float> entry = iter.next();
+
+            PairInt p = entry.getKey();
+
+            float theta = entry.getValue().floatValue();
+
+            int idx = Arrays.binarySearch(startBins, theta);
+
+            // if it's negative, (-(insertion point) - 1)
+            if (idx < 0) {
+                // idx = -*idx2 - 1
+                idx = -1*(idx + 1);
+            }
+
+            int mappedValue = 255 - startBins.length + idx;
+
+            output.setValue(p.getX(), p.getY(), mappedValue);
+        }
     }
  
 }
