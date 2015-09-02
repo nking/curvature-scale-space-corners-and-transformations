@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
+import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
@@ -416,14 +417,14 @@ public class ImageProcessor {
 
         return output;
     }
-    
+
     /**
      * compute theta as a polar angle that increases in a clockwise manner
      * and has a range from 0 to 359, inclusive.
-     * 
+     *
      * @param convolvedX
      * @param convolvedY
-     * @return 
+     * @return
      */
     public GreyscaleImage computeTheta360(final GreyscaleImage convolvedX,
         final GreyscaleImage convolvedY) {
@@ -438,9 +439,9 @@ public class ImageProcessor {
                 double gY = convolvedY.getValue(i, j);
 
                 double thetaR = (2. * Math.PI) - AngleUtil.polarAngleCCW(gX, gY);
-                
+
                 int thetaG = (int)Math.round(thetaR * 180./Math.PI);
-                
+
                 if (thetaG > 359) {
                     thetaG = thetaG - 360;
                 }
@@ -662,19 +663,19 @@ public class ImageProcessor {
 
     public void shrinkImage(final GreyscaleImage input,
         int[] offsetsAndDimensions) {
-        
+
         int w2 = offsetsAndDimensions[2];
         int h2 = offsetsAndDimensions[3];
-        
+
         int offset1X = offsetsAndDimensions[0];
         int offset1Y = offsetsAndDimensions[1];
-        
+
         GreyscaleImage output = new GreyscaleImage(w2, h2);
         output.setXRelativeOffset(offset1X);
         output.setYRelativeOffset(offset1Y);
 
         int x = 0;
-        
+
         int endCol = (offset1X + w2);
         if (endCol > input.getWidth()) {
             endCol = input.getWidth();
@@ -687,7 +688,7 @@ public class ImageProcessor {
         for (int col = offset1X; col < endCol; col++) {
 
             int y = 0;
-            
+
             for (int row = offset1Y; row < endRow; row++) {
 
                 int v = input.getValue(col, row);
@@ -699,7 +700,7 @@ public class ImageProcessor {
 
             x++;
         }
-        
+
         input.resetTo(output);
     }
 
@@ -720,16 +721,16 @@ public class ImageProcessor {
         */
         //xOffset, yOffset, width, height
         // subtract xOffset from x in input and yOffset from y in input
-        
+
         //TODO: remove points out of bounds of final image
-        
+
         for (PairInt p : input) {
             p.setX(p.getX() - offsetsAndDimensions[0]);
             p.setY(p.getY() - offsetsAndDimensions[1]);
         }
-        
+
     }
-    
+
     /**
      * change coordinates of the input as if they were cropped to the given
      * offset and dimensions.
@@ -747,15 +748,15 @@ public class ImageProcessor {
         */
         //xOffset, yOffset, width, height
         // subtract xOffset from x in input and yOffset from y in input
-        
+
         //TODO: remove points out of bounds of final image
-        
+
         for (int i = 0; i < input.getN(); ++i) {
             int x = input.getX(i) - offsetsAndDimensions[0];
             int y = input.getY(i) - offsetsAndDimensions[1];
             input.set(i, x, y);
         }
-        
+
     }
 
     public void applyImageSegmentation(GreyscaleImage input, int kBands)
@@ -903,7 +904,7 @@ public class ImageProcessor {
 
         return output;
     }
-    
+
     /**
      * multiply these images, that is pixel by pixel multiplication.
      * input2 is assumed to be 0 or 1
@@ -933,9 +934,9 @@ public class ImageProcessor {
             for (int row = 0; row < input1.getHeight(); row++) {
 
                 int m = input2.getValue(col, row);
-                
+
                 if (m == 0) {
-                
+
                     input1.setRGB(col, row, 0, 0, 0);
                 }
             }
@@ -988,17 +989,17 @@ public class ImageProcessor {
     protected void blur(GreyscaleImage input, float[] kernel) {
 
         applyKernel1D(input, kernel, true);
-        
+
         applyKernel1D(input, kernel, false);
     }
-    
+
     public void blur(GreyscaleImage input, float sigma) {
 
         float[] kernel = Gaussian1D.getKernel(sigma);
 
         blur(input, kernel);
     }
-    
+
     public void blur(GreyscaleImage input, SIGMA sigma) {
 
         float[] kernel = Gaussian1D.getKernel(sigma);
@@ -1041,8 +1042,8 @@ public class ImageProcessor {
 
         input.resetTo(output);
     }
-    
-    public void applyKernel1D(GreyscaleImage input, float[] kernel, 
+
+    public void applyKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX) {
 
         Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
@@ -1050,7 +1051,7 @@ public class ImageProcessor {
         GreyscaleImage output = input.createWithDimensions();
 
         for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {               
+            for (int j = 0; j < input.getHeight(); j++) {
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, calcForX);
                 int g = (int)Math.round(conv);
@@ -1060,7 +1061,7 @@ public class ImageProcessor {
 
         input.resetTo(output);
     }
-    
+
     /**
      * blur the r, g, b vectors of image input by sigma.
      * @param input
@@ -2422,6 +2423,7 @@ public class ImageProcessor {
 
         return img2;
     }
+    
     /**
      * create an image segmented by color...useful for experimenting with corners
      * due to color differences rather than original intensity differences.
@@ -2434,6 +2436,21 @@ public class ImageProcessor {
         int kColors = 8;
 
         return createGreyscaleFromColorSegmentation(input, kColors);
+    }
+    
+    /**
+     * create an image segmented by color...useful for experimenting with corners
+     * due to color differences rather than original intensity differences.
+     * The default provided here uses 8 color segmentation.
+     * @param input
+     * @return
+     */
+    public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt 
+        input) throws IOException, NoSuchAlgorithmException {
+
+        int kColors = 8;
+
+        return createGreyscaleFromColorSegmentationKMPP(input, kColors);
     }
 
     /**
@@ -2453,6 +2470,23 @@ public class ImageProcessor {
         return createGreyscaleFromColorSegmentation(input, kColors, useBlur);
     }
     
+    /**
+     * create an image segmented by color...useful for experimenting with corners
+     * due to color differences rather than original intensity differences.
+     * Internally, is using a blur of '1' on the image before segmentation.
+     * @param input
+     * @param kColors the number of colors to bin the image by.  max allowed value
+     * is 253.
+     * @return
+     */
+    public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt input,
+        int kColors) throws IOException, NoSuchAlgorithmException {
+
+        boolean useBlur = true;
+
+        return createGreyscaleFromColorSegmentationKMPP(input, kColors, useBlur);
+    }
+
     /**
      * create an image segmented by color...useful for experimenting with corners
      * due to color differences rather than original intensity differences.
@@ -2565,6 +2599,117 @@ public class ImageProcessor {
     }
 
     /**
+     * create an image segmented by color...useful for experimenting with corners
+     * due to color differences rather than original intensity differences.
+     * Internally, is using a blur of '1' on the image before segmentation.
+     * @param input
+     * @param kColors the number of colors to bin the image by.  max allowed value
+     * is 253.
+     * @param useBlur
+     * @return
+     */
+    public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt input,
+        int kColors, boolean useBlur) throws IOException, NoSuchAlgorithmException {
+
+        if (kColors > 253) {
+            throw new IllegalArgumentException("kColors must be <= 253");
+        }
+        if (kColors < 2) {
+            throw new IllegalArgumentException("kColors must be >= 2");
+        }
+
+        GreyscaleImage img;
+
+        int minNeighborLimit;
+
+        if (useBlur) {
+
+            Image input2 = input.copyImage();
+
+            blur(input2, 1/*(float)Math.sqrt(2)/2.f*/);
+
+            img = convertToCIEXYPolarThetaKMPP(input2, kColors);
+
+            minNeighborLimit = 6;
+
+        } else {
+
+            img = convertToCIEXYPolarThetaKMPP(input, kColors);
+
+            minNeighborLimit = 5;
+        }
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        // ----replace pixel, if 7 or more neighbors have same color -----
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+
+        Map<Integer, Integer> freqMap = new HashMap<Integer, Integer>();
+
+        int nChanged = 1;
+        int nIterMax = 100;
+        int nIter = 0;
+
+        while (!useBlur && (nIter < nIterMax) && (nChanged > 0)) {
+
+            log.fine("nIter=" + nIter + " nChanged=" + nChanged);
+
+            nChanged = 0;
+
+            for (int col = 0; col < w; col++) {
+                for (int row = 0; row < h; row++) {
+
+                    freqMap.clear();
+
+                    Integer maxCountValue = null;
+                    int maxCount = Integer.MIN_VALUE;
+
+                    for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                        int x = dxs[nIdx] + col;
+                        int y = dys[nIdx] + row;
+
+                        if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
+                            break;
+                        }
+
+                        Integer v = Integer.valueOf(img.getValue(x, y));
+
+                        Integer c = freqMap.get(v);
+                        if (c == null) {
+                            c = Integer.valueOf(1);
+                        } else {
+                            c = Integer.valueOf(c.intValue() + 1);
+                        }
+                        freqMap.put(v, c);
+
+                        if (c.intValue() > maxCount) {
+                            maxCount = c.intValue();
+                            maxCountValue = v;
+                        }
+                    }
+
+                    if ((maxCount >= minNeighborLimit) &&
+                        (img.getValue(col, row) != maxCountValue.intValue())) {
+
+                        img.setValue(col, row, maxCountValue.intValue());
+                        nChanged++;
+                    }
+                }
+            }
+
+            nIter++;
+        }
+
+        // rescale the image
+        HistogramEqualization hEq = new HistogramEqualization(img);
+        hEq.applyFilter();
+
+        return img;
+    }
+    
+    /**
      * convert the color image into an image scaled into values 0 to 255
      * by the polar theta angle in CIE XY color space.  The colors are
      * divided into 254 bins plus black and white.
@@ -2656,10 +2801,94 @@ public class ImageProcessor {
         }
 
         thetaValues = Arrays.copyOf(thetaValues, thetaCount);
-        
+
         createAndApplyHistMapping(output, pixThetaMap, thetaValues, kColors);
-        
-        return output;        
+
+        return output;
+    }
+
+    /**
+     * convert the color image into an image scaled into values 0 to 255
+     * by the polar theta angle in CIE XY color space.  The colors are divided
+     * into kColors number of bins.
+     *
+     * runtime complexity is O(N) + O(N*lg_2(N))
+     *
+     * @param input
+     * @param kColors the number of color bins to use for the image segmentation.
+     * The minimum allowed value is 2 and the maximum allowed value is 253.
+     * @return
+     */
+    public GreyscaleImage convertToCIEXYPolarThetaKMPP(Image input, int kColors) 
+        throws IOException, NoSuchAlgorithmException {
+
+        if (kColors > 253) {
+            throw new IllegalArgumentException("kColors must be <= 253");
+        }
+        if (kColors < 2) {
+            throw new IllegalArgumentException("kColors must be >= 2");
+        }
+
+        /*
+        TODO: needs some improvements in color mapping.
+           -- for regions that are very spotty, might consider using the
+              intensity image to help define the region and take the highest
+              number density color in that region and assign it to all.
+        */
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        float[] tmpColorBuffer = new float[2];
+
+        GreyscaleImage output = new GreyscaleImage(w, h);
+
+        Map<PairInt, Float> pixThetaMap = new HashMap<PairInt, Float>();
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        float[] thetaValues = new float[input.getNPixels()];
+        int thetaCount = 0;
+
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+
+                PairInt p = new PairInt(col, row);
+
+                int r = input.getR(col, row);
+                int g = input.getG(col, row);
+                int b = input.getB(col, row);
+
+                if ((r < 25) && (g < 25) && (b < 25)) {
+                    continue;
+                } else if ((r > 230) && (g > 230) && (b > 230)) {//might need to use 195 as lower limit
+                    output.setValue(col, row, 255);
+                    continue;
+                }
+
+                float[] cieXY = tmpColorBuffer;
+                cieC.rgbToXYChromaticity(r, g, b, cieXY);
+
+                if (cieC.isWhite(cieXY[0], cieXY[1])) {
+                    output.setValue(col, row, 255);
+                } else {
+
+                    double theta = cieC.calculateXYTheta(cieXY[0], cieXY[1]);
+
+                    thetaValues[thetaCount] = (float)theta;
+
+                    pixThetaMap.put(p, Float.valueOf((float)theta));
+
+                    thetaCount++;
+                }
+            }
+        }
+
+        thetaValues = Arrays.copyOf(thetaValues, thetaCount);
+
+        createAndApplyKMPPMapping(output, pixThetaMap, thetaValues, kColors);
+
+        return output;
     }
 
     /**
@@ -2696,7 +2925,7 @@ public class ImageProcessor {
         }
 
     }
-    
+
     /**
      * find contiguous zeros in image and if the number of pixels in a groups
      * is less than contiguousZerosLimit, fill in the pixels with the
@@ -2712,17 +2941,17 @@ public class ImageProcessor {
         int nGroups = finder.getNumberOfGroups();
 
         for (int i = 0; i < nGroups; ++i) {
-            
+
             int n = finder.getNumberofGroupMembers(i);
-            
+
             if (n <= contiguousZerosLimit) {
-                
+
                 PairIntArray group = finder.getXY(i);
-                
+
                 // find the adjacent non-zero pixels to these
                 Set<PairInt> neighbors = new HashSet<PairInt>();
                 for (int j = 0; j < group.getN(); ++j)  {
-                    getNeighborsNotThisValue(img, group.getX(j), group.getY(j), 
+                    getNeighborsNotThisValue(img, group.getX(j), group.getY(j),
                         valueToFill, neighbors);
                 }
 
@@ -2744,7 +2973,7 @@ public class ImageProcessor {
 
     }
 
-    public void getNeighborsNotThisValue(GreyscaleImage input, int x, int y, 
+    public void getNeighborsNotThisValue(GreyscaleImage input, int x, int y,
         final int value, Set<PairInt> outputNeighbors) {
 
         int width = input.getWidth();
@@ -2772,77 +3001,77 @@ public class ImageProcessor {
 
     /**
      * NOT YET TESTED
-     * 
+     *
      http://en.wikipedia.org/wiki/Bilinear_interpolation
-     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg                
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
      * @param x
      * @param y
-     * @return 
+     * @return
      */
     public double biLinearInterpolation(GreyscaleImage gsImg, float x, float y) {
-                
+
         double x1 = Math.floor(x);
-       
+
         double x2 = Math.ceil(x);
-        
+
         double y1 = Math.floor(y);
-       
+
         double y2 = Math.ceil(y);
-        
+
         double v1, v2;
-        
+
         if (x1 == x2) {
-            
+
             v1 = gsImg.getValue((int)x1, (int)y1);
-            
+
             if (y1 == y2) {
                 return v1;
             }
-            
+
             v2 = gsImg.getValue((int)x1, (int)y2);
-            
+
         } else {
-            
+
             // interpolate over row y1
             v1 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y1) +
                 ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y1);
-            
+
             if (y1 == y2) {
                 return v1;
             }
-            
+
             // interpolate over row y2
             v2 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y2) +
                 ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y2);
         }
-        
+
         // interpolate the fraction of v1 and v2 over rows
         double v = ((y2 - y)/(y2 - y1)) * v1 + ((y - y1)/(y2 - y1)) * v2;
-        
+
         return v;
     }
-    
+
     /**
     NOT YET TESTED
      http://en.wikipedia.org/wiki/Bilinear_interpolation
-     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg   
-     * 
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
+     *
      * @param x
      * @param y
-     * @return 
+     * @return
      */
     public double[] biLinearInterpolation(Image clrImg, float x, float y) {
-        
+
         double x1 = Math.floor(x);
-       
+
         double x2 = Math.ceil(x);
-        
+
         double y1 = Math.floor(y);
-       
+
         double y2 = Math.ceil(y);
-                
+
         double r1, r2, g1, g2, b1, b2;
-        
+
         if (x1 == x2) {
 
             r1 = clrImg.getR((int)x1, (int)y1);
@@ -2851,61 +3080,61 @@ public class ImageProcessor {
 
             if (y1 == y2) {
                 return new double[]{r1, g1, b1};
-            } 
-            
+            }
+
             r2 = clrImg.getR((int)x1, (int)y2);
             g2 = clrImg.getG((int)x1, (int)y2);
             b2 = clrImg.getB((int)x1, (int)y2);
 
         } else {
-       
+
             double v1X2Frac = ((x2 - x)/(x2 - x1));
             double v1X1Frac = ((x - x1)/(x2 - x1));
-            
+
             // interpolate over row y1
             r1 = v1X2Frac * clrImg.getR((int)x1, (int)y1) +
                 v1X1Frac * clrImg.getR((int)x2, (int)y1);
-            
+
             g1 = v1X2Frac * clrImg.getG((int)x1, (int)y1) +
                 v1X1Frac * clrImg.getG((int)x2, (int)y1);
-            
+
             b1 = v1X2Frac * clrImg.getB((int)x1, (int)y1) +
                 v1X1Frac * clrImg.getB((int)x2, (int)y1);
-            
+
             if (y1 == y2) {
                 return new double[]{r1, g1, b1};
             }
-            
+
             // interpolate over row y2
             r2 = v1X2Frac * clrImg.getR((int)x1, (int)y2) +
                 v1X1Frac * clrImg.getR((int)x2, (int)y2);
-            
+
             g2 = v1X2Frac * clrImg.getG((int)x1, (int)y2) +
                 v1X1Frac * clrImg.getG((int)x2, (int)y2);
-            
+
             b2 = v1X2Frac * clrImg.getB((int)x1, (int)y2) +
                 v1X1Frac * clrImg.getB((int)x2, (int)y2);
         }
-        
+
         double v1Y2Frac = ((y2 - y)/(y2 - y1));
         double v1Y1Frac = ((y - y1)/(y2 - y1));
-            
+
         // interpolate the fraction of v1 and v2 over rows
         double r = v1Y2Frac * r1 + v1Y1Frac * r2;
-        
+
         // interpolate the fraction of v1 and v2 over rows
         double g = v1Y2Frac * g1 + v1Y1Frac * g2;
-        
+
         // interpolate the fraction of v1 and v2 over rows
         double b = v1Y2Frac * b1 + v1Y1Frac * b2;
-        
+
         return new double[]{r, g, b};
     }
 
-    private void createAndApplyHistMapping(GreyscaleImage output, 
+    private void createAndApplyHistMapping(GreyscaleImage output,
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
         final int kColors) {
-        
+
         float minValue = MiscMath.findMin(thetaValues);
         float maxValue = MiscMath.findMax(thetaValues);
 
@@ -2913,15 +3142,15 @@ public class ImageProcessor {
             " maxTheta=" + (maxValue * 180./Math.PI));
 
         int nReserved = 254 - kColors;
-        
+
         HistogramHolder hist = Histogram.createSimpleHistogram(minValue,
             maxValue, (256 - nReserved - 1), thetaValues,
             Errors.populateYErrorsBySqrt(thetaValues));
 
-        /*try {
-            hist.plotHistogram("cie XY theta histogram", 76543);
+        try {
+            hist.plotHistogram("cie XY theta histogram", "cieXY_hist_" 
+                + MiscDebug.getCurrentTimeFormatted());
         } catch (Exception e) {}
-        */
 
         int nonZeroCount = 0;
         for (int i = 0; i < hist.getXHist().length; i++) {
@@ -2968,5 +3197,66 @@ public class ImageProcessor {
             output.setValue(p.getX(), p.getY(), mappedValue);
         }
     }
- 
+
+    private void createAndApplyKMPPMapping(GreyscaleImage output,
+        Map<PairInt, Float> pixThetaMap, float[] thetaValues,
+        final int kColors) throws IOException, NoSuchAlgorithmException {
+
+        int nReserved = 254 - kColors;
+        int nBins = 256 - nReserved - 1;
+        
+        KMeansPlusPlusFloat kmpp = new KMeansPlusPlusFloat();
+        kmpp.computeMeans(nBins, thetaValues);
+        
+        float minValue = kmpp.getMinValue();
+        float maxValue = kmpp.getMaxValue();
+
+        float[] binCenters = kmpp.getCenters();
+        
+        Iterator<Entry<PairInt, Float> > iter = pixThetaMap.entrySet().iterator();
+
+        while (iter.hasNext()) {
+
+            Entry<PairInt, Float> entry = iter.next();
+
+            PairInt p = entry.getKey();
+
+            float theta = entry.getValue().floatValue();
+
+            for (int i = 0; i < binCenters.length; i++) {
+
+                float vc = binCenters[i];
+
+                float bisectorBelow = ((i - 1) > -1) ?
+                    ((binCenters[i - 1] + vc) / 2) : minValue;
+
+                float bisectorAbove = ((i + 1) > (binCenters.length - 1)) ?
+                    maxValue : ((binCenters[i + 1] + vc) / 2);
+
+                if ((theta >= bisectorBelow) && (theta <= bisectorAbove)) {
+
+                    //TODO: check this
+                    int mappedValue = 255 - nBins + i;
+                    
+                    output.setValue(p.getX(), p.getY(), mappedValue);
+
+                    break;
+                }
+            }
+            
+            /* 
+            // if binCenters is ordered, use binary search for faster results
+            int idx = Arrays.binarySearch(startBins, theta);
+
+            // if it's negative, (-(insertion point) - 1)
+            if (idx < 0) {
+                // idx = -*idx2 - 1
+                idx = -1*(idx + 1);
+            }
+            int mappedValue = 255 - startBins.length + idx;
+
+            output.setValue(p.getX(), p.getY(), mappedValue);
+            */
+        }
+    }
 }

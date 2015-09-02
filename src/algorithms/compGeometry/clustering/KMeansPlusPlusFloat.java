@@ -1,6 +1,6 @@
 package algorithms.compGeometry.clustering;
 
-import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.misc.MiscMath;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -28,14 +28,14 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-public class KMeansPlusPlus {
+public class KMeansPlusPlusFloat {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
      * final solution for centers of groups (== seed centers)
      */
-    protected int[] center = null;
+    protected float[] center = null;
     protected int[] numberOfPointsPerSeedCell = null;
     
     /**
@@ -50,30 +50,41 @@ public class KMeansPlusPlus {
     protected final static int nMaxIter = 20;
     protected int nIter = 0;
     
-    public KMeansPlusPlus() {
+    private float minValue = Float.POSITIVE_INFINITY;
+    private float maxValue = Float.POSITIVE_INFINITY;
+    
+    public KMeansPlusPlusFloat() {
     }
     
-    protected void init(int k) {
+    protected void init(final int k, final float[] values) {
         this.nSeeds = k;
         this.nIter = 0;
         this.seedVariances = new float[nSeeds];
+        
+        minValue = MiscMath.findMin(values);
+        maxValue = MiscMath.findMax(values);
     }
     
     /**
-     * note that an internal method binPoints makes an assumption that the
-     * minimum values in an img pixel is 0 and a maximum is 255.
+     * note that values may have needed some pre-processing
+       to group close numbers (similarity of floating point numbers depends
+       upon context so a decision about numerical resolution would be
+       difficult to make here).
+       * Also, note that the minimum and maximum in values are used in binning,
+       * so the algorithm may need to one day offer ability to pass those in
+       * as argument for some use cases.
      * @param k
-     * @param img
+     * @param values
      * @throws IOException
      * @throws NoSuchAlgorithmException 
      */
-    public void computeMeans(int k, GreyscaleImage img) throws IOException, 
+    public void computeMeans(final int k, final float[] values) throws IOException, 
         NoSuchAlgorithmException {
          
-        init(k);
+        init(k, values);
         
         // starter seeds, sorted by increasing value
-        int[] seeds = createStartSeeds(img);
+        float[] seeds = createStartSeeds(values);
         
         int[] imgSeedIndexes = null;
 
@@ -81,17 +92,17 @@ public class KMeansPlusPlus {
 
         while (!hasConverged && (nIter < nMaxIter) ) {
 
-            imgSeedIndexes = binPoints(img, seeds);
+            imgSeedIndexes = binPoints(values, seeds);
 
-            seeds = calculateMeanOfSeedPoints(img, imgSeedIndexes);
+            seeds = calculateMeanOfSeedPoints(values, imgSeedIndexes);
 
             if (seeds == null) {
                 nIter = 0;
-                seeds = createStartSeeds(img);
+                seeds = createStartSeeds(values);
                 continue;
             }
 
-            hasConverged = calculateVarianceFromSeedCenters(img, seeds, 
+            hasConverged = calculateVarianceFromSeedCenters(values, seeds, 
                 imgSeedIndexes);
 
             nIter++;
@@ -101,7 +112,7 @@ public class KMeansPlusPlus {
         center = seeds;
 
         // calculate final stats
-        calculateFinalStats(img, imgSeedIndexes);
+        calculateFinalStats(values, imgSeedIndexes);
     }
 
     /**
@@ -110,47 +121,47 @@ public class KMeansPlusPlus {
      * @param img
      * @return 
      */
-    private int[] createStartSeeds(GreyscaleImage img) throws 
+    private float[] createStartSeeds(final float[] values) throws 
         NoSuchAlgorithmException {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(System.currentTimeMillis());
         
-        int[] seed = new int[nSeeds];
+        float[] seed = new float[nSeeds];
         
         int[] indexes = new int[nSeeds];
 
-        int index = getModeIdx(img);
+        int index = getModeIdx(values);
 
         int nSeedsChosen = 0;
-        seed[nSeedsChosen] = img.getValue(index);
+        seed[nSeedsChosen] = values[index];
         indexes[nSeedsChosen] = index;
         
-        log.fine(String.format("choose seed %d) %d", nSeedsChosen, 
+        log.fine(String.format("choose seed %d) %f", nSeedsChosen, 
             seed[nSeedsChosen]));
         
         nSeedsChosen++;
         
         for (int n = 1; n < nSeeds; n++) {
 
-            int[] distOfSeeds = new int[img.getNPixels()];
-            int[] indexOfDistOfSeeds = new int[img.getNPixels()];
+            float[] distOfSeeds = new float[values.length];
+            int[] indexOfDistOfSeeds = new int[values.length];
 
-            int minAllDist = Integer.MAX_VALUE;
+            float minAllDist = Float.MAX_VALUE;
 
-            for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
+            for (int xyIndex = 0; xyIndex < values.length; xyIndex++) {
                 
                 if (contains(indexes, nSeedsChosen, xyIndex)) {
                     continue;
                 }
                 
-                int pt = img.getValue(xyIndex);
+                float pt = values[xyIndex];
                 
-                int minDist = Integer.MAX_VALUE;
+                float minDist = Float.MAX_VALUE;
 
                 for (int seedIndex = 0; seedIndex < nSeedsChosen; seedIndex++) {
                     
-                    int dist = Math.abs(pt - seed[seedIndex]);
+                    float dist = Math.abs(pt - seed[seedIndex]);
                     
                     if (dist < minDist) {
                         minDist = dist;
@@ -168,10 +179,10 @@ public class KMeansPlusPlus {
             index = chooseRandomlyFromNumbersPresentByProbability(distOfSeeds, 
                 indexOfDistOfSeeds, sr, indexes, nSeedsChosen);
 
-            seed[nSeedsChosen] = img.getValue(index);
+            seed[nSeedsChosen] = values[index];
             indexes[nSeedsChosen] = index;
 
-            log.fine(String.format("choose seed %d) %d", nSeedsChosen, 
+            log.fine(String.format("choose seed %d) %f", nSeedsChosen, 
                 seed[nSeedsChosen]));
             
             nSeedsChosen++;
@@ -196,21 +207,21 @@ public class KMeansPlusPlus {
      *   as new seed bin centers.  note that if there is a bin without points
      *   in it, null is returned.
      *
-     * @param img
+     * @param values
      * @param imgSeedIndexes
      * @return
      */
-    protected int[] calculateMeanOfSeedPoints(final GreyscaleImage img, 
+    protected float[] calculateMeanOfSeedPoints(final float[] values, 
         final int[] imgSeedIndexes) {
 
-        int[] sum = new int[nSeeds];
+        float[] sum = new float[nSeeds];
         int[] nSum = new int[nSeeds];
 
-        for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
+        for (int xyIndex = 0; xyIndex < values.length; xyIndex++) {
 
             int seedIndex = imgSeedIndexes[xyIndex];
 
-            sum[seedIndex] += img.getValue(xyIndex);
+            sum[seedIndex] += values[xyIndex];
             
             nSum[seedIndex]++;
         }
@@ -223,7 +234,7 @@ public class KMeansPlusPlus {
                 sum[i] /= nSum[i];
             }
 
-            log.fine(String.format("seed mean = %d) %d number of points=%d", 
+            log.fine(String.format("seed mean = %d) %f number of points=%d", 
                 i, sum[i], nSum[i]));
             
         }
@@ -232,18 +243,18 @@ public class KMeansPlusPlus {
     }
 
     /**
-     * calculate the variance of the points from their seed centers and compare 
+     * Calculate the variance of the points from their seed centers and compare 
      * results with the last iteration and return true when solution has 
-     * converged.  the solution has converged if each seed's variation differs 
+     * converged.  The solution has converged if each seed's variation differs 
      * from the last iteration by less than 2 sigma.
      *
-     * @param img
+     * @param values
      * @param seed
      * @param imgSeedIndexes
      * @return
      */
-    protected boolean calculateVarianceFromSeedCenters(final GreyscaleImage img,
-        int[] seed, int[] imgSeedIndexes) {
+    protected boolean calculateVarianceFromSeedCenters(final float[] values,
+        float[] seed, int[] imgSeedIndexes) {
 
         /*
         calculate stdev or variance of points within each seed
@@ -256,11 +267,11 @@ public class KMeansPlusPlus {
         float[] sumVariance = new float[nSeeds];
         int[] nSumVariance = new int[nSeeds];
 
-        for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
+        for (int xyIndex = 0; xyIndex < values.length; xyIndex++) {
 
             int seedIndex = imgSeedIndexes[xyIndex];
 
-            int d = img.getValue(xyIndex) - seed[seedIndex];
+            float d = values[xyIndex] - seed[seedIndex];
             
             sumVariance[seedIndex] += (d * d);
             
@@ -295,17 +306,17 @@ public class KMeansPlusPlus {
         return allAreBelowCriticalLimit;
     }
     
-    protected void calculateFinalStats(final GreyscaleImage img, 
-        final int[] imgSeedIndexes) {
+    protected void calculateFinalStats(final float[] values, final int[] 
+        imgSeedIndexes) {
 
         float[] sumStDev = new float[nSeeds];
         int[] nSumStDev = new int[nSeeds];
 
-        for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
+        for (int xyIndex = 0; xyIndex < values.length; xyIndex++) {
 
             int seedIndex = imgSeedIndexes[xyIndex];
 
-            int d = img.getValue(xyIndex) - center[seedIndex];
+            float d = values[xyIndex] - center[seedIndex];
             
             sumStDev[seedIndex] += (d * d);
             
@@ -323,7 +334,7 @@ public class KMeansPlusPlus {
             }
             seedVariances[i] = sumStDev[i];
 
-            log.fine(String.format("seed %d) %d stDev=%.2f number of points=%d", 
+            log.fine(String.format("seed %d) %f stDev=%.2f number of points=%d", 
                 i, center[i], seedVariances[i], nSumStDev[i]));
             
         }
@@ -333,15 +344,15 @@ public class KMeansPlusPlus {
     
      /**
      *
-     * @param img
+     * @param values
      * @param seed array of pixel intensities of voronoi-like seeds
      * @throws IOException
      */
-    protected int[] binPoints(final GreyscaleImage img,
-        int[] seed) throws IOException {
+    protected int[] binPoints(final float[] values, final float[] seed) throws 
+        IOException {
 
-        if (img == null) {
-            throw new IllegalArgumentException("img cannot be null");
+        if (values == null) {
+            throw new IllegalArgumentException("values cannot be null");
         }
         if (seed == null) {
             throw new IllegalArgumentException("seed cannot be null");
@@ -349,19 +360,19 @@ public class KMeansPlusPlus {
         
         //TODO: review to improve this:
 
-        int[] seedNumber = new int[img.getNPixels()];
+        int[] seedNumber = new int[values.length];
 
         for (int seedIndex = 0; seedIndex < seed.length; seedIndex++) {
 
-            int bisectorBelow = ((seedIndex - 1) > -1) ?
-                ((seed[seedIndex - 1] + seed[seedIndex])/2) : 0;
+            float bisectorBelow = ((seedIndex - 1) > -1) ?
+                ((seed[seedIndex - 1] + seed[seedIndex])/2) : minValue;
                 
-            int bisectorAbove = ((seedIndex + 1) > (seed.length - 1)) ?
-                255 : ((seed[seedIndex + 1] + seed[seedIndex])/2);
+            float bisectorAbove = ((seedIndex + 1) > (seed.length - 1)) ?
+                maxValue : ((seed[seedIndex + 1] + seed[seedIndex])/2);
                        
-            for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
+            for (int xyIndex = 0; xyIndex < values.length; xyIndex++) {
 
-                int pt = img.getValue(xyIndex);
+                float pt = values[xyIndex];
 
                 boolean isInCell = (pt >= bisectorBelow) &&  (pt <= bisectorAbove);
 
@@ -375,11 +386,11 @@ public class KMeansPlusPlus {
         return seedNumber;
     }
     
-    int chooseRandomlyFromNumbersPresentByProbability(int[] distOfSeeds, 
+    int chooseRandomlyFromNumbersPresentByProbability(float[] distOfSeeds, 
         int[] indexOfDistOfSeeds, SecureRandom sr, 
         int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
         
-        //TODO: update these notes.  no longer using random in this method
+        //TODO: update these notes.
         
         // we want to choose randomly from the indexes based upon probabilities 
         // that scale by distance
@@ -396,7 +407,7 @@ public class KMeansPlusPlus {
 
         int nDistDistr = 0;
         for (int i = 0; i < distOfSeeds.length; i++) {            
-            int nValues = distOfSeeds[i];
+            int nValues = (int)Math.ceil(distOfSeeds[i]);
             // value should be present nValues number of times
             nDistDistr += nValues;
         }
@@ -414,7 +425,7 @@ public class KMeansPlusPlus {
             // walk thru same iteration to obtain the chosen index
             int n = 0;
             for (int i = 0; i < distOfSeeds.length; i++) {            
-                int nValues = distOfSeeds[i];
+                int nValues = (int)Math.ceil(distOfSeeds[i]);
                 // value should be present nValues number of times
                 
                 if ((chosen >= n) && (chosen < (n + nValues))) {
@@ -432,7 +443,7 @@ public class KMeansPlusPlus {
         return this.seedVariances;
     }
 
-    public int[] getCenters() {
+    public float[] getCenters() {
         return this.center;
     }
 
@@ -440,25 +451,44 @@ public class KMeansPlusPlus {
         return numberOfPointsPerSeedCell;
     }
 
-    private int getModeIdx(GreyscaleImage img) {
+    private int getModeIdx(float[] values) {
         
-        Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+        //TODO: numbers given to main invocation may have needed some pre-processing
+        // to group close numbers (similarity of floating point numbers depends
+        // upon context so a decision about numerical resolution would be
+        // difficult to make here).
+        
+        Map<Float, Integer> counts = new HashMap<Float, Integer>();
         int maxCounts = 0;
         int maxCountsIdx = -1;
         
-        for (int idx = 0; idx < img.getNPixels(); idx++) {
-            int v = img.getValue(idx);
-            Integer key = Integer.valueOf(v);
+        for (int idx = 0; idx < values.length; idx++) {
+            float v = values[idx];
+            Float key = Float.valueOf(v);
             Integer value = counts.get(key);
-            int f = (value == null) ? 1 : (value.intValue() + 1);
-            counts.put(key, Integer.valueOf(f));
-            if (f > maxCounts) {
-                maxCounts = f;
+            int freq = (value == null) ? 1 : (value.intValue() + 1);
+            counts.put(key, Integer.valueOf(freq));
+            if (freq > maxCounts) {
+                maxCounts = freq;
                 maxCountsIdx = idx;
             }
         }
         
         return maxCountsIdx;
+    }
+
+    /**
+     * @return the minValue
+     */
+    public float getMinValue() {
+        return minValue;
+    }
+
+    /**
+     * @return the maxValue
+     */
+    public float getMaxValue() {
+        return maxValue;
     }
 
 }

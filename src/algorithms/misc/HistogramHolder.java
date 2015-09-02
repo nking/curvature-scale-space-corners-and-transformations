@@ -54,6 +54,28 @@ public class HistogramHolder {
 
         return plotter.writeFile(outputFileNumber);
     }
+    
+    public String plotHistogram(String label, 
+        String outputFileSuffix) throws IOException {
+                
+        float[] xh = xHist;
+        float[] yh = yHistFloat;
+        
+        float yMin = MiscMath.findMin(yh);
+        int yMaxIdx = MiscMath.findYMaxIndex(yh);
+        float yMax = yh[yMaxIdx];
+        
+        float xMin = MiscMath.findMin(xh);
+        float xMax = MiscMath.findMax(xh);        
+                
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+
+        plotter.addPlot(
+            xMin, xMax, yMin, yMax,
+            xh, yh, xh, yh, label);
+
+        return plotter.writeFile(outputFileSuffix);
+    }
 
     /**
      * @return the xHist
