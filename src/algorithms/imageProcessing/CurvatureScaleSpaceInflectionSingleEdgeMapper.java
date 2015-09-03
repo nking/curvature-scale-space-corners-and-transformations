@@ -22,10 +22,6 @@ import java.util.logging.Logger;
  */
 public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         
-    private final PairIntArray edge1; 
-    private final PairIntArray edge2;
-    private final int edge1Index;
-    private final int edge2Index;
     private final int xRelativeOffset1; 
     private final int yRelativeOffset1;
     private final int xRelativeOffset2; 
@@ -36,33 +32,17 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
     private CSSContourMatcherWrapper matcherResults = null;
     
     public CurvatureScaleSpaceInflectionSingleEdgeMapper(
-        PairIntArray edge1, int edge1Index, PairIntArray edge2, int edge2Index,
         int offsetImageX1, int offsetImageY1, int offsetImageX2, int offsetImageY2) {
         
-        if (edge1 == null) {
-            throw new IllegalArgumentException("edge1 cannot be null");
-        }
-        if (edge2 == null) {
-            throw new IllegalArgumentException("edge2 cannot be null");
-        }
-        
-        this.edge1 = edge1;
-        this.edge2 = edge2;
-        this.edge1Index = edge1Index;
-        this.edge2Index = edge2Index;
         this.xRelativeOffset1 = offsetImageX1;
         this.yRelativeOffset1 = offsetImageY1;
         this.xRelativeOffset2 = offsetImageX2;
         this.yRelativeOffset2 = offsetImageY2;
     }
    
-    public TransformationParameters matchContours() {
-        
-        List<CurvatureScaleSpaceContour> contours1 = populateContours(edge1,
-            edge1Index);
-        
-        List<CurvatureScaleSpaceContour> contours2 = populateContours(edge2,
-            edge2Index);
+    public TransformationParameters matchContours(
+        List<CurvatureScaleSpaceContour> contours1,
+        List<CurvatureScaleSpaceContour> contours2) {
         
         boolean alreadySorted = true;
         
@@ -135,7 +115,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         return params;
     }
 
-    protected List<CurvatureScaleSpaceContour> populateContours(
+    public static List<CurvatureScaleSpaceContour> populateContours(
         PairIntArray edge, int edgeIndex) {
         
         CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();
@@ -168,7 +148,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         boolean reversed = contourFinder.reverseIfClockwise(result);
 
         if (reversed) {
-            log.info("EDGES1: contour isCW=true");
+            //log.info("EDGES1: contour isCW=true");
 
             // these are extracted from contourFinder in order of decreasing
             // sigma already, so only need to be sorted if the list was
@@ -197,7 +177,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
       * </pre>
      * @param contours 
      */
-    protected void correctPeaks(List<CurvatureScaleSpaceContour> contours) {
+    protected static void correctPeaks(List<CurvatureScaleSpaceContour> contours) {
         
         if (contours == null) {
             throw new IllegalArgumentException("contours cannot be null");

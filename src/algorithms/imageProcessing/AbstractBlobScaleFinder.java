@@ -20,9 +20,9 @@ import java.util.logging.Logger;
  * @author nichole
  */
 public class AbstractBlobScaleFinder {
-    
+
     protected Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     protected boolean debug = false;
 
     public void setToDebug() {
@@ -152,6 +152,12 @@ public class AbstractBlobScaleFinder {
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
         List<PairIntArray> bounds1, List<PairIntArray> bounds2,
         float[] outputScaleRotTransXYStDev) {
+        
+        List<List<CurvatureScaleSpaceContour>> contours1List = 
+            populateContours(bounds1);
+        
+        List<List<CurvatureScaleSpaceContour>> contours2List = 
+            populateContours(bounds2);
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
@@ -193,15 +199,30 @@ public class AbstractBlobScaleFinder {
 
 //log.info("index1=" + index1.toString() + " index2=" + index2.toString());
 
+//TODO: need to refactor to only calculate the
+// scale space curves once each!
+
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper =
                     new CurvatureScaleSpaceInflectionSingleEdgeMapper(
-                    curve1, index1.intValue(), curve2, index2.intValue(),
                     0, 0, 0, 0);
 
-                TransformationParameters params = mapper.matchContours();
+                TransformationParameters params = mapper.matchContours(
+                    contours1List.get(idx1), contours2List.get(idx2));
 
                 if ((params == null) ||
                     (mapper.getMatcher().getSolutionMatchedContours1().size() < 2)) {
+                    
+double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
+if (mapper.getMatcher() != null) {
+log.info(String.format("discarding [%d] (%d,%d)  [%d] (%d,%d)  nMCs=%d",
+idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
+mapper.getMatcher().getSolutionMatchedContours1().size()));
+} else {
+log.info(String.format("discarding [%d] (%d,%d)  [%d] (%d,%d)",
+idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
+}
 
                     continue;
                 }
@@ -1051,6 +1072,24 @@ int z = 1;
         float mean = (float)sum/(float)blob.size();
 
         return mean;
+    }
+
+    protected List<List<CurvatureScaleSpaceContour>> populateContours(
+        List<PairIntArray> closedContours) {
+        
+        List<List<CurvatureScaleSpaceContour>> list 
+            = new ArrayList<List<CurvatureScaleSpaceContour>>();
+        
+        for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
+        
+            List<CurvatureScaleSpaceContour> contours = 
+                CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
+                closedContours.get(edgeIndex), edgeIndex);
+            
+            list.add(contours);
+        }
+
+        return list;
     }
 
 }

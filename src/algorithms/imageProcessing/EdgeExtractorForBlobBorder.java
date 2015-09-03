@@ -143,8 +143,6 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()
             - nBorder;
                
-        log.info("number of border points=" + nBorder + " nCavity=" + nCavity);
-
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
@@ -154,6 +152,15 @@ MiscDebug.writeImageCopy(img3, "border_perimeter_" + MiscDebug.getCurrentTimeFor
 }
 
         if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
+            
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            double[] xyCen = curveHelper.calculateXYCentroids(borderPixels);
+            
+            log.info(String.format(
+                "discarding (%d, %d) number of border points=%d nCavity=%d ", 
+                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]), 
+                nBorder, nCavity));
+            
             return null;
         }
         

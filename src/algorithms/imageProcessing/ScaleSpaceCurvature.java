@@ -128,7 +128,7 @@ public class ScaleSpaceCurvature {
         return scaleSpaceCurve;
     }
      
-    private boolean isZeroCrossing(float kPrev, float k) {
+    private boolean isZeroCrossing(final float kPrev, final float k) {
         if (k <= 0) {
             if (kPrev >= 0) {
                 return true;
@@ -179,12 +179,15 @@ public class ScaleSpaceCurvature {
 
         //TODO: adjust this to avoid noise
         for (int i = 1; i < scaleSpaceCurve.getK().length; ++i) {
+            
             if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),
                 scaleSpaceCurve.getK(i))) {
 
                 scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));
             }
         }
+        
+//log.info("k=" + java.util.Arrays.toString(scaleSpaceCurve.getK()));
 
         scaleSpaceCurve.compressKIsZeroIdx();
 

@@ -19,7 +19,7 @@ public class BlobScaleFinderTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 1; i < 2;/*3;*/ ++i) {
+        for (int i = 0; i < 1;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";

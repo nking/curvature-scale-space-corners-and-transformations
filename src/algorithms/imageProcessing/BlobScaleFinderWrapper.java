@@ -59,12 +59,14 @@ public class BlobScaleFinderWrapper {
         */
         
         TransformationParameters params;
+        
         // try the B&W solution first
         params = calculateScaleForBW(img1, img2);
         
         if (params != null) {
             return params;
         }
+        
         
         // try the Clr solution
         int k = 2;
