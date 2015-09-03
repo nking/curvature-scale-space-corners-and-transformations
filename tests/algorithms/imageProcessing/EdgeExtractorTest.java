@@ -1433,8 +1433,8 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         if (fileName.contains("cones")) {//cannot use on B&W images
             ImageProcessor imageProcessor = new ImageProcessor();
             ImageExt clrImg = ImageIOHelper.readImageExt(filePath);
-            img = imageProcessor.createGreyscaleFromColorSegmentation(clrImg);
-            //img = imageProcessor.createGreyscaleFromColorSegmentationKMPP(clrImg);
+            //img = imageProcessor.createGreyscaleFromColorSegmentation(clrImg);
+            img = imageProcessor.createGreyscaleFromColorSegmentationKMPP(clrImg);
             
             ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot 
                 + "_color_theta.png", img);

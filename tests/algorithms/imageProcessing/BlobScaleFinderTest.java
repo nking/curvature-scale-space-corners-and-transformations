@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
@@ -25,7 +24,7 @@ public class BlobScaleFinderTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 1; i < 2;/*3;*/ ++i) {
+        for (int i = 0; i < 1;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -124,74 +123,6 @@ public class BlobScaleFinderTest extends TestCase {
 
         // the extracted bounds are tested in EdgeExtractorForBlobBorderTest
 
-    }
-
-    public void estExtractBlobsFromSegmentedImage() throws Exception {
-
-        int width = 10;
-        int height = 10;
-        int xCenter = 10;
-        int yCenter = 10;
-        Set<PairInt> rectangle10 = DataForTests.getRectangle(width, height,
-            xCenter, yCenter);
-
-        GreyscaleImage img = new GreyscaleImage(xCenter*2, yCenter*2);
-        for (PairInt p : rectangle10) {
-            img.setValue(p.getX(), p.getY(), 100);
-        }
-
-        BlobScaleFinder blobFinder = new BlobScaleFinder();
-
-        List<Set<PairInt>> outputBlobs = new ArrayList<Set<PairInt>>();
-
-        int smallestGroupLimit = 10;
-        int largestGroupLimit = 5000;
-
-        blobFinder.extractBlobsFromSegmentedImage(2, img, outputBlobs,
-            smallestGroupLimit, largestGroupLimit);
-
-        assertTrue(outputBlobs.size() == 1);
-
-        boolean foundRectangle10 = false;
-        for (Set<PairInt> p : outputBlobs) {
-            if (p.equals(rectangle10)) {
-                foundRectangle10 = true;
-                break;
-            }
-        }
-        assertTrue(foundRectangle10);
-
-        //----------------
-        outputBlobs.clear();
-        List<PairIntArray> outputBounds = new ArrayList<PairIntArray>();
-
-        blobFinder.extractBlobsFromSegmentedImage(2, img, outputBlobs,
-            outputBounds, smallestGroupLimit, largestGroupLimit);
-
-        Set<PairInt> expected = new HashSet<PairInt>();
-        for (int x = (xCenter - (width/2)); x < (xCenter + (width/2)); ++x) {
-            expected.add(new PairInt(x, 5));
-            expected.add(new PairInt(x, 14));
-        }
-        for (int y = (yCenter - (height/2)); y < (yCenter + (height/2)); ++y) {
-            expected.add(new PairInt(5, y));
-            expected.add(new PairInt(14, y));
-        }
-        assertTrue(expected.size() == 36);
-        expected.remove(new PairInt(5, 5));
-        expected.remove(new PairInt(5, 14));
-        expected.remove(new PairInt(14, 5));
-        expected.remove(new PairInt(14, 14));
-        
-        PairIntArray pai = outputBounds.get(0);
-        for (int j = 0; j < pai.getN(); ++j) {
-            int x = pai.getX(j);
-            int y = pai.getY(j);
-            PairInt p = new PairInt(x, y);
-            assertTrue(expected.remove(p));
-        }
-
-        assertTrue(expected.isEmpty());
     }
 
     public void estSumIntensity() throws Exception {

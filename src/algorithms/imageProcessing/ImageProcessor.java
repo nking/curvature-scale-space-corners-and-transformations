@@ -2446,7 +2446,7 @@ public class ImageProcessor {
      * @return
      */
     public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt 
-        input) throws IOException, NoSuchAlgorithmException {
+        input) {
 
         int kColors = 8;
 
@@ -2480,7 +2480,7 @@ public class ImageProcessor {
      * @return
      */
     public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt input,
-        int kColors) throws IOException, NoSuchAlgorithmException {
+        int kColors) {
 
         boolean useBlur = true;
 
@@ -2609,7 +2609,7 @@ public class ImageProcessor {
      * @return
      */
     public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt input,
-        int kColors, boolean useBlur) throws IOException, NoSuchAlgorithmException {
+        int kColors, boolean useBlur) {
 
         if (kColors > 253) {
             throw new IllegalArgumentException("kColors must be <= 253");
@@ -2819,8 +2819,7 @@ public class ImageProcessor {
      * The minimum allowed value is 2 and the maximum allowed value is 253.
      * @return
      */
-    public GreyscaleImage convertToCIEXYPolarThetaKMPP(Image input, int kColors) 
-        throws IOException, NoSuchAlgorithmException {
+    public GreyscaleImage convertToCIEXYPolarThetaKMPP(Image input, int kColors) {
 
         if (kColors > 253) {
             throw new IllegalArgumentException("kColors must be <= 253");
@@ -3200,7 +3199,7 @@ public class ImageProcessor {
 
     private void createAndApplyKMPPMapping(GreyscaleImage output,
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
-        final int kColors) throws IOException, NoSuchAlgorithmException {
+        final int kColors) {
 
         //TODO: assert kColors.  The invoker is reserving 2 bands for 
         // B & W, so nBins should probably be (kColors - 2)...

@@ -1,8 +1,6 @@
 package algorithms.compGeometry.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.util.XORShift64;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
