@@ -67,7 +67,6 @@ public class BlobScaleFinderWrapper {
             return params;
         }
         
-        
         // try the Clr solution
         int k = 2;
         params =  calculateScaleForClr(img1, img2, k);
@@ -79,7 +78,7 @@ public class BlobScaleFinderWrapper {
         if (params != null) {
             return params;
         }
-        
+ 
         return params;
     }
     
@@ -160,9 +159,12 @@ public class BlobScaleFinderWrapper {
 
             //TODO: review this limit
             // sometimes a single pair solution is correct even though it has
-            //   stdev of NaN due to no other pairs
+            //   stdev of NaN due to no other pairs.
+            // might assume that only high quality matches have made it
+            // here at this stage...
             if (
-                (outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale()) < 0.2) {
+                ((outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale()) < 0.2)
+                ) {
                 return paramsBinned;
             }
         }
@@ -208,7 +210,10 @@ public class BlobScaleFinderWrapper {
             // TODO: consider keeping even if it is only one pair because
             // the contour matching followed by features already filters for
             // relative location and descriptor... but there may be textures...
-            if (!Float.isNaN(outputScaleRotTransXYStDev[0])) {
+            // see above comments about NaN
+            if (
+                ((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)
+                ) {
                 return params;
             }
         }
@@ -331,15 +336,17 @@ public class BlobScaleFinderWrapper {
 
             //TODO: review this limit
             // sometimes a single pair solution is correct even though it has
-            //   stdev of NaN due to no other pairs
+            //   stdev of NaN due to no other pairs.
+            // might assume that only high quality matches have made it
+            // here at this stage...
             if (
-                (outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale()) < 0.2) {
+                ((outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale()) < 0.2)
+                || Float.isNaN(outputScaleRotTransXYStDevBinned[0])) {
                 return paramsBinned;
             }
         }
 
         //---------------------------------------------
-        
         float[] outputScaleRotTransXYStDev = new float[4];
 
         scaleFinder = new BlobScaleFinderClr();
@@ -376,12 +383,19 @@ public class BlobScaleFinderWrapper {
                 }
             }
 
-            return params;
+            // TODO: consider keeping even if it is only one pair because
+            // the contour matching followed by features already filters for
+            // relative location and descriptor... but there may be textures...
+            // see above comments about NaN
+            if (
+                ((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)
+                || Float.isNaN(outputScaleRotTransXYStDev[0])) {
+                return params;
+            }
         }
 
         // this is either null or possibly a single pair solution
         //return paramsBinned;
-       
         return null;
     }
 

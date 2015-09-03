@@ -30,7 +30,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     private CSSContourMatcherWrapper matcherResults = null;
-    
+        
     public CurvatureScaleSpaceInflectionSingleEdgeMapper(
         int offsetImageX1, int offsetImageY1, int offsetImageX2, int offsetImageY2) {
         
@@ -39,7 +39,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         this.xRelativeOffset2 = offsetImageX2;
         this.yRelativeOffset2 = offsetImageY2;
     }
-   
+    
     public TransformationParameters matchContours(
         List<CurvatureScaleSpaceContour> contours1,
         List<CurvatureScaleSpaceContour> contours2) {
@@ -115,8 +115,8 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         return params;
     }
 
-    public static List<CurvatureScaleSpaceContour> populateContours(
-        PairIntArray edge, int edgeIndex) {
+    public static ScaleSpaceCurveImage createScaleSpaceImage(PairIntArray edge, 
+        int edgeIndex) {
         
         CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();
         
@@ -128,7 +128,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         Map<Float, ScaleSpaceCurve> scaleSpaceMap = 
             csscMaker.createScaleSpaceMetricsForEdge(edge, factor,
             SIGMA.ONE, SIGMA.TWOHUNDREDANDFIFTYSIX);
-           
+                       
         ScaleSpaceCurveImage scaleSpaceImage = 
             csscMaker.convertScaleSpaceMapToSparseImage(
             scaleSpaceMap, edgeIndex, edge.getN());
@@ -139,8 +139,26 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
  int z = 1;
  } catch (IOException ex) {
  }
+
+        return scaleSpaceImage;
+    }
+    
+    public static List<CurvatureScaleSpaceContour> populateContours(
+        ScaleSpaceCurveImage scaleSpaceImage, int edgeIndex, 
+        boolean setToExtractWeakCurvesTooIfNeeded) {
+        
+ try {
+ String fileSuffix = "edge_" + edgeIndex + "_" + MiscDebug.getCurrentTimeFormatted();
+ MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);
+ int z = 1;
+ } catch (IOException ex) {
+ }
             
         ContourFinder contourFinder = new ContourFinder();
+        
+        if (setToExtractWeakCurvesTooIfNeeded) {
+            contourFinder.overrideTheLowSigmaLimit(1.25f);
+        }
 
         List<CurvatureScaleSpaceContour> result = 
             contourFinder.findContours(scaleSpaceImage, edgeIndex);

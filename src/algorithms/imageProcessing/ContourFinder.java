@@ -17,8 +17,16 @@ public class ContourFinder {
         
     protected Logger log = null;
     
+    private float overrideLimit = -1;
+    
     public ContourFinder() {
         log = Logger.getLogger(this.getClass().getName());
+    }
+    
+    public void overrideTheLowSigmaLimit(float lowSigmaLimit) {
+        if (lowSigmaLimit > 1) {
+            overrideLimit = lowSigmaLimit;
+        }
     }
     
     /**
@@ -55,7 +63,11 @@ public class ContourFinder {
             
             float sigma = space.getImageSigmas()[i];
             
-            if (sigma < lowLimit) {
+            if (overrideLimit > -1) {
+                if (sigma < overrideLimit) {
+                    break;
+                }
+            } else if (sigma < lowLimit) {
                 break;
             }
             
