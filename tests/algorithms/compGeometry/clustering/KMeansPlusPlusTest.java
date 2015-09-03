@@ -1,7 +1,7 @@
 package algorithms.compGeometry.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import java.security.SecureRandom;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
@@ -31,7 +31,7 @@ public class KMeansPlusPlusTest extends TestCase {
     public void testChooseRandomlyFromNumbersPresentByProbability() throws 
         Exception {
 
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        ThreadLocalRandom sr = ThreadLocalRandom.current();
         long seed = System.currentTimeMillis();
         System.out.println("seed=" + seed);
         sr.setSeed(seed);

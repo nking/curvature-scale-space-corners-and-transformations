@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 /**
@@ -124,8 +125,7 @@ public class KMeansPlusPlusFloat {
     private float[] createStartSeeds(final float[] values) throws 
         NoSuchAlgorithmException {
         
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
+        ThreadLocalRandom sr = ThreadLocalRandom.current();
         
         float[] seed = new float[nSeeds];
         
@@ -387,7 +387,7 @@ public class KMeansPlusPlusFloat {
     }
     
     int chooseRandomlyFromNumbersPresentByProbability(float[] distOfSeeds, 
-        int[] indexOfDistOfSeeds, SecureRandom sr, 
+        int[] indexOfDistOfSeeds, ThreadLocalRandom sr, 
         int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
         
         //TODO: update these notes.
@@ -405,14 +405,23 @@ public class KMeansPlusPlusFloat {
 
         int chosenIndex = -1;
 
-//TODO:  need to change this. 
-// min and max for some uses such as cieXY theta are 0 and 6.28
-// which may be smaller than the number of bins,
-// so this method is not correct for floats now...
+        /*
+        for distOfSeeds being floats and possibly having a maximum value smaller
+        than the number of bins,
+        need to rescale the numbers to integers.
+        If one knew the desired numerical resolution already, could pick the
+        factor from that.  
+        Without such knowledge the factor is Integer.MAX_VALUE/maxValue.
+        Need to make sure the sum is never larger than Long.MAX_VALUE.
         
-        int nDistDistr = 0;
+        TODO: should adjust for minValue too... <===========
+        */
+
+        float factor = (float)Integer.MAX_VALUE/maxValue;
+
+        long nDistDistr = 0;
         for (int i = 0; i < distOfSeeds.length; i++) {            
-            int nValues = (int)Math.ceil(distOfSeeds[i]);
+            int nValues = Math.round(factor * distOfSeeds[i]);
             // value should be present nValues number of times
             nDistDistr += nValues;
         }
@@ -425,12 +434,12 @@ public class KMeansPlusPlusFloat {
         while ((chosenIndex == -1) || 
             contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)){
             
-            int chosen = sr.nextInt(nDistDistr);
+            long chosen = sr.nextLong(nDistDistr);
 
             // walk thru same iteration to obtain the chosen index
             int n = 0;
             for (int i = 0; i < distOfSeeds.length; i++) {            
-                int nValues = (int)Math.ceil(distOfSeeds[i]);
+                int nValues = Math.round(factor * distOfSeeds[i]);
                 // value should be present nValues number of times
                 
                 if ((chosen >= n) && (chosen < (n + nValues))) {
@@ -441,6 +450,8 @@ public class KMeansPlusPlusFloat {
             }
         }
         
+log.info("distOfSeeds.length=" + distOfSeeds.length + " chosenIndex=" + chosenIndex);
+
         return chosenIndex;
     }
     

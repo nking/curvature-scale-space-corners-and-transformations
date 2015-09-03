@@ -3204,7 +3204,7 @@ public class ImageProcessor {
 
         //TODO: assert kColors.  The invoker is reserving 2 bands for 
         // B & W, so nBins should probably be (kColors - 2)...
-        // correct this when testing
+        // correct this for the invoker when testing
         int nBins = kColors;
         
         KMeansPlusPlusFloat kmpp = new KMeansPlusPlusFloat();

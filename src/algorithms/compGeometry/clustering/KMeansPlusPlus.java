@@ -2,11 +2,13 @@ package algorithms.compGeometry.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 /**
@@ -113,8 +115,7 @@ public class KMeansPlusPlus {
     private int[] createStartSeeds(GreyscaleImage img) throws 
         NoSuchAlgorithmException {
         
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
+        ThreadLocalRandom sr = ThreadLocalRandom.current();
         
         int[] seed = new int[nSeeds];
         
@@ -375,8 +376,24 @@ public class KMeansPlusPlus {
         return seedNumber;
     }
     
+    /**
+     * an algorithm to choose randomly from values using a probability 
+     * function based upon the value.  In other words, if the values were
+     * [2, 3, 4] their presence in a bin to choose from using their indexes
+     * as the bin values would be [0, 0, 1, 1, 1, 2, 2, 2, 2] and choosing
+     * '2' from the bin would be more likely and '2' is the index so the result
+     * would more often be values[2] = 4.
+     * The additional arguments are present for uses specific to KMeansPlusPlus
+     * where one doesn't want two similar seeds as a result.
+     * @param distOfSeeds
+     * @param indexOfDistOfSeeds
+     * @param sr
+     * @param indexesAlreadyChosen
+     * @param nIndexesAlreadyChosen
+     * @return 
+     */
     int chooseRandomlyFromNumbersPresentByProbability(int[] distOfSeeds, 
-        int[] indexOfDistOfSeeds, SecureRandom sr, 
+        int[] indexOfDistOfSeeds, ThreadLocalRandom sr, 
         int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
         
         //TODO: update these notes.  no longer using random in this method
@@ -393,8 +410,8 @@ public class KMeansPlusPlus {
         // drawn randomly
 
         int chosenIndex = -1;
-
-        int nDistDistr = 0;
+        
+        long nDistDistr = 0;
         for (int i = 0; i < distOfSeeds.length; i++) {            
             int nValues = distOfSeeds[i];
             // value should be present nValues number of times
@@ -407,9 +424,9 @@ public class KMeansPlusPlus {
         }
                 
         while ((chosenIndex == -1) || 
-            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)){
+            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)) {
             
-            int chosen = sr.nextInt(nDistDistr);
+            long chosen = sr.nextLong(nDistDistr);
 
             // walk thru same iteration to obtain the chosen index
             int n = 0;
