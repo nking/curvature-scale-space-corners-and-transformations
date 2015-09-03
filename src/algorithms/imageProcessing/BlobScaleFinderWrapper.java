@@ -58,14 +58,25 @@ public class BlobScaleFinderWrapper {
             a solution.
         */
         
+        TransformationParameters params;
         // try the B&W solution first
-        TransformationParameters params =  calculateScaleForBW(img1, img2);
+        params = calculateScaleForBW(img1, img2);
         
         if (params != null) {
             return params;
         }
         
         // try the Clr solution
+        int k = 2;
+        params =  calculateScaleForClr(img1, img2, k);
+        if (params != null) {
+            return params;
+        }
+        k = 4;
+        params =  calculateScaleForClr(img1, img2, k);
+        if (params != null) {
+            return params;
+        }
         
         return params;
     }
@@ -192,7 +203,12 @@ public class BlobScaleFinderWrapper {
                 }
             }
 
-            return params;
+            // TODO: consider keeping even if it is only one pair because
+            // the contour matching followed by features already filters for
+            // relative location and descriptor... but there may be textures...
+            if (!Float.isNaN(outputScaleRotTransXYStDev[0])) {
+                return params;
+            }
         }
 
         // this is either null or possibly a single pair solution
@@ -238,6 +254,133 @@ public class BlobScaleFinderWrapper {
         }
 
         return performHistEq;
+    }
+
+    public TransformationParameters calculateScaleForClr(ImageExt img1,
+        ImageExt img2, final int k) throws IOException, NoSuchAlgorithmException {
+
+        /*
+        tries to solve using a color binned segmentation.
+        if that fails, tries to solve using a full size colorsegmentation.
+        */
+        
+        //GreyscaleImage img1Grey = img1.copyToGreyscale();
+        //GreyscaleImage img2Grey = img2.copyToGreyscale();
+
+        /*
+        consider if histogram equalization is needed
+        */
+                
+        //---------------------------------------------
+        
+        float minDimension = 300.f;//200.f
+        int binFactor = (int) Math.ceil(
+            Math.max((float)img1.getWidth()/minDimension,
+            (float)img2.getHeight()/minDimension));
+        int smallestGroupLimitBinned = smallestGroupLimit/(binFactor*binFactor);
+        int largestGroupLimitBinned = largestGroupLimit/(binFactor*binFactor);
+
+        log.info("binFactor=" + binFactor);
+
+        // prevent from being smaller than needed for a convex hull
+        if (smallestGroupLimitBinned < 4) {
+            smallestGroupLimitBinned = 4;
+        }
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        ImageExt img1Binned = imageProcessor.binImage(img1, binFactor);
+        ImageExt img2Binned = imageProcessor.binImage(img2, binFactor);
+        
+        BlobScaleFinderClr scaleFinder = new BlobScaleFinderClr();
+        
+        if (debug) {
+            scaleFinder.setToDebug();
+        }
+        
+        float[] outputScaleRotTransXYStDevBinned = new float[4];
+        
+        TransformationParameters paramsBinned = scaleFinder.calculateScale(
+            img1Binned, img2Binned, k, 
+            smallestGroupLimitBinned, largestGroupLimitBinned,
+            outputScaleRotTransXYStDevBinned);
+        
+        if (paramsBinned != null) {
+            
+            // put back into unbinned image reference frame
+            float transX = paramsBinned.getTranslationX();
+            float transY = paramsBinned.getTranslationY();
+
+            transX *= binFactor;
+            transY *= binFactor;
+
+            outputScaleRotTransXYStDevBinned[2] *= binFactor;
+            outputScaleRotTransXYStDevBinned[3] *= binFactor;
+
+            paramsBinned.setTranslationX(transX);
+            paramsBinned.setTranslationY(transY);
+        
+            log.info("binned params: " + paramsBinned.toString());
+
+            log.info(String.format(
+                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
+                outputScaleRotTransXYStDevBinned[0], outputScaleRotTransXYStDevBinned[1],
+                outputScaleRotTransXYStDevBinned[2], outputScaleRotTransXYStDevBinned[3]));
+
+            //TODO: review this limit
+            // sometimes a single pair solution is correct even though it has
+            //   stdev of NaN due to no other pairs
+            if (
+                (outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale()) < 0.2) {
+                return paramsBinned;
+            }
+        }
+
+        //---------------------------------------------
+        
+        float[] outputScaleRotTransXYStDev = new float[4];
+
+        scaleFinder = new BlobScaleFinderClr();
+        
+        if (debug) {
+            scaleFinder.setToDebug();
+        }
+                
+        TransformationParameters params = scaleFinder.calculateScale(
+            img1, img2, k, smallestGroupLimit, largestGroupLimit,
+            outputScaleRotTransXYStDev);
+        
+        if (params != null) {
+            
+            log.info("params: " + params.toString());
+
+            log.info(String.format(
+                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
+                outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
+                outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
+
+            if (paramsBinned != null) {
+
+                float stat0 = (outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale());
+                float stat1 = (outputScaleRotTransXYStDev[0]/params.getScale());
+
+                log.info("comparing to paramsBinned.  stat0=" + stat0 
+                    + " stat1=" + stat1);
+                
+                if (stat1 < stat0) {
+                    return params;
+                } else {
+                    return paramsBinned;
+                }
+            }
+
+            return params;
+        }
+
+        // this is either null or possibly a single pair solution
+        //return paramsBinned;
+       
+        return null;
     }
 
 }

@@ -1,11 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
@@ -23,7 +19,7 @@ public class BlobScaleFinderTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 0; i < 1;/*3;*/ ++i) {
+        for (int i = 1; i < 2;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
