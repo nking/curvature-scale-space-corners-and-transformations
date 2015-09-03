@@ -1,10 +1,9 @@
 package algorithms.compGeometry.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.util.XORShift64;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +51,10 @@ public class KMeansPlusPlus {
     protected final static int nMaxIter = 20;
     protected int nIter = 0;
     
+    private final ThreadLocalRandom sr;
+    
     public KMeansPlusPlus() {
+         sr = ThreadLocalRandom.current();
     }
     
     protected void init(int k) {
@@ -114,9 +116,7 @@ public class KMeansPlusPlus {
      */
     private int[] createStartSeeds(GreyscaleImage img) throws 
         NoSuchAlgorithmException {
-        
-        ThreadLocalRandom sr = ThreadLocalRandom.current();
-        
+                
         int[] seed = new int[nSeeds];
         
         int[] indexes = new int[nSeeds];
@@ -167,7 +167,7 @@ public class KMeansPlusPlus {
             }
             
             index = chooseRandomlyFromNumbersPresentByProbability(distOfSeeds, 
-                indexOfDistOfSeeds, sr, indexes, nSeedsChosen);
+                indexOfDistOfSeeds, indexes, nSeedsChosen);
 
             seed[nSeedsChosen] = img.getValue(index);
             indexes[nSeedsChosen] = index;
@@ -393,10 +393,9 @@ public class KMeansPlusPlus {
      * @return 
      */
     int chooseRandomlyFromNumbersPresentByProbability(int[] distOfSeeds, 
-        int[] indexOfDistOfSeeds, ThreadLocalRandom sr, 
-        int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
+        int[] indexOfDistOfSeeds, int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
         
-        //TODO: update these notes.  no longer using random in this method
+        //TODO: update these notes. 
         
         // we want to choose randomly from the indexes based upon probabilities 
         // that scale by distance
@@ -429,7 +428,7 @@ public class KMeansPlusPlus {
             long chosen = sr.nextLong(nDistDistr);
 
             // walk thru same iteration to obtain the chosen index
-            int n = 0;
+            long n = 0;
             for (int i = 0; i < distOfSeeds.length; i++) {            
                 int nValues = distOfSeeds[i];
                 // value should be present nValues number of times

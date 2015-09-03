@@ -1,6 +1,7 @@
 package algorithms.compGeometry.clustering;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.util.XORShift64;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -30,12 +31,7 @@ public class KMeansPlusPlusTest extends TestCase {
     
     public void testChooseRandomlyFromNumbersPresentByProbability() throws 
         Exception {
-
-        ThreadLocalRandom sr = ThreadLocalRandom.current();
-        long seed = System.currentTimeMillis();
-        System.out.println("seed=" + seed);
-        sr.setSeed(seed);
-
+        
         int[] distOfSeeds = new int[]{5, 25, 125};
         int[] indexOfDistOfSeeds = new int[] {0,1,2};
 
@@ -53,7 +49,7 @@ public class KMeansPlusPlusTest extends TestCase {
         for (int i = 0; i < nThrows; i++) {
             
             int chosenIndex = instance.chooseRandomlyFromNumbersPresentByProbability(
-                distOfSeeds, indexOfDistOfSeeds, sr, 
+                distOfSeeds, indexOfDistOfSeeds, 
                 indexesAlreadyChosen, nIndexesAlreadyChosen);
 
             chosenIndexes[i] = chosenIndex;

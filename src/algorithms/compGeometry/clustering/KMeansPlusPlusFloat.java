@@ -1,9 +1,9 @@
 package algorithms.compGeometry.clustering;
 
 import algorithms.misc.MiscMath;
+import algorithms.util.XORShift64;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +54,10 @@ public class KMeansPlusPlusFloat {
     private float minValue = Float.POSITIVE_INFINITY;
     private float maxValue = Float.POSITIVE_INFINITY;
     
+    private final ThreadLocalRandom sr;
+    
     public KMeansPlusPlusFloat() {
+         sr = ThreadLocalRandom.current();
     }
     
     protected void init(final int k, final float[] values) {
@@ -76,11 +79,8 @@ public class KMeansPlusPlusFloat {
        * as argument for some use cases.
      * @param k
      * @param values
-     * @throws IOException
-     * @throws NoSuchAlgorithmException 
      */
-    public void computeMeans(final int k, final float[] values) throws IOException, 
-        NoSuchAlgorithmException {
+    public void computeMeans(final int k, final float[] values) {
          
         init(k, values);
         
@@ -122,11 +122,8 @@ public class KMeansPlusPlusFloat {
      * @param img
      * @return 
      */
-    private float[] createStartSeeds(final float[] values) throws 
-        NoSuchAlgorithmException {
-        
-        ThreadLocalRandom sr = ThreadLocalRandom.current();
-        
+    private float[] createStartSeeds(final float[] values) {
+                
         float[] seed = new float[nSeeds];
         
         int[] indexes = new int[nSeeds];
@@ -177,7 +174,7 @@ public class KMeansPlusPlusFloat {
             }
             
             index = chooseRandomlyFromNumbersPresentByProbability(distOfSeeds, 
-                indexOfDistOfSeeds, sr, indexes, nSeedsChosen);
+                indexOfDistOfSeeds, indexes, nSeedsChosen);
 
             seed[nSeedsChosen] = values[index];
             indexes[nSeedsChosen] = index;
@@ -346,10 +343,8 @@ public class KMeansPlusPlusFloat {
      *
      * @param values
      * @param seed array of pixel intensities of voronoi-like seeds
-     * @throws IOException
      */
-    protected int[] binPoints(final float[] values, final float[] seed) throws 
-        IOException {
+    protected int[] binPoints(final float[] values, final float[] seed) {
 
         if (values == null) {
             throw new IllegalArgumentException("values cannot be null");
@@ -387,11 +382,9 @@ public class KMeansPlusPlusFloat {
     }
     
     int chooseRandomlyFromNumbersPresentByProbability(float[] distOfSeeds, 
-        int[] indexOfDistOfSeeds, ThreadLocalRandom sr, 
-        int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
-        
-        //TODO: update these notes.
-        
+        int[] indexOfDistOfSeeds, int[] indexesAlreadyChosen, 
+        int nIndexesAlreadyChosen) {
+                
         // we want to choose randomly from the indexes based upon probabilities 
         // that scale by distance
         // so create an array that represents by number, the probability of a 
@@ -432,13 +425,14 @@ public class KMeansPlusPlusFloat {
         }
                 
         while ((chosenIndex == -1) || 
-            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)){
+            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)) {
             
             long chosen = sr.nextLong(nDistDistr);
 
             // walk thru same iteration to obtain the chosen index
-            int n = 0;
-            for (int i = 0; i < distOfSeeds.length; i++) {            
+            long n = 0;
+            for (int i = 0; i < distOfSeeds.length; i++) {  
+                
                 int nValues = Math.round(factor * distOfSeeds[i]);
                 // value should be present nValues number of times
                 
@@ -449,8 +443,6 @@ public class KMeansPlusPlusFloat {
                 n += nValues;
             }
         }
-        
-log.info("distOfSeeds.length=" + distOfSeeds.length + " chosenIndex=" + chosenIndex);
 
         return chosenIndex;
     }

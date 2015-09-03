@@ -1,10 +1,7 @@
 package algorithms.compGeometry.clustering;
 
-import algorithms.imageProcessing.GreyscaleImage;
-import java.security.SecureRandom;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
 /**
  *
