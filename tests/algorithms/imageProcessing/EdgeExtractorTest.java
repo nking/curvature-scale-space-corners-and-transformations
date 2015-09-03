@@ -1416,6 +1416,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         //String fileName = "valve_gaussian.png";
         //String fileName = "lena.jpg";
         String fileName = "middlebury_cones_im2.png";
+        //String fileName = "venturi_mountain_j6_0001.png";
         
         log.info("fileName=" + fileName);
         
@@ -1430,11 +1431,11 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         // to experiment w/ a color mapping instead of intensity:
-        if (fileName.contains("cones")) {//cannot use on B&W images
+        if (fileName.contains("cones") || fileName.contains("venturi")) {//cannot use on B&W images
             ImageProcessor imageProcessor = new ImageProcessor();
             ImageExt clrImg = ImageIOHelper.readImageExt(filePath);
             //img = imageProcessor.createGreyscaleFromColorSegmentation(clrImg);
-            img = imageProcessor.createGreyscaleFromColorSegmentationKMPP(clrImg);
+            img = imageProcessor.createGreyscaleFromColorSegmentationKMPP(clrImg, 4, false);
             
             ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot 
                 + "_color_theta.png", img);

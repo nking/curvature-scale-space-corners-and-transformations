@@ -5,7 +5,6 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -68,7 +67,7 @@ public class BlobScaleFinderTest extends TestCase {
                     helper2.getCannyEdgeFilterSettings());
             }
 
-            BlobScaleFinder scaleFinder = new BlobScaleFinder();
+            BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper();
             
             scaleFinder.setToDebug();
 
@@ -79,49 +78,6 @@ public class BlobScaleFinderTest extends TestCase {
 
             assertTrue(Math.abs(params.getScale() - 1) < 0.1);
         }
-
-    }
-
-    public void estExtractBoundsOfBlobs() throws Exception {
-
-        int width = 10;
-        int height = 10;
-        int xCenter = 50;
-        int yCenter = 50;
-        Set<PairInt> rectangle10 = DataForTests.getRectangle(width, height,
-            xCenter, yCenter);
-
-        Set<PairInt> rectangle5 = DataForTests.getRectangle(2*width, height,
-            2*xCenter, 2*yCenter);
-
-        List<Set<PairInt>> blobs = new ArrayList<Set<PairInt>>();
-        blobs.add(rectangle10);
-        blobs.add(rectangle5);
-
-        BlobScaleFinder blobFinder = new BlobScaleFinder();
-
-        List<PairIntArray> blobPerimeters = new ArrayList<PairIntArray>();
-
-        int dimension = (2 * xCenter) + xCenter;
-        
-        // make a fake image for the edge guide
-        GreyscaleImage img = new GreyscaleImage(dimension, dimension);
-        Arrays.fill(img.getValues(), 200);
-        for (Set<PairInt> blobSets : blobs) {
-            for (PairInt p : blobSets) {
-                img.setValue(p.getX(), p.getY(), 50);
-            }
-        }
-
- //NOTE: update test.  expansion of blob?       
-        
-        blobFinder.extractBoundsOfBlobs(img, blobs, blobPerimeters, dimension,
-            dimension, true);
-
-        assertTrue(blobs.size() == 2);
-        assertTrue(blobPerimeters.size() == 2);
-
-        // the extracted bounds are tested in EdgeExtractorForBlobBorderTest
 
     }
 
@@ -146,7 +102,7 @@ public class BlobScaleFinderTest extends TestCase {
         }
         // average = 100,  each of 36 will be +3 or -3 so sum should be 0
 
-        BlobScaleFinder blobFinder = new BlobScaleFinder();
+        BlobScaleFinderBW blobFinder = new BlobScaleFinderBW();
 
         double result = blobFinder.sumIntensity(img, rectangle10);
 

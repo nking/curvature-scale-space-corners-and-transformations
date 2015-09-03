@@ -12,22 +12,19 @@ import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * determine scale between 2 image using blob contours.
+ * determine scale between 2 images using blob contours.
  * NOT READY FOR USE YET.
  *
  * @author nichole
  */
-public class BlobScaleFinder {
+public class BlobScaleFinderBW {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -57,192 +54,16 @@ public class BlobScaleFinder {
      * @throws java.io.IOException
      * @throws java.security.NoSuchAlgorithmException
      */
-    public TransformationParameters calculateScale(ImageExt img1,
-        ImageExt img2) throws IOException, NoSuchAlgorithmException {
-
-        /*
-        (1) applies histogram equalization to greyscale images of img1, img2
-        (2) bins the greyscale and color images to sizes < 300 x 300.
-        */
-        GreyscaleImage img1Grey = img1.copyToGreyscale();
-        GreyscaleImage img2Grey = img2.copyToGreyscale();
-
-        boolean didApplyHistEq = applyHistogramEqualizationIfNeeded(img1Grey,
-            img2Grey);
-
-        // TODO: when solution not found (or stdev=NaN) for k=2 binned and unbinned,
-        //   increase k or consider corners in contours
-
-        //TODO: could consider whether invoker should use a black or white sky mask
-
-        final int k = 2;
-        int smallestGroupLimit = 100;
-        int largestGroupLimit = 5000;
-
-        float[] outputScaleRotTransXYStDev0 = new float[4];
-
-        TransformationParameters paramsBinned = binAndCalculateScale(
-            img1Grey.copyImage(), img2Grey.copyImage(), k, smallestGroupLimit,
-            largestGroupLimit, outputScaleRotTransXYStDev0);
-
-        if (paramsBinned != null) {
-
-            log.info("binned params: " + paramsBinned.toString());
-
-            log.info(String.format(
-                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
-                outputScaleRotTransXYStDev0[0], outputScaleRotTransXYStDev0[1],
-                outputScaleRotTransXYStDev0[2], outputScaleRotTransXYStDev0[3]));
-
-            if (
-                (outputScaleRotTransXYStDev0[0]/paramsBinned.getScale()) > 0.2) {
-
-            } else {
-                return paramsBinned;
-            }
-        }
-
-        float[] outputScaleRotTransXYStDev = new float[4];
-
-        TransformationParameters params = calculateScale(img1Grey, img2Grey,
-            k, smallestGroupLimit, largestGroupLimit,
-            outputScaleRotTransXYStDev);
-
-        if (params != null) {
-
-            log.info("params: " + params.toString());
-
-            log.info(String.format(
-                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
-                outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
-                outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
-
-            if (paramsBinned != null) {
-
-                float stat0 = (outputScaleRotTransXYStDev0[0]/paramsBinned.getScale());
-                float stat1 = (outputScaleRotTransXYStDev[0]/params.getScale());
-
-                if (stat1 < stat0) {
-                    return params;
-                } else {
-                    return paramsBinned;
-                }
-            }
-
-            return params;
-        }
-
-        //TODO: if do not have a solution due to no contours from inflection
-        // points, could consider extracting corners from the blob perimeters
-        // that requires keeping a handle on the perimeters at this level
-        // or as an instance variable
-
-        return paramsBinned;
-    }
-
-    protected boolean applyHistogramEqualizationIfNeeded(GreyscaleImage image1,
-        GreyscaleImage image2) {
-
-        // doing this automatically for now, but can use the stats insead to
-        // decide
-        boolean performHistEq = true;
-
-        boolean useStatsToDecide = false;
-
-        if (useStatsToDecide) {
-            ImageStatistics stats1 = ImageStatisticsHelper.examineImage(image1,
-                true);
-            ImageStatistics stats2 = ImageStatisticsHelper.examineImage(image2,
-                true);
-            double median1DivMedian2 = stats1.getMedian() / stats2.getMedian();
-            double meanDivMedian1 = stats1.getMean() / stats1.getMedian();
-            double meanDivMedian2 = stats2.getMean() / stats2.getMedian();
-            if (((median1DivMedian2 > 1) && ((median1DivMedian2 - 1) > 0.2))
-                || ((median1DivMedian2 < 1) && (median1DivMedian2 < 0.8))) {
-                performHistEq = true;
-            } else if (((meanDivMedian1 > 1) && ((meanDivMedian1 - 1) > 0.2))
-                || ((meanDivMedian1 < 1) && (meanDivMedian1 < 0.8))) {
-                performHistEq = true;
-            } else if (((meanDivMedian2 > 1) && ((meanDivMedian2 - 1) > 0.2))
-                || ((meanDivMedian2 < 1) && (meanDivMedian2 < 0.8))) {
-                performHistEq = true;
-            }
-        }
-
-        if (performHistEq) {
-            HistogramEqualization hEq = new HistogramEqualization(image1);
-            hEq.applyFilter();
-            hEq = new HistogramEqualization(image2);
-            hEq.applyFilter();
-        }
-
-        return performHistEq;
-    }
-
-    /**
-     * bin the image to calculate scale and rough transformation between images.
-     * The returned result is in the reference frame of the unbinned img1, and
-     * when applied to it, the result is in the reference frame of the unbinned
-     * img2.
-     * @param img1
-     * @param img2
-     * @param k
-     * @param smallestGroupLimit
-     * @param largestGroupLimit
-     * @return
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     */
-    protected TransformationParameters binAndCalculateScale(GreyscaleImage img1,
-        GreyscaleImage img2, int k, int smallestGroupLimit,
-        int largestGroupLimit, float[] outputScaleRotTransXYStDev)
+    public TransformationParameters calculateScale(final GreyscaleImage img1,
+        final GreyscaleImage img2, final int k,
+        final int smallestGroupLimit, final int largestGroupLimit,
+        final float[] outputScaleRotTransXYStDev) 
         throws IOException, NoSuchAlgorithmException {
 
-        float minDimension = 300.f;//200.f
-        int binFactor = (int) Math.ceil(
-            Math.max((float)img1.getWidth()/minDimension,
-            (float)img2.getHeight()/minDimension));
-        int smallestGroupLimitBinned = smallestGroupLimit/(binFactor*binFactor);
-        int largestGroupLimitBinned = largestGroupLimit/(binFactor*binFactor);
+        TransformationParameters params = calculateScaleImpl(img1, img2, k, 
+            smallestGroupLimit, largestGroupLimit, outputScaleRotTransXYStDev);
 
-        log.info("binFactor=" + binFactor);
-
-        // prevent from being smaller than needed for a convex hull
-        if (smallestGroupLimitBinned < 4) {
-            smallestGroupLimitBinned = 4;
-        }
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        GreyscaleImage img1GreyBinned = imageProcessor.binImage(img1,
-            binFactor);
-        GreyscaleImage img2GreyBinned = imageProcessor.binImage(img2,
-            binFactor);
-
-        TransformationParameters paramsBinned = calculateScale(img1GreyBinned,
-            img2GreyBinned, k, smallestGroupLimitBinned, largestGroupLimitBinned,
-            outputScaleRotTransXYStDev);
-
-        if (paramsBinned == null) {
-            return null;
-        }
-
-        // put back into unbinned image reference frame
-        float transX = paramsBinned.getTranslationX();
-        float transY = paramsBinned.getTranslationY();
-
-        transX *= binFactor;
-        transY *= binFactor;
-
-        if (outputScaleRotTransXYStDev != null) {
-            outputScaleRotTransXYStDev[2] *= binFactor;
-            outputScaleRotTransXYStDev[3] *= binFactor;
-        }
-
-        paramsBinned.setTranslationX(transX);
-        paramsBinned.setTranslationY(transY);
-
-        return paramsBinned;
+        return params;
     }
 
     /**
@@ -263,7 +84,8 @@ public class BlobScaleFinder {
      * @throws java.io.IOException
      * @throws java.security.NoSuchAlgorithmException
      */
-    protected void extractBlobsFromSegmentedImage(int k, GreyscaleImage img,
+    protected void extractBlobsFromSegmentedImage(final int k, 
+        GreyscaleImage img, 
         List<Set<PairInt>> outputBlobs, List<PairIntArray> outputBounds,
         int smallestGroupLimit, int largestGroupLimit) throws IOException,
         NoSuchAlgorithmException {
@@ -342,47 +164,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
 }
 
     }
-
-    /**
-     * given a list of inOutBlobs, also find blobs in the image segmented into
-     * k color bins and discard all but those having the same centroids as
-     * inOutBlobs, then find the perimeters of those and place them in
-     * outBounds.
-     * @param k
-     * @param img
-     * @param inOutBlobs
-     * @param outBounds
-     * @param smallestGroupLimit
-     * @param largestGroupLimit
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     */
-    protected void extractGivenBlobsFromSegmentedImage(int k, GreyscaleImage img,
-        List<Set<PairInt>> inOutBlobs, List<PairIntArray> outBounds,
-        int smallestGroupLimit, int largestGroupLimit) throws IOException,
-        NoSuchAlgorithmException {
-
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        /*
-        (4c) if there were results from k=2, discard any blob whose centroid
-             indicates it isn't in that list.
-        */
-        List<Set<PairInt>> blobs = new ArrayList<Set<PairInt>>();
-
-        extractBlobsFromSegmentedImage(k, img, blobs, smallestGroupLimit,
-            largestGroupLimit);
-
-        boolean discardWhenCavityIsSmallerThanBorder = true;
-
-        extractBoundsOfBlobs(img, blobs, outBounds, w, h,
-            discardWhenCavityIsSmallerThanBorder);
-
-        inOutBlobs.clear();
-        inOutBlobs.addAll(blobs);
-    }
-
+    
     /**
      * given the list of blob points, extract the ordered boundaries of them
      * and remove any blobs for which the bounds were not extractable.
@@ -525,7 +307,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
         int bestOverallIdx2 = -1;
         int bestOverallNMatched = -1;
         List<FeatureComparisonStat> bestOverallCompStats = null;
-//[5][3]
+
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
             Integer index1 = Integer.valueOf(idx1);
@@ -667,7 +449,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
         return params;
     }
 
-    protected TransformationParameters calculateScale(GreyscaleImage img1,
+    protected TransformationParameters calculateScaleImpl(GreyscaleImage img1,
         GreyscaleImage img2, int k, int smallestGroupLimit,
         int largestGroupLimit, float[] outputScaleRotTransXYStDev)
         throws IOException, NoSuchAlgorithmException {
