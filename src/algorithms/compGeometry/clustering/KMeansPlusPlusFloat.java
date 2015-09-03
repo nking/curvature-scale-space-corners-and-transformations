@@ -1,9 +1,6 @@
 package algorithms.compGeometry.clustering;
 
 import algorithms.misc.MiscMath;
-import algorithms.util.XORShift64;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
