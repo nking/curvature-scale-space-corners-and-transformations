@@ -1,17 +1,16 @@
+-- scale calculation from blobs:
 
--- run the venturi tests for blob scale
--- run the books tests for blob scale
+   -- rearrange order of attempted segmentation/binning combinations:
+      (1) B&W binned, k=2
+      (2) Clr binned, k=2
+          -- possibly watershed on blobs if no solution
+      (3) Clr binned, k=3 or k=4
+          -- possibly watershed on blobs if no solution
+      (4) B&W not binned, k=2
+      (5) Clr not binned, k=2
+
 -- for the blob scale tests, consider rotating an image by 90 degrees.
    shouldn't result in a change of solution...
--- in blob calculation
-   -- need to transform the binned transformation solution by the binFactor.
-      (just the transformation I think... scale and rotation are invariant because
-      the binning affects both similarly).
-   -- check on image offsets. did the pre-processed image lose information
-      when passing in the sky masked image?
-   -- decide how to evaluate if the binned image solution is enough of
-      a good answer or whether the full image solution should be performed
-      afterwards to provide a solution
 -- complete a runner that finds scale, then uses that with the Feature Matcher
    to make a correspondence list then uses the epipolar projection solver.
 -- add tests, and bring coverage up
