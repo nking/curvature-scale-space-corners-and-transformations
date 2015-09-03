@@ -18,7 +18,33 @@ public class BlobScaleFinderWrapper {
 
     protected final int smallestGroupLimit = 100;
     protected final int largestGroupLimit = 5000;
+    
+    protected final ImageExt img1;
+    protected final ImageExt img2;
+    
+    protected final GreyscaleImage img1Grey;
+    protected final GreyscaleImage img2Grey;
+    
+    /**
+     * 
+     * @param img1 the first image holding objects for which a Euclidean
+     * transformation is found that can be applied to put it in
+     * the same scale reference frame as image2.
+     * @param img2 the second image representing the reference frame that
+     * image1 is transformed to using the resulting parameters,
+     */
+    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {
+        this.img1 = img1;
+        this.img2 = img2;
         
+        img1Grey = img1.copyToGreyscale();
+        img2Grey = img2.copyToGreyscale();
+
+        //TODO: this decision might belong to a preprocessor:
+        boolean didApplyHistEq = applyHistogramEqualizationIfNeeded(img1Grey,
+            img2Grey);
+    }
+    
     public void setToDebug() {
         debug = true;
     }
@@ -29,74 +55,136 @@ public class BlobScaleFinderWrapper {
      * estimate the rotation and translation too.  Note that image processing
      * such as sky masks should be applied before using this method.
      * Also note that it is expected that it will be followed by a more rigorous
-     * solver for Euclidean transforms such as the FeatureMatcher and then
-     * the epipolar projection solver.
-     *
-     * @param img1 the first image holding objects for which a Euclidean
-     * transformation is found that can be applied to the image to put it in
-     * the same scale reference frame as image2.
-     * @param img2 the second image representing the reference frame that
-     * image1 is transformed to using the resulting parameters,
+     * solver such as the FeatureMatcher for a correspondence list 
+     * (and a better Euclidean transform) to be used in
+    
      * @return Euclidean scale to be applied to image1 to place it in the same
      * scale reference frame as image2.  Rotation and transformation are also
      * roughly solved for.
      * @throws java.io.IOException
      * @throws java.security.NoSuchAlgorithmException
      */
-    public TransformationParameters calculateScale(ImageExt img1,
-        ImageExt img2) throws IOException, NoSuchAlgorithmException {
+    public TransformationParameters calculateScale() throws IOException, 
+        NoSuchAlgorithmException {
 
         /*
-        tries to solve using a black and white binned segmentation.
-        if that fails, tries to solve using a full size black and white segmentation.
-        if that fails, tries to solve using a more rigorous color segmentation
-        on binned images. 
-            tries k=2 and k=3
-        if that fails, tries to solve using a more rigorous color segmentation
-        on full size images,
-            starting with the smallest k and increasing until a k limit or
-            a solution.
+        Tries to solve using various combinations of binning and segmentation,
+        starting with binned images because the solution if possible with them
+        is faster.
+        (1) Greyscale binned, k=2
+        (2) Clr binned, k=2
+            -- possibly watershed on blobs if no solution
+        (3) Clr binned, k=3 or k=4
+            -- possibly watershed on blobs if no solution
+        (4) Greyscale not binned, k=2
+        (5) Clr not binned, k=2
         */
         
         TransformationParameters params;
         
-        // try the B&W solution first
-        params = calculateScaleForBW(img1, img2);
-        
+        // (0) try the greyscale solution first, binned=true ---------------------
+        float[] scaleRotTransXYStDev0 = new float[4];
+        params = calculateScaleForGSUseBinning(scaleRotTransXYStDev0);
+   
         if (params != null) {
             return params;
         }
         
-        // try the Clr solution
+        // (1) try the Clr solution, binned=true ---------------------------
         int k = 2;
-        params =  calculateScaleForClr(img1, img2, k);
+        float[] scaleRotTransXYStDev1 = new float[4];
+        params = calculateScaleForClrUseBinning(img1, img2, k, 
+            scaleRotTransXYStDev1);
         if (params != null) {
             return params;
         }
+        
+        // (2) try the greyscale solution, binned=false --------------------------
+        float[] scaleRotTransXYStDev2 = new float[4];
+        params = calculateScaleForGS(img1, img2, scaleRotTransXYStDev2);
+        if (params != null) {
+            return params;
+        }
+        
+        // (3) try the Clr solution, binned=false ---------------------------
+        k = 2;
+        float[] scaleRotTransXYStDev3 = new float[4];
+        params = calculateScaleForClr(img1, img2, k,  scaleRotTransXYStDev3);
+        if (params != null) {
+            return params;
+        }
+        
         k = 4;
-        params =  calculateScaleForClr(img1, img2, k);
+        float[] scaleRotTransXYStDev4 = new float[4];
+        params = calculateScaleForClr(img1, img2, k,  scaleRotTransXYStDev4);
         if (params != null) {
             return params;
         }
  
-        return params;
+        return null;
     }
     
-    public TransformationParameters calculateScaleForBW(ImageExt img1,
-        ImageExt img2) throws IOException, NoSuchAlgorithmException {
+    /**
+     * calculate scale using the full size image and B&W segmentation algorithm.
+     * @param img1
+     * @param img2
+     * @param outputScaleRotTransXYStDev
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    public TransformationParameters calculateScaleForGS(ImageExt img1,
+        ImageExt img2, final float[] outputScaleRotTransXYStDev) 
+        throws IOException, NoSuchAlgorithmException {
 
-        /*
-        tries to solve using a black and white binned segmentation.
-        if that fails, tries to solve using a full size black and white segmentation.
-        */
+        final int k = 2;
         
-        GreyscaleImage img1Grey = img1.copyToGreyscale();
-        GreyscaleImage img2Grey = img2.copyToGreyscale();
+        BlobScaleFinderGS scaleFinder = new BlobScaleFinderGS();
+        
+        if (debug) {
+            scaleFinder.setToDebug();
+        }
+                
+        scaleFinder = new BlobScaleFinderGS();
+        
+        if (debug) {
+            scaleFinder.setToDebug();
+        }
+                
+        TransformationParameters params = scaleFinder.calculateScale(
+            img1Grey, img2Grey, k, smallestGroupLimit, largestGroupLimit,
+            outputScaleRotTransXYStDev);
+        
+        if (params != null) {
+            
+            log.info("params: " + params.toString());
 
-        //TODO: this decision might belong to a preprocessor:
-        boolean didApplyHistEq = applyHistogramEqualizationIfNeeded(img1Grey,
-            img2Grey);
+            log.info(String.format(
+                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
+                outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
+                outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
+            
+            // TODO: consider keeping even if it is only one pair because
+            // the contour matching followed by features already filters for
+            // relative location and descriptor... but there may be textures...
+            // see above comments about NaN
+            if (
+                ((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)
+                ) {
+                return params;
+            }
+        }
+
+        // this is either null or possibly a single pair solution
+        //return paramsBinned;
         
+        return null;
+    }
+    
+    TransformationParameters calculateScaleForGSUseBinning(
+        final float[] outputScaleRotTransXYStDevBinned) 
+        throws IOException, NoSuchAlgorithmException {
+
         final int k = 2;
         
         //---------------------------------------------
@@ -122,14 +210,12 @@ public class BlobScaleFinderWrapper {
         GreyscaleImage img2GreyBinned = imageProcessor.binImage(img2Grey,
             binFactor);
         
-        BlobScaleFinderBW scaleFinder = new BlobScaleFinderBW();
+        BlobScaleFinderGS scaleFinder = new BlobScaleFinderGS();
         
         if (debug) {
             scaleFinder.setToDebug();
         }
-        
-        float[] outputScaleRotTransXYStDevBinned = new float[4];
-        
+                
         TransformationParameters paramsBinned = scaleFinder.calculateScale(
             img1GreyBinned, img2GreyBinned, k, 
             smallestGroupLimitBinned, largestGroupLimitBinned,
@@ -166,55 +252,6 @@ public class BlobScaleFinderWrapper {
                 ((outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale()) < 0.2)
                 ) {
                 return paramsBinned;
-            }
-        }
-
-        //---------------------------------------------
-        
-        float[] outputScaleRotTransXYStDev = new float[4];
-
-        scaleFinder = new BlobScaleFinderBW();
-        
-        if (debug) {
-            scaleFinder.setToDebug();
-        }
-                
-        TransformationParameters params = scaleFinder.calculateScale(
-            img1Grey, img2Grey, k, smallestGroupLimit, largestGroupLimit,
-            outputScaleRotTransXYStDev);
-        
-        if (params != null) {
-            
-            log.info("params: " + params.toString());
-
-            log.info(String.format(
-                "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
-                outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
-                outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
-
-            if (paramsBinned != null) {
-
-                float stat0 = (outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale());
-                float stat1 = (outputScaleRotTransXYStDev[0]/params.getScale());
-
-                log.info("comparing to paramsBinned.  stat0=" + stat0 
-                    + " stat1=" + stat1);
-                
-                if (stat1 < stat0) {
-                    return params;
-                } else {
-                    return paramsBinned;
-                }
-            }
-
-            // TODO: consider keeping even if it is only one pair because
-            // the contour matching followed by features already filters for
-            // relative location and descriptor... but there may be textures...
-            // see above comments about NaN
-            if (
-                ((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)
-                ) {
-                return params;
             }
         }
 
@@ -263,21 +300,11 @@ public class BlobScaleFinderWrapper {
         return performHistEq;
     }
 
-    public TransformationParameters calculateScaleForClr(ImageExt img1,
-        ImageExt img2, final int k) throws IOException, NoSuchAlgorithmException {
-
-        /*
-        tries to solve using a color binned segmentation.
-        if that fails, tries to solve using a full size colorsegmentation.
-        */
-        
-        //GreyscaleImage img1Grey = img1.copyToGreyscale();
-        //GreyscaleImage img2Grey = img2.copyToGreyscale();
-
-        /*
-        consider if histogram equalization is needed
-        */
-                
+    public TransformationParameters calculateScaleForClrUseBinning(ImageExt img1,
+        ImageExt img2, final int k, 
+        final float[] outputScaleRotTransXYStDevBinned) throws IOException, 
+        NoSuchAlgorithmException {
+          
         //---------------------------------------------
         
         float minDimension = 300.f;//200.f
@@ -304,9 +331,7 @@ public class BlobScaleFinderWrapper {
         if (debug) {
             scaleFinder.setToDebug();
         }
-        
-        float[] outputScaleRotTransXYStDevBinned = new float[4];
-        
+                
         TransformationParameters paramsBinned = scaleFinder.calculateScale(
             img1Binned, img2Binned, k, 
             smallestGroupLimitBinned, largestGroupLimitBinned,
@@ -346,15 +371,21 @@ public class BlobScaleFinderWrapper {
             }
         }
 
-        //---------------------------------------------
-        float[] outputScaleRotTransXYStDev = new float[4];
+        // this is either null or possibly a single pair solution
+        //return paramsBinned;
+        return null;
+    }
+    
+    public TransformationParameters calculateScaleForClr(ImageExt img1,
+        ImageExt img2, final int k, final float[] outputScaleRotTransXYStDev) 
+        throws IOException, NoSuchAlgorithmException {
 
-        scaleFinder = new BlobScaleFinderClr();
+        BlobScaleFinderClr scaleFinder = new BlobScaleFinderClr();
         
         if (debug) {
             scaleFinder.setToDebug();
         }
-                
+        
         TransformationParameters params = scaleFinder.calculateScale(
             img1, img2, k, smallestGroupLimit, largestGroupLimit,
             outputScaleRotTransXYStDev);
@@ -367,21 +398,6 @@ public class BlobScaleFinderWrapper {
                 "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
                 outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
                 outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
-
-            if (paramsBinned != null) {
-
-                float stat0 = (outputScaleRotTransXYStDevBinned[0]/paramsBinned.getScale());
-                float stat1 = (outputScaleRotTransXYStDev[0]/params.getScale());
-
-                log.info("comparing to paramsBinned.  stat0=" + stat0 
-                    + " stat1=" + stat1);
-                
-                if (stat1 < stat0) {
-                    return params;
-                } else {
-                    return paramsBinned;
-                }
-            }
 
             // TODO: consider keeping even if it is only one pair because
             // the contour matching followed by features already filters for

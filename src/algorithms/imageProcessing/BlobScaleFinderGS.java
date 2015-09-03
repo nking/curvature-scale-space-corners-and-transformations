@@ -19,12 +19,15 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * determine scale between 2 images using blob contours.
+ * determine scale between 2 images using blob contours and methods for 
+ * segmentation on greyscale images (more specifically, using KMPP for
+ * finding the k bins of intensity).
+ * 
  * NOT READY FOR USE YET.
  *
  * @author nichole
  */
-public class BlobScaleFinderBW extends AbstractBlobScaleFinder {
+public class BlobScaleFinderGS extends AbstractBlobScaleFinder {
 
     /**
      * NOT READY FOR USE YET.
@@ -163,8 +166,8 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
         throws IOException, NoSuchAlgorithmException {
 
         /*
-        extract the top 10 blobs and their contours from k=2 segmented image:
-        -- perform segmentation for k=2
+        extract the top 10 or so blobs and their contours from k=2 segmented image:
+        -- perform segmentation for k
         -- find blobs w/ DFSContiguousValueFinder for each intensity level
         -- use EdgeExtractorForBlobBorder to extract closed contour for each
            blob

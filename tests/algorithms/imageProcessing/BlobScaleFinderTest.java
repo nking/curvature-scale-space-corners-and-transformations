@@ -19,7 +19,7 @@ public class BlobScaleFinderTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 1; i < 2;/*3;*/ ++i) {
+        for (int i = 0; i < 2;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -63,12 +63,12 @@ public class BlobScaleFinderTest extends TestCase {
                     helper2.getCannyEdgeFilterSettings());
             }
 
-            BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper();
+            BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
+                img1Orig, img2Orig);
             
             scaleFinder.setToDebug();
 
-            TransformationParameters params = scaleFinder.calculateScale(
-                img1Orig, img2Orig);
+            TransformationParameters params = scaleFinder.calculateScale();
 
             assertNotNull(params);
 

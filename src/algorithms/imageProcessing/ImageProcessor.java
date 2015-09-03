@@ -759,6 +759,14 @@ public class ImageProcessor {
 
     }
 
+    /**
+     * applies KMeansPlusPlus algorithm to the values in input to create
+     * kBands segmented image (operates on input).
+     * @param input
+     * @param kBands
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
     public void applyImageSegmentation(GreyscaleImage input, int kBands)
         throws IOException, NoSuchAlgorithmException {
 
