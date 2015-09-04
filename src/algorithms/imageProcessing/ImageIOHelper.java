@@ -1241,4 +1241,96 @@ int z1 = 1;
             }
         }
     }
+    
+    /**
+     * given data, apply a factor and offset to put it in range 0 to 255 and
+     * return an image from it.
+     * @param data
+     * @return 
+     */
+    public static GreyscaleImage scaleToImgRange(double[][] data) {
+        
+        double maxValue = Double.MIN_VALUE;
+        double minValue = Double.MAX_VALUE;
+        for (int i = 0; i < data.length; ++i) {
+            for (int j = 0; j < data[i].length; ++j) {
+                double v = data[i][j];
+                if (v < minValue) {
+                    minValue = v;
+                }
+                if (v > maxValue) {
+                    maxValue = v;
+                }
+            }
+        }
+        
+        /* scale data between 0 and 255
+               
+        (max - min) * factor = 255 --> factor = 255/(max - min)
+        then subtract min, min*factor
+        for example 10  20, delta=10, factor = 25.5
+        (10*25.5)-(10*25.5) = 0
+        (20*25.5)-(10*25.5) = 255
+        */
+        double factor = 255./(maxValue - minValue);
+        double zp = minValue * factor;
+        
+        GreyscaleImage img = new GreyscaleImage(data.length, data[0].length);
+        
+        for (int i = 0; i < data.length; ++i) {
+            for (int j = 0; j < data[i].length; ++j) {
+                double v = data[i][j];
+                int vs = (int)Math.round((v * factor) - zp);
+                img.setValue(i, j, vs);
+            }
+        }
+        
+        return img;
+    }
+    
+    /**
+     * given data, apply a factor and offset to put it in range 0 to 255 and
+     * return an image from it.
+     * @param data
+     * @return 
+     */
+    public static GreyscaleImage scaleToImgRange(int[][] data) {
+        
+        int maxValue = Integer.MIN_VALUE;
+        int minValue = Integer.MAX_VALUE;
+        for (int i = 0; i < data.length; ++i) {
+            for (int j = 0; j < data[i].length; ++j) {
+                int v = data[i][j];
+                if (v < minValue) {
+                    minValue = v;
+                }
+                if (v > maxValue) {
+                    maxValue = v;
+                }
+            }
+        }
+        
+        /* scale data between 0 and 255
+               
+        (max - min) * factor = 255 --> factor = 255/(max - min)
+        then subtract min, min*factor
+        for example 10  20, delta=10, factor = 25.5
+        (10*25.5)-(10*25.5) = 0
+        (20*25.5)-(10*25.5) = 255
+        */
+        double factor = 255./(double)(maxValue - minValue);
+        double zp = minValue * factor;
+        
+        GreyscaleImage img = new GreyscaleImage(data.length, data[0].length);
+        
+        for (int i = 0; i < data.length; ++i) {
+            for (int j = 0; j < data[i].length; ++j) {
+                int v = data[i][j];
+                int vs = (int)Math.round((v * factor) - zp);
+                img.setValue(i, j, vs);
+            }
+        }
+        
+        return img;
+    }
 }

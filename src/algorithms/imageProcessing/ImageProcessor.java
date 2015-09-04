@@ -35,6 +35,14 @@ public class ImageProcessor {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     * <pre>
+     * [1, 0, -1]
+     * this is the n=2 binomial filter for a Gaussian first derivative,
+       that is sigma = sqrt(2)/2 = 0.707
+       </pre>
+     * @param input 
+     */
     public void applySobelKernel(Image input) {
 
         IKernel kernel = new SobelX();
