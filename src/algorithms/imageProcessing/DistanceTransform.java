@@ -4,9 +4,8 @@ import algorithms.util.PairInt;
 import java.util.Set;
 
 /**
- * distance transforms calculate the minimum distance of each pixel from a 
- * boundary pixel (where a boundary pixel is a non-zero pixel).
- * 
+ * Euclidean square distance transforms are computed for every zero pixel relative to a non-zero point.
+ *
  * The implementations are euclidean distance by default unless stated otherwise.
  * Chessboard implementations may be added.  All adjacent pixels, including 
  * diagonal have a distance of '1' for chessboard implementation.
@@ -16,10 +15,31 @@ import java.util.Set;
 public class DistanceTransform {
     
     /**
-     * a two-dimensional distance transform to process binary data to find the
-     * closest distance to points.  
-     * Euclidean distances are computed for every zero pixel 
-     * relative to the non zero-pixels.
+     * The square of Euclidean distances are computed for every zero pixel 
+     * relative to the nearest non-zero pixels for two-dimensional input.
+     * <pre>
+     * original data:
+        row 0:  1 1 1 1 1 1 1 1 1 
+        row 1:  1 1 1 1 1 1 1 1 1 
+        row 2:  1 1 1 0 0 0 1 1 1 
+        row 3:  1 1 0 0 0 0 0 1 1 
+        row 4:  1 1 0 0 0 0 0 1 1 
+        row 5:  1 1 0 0 0 0 0 1 1 
+        row 6:  1 1 1 0 0 0 1 1 1 
+        row 7:  1 1 1 1 1 1 1 0 1 
+        row 8:  1 1 1 1 1 1 0 1 1 
+
+        distance transform:
+        row 0:  0 0 0 0 0 0 0 0 0 
+        row 1:  0 0 0 0 0 0 0 0 0 
+        row 2:  0 0 0 1 1 1 0 0 0 
+        row 3:  0 0 1 2 4 2 1 0 0 
+        row 4:  0 0 1 4 8 4 1 0 0 
+        row 5:  0 0 1 2 4 2 1 0 0 
+        row 6:  0 0 0 1 1 1 0 0 0 
+        row 7:  0 0 0 0 0 0 0 1 0 
+        row 8:  0 0 0 0 0 0 1 0 0
+     * </pre>
      * 
      * an O(N) runtime complexity algorithm for computing the distance transform
      * by Meijster, Roerdink, and Hesselink 2000, implemented from their pseudocode.
