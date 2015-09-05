@@ -10,6 +10,12 @@ import java.util.Set;
  * Chessboard implementations may be added.  All adjacent pixels, including 
  * diagonal have a distance of '1' for chessboard implementation.
  * 
+ * Useful papers in current implementations and tests were:
+ * Meijster, Roerdink, and Hesselink 2000, 
+   https://www.rug.nl/research/portal/files/3059926/2002CompImagVisMeijster.pdf
+ * and
+ * http://www.agencia.fapesp.br/arquivos/survey-final-fabbri-ACMCSurvFeb2008.pdf
+ * 
  * @author nichole
  */
 public class DistanceTransform {
@@ -70,7 +76,7 @@ public class DistanceTransform {
     private void applyPhase1(Set<PairInt> blob, int[][] g, final int width, 
         final int height) {
        
-        int inf = 1 << 22;//(int)Math.ceil(width*width + height*height);
+        int inf = 1 << 22;
         
         for (int x = 0; x < width; ++x) {
             
@@ -114,6 +120,12 @@ public class DistanceTransform {
             int q = 0;
             s[0] = 0;
             t[0] = 0;
+            
+            /*
+            avoids a comparison with the entire column by limiting the search
+            using tests of voronoi diagram regions, that is bisectors of points
+            intersecting with the current row.
+            */
             
             for (int u = 1; u < width; ++u) {
                 

@@ -202,8 +202,6 @@ public class DistanceTransformTest extends TestCase {
         int w = 9;
         int h = 9;
         
-        GreyscaleImage img0 = new GreyscaleImage(w, h);
-
         Set<PairInt> pointsM = new HashSet<PairInt>();
         double[][] data = new double[w][h];
         for (int x = 0; x < w; ++x) {

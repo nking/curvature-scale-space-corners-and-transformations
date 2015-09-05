@@ -1,0 +1,3 @@
+snapshot from
+http://www.agencia.fapesp.br/arquivos/survey-final-fabbri-ACMCSurvFeb2008.pdf
+used for distance transform tests

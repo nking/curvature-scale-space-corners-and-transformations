@@ -74,21 +74,21 @@ public class BlobScaleFinderWrapper {
         (1) Greyscale binned, k=2
         (2) Clr binned, k=2
             -- possibly watershed on blobs if no solution
-        (3) Clr binned, k=3 or k=4
+        (3) Greyscale not binned, k=2
+        (4) Clr binned, k=2
             -- possibly watershed on blobs if no solution
-        (4) Greyscale not binned, k=2
-        (5) Clr not binned, k=2
+        (5) Clr not binned, k=3 or 4
         */
         
         TransformationParameters params;
         
         // (0) try the greyscale solution first, binned=true ---------------------
-        float[] scaleRotTransXYStDev0 = new float[4];
+        /*float[] scaleRotTransXYStDev0 = new float[4];
         params = calculateScaleForGSUseBinning(scaleRotTransXYStDev0);
    
         if (params != null) {
             return params;
-        }
+        }*/
         
         // (1) try the Clr solution, binned=true ---------------------------
         int k = 2;
@@ -98,7 +98,7 @@ public class BlobScaleFinderWrapper {
         if (params != null) {
             return params;
         }
-        
+        /*
         // (2) try the greyscale solution, binned=false --------------------------
         float[] scaleRotTransXYStDev2 = new float[4];
         params = calculateScaleForGS(img1, img2, scaleRotTransXYStDev2);
@@ -120,7 +120,7 @@ public class BlobScaleFinderWrapper {
         if (params != null) {
             return params;
         }
- 
+ */
         return null;
     }
     
