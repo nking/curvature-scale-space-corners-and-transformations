@@ -2,13 +2,14 @@
    it from the wiki
 
 -- make the downhill simplex improvements (already present in the curvature project)
+   http://nking.github.io/curvature-scale-space-corners-and-transformations/
 
 -- consider whether can make a faster but still accurate version (espec for very large N) that
    fits a polynomial peak to the GEV peak faster than fits to a GEV curve.
    simplest peak finding is not enough for robust results.
 
 -- for point sets in which the number of points in the range of data is large and
-   a large percentage of the area of that range, consider using the distance tranform
+   a large percentage of the area of that range, consider using the distance transform
    from my curvature project (it's the Meijster et al algorithm which uses dynamic programming
    and Voronoi regions to make a sq distance map to nearest boundaries within
    a linear runtime where N is the number of pixels (data range area) rather than the number of points).  
