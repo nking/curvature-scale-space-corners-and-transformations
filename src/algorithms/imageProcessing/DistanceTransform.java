@@ -49,7 +49,7 @@ public class DistanceTransform {
 
     private void applyPhase1(Set<PairInt> blob, int[][] g, final int width, 
         final int height) {
-        
+       
         int inf = 1 << 22;//(int)Math.ceil(width*width + height*height);
         
         for (int x = 0; x < width; ++x) {
@@ -136,8 +136,8 @@ public class DistanceTransform {
 
     private int sep(int i, int u, int gi, int gu) {
         
-        double sep = ((u * u) - (i * i) + (gu * gu) - (gi * gi))/(2. * (u - i));
+        int sep = ((u * u) - (i * i) + (gu * gu) - (gi * gi))/(2 * (u - i));
         
-        return (int)Math.round(sep);
+        return sep;
     }
 }
