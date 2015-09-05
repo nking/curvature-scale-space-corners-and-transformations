@@ -11,9 +11,9 @@
    a large percentage of the area of that range, consider using the distance tranform
    from my curvature project (it's the Meijster et al algorithm which uses dynamic programming
    and Voronoi regions to make a sq distance map to nearest boundaries within
-   a linear runtime where N is the number of pixels rather than the number of points).  
+   a linear runtime where N is the number of pixels (data range area) rather than the number of points).  
    The resulting distribution of distances would have to
    be handled differently since they aren't the value for unique voids between points...
-   the distances data between every pair is now from 1 to square(pair distance)/2,
+   the distances data between every pair is now from 1 to square(pair distance) -1,
    so the distribution is no longer a GEV though the maxima alone would be...
    need to think about how to acurately find the background density from it...
