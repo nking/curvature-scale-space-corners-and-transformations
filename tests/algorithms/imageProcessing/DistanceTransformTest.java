@@ -128,4 +128,71 @@ public class DistanceTransformTest extends TestCase {
         ImageIOHelper.writeOutputImage(bin + "/m_inv_dt_blox.png", outputImgInvM);
     }
 
+    public void testApplyTransforms3() throws Exception {
+
+        // snapshot of spiral at http://www.agencia.fapesp.br/arquivos/survey-final-fabbri-ACMCSurvFeb2008.pdf
+        
+        String filePath = ResourceFinder.findFileInTestResources("spiral.png");
+        Image img = ImageIOHelper.readImageAsGrayScale(filePath);
+        GreyscaleImage img0 = img.copyToGreyscale();
+
+        int w = img0.getWidth();
+        int h = img0.getHeight();
+        
+        Set<PairInt> pointsM = new HashSet<PairInt>();
+        double[][] dataFH = new double[w][h];
+        for (int x = 0; x < w; ++x) {
+            dataFH[x] = new double[h];
+        }
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                if (img0.getValue(x, y) > 0) { 
+                    pointsM.add(new PairInt(x, y));
+                    dataFH[x][y] = 1;
+                }
+            }
+        }
+
+        String bin = ResourceFinder.findDirectory("bin");
+
+        DistanceTransform dtr = new DistanceTransform();
+        int[][] dtM = dtr.applyMeijsterEtAl(pointsM, w, h);
+
+        GreyscaleImage outputImgM = ImageIOHelper.scaleToImgRange(dtM);
+        
+        ImageIOHelper.writeOutputImage(bin + "/m_dt_spiral.png", outputImgM);
+        
+        GreyscaleImage outputImgM2 = new GreyscaleImage(w, h);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                outputImgM2.setValue(i, j, dtM[i][j]);
+            }
+        }
+        
+        ImageIOHelper.writeOutputImage(bin + "/m_dt_spiral_2.png", outputImgM2);
+        
+        
+        // ----- inverse binary of that  ----------
+        GreyscaleImage imgInv0 = new GreyscaleImage(w, h);
+        Set<PairInt> pointsInvM = new HashSet<PairInt>();
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                PairInt p = new PairInt(x, y);
+                if (!pointsM.contains(p)) {
+                    pointsInvM.add(new PairInt(x, y));
+                    imgInv0.setValue(x, y, 255);
+                }
+            }
+        }
+        ImageIOHelper.writeOutputImage(bin + "/dt_inv_input_spiral.png", imgInv0);
+
+        System.out.println("INV:");
+        int[][] dtInvM = dtr.applyMeijsterEtAl(pointsInvM, w, h);
+        
+        GreyscaleImage outputImgInvM = ImageIOHelper.scaleToImgRange(dtInvM);
+       
+        ImageIOHelper.writeOutputImage(bin + "/m_inv_dt_spiral.png", outputImgInvM);
+    }
 }

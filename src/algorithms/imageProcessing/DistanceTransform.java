@@ -17,8 +17,9 @@ public class DistanceTransform {
     
     /**
      * a two-dimensional distance transform to process binary data to find the
-     * closest distance to points.  Note that unlike the F&H algorithm, this 
-     * writes values for the location not in points (it writes for the zero locations).
+     * closest distance to points.  
+     * Euclidean distances are computed for every zero pixel 
+     * relative to the non zero-pixels.
      * 
      * an O(N) runtime complexity algorithm for computing the distance transform
      * by Meijster, Roerdink, and Hesselink 2000, implemented from their pseudocode.
@@ -49,7 +50,7 @@ public class DistanceTransform {
     private void applyPhase1(Set<PairInt> blob, int[][] g, final int width, 
         final int height) {
         
-        int inf = (int)Math.ceil(width*width + height*height);
+        int inf = 1 << 22;//(int)Math.ceil(width*width + height*height);
         
         for (int x = 0; x < width; ++x) {
             
