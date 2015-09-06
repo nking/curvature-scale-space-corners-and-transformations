@@ -173,6 +173,19 @@ public class MiscMath {
         }
         return min;
     }
+    
+    public static int findMin(GreyscaleImage img, Set<PairInt> points) {
+        int min = Integer.MAX_VALUE;
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            int v = img.getValue(x, y);
+            if (v < min) {
+                min = v;
+            }
+        }
+        return min;
+    }
 
     /**
      * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
