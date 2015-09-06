@@ -37,7 +37,7 @@ public class WaterShed {
      * path to lowest intensity is possible and less ambiguous. A plateau is a
      * region of where the pixels have the same intensities.
      * After this has finished, there should be no pixel which does not
-     * have a neighbor of lower intensity if the pixel is not the regional
+     * have a neighbor of lower intensity if the pixel is not a regional
      * minimum.
      * runtime complexity is O(N).
      *
@@ -48,7 +48,7 @@ public class WaterShed {
 
         /*
         TODO: create a helper method to determine the bounds of points
-        and then pass the offsets for that into this method to allows
+        and then pass the offsets for that into this method to allow
         using a smaller returned two dimensional array whose coordinate
         reference frame is (x - xOffset, y - yOffset).
         The algorithm below would need to be adjusted for it where
@@ -170,8 +170,11 @@ public class WaterShed {
     }
 
     /**
-     * get the two dimensional matrix of the distance of a pixel to the
-     * regional minima.
+     * get the two dimensional matrix of the shortest distance of a pixel to
+     * a lower intensity pixel with respect to the original image reference
+     * frame.  For example, if a pixel is surrounded by pixels with the same
+     * intensity, the shortest distance for it will be larger than '1' because
+     * no neighbors have a smaller intensity.
      * @return the distToLowerIntensityPixel
      */
     public int[][] getDistToLowerIntensityPixel() {
