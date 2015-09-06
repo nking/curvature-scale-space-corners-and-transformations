@@ -4,7 +4,6 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -14,19 +13,19 @@ import junit.framework.TestCase;
  * @author nichole
  */
 public class WaterShedTest extends TestCase {
-    
+
     public WaterShedTest() {
     }
-    
+
     public void testLower() throws Exception {
-        
+
         String filePath = ResourceFinder.findFileInTestResources("pattern0.png");
         Image img = ImageIOHelper.readImageAsGrayScale(filePath);
         GreyscaleImage img0 = img.copyToGreyscale();
 
         int w = img0.getWidth();
         int h = img0.getHeight();
-        
+
         int factor = 2;//100
         GreyscaleImage img09 = new GreyscaleImage(w*factor, h*factor);
         for (int i = 0; i < w; i++) {
@@ -39,31 +38,31 @@ public class WaterShedTest extends TestCase {
                 }
             }
         }
-        
+
         Set<PairInt> points = new HashSet<PairInt>();
         for (int i = 0; i < img09.getWidth(); ++i) {
             for (int j = 0; j < img09.getHeight(); ++j) {
                 points.add(new PairInt(i, j));
             }
         }
-        
+
         WaterShed ws = new WaterShed();
-     
+
         int[][] lowerComplete = ws.lower(img09, points);
-        
+
         assertNotNull(lowerComplete);
-        
+
         GreyscaleImage imgL = new GreyscaleImage(lowerComplete.length, lowerComplete[0].length);
         for (int i = 0; i < lowerComplete.length; ++i) {
             for (int j = 0; j < lowerComplete[0].length; ++j) {
                 imgL.setValue(i, j, lowerComplete[i][j]);
             }
         }
-        
+
         String bin = ResourceFinder.findDirectory("bin");
         ImageIOHelper.writeOutputImage(bin + "/pattern0_input.png", img09);
         ImageIOHelper.writeOutputImage(bin + "/pattern0_lowered.png", imgL);
-        
+
         StringBuilder sb = new StringBuilder("input:\n");
         for (int j = 0; j < img09.getHeight(); ++j) {
             sb.append(String.format("row %4d:", j));
@@ -73,7 +72,7 @@ public class WaterShedTest extends TestCase {
             sb.append("\n");
         }
         System.out.println(sb.toString());
-        
+
         StringBuilder sb2 = new StringBuilder();
         for (int j = 0; j < lowerComplete[0].length; ++j) {
             sb2.append(String.format("row %4d:", j));
@@ -83,7 +82,7 @@ public class WaterShedTest extends TestCase {
             sb2.append("\n");
         }
         System.out.println(sb2.toString());
-        
+
         // --------------- assert regionalMinima ---------------
         final Set<PairInt> regionalMinima = ws.getRegionalMinima();
         // fudging the test since already know that all of the minima have the
@@ -96,45 +95,72 @@ public class WaterShedTest extends TestCase {
             assertTrue(expected.remove(p));
         }
         assertTrue(expected.isEmpty());
-        
+
         // ------------- assert values in distToLowerIntensityPixel -----------
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
-        
+
         int[][] distToLowerIntensityPixel = ws.getDistToLowerIntensityPixel();
-        
+
         for (PairInt p : points) {
-            
+
             int x = p.getX();
             int y = p.getY();
-            
+
             Set<PairInt> visited = new HashSet<PairInt>();
-           
+
             int dist = findShortestPathToLowerIntensity(img09, visited, p, points, regionalMinima);
-                                 
+
             assertTrue(distToLowerIntensityPixel[x][y] == dist);
-        }  
+        }
+
+        // ------- assert final result, lowerComplete:
+        //         that each pixel, if not in a regional minima, has an adjacent
+        //         lower intensity pixel
+        for (PairInt p : points) {
+            if (regionalMinima.contains(p)) {
+                continue;
+            }
+            int v = lowerComplete[p.getX()][p.getY()];
+            boolean foundLowerIntNghbr = false;
+            for (int vIdx = 0; vIdx < dxs8.length; ++vIdx) {
+                int x2 = p.getX() + dxs8[vIdx];
+                int y2 = p.getY() + dys8[vIdx];
+                PairInt p2 = new PairInt(x2, y2);
+                if (points.contains(p2)) {
+                    int v2 = lowerComplete[x2][y2];
+                    if (v2 < v) {
+                        foundLowerIntNghbr = true;
+                        break;
+                    }
+                }
+            }
+            if (!foundLowerIntNghbr) {
+                int z = 1;
+            }
+            assertTrue(foundLowerIntNghbr);
+        }
     }
 
-    private int findShortestPathToLowerIntensity(GreyscaleImage img, 
+    private int findShortestPathToLowerIntensity(GreyscaleImage img,
         Set<PairInt> visited, PairInt p, Set<PairInt> points, Set<PairInt> regionalMinima) {
-        
+
         if (regionalMinima.contains(p)) {
             return 0;
         }
-        
+
         int v = img.getValue(p.getX(), p.getY());
-        
+
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
-                
+
         int minDist = Integer.MAX_VALUE;
-          
+
         for (int vIdx = 0; vIdx < dxs8.length; ++vIdx) {
             int x2 = p.getX() + dxs8[vIdx];
             int y2 = p.getY() + dys8[vIdx];
             PairInt p2 = new PairInt(x2, y2);
-            
+
             if (visited.contains(p2)) {
                 continue;
             }
@@ -142,7 +168,7 @@ public class WaterShedTest extends TestCase {
             if (regionalMinima.contains(p2)) {
                 return 1;
             }
-            
+
             if (points.contains(p2)) {
                 int v2 = img.getValue(x2, y2);
                 if (v2 < v) {
@@ -151,7 +177,7 @@ public class WaterShedTest extends TestCase {
                     Set<PairInt> visited2 = new HashSet<PairInt>(visited);
                     visited2.add(p);
                     visited2.add(p2);
-                    int dist = 1 + findShortestPathToLowerIntensity(img, visited2, 
+                    int dist = 1 + findShortestPathToLowerIntensity(img, visited2,
                         p2, points, regionalMinima);
                     if (dist < minDist) {
                         minDist = dist;
