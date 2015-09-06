@@ -1,0 +1,5 @@
+Figure 1 from
+Meijster and Roerdink (1998?),
+  "A Disjoint Set Algorihm for the Watershed Transform"
+  http://www.researchgate.net/publication/2407714_A_Disjoint_Set_Algorithm_For_The_Watershed_Transform
+ 
