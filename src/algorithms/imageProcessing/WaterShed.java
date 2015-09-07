@@ -229,7 +229,7 @@ public class WaterShed {
         search for neighbors q of p that have smaller lexicographical values
         q ≺ p : (i_q < i_p) ∨ ((i_q == i_p) ∧(j_q < j_p))
 
-          (-1, 1)            <--- needing to add j_q > j_p too?
+          (-1, 1)           
           (-1, 0)   p=(0,  0)
           (-1,-1)     (0, -1)
         */
@@ -241,7 +241,7 @@ public class WaterShed {
         Map<PairInt, DisjointSet2Node<PairInt>> parentMap = new
             HashMap<PairInt, DisjointSet2Node<PairInt>>();
         
-        // init map or create entries upon need?
+        // init map
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
@@ -337,15 +337,26 @@ public class WaterShed {
         int curLabel = 1;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-
+                
                 PairInt pPoint = new PairInt(i, j);
                 
+                DisjointSet2Node<PairInt> parent = disjointSetHelper.findSet(
+                    parentMap.get(pPoint));
+                
+                if (parent.getMember().equals(pPoint)) {
+                    // root pixel
+                    label[i][j] = curLabel;
+                    curLabel++;
+                } else {
+                    //Resolve unresolved equivalences
+                    // not going to be visiting point again.  not necessary to reset?
+                    // parent[p] = parent[parent[p]]
+                    label[i][j] = label[parent.getMember().getX()][parent.getMember().getY()];
+                }
             }
         }
-
-        throw new UnsupportedOperationException("not yet implemented");
         
-        //return label;
+        return label;
     }
 
     /*

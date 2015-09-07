@@ -135,11 +135,49 @@ public class WaterShedTest extends TestCase {
                     }
                 }
             }
-            if (!foundLowerIntNghbr) {
-                int z = 1;
-            }
             assertTrue(foundLowerIntNghbr);
         }
+    }
+    
+    public void testUnionFindComponentLabelling() throws Exception {
+
+        int w = 5;
+        int h = 5;
+        
+        /*
+        4 3 0 3 4  0
+        3 2 0 2 3  1
+        0 0 0 0 0  2
+        3 2 0 2 3  3
+        4 3 0 3 4  4
+                   5
+        0 1 2 3 4
+        */
+
+        int[][] lowerComplete = new int[w][];
+        for (int i = 0; i < w; ++i) {
+            lowerComplete[i] = new int[h];
+        }
+        lowerComplete[0] = new int[]{4, 3, 0, 3, 4};
+        lowerComplete[1] = new int[]{3, 2, 0, 2, 3};
+        lowerComplete[2] = new int[]{0, 0, 0, 0, 0};
+        lowerComplete[3] = new int[]{3, 2, 0, 2, 3};
+        lowerComplete[4] = new int[]{4, 3, 0, 3, 4};
+
+        WaterShed ws = new WaterShed();
+
+        int[][] labeled = ws.unionFindComponentLabelling(lowerComplete);
+
+        StringBuilder sb2 = new StringBuilder();
+        for (int j = 0; j < labeled[0].length; ++j) {
+            sb2.append(String.format("row %4d:", j));
+            for (int i = 0; i < labeled.length; ++i) {
+                sb2.append(String.format("%4d", labeled[i][j]));
+            }
+            sb2.append("\n");
+        }
+        System.out.println(sb2.toString());
+        
     }
 
     private int findShortestPathToLowerIntensity(GreyscaleImage img,
