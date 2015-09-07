@@ -183,6 +183,7 @@ public class EllipseHelper {
      * @param a
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
      */
+    @SuppressWarnings({"unchecked"})
     protected double[] fitEllipseToPointsWithAlgLSQ(SimpleMatrix a) {
         
         int nPoints = a.numRows();
@@ -284,7 +285,7 @@ public class EllipseHelper {
         D is a diagonal matrix containing the eigenvalues. 
         V is a matrix whose columns are the corresponding right eigenvectors.
         */
-        SimpleEVD evd = matrixT.eig();
+        SimpleEVD<SimpleMatrix> evd = matrixT.eig();
         
         //3X3
         DenseMatrix64F v = EigenOps.createMatrixV(evd.getEVD());
@@ -381,6 +382,7 @@ public class EllipseHelper {
      * @param u
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
      */
+    @SuppressWarnings({"unchecked"})
     private double[] extractEllipseParams(SimpleMatrix u) {
         
         if (u == null) {
@@ -404,7 +406,7 @@ public class EllipseHelper {
         SimpleMatrix c = new SimpleMatrix(1, 1);
         c.set(0, 0, u.get(5, 0));
         
-        SimpleEVD qd = a.eig();
+        SimpleEVD<SimpleMatrix> qd = a.eig();
         
         DenseMatrix64F q = EigenOps.createMatrixV(qd.getEVD());
         //q.print();
@@ -468,6 +470,7 @@ public class EllipseHelper {
      * @param alphaParam
      * @return new double[avgResid, stDevResid]
      */
+    @SuppressWarnings({"unchecked"})
     public double[] calculateEllipseResidualStats(float[] xP, float[] yP, 
         float xCenterParam, float yCenterParam, float aParam, float bParam, 
         float alphaParam) {

@@ -24,6 +24,7 @@ public class DistanceTransform {
      * The square of Euclidean distances are computed for every zero pixel 
      * relative to the nearest non-zero pixels for two-dimensional input.
      * <pre>
+     * For example
      * original data:
         row 0:  1 1 1 1 1 1 1 1 1 
         row 1:  1 1 1 1 1 1 1 1 1 

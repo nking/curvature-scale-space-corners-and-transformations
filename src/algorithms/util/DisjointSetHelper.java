@@ -4,7 +4,7 @@ package algorithms.util;
  * a disjoint set implemented with linked lists.
  * each set is a linked list.
  * 
- * based upon pseudocode from "Introduction to Cormen et al." by Cormen et al.
+ * based upon pseudocode from "Introduction to Algorithms" by Cormen et al.
  * 
  * @author nichole
  */
@@ -17,12 +17,12 @@ public class DisjointSetHelper {
      * @param x
      * @return
      */
-    public DisjointSet makeSet(DisjointSetNode x) {
-        x.representative = x;
-        DisjointSet list = new DisjointSet();
-        list.head = x;
-        list.tail = x;
-        list.numberOfNodes = 1;
+    public <T> DisjointSet<T> makeSet(DisjointSetNode<T> x) {
+        x.setRepresentative(x);
+        DisjointSet<T> list = new DisjointSet<T>();
+        list.setHead(x);
+        list.setTail(x);
+        list.setNumberOfNodes(1);
         return list;
     }
     
@@ -32,21 +32,26 @@ public class DisjointSetHelper {
      * @param x
      * @return
      */
-    public DisjointSetNode findSet(DisjointSetNode x) {
-        return x.representative;
+    public <T> DisjointSetNode<T> findSet(DisjointSetNode<T> x) {
+        return x.getRepresentative();
     }
     
     /**
      * append the shorter list onto the end of the longer's list.
      * runtime complexity is  O(N_shorter).
      * @param x
+     * @param y
      * @return
      */
-    public DisjointSet union(DisjointSet x, DisjointSet y) {
+    public <T> DisjointSet<T> union(DisjointSet<T> x, DisjointSet<T> y) {
         
-        DisjointSet longer, shorter;
+        if (x.equals(y)) {
+            return x;
+        }
+        
+        DisjointSet<T> longer, shorter;
        
-        if (x.numberOfNodes >= y.numberOfNodes) {
+        if (x.getNumberOfNodes() >= y.getNumberOfNodes()) {
             longer = x;
             shorter = y;
         } else {
@@ -55,28 +60,28 @@ public class DisjointSetHelper {
         }
         
         // add next references to longer
-        longer.tail.next = shorter.head;
+        longer.getTail().setNext(shorter.getHead());
         
-        DisjointSetNode latest = shorter.head;
+        DisjointSetNode<T> latest = shorter.getHead();
         while (latest != null) {
-            latest.representative = longer.head;
-            latest = latest.next;
+            latest.setRepresentative(longer.getHead());
+            latest = latest.getNext();
         }
-        longer.tail = shorter.tail;
+        longer.setTail(shorter.getTail());
         
         longer.setNumberOfNodes(longer.getNumberOfNodes() + shorter.getNumberOfNodes());
         
         return longer;
     }
     
-    public static String print(DisjointSet x) {
+    public static <T> String print(DisjointSet<T> x) {
         
-        DisjointSetNode current = x.getHead();
+        DisjointSetNode<T> current = x.getHead();
         
         StringBuilder sb = new StringBuilder();
         while (current != null) {
             if (sb.length() > 0) {
-                sb.append(",");
+                sb.append(", ");
             }
             sb.append(current.getMember().toString());
             current = current.getNext();

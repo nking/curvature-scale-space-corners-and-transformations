@@ -1,6 +1,7 @@
 package algorithms.util;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * a node holding only a integer key and the next reference.  the key must be 
@@ -239,4 +240,5 @@ public class SimpleLinkedListNode {
         SimpleLinkedListNode other = (SimpleLinkedListNode)arg0;
         return (other.key == this.key);
     }
+
 }

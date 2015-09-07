@@ -475,6 +475,7 @@ public class StereoProjectionTransformer {
      * @param theRightXY 
      * @return  
      */
+    @SuppressWarnings({"unchecked"})
     public List<SimpleMatrix> calculateEpipolarProjectionFor7Points(
         SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
         
@@ -636,6 +637,7 @@ public class StereoProjectionTransformer {
     * point from the front to the back of the camera, or vice-versa. 
     * Otherwise it is called cheirality-preserving.
     */
+    @SuppressWarnings({"unchecked"})
     private SimpleMatrix validateSolution(SimpleMatrix solution) {
                             
         /*
@@ -869,6 +871,7 @@ public class StereoProjectionTransformer {
         return sum;
     }
     
+    @SuppressWarnings({"unchecked"})
     SimpleMatrix calculateFundamentalMatrix(NormalizedXY normalizedXY1, 
         NormalizedXY normalizedXY2) {
         
@@ -950,6 +953,7 @@ public class StereoProjectionTransformer {
         return denormFundamentalMatrix;
     }
     
+    @SuppressWarnings({"unchecked"})
     SimpleMatrix denormalizeTheFundamentalMatrix(
         SimpleMatrix normalizedFundamentalMatrix,
         NormalizedXY normalizedLeftXY, NormalizedXY normalizedRightXY) {
@@ -978,6 +982,7 @@ public class StereoProjectionTransformer {
      * @param matchedXY2
      * @return 
      */
+    @SuppressWarnings({"unchecked"})
     SimpleMatrix calculateFundamentalMatrixWithoutNormalization(
         SimpleMatrix matchedXY1, SimpleMatrix matchedXY2) {
         
@@ -1059,6 +1064,7 @@ public class StereoProjectionTransformer {
      * @param xyPair
      * @return 
      */
+    @SuppressWarnings({"unchecked"})
     NormalizedXY normalize(SimpleMatrix xy) {
         
         /*
@@ -1244,6 +1250,7 @@ public class StereoProjectionTransformer {
      * @param fundamentalMatrix
      * @return 
      */
+    @SuppressWarnings({"unchecked"})
     double[][] calculateEpipoles(SimpleMatrix fundamentalMatrix) {
         
         /*
