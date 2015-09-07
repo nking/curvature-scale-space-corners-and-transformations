@@ -5,9 +5,12 @@ import algorithms.util.DisjointSet2Helper;
 import algorithms.util.DisjointSet2Node;
 import algorithms.util.PairInt;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -199,7 +202,10 @@ public class WaterShed {
     /**
      * Algorithm 4.7 Scan-line algorithm for labelling level components based on
      * disjoint sets.
-     *
+     * from 
+      "The Watershed Transform: Definitions, Algorithms and Parallelization Strategies"
+      Roerdink and Meijster, 2001, Fundamenta Informaticae 41 (2001) 187–228
+      
      * @param im greyscale image (does not need to be lower complete)
      * @return
      */
@@ -223,7 +229,7 @@ public class WaterShed {
         search for neighbors q of p that have smaller lexicographical values
         q ≺ p : (i_q < i_p) ∨ ((i_q == i_p) ∧(j_q < j_p))
 
-          (-1, 1)
+          (-1, 1)            <--- needing to add j_q > j_p too?
           (-1, 0)   p=(0,  0)
           (-1,-1)     (0, -1)
         */
@@ -232,20 +238,33 @@ public class WaterShed {
 
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
 
-        DisjointSet2Node[] parents = new DisjointSet2Node[w * h];
+        Map<PairInt, DisjointSet2Node<PairInt>> parentMap = new
+            HashMap<PairInt, DisjointSet2Node<PairInt>>();
+        
+        // init map or create entries upon need?
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                PairInt pPoint = new PairInt(i, j);
+                DisjointSet2Node<PairInt> pNode = 
+                    disjointSetHelper.makeSet(new DisjointSet2Node<PairInt>(pPoint));
+                parentMap.put(pPoint, pNode);
+            }
+        }
 
         //Firstpass
-        PairInt rPoint;
+        PairInt reprPoint;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
 
                 PairInt pPoint = new PairInt(i, j);
 
-                rPoint = pPoint;
+                reprPoint = pPoint;
 
                 int x = pPoint.getX();
                 int y = pPoint.getY();
-                int v = im[x][y];
+                int vP = im[x][y];
+                                
+                List<PairInt> qPoints = new ArrayList<PairInt>();
 
                 //for all q ∈ Neighbor(p) with q ≺ p
                 for (int vIdx = 0; vIdx < dLOX.length; ++vIdx) {
@@ -257,35 +276,50 @@ public class WaterShed {
 
                     PairInt qPoint = new PairInt(x2, y2);
 
-                    int v2 = im[x2][y2];
-      
-                    if (v == v2) {
+                    int vQ = im[x2][y2];
+     
+                    if (vP == vQ) {
+                        
+                        // find r, the representative of the neighbors with
+                        // same image intensity, as the lexicographically
+                        // smallest location
+                        
                         //r ← r min FindRoot(q);
-                        //min denotes minimum w.r.t. lexicographical order
+                        
+                        DisjointSet2Node<PairInt> qParent = disjointSetHelper.findSet(
+                            parentMap.get(qPoint));
+                        
+                        if (qParent.getMember().getX() < reprPoint.getX()) {
+                            reprPoint = qPoint;
+                        } else if ((qParent.getMember().getX() == reprPoint.getX()) 
+                            && (qParent.getMember().getY() < reprPoint.getY())) {
+                            reprPoint = qPoint;
+                        }
+                        qPoints.add(qPoint);
                     }
                 }
 
                 //parent[p] ← r
-
-                //for all q ∈ Neighbor(p) with q ≺ p
-                for (int vIdx = 0; vIdx < dLOX.length; ++vIdx) {
-                    int x2 = x + dLOX[vIdx];
-                    int y2 = y + dLOY[vIdx];
-                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                        continue;
-                    }
-
-                    PairInt qPoint = new PairInt(x2, y2);
-
-                    int v2 = im[x2][y2];
-
-                    if (v == v2) {
-                       //PathCompress(q, r)
+                if (!qPoints.isEmpty()) {
+                    
+                    DisjointSet2Node<PairInt> parent = disjointSetHelper.union(
+                        parentMap.get(reprPoint), parentMap.get(pPoint));
+                    
+                    for (PairInt qPoint : qPoints) {
+                        if (qPoint.equals(reprPoint)) {
+                            continue;
+                        }
+                        //PathCompress(q, r)
+                        
+                        DisjointSet2Node<PairInt> qParent = disjointSetHelper.union(
+                            parentMap.get(reprPoint), parentMap.get(qPoint));
                     }
                 }
             } // end j loop
         } // end i loop
 
+ System.out.println(printParents(parentMap));
+ 
         /*
         In a second pass through the input image, the output image lab is
         created. All root pixels get a distinct label; for any other pixel p
@@ -293,7 +327,7 @@ public class WaterShed {
         parent (see line 29 in Algorithm 4.7), and p gets the label of its
         representative.
         */
-
+        
         int[][] label = new int[w][];
         for (int i = 0; i < w; ++i) {
             label[i] = new int[h];
@@ -436,5 +470,38 @@ public class WaterShed {
 
         return rep
     */
+
+    private String printParents(Map<PairInt, DisjointSet2Node<PairInt>> parentMap) {
+        
+        DisjointSet2Helper dsHelper = new DisjointSet2Helper();
+        
+        Map<PairInt, List<PairInt>> parentValueMap = new HashMap<PairInt, List<PairInt>>();
+        
+        for (Entry<PairInt, DisjointSet2Node<PairInt>> entry : parentMap.entrySet()) {
+            
+            PairInt child = entry.getKey();
+            PairInt parent = dsHelper.findSet(entry.getValue()).getMember();
+            
+            List<PairInt> children = parentValueMap.get(parent);
+            if (children == null) {
+                children = new ArrayList<PairInt>();
+                parentValueMap.put(parent, children);
+            }
+            children.add(child);
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (Entry<PairInt, List<PairInt>> entry : parentValueMap.entrySet()) {
+            PairInt parent = entry.getKey();
+            List<PairInt> children = entry.getValue();
+            sb.append("parent: ").append(parent.toString());
+            sb.append("    children: ");
+            for (PairInt c : children) {
+                sb.append(" ").append(c.toString());
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
 }
 
