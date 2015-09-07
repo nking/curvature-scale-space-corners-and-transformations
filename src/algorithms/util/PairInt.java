@@ -85,8 +85,8 @@ public class PairInt {
     @Override
     public String toString() {
         
-        StringBuilder sb = new StringBuilder("x=");
-        sb.append(Integer.toString(x)).append(" y=").append(Integer.toString(y));
+        StringBuilder sb = new StringBuilder("(");
+        sb.append(Integer.toString(x)).append(",").append(Integer.toString(y)).append(")");
         
         return sb.toString();
     }

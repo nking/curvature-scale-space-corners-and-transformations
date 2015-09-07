@@ -8,8 +8,7 @@ public class DisjointSet2Test extends TestCase {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
-        DisjointSet2Node<String> x = new DisjointSet2Node<String>();
-        x.setMember(new String("c"));
+        DisjointSet2Node<String> x = new DisjointSet2Node<String>(new String("c"));
         
         DisjointSet2Node<String> xTree = disjointSetHelper.makeSet(x);
         

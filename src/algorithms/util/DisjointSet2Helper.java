@@ -23,7 +23,9 @@ public class DisjointSet2Helper {
     
     /**
      * <pre>
-     * find the set representative for the given node.
+     * find the set representative for the given node.  as a side effect,
+     * also updates x with the found result so that it directly points to the
+     * top most parent.
      * runtime complexity:
      *     the method uses recursion and each iteration removes a node.  
      *     if we represent x_height as
@@ -100,11 +102,12 @@ public class DisjointSet2Helper {
         DisjointSet2Node<T> p = x.getParent();
         
         while (p != null) {
-            sb.append(p.toString());
             DisjointSet2Node<T> nextP = p.getParent();
             if (nextP.equals(p)) {
                 break;
             }
+            sb.append("parent->").append(p.toString());
+            p = nextP;
         }
         
         return sb.toString();

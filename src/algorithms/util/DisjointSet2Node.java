@@ -17,6 +17,13 @@ public class DisjointSet2Node<T> {
     // upper bound of edges between this node and the longest path to it's descendants
     protected int rank = 0;
 
+    public DisjointSet2Node(T member) {
+        this.member = member;
+    }
+    
+    public DisjointSet2Node() {
+    }
+   
     public T getMember() {
         return member;
     }
@@ -55,7 +62,11 @@ public class DisjointSet2Node<T> {
         
         sb.append("parent=");
         if (parent != null) {
-            sb.append(parent.toString());
+            if (parent.equals(this)) {
+                sb.append("self");
+            } else {
+                sb.append(parent.toString());
+            }
         }
         sb.append(";] ");
         
