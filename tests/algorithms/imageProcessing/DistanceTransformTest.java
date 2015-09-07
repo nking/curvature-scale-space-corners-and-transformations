@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;

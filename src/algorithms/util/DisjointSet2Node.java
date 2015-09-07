@@ -9,10 +9,10 @@ package algorithms.util;
 public class DisjointSet2Node<T> {
 
     // the set member data to be held in a disjoint set
-    protected T member;
+    protected T member = null;
     
     // pointer to the set representative
-    protected DisjointSet2Node<T> parent;
+    protected DisjointSet2Node<T> parent = null;
 
     // upper bound of edges between this node and the longest path to it's descendants
     protected int rank = 0;
@@ -40,4 +40,26 @@ public class DisjointSet2Node<T> {
     public void setRank(int rank) {
         this.rank = rank;
     }
+
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("[member=");
+        if (member != null) {
+            sb.append(member.toString());
+        }
+        sb.append("; ");
+        sb.append("rank=").append(Integer.toString(rank)).append("; ");
+        
+        sb.append("parent=");
+        if (parent != null) {
+            sb.append(parent.toString());
+        }
+        sb.append(";] ");
+        
+        return sb.toString();
+    }
+  
 }

@@ -57,6 +57,11 @@ public class DisjointSet2Helper {
      * @return the root found to be the one with equal number of nodes or more nodes
      */
     private <T> DisjointSet2Node<T> link(DisjointSet2Node<T> x, DisjointSet2Node<T> y) {
+        
+        if (x.equals(y)) {
+            return x;
+        }
+        
         DisjointSet2Node<T> parent;
         if (x.getRank() >= y.getRank()) {
             parent = x;
@@ -90,7 +95,17 @@ public class DisjointSet2Helper {
                 
         StringBuilder sb = new StringBuilder();
         
-        // rewrite with traversal
+        sb.append(x.toString());
+        
+        DisjointSet2Node<T> p = x.getParent();
+        
+        while (p != null) {
+            sb.append(p.toString());
+            DisjointSet2Node<T> nextP = p.getParent();
+            if (nextP.equals(p)) {
+                break;
+            }
+        }
         
         return sb.toString();
     }
