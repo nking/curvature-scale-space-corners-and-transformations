@@ -1,7 +1,6 @@
 package algorithms.util;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * a node holding only a integer key and the next reference.  the key must be 

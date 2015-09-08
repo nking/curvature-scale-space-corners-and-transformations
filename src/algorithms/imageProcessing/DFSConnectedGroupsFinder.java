@@ -1,10 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import algorithms.util.SimpleLinkedListNode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
