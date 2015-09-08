@@ -26,6 +26,11 @@ public class CustomWatershedNode {
      * @param nodeLocation
      */
     public CustomWatershedNode(PairInt nodeLocation) {
+        
+        if (nodeLocation == null) {
+            throw new IllegalStateException("nodeLocation cannot be null");
+        }
+        
         this.key = nodeLocation;
         outgoing = new PairInt[1];
     }
@@ -36,11 +41,20 @@ public class CustomWatershedNode {
      * @param edgeCapacity
      */
     public CustomWatershedNode(PairInt nodeLocation, int edgeCapacity) {
+        
+        if (nodeLocation == null) {
+            throw new IllegalStateException("nodeLocation cannot be null");
+        }
+        
         this.key = nodeLocation;
         outgoing = new PairInt[edgeCapacity];
     }
 
     public void insertOutgoing(PairInt nodeLocation) {
+        
+        if (resolved) {
+            throw new IllegalStateException("this node has been set to resolved");
+        }
 
         if ((nOutgoing + 1) > outgoing.length) {
             int expand = 2*nOutgoing;
@@ -51,6 +65,14 @@ public class CustomWatershedNode {
     }
 
     public void setToResolved(PairInt nodeLocation) {
+        
+        if (resolved) {
+            throw new IllegalStateException("this node has already been set to resolved");
+        }
+        
+        if (nodeLocation == null) {
+            throw new IllegalStateException("nodeLocation cannot be null");
+        }
         
         resolved = true;
         

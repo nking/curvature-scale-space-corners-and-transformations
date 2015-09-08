@@ -43,12 +43,20 @@ public class CustomWatershedDAG {
      * @param orderedSLN 
      */
     public void insert(PairInt key, CustomWatershedNode orderedSLN) {
+        
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        if (orderedSLN == null) {
+            throw new IllegalStateException("orderedSLN cannot be null");
+        }
+        
         vertices.put(key, orderedSLN);
     }
     
     /**
-     * insert into DAG for key, the list of nodes after sorting them such that the steepest
-     * is at smallest indexes.
+     * insert into DAG for key, the list of nodes after sorting them here such 
+     * that the steepest is at smallest indexes.
      * @param key
      * @param intensityDifferences an array of lenUsable items holding the
      * difference in intensity of the pixel at key to the intensity of the
@@ -106,6 +114,13 @@ public class CustomWatershedDAG {
 
     public void setToResolved(PairInt key, PairInt resolution) {
 
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        if (resolution == null) {
+            throw new IllegalStateException("resolution cannot be null");
+        }
+        
         CustomWatershedNode node = vertices.get(key);
 
         if (node != null) {
@@ -115,6 +130,10 @@ public class CustomWatershedDAG {
     
     public PairInt getResolved(PairInt key) {
 
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        
         CustomWatershedNode node  = vertices.get(key);
 
         if (node != null) {
