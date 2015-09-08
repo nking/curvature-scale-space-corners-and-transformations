@@ -42,10 +42,30 @@ import java.util.Set;
  */
 public class WaterShed {
 
+    /**
+     * two dimensional matrix of the shortest distance of a pixel to
+     * a lower intensity pixel with respect to the original image reference
+     * frame.  For example, if a pixel is surrounded by pixels with the same
+     * intensity, the shortest distance for it will be larger than '1' because
+     * no neighbors have a smaller intensity.
+     * This is populated by the method named lower.
+     */
     private int[][] distToLowerIntensityPixel = null;
 
-    private Set<PairInt> regionalMinima = new HashSet<PairInt>();
+    /**
+     * a set of points found as the regional minima.
+     * This is populated by the method named lower.
+     */
+    private Set<PairInt> regionalMinima = null;
 
+    /**
+     * a map with key = PairInt(x, y) and value = disjoint set of the level
+     * components (contiguous pixels of same intensity) whose set parent is
+     * the representative for that level (which may be a regional minima).
+     * This is populated by the method named unionFindComponentLabelling.
+     */
+    private Map<PairInt, DisjointSet2Node<PairInt>> componentLabelMap = null;
+    
     /**
      * This method alters the image, specifically the plateaus, so that a best
      * path to lowest intensity is possible and less ambiguous. A plateau is a
@@ -83,6 +103,8 @@ public class WaterShed {
         for (int i = 0; i < w; ++i) {
             distToLowerIntensityPixel[i] = new int[h];
         }
+        
+        regionalMinima = new HashSet<PairInt>();
 
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
@@ -350,30 +372,36 @@ public class WaterShed {
                 } else {
                     //Resolve unresolved equivalences
                     // parent[p] = parent[parent[p]]
-                    // parentMap.put(pPoint, parent);
-                    // not going to be visiting pPoint again.  not necessary to reset?
+                    parentMap.put(pPoint, parent);
                     label[i][j] = label[parent.getMember().getX()][parent.getMember().getY()];
                 }
             }
         }
         
+        componentLabelMap = parentMap;
+        
         return label;
     }
 
     /**
-     * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on disjoint sets.
+     * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on 
+     * disjoint sets.
+     * 
+     * Note this method uses the by-products of the methods named lower and 
+     * unionFindComponentLabelling.  To use this method as a standalone 
+     * invocation requires some changes to accept arguments for the by-products 
+     * or to re-solve for similar data in this method.
+     * 
      * @param im a lower complete image
      * @return
      */
     protected int[][] unionFindWatershed(int[][] im) {
 
-        /*
-        input is a lower complete image.
-
-        internally uses a DAG and disjoint sets
-
-        algorithm 4.8 of reference above
-        */
+        if ((distToLowerIntensityPixel == null) || (regionalMinima == null) ||
+            (componentLabelMap == null)) {
+            throw new IllegalStateException("algorithm currently depends upon "
+            + "previous use of the methods name lower and unionFindComponentLabelling");
+        }
         
         int w = im.length;
         int h = im[0].length;

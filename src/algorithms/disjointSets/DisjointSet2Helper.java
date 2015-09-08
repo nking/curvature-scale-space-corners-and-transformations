@@ -1,5 +1,8 @@
 package algorithms.disjointSets;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * a disjoint set implemented as a forest.
  * 
@@ -39,9 +42,31 @@ public class DisjointSet2Helper {
      */
     public <T> DisjointSet2Node<T> findSet(DisjointSet2Node<T> x) {
         
+        /* 
+        //recursive
         if (!x.equals(x.getParent())) {
             DisjointSet2Node<T> parent = findSet(x.getParent());
             x.setParent(parent);
+        }
+        
+        return x.getParent();
+        */
+        
+        // iterative
+        if (!x.equals(x.getParent())) {
+            
+            List<DisjointSet2Node<T>> update = new ArrayList<DisjointSet2Node<T>>();
+            
+            DisjointSet2Node<T> parent = x;
+            while (!parent.equals(parent.getParent())) {
+                update.add(parent);
+                parent = parent.getParent();
+            }
+            
+            // update the nodes with parent
+            for (DisjointSet2Node<T> node : update) {
+                node.setParent(parent);
+            }
         }
         
         return x.getParent();
