@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.graphs.CustomWatershedDAG;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -73,6 +74,17 @@ public class WaterShedTest extends TestCase {
         }
         System.out.println(sb.toString());
 
+        int[][] distToLowerIntPix = ws.getDistToLowerIntensityPixel();
+        sb = new StringBuilder("distToLowerIntPix:\n");
+        for (int j = 0; j < distToLowerIntPix[0].length; ++j) {
+            sb.append(String.format("row %4d:", j));
+            for (int i = 0; i < distToLowerIntPix.length; ++i) {
+                sb.append(String.format("%4d", distToLowerIntPix[i][j]));
+            }
+            sb.append("\n");
+        }
+        System.out.println(sb.toString());
+                
         StringBuilder sb2 = new StringBuilder();
         for (int j = 0; j < lowerComplete[0].length; ++j) {
             sb2.append(String.format("row %4d:", j));
@@ -145,6 +157,8 @@ public class WaterShedTest extends TestCase {
         int h = 5;
         
         /*
+        input data:
+        
         4 3 0 3 4  0
         3 2 0 2 3  1
         0 0 0 0 0  2
@@ -303,7 +317,7 @@ public class WaterShedTest extends TestCase {
         im[1] = new int[]{1, 2, 3, 2, 1};
         im[2] = new int[]{2, 3, 4, 3, 2};
         im[3] = new int[]{1, 2, 3, 2, 1};
-        im[4] = new int[]{0, 1, 2, 3, 4};
+        im[4] = new int[]{0, 1, 2, 1, 0};
         
         GreyscaleImage img = new GreyscaleImage(im.length, im[0].length);
         Set<PairInt> points = new HashSet<PairInt>();
@@ -434,5 +448,37 @@ public class WaterShedTest extends TestCase {
             sb2.append("\n");
         }
         System.out.println(sb2.toString());
+        
+        // assert the watershed pixels
+        assertTrue(labelled2[2][0] == 0);
+        assertTrue(labelled2[2][1] == 0);
+        assertTrue(labelled2[0][2] == 0);
+        assertTrue(labelled2[1][2] == 0);
+        assertTrue(labelled2[2][2] == 0);
+        assertTrue(labelled2[3][2] == 0);
+        assertTrue(labelled2[4][2] == 0);
+        assertTrue(labelled2[2][3] == 0);
+        assertTrue(labelled2[2][4] == 0);
+        
+        assertTrue(labelled2[0][0] == labelled[0][0]);
+        assertTrue(labelled2[1][0] == labelled[0][0]);
+        assertTrue(labelled2[1][1] == labelled[0][0]);
+        assertTrue(labelled2[0][1] == labelled[0][0]);
+        
+        assertTrue(labelled2[0][4] == labelled[0][4]);
+        assertTrue(labelled2[0][3] == labelled[0][4]);
+        assertTrue(labelled2[1][3] == labelled[0][4]);
+        assertTrue(labelled2[1][4] == labelled[0][4]);
+        
+        assertTrue(labelled2[4][4] == labelled[4][4]);
+        assertTrue(labelled2[3][4] == labelled[4][4]);
+        assertTrue(labelled2[3][3] == labelled[4][4]);
+        assertTrue(labelled2[4][3] == labelled[4][4]);
+        
+        assertTrue(labelled2[4][0] == labelled[4][0]);
+        assertTrue(labelled2[4][1] == labelled[4][0]);
+        assertTrue(labelled2[3][0] == labelled[4][0]);
+        assertTrue(labelled2[3][1] == labelled[4][0]);
+        
     }
 }
