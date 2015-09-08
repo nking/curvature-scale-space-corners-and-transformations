@@ -328,10 +328,21 @@ public class WaterShedTest extends TestCase {
         }
         System.out.println(sb2.toString());
         
-        int[][] labeled = ws.unionFindComponentLabelling(lowered);
+        int[][] labelled = ws.unionFindComponentLabelling(lowered);
+        sb2 = new StringBuilder("labelled 0:\n");
+        for (int j = 0; j < labelled[0].length; ++j) {
+            sb2.append(String.format("row %4d:", j));
+            for (int i = 0; i < labelled.length; ++i) {
+                sb2.append(String.format("%4d", labelled[i][j]));
+            }
+            sb2.append("\n");
+        }
+        System.out.println(sb2.toString());
+        
         
         CustomWatershedDAG dag = ws.createLowerIntensityDAG(lowered);
         
+        // ----- row 0
         assertTrue(dag.getConnectedNumber(new PairInt(0, 0)) == 0);
         
         assertTrue(dag.getConnectedNumber(new PairInt(1, 0)) == 1);
@@ -409,5 +420,19 @@ public class WaterShedTest extends TestCase {
             assertTrue(expected.remove(p));
         }
         assertTrue(expected.isEmpty());
+        
+        int[][] labelled2 = ws.unionFindWatershed(lowered);
+        
+        assertNotNull(labelled2);
+        
+        sb2 = new StringBuilder("labelled final:\n");
+        for (int j = 0; j < labelled2[0].length; ++j) {
+            sb2.append(String.format("row %4d:", j));
+            for (int i = 0; i < labelled2.length; ++i) {
+                sb2.append(String.format("%4d", labelled2[i][j]));
+            }
+            sb2.append("\n");
+        }
+        System.out.println(sb2.toString());
     }
 }

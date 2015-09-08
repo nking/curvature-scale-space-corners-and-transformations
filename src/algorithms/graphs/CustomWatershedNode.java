@@ -14,6 +14,9 @@ public class CustomWatershedNode {
     /**
      * flag indicating whether node resolution has occurred (if true,
      * can just use first and only result in outgoing).
+     * Note that if flag has been set to resolved, the single outgoing
+     * connection may hold a value that it is not directly connected too,
+     * but is the representative of its contiguous group.
      */
     protected boolean resolved = false;
 
@@ -77,11 +80,14 @@ public class CustomWatershedNode {
         
         resolved = true;
         
-        outgoing[0] = nodeLocation;
+        if (nOutgoing == 0) {
+            outgoing = new PairInt[]{nodeLocation};
+        } else {
+            outgoing[0] = nodeLocation;
+            //TODO: compress if needed... there are at most 8 items in outgoing
+        }
         
-        nOutgoing = 1;
-        
-        //TODO: compress if needed... there are at most 8 items in outgoing
+        nOutgoing = 1;        
     }
     
     public boolean isResolved() {
@@ -108,6 +114,19 @@ public class CustomWatershedNode {
         }
         
         return outgoing[nodeNumber];
+    }
+
+    public void reset(int nodeNumber, PairInt nodeValue) {
+        
+        if (nodeNumber < 0 || nodeNumber > (nOutgoing - 1)) {
+            throw new IllegalArgumentException("nodeNumber is out of bounds");
+        }
+        
+        if (nodeValue == null) {
+            throw new IllegalArgumentException("nodeValue cannot be null");
+        }
+        
+        outgoing[nodeNumber] = nodeValue;
     }
     
 }

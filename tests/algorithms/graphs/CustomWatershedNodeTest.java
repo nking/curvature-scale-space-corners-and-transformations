@@ -19,15 +19,19 @@ public class CustomWatershedNodeTest extends TestCase {
         
         CustomWatershedNode node = new CustomWatershedNode(nodeLocation, 2);
         
-        node.insertOutgoing(new PairInt(1, 1));
+        node.insertOutgoing(new PairInt(0, 1));
         
-        node.insertOutgoing(new PairInt(2, 2));
+        node.insertOutgoing(new PairInt(1, 1));
         
         assertTrue(node.getConnectedNumber() == 2);
         
-        assertTrue(node.get(0).equals(new PairInt(1, 1)));
+        assertTrue(node.get(0).equals(new PairInt(0, 1)));
         
-        assertTrue(node.get(1).equals(new PairInt(2, 2)));
+        assertTrue(node.get(1).equals(new PairInt(1, 1)));
+        
+        node.reset(0, new PairInt(1, 0));
+        
+        assertTrue(node.get(0).equals(new PairInt(1, 0)));
         
         node.setToResolved(new PairInt(1, 1));
         

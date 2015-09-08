@@ -68,6 +68,8 @@ public class WaterShed {
      */
     private Map<PairInt, DisjointSet2Node<PairInt>> componentLabelMap = null;
     
+    private final static PairInt sentinel = new PairInt(-1, -1);
+    
     /**
      * This method alters the image, specifically the plateaus, so that a best
      * path to lowest intensity is possible and less ambiguous. A plateau is a
@@ -90,8 +92,6 @@ public class WaterShed {
         The algorithm below would need to be adjusted for it where
         int[][] lc is used.
         */
-
-        PairInt sentinel = new PairInt(-1, -1);
 
         int w = img.getWidth();
         int h = img.getHeight();
@@ -412,34 +412,28 @@ public class WaterShed {
         int h = im[0].length;
         
         final int wshed = 0;
-        final PairInt sentinel = new PairInt(-1, -1);
         
         //initialize image lab with distinct labels for minima
         //LabelInit
         int[][] labeled = unionFindComponentLabelling(im);
         
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                PairInt pPoint = new PairInt(i, j);
+                
+                PairInt repr = resolve(pPoint, dag);
+                
+                int value;
+                if (repr.equals(sentinel)) {
+                    value = wshed;
+                } else {
+                    value = labeled[repr.getX()][repr.getY()];
+                }
+                labeled[pPoint.getX()][pPoint.getY()] = value;
+            }
+        }
         
-        /*
-        2. From the lower complete image, the lower complete graph 
-        G′ = (V , E ′ ) is constructed (see Definition 3.5), which is a 
-        directed acyclic graph (DAG). 
-        See Fig. 11 for an example. The DAG is stored in an array sln, 
-        where sln[p,i] is a pointer to the ith steepest lower neighbor of 
-        pixel p 
-        (the number of steepest lower neighbours is at most the connectivity). 
-        For each minimum m, one pixel r ∈ m is chosen as the representative of 
-        this minimum, and a pointer is created from r to itself.   
-        
-        The array sln plays the role of parent in the level components 
-        algorithm, but note that a node can now have more than one ‘parent’ 
-        (steepest lower neighbor). 
-        Therefore the graph G is not a disjoint set 
-        forest, as in the case of connected components. The DAG can be 
-        constructed in a single pass scan-line algorithm, in which for each 
-        pixel only its neighbours are referenced.
-        */
-
-        throw new UnsupportedOperationException("not yet implemented");
+        return labeled;
     }
 
     /*
@@ -465,35 +459,6 @@ public class WaterShed {
                 lab[p] ← wshed end if
             end if
         end for
-
-    
-    //Recursive function for resolving the downstream paths of the lower complete graph
-    //Returns representative element of pixel p, or W if p is a watershed pixel
-    function Resolve (p : pixel)
-
-        i←1;
-
-        //some value such that rep ̸= W
-        rep←(0,0)
-
-        //CON indicates the connectivity
-        while (i ≤ CON) and (rep ̸= W) do
-            // for regional minimia only sln[p, i] == p
-            if (sln[p, i] ̸= p) and (sln[p, i] ̸= W) then
-                sln[p, i] ← Resolve (sln[p, i])
-            end if
-            if i=1 then
-                rep ← sln[p, 1]
-            else if sln[p, i] ̸= rep then
-                rep ← W
-                for j←1 to CON do
-                    sln[p, j] ← W
-                end for
-            end if
-            i←i+1
-        end while
-
-        return rep
     */
 
     private String printParents(Map<PairInt, DisjointSet2Node<PairInt>> parentMap) {
@@ -598,5 +563,93 @@ public class WaterShed {
         
         return dag; 
     }
+
+    /**
+     * 
+     * @param p
+     * @param dag
+     * @return repr value indicating whether the point is a watershed (indicated 
+     * by returning the sentinel) or should be assigned the component level of
+     * the returned point.
+     */
+    private PairInt resolve(PairInt p, CustomWatershedDAG dag) {
+        
+        if ((regionalMinima == null) || (componentLabelMap == null)) {
+            throw new IllegalStateException("algorithm currently depends upon "
+            + "previous use of the methods named lower and unionFindComponentLabelling");
+        }
+        
+        if (dag.isResolved(p)) {
+            return dag.getResolved(p);
+        }
+        
+        DisjointSet2Node<PairInt> set = componentLabelMap.get(p);
+        PairInt repr = set.getParent().getMember();
+        
+        int n = dag.getConnectedNumber(p);
+        
+        if (n == 0) {
+            dag.setToResolved(p, repr);
+            return repr;
+        }
+        
+        int i = 0;
+        
+        while ((i < n) && !repr.equals(sentinel)) {
+            
+            PairInt lowerNode = dag.getConnectedNode(p, i);
+            
+            /*
+            TODO: turn this into iterative as soon as it returns correct results
+            */
+            
+            if (!lowerNode.equals(p) && !lowerNode.equals(sentinel)) {
+                
+                lowerNode = resolve(lowerNode, dag);
+                
+                dag.resetConnectedNode(p, i, lowerNode);
+            }
+            
+            if (i == 0) {
+                
+                repr = lowerNode;
+                
+            } else if (!lowerNode.equals(repr)) {
+                
+                repr = sentinel;
+                
+                dag.setToResolved(p, repr);
+            }
+            
+            ++i;
+        }
+
+        return repr;
+    }
+    
+    /*    
+        i←1;
+
+        //some value such that rep ̸= W
+        rep←(0,0)
+
+        //CON indicates the connectivity
+        while (i ≤ CON) and (rep ̸= W) do
+            if (sln[p, i] ̸= p) and (sln[p, i] ̸= W) then
+                sln[p, i] ← Resolve (sln[p, i])
+            end if
+            if i=1 then
+                rep ← sln[p, 1]
+            else if sln[p, i] ̸= rep then
+                rep ← W
+                for j←1 to CON do
+                    sln[p, j] ← W
+                end for
+            end if
+            i←i+1
+        end while
+
+        return rep
+    */
 }
 

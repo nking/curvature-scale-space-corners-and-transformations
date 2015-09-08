@@ -210,6 +210,26 @@ public class CustomWatershedDAG {
      * returned the connected number for the node at key.  Note that an 
      * IllegalArgumentException is thrown if key is not in the dag.
      * @param key
+     */
+    public void resetConnectedNode(PairInt key, int nodeNumber, PairInt nodeValue) {
+
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        
+        CustomWatershedNode node  = vertices.get(key);
+
+        if (node == null) {
+            throw new IllegalArgumentException("key was not found in dag");
+        }
+        
+        node.reset(nodeNumber, nodeValue);
+    }
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
      * @return 
      */
     public boolean contains(PairInt key) {
