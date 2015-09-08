@@ -1,4 +1,4 @@
-package algorithms.util;
+package algorithms.disjointSets;
 
 import junit.framework.TestCase;
 

@@ -1,4 +1,4 @@
-package algorithms.util;
+package algorithms.disjointSets;
 
 /**
  * a disjoint set implemented as a forest.
@@ -38,10 +38,12 @@ public class DisjointSet2Helper {
      * @return
      */
     public <T> DisjointSet2Node<T> findSet(DisjointSet2Node<T> x) {
+        
         if (!x.equals(x.getParent())) {
             DisjointSet2Node<T> parent = findSet(x.getParent());
             x.setParent(parent);
         }
+        
         return x.getParent();
     }
     

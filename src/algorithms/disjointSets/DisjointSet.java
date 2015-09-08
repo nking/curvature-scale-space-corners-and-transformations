@@ -1,4 +1,4 @@
-package algorithms.util;
+package algorithms.disjointSets;
 
 /**
  * based upon pseudocode from "Introduction to Algorithms" by Cormen et al.

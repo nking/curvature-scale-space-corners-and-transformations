@@ -1,4 +1,4 @@
-package algorithms.util;
+package algorithms.disjointSets;
 
 /**
  * a node for the forest implementation of the disjoint set.

@@ -1,4 +1,4 @@
-package algorithms.util;
+package algorithms.disjointSets;
 
 /**
  * a disjoint set implemented with linked lists.
