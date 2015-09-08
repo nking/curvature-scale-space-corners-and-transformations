@@ -352,6 +352,62 @@ public class WaterShedTest extends TestCase {
         
         assertTrue(dag.getConnectedNumber(new PairInt(4, 0)) == 0);
         
+        // ----- row 1        
+        assertTrue(dag.getConnectedNumber(new PairInt(0, 1)) == 1);
+        assertTrue(dag.getConnectedNode(new PairInt(0, 1), 0).equals(new PairInt(0, 0)));
         
+        assertTrue(dag.getConnectedNumber(new PairInt(1, 1)) == 3);
+        p0 = dag.getConnectedNode(new PairInt(1, 1), 0);
+        p1 = dag.getConnectedNode(new PairInt(1, 1), 1);
+        PairInt p2 = dag.getConnectedNode(new PairInt(1, 1), 2);
+        Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(0, 0));
+        expected.add(new PairInt(0, 1));
+        expected.add(new PairInt(1, 0));
+        assertTrue(expected.remove(p0));
+        assertTrue(expected.remove(p1));
+        assertTrue(expected.remove(p2));
+        assertTrue(expected.isEmpty());
+        assertTrue(dag.getConnectedNode(new PairInt(1, 1), 0).equals(new PairInt(0, 0)));
+        
+        int nExpected = 5;
+        Set<PairInt> found = new HashSet<PairInt>();
+        PairInt key = new PairInt(2, 1);
+        assertTrue(dag.getConnectedNumber(key) == nExpected);
+        for (int i = 0; i < nExpected; ++i) {
+            found.add(dag.getConnectedNode(key, i));
+        }
+        expected = new HashSet<PairInt>();
+        expected.add(new PairInt(1, 0));
+        expected.add(new PairInt(2, 0));
+        expected.add(new PairInt(3, 0));
+        expected.add(new PairInt(1, 1));
+        expected.add(new PairInt(3, 1));
+        for (PairInt p : found) {
+            assertTrue(expected.remove(p));
+        }
+        assertTrue(expected.isEmpty());
+        
+        // ------ skip to center pixel
+        nExpected = 8;
+        found = new HashSet<PairInt>();
+        key = new PairInt(2, 2);
+        assertTrue(dag.getConnectedNumber(key) == nExpected);
+        for (int i = 0; i < nExpected; ++i) {
+            found.add(dag.getConnectedNode(key, i));
+        }
+        expected = new HashSet<PairInt>();
+        expected.add(new PairInt(1, 1));
+        expected.add(new PairInt(2, 1));
+        expected.add(new PairInt(3, 1));
+        expected.add(new PairInt(3, 2));
+        expected.add(new PairInt(3, 3));
+        expected.add(new PairInt(2, 3));
+        expected.add(new PairInt(1, 3));
+        expected.add(new PairInt(1, 2));
+        for (PairInt p : found) {
+            assertTrue(expected.remove(p));
+        }
+        assertTrue(expected.isEmpty());
     }
 }
