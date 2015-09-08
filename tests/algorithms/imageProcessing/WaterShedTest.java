@@ -152,6 +152,7 @@ public class WaterShedTest extends TestCase {
         4 3 0 3 4  4
                    5
         0 1 2 3 4
+        
         */
 
         int[][] lowerComplete = new int[w][];
@@ -168,7 +169,17 @@ public class WaterShedTest extends TestCase {
 
         int[][] labeled = ws.unionFindComponentLabelling(lowerComplete);
 
-        StringBuilder sb2 = new StringBuilder();
+        StringBuilder sb2 = new StringBuilder("input:\n");
+        for (int j = 0; j < lowerComplete[0].length; ++j) {
+            sb2.append(String.format("row %4d:", j));
+            for (int i = 0; i < lowerComplete.length; ++i) {
+                sb2.append(String.format("%4d", lowerComplete[i][j]));
+            }
+            sb2.append("\n");
+        }
+        System.out.println(sb2.toString());
+        
+        sb2 = new StringBuilder("labeled components:\n");
         for (int j = 0; j < labeled[0].length; ++j) {
             sb2.append(String.format("row %4d:", j));
             for (int i = 0; i < labeled.length; ++i) {
@@ -178,6 +189,41 @@ public class WaterShedTest extends TestCase {
         }
         System.out.println(sb2.toString());
         
+        /*
+        input data:
+            4 3 0 3 4  0
+            3 2 0 2 3  1
+            0 0 0 0 0  2
+            3 2 0 2 3  3
+            4 3 0 3 4  4
+                       5
+            0 1 2 3 4
+        
+        reversed componentLabelMap with values parent printed as parent
+        and all keys with same parent listed as children:
+            parent: (0,3)    children:  (0,3) (1,4)
+            parent: (1,1)    children:  (1,1)
+            parent: (4,0)    children:  (4,0)
+            parent: (1,3)    children:  (1,3)
+            parent: (0,1)    children:  (0,1) (1,0)
+            parent: (3,0)    children:  (3,0) (4,1)
+            parent: (3,1)    children:  (3,1)
+            parent: (0,2)    children:  (2,3) (0,2) (2,0) (2,4) (3,2) (4,2) (2,1) (1,2) (2,2)
+            parent: (0,4)    children:  (0,4)
+            parent: (4,4)    children:  (4,4)
+            parent: (3,3)    children:  (3,3)
+            parent: (3,4)    children:  (4,3) (3,4)
+            parent: (0,0)    children:  (0,0)
+    
+        output component labeled image:
+            row    0:   1   2   3   8  12
+            row    1:   2   6   3   9   8
+            row    2:   3   3   3   3   3
+            row    3:   4   7   3  10  11
+            row    4:   5   4   3  11  13
+        
+                        0   1   2   3   4
+        */
     }
 
     private int findShortestPathToLowerIntensity(GreyscaleImage img,
@@ -224,5 +270,71 @@ public class WaterShedTest extends TestCase {
             }
         }
         return minDist;
+    }
+    
+    public void testCreateLowerIntensityDAG() throws Exception {
+
+        int w = 5;
+        int h = 5;
+        
+        /*
+        from Fig. 11 of 
+        Roerdink and Meijster 2001
+        "The Watershed Transform: Definitions, Algorithms and Parallelization Strategies",
+        Fundamenta Informaticae 41 (2001) 187–228, Section 4.2.4
+        
+        input data:
+        
+        0 1 2 1 0  0
+        1 2 3 2 1  1
+        2 3 4 3 2  2
+        1 2 3 2 1  3
+        0 1 2 1 0  4
+        
+        0 1 2 3 4
+        
+        */
+
+        int[][] im = new int[w][];
+        for (int i = 0; i < w; ++i) {
+            im[i] = new int[h];
+        }
+        im[0] = new int[]{0, 1, 2, 1, 0};
+        im[1] = new int[]{1, 2, 3, 2, 1};
+        im[2] = new int[]{2, 3, 4, 3, 2};
+        im[3] = new int[]{1, 2, 3, 2, 1};
+        im[4] = new int[]{0, 1, 2, 3, 4};
+        
+        GreyscaleImage img = new GreyscaleImage(im.length, im[0].length);
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int i = 0; i < im.length; ++i) {
+            for (int j = 0; j < im[0].length; ++j) {
+                points.add(new PairInt(i, j));
+                img.setValue(i, j, im[i][j]);
+            }
+        }
+
+        WaterShed ws = new WaterShed();
+
+        int[][] lowered = ws.lower(img, points);
+        
+        StringBuilder sb2 = new StringBuilder("lowered:\n");
+        for (int j = 0; j < lowered[0].length; ++j) {
+            sb2.append(String.format("row %4d:", j));
+            for (int i = 0; i < lowered.length; ++i) {
+                sb2.append(String.format("%4d", lowered[i][j]));
+            }
+            sb2.append("\n");
+        }
+        System.out.println(sb2.toString());
+        
+        int[][] labeled = ws.unionFindComponentLabelling(lowered);
+        
+        CustomWatershedDAG dag = ws.createLowerIntensityDAG(lowered);
+        
+        assertTrue(dag.getConnectedNumber(new PairInt(0, 0)) == 0);
+        
+        assertTrue(dag.getConnectedNumber(new PairInt(0, 1)) == 1);
+        assertTrue(dag.getConnectedNode(new PairInt(0, 1), 0).equals(new PairInt(0, 0)));
     }
 }

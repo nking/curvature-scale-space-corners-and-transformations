@@ -3,6 +3,8 @@ package algorithms.imageProcessing;
 import algorithms.misc.Misc;
 import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
+import algorithms.graphs.CustomWatershedDAG;
+import algorithms.graphs.CustomWatershedNode;
 import algorithms.util.PairInt;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -400,8 +402,11 @@ public class WaterShed {
         if ((distToLowerIntensityPixel == null) || (regionalMinima == null) ||
             (componentLabelMap == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
-            + "previous use of the methods name lower and unionFindComponentLabelling");
+            + "previous use of the methods named lower and unionFindComponentLabelling");
         }
+        
+        // uses regionalMinima
+        CustomWatershedDAG dag = createLowerIntensityDAG(im);
         
         int w = im.length;
         int h = im[0].length;
@@ -411,12 +416,8 @@ public class WaterShed {
         
         //initialize image lab with distinct labels for minima
         //LabelInit
+        int[][] labeled = unionFindComponentLabelling(im);
         
-        /*
-        by-products of lower complete might be useful here
-        int[][] distToLowerIntensityPixel
-        Set<PairInt> regionalMinima
-        */
         
         /*
         2. From the lower complete image, the lower complete graph 
@@ -477,6 +478,7 @@ public class WaterShed {
 
         //CON indicates the connectivity
         while (i ≤ CON) and (rep ̸= W) do
+            // for regional minimia only sln[p, i] == p
             if (sln[p, i] ̸= p) and (sln[p, i] ̸= W) then
                 sln[p, i] ← Resolve (sln[p, i])
             end if
@@ -525,6 +527,76 @@ public class WaterShed {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    protected CustomWatershedDAG createLowerIntensityDAG(int[][] lowerCompleteIm) {
+        
+        if (regionalMinima == null) {
+            throw new IllegalStateException(
+                "method needs lower to have been invoked before using this");
+        }
+        if (lowerCompleteIm == null) {
+            throw new IllegalStateException("lowerCompleteIm cannot be null");
+        }
+        
+        /*
+        TODO: edit to use a points set or make a method which will only operate
+        on the image for locations in point set
+        */
+        
+        int w = lowerCompleteIm.length;
+        int h = lowerCompleteIm[0].length;
+        
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+                
+        CustomWatershedDAG dag = new CustomWatershedDAG(w * h);
+        
+        int[] diffInt = new int[8];
+        PairInt[] neighbors = new PairInt[8];
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                PairInt p = new PairInt(i, j);
+                
+                if (regionalMinima.contains(p)) {
+                    
+                    // componentLabelMap has the representative for this node
+                    dag.insert(p, new CustomWatershedNode(p, 0));
+                    
+                } else {
+                    
+                    int x = p.getX();
+                    int y = p.getY();
+                    int v = lowerCompleteIm[x][y];
+                    
+                    int nc = 0;  
+                    
+                    for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
+                        int x2 = x + dxs8[nIdx];
+                        int y2 = y + dys8[nIdx];
+                        if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                           continue;
+                        }
+                        
+                        int v2 = lowerCompleteIm[x2][y2];
+                        
+                        if (v2 < v) {
+                            diffInt[nc] = v - v2;
+                            neighbors[nc] = new PairInt(x2, y2);
+                            nc++;
+                        }
+                    }
+                    
+                    dag.orderAndInsert(p, diffInt, neighbors, nc);
+                    
+                    assert(nc != 0);
+                }
+            }
+        }
+        
+        return dag; 
     }
 }
 
