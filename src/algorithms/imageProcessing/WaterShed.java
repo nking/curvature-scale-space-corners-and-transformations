@@ -422,7 +422,9 @@ public class WaterShed {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
 
-                PairInt repr = resolve(pPoint, dag);
+System.out.println(pPoint.toString() + ":");
+                PairInt repr = resolveIterative(pPoint, dag, 0);
+System.out.println("   ==> " + pPoint.toString() + " repr=" + repr.toString() + "\n");
 
                 int value;
                 if (repr.equals(sentinel)) {
@@ -643,7 +645,8 @@ public class WaterShed {
      * by returning the sentinel) or should be assigned the component level of
      * the returned point.
      */
-    private PairInt resolveIterative(PairInt p, CustomWatershedDAG dag, int recursionLevel) {
+    private PairInt resolveIterative(PairInt p, CustomWatershedDAG dag,
+        final int recursionLevel) {
 
         if ((regionalMinima == null) || (componentLabelMap == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
@@ -720,33 +723,44 @@ int i0 = 0;
                 repr = componentLabelMap.get(p0).getParent().getMember();
 
                 int n = dag.getConnectedNumber(p0);
-                if (n == 0) {
-                    dag.setToResolved(p0, repr);
-                }
 
                 for (int i = i0; i < n; ++i) {
+
                     if (repr.equals(sentinel)) {
+
+System.out.println(Integer.toString(recursionLevel) + " " + p0.toString() + " repr=" + repr + " i=" + Integer.valueOf(i));
 
                         return repr;
                     }
+
                     PairInt lowerNode = dag.getConnectedNode(p0, i);
+
                     if (!lowerNode.equals(p0) && !lowerNode.equals(sentinel)) {
+
                         lowerNode = resolveIterative(lowerNode, dag, recursionLevel + 1);
+
                         dag.resetConnectedNode(p0, i, lowerNode);
                     }
+
                     if (i == 0) {
+
                         repr = lowerNode;
+
                     } else if (!lowerNode.equals(repr)) {
+
                         repr = sentinel;
                     }
                 }
 
-            } else {
-                repr = dag.getResolved(p0);
+                dag.setToResolved(p0, repr);
 
+            } else {
+
+                repr = dag.getResolved(p0);
             }
-            dag.setToResolved(p0, repr);
         //}
+
+System.out.println(Integer.toString(recursionLevel) + " " + p0.toString() + " repr=" + repr);
 
         return repr;
         //
