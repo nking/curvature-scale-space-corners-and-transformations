@@ -23,7 +23,7 @@ public class CustomWatershedDAG {
     Because Watershed is being designed for use on Sets of points rather than 
     the entire image, will use a Map instead.
     */
-    protected Map<PairInt, CustomWatershedNode> vertices;
+    protected final Map<PairInt, CustomWatershedNode> vertices;
     
     protected int nVertices = 0;
 

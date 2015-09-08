@@ -61,6 +61,7 @@ public class CustomWatershedNode {
             outgoing = Arrays.copyOf(outgoing, expand);
         }
         outgoing[nOutgoing] = nodeLocation;
+        
         nOutgoing++;
     }
 
@@ -95,4 +96,18 @@ public class CustomWatershedNode {
         
         return null;
     }
+    
+    public int getConnectedNumber() {
+        return nOutgoing;
+    }
+    
+    public PairInt get(int nodeNumber) {
+        
+        if (nodeNumber < 0 || nodeNumber > (nOutgoing - 1)) {
+            throw new IllegalArgumentException("nodeNumber is out of bounds");
+        }
+        
+        return outgoing[nodeNumber];
+    }
+    
 }
