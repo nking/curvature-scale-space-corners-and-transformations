@@ -68,9 +68,9 @@ public class WaterShed {
      * This is populated by the method named unionFindComponentLabelling.
      */
     private Map<PairInt, DisjointSet2Node<PairInt>> componentLabelMap = null;
-    
+
     private final static PairInt sentinel = new PairInt(-1, -1);
-    
+
     /**
      * This method alters the image, specifically the plateaus, so that a best
      * path to lowest intensity is possible and less ambiguous. A plateau is a
@@ -106,7 +106,7 @@ public class WaterShed {
         for (int i = 0; i < w; ++i) {
             distToLowerIntensityPixel[i] = new int[h];
         }
-        
+
         regionalMinima = new HashSet<PairInt>();
 
         int[] dxs8 = Misc.dx8;
@@ -227,10 +227,10 @@ public class WaterShed {
     /**
      * Algorithm 4.7 Scan-line algorithm for labelling level components based on
      * disjoint sets.
-     * from 
+     * from
       "The Watershed Transform: Definitions, Algorithms and Parallelization Strategies"
       Roerdink and Meijster, 2001, Fundamenta Informaticae 41 (2001) 187–228
-      
+
      * @param im greyscale image (does not need to be lower complete)
      * @return
      */
@@ -254,7 +254,7 @@ public class WaterShed {
         search for neighbors q of p that have smaller lexicographical values
         q ≺ p : (i_q < i_p) ∨ ((i_q == i_p) ∧(j_q < j_p))
 
-          (-1, 1)           
+          (-1, 1)
           (-1, 0)   p=(0,  0)
           (-1,-1)     (0, -1)
         */
@@ -265,12 +265,12 @@ public class WaterShed {
 
         Map<PairInt, DisjointSet2Node<PairInt>> parentMap = new
             HashMap<PairInt, DisjointSet2Node<PairInt>>();
-        
+
         // init map
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
-                DisjointSet2Node<PairInt> pNode = 
+                DisjointSet2Node<PairInt> pNode =
                     disjointSetHelper.makeSet(new DisjointSet2Node<PairInt>(pPoint));
                 parentMap.put(pPoint, pNode);
             }
@@ -288,7 +288,7 @@ public class WaterShed {
                 int x = pPoint.getX();
                 int y = pPoint.getY();
                 int vP = im[x][y];
-                                
+
                 List<PairInt> qPoints = new ArrayList<PairInt>();
 
                 //for all q ∈ Neighbor(p) with q ≺ p
@@ -302,21 +302,21 @@ public class WaterShed {
                     PairInt qPoint = new PairInt(x2, y2);
 
                     int vQ = im[x2][y2];
-     
+
                     if (vP == vQ) {
-                        
+
                         // find r, the representative of the neighbors with
                         // same image intensity, as the lexicographically
                         // smallest location
-                        
+
                         //r ← r min FindRoot(q);
-                        
+
                         DisjointSet2Node<PairInt> qParent = disjointSetHelper.findSet(
                             parentMap.get(qPoint));
-                        
+
                         if (qParent.getMember().getX() < reprPoint.getX()) {
                             reprPoint = qPoint;
-                        } else if ((qParent.getMember().getX() == reprPoint.getX()) 
+                        } else if ((qParent.getMember().getX() == reprPoint.getX())
                             && (qParent.getMember().getY() < reprPoint.getY())) {
                             reprPoint = qPoint;
                         }
@@ -326,16 +326,16 @@ public class WaterShed {
 
                 //parent[p] ← r
                 if (!qPoints.isEmpty()) {
-                    
+
                     DisjointSet2Node<PairInt> parent = disjointSetHelper.union(
                         parentMap.get(reprPoint), parentMap.get(pPoint));
-                    
+
                     for (PairInt qPoint : qPoints) {
                         if (qPoint.equals(reprPoint)) {
                             continue;
                         }
                         //PathCompress(q, r)
-                        
+
                         DisjointSet2Node<PairInt> qParent = disjointSetHelper.union(
                             parentMap.get(reprPoint), parentMap.get(qPoint));
                     }
@@ -344,7 +344,7 @@ public class WaterShed {
         } // end i loop
 
  System.out.println(printParents(parentMap));
- 
+
         /*
         In a second pass through the input image, the output image lab is
         created. All root pixels get a distinct label; for any other pixel p
@@ -352,7 +352,7 @@ public class WaterShed {
         parent (see line 29 in Algorithm 4.7), and p gets the label of its
         representative.
         */
-        
+
         int[][] label = new int[w][];
         for (int i = 0; i < w; ++i) {
             label[i] = new int[h];
@@ -362,12 +362,12 @@ public class WaterShed {
         int curLabel = 1;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                
+
                 PairInt pPoint = new PairInt(i, j);
-                
+
                 DisjointSet2Node<PairInt> parent = disjointSetHelper.findSet(
                     parentMap.get(pPoint));
-                
+
                 if (parent.getMember().equals(pPoint)) {
                     // root pixel
                     label[i][j] = curLabel;
@@ -380,21 +380,21 @@ public class WaterShed {
                 }
             }
         }
-        
+
         componentLabelMap = parentMap;
-        
+
         return label;
     }
 
     /**
-     * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on 
+     * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on
      * disjoint sets.
-     * 
-     * Note this method uses the by-products of the methods named lower and 
-     * unionFindComponentLabelling.  To use this method as a standalone 
-     * invocation requires some changes to accept arguments for the by-products 
+     *
+     * Note this method uses the by-products of the methods named lower and
+     * unionFindComponentLabelling.  To use this method as a standalone
+     * invocation requires some changes to accept arguments for the by-products
      * or to re-solve for similar data in this method.
-     * 
+     *
      * @param im a lower complete image
      * @return
      */
@@ -405,25 +405,25 @@ public class WaterShed {
             throw new IllegalStateException("algorithm currently depends upon "
             + "previous use of the methods named lower and unionFindComponentLabelling");
         }
-        
+
         // uses regionalMinima
         CustomWatershedDAG dag = createLowerIntensityDAG(im);
-        
+
         int w = im.length;
         int h = im[0].length;
-        
+
         final int wshed = 0;
-        
+
         //initialize image lab with distinct labels for minima
         //LabelInit
         int[][] labeled = unionFindComponentLabelling(im);
-        
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
-                
-                PairInt repr = resolveIterative(pPoint, dag);
-                
+
+                PairInt repr = resolve(pPoint, dag);
+
                 int value;
                 if (repr.equals(sentinel)) {
                     value = wshed;
@@ -433,7 +433,7 @@ public class WaterShed {
                 labeled[pPoint.getX()][pPoint.getY()] = value;
             }
         }
-        
+
         return labeled;
     }
 
@@ -463,16 +463,16 @@ public class WaterShed {
     */
 
     private String printParents(Map<PairInt, DisjointSet2Node<PairInt>> parentMap) {
-        
+
         DisjointSet2Helper dsHelper = new DisjointSet2Helper();
-        
+
         Map<PairInt, List<PairInt>> parentValueMap = new HashMap<PairInt, List<PairInt>>();
-        
+
         for (Entry<PairInt, DisjointSet2Node<PairInt>> entry : parentMap.entrySet()) {
-            
+
             PairInt child = entry.getKey();
             PairInt parent = dsHelper.findSet(entry.getValue()).getMember();
-            
+
             List<PairInt> children = parentValueMap.get(parent);
             if (children == null) {
                 children = new ArrayList<PairInt>();
@@ -480,7 +480,7 @@ public class WaterShed {
             }
             children.add(child);
         }
-        
+
         StringBuilder sb = new StringBuilder();
         for (Entry<PairInt, List<PairInt>> entry : parentValueMap.entrySet()) {
             PairInt parent = entry.getKey();
@@ -496,7 +496,7 @@ public class WaterShed {
     }
 
     protected CustomWatershedDAG createLowerIntensityDAG(int[][] lowerCompleteIm) {
-        
+
         if (regionalMinima == null) {
             throw new IllegalStateException(
                 "method needs lower to have been invoked before using this");
@@ -504,178 +504,215 @@ public class WaterShed {
         if (lowerCompleteIm == null) {
             throw new IllegalStateException("lowerCompleteIm cannot be null");
         }
-        
+
         /*
         TODO: edit to use a points set or make a method which will only operate
         on the image for locations in point set
         */
-        
+
         int w = lowerCompleteIm.length;
         int h = lowerCompleteIm[0].length;
-        
+
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
-                
+
         CustomWatershedDAG dag = new CustomWatershedDAG(w * h);
-        
+
         int[] diffInt = new int[8];
         PairInt[] neighbors = new PairInt[8];
-        
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                
+
                 PairInt p = new PairInt(i, j);
-                
+
                 if (regionalMinima.contains(p)) {
-                    
+
                     // componentLabelMap has the representative for this node
                     dag.insert(p, new CustomWatershedNode(p, 0));
-                    
+
                 } else {
-                    
+
                     int x = p.getX();
                     int y = p.getY();
                     int v = lowerCompleteIm[x][y];
-                    
-                    int nc = 0;  
-                    
+
+                    int nc = 0;
+
                     for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
                         int x2 = x + dxs8[nIdx];
                         int y2 = y + dys8[nIdx];
                         if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
                            continue;
                         }
-                        
+
                         int v2 = lowerCompleteIm[x2][y2];
-                        
+
                         if (v2 < v) {
                             diffInt[nc] = v - v2;
                             neighbors[nc] = new PairInt(x2, y2);
                             nc++;
                         }
                     }
-                    
+
                     dag.orderAndInsert(p, diffInt, neighbors, nc);
-                    
+
                     assert(nc != 0);
                 }
             }
         }
-        
-        return dag; 
+
+        return dag;
     }
 
     /**
-     * 
+     *
      * @param p
      * @param dag
-     * @return repr value indicating whether the point is a watershed (indicated 
+     * @param recursionLevel level of recursion used only for logging
+     * @return repr value indicating whether the point is a watershed (indicated
      * by returning the sentinel) or should be assigned the component level of
      * the returned point.
      */
     private PairInt resolve(PairInt p, CustomWatershedDAG dag) {
-        
+
         if ((regionalMinima == null) || (componentLabelMap == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
             + "previous use of the methods named lower and unionFindComponentLabelling");
         }
-        
+
         if (dag.isResolved(p)) {
             return dag.getResolved(p);
         }
-        
+
         DisjointSet2Node<PairInt> set = componentLabelMap.get(p);
         PairInt repr = set.getParent().getMember();
-        
+
         int n = dag.getConnectedNumber(p);
-        
+
         if (n == 0) {
             dag.setToResolved(p, repr);
             return repr;
         }
-        
+
         int i = 0;
-        
+
         while ((i < n) && !repr.equals(sentinel)) {
-            
+
             PairInt lowerNode = dag.getConnectedNode(p, i);
-            
+
             if (!lowerNode.equals(p) && !lowerNode.equals(sentinel)) {
-                
-                lowerNode = resolve(lowerNode, dag);
-                
+
+                PairInt prevLowerNode = lowerNode;
+
+                lowerNode = resolve(prevLowerNode, dag);
+
                 dag.resetConnectedNode(p, i, lowerNode);
             }
-            
+
             if (i == 0) {
-                
+
                 repr = lowerNode;
-                
+
             } else if (!lowerNode.equals(repr)) {
-                
+
                 repr = sentinel;
-                
-                dag.setToResolved(p, repr);
             }
-            
+
             ++i;
         }
 
+        dag.setToResolved(p, repr);
+
         return repr;
     }
-    
-    
+
+    private String createKey(int level, PairInt p, int i) {
+        //TODO: replace this with encoding to a long using characteristics
+        // such as image dimensions (coords converted to image index),
+        // max level expected (nPixels), and knowledge that i will always be <= 8
+        String key = String.format("%d_%d_%d_%d", level, p.getX(), p.getY(), i);
+        return key;
+    }
+
     /**
-     * 
-     * @param p0
+     *
+     * @param p
      * @param dag
-     * @return repr value indicating whether the point is a watershed (indicated 
+     * @return repr value indicating whether the point is a watershed (indicated
      * by returning the sentinel) or should be assigned the component level of
      * the returned point.
      */
-    private PairInt resolveIterative(PairInt p0, CustomWatershedDAG dag) {
-        
+    private PairInt resolveIterative(PairInt p, CustomWatershedDAG dag, int recursionLevel) {
+
         if ((regionalMinima == null) || (componentLabelMap == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
             + "previous use of the methods named lower and unionFindComponentLabelling");
         }
-        
+
         /*
-        To make iterative from recursive in java, cannot use tail recursion, 
-        so have to replace the method frame loading and unloading
-        with parallel stacks of arguments given to a loop which pops each
-        stack to get current arguments, computes the result and stores that in
-        a results map accessible to subsequent iterations.
-        
-        
+        Recursion in java cannot be refactored to use tail recursion to release
+        method frame memory, so to improve the use of memory, a recursive
+        method has to be made iterative.
+
+        To make iterative, have to replace the method frame loading and
+        unloading with parallel stacks of arguments given to a loop which pops
+        each stack to get current arguments, computes the result and stores that
+        in a results map accessible to subsequent iterations.
+
+        The composite key for the results is referred to as prevCompKey here
+        and for simplicity while testing is a string, but should be changed to
+        use encoding to be more efficient.
+        TODO: improve the results map key
+
             level  p            i in level    prevCompKey
-            0      p            0 
+            0      p            0
             1      p.c[0]       0             "0 p      0"  <---place result here for i=0
             2      p.c[0].c[0]  0             "1 p.c[0] 0"  <---place result here
             1      p.c[1]       1             "0 p      0"  <---place result here for i=1
-            
+
            paused edit here... design handling of results.
-            
+
             level  p            i in level    prevCompKey
             0      p            0                           resolve cnctn: push onto stack "1 p.c[0] 0" pCKey="0 p 0" reprLevel="repr"
                                                             pop "1 p.c[0] 0" pCKey="0 p 0" repr0
-            1      p.c[0]       0             "0 p      0"  
-            
+            1      p.c[0]       0             "0 p      0"
+
             1      p.c[0]       0             "0 p      0"  <---place result here for i=0
             2      p.c[0].c[0]  0             "1 p.c[0] 0"  <---place result here
             1      p.c[1]       1             "0 p      0"
-            
-            
-            
+
+
+
             level  p            i in level    prevCompKey
-            0      p            0 
+            0      p            0
                resolve connection p.c[i=0]
                   resolve connection p.c[i=0].c[i=0]
                       pop repr.  if i0>0, retrieve repr from map (and remove it)<--
                   resolve connection p.c[i=0].c[i=1]
                   process
             */
-        
+/*
+        Stack<PairInt> currentP = new Stack<PairInt>();
+        currentP.add(p);
+        Stack<Integer> currentI = new Stack<Integer>();
+        currentI.add(Integer.valueOf(0));
+        Stack<Integer> currentLevel = new Stack<Integer>();
+        currentI.add(Integer.valueOf(0));
+        Stack<String> currentPrevCompKey = new Stack<String>();
+        currentPrevCompKey.add("0");
+
+        Map<String, PairInt> resultsMap = new HashMap<String, PairInt>();
+
+        while (!currentP.isEmpty()) {
+
+            PairInt p0 = currentP.pop();
+            int i0 = currentI.pop().intValue();
+            int level0 = currentLevel.pop().intValue();
+            String prevCompKey0 = currentPrevCompKey.pop();
+*/
+PairInt p0 = p;
+int i0 = 0;
             PairInt repr;
 
             if (!dag.isResolved(p0)) {
@@ -687,30 +724,33 @@ public class WaterShed {
                     dag.setToResolved(p0, repr);
                 }
 
-                for (int i = 0; i < n; ++i) {
+                for (int i = i0; i < n; ++i) {
                     if (repr.equals(sentinel)) {
+
                         return repr;
                     }
                     PairInt lowerNode = dag.getConnectedNode(p0, i);
-                    if (!lowerNode.equals(p0) && !lowerNode.equals(sentinel)) {                
-                        lowerNode = resolve(lowerNode, dag);
+                    if (!lowerNode.equals(p0) && !lowerNode.equals(sentinel)) {
+                        lowerNode = resolveIterative(lowerNode, dag, recursionLevel + 1);
                         dag.resetConnectedNode(p0, i, lowerNode);
                     }
                     if (i == 0) {
-                        repr = lowerNode;                
+                        repr = lowerNode;
                     } else if (!lowerNode.equals(repr)) {
-                        repr = sentinel;                
-                        dag.setToResolved(p0, repr);
+                        repr = sentinel;
                     }
                 }
-                
+
             } else {
                 repr = dag.getResolved(p0);
-               
-            }            
+
+            }
+            dag.setToResolved(p0, repr);
+        //}
+
         return repr;
-        
+        //
     }
-    
+
 }
 
