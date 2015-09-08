@@ -334,7 +334,24 @@ public class WaterShedTest extends TestCase {
         
         assertTrue(dag.getConnectedNumber(new PairInt(0, 0)) == 0);
         
-        assertTrue(dag.getConnectedNumber(new PairInt(0, 1)) == 1);
-        assertTrue(dag.getConnectedNode(new PairInt(0, 1), 0).equals(new PairInt(0, 0)));
+        assertTrue(dag.getConnectedNumber(new PairInt(1, 0)) == 1);
+        assertTrue(dag.getConnectedNode(new PairInt(1, 0), 0).equals(new PairInt(0, 0)));
+        
+        assertTrue(dag.getConnectedNumber(new PairInt(2, 0)) == 2);
+        PairInt p0 = dag.getConnectedNode(new PairInt(2, 0), 0);
+        PairInt p1 = dag.getConnectedNode(new PairInt(2, 0), 1);
+        assertTrue(p0.equals(new PairInt(1, 0)) || p1.equals(new PairInt(1, 0)));
+        if (p0.equals(new PairInt(1, 0))) {
+            assertTrue(p1.equals(new PairInt(3, 0)));
+        } else {
+            assertTrue(p0.equals(new PairInt(3, 0)));
+        }
+        
+        assertTrue(dag.getConnectedNumber(new PairInt(3, 0)) == 1);
+        assertTrue(dag.getConnectedNode(new PairInt(3, 0), 0).equals(new PairInt(4, 0)));
+        
+        assertTrue(dag.getConnectedNumber(new PairInt(4, 0)) == 0);
+        
+        
     }
 }
