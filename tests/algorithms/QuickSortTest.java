@@ -1,5 +1,7 @@
 package algorithms;
 
+import java.security.SecureRandom;
+import java.util.Arrays;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -81,6 +83,86 @@ public class QuickSortTest extends TestCase {
         assertTrue(a[1] == 4); assertTrue(b[1] == 3); assertTrue(c[1] == 1); assertTrue(d[1] == 1);
         assertTrue(a[2] == 4); assertTrue(b[2] == 5); assertTrue(c[2] == 6); assertTrue(d[2] == 6);
         assertTrue(a[3] == 4); assertTrue(b[3] == 6); assertTrue(c[3] == 7); assertTrue(d[3] == 7);
+    }
+    
+    public void testSortByFirstArgument() {
+        
+        int[] a = new int[]{3, 7, 1, 5};
+        Object[] b = new Object[]{"3", "7", "1", "5"};
+        
+        QuickSort.sortBy1stArg(a, b);
+        
+        assertTrue(a[0] == 1);
+        assertEquals(b[0], "1");
+        
+        assertTrue(a[1] == 3);
+        assertEquals(b[1], "3");
+        
+        assertTrue(a[2] == 5);
+        assertEquals(b[2], "5");
+        
+        assertTrue(a[3] == 7);
+        assertEquals(b[3], "7");
+    }
+    
+    public void testSortByFirstArgument2() {
+        
+        SecureRandom sr = new SecureRandom();
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
+        
+        int n = 100;
+        int[] a = new int[n];
+        String[] b = new String[n];
+        
+        for (int i = 0; i < n; ++i) {
+            int v = sr.nextInt();
+            String vStr = Integer.toString(v);
+            a[i] = v;
+            b[i] = vStr;
+        }
+        
+        int[] expected = Arrays.copyOf(a, n);
+        Arrays.sort(expected);
+        
+        QuickSort.sortBy1stArg(a, b);
+        
+        for (int i = 0; i < n; i++) {
+            int v = a[i];
+            String vStr = Integer.toString(v);
+            assertTrue(expected[i] == v);
+            assertEquals(b[i], vStr);
+        }
+    }
+    
+    public void testSortByFirstArgument3() {
+        
+        SecureRandom sr = new SecureRandom();
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
+        
+        int n = 100;
+        float[] a = new float[n];
+        String[] b = new String[n];
+        
+        for (int i = 0; i < n; ++i) {
+            float v = sr.nextFloat();
+            String vStr = Float.toString(v);
+            a[i] = v;
+            b[i] = vStr;
+        }
+        
+        float[] expected = Arrays.copyOf(a, n);
+        Arrays.sort(expected);
+        
+        QuickSort.sortBy1stArg(a, b);
+        
+        for (int i = 0; i < n; i++) {
+            float v = a[i];
+            String vStr = Float.toString(v);
+            assertTrue(expected[i] == v);
+            assertEquals(b[i], vStr);
+        }
     }
     
 }
