@@ -1,8 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
-import algorithms.util.DisjointSet2Helper;
-import algorithms.util.DisjointSet2Node;
+import algorithms.disjointSets.DisjointSet2Helper;
+import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.util.PairInt;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -349,8 +349,9 @@ public class WaterShed {
                     curLabel++;
                 } else {
                     //Resolve unresolved equivalences
-                    // not going to be visiting point again.  not necessary to reset?
                     // parent[p] = parent[parent[p]]
+                    // parentMap.put(pPoint, parent);
+                    // not going to be visiting pPoint again.  not necessary to reset?
                     label[i][j] = label[parent.getMember().getX()][parent.getMember().getY()];
                 }
             }
@@ -358,59 +359,6 @@ public class WaterShed {
         
         return label;
     }
-
-    /*
-    Scan-line algorithm for labelling level components based on disjoint sets.
-
-    procedure union-find-ComponentLabelling
-        Input: grey scale image im on digital grid G = (D, E).
-        Output: image lab on D, with labelled level components. (∗Uses array parent of pointers. ∗)
-
-    //Firstpass
-    for all p ∈ D in lexicographical order do
-        r←p
-        for all q ∈ Neighbor(p) with q ≺ p do
-            if im[q] = im[p] then
-                r ← r min FindRoot(q) //min denotes minimum w.r.t. lexicographical order
-            end if
-        end for
-        parent[p] ← r
-        for all q ∈ Neighbor(p) with q ≺ p do //compress paths
-            if im[q] = im[p] then
-                PathCompress(q, r)
-            end if
-        end for
-    end for
-
-    //Secondpass∗)
-    curlab←1 //curlab is the current label∗)
-    for all p ∈ D in lexicographical order do
-        if parent[p] = p then // p is a root pixel ∗)
-            lab[p] = curlab
-            curlab = curlab + 1
-        else
-            parent[p] = parent[parent[p]] //Resolve unresolved equivalences ∗)
-            lab[p] = lab[parent[p]]
-        end if
-    end for
-
-    // The authors credit Tarjan for the DisjointSet improvements, espec the
-    // path compression.
-    // Tarjan, R. E. Data Structures and Network Algorithms. SIAM, 1983
-    functionFindRoot(p:pixel)
-        while parent[p] ̸= p do
-            r←parent[p] ;
-            p←r
-        end while
-        return r
-
-    procedurePathCompress(p:pixel,r:pixel)
-        while parent[p] ̸= r do
-            h←parent[p] ;
-            parent[p]←r ;
-            p←h
-        end while
-    */
 
     /**
      * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on disjoint sets.
@@ -425,6 +373,41 @@ public class WaterShed {
         internally uses a DAG and disjoint sets
 
         algorithm 4.8 of reference above
+        */
+        
+        int w = im.length;
+        int h = im[0].length;
+        
+        final int wshed = 0;
+        final PairInt sentinel = new PairInt(-1, -1);
+        
+        //initialize image lab with distinct labels for minima
+        //LabelInit
+        
+        /*
+        by-products of lower complete might be useful here
+        int[][] distToLowerIntensityPixel
+        Set<PairInt> regionalMinima
+        */
+        
+        /*
+        2. From the lower complete image, the lower complete graph 
+        G′ = (V , E ′ ) is constructed (see Definition 3.5), which is a 
+        directed acyclic graph (DAG). 
+        See Fig. 11 for an example. The DAG is stored in an array sln, 
+        where sln[p,i] is a pointer to the ith steepest lower neighbor of 
+        pixel p 
+        (the number of steepest lower neighbours is at most the connectivity). 
+        For each minimum m, one pixel r ∈ m is chosen as the representative of 
+        this minimum, and a pointer is created from r to itself.   
+        
+        The array sln plays the role of parent in the level components 
+        algorithm, but note that a node can now have more than one ‘parent’ 
+        (steepest lower neighbor). 
+        Therefore the graph G is not a disjoint set 
+        forest, as in the case of connected components. The DAG can be 
+        constructed in a single pass scan-line algorithm, in which for each 
+        pixel only its neighbours are referenced.
         */
 
         throw new UnsupportedOperationException("not yet implemented");
@@ -454,6 +437,7 @@ public class WaterShed {
             end if
         end for
 
+    
     //Recursive function for resolving the downstream paths of the lower complete graph
     //Returns representative element of pixel p, or W if p is a watershed pixel
     function Resolve (p : pixel)
