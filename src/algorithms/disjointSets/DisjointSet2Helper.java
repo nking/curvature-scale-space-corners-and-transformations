@@ -26,15 +26,15 @@ public class DisjointSet2Helper {
     
     /**
      * <pre>
-     * find the set representative for the given node.  as a side effect,
-     * also updates x with the found result so that it directly points to the
-     * top most parent.
+     * find the set representative for the given node.  As a side effect,
+     * also updates x and all of it's ancestors with the found result so that
+     * they directly point to the top most parent ans subsequent lookups are
+     * faster.
      * runtime complexity:
-     *     the method uses recursion and each iteration removes a node.  
-     *     if we represent x_height as
-     *     the number of nodes between x's tree root and x, we have recursion
-     *     T(x_height) =  T(x_height–1) + 1
-     *   The solution for that recursion is O(x_height). 
+     *     the method uses iteration.  
+     *     if we represent x_height as the number of nodes between x's tree 
+     *     root and x, we have 2 times x_height iterations of statements,
+     * so O(x_height). 
      * </pre>
      * 
      * @param x
