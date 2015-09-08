@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * A watershed algorithm for use in image segmentation that is based upon
@@ -421,7 +422,7 @@ public class WaterShed {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
                 
-                PairInt repr = resolve(pPoint, dag);
+                PairInt repr = resolveIterative(pPoint, dag);
                 
                 int value;
                 if (repr.equals(sentinel)) {
@@ -599,10 +600,6 @@ public class WaterShed {
             
             PairInt lowerNode = dag.getConnectedNode(p, i);
             
-            /*
-            TODO: turn this into iterative as soon as it returns correct results
-            */
-            
             if (!lowerNode.equals(p) && !lowerNode.equals(sentinel)) {
                 
                 lowerNode = resolve(lowerNode, dag);
@@ -627,29 +624,93 @@ public class WaterShed {
         return repr;
     }
     
-    /*    
-        i←1;
+    
+    /**
+     * 
+     * @param p0
+     * @param dag
+     * @return repr value indicating whether the point is a watershed (indicated 
+     * by returning the sentinel) or should be assigned the component level of
+     * the returned point.
+     */
+    private PairInt resolveIterative(PairInt p0, CustomWatershedDAG dag) {
+        
+        if ((regionalMinima == null) || (componentLabelMap == null)) {
+            throw new IllegalStateException("algorithm currently depends upon "
+            + "previous use of the methods named lower and unionFindComponentLabelling");
+        }
+        
+        /*
+        To make iterative from recursive in java, cannot use tail recursion, 
+        so have to replace the method frame loading and unloading
+        with parallel stacks of arguments given to a loop which pops each
+        stack to get current arguments, computes the result and stores that in
+        a results map accessible to subsequent iterations.
+        
+        
+            level  p            i in level    prevCompKey
+            0      p            0 
+            1      p.c[0]       0             "0 p      0"  <---place result here for i=0
+            2      p.c[0].c[0]  0             "1 p.c[0] 0"  <---place result here
+            1      p.c[1]       1             "0 p      0"  <---place result here for i=1
+            
+           paused edit here... design handling of results.
+            
+            level  p            i in level    prevCompKey
+            0      p            0                           resolve cnctn: push onto stack "1 p.c[0] 0" pCKey="0 p 0" reprLevel="repr"
+                                                            pop "1 p.c[0] 0" pCKey="0 p 0" repr0
+            1      p.c[0]       0             "0 p      0"  
+            
+            1      p.c[0]       0             "0 p      0"  <---place result here for i=0
+            2      p.c[0].c[0]  0             "1 p.c[0] 0"  <---place result here
+            1      p.c[1]       1             "0 p      0"
+            
+            
+            
+            level  p            i in level    prevCompKey
+            0      p            0 
+               resolve connection p.c[i=0]
+                  resolve connection p.c[i=0].c[i=0]
+                      pop repr.  if i0>0, retrieve repr from map (and remove it)<--
+                  resolve connection p.c[i=0].c[i=1]
+                  process
+            */
+        
+            PairInt repr;
 
-        //some value such that rep ̸= W
-        rep←(0,0)
+            if (!dag.isResolved(p0)) {
 
-        //CON indicates the connectivity
-        while (i ≤ CON) and (rep ̸= W) do
-            if (sln[p, i] ̸= p) and (sln[p, i] ̸= W) then
-                sln[p, i] ← Resolve (sln[p, i])
-            end if
-            if i=1 then
-                rep ← sln[p, 1]
-            else if sln[p, i] ̸= rep then
-                rep ← W
-                for j←1 to CON do
-                    sln[p, j] ← W
-                end for
-            end if
-            i←i+1
-        end while
+                repr = componentLabelMap.get(p0).getParent().getMember();
 
-        return rep
-    */
+                int n = dag.getConnectedNumber(p0);
+                if (n == 0) {
+                    dag.setToResolved(p0, repr);
+                }
+
+                for (int i = 0; i < n; ++i) {
+                    if (repr.equals(sentinel)) {
+                        return repr;
+                    }
+                    PairInt lowerNode = dag.getConnectedNode(p0, i);
+                    if (!lowerNode.equals(p0) && !lowerNode.equals(sentinel)) {                
+                        lowerNode = resolve(lowerNode, dag);
+                        dag.resetConnectedNode(p0, i, lowerNode);
+                    }
+                    if (i == 0) {
+                        repr = lowerNode;                
+                    } else if (!lowerNode.equals(repr)) {
+                        repr = sentinel;                
+                        dag.setToResolved(p0, repr);
+                    }
+                }
+                
+            } else {
+                repr = dag.getResolved(p0);
+               
+            }            
+        return repr;
+        
+    }
+    
 }
 
