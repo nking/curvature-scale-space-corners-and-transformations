@@ -142,5 +142,83 @@ public class CustomWatershedDAG {
         
         return null;
     }
+    
+    /**
+     * return whether the node at key has been processed as resolved yet.
+     * Note that an IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public boolean isResolved(PairInt key) {
+
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        
+        CustomWatershedNode node  = vertices.get(key);
+
+        if (node == null) {
+            throw new IllegalArgumentException("key was not found in dag");
+        }
+        
+        return node.isResolved();
+    }
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public int getConnectedNumber(PairInt key) {
+
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        
+        CustomWatershedNode node  = vertices.get(key);
+
+        if (node == null) {
+            throw new IllegalArgumentException("key was not found in dag");
+        }
+        
+        return node.getConnectedNumber();
+    }
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public PairInt getConnectedNode(PairInt key, int nodeNumber) {
+
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        
+        CustomWatershedNode node  = vertices.get(key);
+
+        if (node == null) {
+            throw new IllegalArgumentException("key was not found in dag");
+        }
+        
+        return node.get(nodeNumber);
+    }
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public boolean contains(PairInt key) {
+
+        if (key == null) {
+            throw new IllegalStateException("key cannot be null");
+        }
+        
+        return vertices.containsKey(key);
+    }
 
 }
