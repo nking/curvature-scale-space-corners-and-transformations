@@ -76,6 +76,25 @@ public class WaterShed {
     private final static Integer sentinelInt = Integer.MIN_VALUE;
 
     /**
+     * create a component labelled image with watershed pixels labelled as '0'.
+     * runtime is quasi-linear.
+     * @param img
+     * @return
+     */
+    public int[][] createLabelledImage(GreyscaleImage img) {
+
+        int[][] lowerComplete = lower(img);
+
+        int[][] labelled = unionFindComponentLabelling(lowerComplete);
+
+        CustomWatershedDAG dag = createLowerIntensityDAG(lowerComplete);
+
+        int[][] labelled2 = unionFindWatershed(lowerComplete);
+
+        return labelled2;
+    }
+
+    /**
      * This method alters the image, specifically the plateaus, so that a best
      * path to lowest intensity is possible and less ambiguous. A plateau is a
      * region of where the pixels have the same intensities.
