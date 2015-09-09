@@ -1,8 +1,8 @@
 package algorithms.misc;
 
 import algorithms.CountingSort;
+import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -1010,6 +1011,12 @@ public class MiscMath {
         return lastZeroIdx;
     }
 
+    /**
+     * find the minima and maxima of x and y and return them as
+     * int[]{xMin, xMax, yMin, yMax}
+     * @param points
+     * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
+     */
     public static int[] findMinMaxXY(Set<PairInt> points) {
         
         int xMin = Integer.MAX_VALUE;
@@ -1533,4 +1540,82 @@ public class MiscMath {
         return (float)sum;
     }
 
+    /**
+     <pre>
+     order points such that:
+        q ≺ p : (i_q < i_p) ∨ ((i_q == i_p) ∧(j_q < j_p))
+
+          (-1, 1)
+          (-1, 0)   p=(0,  0)
+          (-1,-1)     (0, -1)
+     </pre>
+     * runtime complexity is 2*O(N_points) + O(N_points * lg2(O(N_points)))
+     * @param points
+     * @return 
+     */
+    public static LinkedHashSet<PairInt> lexicographicallyOrderPointsBySort(
+        Set<PairInt> points) {
+        
+        int n = points.size();
+        
+        LinkedHashSet<PairInt> ordered = new LinkedHashSet<PairInt>(n);
+        
+        int[] x = new int[n];
+        int[] y = new int[n];
+        
+        // O(N_points)
+        int count = 0;
+        for (PairInt p : points) {
+            x[count] = p.getX();
+            y[count] = p.getY();
+            count++;
+        }
+        
+        // O(N_points * lg2(O(N_points)))
+        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);
+        
+        // O(N_points)
+        for (int i = 0; i < n; ++i) {
+            
+            PairInt p = new PairInt(x[i], y[i]);
+            
+            ordered.add(p);
+        }
+        
+        return ordered;
+    }
+    
+    /**
+     <pre>
+     order points such that:
+        q ≺ p : (i_q < i_p) ∨ ((i_q == i_p) ∧(j_q < j_p))
+
+          (-1, 1)
+          (-1, 0)   p=(0,  0)
+          (-1,-1)     (0, -1)
+     </pre>
+     * runtime complexity is O(w*h)
+     * @param points
+     * @param w
+     * @param h
+     * @return 
+     */
+    public static LinkedHashSet<PairInt> lexicographicallyOrderPointsByScan(
+        Set<PairInt> points, int w, int h) {
+        
+        LinkedHashSet<PairInt> ordered = new LinkedHashSet<PairInt>(w * h);
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                PairInt p = new PairInt(i, j);
+                
+                if (points.contains(p)) {
+                    ordered.add(p);
+                }
+            }
+        }
+        
+        return ordered;
+    }
 }

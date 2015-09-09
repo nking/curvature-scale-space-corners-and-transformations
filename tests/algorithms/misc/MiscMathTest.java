@@ -6,12 +6,10 @@ import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.ResourceFinder;
-import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import static junit.framework.Assert.assertTrue;
@@ -628,4 +626,61 @@ public class MiscMathTest extends TestCase {
         }
     }
     
+    public void testLexicographicallyOrderedPoints() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
+        log.info("SEED=" + seed);
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        int limit = 1 << 10;
+        
+        for (int i = 0; i < 1000; ++i) {
+            int x = sr.nextInt(limit);
+            int y = sr.nextInt(limit);
+            
+            points.add(new PairInt(x, y));
+            
+            // occassionally, add a few with same x but different y
+            if (((i % 100) == 0) && sr.nextBoolean()) {
+                int prevY = y;
+                while (y == prevY) {
+                    y = sr.nextInt(limit);
+                    points.add(new PairInt(x, y));
+                }
+            }
+        }
+                
+        Set<PairInt> points0 = new HashSet<PairInt>(points);
+        Set<PairInt> points1 = new HashSet<PairInt>(points);
+        
+        LinkedHashSet<PairInt> ordered0 = MiscMath.lexicographicallyOrderPointsByScan(
+            points0, limit, limit);
+        
+        LinkedHashSet<PairInt> ordered1 = MiscMath.lexicographicallyOrderPointsBySort(
+            points1);
+        
+        int prevX = Integer.MIN_VALUE;
+        int prevY = Integer.MIN_VALUE;
+        for (PairInt p : ordered0) {
+            int x = p.getX();
+            int y = p.getY();
+            assertTrue((prevX < x) || ((prevX == x) && (prevY < y)));
+            prevX = x;
+            prevY = y;
+        }
+        
+        prevX = Integer.MIN_VALUE;
+        prevY = Integer.MIN_VALUE;
+        for (PairInt p : ordered1) {
+            int x = p.getX();
+            int y = p.getY();
+            assertTrue((prevX < x) || ((prevX == x) && (prevY < y)));
+            prevX = x;
+            prevY = y;
+        }
+        
+    }
 }

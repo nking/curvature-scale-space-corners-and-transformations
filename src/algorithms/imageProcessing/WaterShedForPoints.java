@@ -5,11 +5,13 @@ import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.graphs.CustomWatershedDAG;
 import algorithms.graphs.CustomWatershedNode;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,7 +45,7 @@ import java.util.Stack;
  *
  * @author nichole
  */
-public class WaterShed {
+public class WaterShedForPoints {
 
     /**
      * two dimensional matrix of the shortest distance of a pixel to
@@ -53,7 +55,7 @@ public class WaterShed {
      * no neighbors have a smaller intensity.
      * This is populated by the method named lower.
      */
-    private int[][] distToLowerIntensityPixel = null;
+    private Map<PairInt, Integer> distToLowerIntensityPixel = null;
 
     /**
      * a set of points found as the regional minima.
@@ -70,35 +72,44 @@ public class WaterShed {
     private Map<PairInt, DisjointSet2Node<PairInt>> componentLabelMap = null;
 
     private final static PairInt sentinel = new PairInt(-1, -1);
-    
-    private final static Integer sentinelInt = Integer.MIN_VALUE;
-
+        
     /**
+     * get the two dimensional matrix of the shortest distance of a pixel to
+     * a lower intensity pixel with respect to the original image reference
+     * frame.  For example, if a pixel is surrounded by pixels with the same
+     * intensity, the shortest distance for it will be larger than '1' because
+     * no neighbors have a smaller intensity.
+     * @return the distToLowerIntensityPixel
+     */
+    public Map<PairInt, Integer> getDistToLowerIntensityPixel() {
+        return distToLowerIntensityPixel;
+    }
+
+    public Set<PairInt> getRegionalMinima() {
+        return regionalMinima;
+    }
+
+     /**
      * This method alters the image, specifically the plateaus, so that a best
      * path to lowest intensity is possible and less ambiguous. A plateau is a
      * region of where the pixels have the same intensities.
      * After this has finished, there should be no pixel which does not
      * have a neighbor of lower intensity if the pixel is not a regional
      * minimum.
-     * runtime complexity is O(N_pixels).
+     * runtime complexity is O(N_points).
      *
      * @param img
+     * @param points
      * @return
      */
-    protected int[][] lower(GreyscaleImage img) {
+    protected Map<PairInt, Integer> lower(GreyscaleImage img, Set<PairInt> points) {
 
         int w = img.getWidth();
         int h = img.getHeight();
 
-        int[][] lc = new int[w][];
-        for (int i = 0; i < w; ++i) {
-            lc[i] = new int[h];
-        }
+        Map<PairInt, Integer> lc = new HashMap<PairInt, Integer>();
 
-        distToLowerIntensityPixel = new int[w][];
-        for (int i = 0; i < w; ++i) {
-            distToLowerIntensityPixel[i] = new int[h];
-        }
+        distToLowerIntensityPixel = new HashMap<PairInt, Integer>();
 
         regionalMinima = new HashSet<PairInt>();
 
@@ -107,27 +118,23 @@ public class WaterShed {
 
         int dist;
 
-        ArrayDeque<Integer> queue = new ArrayDeque<Integer>(img.getNPixels());
+        ArrayDeque<PairInt> queue = new ArrayDeque<PairInt>(points.size());
 
         // ---- init queue with points which have lower intensity neighbors ---
-        for (int x = 0; x < w; ++x) {
-            for (int y = 0; y < h; ++y) {
-                
-                int v = img.getValue(x, y);
-                int idx = img.getIndex(x, y);
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            int v = img.getValue(x, y);
 
-                for (int vIdx = 0; vIdx < dxs8.length; ++vIdx) {
-                    
-                    int x2 = x + dxs8[vIdx];
-                    int y2 = y + dys8[vIdx];
-                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                        continue;
-                    }
-                    
+            for (int vIdx = 0; vIdx < dxs8.length; ++vIdx) {
+                int x2 = x + dxs8[vIdx];
+                int y2 = y + dys8[vIdx];
+                PairInt p2 = new PairInt(x2, y2);
+                if (points.contains(p2)) {
                     int v2 = img.getValue(x2, y2);
                     if (v2 < v) {
-                        queue.add(Integer.valueOf(idx));
-                        lc[x][y] = -1;
+                        queue.add(p);
+                        lc.put(p, Integer.valueOf(-1));
                         break;
                     }
                 }
@@ -140,254 +147,85 @@ public class WaterShed {
         }
 
         dist = 1;
-        queue.add(sentinelInt);
+        queue.add(sentinel);
 
         while (!queue.isEmpty()) {
 
-            Integer index = queue.poll();
+            PairInt p = queue.poll();
 
-            if (index.equals(sentinelInt)) {
+            if (p.equals(sentinel)) {
                 
                 if (!queue.isEmpty()) {
 
-                    queue.add(sentinelInt);
+                    queue.add(sentinel);
 
                     //any point originally lacking lower intensity neighbors,
                     //now gets a larger distance
 
                     dist++;
                 }
-                
                 continue;
             }
 
-            int x = img.getCol(index.intValue());
-            int y = img.getRow(index.intValue());
+            int x = p.getX();
+            int y = p.getY();
 
-            lc[x][y] = dist;
+            lc.put(p, Integer.valueOf(dist));
 
             for (int vIdx = 0; vIdx < dxs8.length; ++vIdx) {
                 int x2 = x + dxs8[vIdx];
                 int y2 = y + dys8[vIdx];
 
-                if (x2 < 0 || y2 < 0 || (x2 > (img.getWidth() - 1)) ||
-                    (y2 > (img.getHeight() - 1))) {
+                PairInt p2 = new PairInt(x2, y2);
+                
+                if (!points.contains(p2)) {
                     continue;
                 }
+                
+                Integer value2 = lc.get(p2);
+                
+                int v2 = (value2 == null) ? 0 : value2.intValue();
 
-                if ((img.getValue(x, y) == img.getValue(x2, y2)) &&
-                    (lc[x2][y2] == 0)) {
+                if ((img.getValue(x, y) == img.getValue(x2, y2)) && (v2 == 0)) {
 
-                    int idx2 = img.getIndex(x2, y2);
-                    
-                    queue.add(Integer.valueOf(idx2));
+                    queue.add(new PairInt(x2, y2));
 
-                    lc[x2][y2] = -1;
+                    lc.put(p2, Integer.valueOf(-1));
                 }
             }
         }
 
-        for (int x = 0; x < w; ++x) {
+        for (PairInt p : points) {
             
-            for (int y = 0; y < h; ++y) {
+            int x = p.getX();
+            int y = p.getY();
+            
+            Integer value = lc.get(p);
+                
+            int v = (value == null) ? 0 : value.intValue();
+            
+            distToLowerIntensityPixel.put(p, Integer.valueOf(v));
 
-                distToLowerIntensityPixel[x][y] = lc[x][y];
+            if (v != 0) {
+                
+                int v2 = dist * img.getValue(x, y) + v - 1;
 
-                if (lc[x][y] != 0) {
+                lc.put(p, Integer.valueOf(v2));
 
-                    lc[x][y] = dist * img.getValue(x, y) + lc[x][y] - 1;
+            } else {
 
-                } else {
+                regionalMinima.add(p);
 
-                    regionalMinima.add(new PairInt(x, y));
+                //as suggested by later paper, adapted for watershed by Union-Find
+                int v2 = dist * img.getValue(x, y);
 
-                    //as suggested by later paper, adapted for watershed by Union-Find
-                    lc[x][y] = dist * img.getValue(x, y);
-                }
+                lc.put(p, Integer.valueOf(v2));
             }
         }
 
         return lc;
     }
     
-    /**
-     * get the two dimensional matrix of the shortest distance of a pixel to
-     * a lower intensity pixel with respect to the original image reference
-     * frame.  For example, if a pixel is surrounded by pixels with the same
-     * intensity, the shortest distance for it will be larger than '1' because
-     * no neighbors have a smaller intensity.
-     * @return the distToLowerIntensityPixel
-     */
-    public int[][] getDistToLowerIntensityPixel() {
-        return distToLowerIntensityPixel;
-    }
-
-    public Set<PairInt> getRegionalMinima() {
-        return regionalMinima;
-    }
-
-    /**
-     * Algorithm 4.7 Scan-line algorithm for labelling level components based on
-     * disjoint sets.
-     * from
-      "The Watershed Transform: Definitions, Algorithms and Parallelization Strategies"
-      Roerdink and Meijster, 2001, Fundamenta Informaticae 41 (2001) 187–228
-
-     * @param im greyscale image (does not need to be lower complete)
-     * @return
-     */
-    protected int[][] unionFindComponentLabelling(int[][] im) {
-
-        /*
-        TODO: when make changes above to use a reduced portion of the image
-        via the points set, can consider visiting a smaller number of points
-        here too.  A LinkedHashSet can be created with lexicographical ordering
-        rules.  The LinkedHashSet can be created with one pass through 0 to
-        width and 0 to height or the points set can be sorted and entered into
-        LinkedHashSet in lexicographical order depending upon comparison of
-        n_points in points set and n_pixels = width*height,
-        O(N_points*lg2(N_points)) vs O(N_pixels), respectively.
-        */
-
-        int w = im.length;
-        int h = im[0].length;
-
-        /*
-        search for neighbors q of p that have smaller lexicographical values
-        q ≺ p : (i_q < i_p) ∨ ((i_q == i_p) ∧(j_q < j_p))
-
-          (-1, 1)
-          (-1, 0)   p=(0,  0)
-          (-1,-1)     (0, -1)
-        */
-        int[] dLOX = new int[]{-1, -1, -1,  0};
-        int[] dLOY = new int[]{ 1,  0, -1, -1};
-
-        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
-
-        Map<PairInt, DisjointSet2Node<PairInt>> parentMap = new
-            HashMap<PairInt, DisjointSet2Node<PairInt>>();
-
-        // init map
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                PairInt pPoint = new PairInt(i, j);
-                DisjointSet2Node<PairInt> pNode =
-                    disjointSetHelper.makeSet(new DisjointSet2Node<PairInt>(pPoint));
-                parentMap.put(pPoint, pNode);
-            }
-        }
-
-        //Firstpass
-        PairInt reprPoint;
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-
-                PairInt pPoint = new PairInt(i, j);
-
-                reprPoint = pPoint;
-
-                int x = pPoint.getX();
-                int y = pPoint.getY();
-                int vP = im[x][y];
-
-                List<PairInt> qPoints = new ArrayList<PairInt>();
-
-                //for all q ∈ Neighbor(p) with q ≺ p
-                for (int vIdx = 0; vIdx < dLOX.length; ++vIdx) {
-                    int x2 = x + dLOX[vIdx];
-                    int y2 = y + dLOY[vIdx];
-                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                        continue;
-                    }
-
-                    PairInt qPoint = new PairInt(x2, y2);
-
-                    int vQ = im[x2][y2];
-
-                    if (vP == vQ) {
-
-                        // find r, the representative of the neighbors with
-                        // same image intensity, as the lexicographically
-                        // smallest location
-
-                        //r ← r min FindRoot(q);
-
-                        DisjointSet2Node<PairInt> qParent = disjointSetHelper.findSet(
-                            parentMap.get(qPoint));
-
-                        if (qParent.getMember().getX() < reprPoint.getX()) {
-                            reprPoint = qPoint;
-                        } else if ((qParent.getMember().getX() == reprPoint.getX())
-                            && (qParent.getMember().getY() < reprPoint.getY())) {
-                            reprPoint = qPoint;
-                        }
-                        qPoints.add(qPoint);
-                    }
-                }
-
-                //parent[p] ← r
-                if (!qPoints.isEmpty()) {
-
-                    DisjointSet2Node<PairInt> parent = disjointSetHelper.union(
-                        parentMap.get(reprPoint), parentMap.get(pPoint));
-
-                    for (PairInt qPoint : qPoints) {
-                        if (qPoint.equals(reprPoint)) {
-                            continue;
-                        }
-                        //PathCompress(q, r)
-
-                        DisjointSet2Node<PairInt> qParent = disjointSetHelper.union(
-                            parentMap.get(reprPoint), parentMap.get(qPoint));
-                    }
-                }
-            } // end j loop
-        } // end i loop
-
- System.out.println(printParents(parentMap));
-
-        /*
-        In a second pass through the input image, the output image lab is
-        created. All root pixels get a distinct label; for any other pixel p
-        its path is compressed, making explicit use of the order imposed on
-        parent (see line 29 in Algorithm 4.7), and p gets the label of its
-        representative.
-        */
-
-        int[][] label = new int[w][];
-        for (int i = 0; i < w; ++i) {
-            label[i] = new int[h];
-        }
-
-        //Secondpass
-        int curLabel = 1;
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-
-                PairInt pPoint = new PairInt(i, j);
-
-                DisjointSet2Node<PairInt> parent = disjointSetHelper.findSet(
-                    parentMap.get(pPoint));
-
-                if (parent.getMember().equals(pPoint)) {
-                    // root pixel
-                    label[i][j] = curLabel;
-                    curLabel++;
-                } else {
-                    //Resolve unresolved equivalences
-                    // parent[p] = parent[parent[p]]
-                    parentMap.put(pPoint, parent);
-                    label[i][j] = label[parent.getMember().getX()][parent.getMember().getY()];
-                }
-            }
-        }
-
-        componentLabelMap = parentMap;
-
-        return label;
-    }
-
     /**
      * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on
      * disjoint sets.
@@ -400,7 +238,7 @@ public class WaterShed {
      * @param im a lower complete image
      * @return
      */
-    protected int[][] unionFindWatershed(int[][] im) {
+    protected Map<PairInt, Integer> unionFindWatershed(Map<PairInt, Integer> im) {
 
         if ((distToLowerIntensityPixel == null) || (regionalMinima == null) ||
             (componentLabelMap == null)) {
@@ -411,29 +249,25 @@ public class WaterShed {
         // uses regionalMinima
         CustomWatershedDAG dag = createLowerIntensityDAG(im);
 
-        int w = im.length;
-        int h = im[0].length;
-
-        final int wshed = 0;
+        final Integer wshed = Integer.valueOf(0);
 
         //initialize image lab with distinct labels for minima
         //LabelInit
-        int[][] labeled = unionFindComponentLabelling(im);
+        Map<PairInt, Integer> labeled = unionFindComponentLabelling(im);
 
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                PairInt pPoint = new PairInt(i, j);
+        for (Entry<PairInt, Integer> entry : labeled.entrySet()) {
+                
+            PairInt pPoint = entry.getKey();
 
-                PairInt repr = resolveIterative(pPoint, dag);
+            PairInt repr = resolveIterative(pPoint, dag);
 
-                int value;
-                if (repr.equals(sentinel)) {
-                    value = wshed;
-                } else {
-                    value = labeled[repr.getX()][repr.getY()];
-                }
-                labeled[pPoint.getX()][pPoint.getY()] = value;
+            Integer value;
+            if (repr.equals(sentinel)) {
+                value = wshed;
+            } else {
+                value = labeled.get(repr);
             }
+            labeled.put(pPoint, value);
         }
 
         return labeled;
@@ -472,7 +306,8 @@ public class WaterShed {
         return sb.toString();
     }
 
-    protected CustomWatershedDAG createLowerIntensityDAG(int[][] lowerCompleteIm) {
+    protected CustomWatershedDAG createLowerIntensityDAG(
+        Map<PairInt, Integer> lowerCompleteIm) {
 
         if (regionalMinima == null) {
             throw new IllegalStateException(
@@ -482,60 +317,53 @@ public class WaterShed {
             throw new IllegalStateException("lowerCompleteIm cannot be null");
         }
 
-        /*
-        TODO: edit to use a points set or make a method which will only operate
-        on the image for locations in point set
-        */
-
-        int w = lowerCompleteIm.length;
-        int h = lowerCompleteIm[0].length;
-
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
 
-        CustomWatershedDAG dag = new CustomWatershedDAG(w * h);
+        CustomWatershedDAG dag = new CustomWatershedDAG(lowerCompleteIm.size());
 
         int[] diffInt = new int[8];
         PairInt[] neighbors = new PairInt[8];
 
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
+        for (Entry<PairInt, Integer> entry : lowerCompleteIm.entrySet()) {
 
-                PairInt p = new PairInt(i, j);
+            PairInt p = entry.getKey();
 
-                if (regionalMinima.contains(p)) {
+            Integer value = entry.getValue();
 
-                    // componentLabelMap has the representative for this node
-                    dag.insert(p, new CustomWatershedNode(p, 0));
+            if (regionalMinima.contains(p)) {
 
-                } else {
+                // componentLabelMap has the representative for this node
+                dag.insert(p, new CustomWatershedNode(p, 0));
 
-                    int x = p.getX();
-                    int y = p.getY();
-                    int v = lowerCompleteIm[x][y];
+            } else {
 
-                    int nc = 0;
+                int x = p.getX();
+                int y = p.getY();
 
-                    for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
-                        int x2 = x + dxs8[nIdx];
-                        int y2 = y + dys8[nIdx];
-                        if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                           continue;
-                        }
+                int nc = 0;
 
-                        int v2 = lowerCompleteIm[x2][y2];
-
-                        if (v2 < v) {
-                            diffInt[nc] = v - v2;
-                            neighbors[nc] = new PairInt(x2, y2);
-                            nc++;
-                        }
+                for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
+                    int x2 = x + dxs8[nIdx];
+                    int y2 = y + dys8[nIdx];
+                    PairInt p2 = new PairInt(x2, y2);
+                    
+                    if (!lowerCompleteIm.containsKey(p2)) {
+                        continue;
                     }
+                    
+                    Integer value2 = lowerCompleteIm.get(p2);
 
-                    dag.orderAndInsert(p, diffInt, neighbors, nc);
-
-                    assert(nc != 0);
+                    if (value2.intValue() < value.intValue()) {
+                        diffInt[nc] = value.intValue() - value2.intValue();
+                        neighbors[nc] = new PairInt(x2, y2);
+                        nc++;
+                    }
                 }
+
+                dag.orderAndInsert(p, diffInt, neighbors, nc);
+
+                assert(nc != 0);
             }
         }
 
@@ -769,6 +597,181 @@ public class WaterShed {
         }
 
         return repr;
+    }
+   
+    /**
+     * Algorithm 4.7 Scan-line algorithm for labelling level components based on
+     * disjoint sets.
+     * from
+      "The Watershed Transform: Definitions, Algorithms and Parallelization Strategies"
+      Roerdink and Meijster, 2001, Fundamenta Informaticae 41 (2001) 187–228
+
+     The runtime is quasi-linear in the number of points (not the number of pixels).
+     * 
+     * @param im greyscale image (does not need to be lower complete)
+     * @return
+     */
+    protected Map<PairInt, Integer> unionFindComponentLabelling(
+        Map<PairInt, Integer> im) {
+
+        /*
+        TODO: when make changes above to use a reduced portion of the image
+        via the points set, can consider visiting a smaller number of points
+        here too.  A LinkedHashSet can be created with lexicographical ordering
+        rules.  The LinkedHashSet can be created with one pass through 0 to
+        width and 0 to height or the points set can be sorted and entered into
+        LinkedHashSet in lexicographical order depending upon comparison of
+        n_points in points set and n_pixels = width*height,
+        O(N_points*lg2(N_points)) vs O(N_pixels), respectively.
+        */
+        
+        LinkedHashSet<PairInt> lOrderedPoints = 
+            MiscMath.lexicographicallyOrderPointsBySort(im.keySet());
+
+        /*
+        search for neighbors q of p that have smaller lexicographical values
+        q ≺ p : (i_q < i_p) ∨ ((i_q == i_p) ∧(j_q < j_p))
+
+          (-1, 1)
+          (-1, 0)   p=(0,  0)
+          (-1,-1)     (0, -1)
+        */
+        int[] dLOX = new int[]{-1, -1, -1,  0};
+        int[] dLOY = new int[]{ 1,  0, -1, -1};
+
+        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
+
+        Map<PairInt, DisjointSet2Node<PairInt>> parentMap = new
+            HashMap<PairInt, DisjointSet2Node<PairInt>>();
+
+        // init map
+        for (PairInt pPoint : lOrderedPoints) {
+            DisjointSet2Node<PairInt> pNode = disjointSetHelper.makeSet(
+                new DisjointSet2Node<PairInt>(pPoint));
+            parentMap.put(pPoint, pNode);
+        }
+
+        //Firstpass
+        PairInt reprPoint;
+        for (PairInt pPoint : lOrderedPoints) {
+
+            reprPoint = pPoint;
+
+            int x = pPoint.getX();
+            int y = pPoint.getY();
+            
+            Integer value = im.get(pPoint);
+            
+            assert(value != null);
+            
+            int vP = value.intValue();
+
+            List<PairInt> qPoints = new ArrayList<PairInt>();
+
+            //for all q ∈ Neighbor(p) with q ≺ p
+            for (int vIdx = 0; vIdx < dLOX.length; ++vIdx) {
+                int x2 = x + dLOX[vIdx];
+                int y2 = y + dLOY[vIdx];
+
+                PairInt qPoint = new PairInt(x2, y2);
+
+                if (!lOrderedPoints.contains(qPoint)) {
+                    continue;
+                }
+
+                Integer value2 = im.get(qPoint);
+                
+                assert(value2 != null);
+            
+                int vQ = value2.intValue();
+            
+                if (vP == vQ) {
+
+                    // find r, the representative of the neighbors with
+                    // same image intensity, as the lexicographically
+                    // smallest location
+
+                    //r ← r min FindRoot(q);
+
+                    DisjointSet2Node<PairInt> qParent = disjointSetHelper.findSet(
+                        parentMap.get(qPoint));
+
+                    if (qParent.getMember().getX() < reprPoint.getX()) {
+                        reprPoint = qPoint;
+                    } else if ((qParent.getMember().getX() == reprPoint.getX())
+                        && (qParent.getMember().getY() < reprPoint.getY())) {
+                        reprPoint = qPoint;
+                    }
+                    qPoints.add(qPoint);
+                }
+            }
+
+            //parent[p] ← r
+            if (!qPoints.isEmpty()) {
+
+                DisjointSet2Node<PairInt> parent = disjointSetHelper.union(
+                    parentMap.get(reprPoint), parentMap.get(pPoint));
+
+                for (PairInt qPoint : qPoints) {
+                    if (qPoint.equals(reprPoint)) {
+                        continue;
+                    }
+                    //PathCompress(q, r)
+
+                    DisjointSet2Node<PairInt> qParent = disjointSetHelper.union(
+                        parentMap.get(reprPoint), parentMap.get(qPoint));
+                }
+            }
+        }
+
+ System.out.println(printParents(parentMap));
+
+        /*
+        In a second pass through the input image, the output image lab is
+        created. All root pixels get a distinct label; for any other pixel p
+        its path is compressed, making explicit use of the order imposed on
+        parent (see line 29 in Algorithm 4.7), and p gets the label of its
+        representative.
+        */
+
+        Map<PairInt, Integer> label = new HashMap<PairInt, Integer>();
+ 
+        //Secondpass
+        int curLabel = 1;
+        for (PairInt pPoint : lOrderedPoints) {
+
+            DisjointSet2Node<PairInt> parent = disjointSetHelper.findSet(
+                parentMap.get(pPoint));
+
+            if (parent.getMember().equals(pPoint)) {
+                
+                // root pixel
+                label.put(pPoint, Integer.valueOf(curLabel));
+                
+                curLabel++;
+                
+            } else {
+                
+                //Resolve unresolved equivalences
+                // parent[p] = parent[parent[p]]
+                parentMap.put(pPoint, parent);
+                
+                PairInt ePoint = new PairInt(parent.getMember().getX(),
+                    parent.getMember().getY());
+                
+                Integer eLabel = label.get(ePoint);
+                
+                if (eLabel == null) {
+                    eLabel = Integer.valueOf(0);
+                }
+                
+                label.put(pPoint, eLabel);
+            }
+        }
+
+        componentLabelMap = parentMap;
+
+        return label;
     }
 
 }
