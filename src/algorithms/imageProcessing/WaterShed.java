@@ -422,9 +422,7 @@ public class WaterShed {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
 
-System.out.println(pPoint.toString() + ":");
                 PairInt repr = resolveIterative(pPoint, dag);
-System.out.println("   ==> " + pPoint.toString() + " repr=" + repr.toString() + "\n");
 
                 int value;
                 if (repr.equals(sentinel)) {
@@ -672,30 +670,7 @@ System.out.println("   ==> " + pPoint.toString() + " repr=" + repr.toString() + 
             1      p.c[0]       0             "0 p      0"  <---place result here for i=0
             2      p.c[0].c[0]  0             "1 p.c[0] 0"  <---place result here
             1      p.c[1]       1             "0 p      0"  <---place result here for i=1
-
-           paused edit here... design handling of results.
-
-            level  p            i in level    prevCompKey
-            0      p            0                           resolve cnctn: push onto stack "1 p.c[0] 0" pCKey="0 p 0" reprLevel="repr"
-                                                            pop "1 p.c[0] 0" pCKey="0 p 0" repr0
-            1      p.c[0]       0             "0 p      0"
-
-            1      p.c[0]       0             "0 p      0"  <---place result here for i=0
-            2      p.c[0].c[0]  0             "1 p.c[0] 0"  <---place result here
-            1      p.c[1]       1             "0 p      0"
-
-
-
-            level  p            i in level    prevCompKey
-            0      p            0
-               resolve connection p.c[i=0]
-                  resolve connection p.c[i=0].c[i=0]
-                      pop repr.  if i0>0, retrieve repr from map (and remove it)<--
-                  resolve connection p.c[i=0].c[i=1]
-                  process
-            */
-
-        // TODO: simplify the branch logic
+        */
 
         Stack<PairInt> currentP = new Stack<PairInt>();
         currentP.add(p);
@@ -769,12 +744,12 @@ System.out.println("   ==> " + pPoint.toString() + " repr=" + repr.toString() + 
                 for (int i = i0; i < n; ++i) {
 
                     if (repr.equals(sentinel)) {
-System.out.println(Integer.toString(level0) + " " + p0.toString() + " repr=" + repr + " i=" + Integer.valueOf(i));
                         return repr;
                     }
 
                     PairInt lowerNode = dag.getConnectedNode(p0, i);
 
+                    // check for 2 different paths, hence a watershed
                     if (i == 0) {
                         repr = lowerNode;
                     } else if (!lowerNode.equals(repr)) {
@@ -789,15 +764,11 @@ System.out.println(Integer.toString(level0) + " " + p0.toString() + " repr=" + r
                 repr = dag.getResolved(p0);
             }
 
-System.out.println(Integer.toString(level0) + " " + p0.toString()
-+ " repr=" + repr + " prevCompKey0=" + prevCompKey0);
-
+            //logic for the root of the composite key to see if 2 separate
+            //paths have different results, hence a watershed.
             if (repr != null) {
 
                 resultsMap.put(prevCompKey0, repr);
-
-                //logic for the root of the composite key to see if 2 separate
-                //paths have different results, hence a watershed.
 
                 String[] items = prevCompKey0.split("_");
                 String rootKey = items[0] + "_" + items[1] + "_" + items[2];
