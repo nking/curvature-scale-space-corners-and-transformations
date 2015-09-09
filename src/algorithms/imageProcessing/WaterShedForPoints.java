@@ -38,6 +38,8 @@ import java.util.Stack;
  Instead, the current implementation for disjoint sets follows "Introduction
  to Algorithms" by Cormen et al. which include improvements suggested by
  Tarjan too.
+
+ Notes on parallelization are in Section 5 of Roerdink and Meijster 2001.
  </pre>
 
  * The image is first transformed into a lower complete image and then
@@ -72,7 +74,7 @@ public class WaterShedForPoints {
     private Map<PairInt, DisjointSet2Node<PairInt>> componentLabelMap = null;
 
     private final static PairInt sentinel = new PairInt(-1, -1);
-        
+
     /**
      * get the two dimensional matrix of the shortest distance of a pixel to
      * a lower intensity pixel with respect to the original image reference
@@ -154,7 +156,7 @@ public class WaterShedForPoints {
             PairInt p = queue.poll();
 
             if (p.equals(sentinel)) {
-                
+
                 if (!queue.isEmpty()) {
 
                     queue.add(sentinel);
@@ -177,13 +179,13 @@ public class WaterShedForPoints {
                 int y2 = y + dys8[vIdx];
 
                 PairInt p2 = new PairInt(x2, y2);
-                
+
                 if (!points.contains(p2)) {
                     continue;
                 }
-                
+
                 Integer value2 = lc.get(p2);
-                
+
                 int v2 = (value2 == null) ? 0 : value2.intValue();
 
                 if ((img.getValue(x, y) == img.getValue(x2, y2)) && (v2 == 0)) {
@@ -196,18 +198,18 @@ public class WaterShedForPoints {
         }
 
         for (PairInt p : points) {
-            
+
             int x = p.getX();
             int y = p.getY();
-            
+
             Integer value = lc.get(p);
-                
+
             int v = (value == null) ? 0 : value.intValue();
-            
+
             distToLowerIntensityPixel.put(p, Integer.valueOf(v));
 
             if (v != 0) {
-                
+
                 int v2 = dist * img.getValue(x, y) + v - 1;
 
                 lc.put(p, Integer.valueOf(v2));
@@ -225,7 +227,7 @@ public class WaterShedForPoints {
 
         return lc;
     }
-    
+
     /**
      * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on
      * disjoint sets.
@@ -256,7 +258,7 @@ public class WaterShedForPoints {
         Map<PairInt, Integer> labeled = unionFindComponentLabelling(im);
 
         for (Entry<PairInt, Integer> entry : labeled.entrySet()) {
-                
+
             PairInt pPoint = entry.getKey();
 
             PairInt repr = resolveIterative(pPoint, dag);
@@ -347,11 +349,11 @@ public class WaterShedForPoints {
                     int x2 = x + dxs8[nIdx];
                     int y2 = y + dys8[nIdx];
                     PairInt p2 = new PairInt(x2, y2);
-                    
+
                     if (!lowerCompleteIm.containsKey(p2)) {
                         continue;
                     }
-                    
+
                     Integer value2 = lowerCompleteIm.get(p2);
 
                     if (value2.intValue() < value.intValue()) {
@@ -598,7 +600,7 @@ public class WaterShedForPoints {
 
         return repr;
     }
-   
+
     /**
      * Algorithm 4.7 Scan-line algorithm for labelling level components based on
      * disjoint sets.
@@ -607,7 +609,7 @@ public class WaterShedForPoints {
       Roerdink and Meijster, 2001, Fundamenta Informaticae 41 (2001) 187–228
 
      The runtime is quasi-linear in the number of points (not the number of pixels).
-     * 
+     *
      * @param im greyscale image (does not need to be lower complete)
      * @return
      */
@@ -624,8 +626,8 @@ public class WaterShedForPoints {
         n_points in points set and n_pixels = width*height,
         O(N_points*lg2(N_points)) vs O(N_pixels), respectively.
         */
-        
-        LinkedHashSet<PairInt> lOrderedPoints = 
+
+        LinkedHashSet<PairInt> lOrderedPoints =
             MiscMath.lexicographicallyOrderPointsBySort(im.keySet());
 
         /*
@@ -659,11 +661,11 @@ public class WaterShedForPoints {
 
             int x = pPoint.getX();
             int y = pPoint.getY();
-            
+
             Integer value = im.get(pPoint);
-            
+
             assert(value != null);
-            
+
             int vP = value.intValue();
 
             List<PairInt> qPoints = new ArrayList<PairInt>();
@@ -680,11 +682,11 @@ public class WaterShedForPoints {
                 }
 
                 Integer value2 = im.get(qPoint);
-                
+
                 assert(value2 != null);
-            
+
                 int vQ = value2.intValue();
-            
+
                 if (vP == vQ) {
 
                     // find r, the representative of the neighbors with
@@ -735,7 +737,7 @@ public class WaterShedForPoints {
         */
 
         Map<PairInt, Integer> label = new HashMap<PairInt, Integer>();
- 
+
         //Secondpass
         int curLabel = 1;
         for (PairInt pPoint : lOrderedPoints) {
@@ -744,27 +746,27 @@ public class WaterShedForPoints {
                 parentMap.get(pPoint));
 
             if (parent.getMember().equals(pPoint)) {
-                
+
                 // root pixel
                 label.put(pPoint, Integer.valueOf(curLabel));
-                
+
                 curLabel++;
-                
+
             } else {
-                
+
                 //Resolve unresolved equivalences
                 // parent[p] = parent[parent[p]]
                 parentMap.put(pPoint, parent);
-                
+
                 PairInt ePoint = new PairInt(parent.getMember().getX(),
                     parent.getMember().getY());
-                
+
                 Integer eLabel = label.get(ePoint);
-                
+
                 if (eLabel == null) {
                     eLabel = Integer.valueOf(0);
                 }
-                
+
                 label.put(pPoint, eLabel);
             }
         }

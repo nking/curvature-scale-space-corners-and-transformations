@@ -36,6 +36,8 @@ import java.util.Stack;
  Instead, the current implementation for disjoint sets follows "Introduction
  to Algorithms" by Cormen et al. which include improvements suggested by
  Tarjan too.
+
+ Notes on parallelization are in Section 5 of Roerdink and Meijster 2001.
  </pre>
 
  * The image is first transformed into a lower complete image and then
@@ -70,7 +72,7 @@ public class WaterShed {
     private Map<PairInt, DisjointSet2Node<PairInt>> componentLabelMap = null;
 
     private final static PairInt sentinel = new PairInt(-1, -1);
-    
+
     private final static Integer sentinelInt = Integer.MIN_VALUE;
 
     /**
@@ -112,18 +114,18 @@ public class WaterShed {
         // ---- init queue with points which have lower intensity neighbors ---
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
-                
+
                 int v = img.getValue(x, y);
                 int idx = img.getIndex(x, y);
 
                 for (int vIdx = 0; vIdx < dxs8.length; ++vIdx) {
-                    
+
                     int x2 = x + dxs8[vIdx];
                     int y2 = y + dys8[vIdx];
                     if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
                         continue;
                     }
-                    
+
                     int v2 = img.getValue(x2, y2);
                     if (v2 < v) {
                         queue.add(Integer.valueOf(idx));
@@ -147,7 +149,7 @@ public class WaterShed {
             Integer index = queue.poll();
 
             if (index.equals(sentinelInt)) {
-                
+
                 if (!queue.isEmpty()) {
 
                     queue.add(sentinelInt);
@@ -157,7 +159,7 @@ public class WaterShed {
 
                     dist++;
                 }
-                
+
                 continue;
             }
 
@@ -179,7 +181,7 @@ public class WaterShed {
                     (lc[x2][y2] == 0)) {
 
                     int idx2 = img.getIndex(x2, y2);
-                    
+
                     queue.add(Integer.valueOf(idx2));
 
                     lc[x2][y2] = -1;
@@ -188,7 +190,7 @@ public class WaterShed {
         }
 
         for (int x = 0; x < w; ++x) {
-            
+
             for (int y = 0; y < h; ++y) {
 
                 distToLowerIntensityPixel[x][y] = lc[x][y];
@@ -209,7 +211,7 @@ public class WaterShed {
 
         return lc;
     }
-    
+
     /**
      * get the two dimensional matrix of the shortest distance of a pixel to
      * a lower intensity pixel with respect to the original image reference
