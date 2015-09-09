@@ -712,8 +712,6 @@ System.out.println("   ==> " + pPoint.toString() + " repr=" + repr.toString() + 
 
         int nIter = 0;
 
-        skipped:
-
         while (!currentP.isEmpty()) {
 
             PairInt p0 = currentP.pop();
@@ -741,6 +739,33 @@ System.out.println("   ==> " + pPoint.toString() + " repr=" + repr.toString() + 
 
                 int n = dag.getConnectedNumber(p0);
 
+                // ----- recursion block --------
+                if ((i0 == 0) && (n > 0)) {
+
+                    PairInt lowerNode = dag.getConnectedNode(p0, i0);
+
+                    if (!currentLevelEnd0 &&
+                        !(dag.isResolved(lowerNode) && (n==1)) &&
+                        !lowerNode.equals(p0) && !lowerNode.equals(sentinel)) {
+
+                        currentP.push(p0);
+                        currentI.push(i0);
+                        currentLevel.push(Integer.valueOf(level0));
+                        currentPrevCompKey.push(prevCompKey0);
+                        currentLevelEnd.push(Integer.valueOf(1));
+
+                        // add all i's onto the stack in reverse order
+                        for (int ii = (n - 1); ii >= i0; --ii) {
+                            currentP.push(dag.getConnectedNode(p0, ii));
+                            currentI.push(0);
+                            currentLevel.push(Integer.valueOf(level0 + 1));
+                            currentPrevCompKey.push(createKey(level0, p0, ii));
+                            currentLevelEnd.push(Integer.valueOf(-1));
+                        }
+                        continue;
+                    }
+                } // ---- end add recursion if needed
+
                 for (int i = i0; i < n; ++i) {
 
                     if (repr.equals(sentinel)) {
@@ -751,47 +776,6 @@ System.out.println(Integer.toString(level0) + " " + p0.toString() + " repr=" + r
                     }
 
                     PairInt lowerNode = dag.getConnectedNode(p0, i);
-
-                    boolean isRes = dag.isResolved(lowerNode)
-                        && (dag.getConnectedNumber(p0) == (i + 1));
-
-                    if (isRes) {
-                        repr = lowerNode;
-                    }
-
-                    if (!currentLevelEnd0 && !isRes && !lowerNode.equals(p0) && !lowerNode.equals(sentinel)) {
-
-                        /*
-                        lowerNode = resolveIterative(lowerNode, dag, recursionLevel + 1);
-                        dag.resetConnectedNode(p0, i, lowerNode);
-                        */
-
-                        //TODO: change the loop from i0 to n above
-                        if ((i == 0) && (n > 0)) {
-
-                            //TODO: may need to revisit and refactor recursive to store results
-                            // in one loop and process results in next loop
-                            // making it easier to validate there, then separate here
-
-                            int nAdded = 1;
-                            currentP.push(p0);
-                            currentI.push(i0);
-                            currentLevel.push(Integer.valueOf(level0));
-                            currentPrevCompKey.push(prevCompKey0);
-                            currentLevelEnd.push(Integer.valueOf(1));
-
-                            // add all i's onto the stack in reverse order
-                            for (int ii = (n - 1); ii >= i0; --ii) {
-                                currentP.push(dag.getConnectedNode(p0, ii));
-                                currentI.push(0);
-                                currentLevel.push(Integer.valueOf(level0 + 1));
-                                currentPrevCompKey.push(createKey(level0, p0, ii));
-                                currentLevelEnd.push(Integer.valueOf(-1));
-                                nAdded++;
-                            }
-                            continue skipped;
-                        }
-                    }
 
                     if (i == 0) {
                         repr = lowerNode;
@@ -815,20 +799,20 @@ System.out.println(Integer.toString(level0) + " " + p0.toString()
                 resultsMap.put(prevCompKey0, repr);
 
                 /*
-                logic for the root of the composite key to see if 2 separate paths
-                have different results, hence a watershed.
+                logic for the root of the composite key to see if 2 separate
+                paths have different results, hence a watershed.
                 */
 
                 String[] items = prevCompKey0.split("_");
                 String rootKey = items[0] + "_" + items[1] + "_" + items[2];
                 PairInt existingRepr = resultsMap.get(rootKey);
-                if ((existingRepr != null) && (repr != null)) {
+                if (existingRepr != null) {
                     if (!existingRepr.equals(sentinel) && !existingRepr.equals(repr)) {
                         repr = sentinel;
                         dag.setToResolved(p, repr);
                         return repr;
                     }
-                } else if (repr != null) {
+                } else {
                     resultsMap.put(rootKey, repr);
                 }
             }
