@@ -764,14 +764,12 @@ System.out.println("   ==> " + pPoint.toString() + " repr=" + repr.toString() + 
                         }
                         continue;
                     }
-                } // ---- end add recursion if needed
+                } // ---- end add recursion if needed -------------
 
                 for (int i = i0; i < n; ++i) {
 
                     if (repr.equals(sentinel)) {
-
 System.out.println(Integer.toString(level0) + " " + p0.toString() + " repr=" + repr + " i=" + Integer.valueOf(i));
-
                         return repr;
                     }
 
@@ -786,7 +784,7 @@ System.out.println(Integer.toString(level0) + " " + p0.toString() + " repr=" + r
 
                 dag.setToResolved(p0, repr);
 
-            } else {
+            } else if (dag.isResolved(p0)) {
 
                 repr = dag.getResolved(p0);
             }
@@ -798,10 +796,8 @@ System.out.println(Integer.toString(level0) + " " + p0.toString()
 
                 resultsMap.put(prevCompKey0, repr);
 
-                /*
-                logic for the root of the composite key to see if 2 separate
-                paths have different results, hence a watershed.
-                */
+                //logic for the root of the composite key to see if 2 separate
+                //paths have different results, hence a watershed.
 
                 String[] items = prevCompKey0.split("_");
                 String rootKey = items[0] + "_" + items[1] + "_" + items[2];
@@ -820,10 +816,8 @@ System.out.println(Integer.toString(level0) + " " + p0.toString()
 
         PairInt repr = resultsMap.get(createKey(0, p, 0));
 
-        if (repr != null) {
-            if (!dag.isResolved(p)) {
-                dag.setToResolved(p, repr);
-            }
+        if ((repr != null) && !dag.isResolved(p)) {
+            dag.setToResolved(p, repr);
         }
 
         return repr;
