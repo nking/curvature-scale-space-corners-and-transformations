@@ -20,7 +20,7 @@ public class WaterShedForPointsTest extends TestCase {
 
     public WaterShedForPointsTest() {
     }
-    
+
     public void testLower_set() throws Exception {
 
         String filePath = ResourceFinder.findFileInTestResources("pattern0.png");
@@ -90,7 +90,7 @@ public class WaterShedForPointsTest extends TestCase {
             sb.append("\n");
         }
         System.out.println(sb.toString());
-                
+
         StringBuilder sb2 = new StringBuilder("lower complete:");
         for (int j = 0; j < img09.getHeight(); ++j) {
             sb2.append(String.format("row %4d:", j));
@@ -160,15 +160,15 @@ public class WaterShedForPointsTest extends TestCase {
             assertTrue(foundLowerIntNghbr);
         }
     }
-    
+
     public void testUnionFindComponentLabelling_set() throws Exception {
 
         int w = 5;
         int h = 5;
-        
+
         /*
         input data:
-        
+
         4 3 0 3 4  0
         3 2 0 2 3  1
         0 0 0 0 0  2
@@ -176,7 +176,7 @@ public class WaterShedForPointsTest extends TestCase {
         4 3 0 3 4  4
                    5
         0 1 2 3 4
-        
+
         */
 
         int[][] lowerComplete = new int[w][];
@@ -188,7 +188,7 @@ public class WaterShedForPointsTest extends TestCase {
         lowerComplete[2] = new int[]{0, 0, 0, 0, 0};
         lowerComplete[3] = new int[]{3, 2, 0, 2, 3};
         lowerComplete[4] = new int[]{4, 3, 0, 3, 4};
-        
+
         Map<PairInt, Integer> lowerCompleteIm = new HashMap<PairInt, Integer>();
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -201,7 +201,7 @@ public class WaterShedForPointsTest extends TestCase {
         WaterShedForPoints ws = new WaterShedForPoints();
 
         Map<PairInt, Integer> labeled = ws.unionFindComponentLabelling(lowerCompleteIm);
-        
+
         assertTrue(labeled.size() == lowerCompleteIm.size());
 
         StringBuilder sb2 = new StringBuilder("input:\n");
@@ -215,7 +215,7 @@ public class WaterShedForPointsTest extends TestCase {
             sb2.append("\n");
         }
         System.out.println(sb2.toString());
-        
+
         sb2 = new StringBuilder("labeled components:\n");
         for (int j = 0; j < w; ++j) {
             sb2.append(String.format("row %4d:", j));
@@ -227,7 +227,7 @@ public class WaterShedForPointsTest extends TestCase {
             sb2.append("\n");
         }
         System.out.println(sb2.toString());
-        
+
         /*
         input data:
             4 3 0 3 4  0
@@ -237,7 +237,7 @@ public class WaterShedForPointsTest extends TestCase {
             4 3 0 3 4  4
                        5
             0 1 2 3 4
-        
+
         reversed componentLabelMap with values parent printed as parent
         and all keys with same parent listed as children:
             parent: (0,3)    children:  (0,3) (1,4)
@@ -253,39 +253,39 @@ public class WaterShedForPointsTest extends TestCase {
             parent: (3,3)    children:  (3,3)
             parent: (3,4)    children:  (4,3) (3,4)
             parent: (0,0)    children:  (0,0)
-    
+
         output component labeled image:
             row    0:   1   2   3   8  12
             row    1:   2   6   3   9   8
             row    2:   3   3   3   3   3
             row    3:   4   7   3  10  11
             row    4:   5   4   3  11  13
-        
+
                         0   1   2   3   4
         */
     }
-    
+
     public void testCreateLowerIntensityDAG() throws Exception {
 
         int w = 5;
         int h = 5;
-        
+
         /*
-        from Fig. 11 of 
+        from Fig. 11 of
         Roerdink and Meijster 2001
         "The Watershed Transform: Definitions, Algorithms and Parallelization Strategies",
         Fundamenta Informaticae 41 (2001) 187–228, Section 4.2.4
-        
+
         input data:
-        
+
         0 1 2 1 0  0
         1 2 3 2 1  1
         2 3 4 3 2  2
         1 2 3 2 1  3
         0 1 2 1 0  4
-        
+
         0 1 2 3 4
-        
+
         */
 
         int[][] im = new int[w][];
@@ -297,7 +297,7 @@ public class WaterShedForPointsTest extends TestCase {
         im[2] = new int[]{2, 3, 4, 3, 2};
         im[3] = new int[]{1, 2, 3, 2, 1};
         im[4] = new int[]{0, 1, 2, 1, 0};
-        
+
         Set<PairInt> points = new HashSet<PairInt>();
         GreyscaleImage img = new GreyscaleImage(w, h);
         for (int i = 0; i < w; ++i) {
@@ -312,9 +312,9 @@ public class WaterShedForPointsTest extends TestCase {
         Map<PairInt, Integer> lowerComplete = ws.lower(img, points);
 
         assertNotNull(lowerComplete);
-        
+
         assertTrue(lowerComplete.size() == points.size());
-        
+
         StringBuilder sb2 = new StringBuilder("lowered:\n");
         for (int j = 0; j < h; ++j) {
             sb2.append(String.format("row %4d:", j));
@@ -326,7 +326,7 @@ public class WaterShedForPointsTest extends TestCase {
             sb2.append("\n");
         }
         System.out.println(sb2.toString());
-        
+
         Map<PairInt, Integer> labelled = ws.unionFindComponentLabelling(lowerComplete);
         sb2 = new StringBuilder("labelled 0:\n");
         for (int j = 0; j < h; ++j) {
@@ -339,16 +339,16 @@ public class WaterShedForPointsTest extends TestCase {
             sb2.append("\n");
         }
         System.out.println(sb2.toString());
-        
-        
+
+
         CustomWatershedDAG dag = ws.createLowerIntensityDAG(lowerComplete);
-        
+
         // ----- row 0
         assertTrue(dag.getConnectedNumber(new PairInt(0, 0)) == 0);
-        
+
         assertTrue(dag.getConnectedNumber(new PairInt(1, 0)) == 1);
         assertTrue(dag.getConnectedNode(new PairInt(1, 0), 0).equals(new PairInt(0, 0)));
-        
+
         assertTrue(dag.getConnectedNumber(new PairInt(2, 0)) == 2);
         PairInt p0 = dag.getConnectedNode(new PairInt(2, 0), 0);
         PairInt p1 = dag.getConnectedNode(new PairInt(2, 0), 1);
@@ -358,16 +358,16 @@ public class WaterShedForPointsTest extends TestCase {
         } else {
             assertTrue(p0.equals(new PairInt(3, 0)));
         }
-        
+
         assertTrue(dag.getConnectedNumber(new PairInt(3, 0)) == 1);
         assertTrue(dag.getConnectedNode(new PairInt(3, 0), 0).equals(new PairInt(4, 0)));
-        
+
         assertTrue(dag.getConnectedNumber(new PairInt(4, 0)) == 0);
-        
-        // ----- row 1        
+
+        // ----- row 1
         assertTrue(dag.getConnectedNumber(new PairInt(0, 1)) == 1);
         assertTrue(dag.getConnectedNode(new PairInt(0, 1), 0).equals(new PairInt(0, 0)));
-        
+
         assertTrue(dag.getConnectedNumber(new PairInt(1, 1)) == 3);
         p0 = dag.getConnectedNode(new PairInt(1, 1), 0);
         p1 = dag.getConnectedNode(new PairInt(1, 1), 1);
@@ -381,7 +381,7 @@ public class WaterShedForPointsTest extends TestCase {
         assertTrue(expected.remove(p2));
         assertTrue(expected.isEmpty());
         assertTrue(dag.getConnectedNode(new PairInt(1, 1), 0).equals(new PairInt(0, 0)));
-        
+
         int nExpected = 5;
         Set<PairInt> found = new HashSet<PairInt>();
         PairInt key = new PairInt(2, 1);
@@ -399,7 +399,7 @@ public class WaterShedForPointsTest extends TestCase {
             assertTrue(expected.remove(p));
         }
         assertTrue(expected.isEmpty());
-        
+
         // ------ skip to center pixel
         nExpected = 8;
         found = new HashSet<PairInt>();
@@ -421,11 +421,11 @@ public class WaterShedForPointsTest extends TestCase {
             assertTrue(expected.remove(p));
         }
         assertTrue(expected.isEmpty());
-        
+
         Map<PairInt, Integer> labelled2 = ws.unionFindWatershed(lowerComplete);
-        
+
         assertNotNull(labelled2);
-        
+
         sb2 = new StringBuilder("labelled final:\n");
         for (int j = 0; j < h; ++j) {
             sb2.append(String.format("row %4d:", j));
@@ -437,7 +437,7 @@ public class WaterShedForPointsTest extends TestCase {
             sb2.append("\n");
         }
         System.out.println(sb2.toString());
-        
+
         // assert the watershed pixels
         assertTrue(labelled2.get(new PairInt(2,0)) == 0);
         assertTrue(labelled2.get(new PairInt(2, 1)) == 0);
@@ -448,31 +448,31 @@ public class WaterShedForPointsTest extends TestCase {
         assertTrue(labelled2.get(new PairInt(4, 2)) == 0);
         assertTrue(labelled2.get(new PairInt(2, 3)) == 0);
         assertTrue(labelled2.get(new PairInt(2, 4)) == 0);
-        
+
         assertTrue(labelled2.get(new PairInt(0, 0)) == labelled.get(new PairInt(0, 0)));
         assertTrue(labelled2.get(new PairInt(1, 0)) == labelled.get(new PairInt(0, 0)));
         assertTrue(labelled2.get(new PairInt(1, 1)) == labelled.get(new PairInt(0, 0)));
         assertTrue(labelled2.get(new PairInt(0, 1)) == labelled.get(new PairInt(0, 0)));
-        
+
         assertTrue(labelled2.get(new PairInt(0, 4)) == labelled.get(new PairInt(0, 4)));
         assertTrue(labelled2.get(new PairInt(0, 3)) == labelled.get(new PairInt(0, 4)));
         assertTrue(labelled2.get(new PairInt(1, 3)) == labelled.get(new PairInt(0, 4)));
         assertTrue(labelled2.get(new PairInt(1, 4)) == labelled.get(new PairInt(0, 4)));
-        
+
         assertTrue(labelled2.get(new PairInt(4, 4)) == labelled.get(new PairInt(4, 4)));
         assertTrue(labelled2.get(new PairInt(3, 4)) == labelled.get(new PairInt(4, 4)));
         assertTrue(labelled2.get(new PairInt(3, 3)) == labelled.get(new PairInt(4, 4)));
         assertTrue(labelled2.get(new PairInt(4, 3)) == labelled.get(new PairInt(4, 4)));
-        
+
         assertTrue(labelled2.get(new PairInt(4, 0)) == labelled.get(new PairInt(4, 0)));
         assertTrue(labelled2.get(new PairInt(4, 1)) == labelled.get(new PairInt(4, 0)));
         assertTrue(labelled2.get(new PairInt(3, 0)) == labelled.get(new PairInt(4, 0)));
         assertTrue(labelled2.get(new PairInt(3, 1)) == labelled.get(new PairInt(4, 0)));
-        
+
     }
-    
+
     // ----------  tests of methods using point sets ------
-    
+
     private int findShortestPathToLowerIntensity(GreyscaleImage img,
         Set<PairInt> visited, PairInt p, Set<PairInt> points, Set<PairInt> regionalMinima) {
 
@@ -518,5 +518,95 @@ public class WaterShedForPointsTest extends TestCase {
         }
         return minDist;
     }
-    
+
+    public void testLabel() throws Exception {
+
+        int w = 5;
+        int h = 5;
+
+        /*
+        from Fig. 11 of
+        Roerdink and Meijster 2001
+        "The Watershed Transform: Definitions, Algorithms and Parallelization Strategies",
+        Fundamenta Informaticae 41 (2001) 187–228, Section 4.2.4
+
+        input data:
+
+        0 1 2 1 0  0
+        1 2 3 2 1  1
+        2 3 4 3 2  2
+        1 2 3 2 1  3
+        0 1 2 1 0  4
+
+        0 1 2 3 4
+
+        */
+
+        int[][] im = new int[w][];
+        for (int i = 0; i < w; ++i) {
+            im[i] = new int[h];
+        }
+        im[0] = new int[]{0, 1, 2, 1, 0};
+        im[1] = new int[]{1, 2, 3, 2, 1};
+        im[2] = new int[]{2, 3, 4, 3, 2};
+        im[3] = new int[]{1, 2, 3, 2, 1};
+        im[4] = new int[]{0, 1, 2, 1, 0};
+
+        Set<PairInt> points = new HashSet<PairInt>();
+        GreyscaleImage img = new GreyscaleImage(w, h);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                img.setValue(i, j, im[i][j]);
+                points.add(new PairInt(i, j));
+            }
+        }
+
+        WaterShedForPoints ws = new WaterShedForPoints();
+
+        Map<PairInt, Integer> labelled2 = ws.createLabelledImage(img, points);
+
+        StringBuilder sb2 = new StringBuilder("labelled 0:\n");
+        for (int j = 0; j < h; ++j) {
+            sb2.append(String.format("row %4d:", j));
+            for (int i = 0; i < w; ++i) {
+                PairInt p = new PairInt(i, j);
+                Integer value = labelled2.get(p);
+                sb2.append(String.format("%4d", value.intValue()));
+            }
+            sb2.append("\n");
+        }
+        System.out.println(sb2.toString());
+
+        // assert the watershed pixels
+        assertTrue(labelled2.get(new PairInt(2,0)) == 0);
+        assertTrue(labelled2.get(new PairInt(2, 1)) == 0);
+        assertTrue(labelled2.get(new PairInt(0, 2)) == 0);
+        assertTrue(labelled2.get(new PairInt(1, 2)) == 0);
+        assertTrue(labelled2.get(new PairInt(2, 2)) == 0);
+        assertTrue(labelled2.get(new PairInt(3, 2)) == 0);
+        assertTrue(labelled2.get(new PairInt(4, 2)) == 0);
+        assertTrue(labelled2.get(new PairInt(2, 3)) == 0);
+        assertTrue(labelled2.get(new PairInt(2, 4)) == 0);
+
+        assertTrue(labelled2.get(new PairInt(0, 0)) > 0);
+        assertTrue(labelled2.get(new PairInt(1, 0)) > 0);
+        assertTrue(labelled2.get(new PairInt(1, 1)) > 0);
+        assertTrue(labelled2.get(new PairInt(0, 1)) > 0);
+
+        assertTrue(labelled2.get(new PairInt(0, 4))  > 0);
+        assertTrue(labelled2.get(new PairInt(0, 3))  > 0);
+        assertTrue(labelled2.get(new PairInt(1, 3))  > 0);
+        assertTrue(labelled2.get(new PairInt(1, 4))  > 0);
+
+        assertTrue(labelled2.get(new PairInt(4, 4))  > 0);
+        assertTrue(labelled2.get(new PairInt(3, 4))  > 0);
+        assertTrue(labelled2.get(new PairInt(3, 3))  > 0);
+        assertTrue(labelled2.get(new PairInt(4, 3))  > 0);
+
+        assertTrue(labelled2.get(new PairInt(4, 0))  > 0);
+        assertTrue(labelled2.get(new PairInt(4, 1))  > 0);
+        assertTrue(labelled2.get(new PairInt(3, 0))  > 0);
+        assertTrue(labelled2.get(new PairInt(3, 1))  > 0);
+
+    }
 }

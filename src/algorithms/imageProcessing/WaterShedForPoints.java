@@ -76,6 +76,28 @@ public class WaterShedForPoints {
     private final static PairInt sentinel = new PairInt(-1, -1);
 
     /**
+     * create for the points in the image, a component labelled image with
+     * watershed pixels labelled as '0'.
+     * runtime is quasi-linear.
+     * @param img
+     * @param points
+     * @return
+     */
+    public Map<PairInt, Integer> createLabelledImage(GreyscaleImage img,
+        Set<PairInt> points) {
+
+        Map<PairInt, Integer> lowerComplete = lower(img, points);
+
+        Map<PairInt, Integer> labelled = unionFindComponentLabelling(lowerComplete);
+
+        CustomWatershedDAG dag = createLowerIntensityDAG(lowerComplete);
+
+        Map<PairInt, Integer> labelled2 = unionFindWatershed(lowerComplete);
+
+        return labelled2;
+    }
+
+    /**
      * get the two dimensional matrix of the shortest distance of a pixel to
      * a lower intensity pixel with respect to the original image reference
      * frame.  For example, if a pixel is surrounded by pixels with the same
