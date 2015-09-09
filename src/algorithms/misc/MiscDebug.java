@@ -825,6 +825,24 @@ public class MiscDebug {
         }
     }
 
+    public static void writeImage(int[][] img, String fileName) {
+        
+        GreyscaleImage imgL = new GreyscaleImage(img.length, img[0].length);
+        for (int i = 0; i < img.length; ++i) {
+            for (int j = 0; j < img[0].length; ++j) {
+                int v = img[i][j];
+                imgL.setValue(i, j, v);
+            }
+        }
+        try {
+            String bin = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(bin + "/" + fileName, imgL);
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
+    
     public static void writeImage(ImageExt img, String fileNameSuffix) {
         
         try {

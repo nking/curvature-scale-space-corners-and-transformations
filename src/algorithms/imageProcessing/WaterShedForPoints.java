@@ -88,10 +88,6 @@ public class WaterShedForPoints {
 
         Map<PairInt, Integer> lowerComplete = lower(img, points);
 
-        Map<PairInt, Integer> labelled = unionFindComponentLabelling(lowerComplete);
-
-        CustomWatershedDAG dag = createLowerIntensityDAG(lowerComplete);
-
         Map<PairInt, Integer> labelled2 = unionFindWatershed(lowerComplete);
 
         return labelled2;
@@ -264,10 +260,9 @@ public class WaterShedForPoints {
      */
     protected Map<PairInt, Integer> unionFindWatershed(Map<PairInt, Integer> im) {
 
-        if ((distToLowerIntensityPixel == null) || (regionalMinima == null) ||
-            (componentLabelMap == null)) {
+        if ((distToLowerIntensityPixel == null) || (regionalMinima == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
-            + "previous use of the methods named lower and unionFindComponentLabelling");
+            + "previous use of the methods named lower");
         }
 
         // uses regionalMinima
@@ -283,7 +278,7 @@ public class WaterShedForPoints {
 
             PairInt pPoint = entry.getKey();
 
-            PairInt repr = resolveIterative(pPoint, dag);
+            PairInt repr = resolve(pPoint, dag);
 
             Integer value;
             if (repr.equals(sentinel)) {
@@ -748,7 +743,7 @@ public class WaterShedForPoints {
             }
         }
 
- System.out.println(printParents(parentMap));
+//System.out.println(printParents(parentMap));
 
         /*
         In a second pass through the input image, the output image lab is

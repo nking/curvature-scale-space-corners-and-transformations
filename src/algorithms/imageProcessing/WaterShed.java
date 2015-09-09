@@ -5,6 +5,7 @@ import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.graphs.CustomWatershedDAG;
 import algorithms.graphs.CustomWatershedNode;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -84,10 +85,6 @@ public class WaterShed {
     public int[][] createLabelledImage(GreyscaleImage img) {
 
         int[][] lowerComplete = lower(img);
-
-        int[][] labelled = unionFindComponentLabelling(lowerComplete);
-
-        CustomWatershedDAG dag = createLowerIntensityDAG(lowerComplete);
 
         int[][] labelled2 = unionFindWatershed(lowerComplete);
 
@@ -366,7 +363,7 @@ public class WaterShed {
             } // end j loop
         } // end i loop
 
- System.out.println(printParents(parentMap));
+ //System.out.println(printParents(parentMap));
 
         /*
         In a second pass through the input image, the output image lab is
@@ -423,10 +420,9 @@ public class WaterShed {
      */
     protected int[][] unionFindWatershed(int[][] im) {
 
-        if ((distToLowerIntensityPixel == null) || (regionalMinima == null) ||
-            (componentLabelMap == null)) {
+        if ((distToLowerIntensityPixel == null) || (regionalMinima == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
-            + "previous use of the methods named lower and unionFindComponentLabelling");
+            + "previous use of the methods named lower");
         }
 
         // uses regionalMinima
@@ -445,7 +441,7 @@ public class WaterShed {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
 
-                PairInt repr = resolveIterative(pPoint, dag);
+                PairInt repr = resolve(pPoint, dag);
 
                 int value;
                 if (repr.equals(sentinel)) {
