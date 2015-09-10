@@ -440,9 +440,9 @@ public class WaterShed {
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
-
-                PairInt repr = resolve(pPoint, dag);
-
+                
+                PairInt repr = resolveIterative(pPoint, dag);
+                
                 int value;
                 if (repr.equals(sentinel)) {
                     value = wshed;
@@ -579,13 +579,12 @@ public class WaterShed {
             return dag.getResolved(p);
         }
 
-        DisjointSet2Node<PairInt> set = componentLabelMap.get(p);
-        PairInt repr = set.getParent().getMember();
+        PairInt repr = componentLabelMap.get(p).getParent().getMember();
 
         int n = dag.getConnectedNumber(p);
 
         if (n == 0) {
-            dag.setToResolved(p, repr);
+            dag.setToResolved(p, repr);            
             return repr;
         }
 
@@ -598,7 +597,7 @@ public class WaterShed {
             if (!lowerNode.equals(p) && !lowerNode.equals(sentinel)) {
 
                 PairInt prevLowerNode = lowerNode;
-
+                
                 lowerNode = resolve(prevLowerNode, dag);
 
                 dag.resetConnectedNode(p, i, lowerNode);
@@ -617,27 +616,20 @@ public class WaterShed {
         }
 
         dag.setToResolved(p, repr);
-
+        
         return repr;
-    }
-
-    private String createKey(int level, PairInt p, int i) {
-        //TODO: replace this with encoding to a long using characteristics
-        // such as image dimensions (coords converted to image index),
-        // max level expected (nPixels), and knowledge that i will always be <= 8
-        String key = String.format("%d_%d_%d_%d", level, p.getX(), p.getY(), i);
-        return key;
     }
 
     /**
      *
      * @param p
      * @param dag
+     * @param recursionLevel level of recursion used only for logging
      * @return repr value indicating whether the point is a watershed (indicated
      * by returning the sentinel) or should be assigned the component level of
      * the returned point.
      */
-    private PairInt resolveIterative(PairInt p, CustomWatershedDAG dag) {
+    private PairInt resolveIterative(final PairInt p, final CustomWatershedDAG dag) {
 
         if ((regionalMinima == null) || (componentLabelMap == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
@@ -645,9 +637,10 @@ public class WaterShed {
         }
 
         /*
-        Recursion in java cannot be refactored to use tail recursion to release
-        method frame memory, so to improve the use of memory, a recursive
-        method has to be made iterative.
+        Recursion in java cannot be refactored to use tail recursion (tail
+        recursion avoids retaining the method frame), so to improve the use of
+        memory when the potential depth of recursion is large, the recursive
+        method is replaced here with an iterative.
 
         To make iterative, have to replace the method frame loading and
         unloading with parallel stacks of arguments given to a loop which pops
@@ -666,126 +659,289 @@ public class WaterShed {
             1      p.c[1]       1             "0 p      0"  <---place result here for i=1
         */
 
-        Stack<PairInt> currentP = new Stack<PairInt>();
-        currentP.add(p);
-        Stack<Integer> currentI = new Stack<Integer>();
-        currentI.add(Integer.valueOf(0));
-        Stack<Integer> currentLevel = new Stack<Integer>();
-        currentLevel.add(Integer.valueOf(0));
-        Stack<String> currentPrevCompKey = new Stack<String>();
-        currentPrevCompKey.add(createKey(0, p, 0));
-        Stack<Integer> currentLevelEnd = new Stack<Integer>();
-        currentLevelEnd.add(Integer.valueOf(-1));
+        Map<String, Set<PairInt>> resultsMap = new HashMap<String, Set<PairInt>>();
 
-        Map<String, PairInt> resultsMap = new HashMap<String, PairInt>();
+        final Stack<ResolveState> stack = new Stack<ResolveState>();
 
-        int nIter = 0;
+        addToStack(0, p, 0, null, -1, false, stack);
+   
+        while (!stack.isEmpty()) {
 
-        while (!currentP.isEmpty()) {
+            ResolveState rs = stack.pop();
 
-            PairInt p0 = currentP.pop();
-            int i0 = currentI.pop().intValue();
-            int level0 = currentLevel.pop().intValue();
-            String prevCompKey0 = currentPrevCompKey.pop();
-            String currentCompKey = createKey(level0, p0, i0);
-            boolean currentLevelEnd0 = (currentLevelEnd.pop().intValue() > 0);
+            PairInt repr;
 
-            PairInt repr = null;
-
-            boolean foundRecursionEnd = false;
-            if ((nIter > 0) && p0.equals(p)) {
-                foundRecursionEnd = true;
-            }
-            nIter++;
-
-            if (!dag.isResolved(p0) && !foundRecursionEnd) {
-
-                if (resultsMap.containsKey(currentCompKey)) {
-                    repr = resultsMap.remove(currentCompKey);
-                } else {
-                    repr = componentLabelMap.get(p0).getParent().getMember();
+            // instead of only processing at base or recursion, will check results
+            // each time to possibly break earlier for sentinel
+            //if (rs.isRecursionBase()) {
+                //process the logic from the recursion as the returned result of
+                //lowerNode = resolve(...)
+                
+                repr = findResult(rs, resultsMap);
+                
+                if (repr == sentinel) {
+                    addToResults(createRootKey(0, p), repr, resultsMap);
+                    dag.setToResolved(rs.getP(), repr);
+                    break;
+                } else if (rs.isRecursionBase()) {
+                    addToResults(repr, rs, resultsMap);
                 }
+            //}
 
-                int n = dag.getConnectedNumber(p0);
-
-                // ----- recursion block --------
-                if ((i0 == 0) && (n > 0)) {
-
-                    PairInt lowerNode = dag.getConnectedNode(p0, i0);
-
-                    if (!currentLevelEnd0 &&
-                        !(dag.isResolved(lowerNode) && (n==1)) &&
-                        !lowerNode.equals(p0) && !lowerNode.equals(sentinel)) {
-
-                        currentP.push(p0);
-                        currentI.push(i0);
-                        currentLevel.push(Integer.valueOf(level0));
-                        currentPrevCompKey.push(prevCompKey0);
-                        currentLevelEnd.push(Integer.valueOf(1));
-
-                        // add all i's onto the stack in reverse order
-                        for (int ii = (n - 1); ii >= i0; --ii) {
-                            currentP.push(dag.getConnectedNode(p0, ii));
-                            currentI.push(0);
-                            currentLevel.push(Integer.valueOf(level0 + 1));
-                            currentPrevCompKey.push(createKey(level0, p0, ii));
-                            currentLevelEnd.push(Integer.valueOf(-1));
-                        }
-                        continue;
-                    }
-                } // ---- end add recursion if needed -------------
-
-                for (int i = i0; i < n; ++i) {
-
-                    if (repr.equals(sentinel)) {
-                        return repr;
-                    }
-
-                    PairInt lowerNode = dag.getConnectedNode(p0, i);
-
-                    // check for 2 different paths, hence a watershed
-                    if (i == 0) {
-                        repr = lowerNode;
-                    } else if (!lowerNode.equals(repr)) {
-                        repr = sentinel;
-                    }
+            if (dag.isResolved(rs.getP())) {
+                repr = dag.getResolved(rs.getP());
+                addToResults(repr, rs, resultsMap);
+                if (rs.getPrevious() == null) {
+                    break;
                 }
-
-                dag.setToResolved(p0, repr);
-
-            } else if (dag.isResolved(p0)) {
-
-                repr = dag.getResolved(p0);
             }
 
-            //logic for the root of the composite key to see if 2 separate
-            //paths have different results, hence a watershed.
-            if (repr != null) {
+            if (repr == null) {
+                repr = componentLabelMap.get(rs.getP()).getParent().getMember();
+            }
+            
+            assert(repr != null);
 
-                resultsMap.put(prevCompKey0, repr);
+            int n = dag.getConnectedNumber(rs.getP());
 
-                String[] items = prevCompKey0.split("_");
-                String rootKey = items[0] + "_" + items[1] + "_" + items[2];
-                PairInt existingRepr = resultsMap.get(rootKey);
-                if (existingRepr != null) {
-                    if (!existingRepr.equals(sentinel) && !existingRepr.equals(repr)) {
-                        repr = sentinel;
-                        dag.setToResolved(p, repr);
-                        return repr;
-                    }
-                } else {
-                    resultsMap.put(rootKey, repr);
+            if (n == 0) {                
+                dag.setToResolved(rs.getP(), repr);
+                if (rs.getPrevious() != null) {
+                    dag.resetConnectedNode(rs.getPrevious().getP(), rs.getPreviousI(), repr);
                 }
+                addToResults(repr, rs, resultsMap);
+                continue;
+            }
+
+            int i = rs.getI();          
+              
+            while ((i < n) && !repr.equals(sentinel)) {
+
+                PairInt lowerNode = dag.getConnectedNode(rs.getP(), i);
+                
+                assert(lowerNode != null);
+
+                if (!lowerNode.equals(rs.p) && !lowerNode.equals(sentinel)) {
+
+                    // ---- add to stack to replace recursion ---
+                    //PairInt prevLowerNode = lowerNode;
+                    //lowerNode = resolve(prevLowerNode, dag);
+                    //dag.resetConnectedNode(p, i, lowerNode);
+
+                    // add current state to process the about to be added stack items:
+                    // set rs0's i to i+1 so when popped, after processing result, starts at next
+                    int prevI = (rs.getPrevious() == null) ? -1 : i;
+                    ResolveState rs0 = addToStack(rs.getLevel(), rs.getP(), 
+                        i + 1, rs.getPrevious(), prevI, true, stack);
+
+                    addToStack(rs.getLevel() + 1, lowerNode, 0, rs0, i, false,
+                        stack);
+               
+                    break;
+                }
+
+                if (i == 0) {
+                    repr = lowerNode;
+                    addToResults(repr, rs, resultsMap);
+                } else if (!lowerNode.equals(repr)) {
+                    repr = sentinel;
+                    addToResults(createRootKey(0, p), repr, resultsMap);
+                    break;
+                }
+
+                ++i;
             }
         }
 
-        PairInt repr = resultsMap.get(createKey(0, p, 0));
+        PairInt repr = findRootResult(p, resultsMap);
 
-        if ((repr != null) && !dag.isResolved(p)) {
+        if (repr != null && !dag.isResolved(p)) {
             dag.setToResolved(p, repr);
         }
 
         return repr;
+    }
+
+    private String createKey(int level, PairInt p, int i) {
+        //TODO: replace this with encoding to a long using characteristics
+        // such as image dimensions (coords converted to image index),
+        // max level expected (nPixels), and knowledge that i will always be <= 8
+        String key = String.format("%d_%d_%d_%d", level, p.getX(), p.getY(), i);
+        return key;
+    }
+
+    private String createRootKey(int level, PairInt p) {
+        //TODO: replace this with encoding to a long using characteristics
+        // such as image dimensions (coords converted to image index),
+        // max level expected (nPixels), and knowledge that i will always be <= 8
+        String key = String.format("%d_%d_%d", level, p.getX(), p.getY());
+        return key;
+    }
+
+    private ResolveState addToStack( int level, PairInt p, int i,
+        ResolveState invokedFrom, int invokedFromI, boolean isRecursionBase,
+        Stack<ResolveState> stack) {
+
+        ResolveState rs = new ResolveState(level, p, i, invokedFrom, 
+            invokedFromI, isRecursionBase);
+        
+        stack.add(rs);
+
+        return rs;
+    }
+
+    private void addToResults(PairInt resolved, ResolveState rs,
+        Map<String, Set<PairInt>> resultsMap) {
+
+        if (rs.getPrevious() == null) {
+            // special case.  this is the original p resolve is invoked for
+
+            addToResults(createRootKey(rs.getLevel(), rs.getP()), resolved, resultsMap);
+
+            return;
+        }
+
+        // add to root results
+        addToResults(createRootKey(rs.getPrevious().getLevel(), rs.getPrevious().getP()), resolved,
+            resultsMap);
+
+        addToResults(createKey(rs.getPrevious().getLevel(), rs.getPrevious().getP(), rs.getPrevious().getI()),
+            resolved, resultsMap);
+    }
+
+    /**
+     * look for more than one result in the "root" key and if found, return
+     * the sentinel (note that the invoker is responsible for sentinel state
+     * logic), else get the specific key value from the resultsMap and remove
+     * it while at it and return it.
+     * @param rs
+     * @param resultsMap
+     * @return
+     */
+    private PairInt findResult(ResolveState rs, Map<String, Set<PairInt>> resultsMap) {
+
+        return findResult(rs.getP(), rs.getLevel(), rs.getI(), resultsMap);
+    }
+
+    /**
+     * look for more than one result in the "root" key and if found, return
+     * the sentinel (note that the invoker is responsible for sentinel state
+     * logic), else get the specific key value from the resultsMap and remove
+     * it while at it and return it.
+     * @param rs
+     * @param resultsMap
+     * @return
+     */
+    private PairInt findResult(PairInt p, int level, int i,
+        Map<String, Set<PairInt>> resultsMap) {
+
+        Set<PairInt> reprSet = resultsMap.remove(createKey(level, p, i));
+
+        Set<PairInt> rootSet = resultsMap.get(createRootKey(level, p));
+
+        if ((rootSet != null) && rootSet.size() > 1) {
+            return sentinel;
+        }
+        if ((reprSet != null) && reprSet.size() > 0) {
+            assert(reprSet.size() == 1);
+            return reprSet.iterator().next();
+        }
+        if ((rootSet != null) && !rootSet.isEmpty()) {
+            assert(rootSet.size() == 1);
+            return rootSet.iterator().next();
+        }
+
+        return null;
+    }
+
+    /**
+     * look for more than one result in the "root" key and if found, return
+     * the sentinel (note that the invoker is responsible for sentinel state
+     * logic), else get the specific key value from the resultsMap and remove
+     * it while at it and return it.
+     * @param rs
+     * @param resultsMap
+     * @return
+     */
+    private PairInt findRootResult(PairInt p, Map<String, Set<PairInt>> resultsMap) {
+
+        Set<PairInt> rootSet = resultsMap.get(createRootKey(0, p));
+
+        if ((rootSet != null) && rootSet.size() > 1) {
+            return sentinel;
+        }
+        if ((rootSet != null) && !rootSet.isEmpty()) {
+            assert(rootSet.size() == 1);
+            return rootSet.iterator().next();
+        }
+
+        return null;
+    }
+
+    private void addToResults(String key, PairInt resolved,
+        Map<String, Set<PairInt>> resultsMap) {
+
+        Set<PairInt> list = resultsMap.get(key);
+        if (list == null) {
+            list = new HashSet<PairInt>();
+        }
+
+        list.add(resolved);
+
+        resultsMap.put(key, list);
+    }
+
+    private static class ResolveState {
+        /*
+        represents  resolve() invoked for p from an invocation from state previous.
+                    level is the depth of "recursion" for p (it should be
+                    equal to the previous.level + 1 if previous != null, else
+                    is 0).
+                    i is the position that when popped, after processing found
+                    results, the local i will be set to.
+                    previousI is the position that this p is in the dag's
+                    connections for previous.p.
+                    in other words, previous.p's previousI'th connection is 
+                    this p.  previousI is useful to save when wanting to update
+                    the dag for p's i'th connection with this result.
+                    boolean isRecursionBase is true when this is the start of the
+                    replacement recursion (popped after the recursion steps).
+        */
+        private final PairInt p;
+        private final int i;
+        private final int level;
+        private final ResolveState previous;
+        private final int previousI;
+        private final boolean isRecursionBase;
+        
+        public ResolveState(int level, PairInt p, int pI, ResolveState previous,
+            int previousI, boolean isRecursionBase) {
+            this.p = p;
+            this.i = pI;
+            this.level = level;
+            this.previous = previous;
+            this.previousI = previousI;
+            this.isRecursionBase = isRecursionBase;
+        }
+        
+        public PairInt getP() {
+            return p;
+        }
+        public int getI() {
+            return i;
+        }
+        public int getLevel() {
+            return level;
+        }
+        public ResolveState getPrevious() {
+            return previous;
+        }
+        public int getPreviousI() {
+            return previousI;
+        }
+        public boolean isRecursionBase() {
+            return isRecursionBase;
+        }
     }
 
 }
