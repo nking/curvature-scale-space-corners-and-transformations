@@ -3276,4 +3276,304 @@ public class ImageProcessor {
             */
         }
     }
+    
+    public void applyAdaptiveMeanThresholding(GreyscaleImage img) {
+        
+        GreyscaleImage imgM = img.copyImage();
+
+        /*
+        7 x 7 averaging
+        */
+        applyCenteredMean(imgM, 3);
+
+        int c = 7;
+
+        int foreground = 255;//1;
+        int background = 0;
+
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                int v = img.getValue(i, j);
+                int m = imgM.getValue(i, j);
+                int t = m - c;
+                if (v > t) {
+                    img.setValue(i, j, foreground);
+                } else {
+                    img.setValue(i, j, background);
+                }
+            }
+        }
+    }
+    
+    /**
+     * create an image of the mean of the surrounding dimension x dimension 
+     * pixels for each pixel.  The calculation starts at 0 and the end
+     * dimension pixels are averaged using the decreasing number of pixels.
+     * <pre>
+     * for example, image:
+     * [10] [12] [12]     
+     * [10] [12] [12]
+     * 
+     * for dimension = 2 becomes:
+     * [11] [12] [12]
+     * [11] [12] [12]
+     * </pre>
+     * runtime complexity is O(N_pixels)
+     * This can be used as part of adaptive mean thresholding.
+     * @param img
+     * @param dimension
+     */
+    public void applyBoxcarMean(GreyscaleImage img, int dimension) {
+        
+        if ((img.getWidth() < dimension) || (img.getHeight() < dimension)) {
+            throw new IllegalArgumentException("dimension is larger than image"
+                + " dimensions.  method not yet handling that.");
+        }
+        
+        /*
+        becomes efficient when dimension > 3
+        
+        sum along columns first using dynamic programming:
+        sumCol[j=0] = sum_j=0_to_dim of row[i]
+        sumCol[j=1] = sumCol[0] - row[j-1] + row[dim + j - 1]
+        sumCol[j=2] = sumCol[1] - row[j-1] + row[dim + j - 1]
+        */
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage mean = img.createWithDimensions();
+        
+        // sum along rows
+        for (int i = 0; i < w; ++i) {
+            int sum0 = 0;
+            for (int j = 0; j < dimension; ++j) {
+                sum0 += img.getValue(i, j);
+            }
+            mean.setValue(i, 0, sum0);
+            for (int j = 1; j <= (h - dimension); ++j) {                
+                int vp = img.getValue(i, j - 1);
+                int vl =  img.getValue(i, dimension + j - 1);
+                sum0 = sum0 - vp + vl;
+                mean.setValue(i, j, sum0);
+            }
+            // last dimension - 1 rows: sum along them, divide by count then mult by dimension
+            for (int j = (h - dimension + 1); j < h; ++j) {
+                float count = h - j;
+                float sum = 0;
+                for (int k = j; k < h; ++k) {
+                    sum += img.getValue(i, k);
+                }
+                sum /= count;
+                sum *= dimension;
+                mean.setValue(i, j, Math.round(sum));
+            }
+        }
+        
+        // sum along columns
+        for (int j = 0; j < h; ++j) {
+            int sum0 = 0;
+            for (int i = 0; i < dimension; ++i) {
+                sum0 += mean.getValue(i, j);
+            }
+            img.setValue(0, j, sum0);
+            for (int i = 1; i <= (w - dimension); ++i) {
+                int vp = mean.getValue(i - 1, j);
+                int vl = mean.getValue(dimension + i - 1, j);
+                sum0 = sum0 - vp + vl;
+                img.setValue(i, j, sum0);
+            }
+            
+            // last dimension - 1 cols: sum along them, divide by count then mult by dimension
+            for (int i = (w - dimension + 1); i < w; ++i) {
+                float count = h - i;
+                float sum = 0;
+                for (int k = i; k < w; ++k) {
+                    sum += mean.getValue(k, j);
+                }
+                sum /= count;
+                sum *= dimension;
+                img.setValue(i, j, Math.round(sum));
+            }            
+        }
+
+        // divide each value by dimension * dimension
+        float dsq = dimension * dimension;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = img.getValue(i, j);
+                v = Math.round((float)v/dsq);
+                img.setValue(i, j, v);
+            }
+        } 
+    }
+    
+    /**
+     * create an image of the mean of the surrounding dimension x dimension 
+     * pixels for each pixel centered on each pixel.  For the starting
+     * and ending (dimension/2) pixels, the average uses a descreasing
+     * number of pixels.
+     * <pre>
+     * for example, image:
+     * [10] [12] [12]     
+     * [10] [12] [12]
+     * 
+     * for halfDimension = 1 becomes:
+     * [11] [11] [12]
+     * [11] [11] [12]
+     * </pre>
+     * runtime complexity is O(N_pixels)
+     * @param img
+     * @param halfDimension the pixel center + and - this value in x and y
+     * are averaged
+     */
+    public void applyCenteredMean(GreyscaleImage img, int halfDimension) {
+        
+        if ((img.getWidth() < 2*halfDimension) || 
+            (img.getHeight() < 2*halfDimension)) {
+            throw new IllegalArgumentException("dimension is larger than image"
+                + " dimensions.  method not yet handling that.");
+        }
+        
+        /*
+        becomes efficient when halfDimension > 1
+        
+        sum along columns first using dynamic programming, then rows
+        */
+        
+        int dimension = 2*halfDimension + 1;
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage mean = img.createWithDimensions();
+        
+        // sum along rows
+        for (int i = 0; i < w; ++i) {
+            
+            /* pixels before halfDimension
+            halfDimension = 2            
+            0 1 2 3 4 5 6
+                <
+            */
+            for (int j = 0; j < halfDimension; ++j) {
+                float count = halfDimension - j;
+                float sum = 0;
+                for (int k = j; k < halfDimension; ++k) {
+                    sum += img.getValue(i, k);
+                }
+                sum /= count;
+                sum *= dimension;
+                mean.setValue(i, j, Math.round(sum));
+            }
+            
+            /* pixels between halfDimension and j-halfDimension
+            halfDimension = 2            
+            0 1 2 3 4 5
+            |   *   |  sum from idx - halfDimension to idx + halfDimension, incl
+            but store in idx
+            */
+            int sum0 = 0;
+            for (int j = 0; j <= 2*halfDimension; ++j) {
+                sum0 += img.getValue(i, j);
+            }
+            mean.setValue(i, halfDimension, sum0);
+            /*
+            halfDimension = 2            
+            0 1 2 3 4 5 6
+              |   *   | 
+                |   *   |
+                    
+            */
+            for (int j = halfDimension + 1; j < (h - halfDimension); ++j) {                
+                int vp = img.getValue(i, j - halfDimension - 1);
+                int vl =  img.getValue(i, j + halfDimension);
+                sum0 = sum0 - vp + vl;
+                mean.setValue(i, j, sum0);
+            }
+            /* last halfDimension pixels
+            0 1 2 3   n=4, halfDimension = 2 
+                >
+            */
+            for (int j = (h - halfDimension); j < h; ++j) {
+                float count = h - j + 1;
+                float sum = 0;
+                for (int k = (j - 1); k < h; ++k) {
+                    sum += img.getValue(i, k);
+                }
+                sum /= count;
+                sum *= dimension;
+                mean.setValue(i, j, Math.round(sum));
+            }
+        }
+        
+        // sum along columns
+        for (int j = 0; j < h; ++j) {
+          
+            /* pixels before halfDimension
+            halfDimension = 2            
+            0 1 2 3 4 5 6
+                <
+            */
+            for (int i = 0; i < halfDimension; ++i) {
+                float count = halfDimension - i;
+                float sum = 0;
+                for (int k = i; k < halfDimension; ++k) {
+                    sum += mean.getValue(k, j);
+                }
+                sum /= count;
+                sum *= dimension;
+                img.setValue(i, j, Math.round(sum));
+            }
+            
+            /* pixels between halfDimension and j-halfDimension
+            halfDimension = 2            
+            0 1 2 3 4 5
+            |   *   |  sum from idx - halfDimension to idx + halfDimension, incl
+            but store in idx
+            */
+            int sum0 = 0;
+            for (int i = 0; i <= 2*halfDimension; ++i) {
+                sum0 += mean.getValue(i, j);
+            }
+            img.setValue(halfDimension, j, sum0);
+            /*
+            halfDimension = 2            
+            0 1 2 3 4 5 6
+              |   *   | 
+                |   *   |
+                    
+            */
+            for (int i = halfDimension + 1; i < (w - halfDimension); ++i) {                
+                int vp = mean.getValue(i - halfDimension - 1, j);
+                int vl =  mean.getValue(i + halfDimension, j);
+                sum0 = sum0 - vp + vl;
+                img.setValue(i, j, sum0);
+            }
+            /* last halfDimension pixels
+            0 1 2 3   n=4, halfDimension = 2 
+                >
+            */
+            for (int i = (w - halfDimension); i < w; ++i) {
+                float count = w - i + 1;
+                float sum = 0;
+                for (int k = (i - 1); k < w; ++k) {
+                    sum += mean.getValue(k, j);
+                }
+                sum /= count;
+                sum *= dimension;
+                img.setValue(i, j, Math.round(sum));
+            }
+        }
+        
+        // divide each value by dimension * dimension
+        float dsq = dimension * dimension;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = img.getValue(i, j);
+                v = Math.round((float)v/dsq);
+                img.setValue(i, j, v);
+            }
+        } 
+    }
 }

@@ -849,4 +849,176 @@ public class ImageProcessorTest extends TestCase {
         
         return checkerboard;
     }
+    
+    public void testApplyAdaptiveMean() throws Exception {
+        
+        int w = 6;
+        int h = 6;
+        int dimension = 4;
+        /*
+        [10] [10] [10] [10] [40] [50]  0
+        [10] [10] [10] [10] [40] [50]  1
+        [10] [10] [10] [10] [40] [50]  2
+        [10] [10] [10] [10] [40] [50]  3
+        [20] [20] [20] [20] [40] [50]  4
+        [30] [30] [30] [30] [40] [50]  5
+         0    1    2    3     4    5
+        */
+        
+        GreyscaleImage out = new GreyscaleImage(w, h);
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                out.setValue(i, j, 10);
+            }
+        }
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 4; j < 5; ++j) {
+                out.setValue(i, j, 20);
+            }
+        }
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 5; j < 6; ++j) {
+                out.setValue(i, j, 30);
+            }
+        }
+        for (int j = 0; j < 6; ++j) {
+            out.setValue(4, j, 40);
+        }
+        for (int j = 0; j < 6; ++j) {
+            out.setValue(5, j, 50);
+        }
+        /*
+        [10] [10] [10] [10] [40] [50]  0
+        [10] [10] [10] [10] [40] [50]  1
+        [10] [10] [10] [10] [40] [50]  2
+        [10] [10] [10] [10] [40] [50]  3
+        [20] [20] [20] [20] [40] [50]  4
+        [30] [30] [30] [30] [40] [50]  5
+         0    1    2    3     4    5
+        */
+        /*
+        expected:
+        
+        [10] [18] [27] [33] [45] [50]  0
+        [13] [13] [28] [34] [45] [50]  1
+        [18] [18] [31] [36] [45] [50]  2
+        [20] [20] [32] [37] [45] [50]  3
+        [25] [25] [35] [38] [45] [50]  4
+        [30] [35] [37] [40] [45] [50]  5
+         0    1    2    3     4    5
+        */
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyBoxcarMean(out, dimension);
+                
+        assertEquals(out.getValue(0, 0), 10);
+        assertEquals(20, out.getValue(0, 3));
+        assertEquals(25, out.getValue(0, 4));
+        assertEquals(30, out.getValue(0, 5));
+        
+        assertEquals(31, out.getValue(2, 2));
+        
+        assertEquals(38, out.getValue(3, 4));
+        assertEquals(40, out.getValue(3, 5));
+    }
+    
+    public void testApplyCenteredMean() throws Exception {
+        
+        int w = 6;
+        int h = 6;
+        int halfDimension = 1;
+        /*
+        [10] [10] [10] [10] [40] [50]  0
+        [10] [10] [10] [10] [40] [50]  1
+        [10] [10] [10] [10] [40] [50]  2
+        [10] [10] [10] [10] [40] [50]  3
+        [20] [20] [20] [20] [40] [50]  4
+        [30] [30] [30] [30] [40] [50]  5
+         0    1    2    3     4    5
+        */
+        
+        GreyscaleImage out = new GreyscaleImage(w, h);
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                out.setValue(i, j, 10);
+            }
+        }
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 4; j < 5; ++j) {
+                out.setValue(i, j, 20);
+            }
+        }
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 5; j < 6; ++j) {
+                out.setValue(i, j, 30);
+            }
+        }
+        for (int j = 0; j < 6; ++j) {
+            out.setValue(4, j, 40);
+        }
+        for (int j = 0; j < 6; ++j) {
+            out.setValue(5, j, 50);
+        }
+        /*  
+        [10] [10] [10] [10] [40] [50]  0
+        [10] [10] [10] [10] [40] [50]  1
+        [10] [10] [10] [10] [40] [50]  2
+        [10] [10] [10] [10] [40] [50]  3
+        [20] [20] [20] [20] [40] [50]  4
+        [30] [30] [30] [30] [40] [50]  5
+         0    1    2    3     4    5
+        
+        halfDimension = 1, sum along rows
+        [30] [30] [30] [30] [120] [150]  0
+        [30] [30] [30] [30] [120] [150]  1
+        [30] [30] [30] [30] [120] [150]  2
+        [40] [40] [40] [40] [120] [150]  3
+        [60] [60] [60] [60] [120] [150]  4
+        [75] [75] [75] [75] [120] [150]  5 
+         0    1    2    3     4    5
+        
+        halfDimension = 1, sum along cols
+         [90]  [90]  [90] [180] [300] [405]  0
+         [90]  [90]  [90] [180] [300] [405]  1
+         [90]  [90]  [90] [180] [300] [405]  2
+        [120] [120] [120] [200] [310] [405]  3
+        [180] [180] [180] [240] [330] [405]  4
+        [225] [225] [225] [270] [345] [405]  5
+         0      1      2    3     4     5
+        
+        0:   10   10   10   20   33   45
+        1:   10   10   10   20   33   45
+        2:   10   10   10   20   33   45
+        3:   13   13   13   22   34   45
+        4:   20   20   20   27   37   45
+        5:   25   25   25   30   38   45
+        */
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyCenteredMean(out, halfDimension);
+                
+        assertEquals(out.getValue(0, 0), 10);
+        assertEquals(13, out.getValue(0, 3));
+        assertEquals(20, out.getValue(0, 4));
+        assertEquals(25, out.getValue(0, 5));
+        
+        assertEquals(10, out.getValue(2, 2));
+        
+        assertEquals(27, out.getValue(3, 4));
+        assertEquals(30, out.getValue(3, 5));
+        
+    }
+    
+    public void testApplyAdaptiveMeanThresholding() throws Exception {
+        
+        String fileName = "books_illum3_v0_695x555.png";
+        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img = ImageIOHelper.readImageAsGrayScale(filePath);
+        GreyscaleImage img0 = img.copyToGreyscale();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyAdaptiveMeanThresholding(img0);
+        
+        String bin = ResourceFinder.findDirectory("bin");
+        ImageIOHelper.writeOutputImage(bin + "/books_thresh.png", img0);
+    }
 }
