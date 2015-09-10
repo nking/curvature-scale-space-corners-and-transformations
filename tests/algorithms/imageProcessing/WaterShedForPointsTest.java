@@ -5,6 +5,7 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -609,4 +610,78 @@ public class WaterShedForPointsTest extends TestCase {
         assertTrue(labelled2.get(new PairInt(3, 1))  > 0);
 
     }
+    
+    public void testOnImage() throws Exception {
+        
+        String[] fileRoots = new String[]{"v_blob_1","v_blob_10"};
+        
+        for (String fileRoot : fileRoots) {
+            
+            String fileName = fileRoot + ".png";
+            
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+            Image img = ImageIOHelper.readImageAsGrayScale(filePath);
+            GreyscaleImage img0 = img.copyToGreyscale();
+        
+            filePath = ResourceFinder.findFileInTestResources(fileRoot + "_mask.png");
+            Image imgMask = ImageIOHelper.readImageAsGrayScale(filePath);
+
+            int w = img0.getWidth();
+            int h = img0.getHeight();
+        
+            Set<PairInt> points = new HashSet<PairInt>();
+            for (int i = 0; i < w; ++i) {
+                for (int j = 0; j < h; ++j) {
+                    int v = imgMask.getRGB(i, j);
+                    if (v == 0) {
+                        points.add(new PairInt(i, j));
+                    }
+                }
+            }
+        
+            // mask out the non-points before attempt to use log scaling:
+            for (int i = 0; i < w; ++i) {
+                for (int j = 0; j < h; ++j) {
+                    PairInt p = new PairInt(i, j);
+                    if (!points.contains(p)) {
+                        img0.setValue(i, j, 0);
+                    }
+                }
+            }
+
+            String bin = ResourceFinder.findDirectory("bin");
+        
+            GreyscaleImage img0T = img0.copyImage();
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.applyAdaptiveMeanThresholding(img0T, 3);
+            ImageIOHelper.writeOutputImage(bin + "/" + fileRoot + "_thr.png", img0T);
+
+            WaterShedForPoints ws = new WaterShedForPoints();
+
+            Map<PairInt, Integer> labelled2 = ws.createLabelledImage(img0, points);
+
+            GreyscaleImage imgL = new GreyscaleImage(w, h);
+            for (Entry<PairInt, Integer> entry : labelled2.entrySet()) {
+                PairInt p = entry.getKey();
+                int v = entry.getValue().intValue();
+                imgL.setValue(p.getX(), p.getY(), v);
+            }
+
+            ImageIOHelper.writeOutputImage(bin + "/" + fileRoot + "_labelled.png", imgL);
+
+            GreyscaleImage imgW = new GreyscaleImage(w, h);
+            Arrays.fill(imgW.getValues(), 255);
+            for (PairInt p : points) {
+                int v = labelled2.get(p);
+     //System.out.println(p.toString() + " v=" + v);           
+                if (v == 0) {
+                    imgW.setValue(p.getX(), p.getY(), 0);
+                }
+            }
+
+            ImageIOHelper.writeOutputImage(bin + "/" + fileRoot + "_ws.png", imgW);
+        }
+    }
+    
+    
 }

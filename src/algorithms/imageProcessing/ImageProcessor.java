@@ -3276,15 +3276,20 @@ public class ImageProcessor {
             */
         }
     }
-    
     public void applyAdaptiveMeanThresholding(GreyscaleImage img) {
+        
+        applyAdaptiveMeanThresholding(img, 3);
+    }
+    
+    public void applyAdaptiveMeanThresholding(GreyscaleImage img, 
+        int halfDimension) {
         
         GreyscaleImage imgM = img.copyImage();
 
         /*
         7 x 7 averaging
         */
-        applyCenteredMean(imgM, 3);
+        applyCenteredMean(imgM, halfDimension);
 
         int c = 7;
 
