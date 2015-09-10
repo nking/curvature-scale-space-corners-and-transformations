@@ -106,6 +106,145 @@ public class Histogram {
         createHistogram(a, nBins, aMin, aMax, xHist, yHist, xInterval);
     }
 
+    public static HistogramHolder createSimpleHistogram(GreyscaleImage img) {
+        
+        float[] values = new float[img.getNPixels()];
+        int count = 0;
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                int v = img.getValue(i, j);
+                values[count] = v;
+                count++;
+            }
+        }
+        
+        float[] errors = Errors.populateYErrorsBySqrt(values);
+        
+        HistogramHolder hist = createSimpleHistogram(values, errors);
+        
+        return hist;
+    }
+    
+     public static HistogramHolder createHistogramAndRemovePreAndProceedingZeros(
+         GreyscaleImage img) {
+        
+        float[] values = new float[img.getNPixels()];
+        int count = 0;
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                int v = img.getValue(i, j);
+                values[count] = v;
+                count++;
+            }
+        }
+        
+        float[] errors = Errors.populateYErrorsBySqrt(values);
+        
+        HistogramHolder hist = createSimpleHistogram(values, errors);
+        
+        if (hist.getXHist().length < 2) {
+            return hist;
+        }
+        
+        int n = hist.getXHist().length;
+        
+        //int yMax = MiscMath.findMax(hist.getYHist());
+        //int yMin = MiscMath.findMin(hist.getYHist());
+        
+        int fIdx = 0;
+        for (int i = 0; i < n; ++i) {
+            fIdx = i;
+            int y = hist.getYHist()[i];
+            if (y > 0) {
+                break;
+            }
+        }
+        int lIdx = (n - 1);
+        for (int i = (n - 1); i > -1; --i) {
+            lIdx = i;
+            int y = hist.getYHist()[i];
+            if (y > 0) {
+                break;
+            }
+        }
+        
+        if ((fIdx <= 1) && (lIdx >= (n - 2))) {
+            return hist;
+        }
+        
+        /*
+        if there are a large number of bins, re-do the x idx limits using 
+        a lower limit larger than spurious counts... this may need revision
+        */
+        //TODO: consider comparing (lIdx - fIdx) > 30
+        if (hist.getXHist().length > 30) {
+            int tmp0 = fIdx;
+            int tmp1 = lIdx;
+            int xMaxYIdx = MiscMath.findYMaxIndex(hist.getYHist());
+            float limit = (int)Math.ceil(Math.sqrt(hist.getYHist()[xMaxYIdx]));
+            fIdx = 0;
+            for (int i = 0; i < n; ++i) {
+                fIdx = i;
+                int y = hist.getYHist()[i];
+                if (y > limit) {
+                    break;
+                }
+            }
+            lIdx = (n - 1);
+            for (int i = (n - 1); i > -1; --i) {
+                lIdx = i;
+                int y = hist.getYHist()[i];
+                if (y > limit) {
+                    break;
+                }
+            }
+            int maxDiffIdx = Math.max(xMaxYIdx - fIdx, lIdx - xMaxYIdx);
+            fIdx = xMaxYIdx - 3*maxDiffIdx;
+            lIdx = xMaxYIdx + 3*maxDiffIdx;
+            
+            if (fIdx < 0) {
+                fIdx = tmp0;
+            }
+            if (lIdx > (n - 1)) {
+                lIdx = tmp1;
+            }
+        }
+                
+        // re-do for smaller range
+        float xBin = hist.getXHist()[1] - hist.getXHist()[0];
+
+        float xf;
+        if (fIdx == 0) {
+            xf = hist.getXHist()[0] - (xBin/2.f);
+        } else {
+            xf = hist.getXHist()[fIdx - 1] - (xBin/2.f);
+        }
+        float xl;
+        if (lIdx == (n - 1)) {
+            xl = hist.getXHist()[lIdx] + (xBin/2.f);
+        } else {
+            xl = hist.getXHist()[lIdx + 1] + (xBin/2.f);
+        }
+
+        int n2 = 0;
+        float[] values2 = new float[values.length];
+        float[] errors2 = new float[values2.length];
+        for (int i = 0; i < values2.length; ++i) {
+            float v = values[i];
+            if ((v >= xf) && (v <= xl)) {
+                values2[n2] = v;
+                errors2[n2] = errors[n2];
+                n2++;
+            }
+        }
+        values2 = Arrays.copyOf(values2, n2);
+        errors2 = Arrays.copyOf(errors2, n2);
+
+        hist = createSimpleHistogram(values2, errors2);
+        
+        return hist;        
+    }
+    
     public static HistogramHolder createSimpleHistogram(float[] values, 
         float[] valueErrors) {
 

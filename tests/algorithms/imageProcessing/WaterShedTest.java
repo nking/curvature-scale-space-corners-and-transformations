@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.graphs.CustomWatershedDAG;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -19,7 +21,7 @@ public class WaterShedTest extends TestCase {
     public WaterShedTest() {
     }
 
-    public void testLower() throws Exception {
+    public void estLower() throws Exception {
 
         String filePath = ResourceFinder.findFileInTestResources("pattern0.png");
         Image img = ImageIOHelper.readImageAsGrayScale(filePath);
@@ -152,7 +154,7 @@ public class WaterShedTest extends TestCase {
         }
     }
 
-    public void testUnionFindComponentLabelling() throws Exception {
+    public void estUnionFindComponentLabelling() throws Exception {
 
         int w = 5;
         int h = 5;
@@ -292,7 +294,7 @@ public class WaterShedTest extends TestCase {
         return minDist;
     }
 
-    public void testCreateLowerIntensityDAG() throws Exception {
+    public void estCreateLowerIntensityDAG() throws Exception {
 
         int w = 5;
         int h = 5;
@@ -486,7 +488,7 @@ public class WaterShedTest extends TestCase {
 
     }
 
-    public void testLabel() throws Exception {
+    public void estLabel() throws Exception {
 
         int w = 5;
         int h = 5;
@@ -581,25 +583,48 @@ public class WaterShedTest extends TestCase {
 
         String filePath = ResourceFinder.findFileInTestResources(
             //"v_blob_10.png");
-            "venturi_mountain_j6_0010.png"); // use color segmentation
+            "venturi_mountain_j6_0001.png"); // use color segmentation
+            //"venturi_mountain_j6_0010.png"); // use color segmentation
             //"books_illum3_v0_695x555.png");
             //"books_illum3_v6_695x555.png");
             //"house.gif");
             //"brown_lowe_2003_image1.jpg");
+            //"brown_lowe_2003_image2.jpg");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
+        
+        GreyscaleImage imgStats = img.copyToGreyscale();
+        ImageStatistics stats = ImageStatisticsHelper.examineImage(imgStats, true);
+        System.out.println("stats=" + stats.toString());
+        
+        //imageProcessor.applyInvert255(img);
+       
+        /*
+        venturi:
+            img0 = imageProcessor.createGreyscaleFromColorSegmentation(img, 4)
+            binning is fine here if wanted
+            imageProcessor.applyAdaptiveMeanThresholding(img0, 2); <-- 2 or larger than 2
+        
+        brown & lowe:
+            img0 = img.copyToGreyscale();
+            imageProcessor.applyImageSegmentation(img0, 2);
+            img0 = imageProcessor.binImage(img0, binFactor);
+            imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
+        */
 
         GreyscaleImage img0 =
-            //imageProcessor.createGreyscaleFromColorSegmentation(img, 3);//4,8
-            img.copyToGreyscale();
+            imageProcessor.createGreyscaleFromColorSegmentation(img, 4);//4,8 Venturi, books;  3 or alt for bl2003?
+            //img.copyToGreyscale();
+        //imageProcessor.applyImageSegmentation(img0, 2);
 
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img0.getWidth()/minDimension,
             (float)img0.getHeight()/minDimension));
 
-        //img0 = imageProcessor.binImage(img0, binFactor);
+        img0 = imageProcessor.binImage(img0, binFactor);
 
-        imageProcessor.applyAdaptiveMeanThresholding(img0, 1);//2
+        //venturi: 2 or larger, then line thinner.  binning is okay
+        imageProcessor.applyAdaptiveMeanThresholding(img0, 2);//2// 15 for bl2003
 
         ImageIOHelper.writeOutputImage(bin + "/test_thresh.png", img0);
 

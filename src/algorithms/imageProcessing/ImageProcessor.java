@@ -1506,6 +1506,31 @@ public class ImageProcessor {
             (int)Math.round(bSum)};
     }
 
+    public void applyInvert255(GreyscaleImage img) {
+        // assumption that pixels lie in range 0 to 255
+        
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                int v = img.getValue(i, j);
+                int vInv = 255 - v;
+                img.setValue(i, j, vInv);
+            }
+        }
+    }
+    
+    public void applyInvert255(Image img) {
+        // assumption that pixels lie in range 0 to 255
+        
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                img.setRGB(i, j,
+                    255 - img.getR(i, j),
+                    255 - img.getG(i, j),
+                    255 - img.getB(i, j));
+            }
+        }
+    }
+    
     public GreyscaleImage binImageToKeepZeros(GreyscaleImage img,
         int binFactor) {
 
@@ -2099,6 +2124,38 @@ public class ImageProcessor {
 
         return new double[]{avgY, avgR, avgG, avgB};
     }
+    
+    public GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
+        
+        int w0 = input.getWidth();
+        int h0 = input.getHeight();
+        
+        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
+        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
+
+        int xOffset = w - w0;
+        int yOffset = h - h0;
+        
+        if (xOffset == 0 && yOffset == 0) {
+            return input;
+        }
+        
+        int xOffsetOrig = input.getXRelativeOffset();
+        int yOffsetOrig = input.getYRelativeOffset();
+        
+        GreyscaleImage output = new GreyscaleImage(w, h);
+        output.setXRelativeOffset(xOffset + xOffsetOrig);
+        output.setYRelativeOffset(yOffset + yOffsetOrig);
+      
+        for (int i = 0; i < w0; ++i) {
+            for (int j = 0; j < h0; ++j) {
+                int v = input.getValue(i, j);
+                output.setValue(i + xOffset, j + yOffset, v);
+            }
+        }
+        
+        return output;
+    }
 
     /**
      *
@@ -2107,14 +2164,38 @@ public class ImageProcessor {
      */
     public void apply2DFFT(GreyscaleImage input, boolean forward) {
 
-        //TODO: apply padding to nearest power of 2
+        int xOffsetOrig = input.getXRelativeOffset();
+        int yOffsetOrig = input.getYRelativeOffset();
+            
+        //TODO remove the other power of 2 padding method
+        GreyscaleImage tmp = padUpToPowerOfTwo(input);
 
         // initialize matrix of complex numbers as real numbers from image
-        Complex[][] cc = convertImage(input);
+        Complex[][] cc = convertImage(tmp);
 
         Complex[][] ccOut = apply2DFFT(cc, forward);
 
-        writeToImage(input, ccOut);
+        writeToImage(tmp, ccOut);
+        
+        if (tmp.getNPixels() > input.getNPixels()) {
+                        
+            int xOffset = tmp.getXRelativeOffset();
+            int yOffset = tmp.getYRelativeOffset();
+            
+            // padding is at front of cols and rows
+            int x = 0;
+            for (int col = xOffset; col < tmp.getWidth(); col++) {
+                int y = 0;
+                for (int row = yOffset; row < tmp.getHeight(); row++) {
+                    int v = tmp.getValue(col, row);
+                    input.setValue(x, y, v);
+                    y++;
+                }
+                x++;
+             }
+            input.setXRelativeOffset(xOffsetOrig);
+            input.setYRelativeOffset(yOffsetOrig);
+        }
     }
 
     protected Complex[][] apply2DFFT(Complex[][] cc, boolean forward) {

@@ -76,6 +76,33 @@ public class HistogramHolder {
 
         return plotter.writeFile(outputFileSuffix);
     }
+    
+    public String plotLogHistogram(String label, 
+        String outputFileSuffix) throws IOException {
+                
+        float[] xh = xHist;
+        float[] yh = yHistFloat;
+        
+        float[] yLogH = new float[yh.length];
+        for (int i = 0; i < yh.length; ++i) {
+            yLogH[i] = (float)Math.log(yh[i]/Math.log(10));
+        }
+        
+        float yMin = MiscMath.findMin(yLogH);
+        int yMaxIdx = MiscMath.findYMaxIndex(yLogH);
+        float yMax = yLogH[yMaxIdx];
+        
+        float xMin = MiscMath.findMin(xh);
+        float xMax = MiscMath.findMax(xh);
+                        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+
+        plotter.addPlot(
+            xMin, xMax, yMin, yMax,
+            xh, yLogH, xh, yLogH, label);
+
+        return plotter.writeFile(outputFileSuffix);
+    }
 
     /**
      * @return the xHist
