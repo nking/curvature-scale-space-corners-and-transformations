@@ -610,25 +610,25 @@ public class WaterShedForPointsTest extends TestCase {
         assertTrue(labelled2.get(new PairInt(3, 1))  > 0);
 
     }
-    
+
     public void testOnImage() throws Exception {
-        
+
         String[] fileRoots = new String[]{"v_blob_1","v_blob_10"};
-        
+
         for (String fileRoot : fileRoots) {
-            
+
             String fileName = fileRoot + ".png";
-            
+
             String filePath = ResourceFinder.findFileInTestResources(fileName);
             Image img = ImageIOHelper.readImageAsGrayScale(filePath);
             GreyscaleImage img0 = img.copyToGreyscale();
-        
+
             filePath = ResourceFinder.findFileInTestResources(fileRoot + "_mask.png");
             Image imgMask = ImageIOHelper.readImageAsGrayScale(filePath);
 
             int w = img0.getWidth();
             int h = img0.getHeight();
-        
+
             Set<PairInt> points = new HashSet<PairInt>();
             for (int i = 0; i < w; ++i) {
                 for (int j = 0; j < h; ++j) {
@@ -638,7 +638,7 @@ public class WaterShedForPointsTest extends TestCase {
                     }
                 }
             }
-        
+
             // mask out the non-points before attempt to use log scaling:
             for (int i = 0; i < w; ++i) {
                 for (int j = 0; j < h; ++j) {
@@ -650,7 +650,7 @@ public class WaterShedForPointsTest extends TestCase {
             }
 
             String bin = ResourceFinder.findDirectory("bin");
-        
+
             GreyscaleImage img0T = img0.copyImage();
             ImageProcessor imageProcessor = new ImageProcessor();
             imageProcessor.applyAdaptiveMeanThresholding(img0T, 3);
@@ -673,7 +673,7 @@ public class WaterShedForPointsTest extends TestCase {
             Arrays.fill(imgW.getValues(), 255);
             for (PairInt p : points) {
                 int v = labelled2.get(p);
-     //System.out.println(p.toString() + " v=" + v);           
+     //System.out.println(p.toString() + " v=" + v);
                 if (v == 0) {
                     imgW.setValue(p.getX(), p.getY(), 0);
                 }
@@ -682,6 +682,6 @@ public class WaterShedForPointsTest extends TestCase {
             ImageIOHelper.writeOutputImage(bin + "/" + fileRoot + "_ws.png", imgW);
         }
     }
-    
-    
+
+
 }

@@ -576,33 +576,33 @@ public class WaterShedTest extends TestCase {
     public void testOnImage() throws Exception {
 
         String bin = ResourceFinder.findDirectory("bin");
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-         
+
         String filePath = ResourceFinder.findFileInTestResources(
             //"v_blob_10.png");
             "venturi_mountain_j6_0010.png"); // use color segmentation
-            //"books_illum3_v0_695x555.png"); 
+            //"books_illum3_v0_695x555.png");
             //"books_illum3_v6_695x555.png");
             //"house.gif");
             //"brown_lowe_2003_image1.jpg");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
-        
-        GreyscaleImage img0 = 
+
+        GreyscaleImage img0 =
             //imageProcessor.createGreyscaleFromColorSegmentation(img, 3);//4,8
             img.copyToGreyscale();
-        
+
         float minDimension = 300.f;//200.f
         int binFactor = (int) Math.ceil(
             Math.max((float)img0.getWidth()/minDimension,
             (float)img0.getHeight()/minDimension));
-        
+
         //img0 = imageProcessor.binImage(img0, binFactor);
-        
+
         imageProcessor.applyAdaptiveMeanThresholding(img0, 1);//2
 
         ImageIOHelper.writeOutputImage(bin + "/test_thresh.png", img0);
-        
+
         int w = img0.getWidth();
         int h = img0.getHeight();
 /*
@@ -617,7 +617,7 @@ public class WaterShedTest extends TestCase {
                 imgL.setValue(i, j, v);
             }
         }
-       
+
         ImageIOHelper.writeOutputImage(bin + "/test_labelled.png", imgL);
 */
     }
