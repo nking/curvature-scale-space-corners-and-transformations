@@ -5,7 +5,6 @@ import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.graphs.CustomWatershedDAG;
 import algorithms.graphs.CustomWatershedNode;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -14,8 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.Stack;
 
 /**
  * A watershed algorithm for use in image segmentation that is based upon
@@ -234,17 +231,6 @@ public class WaterShed extends AbstractWaterShed {
      */
     protected int[][] unionFindComponentLabelling(int[][] im) {
 
-        /*
-        TODO: when make changes above to use a reduced portion of the image
-        via the points set, can consider visiting a smaller number of points
-        here too.  A LinkedHashSet can be created with lexicographical ordering
-        rules.  The LinkedHashSet can be created with one pass through 0 to
-        width and 0 to height or the points set can be sorted and entered into
-        LinkedHashSet in lexicographical order depending upon comparison of
-        n_points in points set and n_pixels = width*height,
-        O(N_points*lg2(N_points)) vs O(N_pixels), respectively.
-        */
-
         int w = im.length;
         int h = im[0].length;
 
@@ -388,10 +374,10 @@ public class WaterShed extends AbstractWaterShed {
      * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on
      * disjoint sets.
      *
-     * Note this method uses the by-products of the methods named lower and
-     * unionFindComponentLabelling.  To use this method as a standalone
-     * invocation requires some changes to accept arguments for the by-products
-     * or to re-solve for similar data in this method.
+     * Note this method uses the by-products of the method named lower.
+     * To use this method as a standalone invocation requires some changes to
+     * accept arguments for the by-products or to re-solve for similar data in
+     * this method.
      *
      * @param im a lower complete image
      * @return
@@ -476,11 +462,6 @@ public class WaterShed extends AbstractWaterShed {
         if (lowerCompleteIm == null) {
             throw new IllegalStateException("lowerCompleteIm cannot be null");
         }
-
-        /*
-        TODO: edit to use a points set or make a method which will only operate
-        on the image for locations in point set
-        */
 
         int w = lowerCompleteIm.length;
         int h = lowerCompleteIm[0].length;

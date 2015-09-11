@@ -229,10 +229,10 @@ public class WaterShedForPoints extends AbstractWaterShed {
      * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on
      * disjoint sets.
      *
-     * Note this method uses the by-products of the methods named lower and
-     * unionFindComponentLabelling.  To use this method as a standalone
-     * invocation requires some changes to accept arguments for the by-products
-     * or to re-solve for similar data in this method.
+     * Note this method uses the by-products of the method named lower.
+     * To use this method as a standalone invocation requires some changes to
+     * accept arguments for the by-products or to re-solve for similar data in
+     * this method.
      *
      * @param im a lower complete image
      * @return
@@ -349,17 +349,6 @@ public class WaterShedForPoints extends AbstractWaterShed {
      */
     protected Map<PairInt, Integer> unionFindComponentLabelling(
         Map<PairInt, Integer> im) {
-
-        /*
-        TODO: when make changes above to use a reduced portion of the image
-        via the points set, can consider visiting a smaller number of points
-        here too.  A LinkedHashSet can be created with lexicographical ordering
-        rules.  The LinkedHashSet can be created with one pass through 0 to
-        width and 0 to height or the points set can be sorted and entered into
-        LinkedHashSet in lexicographical order depending upon comparison of
-        n_points in points set and n_pixels = width*height,
-        O(N_points*lg2(N_points)) vs O(N_pixels), respectively.
-        */
 
         LinkedHashSet<PairInt> lOrderedPoints =
             MiscMath.lexicographicallyOrderPointsBySort(im.keySet());
