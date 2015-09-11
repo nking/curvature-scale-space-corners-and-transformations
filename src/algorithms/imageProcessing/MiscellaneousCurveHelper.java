@@ -739,6 +739,8 @@ public class MiscellaneousCurveHelper {
 
     public void removeRedundantPoints(List<PairIntArray> tmpEdges) {
 
+        //TODO: fix this method!!
+        
         log.fine("removeRedundantPoints");
 
         // if there are redundant points, remove the points in between

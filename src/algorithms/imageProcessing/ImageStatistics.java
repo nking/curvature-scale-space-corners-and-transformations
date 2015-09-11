@@ -21,6 +21,8 @@ public class ImageStatistics {
     
     private float[] quartiles = null;
     
+    private float[] histAreas = null;
+    
     /*
     if this is set a value less than Double.MAX_VALUE, its the threshold
     used on the image likely, after these stats were calculated
@@ -132,6 +134,11 @@ public class ImageStatistics {
         this.quartiles = theQuartiles;
     }
     
+    public void setHistogramAreaFraction(float[] histArea) {
+        this.histAreas = histArea;
+    }
+    
+    @Override
     public String toString() {
         
         StringBuilder sb = new StringBuilder();
@@ -148,11 +155,16 @@ public class ImageStatistics {
         sb.append("\n");
         sb.append("histogram=");
         if (histogram != null) {
-            sb.append(histogram.toString()).append("\n");
+            sb.append(histogram.toString());
+        }
+        
+        if (histAreas != null) {
+            sb.append("histAreas=").append(Arrays.toString(histAreas)).append("\n");
         }
         
         if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) < 0) {
             sb.append("lowThresholdApplied=").append(lowThresholdApplied);
+            sb.append("\n");
         }
         
         return sb.toString();
@@ -164,6 +176,13 @@ public class ImageStatistics {
     
     public double getLowThresholdApplied() {
         return lowThresholdApplied;
+    }
+
+    /**
+     * @return the histAreas
+     */
+    public float[] getHistAreas() {
+        return histAreas;
     }
 
 }

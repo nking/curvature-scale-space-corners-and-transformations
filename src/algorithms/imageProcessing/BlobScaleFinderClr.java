@@ -29,6 +29,9 @@ public class BlobScaleFinderClr extends AbstractBlobScaleFinder {
      * solver for Euclidean transforms such as the FeatureMatcher and then
      * the epipolar projection solver.
      *
+     * for segmentation, converts the color image into greyscale polar theta
+     * of CIE XY color space, then applies histogram equalization to the result.
+     * 
      * @param img1 the first image holding objects for which a Euclidean
      * transformation is found that can be applied to the image to put it in
      * the same scale reference frame as image2.
@@ -43,10 +46,48 @@ public class BlobScaleFinderClr extends AbstractBlobScaleFinder {
     public TransformationParameters calculateScale(final ImageExt img1,
         final ImageExt img2, final int k,
         final int smallestGroupLimit, final int largestGroupLimit,
-        final float[] outputScaleRotTransXYStDev) 
+        final float[] outputScaleRotTransXYStDev, final int segmentationType) 
         throws IOException, NoSuchAlgorithmException {
 
-        TransformationParameters params = calculateScaleImpl(img1, img2, k, 
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage img1GS = img1.copyToGreyscale();
+        GreyscaleImage img2GS = img2.copyToGreyscale();
+        
+        GreyscaleImage img1Segmented = null;
+        GreyscaleImage img2Segmented = null;
+        
+        switch(segmentationType) {
+            case 1: {
+                /*int scl1 = (int)Math.ceil(Math.max((float)img1.getWidth()/300.f,
+                    (float)img1.getHeight()/300.f));
+                scl1 *= 10;
+                int scl2 = (int)Math.ceil(Math.max((float)img2.getWidth()/300.f,
+                    (float)img2.getHeight()/300.f));
+                scl2 *= 10;
+                */
+                img1Segmented = 
+                    imageProcessor.createGreyscaleFromColorSegmentation(img1, k);
+                imageProcessor.applyAdaptiveMeanThresholding(img1Segmented, 2);
+                img2Segmented = 
+                    imageProcessor.createGreyscaleFromColorSegmentation(img2, k);
+                imageProcessor.applyAdaptiveMeanThresholding(img2Segmented, 2);
+                
+                break;
+            }
+            default: {
+                // case 0:
+                img1Segmented
+                    = imageProcessor.createGreyscaleFromColorSegmentation(img1, k, false);
+                //= imageProcessor.createGreyscaleFromColorSegmentationKMPP(img1, k, false);
+
+                img2Segmented
+                    = imageProcessor.createGreyscaleFromColorSegmentation(img2, k, false);
+                //= imageProcessor.createGreyscaleFromColorSegmentationKMPP(img2, k, false);
+            }
+        }
+                
+        TransformationParameters params = calculateScaleImpl(img1, img2, 
+            img1GS, img2GS, img1Segmented, img2Segmented, k, 
             smallestGroupLimit, largestGroupLimit, outputScaleRotTransXYStDev);
 
         return params;
@@ -67,53 +108,51 @@ public class BlobScaleFinderClr extends AbstractBlobScaleFinder {
      * @param outputBounds
      * @param smallestGroupLimit
      * @param largestGroupLimit
-     * @return the segmented image
      */
-    protected GreyscaleImage extractBlobsFromSegmentedImage(final int k, 
-        ImageExt img, GreyscaleImage imgGS,
+    protected void extractBlobsFromSegmentedImage(final int k, 
+        ImageExt img, GreyscaleImage segmentedImg,
         List<Set<PairInt>> outputBlobs, List<PairIntArray> outputBounds,
         int smallestGroupLimit, int largestGroupLimit) throws IOException, 
         NoSuchAlgorithmException {
 
-        GreyscaleImage imgS = extractBlobsFromSegmentedImage(k, img, 
+        extractBlobsFromSegmentedImage(k, segmentedImg, 
             outputBlobs, smallestGroupLimit, largestGroupLimit);
 
         if (outputBlobs.isEmpty()) {
-            return imgS;
+            return;
         }
 
         boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        extractBoundsOfBlobs(imgS, outputBlobs, outputBounds, img.getWidth(),
+        extractBoundsOfBlobs(segmentedImg, outputBlobs, outputBounds, img.getWidth(),
             img.getHeight(), discardWhenCavityIsSmallerThanBorder);
-
-        return imgS;
     }
 
-    protected GreyscaleImage extractBlobsFromSegmentedImage(int k, ImageExt img,
+    /**
+     * for segmentation, converts the color image into greyscale polar theta
+     * of CIE XY color space, then applies histogram equalization to the result.
+     * @param k
+     * @param segmentedImage
+     * @param outputBlobs
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    protected void extractBlobsFromSegmentedImage(int k,
+        GreyscaleImage segmentedImage,
         List<Set<PairInt>> outputBlobs, int smallestGroupLimit,
         int largestGroupLimit) throws IOException, NoSuchAlgorithmException {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        /*
-        TODO: may need many changes here.  
-        may even consider the BlobScaleFinder segmentation followed by watershed
-        in this or another class.
-        */
-        GreyscaleImage imgS 
-            = imageProcessor.createGreyscaleFromColorSegmentation(img, k, false);
-        //= imageProcessor.createGreyscaleFromColorSegmentationKMPP(img, k, false);
-
-        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(imgS);
+        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(segmentedImage);
 
         for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
 
             Integer pixValue = entry.getKey();
 
-            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(imgS);
+            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segmentedImage);
             finder.setMinimumNumberInCluster(smallestGroupLimit);
             finder.findGroups(pixValue.intValue());
 
@@ -130,7 +169,7 @@ public class BlobScaleFinderClr extends AbstractBlobScaleFinder {
                     // skip blobs that are on the image boundaries because they
                     // are incomplete
                     if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3,
-                        points, img.getWidth(), img.getHeight())) {
+                        points, segmentedImage.getWidth(), segmentedImage.getHeight())) {
 
                         outputBlobs.add(points);
                     }
@@ -139,7 +178,7 @@ public class BlobScaleFinderClr extends AbstractBlobScaleFinder {
         }
 
 if (debug) {
-Image img0 = ImageIOHelper.convertImage(imgS);
+Image img0 = ImageIOHelper.convertImage(segmentedImage);
 int c = 0;
 for (int i = 0; i < outputBlobs.size(); ++i) {
     Set<PairInt> blobSet = outputBlobs.get(i);
@@ -154,11 +193,27 @@ for (int i = 0; i < outputBlobs.size(); ++i) {
 MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 }
 
-        return imgS;
     }
    
-    protected TransformationParameters calculateScaleImpl(ImageExt img1,
-        ImageExt img2, int k, int smallestGroupLimit,
+    /**
+     * for segmentation, converts the color image into greyscale polar theta
+     * of CIE XY color space, then applies histogram equalization to the result.
+     * 
+     * @param img1
+     * @param img2
+     * @param k
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @param outputScaleRotTransXYStDev
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    protected TransformationParameters calculateScaleImpl(
+        ImageExt img1,ImageExt img2, 
+        GreyscaleImage img1GS, GreyscaleImage img2GS, 
+        GreyscaleImage img1Segmented, GreyscaleImage img2Segmented,
+        int k, int smallestGroupLimit,
         int largestGroupLimit, float[] outputScaleRotTransXYStDev)
         throws IOException, NoSuchAlgorithmException {
 
@@ -170,17 +225,18 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
            blob
         -- return the top 10 longest contours and the blobs
         */
+        
         List<Set<PairInt>> blobs1 = new ArrayList<Set<PairInt>>();
         List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
         List<PairIntArray> bounds1 = new ArrayList<PairIntArray>();
         List<PairIntArray> bounds2 = new ArrayList<PairIntArray>();
+        
         log.info("image1:");
-        GreyscaleImage img1GS = img1.copyToGreyscale();
-        GreyscaleImage img1S = extractBlobsFromSegmentedImage(k, img1, img1GS,
+        extractBlobsFromSegmentedImage(k, img1, img1Segmented,
             blobs1, bounds1, smallestGroupLimit, largestGroupLimit);
+        
         log.info("image2:");
-        GreyscaleImage img2GS = img2.copyToGreyscale();
-        GreyscaleImage img2S = extractBlobsFromSegmentedImage(k, img2, img2GS,
+        extractBlobsFromSegmentedImage(k, img2, img2Segmented,
             blobs2, bounds2, smallestGroupLimit, largestGroupLimit);
 
         log.info("nBounds1=" + bounds1.size());
@@ -197,7 +253,7 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
 
 //TODO: put debug sections in AOP for special build after replace aspectj
 if (debug) {
-Image img0 = ImageIOHelper.convertImage(img1S);
+Image img0 = ImageIOHelper.convertImage(img1Segmented);
 for (int i = 0; i < bounds1.size(); ++i) {
     PairIntArray pa = bounds1.get(i);
     for (int j = 0; j < pa.getN(); ++j) {
@@ -217,7 +273,7 @@ for (int i = 0; i < bounds1.size(); ++i) {
     }
 }
 MiscDebug.writeImageCopy(img0, "blob_contours_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-img0 = ImageIOHelper.convertImage(img2S);
+img0 = ImageIOHelper.convertImage(img2Segmented);
 for (int i = 0; i < bounds2.size(); ++i) {
     PairIntArray pa = bounds2.get(i);
     for (int j = 0; j < pa.getN(); ++j) {

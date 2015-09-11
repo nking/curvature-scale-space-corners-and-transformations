@@ -1,28 +1,22 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
- * determine scale between 2 images using blob contours and methods for 
+ * determine scale between 2 images using blob contours and methods for
  * segmentation on greyscale images (more specifically, using KMPP for
  * finding the k bins of intensity).
- * 
+ *
  * NOT READY FOR USE YET.
  *
  * @author nichole
@@ -38,11 +32,23 @@ public class BlobScaleFinderGS extends AbstractBlobScaleFinder {
      * solver for Euclidean transforms such as the FeatureMatcher and then
      * the epipolar projection solver.
      *
+     * applies KMeansPlusPlus algorithm to the values in each input image to 
+     * create kBands segmented image.
+     * 
+     * Note, images should be pre-processed to have similar comparable qualities,
+     * such as histogram equalization, or resolution changes.
+     * 
      * @param img1 the first image holding objects for which a Euclidean
      * transformation is found that can be applied to the image to put it in
      * the same scale reference frame as image2.
      * @param img2 the second image representing the reference frame that
      * image1 is transformed to using the resulting parameters,
+     * @param segType 
+     * <pre>
+     *     0 applies KMeansPlusPlus to obtain k segmented images;
+     *     1 applies KMeansPlusPlus to obtain a binary segmented image and 
+     *       then uses adaptive mean thresholding.
+     * </pre>
      * @return Euclidean scale to be applied to image1 to place it in the same
      * scale reference frame as image2.  Rotation and transformation are also
      * roughly solved for.
@@ -52,15 +58,46 @@ public class BlobScaleFinderGS extends AbstractBlobScaleFinder {
     public TransformationParameters calculateScale(final GreyscaleImage img1,
         final GreyscaleImage img2, final int k,
         final int smallestGroupLimit, final int largestGroupLimit,
-        final float[] outputScaleRotTransXYStDev) 
+        final float[] outputScaleRotTransXYStDev, final int segType)
         throws IOException, NoSuchAlgorithmException {
-
-        TransformationParameters params = calculateScaleImpl(img1, img2, k, 
-            smallestGroupLimit, largestGroupLimit, outputScaleRotTransXYStDev);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage imgS1 = null; 
+        GreyscaleImage imgS2 = null;
+        
+        switch(segType) {
+            case 1: {
+                int scl1 = (int)Math.ceil(Math.max((float)img1.getWidth()/300.f,
+                    (float)img1.getHeight()/300.f));
+                scl1 *= 10;
+                int scl2 = (int)Math.ceil(Math.max((float)img2.getWidth()/300.f,
+                    (float)img2.getHeight()/300.f));
+                scl2 *= 10;
+                imgS1 = img1.copyImage();
+                imgS2 = img2.copyImage();
+                imageProcessor.applyImageSegmentation(imgS1, 2);
+                imageProcessor.applyImageSegmentation(imgS2, 2);
+                imageProcessor.applyAdaptiveMeanThresholding(imgS1, scl1);
+                imageProcessor.applyAdaptiveMeanThresholding(imgS2, scl2);
+                break;
+            }
+            default: {
+                // case 0:
+                imgS1 = img1.copyImage();
+                imageProcessor.applyImageSegmentation(imgS1, k);
+                imgS2 = img2.copyImage();
+                imageProcessor.applyImageSegmentation(imgS2, k);
+            }
+        }
+        
+        TransformationParameters params = calculateScaleImpl(img1, img2, 
+            imgS1, imgS2, k, smallestGroupLimit, largestGroupLimit, 
+            outputScaleRotTransXYStDev);
 
         return params;
     }
-
+    
     /**
        <pre>
         (3) extract the top 10 blobs and their contours from k=2 segmented image:
@@ -72,20 +109,18 @@ public class BlobScaleFinderGS extends AbstractBlobScaleFinder {
        </pre>
      * @param k
      * @param img
+     * @param segImg segmented image img
      * @param outputBlobs
      * @param outputBounds
      * @param smallestGroupLimit
      * @param largestGroupLimit
-     * @throws java.io.IOException
-     * @throws java.security.NoSuchAlgorithmException
      */
-    protected void extractBlobsFromSegmentedImage(final int k, 
-        GreyscaleImage img, 
+    protected void extractBlobsFromSegmentedImage(final int k,
+        GreyscaleImage img, GreyscaleImage segImg,
         List<Set<PairInt>> outputBlobs, List<PairIntArray> outputBounds,
-        int smallestGroupLimit, int largestGroupLimit) throws IOException,
-        NoSuchAlgorithmException {
+        int smallestGroupLimit, int largestGroupLimit) {
 
-        extractBlobsFromSegmentedImage(k, img, outputBlobs, smallestGroupLimit,
+        extractBlobsFromSegmentedImage(k, segImg, outputBlobs, smallestGroupLimit,
             largestGroupLimit);
 
         if (outputBlobs.isEmpty()) {
@@ -99,25 +134,27 @@ public class BlobScaleFinderGS extends AbstractBlobScaleFinder {
 
     }
 
-    protected void extractBlobsFromSegmentedImage(int k, GreyscaleImage img,
+    /**
+     * @param k
+     * @param segImg segmented image
+     * @param outputBlobs
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     */
+    protected void extractBlobsFromSegmentedImage(int k,
+        GreyscaleImage segImg,
         List<Set<PairInt>> outputBlobs, int smallestGroupLimit,
-        int largestGroupLimit) throws IOException, NoSuchAlgorithmException {
+        int largestGroupLimit) {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
-        GreyscaleImage imgS = img.copyImage();
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        imageProcessor.applyImageSegmentation(imgS, k);
-
-        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(imgS);
+        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(segImg);
 
         for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
 
             Integer pixValue = entry.getKey();
 
-            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(imgS);
+            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
             finder.setMinimumNumberInCluster(smallestGroupLimit);
             finder.findGroups(pixValue.intValue());
 
@@ -134,7 +171,7 @@ public class BlobScaleFinderGS extends AbstractBlobScaleFinder {
                     // skip blobs that are on the image boundaries because they
                     // are incomplete
                     if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3,
-                        points, img.getWidth(), img.getHeight())) {
+                        points, segImg.getWidth(), segImg.getHeight())) {
 
                         outputBlobs.add(points);
                     }
@@ -143,7 +180,7 @@ public class BlobScaleFinderGS extends AbstractBlobScaleFinder {
         }
 
 if (debug) {
-Image img0 = ImageIOHelper.convertImage(imgS);
+Image img0 = ImageIOHelper.convertImage(segImg);
 int c = 0;
 for (int i = 0; i < outputBlobs.size(); ++i) {
     Set<PairInt> blobSet = outputBlobs.get(i);
@@ -159,11 +196,23 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
 }
 
     }
-    
+
+    /**
+     * 
+     * @param img1
+     * @param img2
+     * @param imgS1 segmented image 1
+     * @param imgS2 segmented image 2
+     * @param k
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @param outputScaleRotTransXYStDev
+     * @return
+     */
     protected TransformationParameters calculateScaleImpl(GreyscaleImage img1,
-        GreyscaleImage img2, int k, int smallestGroupLimit,
-        int largestGroupLimit, float[] outputScaleRotTransXYStDev)
-        throws IOException, NoSuchAlgorithmException {
+        GreyscaleImage img2, GreyscaleImage imgS1, GreyscaleImage imgS2,
+        int k, int smallestGroupLimit,
+        int largestGroupLimit, float[] outputScaleRotTransXYStDev) {
 
         /*
         extract the top 10 or so blobs and their contours from k=2 segmented image:
@@ -177,11 +226,12 @@ MiscDebug.writeImageCopy(img0, "blobs_" + MiscDebug.getCurrentTimeFormatted() + 
         List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
         List<PairIntArray> bounds1 = new ArrayList<PairIntArray>();
         List<PairIntArray> bounds2 = new ArrayList<PairIntArray>();
+
         log.info("image1:");
-        extractBlobsFromSegmentedImage(k, img1, blobs1, bounds1,
+        extractBlobsFromSegmentedImage(k, img1, imgS1, blobs1, bounds1,
             smallestGroupLimit, largestGroupLimit);
         log.info("image2:");
-        extractBlobsFromSegmentedImage(k, img2, blobs2, bounds2,
+        extractBlobsFromSegmentedImage(k, img2, imgS2, blobs2, bounds2,
             smallestGroupLimit, largestGroupLimit);
 
         log.info("nBounds1=" + bounds1.size());

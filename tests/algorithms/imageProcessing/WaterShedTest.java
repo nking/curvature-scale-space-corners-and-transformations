@@ -1,14 +1,11 @@
 package algorithms.imageProcessing;
 
 import algorithms.graphs.CustomWatershedDAG;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -583,21 +580,27 @@ public class WaterShedTest extends TestCase {
 
         String filePath = ResourceFinder.findFileInTestResources(
             //"v_blob_10.png");
-            "venturi_mountain_j6_0001.png"); // use color segmentation
+            //"venturi_mountain_j6_0001.png"); // use color segmentation
             //"venturi_mountain_j6_0010.png"); // use color segmentation
             //"books_illum3_v0_695x555.png");
             //"books_illum3_v6_695x555.png");
             //"house.gif");
-            //"brown_lowe_2003_image1.jpg");
+            "brown_lowe_2003_image1.jpg");
             //"brown_lowe_2003_image2.jpg");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         GreyscaleImage imgStats = img.copyToGreyscale();
+        //HistogramEqualization hEq = new HistogramEqualization(imgStats);
         ImageStatistics stats = ImageStatisticsHelper.examineImage(imgStats, true);
         System.out.println("stats=" + stats.toString());
         
         //imageProcessor.applyInvert255(img);
-       
+        
+        float minDimension = 300.f;//200.f
+        int binFactor = (int) Math.ceil(
+            Math.max((float)img.getWidth()/minDimension,
+            (float)img.getHeight()/minDimension));
+
         /*
         venturi:
             img0 = imageProcessor.createGreyscaleFromColorSegmentation(img, 4)
@@ -610,16 +613,16 @@ public class WaterShedTest extends TestCase {
             img0 = imageProcessor.binImage(img0, binFactor);
             imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
         */
-
+/*
+        USES:
+             imageProcessor.applyImageSegmentation(img0, 2);
+             img0 = imageProcessor.binImage(img0, binFactor);
+             imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
+        */
         GreyscaleImage img0 =
-            imageProcessor.createGreyscaleFromColorSegmentation(img, 4);//4,8 Venturi, books;  3 or alt for bl2003?
-            //img.copyToGreyscale();
-        //imageProcessor.applyImageSegmentation(img0, 2);
-
-        float minDimension = 300.f;//200.f
-        int binFactor = (int) Math.ceil(
-            Math.max((float)img0.getWidth()/minDimension,
-            (float)img0.getHeight()/minDimension));
+            //imageProcessor.createGreyscaleFromColorSegmentation(img, 4);//4,8 Venturi, books;  3 or alt for bl2003?
+            img.copyToGreyscale();
+        imageProcessor.applyImageSegmentation(img0, 2);
 
         img0 = imageProcessor.binImage(img0, binFactor);
 

@@ -13,6 +13,46 @@ public class HistogramHolder {
     protected float[] yHistFloat = null;
     protected float[] yErrors = null;
     protected float[] xErrors = null;
+    
+    public float[] getHistArea(float maxXToUse, int nPartitions) {
+        
+        if (yHistFloat == null) {
+            return null;
+        }
+        
+        double[] area = new double[nPartitions];
+        
+        float binSize = maxXToUse/(float)nPartitions;
+        
+        // trapezoidal rule for area under the curve
+        
+        for (int i = 0; i < (xHist.length - 1); ++i) {
+            
+            float yTerm = yHistFloat[i + 1] + yHistFloat[i];
+            float xLen = xHist[i + 1] - xHist[i];
+            if (xLen < 0) {
+                xLen *= -1;
+            }
+            
+            float x = xHist[i];
+            
+            int partition = (int)(x/binSize);
+            
+            area[partition] += (yTerm * xLen);
+        }
+                
+        double sum = 0;
+        for (int i = 0; i < nPartitions; ++i) {
+            sum += area[i]; // area should be multiplied by 0.5, but that's not needed for normalization
+        }
+        
+        float[] frac = new float[nPartitions];
+        for (int i = 0; i < nPartitions; ++i) {
+            frac[i] = (float)(area[i]/sum);
+        }
+        
+        return frac;
+    }
 
     public int calculateHalfYMaxIndexPastYMax() {
 

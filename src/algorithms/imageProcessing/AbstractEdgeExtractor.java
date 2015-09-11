@@ -263,6 +263,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             nIter++;
         }
         
+        //TODO: fix this method!
         curveHelper.removeRedundantPoints(tmpEdges);
         
         curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);

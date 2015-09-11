@@ -227,7 +227,9 @@ public class ImageStatisticsHelper {
         
         stats.setMin(MiscMath.findMin(pixValues));
         
-        stats.setMax(MiscMath.findMax(pixValues));
+        float xMax = MiscMath.findMax(pixValues);
+        
+        stats.setMax(xMax);
         
         float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);
 
@@ -248,6 +250,8 @@ public class ImageStatisticsHelper {
         stats.setHistogram(hist);
         
         stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValues));
+        
+        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));
         
         return stats;
     }

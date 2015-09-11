@@ -72,9 +72,20 @@ public class AbstractBlobScaleFinder {
 
                 int nChanged = 0;
 
-                if (blobIsDarkerThanExterior(blob, closedEdge, img)) {
+                /*if (blobIsDarkerThanExterior(blob, closedEdge, img)) {
                     nChanged = curveHelper.adjustEdgesTowardsBrighterPixels(
                         closedEdge, img);
+if (debug) {
+Image img0 = ImageIOHelper.convertImage(img);
+PairIntArray pa = closedEdge;
+for (int j = 0; j < pa.getN(); ++j) {
+    int x = pa.getX(j);
+    int y = pa.getY(j);
+    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img0, "straightened_curve_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}                  
+                    
                 } else {
                     nChanged = curveHelper.adjustEdgesTowardsDarkerPixels(
                         closedEdge, img);
@@ -82,13 +93,22 @@ public class AbstractBlobScaleFinder {
 
                 if (nChanged > 0) {
 
-                    curveHelper.removeRedundantPoints(closedEdge);
+                    //curveHelper.removeRedundantPoints(closedEdge);
 
                     curveHelper.pruneAdjacentNeighborsTo2(closedEdge);
 
                     curveHelper.correctCheckeredSegments(closedEdge);
-                }
-
+                }*/
+if (debug) {
+Image img0 = ImageIOHelper.convertImage(img);
+PairIntArray pa = closedEdge;
+for (int j = 0; j < pa.getN(); ++j) {
+    int x = pa.getX(j);
+    int y = pa.getY(j);
+    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img0, "straightened_corr_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}
                 outputBounds.add(closedEdge);
 
             } else {
@@ -176,6 +196,8 @@ public class AbstractBlobScaleFinder {
         FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1 =
             new FixedSizeSortedVector<>(2, IntensityFeatureComparisonStats.class);
 
+        //TODO: this section needs to be simplified 
+        
         double bestOverallStatSqSum = Double.MAX_VALUE;
         int bestOverallIdx1 = -1;
         int bestOverallIdx2 = -1;
@@ -215,9 +237,6 @@ public class AbstractBlobScaleFinder {
                 Set<PairInt> blob2 = blobs2.get(idx2);
 
 //log.info("index1=" + index1.toString() + " index2=" + index2.toString());
-
-//TODO: need to refactor to only calculate the
-// scale space curves once each!
 
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper =
                     new CurvatureScaleSpaceInflectionSingleEdgeMapper(
@@ -305,6 +324,8 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
 
         // ---- add to bestOverallCompStats for solutions similar to best -----
         if (bestOverallCompStats != null) {
+log.info("looking for solutions similar to "+bestOverallCompStats);
+
             float rotationBest = calculateRotationDifferences(bestOverallCompStats);
 
             for (int i = 0; i < topForIndex1.getNumberOfItems(); ++i) {
@@ -340,9 +361,10 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
 
         // -------- process the single solution compStats ------------
         if (bestOverallCompStats == null || bestOverallCompStats.isEmpty()) {
-            
+        
             if (singleSolnMap.size() > 1) {
-                
+log.info("processing single solutions");
+
                 Map<PairInt, List<FeatureComparisonStat>> compStatMap = 
                     new HashMap<PairInt, List<FeatureComparisonStat>>();
                 

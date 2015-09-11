@@ -15,11 +15,52 @@ public class BlobScaleFinderTest extends TestCase {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void testFindScale() throws Exception {
+    public void testFindScaleAdapMeans() throws Exception {
 
         String fileName1, fileName2;
 
-        for (int i = 0; i < 2;/*3;*/ ++i) {
+        for (int i = 0; i < 1;/*3;*/ ++i) {
+            switch(i) {
+                case 0: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    break;
+                }
+                default: {
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+            }
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img1Orig = ImageIOHelper.readImageExt(filePath1);
+            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+            ImageExt img2Orig = ImageIOHelper.readImageExt(filePath2);
+
+            BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
+                img1Orig, img2Orig);
+            
+            scaleFinder.setToDebug();
+
+            TransformationParameters params = scaleFinder.calculateScale();
+
+            assertNotNull(params);
+
+            assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+        }
+    }
+    
+    public void estFindScale() throws Exception {
+
+        String fileName1, fileName2;
+
+        for (int i = 0; i < 1;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -68,7 +109,7 @@ public class BlobScaleFinderTest extends TestCase {
             
             scaleFinder.setToDebug();
 
-            TransformationParameters params = scaleFinder.calculateScale();
+            TransformationParameters params = scaleFinder.calculateScale0();
 
             assertNotNull(params);
 
