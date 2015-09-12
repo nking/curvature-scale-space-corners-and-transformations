@@ -13,49 +13,49 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * holds the blobs, their ordered perimeters, and the scale space image 
+ * holds the blobs, their ordered perimeters, and the scale space image
  * contours of the perimeters
- * 
+ *
  * @author nichole
  */
 public class BlobsAndContours {
-    
+
     private final List<Set<PairInt>> blobs;
-    
+
     private final List<PairIntArray> blobOrderedPerimeters;
-    
+
     private final List<List<CurvatureScaleSpaceContour>> contours;
-        
+
     protected Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     private boolean debug = false;
-    
+
     private String debugTag = "";
-    
+
     /**
      * constructor, does all the work of extracting blobs, perimeter, and
      * scale space image contours.
-     * 
+     *
      * @param img
      * @param smallestGroupLimit
      * @param largestGroupLimit
      */
     public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
         int largestGroupLimit) {
-                
+
         blobs = new ArrayList<Set<PairInt>>();
-        
+
         blobOrderedPerimeters = new ArrayList<PairIntArray>();
-        
-        contours = new ArrayList<List<CurvatureScaleSpaceContour>>();  
-        
+
+        contours = new ArrayList<List<CurvatureScaleSpaceContour>>();
+
         init(img, smallestGroupLimit, largestGroupLimit);
     }
-    
+
     /**
-     * constructor for using in debug mode, does all the work of extracting 
+     * constructor for using in debug mode, does all the work of extracting
      * blobs, perimeter, and scale space image contours.
-     * 
+     *
      * @param img
      * @param smallestGroupLimit
      * @param largestGroupLimit
@@ -63,34 +63,34 @@ public class BlobsAndContours {
      */
     public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
         int largestGroupLimit, String debugTag) {
-                
+
         blobs = new ArrayList<Set<PairInt>>();
-        
+
         blobOrderedPerimeters = new ArrayList<PairIntArray>();
-        
-        contours = new ArrayList<List<CurvatureScaleSpaceContour>>();  
-        
+
+        contours = new ArrayList<List<CurvatureScaleSpaceContour>>();
+
         debug = true;
 
         this.debugTag = debugTag;
-        
+
         init(img, smallestGroupLimit, largestGroupLimit);
     }
-    
-    protected void init(GreyscaleImage img, int smallestGroupLimit, 
+
+    protected void init(GreyscaleImage img, int smallestGroupLimit,
         int largestGroupLimit) {
-        
+
         extractBlobsFromSegmentedImage(img, blobs, smallestGroupLimit,
             largestGroupLimit);
-        
+
          boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        extractBoundsOfBlobs(img, blobs, blobOrderedPerimeters, 
+        extractBoundsOfBlobs(img, blobs, blobOrderedPerimeters,
             discardWhenCavityIsSmallerThanBorder);
-        
+
         populateContours(blobOrderedPerimeters, contours);
     }
-    
+
     /**
      * @param segImg segmented image
      * @param outputBlobs
@@ -133,7 +133,7 @@ public class BlobsAndContours {
                 }
             }
         }
-        
+
         if (debug) {
             Image img0 = ImageIOHelper.convertImage(segImg);
             int c = 0;
@@ -162,13 +162,13 @@ public class BlobsAndContours {
      */
     protected void extractBoundsOfBlobs(final GreyscaleImage segImg,
         final List<Set<PairInt>> inOutBlobs,
-        final List<PairIntArray> outputBounds, 
+        final List<PairIntArray> outputBounds,
         boolean discardWhenCavityIsSmallerThanBorder) {
 
         int width = segImg.getWidth();
-        
+
         int height = segImg.getHeight();
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         List<Integer> remove = new ArrayList<Integer>();
@@ -192,16 +192,16 @@ public class BlobsAndContours {
 
                 /*
                 int nChanged = 0;
-                
+
                 adjusting the edges using the unsegmented image did not work
                 as well on some images, so have disable this block.
                 keeping it until can review if it helps with some types of
                 segmentation.
-                
+
                 if (blobIsDarkerThanExterior(blob, closedEdge, img)) {
                     nChanged = curveHelper.adjustEdgesTowardsBrighterPixels(
-                        closedEdge, img);                  
-                    
+                        closedEdge, img);
+
                 } else {
                     nChanged = curveHelper.adjustEdgesTowardsDarkerPixels(
                         closedEdge, img);
@@ -216,7 +216,7 @@ public class BlobsAndContours {
 
                     curveHelper.correctCheckeredSegments(closedEdge);
                 }*/
-                
+
                 if (debug) {
                     Image img0 = ImageIOHelper.convertImage(segImg);
                     PairIntArray pa = closedEdge;
@@ -225,11 +225,11 @@ public class BlobsAndContours {
                         int y = pa.getY(j);
                         ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
                     }
-                    MiscDebug.writeImageCopy(img0, "closed_edge_" + debugTag 
-                        + "_" + Integer.valueOf(i) + 
+                    MiscDebug.writeImageCopy(img0, "closed_edge_" + debugTag
+                        + "_" + Integer.valueOf(i) +
                         "_" + MiscDebug.getCurrentTimeFormatted() + ".png");
                 }
-                
+
                 outputBounds.add(closedEdge);
 
             } else {
@@ -257,7 +257,7 @@ public class BlobsAndContours {
         List<PairIntArray> curves = new ArrayList<PairIntArray>();
 
         log.info("nBlobs before filtered to top =" + inOutBlobs.size());
-        
+
         int last = (inOutBlobs.size() > 15) ? 15 : inOutBlobs.size();
         for (int i = 0; i < last; ++i) {
             int idx = indexes[i];
@@ -272,7 +272,7 @@ public class BlobsAndContours {
         outputBounds.addAll(curves);
 
         log.info("nBlobs after filtered to top =" + inOutBlobs.size());
-        
+
         //TODO: put debug sections in AOP for special build after replace aspectj
         if (debug) {
             Image img0 = ImageIOHelper.convertImage(segImg);
@@ -294,64 +294,62 @@ public class BlobsAndContours {
                     }
                 }
             }
-            MiscDebug.writeImageCopy(img0, "blob_perimeters_" + debugTag + 
+            MiscDebug.writeImageCopy(img0, "blob_perimeters_" + debugTag +
                 "_" + MiscDebug.getCurrentTimeFormatted() + ".png");
         }
     }
 
-    protected void populateContours(final List<PairIntArray> closedContours, 
+    protected void populateContours(final List<PairIntArray> closedContours,
         final List<List<CurvatureScaleSpaceContour>> outputContours) {
-        
+
         outputContours.clear();
-        
-        List<ScaleSpaceCurveImage> scaleSpaceImages 
+
+        List<ScaleSpaceCurveImage> scaleSpaceImages
             = new ArrayList<ScaleSpaceCurveImage>();
-                
+
         boolean setToExtractWeakCurvesTooIfNeeded = false;
-        
+
         boolean allContoursZero = true;
-                
+
         for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
-            
-            ScaleSpaceCurveImage sscImg = 
+
+            ScaleSpaceCurveImage sscImg =
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.createScaleSpaceImage(
                     closedContours.get(edgeIndex), edgeIndex);
-            
+
             scaleSpaceImages.add(sscImg);
-            
-            List<CurvatureScaleSpaceContour> c = 
+
+            List<CurvatureScaleSpaceContour> c =
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
                 sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
-            
-            if (!c.isEmpty()) {
-                outputContours.add(c);
-            }
-            
+
+            outputContours.add(c);
+
             if (!c.isEmpty()) {
                 allContoursZero = false;
             }
         }
-        
+
         //TODO: consider whether want to include weak contours
         if (allContoursZero) {
-            
+
             setToExtractWeakCurvesTooIfNeeded = true;
-            
+
             outputContours.clear();
-            
+
             for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
-            
+
                 ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(edgeIndex);
 
-                List<CurvatureScaleSpaceContour> c = 
+                List<CurvatureScaleSpaceContour> c =
                     CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
                     sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
 
-                if (!c.isEmpty()) {
-                    outputContours.add(c);
-                }
+                outputContours.add(c);
             }
-        }        
+        }
+
+        assert(closedContours.size() == outputContours.size());
     }
 
     /**
