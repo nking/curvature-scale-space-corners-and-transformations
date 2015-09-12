@@ -113,6 +113,7 @@ public class BlobScaleFinder {
 
             double bestStatSqSum = Double.MAX_VALUE;
             double bestScale = -1;
+ //double bestCost consider comparisons by cost between matches
             int bestIdx2 = -1;
             int bestC2 = 0;
             int bestNMatched = -1;
@@ -235,142 +236,18 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                     bestOverallIdx2 + "]  combinedStat=" + bestOverallStatSqSum);
             }
         }
-
-        // ---- add to bestOverallCompStats for solutions similar to best -----
-        if (bestOverallCompStats != null) {
-log.info("looking for solutions similar to "+bestOverallCompStats);
-
-            float rotationBest = calculateRotationDifferences(bestOverallCompStats);
-
-            for (int i = 0; i < topForIndex1.getNumberOfItems(); ++i) {
-
-                IntensityFeatureComparisonStats cStats = topForIndex1.getArray()[i];
-
-                List<FeatureComparisonStat> stats = cStats.getComparisonStats();
-
-                if (stats.equals(bestOverallCompStats)) {
-                    continue;
-                }
-
-                boolean similar = true;
-
-                for (FeatureComparisonStat stat : stats) {
-
-                    float rot1 = stat.getImg1PointRotInDegrees();
-                    float rot2 = stat.getImg2PointRotInDegrees();
-
-                    float rot = AngleUtil.getAngleDifference(rot1, rot2);
-
-                    if (Math.abs(rot - rotationBest) > 30) {
-                        similar = false;
-                        break;
-                    }
-                }
-
-                if (similar) {
-                    bestOverallCompStats.addAll(stats);
-                }
-            }
-        }
-
+        
+        addSimilarToBestOverall(bestOverallCompStats, topForIndex1);
+        
         // -------- process the single solution compStats ------------
         if (bestOverallCompStats == null || bestOverallCompStats.isEmpty()) {
         
-            if (singleSolnMap.size() > 1) {
-log.info("WARNING: processing single solutions... may remove these in future");
-
-                Map<PairInt, List<FeatureComparisonStat>> compStatMap = 
-                    new HashMap<PairInt, List<FeatureComparisonStat>>();
-                
-                TreeSet<Integer> sIndexes1Set = new TreeSet<Integer>();
-                TreeSet<Integer> sIndexes2Set = new TreeSet<Integer>();
-                for (Entry<PairInt, CSSContourMatcherWrapper> entry : singleSolnMap.entrySet()) {
-                    PairInt p = entry.getKey();
-                    int idx1 = p.getX();
-                    int idx2 = p.getY();
-                    sIndexes1Set.add(Integer.valueOf(idx1));
-                    sIndexes2Set.add(Integer.valueOf(idx2));
-                }
-                float[][] cost = new float[sIndexes1Set.size()][];
-                Map<Integer, Integer> sIndexes1 = new HashMap<Integer, Integer>();
-                Map<Integer, Integer> sIndexes2 = new HashMap<Integer, Integer>();
-                int i = 0;
-                for (Integer sIndex1 : sIndexes1Set) {
-                    cost[i] = new float[sIndexes2Set.size()];
-                    Arrays.fill(cost[i], Float.MAX_VALUE);
-                    sIndexes1.put(sIndex1, Integer.valueOf(i));
-                    ++i;
-                }
-                int j = 0;
-                for (Integer sIndex2 : sIndexes2Set) {
-                    sIndexes2.put(sIndex2, Integer.valueOf(j));
-                    ++j;
-                }
-                
-                int nCS = 0;
-                
-                for (Entry<PairInt, CSSContourMatcherWrapper> entry : singleSolnMap.entrySet()) {
-                    
-                    PairInt p = entry.getKey();
-                    int idx1 = p.getX();
-                    int idx2 = p.getY();
-                    
-                    CSSContourMatcherWrapper matcher = entry.getValue();
-                    
-                    PairIntArray curve1 = perimeters1.get(idx1);
-                    Set<PairInt> blob1 = blobs1.get(idx1);
-                    PairIntArray curve2 = perimeters2.get(idx2);
-                    Set<PairInt> blob2 = blobs2.get(idx2);
-                
-                    List<FeatureComparisonStat> compStats =
-                        filterContourPointsByFeatures(img1, img2, 
-                        Integer.valueOf(idx1), Integer.valueOf(idx2),
-                        blob1, blob2, curve1, curve2, features1, features2,
-                        matcher);
-
-double[] xyCen1 = curveHelper.calculateXYCentroids(curve1);
-double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
-log.info(String.format("single solution [%d] (%d,%d)  [%d] (%d,%d)  nCS=%d",
-idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-compStats.size()));
-
-                    if (compStats.isEmpty()) {
-                        continue;
-                    }
-                    
-                    compStatMap.put(p, compStats);
-                    
-                    double combStat = calculateCombinedIntensityStat(compStats);
-
-                    int cIdx1 = sIndexes1.get(Integer.valueOf(idx1)).intValue();
-                    int cIdx2 = sIndexes2.get(Integer.valueOf(idx2)).intValue();
-                    cost[cIdx1][cIdx2] = (float)combStat;
-                    
-                    nCS++;                    
-                }
-                
-                if (nCS > 1) {
-                    List<FeatureComparisonStat> csList = new ArrayList<FeatureComparisonStat>();
-                    HungarianAlgorithm b = new HungarianAlgorithm();
-                    int[][] match = b.computeAssignments(cost);
-                    for (int ii = 0; ii < match.length; ii++) {
-                        int idx1 = match[ii][0];
-                        int idx2 = match[ii][1];
-                        if (idx1 == -1 || idx2 == -1) {
-                            continue;
-                        }
-                        PairInt p = new PairInt(idx1, idx2);
-                        List<FeatureComparisonStat> stats = compStatMap.get(p);
-                        csList.addAll(stats);
-                    }
-                    removeOutliers(csList);
-                    if (csList.size() > 1) {
-                        bestOverallCompStats = new ArrayList<FeatureComparisonStat>();
-                        bestOverallCompStats.addAll(csList);
-                    }
-                }
+            if (singleSolnMap.size() > 1) {                
+                processSingleSolutionsIfNoBest(img1, img2, bestOverallCompStats, 
+                    singleSolnMap, blobs1, blobs2, perimeters1, perimeters2,
+                    features1, features2);
             }
+            
             if ((bestOverallCompStats == null) || bestOverallCompStats.isEmpty()) {
                 return null;
             }
@@ -904,4 +781,151 @@ int z = 1;
         return (float)(sumDiff/(double)compStats.size());
     }
 
+    private void addSimilarToBestOverall(List<FeatureComparisonStat> 
+        bestOverallCompStats, 
+        FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1) {
+        
+        // ---- add to bestOverallCompStats for solutions similar to best -----
+        if (bestOverallCompStats != null) {
+            
+log.info("looking for solutions similar to "+bestOverallCompStats);
+
+            float rotationBest = calculateRotationDifferences(bestOverallCompStats);
+
+            for (int i = 0; i < topForIndex1.getNumberOfItems(); ++i) {
+
+                IntensityFeatureComparisonStats cStats = topForIndex1.getArray()[i];
+
+                List<FeatureComparisonStat> stats = cStats.getComparisonStats();
+
+                if (stats.equals(bestOverallCompStats)) {
+                    continue;
+                }
+
+                boolean similar = true;
+
+                for (FeatureComparisonStat stat : stats) {
+
+                    float rot1 = stat.getImg1PointRotInDegrees();
+                    float rot2 = stat.getImg2PointRotInDegrees();
+
+                    float rot = AngleUtil.getAngleDifference(rot1, rot2);
+
+                    if (Math.abs(rot - rotationBest) > 30) {
+                        similar = false;
+                        break;
+                    }
+                }
+
+                if (similar) {
+                    bestOverallCompStats.addAll(stats);
+                }
+            }
+        }
+    }
+
+    private void processSingleSolutionsIfNoBest(
+        GreyscaleImage img1, GreyscaleImage img2,
+        List<FeatureComparisonStat> bestOverallCompStats, 
+        Map<PairInt, CSSContourMatcherWrapper> singleSolnMap, 
+        List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2, 
+        List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
+        IntensityFeatures features1, IntensityFeatures features2) {
+        
+log.info("WARNING: processing single solutions... may remove these in future");
+
+        Map<PairInt, List<FeatureComparisonStat>> compStatMap = 
+            new HashMap<PairInt, List<FeatureComparisonStat>>();
+
+        TreeSet<Integer> sIndexes1Set = new TreeSet<Integer>();
+        TreeSet<Integer> sIndexes2Set = new TreeSet<Integer>();
+        for (Entry<PairInt, CSSContourMatcherWrapper> entry : singleSolnMap.entrySet()) {
+            PairInt p = entry.getKey();
+            int idx1 = p.getX();
+            int idx2 = p.getY();
+            sIndexes1Set.add(Integer.valueOf(idx1));
+            sIndexes2Set.add(Integer.valueOf(idx2));
+        }
+        float[][] cost = new float[sIndexes1Set.size()][];
+        Map<Integer, Integer> sIndexes1 = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> sIndexes2 = new HashMap<Integer, Integer>();
+        int i = 0;
+        for (Integer sIndex1 : sIndexes1Set) {
+            cost[i] = new float[sIndexes2Set.size()];
+            Arrays.fill(cost[i], Float.MAX_VALUE);
+            sIndexes1.put(sIndex1, Integer.valueOf(i));
+            ++i;
+        }
+        int j = 0;
+        for (Integer sIndex2 : sIndexes2Set) {
+            sIndexes2.put(sIndex2, Integer.valueOf(j));
+            ++j;
+        }
+
+        int nCS = 0;
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        for (Entry<PairInt, CSSContourMatcherWrapper> entry : singleSolnMap.entrySet()) {
+
+            PairInt p = entry.getKey();
+            int idx1 = p.getX();
+            int idx2 = p.getY();
+
+            CSSContourMatcherWrapper matcher = entry.getValue();
+
+            PairIntArray curve1 = perimeters1.get(idx1);
+            Set<PairInt> blob1 = blobs1.get(idx1);
+            PairIntArray curve2 = perimeters2.get(idx2);
+            Set<PairInt> blob2 = blobs2.get(idx2);
+
+            List<FeatureComparisonStat> compStats =
+                filterContourPointsByFeatures(img1, img2, 
+                Integer.valueOf(idx1), Integer.valueOf(idx2),
+                blob1, blob2, curve1, curve2, features1, features2,
+                matcher);
+
+double[] xyCen1 = curveHelper.calculateXYCentroids(curve1);
+double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
+log.info(String.format("single solution [%d] (%d,%d)  [%d] (%d,%d)  nCS=%d",
+idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
+compStats.size()));
+
+            if (compStats.isEmpty()) {
+                continue;
+            }
+
+            compStatMap.put(p, compStats);
+
+            double combStat = calculateCombinedIntensityStat(compStats);
+
+            int cIdx1 = sIndexes1.get(Integer.valueOf(idx1)).intValue();
+            int cIdx2 = sIndexes2.get(Integer.valueOf(idx2)).intValue();
+            cost[cIdx1][cIdx2] = (float)combStat;
+
+            nCS++;                    
+        }
+
+        if (nCS > 1) {
+            List<FeatureComparisonStat> csList = new ArrayList<FeatureComparisonStat>();
+            HungarianAlgorithm b = new HungarianAlgorithm();
+            int[][] match = b.computeAssignments(cost);
+            for (int ii = 0; ii < match.length; ii++) {
+                int idx1 = match[ii][0];
+                int idx2 = match[ii][1];
+                if (idx1 == -1 || idx2 == -1) {
+                    continue;
+                }
+                PairInt p = new PairInt(idx1, idx2);
+                List<FeatureComparisonStat> stats = compStatMap.get(p);
+                csList.addAll(stats);
+            }
+            removeOutliers(csList);
+            if (csList.size() > 1) {
+                bestOverallCompStats = new ArrayList<FeatureComparisonStat>();
+                bestOverallCompStats.addAll(csList);
+            }
+        }
+    }
 }

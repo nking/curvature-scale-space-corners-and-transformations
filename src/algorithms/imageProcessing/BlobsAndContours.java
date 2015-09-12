@@ -110,7 +110,13 @@ public class BlobsAndContours {
             Integer pixValue = entry.getKey();
 
             DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
-            finder.setMinimumNumberInCluster(smallestGroupLimit);
+            finder.setToUse8Neighbors();
+            if (smallestGroupLimit == 0) {
+                finder.setMinimumNumberInCluster(1);
+            } else {
+                finder.setMinimumNumberInCluster(smallestGroupLimit);
+            }
+            
             finder.findGroups(pixValue.intValue());
 
             int nGroups = finder.getNumberOfGroups();
@@ -225,6 +231,8 @@ public class BlobsAndContours {
                         int y = pa.getY(j);
                         ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
                     }
+                    ImageIOHelper.addPointToImage(pa.getX(0), pa.getY(0), img0, 0, 255, 255, 0);
+                    ImageIOHelper.addPointToImage(pa.getX(pa.getN() - 1), pa.getY(pa.getN() - 1), img0, 0, 255, 255, 0);
                     MiscDebug.writeImageCopy(img0, "closed_edge_" + debugTag
                         + "_" + Integer.valueOf(i) +
                         "_" + MiscDebug.getCurrentTimeFormatted() + ".png");

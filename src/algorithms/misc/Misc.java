@@ -29,6 +29,9 @@ public class Misc {
     
     public static final int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
     public static final int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+    
+    public static final int[] dx4 = new int[]{-1,  0, 1, 0};
+    public static final int[] dy4 = new int[]{ 0, -1, 0, 1};
         
     public static Set<PairInt> convert(PairIntArray points) {
         

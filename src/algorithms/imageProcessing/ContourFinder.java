@@ -694,26 +694,32 @@ public class ContourFinder {
         boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);
         if (isCW) {
             didReverse = true;
-            for (int j = 0; j < result.size(); j++) {
-                CurvatureScaleSpaceContour contour = result.get(j);
-                CurvatureScaleSpaceContour reversed = 
-                    new CurvatureScaleSpaceContour(contour.getPeakSigma(), 
-                        1.0f - contour.getPeakScaleFreeLength());
-                CurvatureScaleSpaceImagePoint[] points = contour.getPeakDetails();
-                if (points.length > 1) {
-                    CurvatureScaleSpaceImagePoint tmp = points[0];
-                    points[0] = points[1];
-                    points[1] = tmp;
-                }
-                for (int jj = 0; jj < points.length; jj++) {
-                    points[jj].setScaleFreeLength(1.0f - points[jj].getScaleFreeLength());
-                }
-                reversed.setPeakDetails(points);
-                reversed.setEdgeNumber(contour.getEdgeNumber());
-                result.set(j, reversed);
-            }
+            reversePointOrder(result);
         }
         
         return didReverse;
+    }
+
+    static void reversePointOrder(List<CurvatureScaleSpaceContour> result) {
+        
+        for (int j = 0; j < result.size(); j++) {
+            CurvatureScaleSpaceContour contour = result.get(j);
+            CurvatureScaleSpaceContour reversed = 
+                new CurvatureScaleSpaceContour(contour.getPeakSigma(), 
+                    1.0f - contour.getPeakScaleFreeLength());
+            CurvatureScaleSpaceImagePoint[] points = contour.getPeakDetails();
+            if (points.length > 1) {
+                CurvatureScaleSpaceImagePoint tmp = points[0];
+                points[0] = points[1];
+                points[1] = tmp;
+            }
+            for (int jj = 0; jj < points.length; jj++) {
+                points[jj].setScaleFreeLength(1.0f - points[jj].getScaleFreeLength());
+            }
+            reversed.setPeakDetails(points);
+            reversed.setEdgeNumber(contour.getEdgeNumber());
+            result.set(j, reversed);
+        }
+        
     }
 }

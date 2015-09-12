@@ -569,7 +569,7 @@ try {
         }
     }
     
-    protected void correctPeaks(List<CurvatureScaleSpaceContour> matched1, 
+    protected void correctPeaks0(List<CurvatureScaleSpaceContour> matched1, 
         List<CurvatureScaleSpaceContour> matched2) {
         
         if (matched1.size() != matched2.size()) {
@@ -618,6 +618,60 @@ try {
                     c1.setPeakDetails(p);
                     matched1.set(i, c1);
                 }
+            }
+        }        
+    }
+    
+    protected void correctPeaks(List<CurvatureScaleSpaceContour> matched1, 
+        List<CurvatureScaleSpaceContour> matched2) {
+        
+        if (matched1.size() != matched2.size()) {
+            throw new IllegalArgumentException("lengths of matched1" 
+            + " and matchedContours2 must be the same");
+        }
+        correctPeaks(matched1);
+        correctPeaks(matched2);
+    }
+    
+    /**
+     * when peak details has more than one point, this averages them and
+     * replaces the details with a single point. 
+     * @param contours 
+     */
+    protected void correctPeaks(List<CurvatureScaleSpaceContour> contours) {
+        
+        if (contours == null) {
+            throw new IllegalArgumentException("contours cannot be null");
+        }
+        
+        if (contours.isEmpty()) {
+            return;
+        }
+        
+        // the contours extracted from scale space images using a factor of
+        // 2^(1/8) for recursive convolution tend to not have a single peak,
+        // so the correction here for the single peak case is not usually
+        // needed.  for that rare case, the avg of the other peak is stored
+        // instead of both points
+        
+        for (int i = 0; i < contours.size(); i++) {
+            
+            CurvatureScaleSpaceContour c1 = contours.get(i);
+            
+            if (c1.getPeakDetails().length > 1) {                
+                CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];
+                CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];
+                float t = p0.getScaleFreeLength();
+                float s = p0.getSigma();
+                int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
+                int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
+                CurvatureScaleSpaceImagePoint pAvg =
+                    new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
+                    p0.getCoordIdx());
+                CurvatureScaleSpaceImagePoint[] p =
+                    new CurvatureScaleSpaceImagePoint[]{pAvg};
+                c1.setPeakDetails(p);
+                contours.set(i, c1);
             }
         }        
     }

@@ -123,7 +123,7 @@ public class ScaleSpaceCurvature {
             */
         }
         
-        calculateZeroCrossings(scaleSpaceCurve, curve);
+        calculateZeroCrossings(scaleSpaceCurve, curve, isClosedCurved);
 
         return scaleSpaceCurve;
     }
@@ -143,8 +143,15 @@ public class ScaleSpaceCurvature {
     }
 
     private void calculateZeroCrossings(ScaleSpaceCurve scaleSpaceCurve,
-        PairIntArray curve) {
+        PairIntArray curve, boolean isClosedCurved) {
 
+        final int n = scaleSpaceCurve.getSize();
+        
+        if (n < 3) {
+            scaleSpaceCurve.compressKIsZeroIdx();
+            return;
+        }
+        
         /*
         // find the points where the curvature changes from + to -, but
         // discard such changes when they are noise.
@@ -176,18 +183,122 @@ public class ScaleSpaceCurvature {
             log.severe(e.getMessage());
         }
         */
+         
+        // simple zero crossings works well on curves, but not on straight lines
+        //log.info("new curve (" + scaleSpaceCurve.getSize() + ")");
+        float maxInflectionK = Integer.MIN_VALUE;
+        if (isClosedCurved) {
+            if (isZeroCrossing(scaleSpaceCurve.getK(n - 1),
+                scaleSpaceCurve.getK(0))) {
+                float k = scaleSpaceCurve.getK(0);
+                if (k < 0) {
+                    k *= -1;
+                }
+                if (k > maxInflectionK) {
+                    maxInflectionK = k;
+                }
+                //log.info("   i=" + 0 + " x=" + curve.getX(0) + " y=" + curve.getY(0) + " k=" + k);
+                //scaleSpaceCurve.addKIsZeroIdx(0, curve.getX(0), curve.getY(0));
+            }
+        }
 
-        //TODO: adjust this to avoid noise
         for (int i = 1; i < scaleSpaceCurve.getK().length; ++i) {
-            
             if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),
                 scaleSpaceCurve.getK(i))) {
-
-                scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));
+                float k = scaleSpaceCurve.getK(i);
+                if (k < 0) {
+                    k *= -1;
+                }
+                if (k > maxInflectionK) {
+                    maxInflectionK = k;
+                }
+                //log.info("   i=" + i + " x=" + curve.getX(i) + " y=" + curve.getY(i) + " k=" + k);
+                //scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));
             }
         }
         
+        //adjusting for straight lines.  consecutive points ~0 should
+        //be summarized to just the mid point as the inflection point
+        
+        int endingIdx = -1;
+        int beginningIdx = -1;
+        boolean addToEnd = false;
+        int addIdx = -1;
+        if (isClosedCurved) {
+            // scan the wrap around of end to beginning
+            if ((Math.abs(scaleSpaceCurve.getK()[n - 1]) <= maxInflectionK) && 
+                (Math.abs(scaleSpaceCurve.getK()[0]) <= maxInflectionK)) {
+                for (int i = (n - 1); i > -1; --i) {
+                    if (Math.abs(scaleSpaceCurve.getK()[i]) <= maxInflectionK) {
+                        endingIdx = i;
+                    } else {
+                        break;
+                    }
+                }
+                for (int i = 0; i < n; ++i) {
+                    if (Math.abs(scaleSpaceCurve.getK()[i]) <= maxInflectionK) {
+                        beginningIdx = i;
+                    } else {
+                        break;
+                    }
+                }
+                int midIdx = endingIdx + ((n - endingIdx + beginningIdx)/2);
+                if (midIdx > (n - 1)) {
+                    midIdx = midIdx - n;
+                } else {
+                    addToEnd = true;
+                    addIdx = midIdx;
+                }
+                //log.info("   beginningIdx=" + beginningIdx + " endIdx=" + endingIdx + " midIdx=" + midIdx);
+                //log.info("     " + beginningIdx + " (" + curve.getX(beginningIdx) + "," + curve.getY(beginningIdx) + ")"
+                //    + "   " + endingIdx + " (" + curve.getX(endingIdx) + "," + curve.getY(endingIdx) + ")"
+                //);
+                if (!addToEnd) { 
+                    scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));
+                }
+            }
+        }
+        
+        int i0 = (beginningIdx > -1) ? (beginningIdx + 1) : 0;
+        int i1 = (endingIdx > -1) ? endingIdx : n;
+        int startIdx = -1;
+        int endIdx = -1;
+        for (int i = i0; i < i1; ++i) {
+            float k = scaleSpaceCurve.getK()[i];
+            if (Math.abs(k) <= maxInflectionK) {
+                if (startIdx == -1) {
+                    startIdx = i;
+                    endIdx = i;
+                } else {
+                    endIdx = i;
+                }
+            } else {
+                if (startIdx > -1) {
+                    int midIdx = (startIdx + endIdx)/2;
+                    //log.info("   startIdx=" + startIdx + " endIdx=" + (i-1) + " midIdx=" + midIdx);
+                    //log.info("     " + startIdx + " (" + curve.getX(startIdx) + "," + curve.getY(startIdx) + ")"
+                    //    + "   " + (i-1) + " (" + curve.getX(i-1) + "," + curve.getY(i-1) + ")"
+                    //);
+                    scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));
+                }
+                startIdx = -1;
+                endIdx = -1;
+            }
+        }
+        if (startIdx > -1) {
+             int midIdx = (startIdx + endIdx)/2;
+             //log.info("   startIdx=" + startIdx + " endIdx=" + endIdx + " midIdx=" + midIdx);
+             //   log.info("     " + startIdx + " (" + curve.getX(startIdx) + "," + curve.getY(startIdx) + ")"
+             //   + "   " + (endIdx) + " (" + curve.getX(endIdx) + "," + curve.getY(endIdx) + ")"
+             //);
+             scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));
+        }
+        if (addToEnd) { 
+            scaleSpaceCurve.addKIsZeroIdx(addIdx, curve.getX(addIdx), curve.getY(addIdx));
+        }
+       
 //log.info("k=" + java.util.Arrays.toString(scaleSpaceCurve.getK()));
+//log.info("k=" + java.util.Arrays.toString(scaleSpaceCurve.getKIsZeroIdx()));
 
         scaleSpaceCurve.compressKIsZeroIdx();
 

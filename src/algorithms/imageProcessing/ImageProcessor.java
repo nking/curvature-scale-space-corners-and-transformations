@@ -3026,6 +3026,8 @@ public class ImageProcessor {
      * find contiguous zeros in image and if the number of pixels in a groups
      * is less than contiguousZerosLimit, fill in the pixels with the
      * value of the neighboring pixels.
+     * NOTE: this is set to use the 4-neighbor region, but can be set to use
+     * 8-neighbors if needed.
      */
     public void fillInPixels(GreyscaleImage img, final int valueToFill,
         final int contiguousZerosLimit) {

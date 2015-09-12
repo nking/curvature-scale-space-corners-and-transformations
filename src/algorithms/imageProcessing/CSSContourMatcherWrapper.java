@@ -138,7 +138,7 @@ public final class CSSContourMatcherWrapper {
             
             return true;
         }
-           
+                   
         // ----- possibly ambiguous default solution or no default solution ----
         
         CSSContourMatcher mReverse = new CSSContourMatcher(contours2, contours1, 
@@ -146,6 +146,34 @@ public final class CSSContourMatcherWrapper {
             
         boolean solvedReverse = mReverse.matchContours() &&
             (mReverse.getSolvedScale() < Double.MAX_VALUE);
+        
+        // the isCW method may need revision
+        /*if (mReverse.scaleIsPossiblyAmbiguous() || !solvedReverse) {
+            
+            List<CurvatureScaleSpaceContour> contours2PointsRev 
+                = new ArrayList<CurvatureScaleSpaceContour>(contours2);
+            
+            ContourFinder.reversePointOrder(contours2PointsRev);
+            
+            CSSContourMatcher mDefault2 = new CSSContourMatcher(contours1, contours2PointsRev, 
+                contoursAreAlreadySorted);
+            
+            boolean solved2 = mDefault2.matchContours() && 
+                (mDefault2.getSolvedScale() < Double.MAX_VALUE);
+            
+            if (mDefault2.scaleIsPossiblyAmbiguous() || !solved2) {
+                
+                CSSContourMatcher mReverse2 = new CSSContourMatcher(
+                    contours2PointsRev, contours1, contoursAreAlreadySorted);
+            
+                boolean solvedReverse2 = mReverse2.matchContours() &&
+                    (mReverse2.getSolvedScale() < Double.MAX_VALUE);
+                
+                int z = 1;
+            }
+            
+            int z = 1;
+        }*/
         
         if (!solvedReverse && solved) {
             

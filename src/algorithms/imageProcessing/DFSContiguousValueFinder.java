@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
@@ -48,6 +49,11 @@ public class DFSContiguousValueFinder {
     
     protected final GreyscaleImage img;
     
+    /**
+     * uses the 4 neighbor region if true, else the 8-neighbor region
+     */
+    protected boolean use4Neighbors = true;
+    
     public DFSContiguousValueFinder(final GreyscaleImage input) {
         
         this.img = input;
@@ -61,6 +67,10 @@ public class DFSContiguousValueFinder {
     
     public void setDebug(boolean setDebugToTrue) {
         this.debug = setDebugToTrue;
+    }
+    
+    public void setToUse8Neighbors() {
+        use4Neighbors = false;
     }
        
     /**
@@ -115,10 +125,15 @@ public class DFSContiguousValueFinder {
         int width = img.getWidth();
         int height = img.getHeight();
         
-        //int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        //int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        int[] dxs = new int[]{-1, 0,  1, 0};
-        int[] dys = new int[]{ 0, -1, 0, 1};
+        int[] dxs;
+        int[] dys;
+        if (use4Neighbors) {
+            dxs = Misc.dx4;
+            dys = Misc.dy4;
+        } else {
+            dxs = Misc.dx8;
+            dys = Misc.dy8;
+        }
         
         java.util.Stack<Integer> stack = new java.util.Stack<Integer>();
         

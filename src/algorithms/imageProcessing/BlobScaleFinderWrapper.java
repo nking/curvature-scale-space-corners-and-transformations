@@ -87,6 +87,11 @@ public class BlobScaleFinderWrapper {
             img1Helper.getGreyscaleImage(), true);
         ImageStatistics stats2 = ImageStatisticsHelper.examineImage(
             img2Helper.getGreyscaleImage(), true);
+        
+        if (debug) {
+            log.info(stats1.toString());
+            log.info(stats2.toString());
+        }
 
         /*
         depending on image statistics, different combinations of segmentation
@@ -95,7 +100,9 @@ public class BlobScaleFinderWrapper {
 
         SegmentationType[] orderOfSeg1;
         boolean[] orderOfBinning1;
-        if (stats1.getHistAreas()[1] >= 0.75) {
+        SegmentationType[] orderOfSeg2;
+        boolean[] orderOfBinning2;
+        /*if (stats1.getHistAreas()[1] >= 0.75) {
             orderOfSeg1 = new SegmentationType[]{
                 SegmentationType.BINARY, SegmentationType.BINARY,
                 SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
@@ -109,8 +116,6 @@ public class BlobScaleFinderWrapper {
                 img1Helper.applyEqualizationIfNeededByComparison(img2Helper);
             log.info("didApplyHistEq=" + didApplyHistEq);
         }
-        SegmentationType[] orderOfSeg2;
-        boolean[] orderOfBinning2;
         if (stats2.getHistAreas()[1] >= 0.75) {
             orderOfSeg2 = new SegmentationType[]{
                 SegmentationType.BINARY, SegmentationType.BINARY,
@@ -121,8 +126,12 @@ public class BlobScaleFinderWrapper {
                 SegmentationType.GREYSCALE_KMPP, SegmentationType.GREYSCALE_KMPP,
                 SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
             orderOfBinning2 = new boolean[] {true, false, true, false};
-        }
-
+        }*/
+        orderOfSeg1 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
+        orderOfBinning1 = new boolean[] {false};
+        orderOfSeg2 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
+        orderOfBinning2 = new boolean[] {false};
+        
         int ordered1Idx = 0;
         int ordered2Idx = 0;
 

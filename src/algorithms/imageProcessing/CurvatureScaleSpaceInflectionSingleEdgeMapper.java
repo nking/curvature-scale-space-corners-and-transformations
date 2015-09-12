@@ -148,13 +148,6 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
     public static List<CurvatureScaleSpaceContour> populateContours(
         ScaleSpaceCurveImage scaleSpaceImage, int edgeIndex, 
         boolean setToExtractWeakCurvesTooIfNeeded) {
-        
- try {
- String fileSuffix = "edge_" + edgeIndex + "_" + MiscDebug.getCurrentTimeFormatted();
- MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);
- int z = 1;
- } catch (IOException ex) {
- }
             
         ContourFinder contourFinder = new ContourFinder();
         
