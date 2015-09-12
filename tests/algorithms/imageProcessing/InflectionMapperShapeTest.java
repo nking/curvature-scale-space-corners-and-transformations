@@ -66,7 +66,7 @@ public class InflectionMapperShapeTest extends TestCase {
 
             List<CurvatureScaleSpaceContour> c =
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
-                sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
+                sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded, edge);
 
             MiscDebug.printScaleSpaceCurve(sscImg, fileSuffix);
 

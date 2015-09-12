@@ -321,15 +321,17 @@ public class BlobsAndContours {
 
         for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
 
+            PairIntArray edge = closedContours.get(edgeIndex);
+            
             ScaleSpaceCurveImage sscImg =
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.createScaleSpaceImage(
-                    closedContours.get(edgeIndex), edgeIndex);
+                    edge, edgeIndex);
 
             scaleSpaceImages.add(sscImg);
 
             List<CurvatureScaleSpaceContour> c =
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
-                sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
+                sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded, edge);
 
             outputContours.add(c);
 
@@ -347,11 +349,13 @@ public class BlobsAndContours {
 
             for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
 
+                PairIntArray edge = closedContours.get(edgeIndex);
+                
                 ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(edgeIndex);
 
                 List<CurvatureScaleSpaceContour> c =
                     CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
-                    sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
+                    sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded, edge);
 
                 outputContours.add(c);
             }

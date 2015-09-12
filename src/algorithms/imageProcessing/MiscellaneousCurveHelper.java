@@ -89,17 +89,16 @@ public class MiscellaneousCurveHelper {
             long crossProduct = (dxmxm1 * dyp1my) - (dymym1 * dxp1mx);
 
             if (crossProduct < 0) {
+                // clockwise when crossProduct is negative
                 nNeg++;
             }
         }
 
-        Logger.getLogger(this.getClass().getName()).fine(
-            "nNegative=" + nNeg + " nTotal=" + n);
+        int nPos = n - nNeg;//n - 2 - nNeg;
 
-        int nPos = n - 2 - nNeg;
+        //log.info(closedCurve.toString());
+        //log.info("n=" + n + " nNegative=" + nNeg + " nPositive=" + nPos);
 
-        // note, may want to adjust this for image perspective where
-        // positive y is in downward direction.
         return ((n > 2) && (nNeg >= nPos)) || (nNeg > nPos);
      }
 
@@ -740,7 +739,7 @@ public class MiscellaneousCurveHelper {
     public void removeRedundantPoints(List<PairIntArray> tmpEdges) {
 
         //TODO: fix this method!!
-        
+
         log.fine("removeRedundantPoints");
 
         // if there are redundant points, remove the points in between

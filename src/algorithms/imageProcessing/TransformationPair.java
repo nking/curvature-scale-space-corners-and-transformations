@@ -12,6 +12,8 @@ public class TransformationPair {
     private double scale;
     private double shift;
     
+    private boolean someScaleAreSmallerThanOne = false;
+    
     /**
      * object used to track visits and help choose the next contour.
      * NOTE: this may be null until first search to reduce memory used.
@@ -81,4 +83,13 @@ public class TransformationPair {
     public void setNextContour(NextContour nextContour) {
         this.nextContour = nextContour;
     }
+
+    public void setSomeScaleAreSmallerThanOne() {
+        someScaleAreSmallerThanOne = true;
+    }
+    
+    public boolean scaleIsPossiblyAmbiguous() {
+        return someScaleAreSmallerThanOne;
+    }
+
 }

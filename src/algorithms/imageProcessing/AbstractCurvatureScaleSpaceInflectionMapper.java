@@ -231,6 +231,9 @@ for (int j = 0; j < edges2.get(i2).getN(); ++j) {
 MiscDebug.writeImageCopy(img3, "edge2_" + i2 + "_.png");     
 }
 
+log.info("offsetImage 1=(" + offsetImageX1 + "," + offsetImageY1 + ")");
+log.info("offsetImage 2=(" + offsetImageX2 + "," + offsetImageY2 + ")");
+
                 boolean didMatch = matcher.matchContours();
                 
                 if (!didMatch) {
@@ -290,9 +293,7 @@ int z = 1;
             if (bestM1 != null) {
                 
                 // calculate the implied transformation from these matched points
-                
-                correctPeaks(bestM1, bestM2);
-                
+                                
                 PairIntArray xy1 = new PairIntArray(bestM1.size());
                 PairIntArray xy2 = new PairIntArray(bestM2.size());
         
@@ -622,23 +623,13 @@ try {
         }        
     }
     
-    protected void correctPeaks(List<CurvatureScaleSpaceContour> matched1, 
-        List<CurvatureScaleSpaceContour> matched2) {
-        
-        if (matched1.size() != matched2.size()) {
-            throw new IllegalArgumentException("lengths of matched1" 
-            + " and matchedContours2 must be the same");
-        }
-        correctPeaks(matched1);
-        correctPeaks(matched2);
-    }
-    
     /**
      * when peak details has more than one point, this averages them and
      * replaces the details with a single point. 
      * @param contours 
      */
-    protected void correctPeaks(List<CurvatureScaleSpaceContour> contours) {
+    protected void correctPeaks(List<CurvatureScaleSpaceContour> contours,
+        PairIntArray edge) {
         
         if (contours == null) {
             throw new IllegalArgumentException("contours cannot be null");
@@ -661,15 +652,19 @@ try {
             if (c1.getPeakDetails().length > 1) {                
                 CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];
                 CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];
-                float t = p0.getScaleFreeLength();
+                
+                int iMid = (p0.getCoordIdx() + p1.getCoordIdx())/2;
+                
                 float s = p0.getSigma();
-                int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
-                int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
-                CurvatureScaleSpaceImagePoint pAvg =
-                    new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
-                    p0.getCoordIdx());
+                float tAvg = (p0.getScaleFreeLength() + p1.getScaleFreeLength())/2.f;
+                
+                int xMid = edge.getX(iMid);
+                int yMid = edge.getY(iMid);
+                
+                CurvatureScaleSpaceImagePoint pMid =
+                    new CurvatureScaleSpaceImagePoint(s, tAvg, xMid, yMid, iMid);
                 CurvatureScaleSpaceImagePoint[] p =
-                    new CurvatureScaleSpaceImagePoint[]{pAvg};
+                    new CurvatureScaleSpaceImagePoint[]{pMid};
                 c1.setPeakDetails(p);
                 contours.set(i, c1);
             }
@@ -853,12 +848,16 @@ try {
             
             ContourFinder contourFinder = new ContourFinder();
 
-            List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
-
-            boolean reversed = contourFinder.reverseIfClockwise(result);
+            List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);   
+            
+            correctPeaks(result, edge);
+            
+            removeRedundant(result);
+                
+            boolean reversed = contourFinder.reverseIfClockwise(result, edge);
 
             if (reversed) {
-                log.info("EDGES1: contour isCW=true");
+                log.info("EDGES: contour isCW=true");
 
                 // these are extracted from contourFinder in order of decreasing
                 // sigma already, so only need to be sorted if the list was
@@ -912,4 +911,26 @@ try {
         return indexes;
     }
 
+    private static void removeRedundant(List<CurvatureScaleSpaceContour> contours) {
+        
+        Set<Integer> indexes = new HashSet<Integer>();
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int i = 0; i < contours.size(); ++i) {
+            CurvatureScaleSpaceContour contour = contours.get(i);
+            for (CurvatureScaleSpaceImagePoint ip : contour.getPeakDetails()) {
+                Integer idx = Integer.valueOf(ip.getCoordIdx());
+                if (indexes.contains(idx)) {
+                    remove.add(i);
+                } else {
+                    indexes.add(idx);
+                }
+            }
+        }
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i);
+            contours.remove(idx);
+        }
+    }
 }

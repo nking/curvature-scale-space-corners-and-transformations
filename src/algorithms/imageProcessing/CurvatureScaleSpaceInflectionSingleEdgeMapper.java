@@ -147,7 +147,8 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
     
     public static List<CurvatureScaleSpaceContour> populateContours(
         ScaleSpaceCurveImage scaleSpaceImage, int edgeIndex, 
-        boolean setToExtractWeakCurvesTooIfNeeded) {
+        boolean setToExtractWeakCurvesTooIfNeeded,
+        PairIntArray edge) {
             
         ContourFinder contourFinder = new ContourFinder();
         
@@ -158,7 +159,16 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         List<CurvatureScaleSpaceContour> result = 
             contourFinder.findContours(scaleSpaceImage, edgeIndex);
 
-        boolean reversed = contourFinder.reverseIfClockwise(result);
+        correctPeaks(result, edge);
+        
+        /*
+        for curves formed via blob boundaries rather than canny edge detector,
+        can see a zig zag structure for the points near the top of a sigma=5 to 7
+        scale space curve.  this next corrects for some of that.
+        */
+        removeRedundant(result);
+        
+        boolean reversed = contourFinder.reverseIfClockwise(result, edge);
 
         if (reversed) {
             //log.info("EDGES1: contour isCW=true");
@@ -168,15 +178,6 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
             // reversed
             Collections.sort(result, new DescendingSigmaComparator());
         }
-        
-        correctPeaks(result);
-        
-        /*
-        for curves formed via blob boundaries rather than canny edge detector,
-        can see a zig zag structure for the points near the top of a sigma=5 to 7
-        scale space curve.  this next corrects for some of that.
-        */
-        removeRedundant(result);
 
         return result;
     }
@@ -197,7 +198,8 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
       * </pre>
      * @param contours 
      */
-    protected static void correctPeaks(List<CurvatureScaleSpaceContour> contours) {
+    protected static void correctPeaks(List<CurvatureScaleSpaceContour> contours,
+        PairIntArray edge) {
         
         if (contours == null) {
             throw new IllegalArgumentException("contours cannot be null");
@@ -220,15 +222,19 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
             if (c1.getPeakDetails().length > 1) {                
                 CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];
                 CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];
-                float t = p0.getScaleFreeLength();
+                
+                int iMid = (p0.getCoordIdx() + p1.getCoordIdx())/2;
+                
+                float tAvg = (p0.getScaleFreeLength() + p1.getScaleFreeLength())/2.f;
                 float s = p0.getSigma();
-                int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
-                int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
-                CurvatureScaleSpaceImagePoint pAvg =
-                    new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
-                    p0.getCoordIdx());
+                
+                int xMid = edge.getX(iMid);
+                int yMid = edge.getY(iMid);
+                
+                CurvatureScaleSpaceImagePoint pMid =
+                    new CurvatureScaleSpaceImagePoint(s, tAvg, xMid, yMid, iMid);
                 CurvatureScaleSpaceImagePoint[] p =
-                    new CurvatureScaleSpaceImagePoint[]{pAvg};
+                    new CurvatureScaleSpaceImagePoint[]{pMid};
                 c1.setPeakDetails(p);
                 contours.set(i, c1);
             }
