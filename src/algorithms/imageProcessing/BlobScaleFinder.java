@@ -1,8 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
+import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -12,7 +11,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,7 +23,7 @@ import thirdparty.HungarianAlgorithm;
  *
  * @author nichole
  */
-public class AbstractBlobScaleFinder {
+public class BlobScaleFinder {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -33,121 +31,6 @@ public class AbstractBlobScaleFinder {
 
     public void setToDebug() {
         debug = true;
-    }
-
-    /**
-     * given the list of blob points, extract the ordered boundaries of them
-     * and remove any blobs for which the bounds were not extractable.
-     * @param inOutBlobs
-     * @param outputBounds
-     * @param width
-     * @param height
-     * @param discardWhenCavityIsSmallerThanBorder
-     */
-    protected void extractBoundsOfBlobs(final GreyscaleImage img,
-        final List<Set<PairInt>> inOutBlobs,
-        final List<PairIntArray> outputBounds, int width, int height,
-        boolean discardWhenCavityIsSmallerThanBorder) {
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        List<Integer> remove = new ArrayList<Integer>();
-
-        for (int i = 0; i < inOutBlobs.size(); ++i) {
-
-            Set<PairInt> blob = inOutBlobs.get(i);
-
-            EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
-
-            if (debug) {
-                //extractor.setToDebug();
-            }
-
-            PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(
-                blob, width, height,
-                discardWhenCavityIsSmallerThanBorder);
-
-            if ((closedEdge != null) &&
-                (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1))) {
-
-                int nChanged = 0;
-
-                /*if (blobIsDarkerThanExterior(blob, closedEdge, img)) {
-                    nChanged = curveHelper.adjustEdgesTowardsBrighterPixels(
-                        closedEdge, img);
-if (debug) {
-Image img0 = ImageIOHelper.convertImage(img);
-PairIntArray pa = closedEdge;
-for (int j = 0; j < pa.getN(); ++j) {
-    int x = pa.getX(j);
-    int y = pa.getY(j);
-    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
-}
-MiscDebug.writeImageCopy(img0, "straightened_curve_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-}                  
-                    
-                } else {
-                    nChanged = curveHelper.adjustEdgesTowardsDarkerPixels(
-                        closedEdge, img);
-                }
-
-                if (nChanged > 0) {
-
-                    //curveHelper.removeRedundantPoints(closedEdge);
-
-                    curveHelper.pruneAdjacentNeighborsTo2(closedEdge);
-
-                    curveHelper.correctCheckeredSegments(closedEdge);
-                }*/
-if (debug) {
-Image img0 = ImageIOHelper.convertImage(img);
-PairIntArray pa = closedEdge;
-for (int j = 0; j < pa.getN(); ++j) {
-    int x = pa.getX(j);
-    int y = pa.getY(j);
-    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
-}
-MiscDebug.writeImageCopy(img0, "straightened_corr_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-}
-                outputBounds.add(closedEdge);
-
-            } else {
-
-                remove.add(Integer.valueOf(i));
-            }
-        }
-
-        for (int i = (remove.size() - 1); i >  -1; --i) {
-            inOutBlobs.remove(remove.get(i).intValue());
-        }
-
-        assert(inOutBlobs.size() == outputBounds.size());
-
-        // sort by descending length
-        int[] indexes = new int[inOutBlobs.size()];
-        int[] lengths = new int[indexes.length];
-        for (int i = 0; i < inOutBlobs.size(); ++i) {
-            indexes[i] = i;
-            lengths[i] = outputBounds.get(i).getN();
-        }
-        MultiArrayMergeSort.sortByDecr(lengths, indexes);
-
-        List<Set<PairInt>> blobs = new ArrayList<Set<PairInt>>();
-        List<PairIntArray> curves = new ArrayList<PairIntArray>();
-
-        int last = (inOutBlobs.size() > 15) ? 15 : inOutBlobs.size();
-        for (int i = 0; i < last; ++i) {
-            int idx = indexes[i];
-            blobs.add(inOutBlobs.get(idx));
-            curves.add(outputBounds.get(idx));
-        }
-
-        inOutBlobs.clear();
-        outputBounds.clear();
-
-        inOutBlobs.addAll(blobs);
-        outputBounds.addAll(curves);
-
     }
 
     /**
@@ -173,18 +56,26 @@ MiscDebug.writeImageCopy(img0, "straightened_corr_1_" + MiscDebug.getCurrentTime
         return sum;
     }
 
-    protected TransformationParameters solveForScale(
-        GreyscaleImage img1, GreyscaleImage img2,
-        List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
-        List<PairIntArray> bounds1, List<PairIntArray> bounds2,
+    public TransformationParameters solveForScale(
+        SegmentedImageHelper img1Helper, SegmentationType type1, 
+        boolean useBinned1,
+        SegmentedImageHelper img2Helper, SegmentationType type2,
+        boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
         
-        List<List<CurvatureScaleSpaceContour>> contours1List = 
-            populateContours(bounds1);
+        BlobsAndContours bc1 = img1Helper.getBlobsAndContours(type1, useBinned1);
+        GreyscaleImage img1 = img1Helper.getGreyscaleImage(useBinned1);
         
-        List<List<CurvatureScaleSpaceContour>> contours2List = 
-            populateContours(bounds2);
+        BlobsAndContours bc2 = img2Helper.getBlobsAndContours(type2, useBinned2);
+        GreyscaleImage img2 = img2Helper.getGreyscaleImage(useBinned2);
         
+        List<List<CurvatureScaleSpaceContour>> contours1List = bc1.getContours();
+        List<List<CurvatureScaleSpaceContour>> contours2List = bc2.getContours();
+        List<Set<PairInt>> blobs1 = bc1.getBlobs();
+        List<Set<PairInt>> blobs2 = bc2.getBlobs();
+        List<PairIntArray> perimeters1 = bc1.getBlobOrderedPerimeters();
+        List<PairIntArray> perimeters2 = bc2.getBlobOrderedPerimeters();
+            
         Map<PairInt, CSSContourMatcherWrapper> singleSolnMap = 
             new HashMap<PairInt,  CSSContourMatcherWrapper>();
         
@@ -212,7 +103,7 @@ MiscDebug.writeImageCopy(img0, "straightened_corr_1_" + MiscDebug.getCurrentTime
             
             Integer index1 = Integer.valueOf(idx1);
 
-            PairIntArray curve1 = bounds1.get(idx1);
+            PairIntArray curve1 = perimeters1.get(idx1);
 
             Set<PairInt> blob1 = blobs1.get(idx1);
 
@@ -232,7 +123,7 @@ MiscDebug.writeImageCopy(img0, "straightened_corr_1_" + MiscDebug.getCurrentTime
                 
                 Integer index2 = Integer.valueOf(idx2);
 
-                PairIntArray curve2 = bounds2.get(idx2);
+                PairIntArray curve2 = perimeters2.get(idx2);
 
                 Set<PairInt> blob2 = blobs2.get(idx2);
 
@@ -403,9 +294,9 @@ log.info("processing single solutions");
                     
                     CSSContourMatcherWrapper matcher = entry.getValue();
                     
-                    PairIntArray curve1 = bounds1.get(idx1);
+                    PairIntArray curve1 = perimeters1.get(idx1);
                     Set<PairInt> blob1 = blobs1.get(idx1);
-                    PairIntArray curve2 = bounds2.get(idx2);
+                    PairIntArray curve2 = perimeters2.get(idx2);
                     Set<PairInt> blob2 = blobs2.get(idx2);
                 
                     List<FeatureComparisonStat> compStats =
@@ -461,8 +352,10 @@ compStats.size()));
                 return null;
             }
         }
-
+        
         TransformationParameters params = calculateTransformation(
+            img1Helper, type1, useBinned1,
+            img2Helper, type2, useBinned2,
             bestOverallCompStats, outputScaleRotTransXYStDev);
 
         if (params == null) {
@@ -848,11 +741,20 @@ int z = 1;
     }
 
     protected TransformationParameters calculateTransformation(
+        SegmentedImageHelper img1Helper, SegmentationType type1, 
+        boolean useBinned1,
+        SegmentedImageHelper img2Helper, SegmentationType type2,
+        boolean useBinned2,
         List<FeatureComparisonStat> compStats,
         float[] outputScaleRotTransXYStDev) {
 
         assert(compStats.isEmpty() == false);
-
+        
+        int binFactor1 = img1Helper.getBinFactor(useBinned1);
+        
+        int binFactor2 = img2Helper.getBinFactor(useBinned2);
+        
+        
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 
@@ -870,12 +772,12 @@ int z = 1;
 
             FeatureComparisonStat compStat = compStats.get(i);
 
-            int x1 = compStat.getImg1Point().getX();
-            int y1 = compStat.getImg1Point().getY();
+            int x1 = compStat.getImg1Point().getX() * binFactor1;
+            int y1 = compStat.getImg1Point().getY() * binFactor1;
             matchedXY1.add(x1, y1);
 
-            int x2 = compStat.getImg2Point().getX();
-            int y2 = compStat.getImg2Point().getY();
+            int x2 = compStat.getImg2Point().getX() * binFactor2;
+            int y2 = compStat.getImg2Point().getY() * binFactor2;
             matchedXY2.add(x2, y2);
 
             weights[i] = compStat.getSumIntensitySqDiff();
@@ -959,187 +861,6 @@ int z = 1;
         compStats.addAll(filteredCompStats);
     }
 
-    protected TransformationParameters evaluate(TransformationParameters[]
-        params, List<PairIntArray> bounds1, List<PairIntArray> bounds2,
-        int img1Width, int img1Height, int img2Width, int img2Height) {
-
-        /*
-        using difference of centroids in the region of intersection defined by
-        the transformation.
-        */
-
-        double tolerance = 10;
-
-        double bestDist = Double.MAX_VALUE;
-        int bestDistIdx = -1;
-
-        for (int i = 0; i < params.length; ++i) {
-
-            TransformationParameters p = params[i];
-
-            List<PairIntArray> trCurves1 = applyTransformForIntersection(p,
-                bounds1, img2Width, img2Height);
-
-            List<PairIntArray> trCurves2 = reverseTransformForIntersection(p,
-                bounds2, img1Width, img1Height);
-
-            double[][] centroidXY1s = calculateCentroids(trCurves1);
-            double[][] centroidXY2s = calculateCentroids(trCurves2);
-
-            // using a greedy approach, find the SSD of the distances of the
-            // centroids
-
-            int n1 = centroidXY1s.length;
-            int n2 = centroidXY2s.length;
-
-            double distSum = 0;
-            int nMatched = 0;
-
-            Set<Integer> chosen2 = new HashSet<Integer>();
-
-            for (int idx1 = 0; idx1 < n1; ++idx1) {
-
-                double[] xyCen1 = centroidXY1s[idx1];
-
-                double minDiff = Double.MAX_VALUE;
-                int min2Idx = -1;
-
-                for (int idx2 = 0; idx2 < n2; ++idx2) {
-
-                    if (chosen2.contains(Integer.valueOf(idx2))) {
-                        continue;
-                    }
-
-                    double[] xyCen2 = centroidXY2s[idx2];
-
-                    double diffX = xyCen1[0] - xyCen2[0];
-                    double diffY = xyCen1[1] - xyCen2[1];
-
-                    double dist = Math.sqrt(diffX*diffX + diffY*diffY);
-
-                    if (dist > tolerance) {
-                        continue;
-                    }
-
-                    if (dist < minDiff) {
-                        minDiff = dist;
-                        min2Idx = idx2;
-                    }
-                }
-                if (minDiff < Double.MAX_VALUE) {
-                    distSum = minDiff;
-                    nMatched++;
-                    chosen2.add(Integer.valueOf(min2Idx));
-                }
-            }
-
-            distSum /= (double)nMatched;
-
-            if (distSum < bestDist) {
-                bestDist = distSum;
-                bestDistIdx = i;
-            }
-        }
-
-        return params[bestDistIdx];
-    }
-
-    protected List<PairIntArray> applyTransformForIntersection(
-        TransformationParameters params, List<PairIntArray> curves,
-        int imgTrWidth, int imgTrHeight) {
-
-        Transformer transformer = new Transformer();
-
-        List<PairIntArray> trList = new ArrayList<PairIntArray>();
-
-        for (int ii = 0; ii < curves.size(); ++ii) {
-
-            PairIntArray tr = transformer.applyTransformation(params,
-                curves.get(ii));
-
-            boolean allWithinBounds = true;
-
-            for (int j = 0; j < tr.getN(); ++j) {
-                int x = tr.getX(j);
-                int y = tr.getY(j);
-                if ((x < 0) || (y < 0) || (x > (imgTrWidth - 1))
-                    || (y > (imgTrHeight - 1))) {
-
-                    allWithinBounds = false;
-
-                    break;
-                }
-            }
-            if (allWithinBounds) {
-                trList.add(tr);
-            }
-        }
-
-        return trList;
-    }
-
-    protected List<PairIntArray> reverseTransformForIntersection(
-        TransformationParameters params, List<PairIntArray> curves,
-        int imgWidth, int imgHeight) {
-
-        MatchedPointsTransformationCalculator tc =
-            new MatchedPointsTransformationCalculator();
-
-        TransformationParameters revParams = tc.swapReferenceFrames(params);
-
-        Transformer transformer = new Transformer();
-
-        List<Integer> remove = new ArrayList<Integer>();
-
-        for (int ii = 0; ii < curves.size(); ++ii) {
-
-            PairIntArray tr = transformer.applyTransformation(revParams,
-                curves.get(ii));
-
-            for (int j = 0; j < tr.getN(); ++j) {
-
-                int x = tr.getX(j);
-
-                int y = tr.getY(j);
-
-                if ((x < 0) || (y < 0) || (x > (imgWidth - 1))
-                    || (y > (imgHeight - 1))) {
-
-                    remove.add(Integer.valueOf(ii));
-
-                    break;
-                }
-            }
-        }
-
-        if (remove.isEmpty()) {
-            return curves;
-        }
-
-        List<PairIntArray> filtered = new ArrayList<PairIntArray>(curves);
-
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            int idx = remove.get(i).intValue();
-            filtered.remove(idx);
-        }
-
-        return filtered;
-    }
-
-    protected double[][] calculateCentroids(List<PairIntArray> curves) {
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        double[][] centroids = new double[curves.size()][];
-
-        for (int i = 0; i < curves.size(); ++i) {
-
-            centroids[i] = curveHelper.calculateXYCentroids(curves.get(i));
-        }
-
-        return centroids;
-    }
-
     protected float calculateRotationDifferences(List<FeatureComparisonStat>
         compStats) {
 
@@ -1158,116 +879,6 @@ int z = 1;
         }
 
         return (float)(sumDiff/(double)compStats.size());
-    }
-
-    protected boolean blobIsDarkerThanExterior(Set<PairInt> blob, PairIntArray
-        closedEdge, GreyscaleImage img) {
-
-        long sumExterior = 0;
-
-        int[] dxs8 = Misc.dx8;
-        int[] dys8 = Misc.dy8;
-
-        Set<PairInt> added = new HashSet<PairInt>();
-
-        for (int i = 0; i < closedEdge.getN(); ++i) {
-
-            int x = closedEdge.getX(i);
-            int y = closedEdge.getY(i);
-
-            for (int ii = 0; ii < dxs8.length; ++ii) {
-
-                int x2 = x + dxs8[ii];
-                int y2 = y + dys8[ii];
-
-                if ((x2 < 0) || (y2 < 0) || (x2 > (img.getWidth() - 1)) ||
-                    (y2 > (img.getHeight() - 1))) {
-                    continue;
-                }
-
-                PairInt p2 = new PairInt(x2, y2);
-
-                if (!blob.contains(p2) && !added.contains(p2)) {
-                   sumExterior += img.getValue(x2, y2);
-                   added.add(p2);
-                }
-            }
-        }
-
-        float avgExterior = (float)sumExterior/(float)added.size();
-
-        float avgInterior = mean(blob, img)/(float)blob.size();
-
-        return (avgInterior < avgExterior);
-    }
-
-    protected float mean(Set<PairInt> blob, GreyscaleImage img) {
-
-        long sum = 0;
-
-        for (PairInt p : blob) {
-            int x = p.getX();
-            int y = p.getY();
-            int v = img.getValue(x, y);
-            sum += v;
-        }
-
-        float mean = (float)sum/(float)blob.size();
-
-        return mean;
-    }
-
-    protected List<List<CurvatureScaleSpaceContour>> populateContours(
-        List<PairIntArray> closedContours) {
-        
-        List<ScaleSpaceCurveImage> scaleSpaceImages 
-            = new ArrayList<ScaleSpaceCurveImage>();
-        
-        List<List<CurvatureScaleSpaceContour>> list 
-            = new ArrayList<List<CurvatureScaleSpaceContour>>();
-        
-        boolean setToExtractWeakCurvesTooIfNeeded = false;
-        
-        boolean allContoursZero = true;
-                
-        for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
-            
-            ScaleSpaceCurveImage sscImg = 
-                CurvatureScaleSpaceInflectionSingleEdgeMapper.createScaleSpaceImage(
-                    closedContours.get(edgeIndex), edgeIndex);
-            
-            scaleSpaceImages.add(sscImg);
-            
-            List<CurvatureScaleSpaceContour> contours = 
-                CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
-                sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
-            
-            list.add(contours);
-            
-            if (!contours.isEmpty()) {
-                allContoursZero = false;
-            }
-        }
-        
-        if (allContoursZero) {
-            
-            setToExtractWeakCurvesTooIfNeeded = true;
-            
-            list.clear();
-            
-            for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
-            
-                ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(edgeIndex);
-
-                List<CurvatureScaleSpaceContour> contours = 
-                    CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
-                    sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
-
-                list.add(contours);
-            }
-        }
-        
-        return list;
     }
 
 }

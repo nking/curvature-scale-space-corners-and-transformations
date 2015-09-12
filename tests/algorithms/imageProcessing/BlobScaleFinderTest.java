@@ -139,7 +139,7 @@ public class BlobScaleFinderTest extends TestCase {
         }
         // average = 100,  each of 36 will be +3 or -3 so sum should be 0
 
-        BlobScaleFinderGS blobFinder = new BlobScaleFinderGS();
+        BlobScaleFinder blobFinder = new BlobScaleFinder();
 
         double result = blobFinder.sumIntensity(img, rectangle10);
 
