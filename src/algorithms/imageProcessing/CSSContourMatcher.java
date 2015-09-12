@@ -69,6 +69,8 @@ public final class CSSContourMatcher {
     private boolean hasBeenInitialized = false;
 
     private boolean solutionHasSomeScalesSmallerThanOne = false;
+    
+    private boolean strongestPeaksImplyScaleSmallerThanOne = false;
 
     /**
      * constructor taking required contour lists as arguments.  Note that the
@@ -106,7 +108,7 @@ public final class CSSContourMatcher {
 
             Collections.sort(c2, new DescendingSigmaComparator());
         }
-printPeaks();
+//printPeaks();
 
         initializeHeapNodes();
     }
@@ -228,6 +230,7 @@ printPeaks();
                     // cannot match for scale < 1 because cost function could
                     // prefer smaller sigma peaks that were not good matches.
                     transformationPair.setSomeScaleAreSmallerThanOne();
+                    strongestPeaksImplyScaleSmallerThanOne = true;
                     continue;
                 }
 
@@ -405,8 +408,8 @@ printPeaks();
 
         solutionHasSomeScalesSmallerThanOne = transformationPair.scaleIsPossiblyAmbiguous();
 
- printMatches();
- log.info("cost=" + solutionCost);
+ //printMatches();
+ //log.info("cost=" + solutionCost);
 
         return true;
     }
@@ -648,7 +651,11 @@ printPeaks();
     public boolean scaleIsPossiblyAmbiguous() {
         return solutionHasSomeScalesSmallerThanOne;
     }
+    public boolean strongestPeaksImplyScaleSmallerThanOne() {
+        return strongestPeaksImplyScaleSmallerThanOne;
+    }
 
+    /*
     private void printPeaks() {
         StringBuilder sb = new StringBuilder();
         sb.append("contours 1 list:\n");
@@ -690,5 +697,5 @@ printPeaks();
         }
         log.info(sb.toString());
     }
-
+    */
 }

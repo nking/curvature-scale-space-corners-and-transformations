@@ -132,7 +132,8 @@ public final class CSSContourMatcherWrapper {
         boolean solved = mDefault.matchContours() &&
             (mDefault.getSolvedScale() < Double.MAX_VALUE);
 
-        if (solved && !mDefault.scaleIsPossiblyAmbiguous()) {
+        if (solved && !mDefault.scaleIsPossiblyAmbiguous()
+            && !mDefault.strongestPeaksImplyScaleSmallerThanOne()) {
 
             setSolutionToDefault(mDefault);
 
