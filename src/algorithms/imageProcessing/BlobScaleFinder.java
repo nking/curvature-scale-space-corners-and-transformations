@@ -91,7 +91,9 @@ public class BlobScaleFinder {
         
         double bestOverallStatSqSum = Double.MAX_VALUE;
         int bestOverallIdx1 = -1;
+        int bestOverallC1 = 0;
         int bestOverallIdx2 = -1;
+        int bestOverallC2 = 0;
         int bestOverallNMatched = -1;
         List<FeatureComparisonStat> bestOverallCompStats = null;
 
@@ -112,6 +114,7 @@ public class BlobScaleFinder {
             double bestStatSqSum = Double.MAX_VALUE;
             double bestScale = -1;
             int bestIdx2 = -1;
+            int bestC2 = 0;
             int bestNMatched = -1;
             List<FeatureComparisonStat> bestCompStats = null;
 
@@ -168,13 +171,28 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 if (compStats.size() < 2) {
                     continue;
                 }
-
+                
+                //TODO: consider moving this type of statistic into the
+                //cost during contour matching.  wanting to avoid accepting
+                //solutions which are a small number of spurious matches due
+                //to one contour having many points to match to.
+                int nc1 = contours1List.get(index1.intValue()).size();
+                int nc2 = contours2List.get(index2.intValue()).size();
+                float frac = (float)nc1/(float)nc2;
+                boolean lgDiffN = ((nc1 > nc2) && frac > 2) 
+                    || ((nc1 < nc2) && frac < 0.5);
+                
+                if (lgDiffN) {
+                    continue;
+                }
+                
                 double combinedStat = calculateCombinedIntensityStat(compStats);
 
                 //TODO: consider keeping top k instead of 1
                 if (combinedStat < bestStatSqSum) {
                     bestStatSqSum = combinedStat;
                     bestIdx2 = index2.intValue();
+                    bestC2 = contours2List.get(bestIdx2).size();
                     bestNMatched = mapper.getMatcher().getSolutionMatchedContours1().size();
                     bestCompStats = compStats;
                     bestScale = mapper.getMatcher().getSolvedScale();
@@ -191,20 +209,25 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
 
             StringBuilder sb = new StringBuilder();
             sb.append(String.format(
-                "==>[%d](%d,%d) [%d](%d,%d) scale=%.2f  nMatched=%d  intSqDiff=%.1f",
+                "==>[%d](%d,%d) [%d](%d,%d) scale=%.2f  nMatched=%d(%d,%d) intSqDiff=%.1f",
                 index1.intValue(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
                 bestIdx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-                bestScale, bestNMatched, (float)bestStatSqSum));
+                bestScale, bestNMatched, 
+                contours1List.get(index1.intValue()).size(), bestC2,
+                (float)bestStatSqSum));
             log.info(sb.toString());
 
             IntensityFeatureComparisonStats stats = new IntensityFeatureComparisonStats();
             stats.addAll(bestCompStats);
             topForIndex1.add(stats);
 
-            if (bestStatSqSum < bestOverallStatSqSum) {
+            if (bestStatSqSum < bestOverallStatSqSum) {                                   
+                
                 bestOverallStatSqSum = bestStatSqSum;
                 bestOverallIdx1 = index1.intValue();
                 bestOverallIdx2 = bestIdx2;
+                bestOverallC1 = contours1List.get(bestOverallIdx1).size();
+                bestOverallC2 = bestC2;
                 bestOverallNMatched = bestNMatched;
                 bestOverallCompStats = bestCompStats;
 
@@ -557,8 +580,8 @@ for (FeatureComparisonStat compStat : compStats) {
     img2C.setRGB(x2, y2, 255, 0, 0);
 }
 String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/contours1_before_redo.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/contours2_before_redo.png", img2C);
+ImageIOHelper.writeOutputImage(bin + "/features1_before_redo.png", img1C);
+ImageIOHelper.writeOutputImage(bin + "/features2_before_redo.png", img2C);
 int z = 1;
 } catch(IOException e) {
 }
@@ -597,7 +620,8 @@ redoStats = true;
                 bestCompStat.getImg1PointRotInDegrees(),
                 bestCompStat.getImg2PointRotInDegrees(), matcher);
 
-            log.info("redone: " + printToString(compStats));
+            log.info("redone: " + printToString(compStats) + " combinedStat="
+                + calculateCombinedIntensityStat(compStats));
         }
 
         return compStats;

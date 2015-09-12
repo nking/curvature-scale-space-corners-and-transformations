@@ -5,8 +5,10 @@ import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -21,7 +23,7 @@ import java.util.logging.Logger;
  * @author nichole
  */
 public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
-        
+
     private final int xRelativeOffset1; 
     private final int yRelativeOffset1;
     private final int xRelativeOffset2; 
@@ -175,6 +177,13 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         }
         
         correctPeaks(result);
+        
+        /*
+        for curves formed via blob boundaries rather than canny edge detector,
+        can see a zig zag structure for the points near the top of a sigma=5 to 7
+        scale space curve.  this next corrects for some of that.
+        */
+        removeRedundant(result);
 
         return result;
     }
@@ -262,6 +271,29 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         for (int i = 0; i < outputSigmaWeights.size(); ++i) {
             float w = outputSigmaWeights.get(i)/sumSigma;
             outputSigmaWeights.set(i, w);
+        }
+    }
+    
+    private static void removeRedundant(List<CurvatureScaleSpaceContour> contours) {
+        
+        Set<Integer> indexes = new HashSet<Integer>();
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int i = 0; i < contours.size(); ++i) {
+            CurvatureScaleSpaceContour contour = contours.get(i);
+            for (CurvatureScaleSpaceImagePoint ip : contour.getPeakDetails()) {
+                Integer idx = Integer.valueOf(ip.getCoordIdx());
+                if (indexes.contains(idx)) {
+                    remove.add(i);
+                } else {
+                    indexes.add(idx);
+                }
+            }
+        }
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i);
+            contours.remove(idx);
         }
     }
     
