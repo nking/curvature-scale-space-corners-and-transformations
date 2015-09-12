@@ -254,7 +254,7 @@ log.info("looking for solutions similar to "+bestOverallCompStats);
         if (bestOverallCompStats == null || bestOverallCompStats.isEmpty()) {
         
             if (singleSolnMap.size() > 1) {
-log.info("processing single solutions");
+log.info("WARNING: processing single solutions... may remove these in future");
 
                 Map<PairInt, List<FeatureComparisonStat>> compStatMap = 
                     new HashMap<PairInt, List<FeatureComparisonStat>>();
@@ -370,7 +370,6 @@ compStats.size()));
      * perimeter and return an object when creating descriptors.
      * Note that the perimeter is expected to be a closed curve.
      * @param theEdgeIndex
-     * @param perimeterIdx
      * @param perimeter
      * @param blob
      * @return

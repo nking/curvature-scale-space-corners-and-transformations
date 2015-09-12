@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 
 /**
  * holds the blobs, their ordered perimeters, and the scale space image 
- * contours for the perimeters
+ * contours of the perimeters
  * 
  * @author nichole
  */
@@ -323,7 +323,9 @@ public class BlobsAndContours {
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
                 sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
             
-            outputContours.add(c);
+            if (!c.isEmpty()) {
+                outputContours.add(c);
+            }
             
             if (!c.isEmpty()) {
                 allContoursZero = false;
@@ -331,7 +333,7 @@ public class BlobsAndContours {
         }
         
         //TODO: consider whether want to include weak contours
-        if (false && allContoursZero) {
+        if (allContoursZero) {
             
             setToExtractWeakCurvesTooIfNeeded = true;
             
@@ -345,7 +347,9 @@ public class BlobsAndContours {
                     CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
                     sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded);
 
-                outputContours.add(c);
+                if (!c.isEmpty()) {
+                    outputContours.add(c);
+                }
             }
         }        
     }
