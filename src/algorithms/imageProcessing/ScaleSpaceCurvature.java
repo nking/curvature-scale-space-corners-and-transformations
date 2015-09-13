@@ -219,9 +219,9 @@ public class ScaleSpaceCurvature {
         }
         
         //log.info("maxInflectionK=" + maxInflectionK);
-        if (maxInflectionK < 0.002) {
+        /*if (maxInflectionK < 0.002) {
             maxInflectionK = 0.005f;
-        }
+        }*/
         
         //adjusting for straight lines.  consecutive points ~0 should
         //be summarized to just the mid point as the inflection point
