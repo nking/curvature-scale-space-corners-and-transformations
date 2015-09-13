@@ -48,6 +48,9 @@ public class DisjointSetHelper {
         if (x.equals(y)) {
             return x;
         }
+        if (x.getHead().getRepresentative().equals(y.getHead().getRepresentative())) {
+            return x;
+        }
 
         DisjointSet<T> longer, shorter;
 
