@@ -34,23 +34,18 @@ public class DisjointSet2Helper {
      *     the method uses iteration.  
      *     if we represent x_height as the number of nodes between x's tree 
      *     root and x, we have 2 times x_height iterations of statements,
-     * so O(x_height). 
+     * so O(x_height).   With path compression here, the amoritzed
+     * worst-case running time is Θ(α(n)) where α is the inverse Ackermann 
+     * function.  
+     * 
+     * The inverse Ackermann function is α(n) = min{k : A_k(1) ≥ n}.
+     * For most purposes, α(n) = O(1) so then the amoritized running time is O(1).
      * </pre>
      * 
      * @param x
      * @return
      */
     public <T> DisjointSet2Node<T> findSet(DisjointSet2Node<T> x) {
-        
-        /* 
-        //recursive
-        if (!x.equals(x.getParent())) {
-            DisjointSet2Node<T> parent = findSet(x.getParent());
-            x.setParent(parent);
-        }
-        
-        return x.getParent();
-        */
         
         // iterative
         if (!x.equals(x.getParent())) {
@@ -107,13 +102,20 @@ public class DisjointSet2Helper {
     
     /**
      * append the shorter list onto the end of the longer's list.
-     * runtime complexity is O(1).
+     * The amortized runtime complexity is O(1) due to the path compression
+     * in findSet.
+     * The method is also known as "union-find" because it uses findSet 
+     * as the first steps before link.
      * 
      * @param x
      * @param y
      * @return
      */
     public <T> DisjointSet2Node<T> union(DisjointSet2Node<T> x, DisjointSet2Node<T> y) {
+        
+        x = findSet(x);
+        
+        y = findSet(y);
         
         DisjointSet2Node<T> parent = link(x, y);
 
