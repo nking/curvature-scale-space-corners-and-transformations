@@ -56,6 +56,12 @@ public class CurvatureScaleSpaceCurvesMaker {
 
         ScaleSpaceCurve lastCurve = null;
 
+        /*TODO: implement the recursive methods for gaussian derivatives for
+        these using their separable properties.
+        https://hal.inria.fr/inria-00074778/document
+        http://homepage.tudelft.nl/e3q6n/publications/1995/SP95TYLV/SP95TYLV.pdf
+        */
+        
         while (hasInflectionPoints
             && (resultingSigma < SIGMA.getValue(sigmaEnd))) {
 

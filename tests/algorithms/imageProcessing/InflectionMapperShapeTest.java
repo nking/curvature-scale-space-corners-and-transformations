@@ -24,8 +24,8 @@ public class InflectionMapperShapeTest extends TestCase {
         
         String[] fileSuffixes = new String[]{
             //"closed_curve_circle",
-            "closed_curve_triangle", 
-            //"closed_curve_square"
+            //"closed_curve_triangle", 
+            "closed_curve_square"
         };
 
         for (String fileSuffix : fileSuffixes) {
@@ -49,15 +49,15 @@ public class InflectionMapperShapeTest extends TestCase {
 
             assertNotNull(curves);
 
-            assertTrue(curves.size() == 1);
+            assertTrue(curves.size() == 1 || curves.size() == 2);
             
             PairIntArray edge = curves.get(0);
-            /*
-            if (fileSuffix.contains("triangle")) {
+            
+            /*if (fileSuffix.contains("square")) {
                 int n = edge.getN();
                 Rotate rotate = new Rotate();
-                rotate.rotate2(edge.getX(), (n-1)/2);
-                rotate.rotate2(edge.getY(), (n-1)/2);
+                rotate.rotate2(edge.getX(), (n-1)/8);
+                rotate.rotate2(edge.getY(), (n-1)/8);
             }*/
 
             ScaleSpaceCurveImage sscImg =
@@ -68,7 +68,7 @@ public class InflectionMapperShapeTest extends TestCase {
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
                 sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded, edge);
 
-            MiscDebug.printScaleSpaceCurve(sscImg, fileSuffix);
+            //MiscDebug.printScaleSpaceCurve(sscImg, fileSuffix);
 
             MiscDebug.debugPlot(c, img, 0, 0, fileSuffix);
         }

@@ -183,9 +183,12 @@ public class ScaleSpaceCurvature {
             log.severe(e.getMessage());
         }
         */
+        
+        // TODO: need to improve defining a lower limit k magnitude as a substitute
+        // for strict zero-crossings.  looks like finding wide minima would help
          
         // simple zero crossings works well on curves, but not on straight lines
-        //log.info("new curve (" + scaleSpaceCurve.getSize() + ")");
+        //log.info("new curve (" + scaleSpaceCurve.getSize() + ") sigma=" + scaleSpaceCurve.getSigma());
         float maxInflectionK = Integer.MIN_VALUE;
         if (isClosedCurved) {
             if (isZeroCrossing(scaleSpaceCurve.getK(n - 1),
@@ -197,8 +200,7 @@ public class ScaleSpaceCurvature {
                 if (k > maxInflectionK) {
                     maxInflectionK = k;
                 }
-                //log.info("   i=" + 0 + " x=" + curve.getX(0) + " y=" + curve.getY(0) + " k=" + k);
-                //scaleSpaceCurve.addKIsZeroIdx(0, curve.getX(0), curve.getY(0));
+                //info("   i=" + 0 + " x=" + curve.getX(0) + " y=" + curve.getY(0) + " k=" + k);
             }
         }
 
@@ -213,8 +215,12 @@ public class ScaleSpaceCurvature {
                     maxInflectionK = k;
                 }
                 //log.info("   i=" + i + " x=" + curve.getX(i) + " y=" + curve.getY(i) + " k=" + k);
-                //scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));
             }
+        }
+        
+        //log.info("maxInflectionK=" + maxInflectionK);
+        if (maxInflectionK < 0.002) {
+            maxInflectionK = 0.005f;
         }
         
         //adjusting for straight lines.  consecutive points ~0 should
@@ -249,11 +255,12 @@ public class ScaleSpaceCurvature {
                     addToEnd = true;
                     addIdx = midIdx;
                 }
-                //log.info("   beginningIdx=" + beginningIdx + " endIdx=" + endingIdx + " midIdx=" + midIdx);
-                //log.info("     " + beginningIdx + " (" + curve.getX(beginningIdx) + "," + curve.getY(beginningIdx) + ")"
-                //    + "   " + endingIdx + " (" + curve.getX(endingIdx) + "," + curve.getY(endingIdx) + ")"
-                //);
+                /*log.info("   beginningIdx=" + beginningIdx + " endIdx=" + endingIdx + " midIdx=" + midIdx);
+                log.info("     " + beginningIdx + " (" + curve.getX(beginningIdx) + "," + curve.getY(beginningIdx) + ")"
+                    + "   " + endingIdx + " (" + curve.getX(endingIdx) + "," + curve.getY(endingIdx) + ")"
+                );*/
                 if (!addToEnd) { 
+                    //log.info("    --> adding (" + curve.getX(midIdx) + " " + curve.getY(midIdx) + ") t=" + scaleSpaceCurve.getT()[midIdx]);
                     scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));
                 }
             }
@@ -275,10 +282,12 @@ public class ScaleSpaceCurvature {
             } else {
                 if (startIdx > -1) {
                     int midIdx = (startIdx + endIdx)/2;
-                    //log.info("   startIdx=" + startIdx + " endIdx=" + (i-1) + " midIdx=" + midIdx);
-                    //log.info("     " + startIdx + " (" + curve.getX(startIdx) + "," + curve.getY(startIdx) + ")"
-                    //    + "   " + (i-1) + " (" + curve.getX(i-1) + "," + curve.getY(i-1) + ")"
-                    //);
+                    /*log.info("   startIdx=" + startIdx + " endIdx=" + (i-1) + " midIdx=" + midIdx);
+                    log.info("     " + startIdx + " (" + curve.getX(startIdx) + "," + curve.getY(startIdx) + ")"
+                        + "   " + (i-1) + " (" + curve.getX(i-1) + "," + curve.getY(i-1) + ")"
+                    );
+                    log.info("    --> adding (" + curve.getX(midIdx) + " " + curve.getY(midIdx) + ") t=" + scaleSpaceCurve.getT()[midIdx]);
+                    */
                     scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));
                 }
                 startIdx = -1;
@@ -287,20 +296,23 @@ public class ScaleSpaceCurvature {
         }
         if (startIdx > -1) {
              int midIdx = (startIdx + endIdx)/2;
-             //log.info("   startIdx=" + startIdx + " endIdx=" + endIdx + " midIdx=" + midIdx);
-             //   log.info("     " + startIdx + " (" + curve.getX(startIdx) + "," + curve.getY(startIdx) + ")"
-             //   + "   " + (endIdx) + " (" + curve.getX(endIdx) + "," + curve.getY(endIdx) + ")"
-             //);
+             /*log.info("   startIdx=" + startIdx + " endIdx=" + endIdx + " midIdx=" + midIdx);
+                log.info("     " + startIdx + " (" + curve.getX(startIdx) + "," + curve.getY(startIdx) + ")"
+                + "   " + (endIdx) + " (" + curve.getX(endIdx) + "," + curve.getY(endIdx) + ")"
+             );
+             log.info("    --> adding (" + curve.getX(midIdx) + " " + curve.getY(midIdx) + ") t=" + scaleSpaceCurve.getT()[midIdx]);
+             */
              scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));
         }
         if (addToEnd) { 
+            //log.info("    --> adding (" + curve.getX(addIdx) + " " + curve.getY(addIdx) + ") t=" + scaleSpaceCurve.getT()[addIdx]);
             scaleSpaceCurve.addKIsZeroIdx(addIdx, curve.getX(addIdx), curve.getY(addIdx));
         }
        
+        scaleSpaceCurve.compressKIsZeroIdx();
+        
 //log.info("k=" + java.util.Arrays.toString(scaleSpaceCurve.getK()));
 //log.info("k=" + java.util.Arrays.toString(scaleSpaceCurve.getKIsZeroIdx()));
-
-        scaleSpaceCurve.compressKIsZeroIdx();
 
     }
 
