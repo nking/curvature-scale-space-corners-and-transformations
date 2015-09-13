@@ -6,6 +6,10 @@ package algorithms.disjointSets;
  *
  * based upon pseudocode from "Introduction to Algorithms" by Cormen et al.
  *
+ * each set has a single representative which all members have as their
+ * representative.   This makes comparing whether two objects are in the same 
+ * set fast by checking that their representatives are the same.
+ * 
  * @author nichole
  */
 public class DisjointSetHelper {
@@ -63,6 +67,12 @@ public class DisjointSetHelper {
         }
 
         // add next references to longer
+        
+        /*
+        not using the doubly linked list characteristics yet to make 
+        union faster, so updating tail here is not useful until then.
+        */
+        
         // longer.tail.next might not be pointing to last of next, so walk to end
         if (longer.getTail().getNext() != null) {
             DisjointSetNode<T> tmp = longer.getTail().getNext();
@@ -89,16 +99,22 @@ public class DisjointSetHelper {
     public static <T> String print(DisjointSet<T> x) {
 
         DisjointSetNode<T> current = x.getHead();
-
+        
+        int nIter = 0;
+        
         StringBuilder sb = new StringBuilder();
-        while (current != null) {
+        while (current != null && (nIter < x.getNumberOfNodes())) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
-            sb.append(current.getMember().toString());
+            sb.append("[").append(current.getMember().toString()).append("] ")
+            .append("repr=").append(current.getRepresentative().getMember().toString())
+            ;
             current = current.getNext();
+            nIter++;
         }
-
+        sb.append(", tail=").append(x.getTail().getMember().toString());
+        
         return sb.toString();
     }
 
