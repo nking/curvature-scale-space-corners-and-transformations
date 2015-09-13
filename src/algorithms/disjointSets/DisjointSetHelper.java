@@ -66,13 +66,11 @@ public class DisjointSetHelper {
             shorter = x;
         }
 
+        //note that the doubly linked list node characteristic of "previous" 
+        //is served by the "representative"
+        
         // add next references to longer
-        
-        /*
-        not using the doubly linked list characteristics yet to make 
-        union faster, so updating tail here is not useful until then.
-        */
-        
+                
         // longer.tail.next might not be pointing to last of next, so walk to end
         if (longer.getTail().getNext() != null) {
             DisjointSetNode<T> tmp = longer.getTail().getNext();
@@ -83,7 +81,7 @@ public class DisjointSetHelper {
         }
 
         longer.getTail().setNext(shorter.getHead());
-
+        
         DisjointSetNode<T> latest = shorter.getHead();
         while (latest != null) {
             latest.setRepresentative(longer.getHead());
