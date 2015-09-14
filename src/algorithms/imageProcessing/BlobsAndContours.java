@@ -4,6 +4,7 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
@@ -446,14 +447,21 @@ public class BlobsAndContours {
                 (int)Math.round(xyCen[1]));
             Integer index = Integer.valueOf(i);
             
-            //keep smaller blob.  it's just the line, while larger blob is all of
-            //the interior points.
+            //keep larger dimension blob
             if (blobCenters.containsKey(p)) {
                 // compare and keep exterior perimeter
                 int nCurrent = blob.size();
                 int mapIdx = blobCenters.get(p).intValue();
-                int nInMap = outputBlobs.get(mapIdx).size();
-                if (nCurrent > nInMap) {
+                Set<PairInt> mapBlob = outputBlobs.get(mapIdx);
+                 
+                //xMin, xMax, yMin, yMax
+                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob);
+                int[] minMaxXY2 = MiscMath.findMinMaxXY(mapBlob);
+                int w1 = minMaxXY1[1] - minMaxXY1[0];
+                int h1 = minMaxXY1[3] - minMaxXY1[2];
+                int w2 = minMaxXY2[1] - minMaxXY2[0];
+                int h2 = minMaxXY2[3] - minMaxXY2[2];
+                if ((w1 < w2) && (h1 < h2)) {
                     remove.add(Integer.valueOf(i));
                     continue;
                 }
@@ -483,11 +491,17 @@ public class BlobsAndContours {
                     continue;
                 }
                 // if arrive here, there were 2 blobs with adjacent centers
-                int n1 = outputBlobs.get(index.intValue()).size();
-                int n2 = outputBlobs.get(index2.intValue()).size();
-                //keep smaller blob.  it's just the line, while larger blob is all of
-                //the interior points.
-                if (n1 > n2) {
+                Set<PairInt> blob1 = outputBlobs.get(index.intValue());
+                Set<PairInt> blob2 = outputBlobs.get(index2.intValue());
+                //keep larger dimension blob
+                //xMin, xMax, yMin, yMax
+                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob1);
+                int[] minMaxXY2 = MiscMath.findMinMaxXY(blob2);
+                int w1 = minMaxXY1[1] - minMaxXY1[0];
+                int h1 = minMaxXY1[3] - minMaxXY1[2];
+                int w2 = minMaxXY2[1] - minMaxXY2[0];
+                int h2 = minMaxXY2[3] - minMaxXY2[2];
+                if ((w1 < w2) && (h1 < h2)) {                
                     // keep blob 2
                     remove.add(index);
                 } else {
