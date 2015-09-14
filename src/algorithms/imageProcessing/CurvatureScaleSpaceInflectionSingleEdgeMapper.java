@@ -159,8 +159,12 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         List<CurvatureScaleSpaceContour> result = 
             contourFinder.findContours(scaleSpaceImage, edgeIndex);
 
-        correctPeaks(result, edge);
+        if (result.isEmpty()) {
+            return result;
+        }
         
+        correctPeaks(result, edge);
+                
         /*
         for curves formed via blob boundaries rather than canny edge detector,
         can see a zig zag structure for the points near the top of a sigma=5 to 7

@@ -27,6 +27,8 @@ public class InflectionMapperShapeTest extends TestCase {
             //"closed_curve_triangle", 
             "closed_curve_square"
         };
+        
+        boolean segmentedToLineDrawing = true;
 
         for (String fileSuffix : fileSuffixes) {
         
@@ -39,7 +41,7 @@ public class InflectionMapperShapeTest extends TestCase {
             GreyscaleImage imgGrey = readAsBinary(img);
 
             BlobsAndContours blobsAndContours = new BlobsAndContours(imgGrey, 
-                0, 1 << 30, fileSuffix);
+                0, 1 << 30, segmentedToLineDrawing, fileSuffix);
 
             boolean setToExtractWeakCurvesTooIfNeeded = false;
 
@@ -49,7 +51,7 @@ public class InflectionMapperShapeTest extends TestCase {
 
             assertNotNull(curves);
 
-            assertTrue(curves.size() == 1 || curves.size() == 2);
+            assertTrue(curves.size() == 1);
             
             PairIntArray edge = curves.get(0);
             

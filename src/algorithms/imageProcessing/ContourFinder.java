@@ -681,6 +681,10 @@ public class ContourFinder {
 
     public boolean reverseIfClockwise(List<CurvatureScaleSpaceContour> result) {
 
+        if (result.isEmpty()) {
+            return false;
+        }
+        
         boolean didReverse = false;
 
         PairIntArray testContour = new PairIntArray();
@@ -705,6 +709,10 @@ public class ContourFinder {
 
     public boolean reverseIfClockwise(List<CurvatureScaleSpaceContour> result,
         PairIntArray edge) {
+        
+        if (result.isEmpty()) {
+            return false;
+        }
 
         boolean didReverse = false;
 

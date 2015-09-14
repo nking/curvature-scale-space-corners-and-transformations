@@ -7,8 +7,12 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -28,6 +32,8 @@ public class BlobsAndContours {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    protected final boolean segmentedToLineDrawing;
+    
     private boolean debug = false;
 
     private String debugTag = "";
@@ -39,9 +45,12 @@ public class BlobsAndContours {
      * @param img
      * @param smallestGroupLimit
      * @param largestGroupLimit
+     * @param segmentedToLineDrawing true if image contains mostly white
+     * pixels and black lines for object contours (this is the result of
+     * segmentation using adaptive mean thresholding, for example)
      */
     public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
-        int largestGroupLimit) {
+        int largestGroupLimit, boolean segmentedToLineDrawing) {
 
         blobs = new ArrayList<Set<PairInt>>();
 
@@ -49,6 +58,8 @@ public class BlobsAndContours {
 
         contours = new ArrayList<List<CurvatureScaleSpaceContour>>();
 
+        this.segmentedToLineDrawing = segmentedToLineDrawing;
+        
         init(img, smallestGroupLimit, largestGroupLimit);
     }
 
@@ -59,10 +70,13 @@ public class BlobsAndContours {
      * @param img
      * @param smallestGroupLimit
      * @param largestGroupLimit
+     * segmentedToLineDrawing true if image contains mostly white
+     * pixels and black lines for object contours (this is the result of
+     * segmentation using adaptive mean thresholding, for example)
      * @param debugTag
      */
     public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
-        int largestGroupLimit, String debugTag) {
+        int largestGroupLimit, boolean segmentedToLineDrawing, String debugTag) {
 
         blobs = new ArrayList<Set<PairInt>>();
 
@@ -70,6 +84,8 @@ public class BlobsAndContours {
 
         contours = new ArrayList<List<CurvatureScaleSpaceContour>>();
 
+        this.segmentedToLineDrawing = segmentedToLineDrawing;
+        
         debug = true;
 
         this.debugTag = debugTag;
@@ -138,6 +154,17 @@ public class BlobsAndContours {
                     }
                 }
             }
+        }
+        
+        if (segmentedToLineDrawing) {
+            // for line drawings, there may be a blob due to an objects 
+            // line and to it's interior points, so we want to remove the
+            // blob for the interior points and keep the exterior.  choosing
+            // the exterior because later feature matching should be better
+            // for points outside of the blob which is largely similar content.
+            
+            removeRedundantBlobs(outputBlobs);
+            
         }
 
         if (debug) {
@@ -397,6 +424,88 @@ public class BlobsAndContours {
      */
     public boolean isDebug() {
         return debug;
+    }
+
+    // ~O(N_blob) to compare centroids.
+    private void removeRedundantBlobs(List<Set<PairInt>> outputBlobs) {
+        
+        // for line drawings, there may be a blob due to an objects 
+        // line and to it's interior points, so we want to remove the
+        // blob for the interior points and keep the exterior.  choosing
+        // the exterior because later feature matching should be better
+        // for points outside of the blob which is largely similar content.
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        Map<PairInt, Integer> blobCenters = new HashMap<PairInt, Integer>();
+        LinkedHashSet<Integer> remove = new LinkedHashSet<Integer>();
+        for (int i = 0; i < outputBlobs.size(); ++i) {
+            Set<PairInt> blob = outputBlobs.get(i);
+            double[] xyCen = curveHelper.calculateXYCentroids(blob);
+            PairInt p = new PairInt((int)Math.round(xyCen[0]), 
+                (int)Math.round(xyCen[1]));
+            Integer index = Integer.valueOf(i);
+            
+            //keep smaller blob.  it's just the line, while larger blob is all of
+            //the interior points.
+            if (blobCenters.containsKey(p)) {
+                // compare and keep exterior perimeter
+                int nCurrent = blob.size();
+                int mapIdx = blobCenters.get(p).intValue();
+                int nInMap = outputBlobs.get(mapIdx).size();
+                if (nCurrent > nInMap) {
+                    remove.add(Integer.valueOf(i));
+                    continue;
+                }
+                remove.add(Integer.valueOf(mapIdx));
+                blobCenters.put(p, index);
+            } else {
+                blobCenters.put(p, index);
+            }
+        }
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+        for (Entry<PairInt, Integer> entry : blobCenters.entrySet()) {
+            Integer index = entry.getValue();
+            PairInt p = entry.getKey();
+            if (remove.contains(index)) {
+                continue;
+            }
+            for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
+                int x2 = p.getX() + dxs8[nIdx];
+                int y2 = p.getY() + dys8[nIdx];
+                PairInt p2 = new PairInt(x2, y2);
+                Integer index2 = blobCenters.get(p2);
+                if (index2 == null) {
+                    continue;
+                }
+                if (remove.contains(index2)) {
+                    continue;
+                }
+                // if arrive here, there were 2 blobs with adjacent centers
+                int n1 = outputBlobs.get(index.intValue()).size();
+                int n2 = outputBlobs.get(index2.intValue()).size();
+                //keep smaller blob.  it's just the line, while larger blob is all of
+                //the interior points.
+                if (n1 > n2) {
+                    // keep blob 2
+                    remove.add(index);
+                } else {
+                    // keep blob 1
+                    remove.add(index2);
+                }
+                break;
+            }
+        }
+        if (remove.isEmpty()) {
+            return;
+        }
+        List<Integer> rm = new ArrayList<Integer>(remove);
+        Collections.sort(rm);
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int idx = rm.get(i).intValue();
+            outputBlobs.remove(idx);
+        }
     }
 
 }

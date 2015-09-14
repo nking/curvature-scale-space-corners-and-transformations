@@ -57,28 +57,28 @@ public class BlobScaleFinder {
     }
 
     public TransformationParameters solveForScale(
-        SegmentedImageHelper img1Helper, SegmentationType type1, 
+        SegmentedImageHelper img1Helper, SegmentationType type1,
         boolean useBinned1,
         SegmentedImageHelper img2Helper, SegmentationType type2,
         boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
-        
+
         BlobsAndContours bc1 = img1Helper.getBlobsAndContours(type1, useBinned1);
         GreyscaleImage img1 = img1Helper.getGreyscaleImage(useBinned1);
-        
+
         BlobsAndContours bc2 = img2Helper.getBlobsAndContours(type2, useBinned2);
         GreyscaleImage img2 = img2Helper.getGreyscaleImage(useBinned2);
-        
+
         List<List<CurvatureScaleSpaceContour>> contours1List = bc1.getContours();
         List<List<CurvatureScaleSpaceContour>> contours2List = bc2.getContours();
         List<Set<PairInt>> blobs1 = bc1.getBlobs();
         List<Set<PairInt>> blobs2 = bc2.getBlobs();
         List<PairIntArray> perimeters1 = bc1.getBlobOrderedPerimeters();
         List<PairIntArray> perimeters2 = bc2.getBlobOrderedPerimeters();
-            
-        Map<PairInt, CSSContourMatcherWrapper> singleSolnMap = 
+
+        Map<PairInt, CSSContourMatcherWrapper> singleSolnMap =
             new HashMap<PairInt,  CSSContourMatcherWrapper>();
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
@@ -87,8 +87,8 @@ public class BlobScaleFinder {
         FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1 =
             new FixedSizeSortedVector<>(2, IntensityFeatureComparisonStats.class);
 
-        //TODO: this section needs to be simplified 
-        
+        //TODO: this section needs to be simplified
+
         double bestOverallStatSqSum = Double.MAX_VALUE;
         int bestOverallIdx1 = -1;
         int bestOverallC1 = 0;
@@ -102,7 +102,7 @@ public class BlobScaleFinder {
             if (contours1List.get(idx1).isEmpty()) {
                 continue;
             }
-            
+
             Integer index1 = Integer.valueOf(idx1);
 
             PairIntArray curve1 = perimeters1.get(idx1);
@@ -124,7 +124,7 @@ public class BlobScaleFinder {
                 if (contours2List.get(idx2).isEmpty()) {
                     continue;
                 }
-                
+
                 Integer index2 = Integer.valueOf(idx2);
 
                 PairIntArray curve2 = perimeters2.get(idx2);
@@ -139,16 +139,16 @@ public class BlobScaleFinder {
 
                 TransformationParameters params = mapper.matchContours(
                     contours1List.get(idx1), contours2List.get(idx2));
-                
+
                 if ((params == null) ||
                     (mapper.getMatcher().getSolutionMatchedContours1().size() < 2)) {
-                    
-                    if ((mapper.getMatcher() != null) && 
+
+                    if ((mapper.getMatcher() != null) &&
                         (mapper.getMatcher().getSolutionMatchedContours1().size() == 1)) {
-                        
+
                         singleSolnMap.put(new PairInt(idx1, idx2), mapper.getMatcher());
                     }
-                    
+
 double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
 if (mapper.getMatcher() != null) {
 log.info(String.format("discarding [%d] (%d,%d)  [%d] (%d,%d)  nMCs=%d",
@@ -172,7 +172,7 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 if (compStats.size() < 2) {
                     continue;
                 }
-                
+
                 //TODO: consider moving this type of statistic into the
                 //cost during contour matching.  wanting to avoid accepting
                 //solutions which are a small number of spurious matches due
@@ -180,13 +180,13 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 int nc1 = contours1List.get(index1.intValue()).size();
                 int nc2 = contours2List.get(index2.intValue()).size();
                 float frac = (float)nc1/(float)nc2;
-                boolean lgDiffN = ((nc1 > nc2) && frac > 2) 
+                boolean lgDiffN = ((nc1 > nc2) && frac > 2)
                     || ((nc1 < nc2) && frac < 0.5);
-                
+
                 if (lgDiffN) {
                     continue;
                 }
-                
+
                 double combinedStat = calculateCombinedIntensityStat(compStats);
 
                 //TODO: consider keeping top k instead of 1
@@ -198,7 +198,8 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                     bestCompStats = compStats;
                     bestScale = mapper.getMatcher().getSolvedScale();
                     log.info("  new best for [" + index1.toString() + "] ["
-                        + index2.toString() + "] combinedStat=" + combinedStat);
+                        + index2.toString() + "] combinedStat=" + combinedStat 
+                        + " with n=" + bestCompStats.size());
                 }
             }
 
@@ -213,7 +214,7 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 "==>[%d](%d,%d) [%d](%d,%d) scale=%.2f  nMatched=%d(%d,%d) intSqDiff=%.1f",
                 index1.intValue(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
                 bestIdx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-                bestScale, bestNMatched, 
+                bestScale, bestNMatched,
                 contours1List.get(index1.intValue()).size(), bestC2,
                 (float)bestStatSqSum));
             log.info(sb.toString());
@@ -222,8 +223,8 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
             stats.addAll(bestCompStats);
             topForIndex1.add(stats);
 
-            if (bestStatSqSum < bestOverallStatSqSum) {                                   
-                
+            if (bestStatSqSum < bestOverallStatSqSum) {
+
                 bestOverallStatSqSum = bestStatSqSum;
                 bestOverallIdx1 = index1.intValue();
                 bestOverallIdx2 = bestIdx2;
@@ -236,23 +237,23 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                     bestOverallIdx2 + "]  combinedStat=" + bestOverallStatSqSum);
             }
         }
-        
+
         addSimilarToBestOverall(bestOverallCompStats, topForIndex1);
-        
+
         // -------- process the single solution compStats ------------
         if (bestOverallCompStats == null || bestOverallCompStats.isEmpty()) {
-        
-            if (singleSolnMap.size() > 1) {                
-                processSingleSolutionsIfNoBest(img1, img2, bestOverallCompStats, 
+
+            if (singleSolnMap.size() > 1) {
+                processSingleSolutionsIfNoBest(img1, img2, bestOverallCompStats,
                     singleSolnMap, blobs1, blobs2, perimeters1, perimeters2,
                     features1, features2);
             }
-            
+
             if ((bestOverallCompStats == null) || bestOverallCompStats.isEmpty()) {
                 return null;
             }
         }
-        
+
         TransformationParameters params = calculateTransformation(
             img1Helper, type1, useBinned1,
             img2Helper, type2, useBinned2,
@@ -641,7 +642,7 @@ int z = 1;
     }
 
     protected TransformationParameters calculateTransformation(
-        SegmentedImageHelper img1Helper, SegmentationType type1, 
+        SegmentedImageHelper img1Helper, SegmentationType type1,
         boolean useBinned1,
         SegmentedImageHelper img2Helper, SegmentationType type2,
         boolean useBinned2,
@@ -649,12 +650,12 @@ int z = 1;
         float[] outputScaleRotTransXYStDev) {
 
         assert(compStats.isEmpty() == false);
-        
+
         int binFactor1 = img1Helper.getBinFactor(useBinned1);
-        
+
         int binFactor2 = img2Helper.getBinFactor(useBinned2);
-        
-        
+
+
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 
@@ -781,13 +782,13 @@ int z = 1;
         return (float)(sumDiff/(double)compStats.size());
     }
 
-    private void addSimilarToBestOverall(List<FeatureComparisonStat> 
-        bestOverallCompStats, 
+    private void addSimilarToBestOverall(List<FeatureComparisonStat>
+        bestOverallCompStats,
         FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1) {
-        
+
         // ---- add to bestOverallCompStats for solutions similar to best -----
         if (bestOverallCompStats != null) {
-            
+
 log.info("looking for solutions similar to "+bestOverallCompStats);
 
             float rotationBest = calculateRotationDifferences(bestOverallCompStats);
@@ -818,6 +819,7 @@ log.info("looking for solutions similar to "+bestOverallCompStats);
                 }
 
                 if (similar) {
+log.info("  found similar:" + stats);
                     bestOverallCompStats.addAll(stats);
                 }
             }
@@ -826,15 +828,15 @@ log.info("looking for solutions similar to "+bestOverallCompStats);
 
     private void processSingleSolutionsIfNoBest(
         GreyscaleImage img1, GreyscaleImage img2,
-        List<FeatureComparisonStat> bestOverallCompStats, 
-        Map<PairInt, CSSContourMatcherWrapper> singleSolnMap, 
-        List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2, 
-        List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
+        List<FeatureComparisonStat> bestOverallCompStats,
+        Map<PairInt, CSSContourMatcherWrapper> singleSolnMap,
+        List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
+        List<PairIntArray> perimeters1, List<PairIntArray> perimeters2,
         IntensityFeatures features1, IntensityFeatures features2) {
-        
+
 log.info("WARNING: processing single solutions... may remove these in future");
 
-        Map<PairInt, List<FeatureComparisonStat>> compStatMap = 
+        Map<PairInt, List<FeatureComparisonStat>> compStatMap =
             new HashMap<PairInt, List<FeatureComparisonStat>>();
 
         TreeSet<Integer> sIndexes1Set = new TreeSet<Integer>();
@@ -865,7 +867,7 @@ log.info("WARNING: processing single solutions... may remove these in future");
         int nCS = 0;
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+
         for (Entry<PairInt, CSSContourMatcherWrapper> entry : singleSolnMap.entrySet()) {
 
             PairInt p = entry.getKey();
@@ -880,7 +882,7 @@ log.info("WARNING: processing single solutions... may remove these in future");
             Set<PairInt> blob2 = blobs2.get(idx2);
 
             List<FeatureComparisonStat> compStats =
-                filterContourPointsByFeatures(img1, img2, 
+                filterContourPointsByFeatures(img1, img2,
                 Integer.valueOf(idx1), Integer.valueOf(idx2),
                 blob1, blob2, curve1, curve2, features1, features2,
                 matcher);
@@ -904,7 +906,7 @@ compStats.size()));
             int cIdx2 = sIndexes2.get(Integer.valueOf(idx2)).intValue();
             cost[cIdx1][cIdx2] = (float)combStat;
 
-            nCS++;                    
+            nCS++;
         }
 
         if (nCS > 1) {

@@ -441,12 +441,18 @@ public class SegmentedImageHelper {
             return;
         }
         
+        boolean segmentedToLineDrawing = false;
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT) ||
+            type.equals(SegmentationType.BINARY)) {
+            segmentedToLineDrawing = true;
+        }
+        
         if (debug) {
             blobsAndContours = new BlobsAndContours(segImg, smallestGroupLimit, 
-                largestGroupLimit, debugTag);
+                largestGroupLimit, segmentedToLineDrawing, debugTag);
         } else {
             blobsAndContours = new BlobsAndContours(segImg, smallestGroupLimit, 
-                largestGroupLimit);
+                largestGroupLimit, segmentedToLineDrawing);
         }
         
         imgBlobsAndContoursMap.put(type, blobsAndContours);
@@ -467,12 +473,20 @@ public class SegmentedImageHelper {
             return;
         }
         
+        boolean segmentedToLineDrawing = false;
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT) ||
+            type.equals(SegmentationType.BINARY)) {
+            segmentedToLineDrawing = true;
+        }
+        
         if (debug) {
             blobsAndContours = new BlobsAndContours(segImg, 
-                smallestGroupLimitBinned, largestGroupLimitBinned, debugTag);
+                smallestGroupLimitBinned, largestGroupLimitBinned, 
+                segmentedToLineDrawing, debugTag);
         } else {
             blobsAndContours = new BlobsAndContours(segImg, 
-                smallestGroupLimitBinned, largestGroupLimitBinned);
+                smallestGroupLimitBinned, largestGroupLimitBinned,
+                segmentedToLineDrawing);
         }
         
         imgBinnedBlobsAndContoursMap.put(type, blobsAndContours);
