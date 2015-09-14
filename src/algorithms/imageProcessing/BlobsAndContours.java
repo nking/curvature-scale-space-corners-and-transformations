@@ -427,7 +427,7 @@ public class BlobsAndContours {
         return debug;
     }
 
-    // ~O(N_blob) to compare centroids.
+    // worse case runtime is O(N_blob^2) to compare centroids and dimensions.
     private void removeRedundantBlobs(List<Set<PairInt>> outputBlobs) {
         
         // for line drawings, there may be a blob due to an objects 
@@ -450,7 +450,6 @@ public class BlobsAndContours {
             //keep larger dimension blob
             if (blobCenters.containsKey(p)) {
                 // compare and keep exterior perimeter
-                int nCurrent = blob.size();
                 int mapIdx = blobCenters.get(p).intValue();
                 Set<PairInt> mapBlob = outputBlobs.get(mapIdx);
                  
@@ -471,34 +470,39 @@ public class BlobsAndContours {
                 blobCenters.put(p, index);
             }
         }
-        int[] dxs8 = Misc.dx8;
-        int[] dys8 = Misc.dy8;
         for (Entry<PairInt, Integer> entry : blobCenters.entrySet()) {
             Integer index = entry.getValue();
             PairInt p = entry.getKey();
             if (remove.contains(index)) {
                 continue;
             }
-            for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
-                int x2 = p.getX() + dxs8[nIdx];
-                int y2 = p.getY() + dys8[nIdx];
-                PairInt p2 = new PairInt(x2, y2);
-                Integer index2 = blobCenters.get(p2);
-                if (index2 == null) {
+            Set<PairInt> blob1 = outputBlobs.get(index.intValue());
+            int[] minMaxXY1 = MiscMath.findMinMaxXY(blob1);
+            int w1 = minMaxXY1[1] - minMaxXY1[0];
+            int h1 = minMaxXY1[3] - minMaxXY1[2];
+            
+            // look for another center within dx,dy=(3,3)
+            
+            for (Entry<PairInt, Integer> entry2 : blobCenters.entrySet()) {
+                Integer index2 = entry2.getValue();
+                if (index2.intValue() == index.intValue()) {
                     continue;
                 }
                 if (remove.contains(index2)) {
                     continue;
                 }
-                // if arrive here, there were 2 blobs with adjacent centers
-                Set<PairInt> blob1 = outputBlobs.get(index.intValue());
+                PairInt p2 = entry2.getKey();
+                
+                int diffX = Math.abs(p2.getX() - p.getX());
+                int diffY = Math.abs(p2.getY() - p.getY());
+                if ((diffX > 3) || (diffY > 3)) {
+                    continue;
+                }
+                // if arrive here, there were 2 blobs with near centers
                 Set<PairInt> blob2 = outputBlobs.get(index2.intValue());
                 //keep larger dimension blob
-                //xMin, xMax, yMin, yMax
-                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob1);
+                //xMin, xMax, yMin, yMax                
                 int[] minMaxXY2 = MiscMath.findMinMaxXY(blob2);
-                int w1 = minMaxXY1[1] - minMaxXY1[0];
-                int h1 = minMaxXY1[3] - minMaxXY1[2];
                 int w2 = minMaxXY2[1] - minMaxXY2[0];
                 int h2 = minMaxXY2[3] - minMaxXY2[2];
                 if ((w1 < w2) && (h1 < h2)) {                
