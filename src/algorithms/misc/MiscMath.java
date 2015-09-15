@@ -194,7 +194,7 @@ public class MiscMath {
      * @return
      */
     public static int findYMaxIndex(float[] a) {
-        if (a == null) {
+        if (a == null || a.length == 0) {
             return -1;
         }
         float max = Float.MIN_VALUE;
@@ -210,7 +210,7 @@ public class MiscMath {
     }
 
     public static int findYMaxIndex(int[] a) {
-        if (a == null) {
+        if (a == null || a.length == 0) {
             return -1;
         }
         int max = Integer.MIN_VALUE;

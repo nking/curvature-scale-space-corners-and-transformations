@@ -312,18 +312,18 @@ public class Histogram {
                 "values and valueErrors cannot be null and must be the same length");
         }
         
-        float minX = MiscMath.findMin(values);
-        float maxX = MiscMath.findMax(values);
-        
-        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);
-
         float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
-        
+                
+        int nBins = (int)Math.ceil(((minMax[1] - minMax[0]))/binWidth);
+        if (nBins < 0) {
+            nBins *= -1;
+        }
+
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
         
-        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], 
-            xHist, yHist, binWidth);
+        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], xHist, 
+            yHist, binWidth);
 
         float[] yHistFloat = new float[yHist.length];
         for (int i = 0; i < yHist.length; i++) {
@@ -362,12 +362,12 @@ public class Histogram {
         
         float[] valueErrors = Errors.populateYErrorsBySqrt(values);
         
-        float minX = MiscMath.findMin(values);
-        float maxX = MiscMath.findMax(values);
-        
-        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);
-
         float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
+                
+        int nBins = (int)Math.ceil(((minMax[1] - minMax[0]))/binWidth);
+        if (nBins < 0) {
+            nBins *= -1;
+        }
         
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];

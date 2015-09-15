@@ -1,7 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.ScatterPointPlotterPNG;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,8 +38,8 @@ public class ContourFinder {
 
     /**
      * find contours in this scale space map for an edge of given edgeNumber.
-     * Note that the edgeNumber is not used, but is kept for use with
-     * the indexes in debugging later.
+     * Note that the edgeNumber is not used, but is kept for use with the
+     * indexes in debugging later.
      *
      * @param scaleSpaceImage
      * @param edgeNumber
@@ -44,17 +48,16 @@ public class ContourFinder {
     public List<CurvatureScaleSpaceContour> findContours(
         ScaleSpaceCurveImage scaleSpaceImage, int edgeNumber) {
 
-        List<CurvatureScaleSpaceContour> contours = new
-            ArrayList<CurvatureScaleSpaceContour>();
+        List<CurvatureScaleSpaceContour> contours = new ArrayList<CurvatureScaleSpaceContour>();
 
-        if ((scaleSpaceImage == null) ||
-            (scaleSpaceImage.getImageSigmas().length == 0)) {
+        if ((scaleSpaceImage == null)
+            || (scaleSpaceImage.getImageSigmas().length == 0)) {
             return contours;
         }
 
         ScaleSpaceCurveImage space = scaleSpaceImage.copy();
 
-        double lowLimit = space.getImageSigmas()[0]*thresholdFactor;
+        double lowLimit = space.getImageSigmas()[0] * thresholdFactor;
         //TODO: consider a low limit of sigma=3
         if (lowLimit < 3) {
             lowLimit = 3;
@@ -99,8 +102,8 @@ public class ContourFinder {
     private CurvatureScaleSpaceContour extractNextContour(
         ScaleSpaceCurveImage scaleSpaceImage, int sigmaIndex) {
 
-        if ((scaleSpaceImage == null) ||
-            (scaleSpaceImage.getScaleSpaceImage().length == 0)) {
+        if ((scaleSpaceImage == null)
+            || (scaleSpaceImage.getScaleSpaceImage().length == 0)) {
             return null;
         }
 
@@ -128,11 +131,10 @@ public class ContourFinder {
         return null;
     }
 
-    private CurvatureScaleSpaceContour extractContour(ScaleSpaceCurveImage
-        scaleSpaceImage, int sigmaIndex, int tIndex) {
+    private CurvatureScaleSpaceContour extractContour(ScaleSpaceCurveImage scaleSpaceImage, int sigmaIndex, int tIndex) {
 
-        if ((scaleSpaceImage == null) ||
-            (scaleSpaceImage.getScaleSpaceImage().length == 0)) {
+        if ((scaleSpaceImage == null)
+            || (scaleSpaceImage.getScaleSpaceImage().length == 0)) {
             return null;
         }
 
@@ -157,7 +159,6 @@ public class ContourFinder {
         if (nToRight == 0) {
 
             // single peak contour if the value is larger than zero
-
             float t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
 
             if (t < 0) {
@@ -173,14 +174,14 @@ public class ContourFinder {
             float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
             int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());
 
-            CurvatureScaleSpaceImagePoint point0 =
-                new CurvatureScaleSpaceImagePoint(sigma, t,
+            CurvatureScaleSpaceImagePoint point0
+                = new CurvatureScaleSpaceImagePoint(sigma, t,
                     scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
                     scaleSpaceImage.getYCoord(sigmaIndex, tIndex),
                     idx0);
 
-            CurvatureScaleSpaceImagePoint[] peakPoints =
-                new CurvatureScaleSpaceImagePoint[]{point0};
+            CurvatureScaleSpaceImagePoint[] peakPoints
+                = new CurvatureScaleSpaceImagePoint[]{point0};
 
             contour.setPeakDetails(peakPoints);
 
@@ -191,16 +192,15 @@ public class ContourFinder {
         }
 
         /*
-        Find the next non-negative value in scaleSpaceImage for sigma
-        and determine where it's right branch is if any.
+         Find the next non-negative value in scaleSpaceImage for sigma
+         and determine where it's right branch is if any.
 
-        For now, will assume that there is never an embedded contour
-        which is starting, that is peaking at this same sigma level.
+         For now, will assume that there is never an embedded contour
+         which is starting, that is peaking at this same sigma level.
 
-        Will look for the first non-negative to be a single peak
-        or the left of a left and right of a peak.
-        */
-
+         Will look for the first non-negative to be a single peak
+         or the left of a left and right of a peak.
+         */
         boolean isASinglePeak = false;
 
         if (sigmaIndex == (scaleSpaceImage.getImageSigmas().length - 1)) {
@@ -224,7 +224,6 @@ public class ContourFinder {
             int rightIndexBelow = -1;
             float minDiffLeftBelow = Float.MAX_VALUE;
             float minDiffRightBelow = Float.MAX_VALUE;
-
 
             float[] t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex + 1];
             // sometimes for low sigma, the contours are misshapen and have
@@ -265,8 +264,8 @@ public class ContourFinder {
                     leftIndexBelow = j;
                 }
 
-                if ((rD >= 0) && (rD < minDiffRightBelow) &&
-                    (j > leftIndexBelow)) {
+                if ((rD >= 0) && (rD < minDiffRightBelow)
+                    && (j > leftIndexBelow)) {
                     minDiffRightBelow = rD;
                     rightIndexBelow = j;
                 }
@@ -286,8 +285,8 @@ public class ContourFinder {
 
             if (!isAnEdgePair) {
 
-                float tNext =
-                    scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
+                float tNext
+                    = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
 
                 isASinglePeak = (t[rightIndexBelow] < tNext) || (tNext < 0);
             }
@@ -296,7 +295,6 @@ public class ContourFinder {
         if (isASinglePeak) {
 
             // it's a single peak
-
             CurvatureScaleSpaceContour contour = new CurvatureScaleSpaceContour(
                 sigma, tPoint);
 
@@ -307,14 +305,14 @@ public class ContourFinder {
             float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
             int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());
 
-            CurvatureScaleSpaceImagePoint point0 =
-                new CurvatureScaleSpaceImagePoint(sigma, t,
+            CurvatureScaleSpaceImagePoint point0
+                = new CurvatureScaleSpaceImagePoint(sigma, t,
                     scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
                     scaleSpaceImage.getYCoord(sigmaIndex, tIndex),
                     idx0);
 
-            CurvatureScaleSpaceImagePoint[] peakPoints =
-                new CurvatureScaleSpaceImagePoint[]{point0};
+            CurvatureScaleSpaceImagePoint[] peakPoints
+                = new CurvatureScaleSpaceImagePoint[]{point0};
 
             contour.setPeakDetails(peakPoints);
 
@@ -326,12 +324,11 @@ public class ContourFinder {
         } else {
 
             // else its the left side of a left and right point which are the peak
-
-            float tNext =
-                scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
+            float tNext
+                = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
 
             CurvatureScaleSpaceContour contour = new CurvatureScaleSpaceContour(
-                sigma, (tPoint + tNext)/2.f);
+                sigma, (tPoint + tNext) / 2.f);
 
             contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());
 
@@ -341,18 +338,18 @@ public class ContourFinder {
             int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());
             int idx1 = Math.round(t1 * scaleSpaceImage.getEdgeSize());
 
-            CurvatureScaleSpaceImagePoint point0 =
-                new CurvatureScaleSpaceImagePoint(sigma, t0,
-                scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
-                scaleSpaceImage.getYCoord(sigmaIndex, tIndex), idx0);
+            CurvatureScaleSpaceImagePoint point0
+                = new CurvatureScaleSpaceImagePoint(sigma, t0,
+                    scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
+                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex), idx0);
 
-            CurvatureScaleSpaceImagePoint point1 =
-                new CurvatureScaleSpaceImagePoint(sigma, t1,
-                scaleSpaceImage.getXCoord(sigmaIndex, tIndex + 1),
-                scaleSpaceImage.getYCoord(sigmaIndex, tIndex + 1), idx1);
+            CurvatureScaleSpaceImagePoint point1
+                = new CurvatureScaleSpaceImagePoint(sigma, t1,
+                    scaleSpaceImage.getXCoord(sigmaIndex, tIndex + 1),
+                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex + 1), idx1);
 
-            CurvatureScaleSpaceImagePoint[] peakPoints =
-                new CurvatureScaleSpaceImagePoint[]{point0, point1};
+            CurvatureScaleSpaceImagePoint[] peakPoints
+                = new CurvatureScaleSpaceImagePoint[]{point0, point1};
 
             contour.setPeakDetails(peakPoints);
 
@@ -365,9 +362,8 @@ public class ContourFinder {
     }
 
     /**
-     * remove the contour under a peak.  Note that the method does not yet
-     * handle complex morphologies, such as embedded contours right under
-     * the peak;
+     * remove the contour under a peak. Note that the method does not yet handle
+     * complex morphologies, such as embedded contours right under the peak;
      *
      * @param scaleSpaceImage
      * @param sigmaIndex
@@ -376,15 +372,14 @@ public class ContourFinder {
     private void removeContourFromImage(ScaleSpaceCurveImage scaleSpaceImage,
         int sigmaIndex, int tIndex) {
 
-        if ((sigmaIndex > (scaleSpaceImage.getScaleSpaceImage().length - 1)) ||
-            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] == null) ||
-            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length == 0)) {
+        if ((sigmaIndex > (scaleSpaceImage.getScaleSpaceImage().length - 1))
+            || (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] == null)
+            || (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length == 0)) {
             return;
         }
 
-        if ((tIndex >
-            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))
-            ) {
+        if ((tIndex
+            > (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))) {
             return;
         }
 
@@ -455,18 +450,17 @@ public class ContourFinder {
     private void removeContourFromImage(ScaleSpaceCurveImage scaleSpaceImage,
         int sigmaIndex, int tLeftIndex, int tRightIndex) {
 
-        if ((scaleSpaceImage.getScaleSpaceImage() == null) ||
-            (sigmaIndex > (scaleSpaceImage.getScaleSpaceImage().length - 1)) ||
-            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] == null) ||
-            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length == 0)) {
+        if ((scaleSpaceImage.getScaleSpaceImage() == null)
+            || (sigmaIndex > (scaleSpaceImage.getScaleSpaceImage().length - 1))
+            || (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] == null)
+            || (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length == 0)) {
             return;
         }
 
-        if ((tLeftIndex >
-            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1)) ||
-            (tRightIndex >
-            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))
-            ) {
+        if ((tLeftIndex
+            > (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))
+            || (tRightIndex
+            > (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))) {
             return;
         }
 
@@ -512,8 +506,8 @@ public class ContourFinder {
             // TODO: improve correction for wrap around.
             // Also, this only includes peaks found at end, not beginning.
             if ((leftIndex > -1) && (leftIndex == (t.length - 1))
-                && (t[leftIndex] >= 0.9) &&
-                (t[0] < 0.1)) {
+                && (t[leftIndex] >= 0.9)
+                && (t[0] < 0.1)) {
                 rightIndex = 0;
             }
 
@@ -540,26 +534,23 @@ public class ContourFinder {
     }
 
     /**
-     * looks for contours that may be wrap around contours that started near
-     * 1.0 and finished on the other side of zero, and corrects for that.
-     * Note that this could be done more correctly before the left and right
-     * branches are removed from the scale space image, but a correction at
-     * this stage instead of that earlier stage is simpler and easier to
-     * maintain.
+     * looks for contours that may be wrap around contours that started near 1.0
+     * and finished on the other side of zero, and corrects for that. Note that
+     * this could be done more correctly before the left and right branches are
+     * removed from the scale space image, but a correction at this stage
+     * instead of that earlier stage is simpler and easier to maintain.
+     *
      * @param contours
      */
-    private void correctForWrappedContours(final List<CurvatureScaleSpaceContour>
-        contours) {
+    private void correctForWrappedContours(final List<CurvatureScaleSpaceContour> contours) {
 
         if ((contours == null) || contours.isEmpty()) {
             return;
         }
 
         // roughly, look for features with peaks > 0.9 and < 0.1.
-
         // TODO: what shape would produce the widest possible contour in
         // this space?
-
         List<Integer> rightBorderPeakIndexes = new ArrayList<Integer>();
         List<Integer> leftBorderPeakIndexes = new ArrayList<Integer>();
 
@@ -586,76 +577,73 @@ public class ContourFinder {
             && !leftBorderPeakIndexes.isEmpty()) {
 
             // indexes are ordered by descending sigma
-
             // for now, make an unsafe assumption that there aren't any other
             // full contours within the 0.1 border regions in between the sigma
             // of contours that wrap around
-
             //if ((leftBorderPeakIndexes.size() == 1)
             //    && (rightBorderPeakIndexes.size() == 1)) {
+            int idxLeft = leftBorderPeakIndexes.get(i);
+            int idxRight = rightBorderPeakIndexes.get(i);
 
-                int idxLeft = leftBorderPeakIndexes.get(i);
-                int idxRight = rightBorderPeakIndexes.get(i);
+            CurvatureScaleSpaceContour left = contours.get(idxLeft);
+            CurvatureScaleSpaceContour right = contours.get(idxRight);
 
-                CurvatureScaleSpaceContour left = contours.get(idxLeft);
-                CurvatureScaleSpaceContour right = contours.get(idxRight);
+            boolean leftIsTaller = (left.getPeakSigma()
+                > right.getPeakSigma());
 
-                boolean leftIsTaller = (left.getPeakSigma()
-                    > right.getPeakSigma());
+            boolean rightIsTaller = (right.getPeakSigma()
+                > left.getPeakSigma());
 
-                boolean rightIsTaller = (right.getPeakSigma()
-                    > left.getPeakSigma());
+            if (leftIsTaller && (left.getPeakDetails().length == 2)) {
 
-                if (leftIsTaller && (left.getPeakDetails().length == 2)) {
+                contours.remove(right);
+                resort = true;
+            } else if (rightIsTaller && (right.getPeakDetails().length == 2)) {
 
+                contours.remove(left);
+                resort = true;
+            } else {
+
+                if (leftIsTaller && (right.getPeakDetails().length == 2)) {
+                    // left has 1 peak
                     contours.remove(right);
                     resort = true;
-                } else if (rightIsTaller && (right.getPeakDetails().length == 2)) {
-
+                } else if (rightIsTaller && (left.getPeakDetails().length == 2)) {
+                    // right has 1 peak
                     contours.remove(left);
                     resort = true;
+                } else if (!rightIsTaller && !leftIsTaller
+                    && (right.getPeakDetails().length == 2)
+                    && (left.getPeakDetails().length == 2)) {
+                    // do nothing, both should remain
                 } else {
+                    // both have a single peak, so avg in sigma and t
+                    float sigma = (left.getPeakSigma()
+                        + right.getPeakSigma()) / 2.f;
+                    float scaleFreeLength = (left.getPeakScaleFreeLength()
+                        + right.getPeakScaleFreeLength()) / 2.f;
 
-                    if (leftIsTaller && (right.getPeakDetails().length == 2)) {
-                        // left has 1 peak
-                        contours.remove(right);
-                        resort = true;
-                    } else if (rightIsTaller && (left.getPeakDetails().length == 2)) {
-                        // right has 1 peak
-                        contours.remove(left);
-                        resort = true;
-                    } else if (!rightIsTaller && !leftIsTaller &&
-                        (right.getPeakDetails().length == 2) &&
-                        (left.getPeakDetails().length == 2)) {
-                        // do nothing, both should remain
-                    } else {
-                        // both have a single peak, so avg in sigma and t
-                        float sigma = (left.getPeakSigma()
-                            + right.getPeakSigma())/2.f;
-                        float scaleFreeLength = (left.getPeakScaleFreeLength()
-                            + right.getPeakScaleFreeLength())/2.f;
+                    CurvatureScaleSpaceContour contour
+                        = new CurvatureScaleSpaceContour(sigma, scaleFreeLength);
 
-                        CurvatureScaleSpaceContour contour =
-                            new CurvatureScaleSpaceContour(sigma, scaleFreeLength);
+                    contour.setEdgeNumber(left.getEdgeNumber());
 
-                        contour.setEdgeNumber(left.getEdgeNumber());
+                    CurvatureScaleSpaceImagePoint[] peakPoints
+                        = new CurvatureScaleSpaceImagePoint[]{
+                            left.getPeakDetails()[0],
+                            right.getPeakDetails()[0]};
 
-                        CurvatureScaleSpaceImagePoint[] peakPoints
-                            = new CurvatureScaleSpaceImagePoint[]{
-                                left.getPeakDetails()[0],
-                                right.getPeakDetails()[0]};
+                    contour.setPeakDetails(peakPoints);
 
-                        contour.setPeakDetails(peakPoints);
+                    contours.set(idxLeft, contour);
 
-                        contours.set(idxLeft, contour);
+                    contours.remove(left);
 
-                        contours.remove(left);
+                    contours.remove(right);
 
-                        contours.remove(right);
-
-                        resort = true;
-                    }
+                    resort = true;
                 }
+            }
             //}
 
             leftBorderPeakIndexes.clear();
@@ -674,9 +662,9 @@ public class ContourFinder {
             nIter++;
         }
 
-       if (resort) {
-           Collections.sort(contours, new DescendingSigmaComparator());
-       }
+        if (resort) {
+            Collections.sort(contours, new DescendingSigmaComparator());
+        }
     }
 
     public boolean reverseIfClockwise(List<CurvatureScaleSpaceContour> result) {
@@ -684,7 +672,7 @@ public class ContourFinder {
         if (result.isEmpty()) {
             return false;
         }
-        
+
         boolean didReverse = false;
 
         PairIntArray testContour = new PairIntArray();
@@ -709,17 +697,20 @@ public class ContourFinder {
 
     public boolean reverseIfClockwise(List<CurvatureScaleSpaceContour> result,
         PairIntArray edge) {
-        
+
         if (result.isEmpty()) {
+            return false;
+        }
+
+        if (edge == null) {
             return false;
         }
 
         boolean didReverse = false;
 
         /*
-        using the inflection points and then points half way between them.
-        */
-
+         using the inflection points and then points half way between them.
+         */
         List<Integer> indexes = new ArrayList<Integer>();
         for (int j = 0; j < result.size(); j++) {
             CurvatureScaleSpaceContour c = result.get(j);
@@ -735,7 +726,7 @@ public class ContourFinder {
         for (int i = 1; i < indexes.size(); ++i) {
             int i0 = indexes.get(i - 1);
             int i1 = indexes.get(i);
-            int iMid = (i1 + i0)/2;
+            int iMid = (i1 + i0) / 2;
             betweenInflectionIndexes.add(Integer.valueOf(iMid));
         }
         boolean isClosedCurved = (edge instanceof PairIntArrayWithColor)
@@ -745,7 +736,7 @@ public class ContourFinder {
             int i0 = indexes.get(n - 1);
             int i1 = indexes.get(0);
             int len = (indexes.size() - i0 + i1);
-            int iMid = i0 + (len/2);
+            int iMid = i0 + (len / 2);
             if (iMid > (n - 1)) {
                 iMid = iMid - n;
             }
@@ -770,6 +761,36 @@ public class ContourFinder {
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         boolean isCW = curveHelper.curveIsOrderedClockwise(dirTst);
+        /*
+         try {
+         ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+         float[] x = new float[dirTst.getN()];
+         float[] y = new float[x.length];
+         float xmn = Float.MAX_VALUE;
+         float xmx = Float.MIN_VALUE;
+         float ymn = Float.MAX_VALUE;
+         float ymx = Float.MIN_VALUE;
+         for (int i = 0; i < dirTst.getN(); ++i) {
+         x[i] = dirTst.getX(i);
+         y[i] = dirTst.getY(i);
+         if (x[i] < xmn) {
+         xmn = x[i];
+         }
+         if (x[i] > xmx) {
+         xmx = x[i];
+         }
+         if (y[i] < ymn) {
+         ymn = y[i];
+         }
+         if (y[i] > ymx) {
+         ymx = y[i];
+         }
+         }
+         plotter.plotLabeledPoints(0.9f*xmn, 1.1f*xmx, 0.9f*ymn, 1.1f*ymx, x, y, "isCW="+Boolean.toString(isCW), "X", "Y");
+         plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
+         } catch (IOException e){}
+         */
+
         if (isCW) {
             didReverse = true;
             reversePointOrder(result);
@@ -782,8 +803,8 @@ public class ContourFinder {
 
         for (int j = 0; j < result.size(); j++) {
             CurvatureScaleSpaceContour contour = result.get(j);
-            CurvatureScaleSpaceContour reversed =
-                new CurvatureScaleSpaceContour(contour.getPeakSigma(),
+            CurvatureScaleSpaceContour reversed
+                = new CurvatureScaleSpaceContour(contour.getPeakSigma(),
                     1.0f - contour.getPeakScaleFreeLength());
             CurvatureScaleSpaceImagePoint[] points = contour.getPeakDetails();
             if (points.length > 1) {

@@ -153,7 +153,7 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         ContourFinder contourFinder = new ContourFinder();
         
         if (setToExtractWeakCurvesTooIfNeeded) {
-            contourFinder.overrideTheLowSigmaLimit(1.25f);
+            contourFinder.overrideTheLowSigmaLimit(2.0f);
         }
 
         List<CurvatureScaleSpaceContour> result = 

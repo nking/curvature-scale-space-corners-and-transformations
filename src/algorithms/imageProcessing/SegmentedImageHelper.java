@@ -373,12 +373,16 @@ public class SegmentedImageHelper {
         
         if (type.equals(SegmentationType.BINARY)) {
             
+            //TODO: replace w/ resolution based scl
+            
             int scl = 20;
             
             segImg = imgGrey.copyImage();
             
+imageProcessor.blur(segImg, SIGMA.ONE);
+
             imageProcessor.applyImageSegmentation(segImg, 2);
-            
+                        
             imageProcessor.applyAdaptiveMeanThresholding(segImg, scl);
             
             imgSegmentedMap.put(type, segImg);
@@ -451,10 +455,10 @@ public class SegmentedImageHelper {
         
         if (debug) {
             blobsAndContours = new BlobsAndContours(segImg, smallestGroupLimit, 
-                largestGroupLimit, segmentedToLineDrawing, debugTag);
+                largestGroupLimit, type, segmentedToLineDrawing, debugTag);
         } else {
             blobsAndContours = new BlobsAndContours(segImg, smallestGroupLimit, 
-                largestGroupLimit, segmentedToLineDrawing);
+                largestGroupLimit, type, segmentedToLineDrawing);
         }
         
         imgBlobsAndContoursMap.put(type, blobsAndContours);
@@ -483,11 +487,11 @@ public class SegmentedImageHelper {
         
         if (debug) {
             blobsAndContours = new BlobsAndContours(segImg, 
-                smallestGroupLimitBinned, largestGroupLimitBinned, 
+                smallestGroupLimitBinned, largestGroupLimitBinned, type,
                 segmentedToLineDrawing, debugTag);
         } else {
             blobsAndContours = new BlobsAndContours(segImg, 
-                smallestGroupLimitBinned, largestGroupLimitBinned,
+                smallestGroupLimitBinned, largestGroupLimitBinned, type,
                 segmentedToLineDrawing);
         }
         

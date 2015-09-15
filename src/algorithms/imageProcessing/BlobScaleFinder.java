@@ -487,8 +487,13 @@ redoStats = true;
                 index2, blob1, blob2, curve1, curve2,
                 bestCompStat.getImg1PointRotInDegrees(),
                 bestCompStat.getImg2PointRotInDegrees(), matcher);
-
+            
             log.info("redone: " + printToString(compStats) + " combinedStat="
+                + calculateCombinedIntensityStat(compStats));
+            
+            removeDiscrepantThetaDiff(compStats);
+
+            log.info("theta diff filtered: " + printToString(compStats) + " combinedStat="
                 + calculateCombinedIntensityStat(compStats));
         }
 
@@ -949,6 +954,47 @@ compStats.size()));
         }
 
         return null;
+    }
+
+    private void removeDiscrepantThetaDiff(List<FeatureComparisonStat> compStats) {
+        
+        if (compStats == null || compStats.isEmpty()) {
+            return;
+        }
+        
+        float[] values = new float[compStats.size()];
+        for (int i = 0; i < compStats.size(); ++i) {
+            FeatureComparisonStat stat = compStats.get(i);
+            float diff = AngleUtil.getAngleDifference(
+                stat.getImg1PointRotInDegrees(),
+                stat.getImg2PointRotInDegrees());
+            values[i] = diff;
+        }
+        // 20 degree wide bins
+        HistogramHolder hist = Histogram.createSimpleHistogram(20.f,
+            values, Errors.populateYErrorsBySqrt(values));
+        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        float thetaDiff;
+        if (yMaxIdx == -1) {
+            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);
+            thetaDiff = thetaDiffMeanStDev[0];
+        } else {
+            thetaDiff = hist.getXHist()[yMaxIdx];
+        }        
+        
+        //TODO: consider a bin larger than 20 degrees... 25
+        List<Integer> remove = new ArrayList<Integer>();
+        for (int i = 0; i < values.length; ++i) {
+            float diffRot = Math.abs(values[i] - thetaDiff);
+            if (diffRot > 20) {
+                remove.add(Integer.valueOf(i));
+            }
+        }
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i);
+            compStats.remove(idx);
+        }
     }
 
 }

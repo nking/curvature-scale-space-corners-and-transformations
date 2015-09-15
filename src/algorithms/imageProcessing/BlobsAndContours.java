@@ -34,6 +34,8 @@ public class BlobsAndContours {
     private final int smallestGroupLimit;
     
     private final int largestGroupLimit;
+    
+    private final SegmentedImageHelper.SegmentationType type;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -55,7 +57,8 @@ public class BlobsAndContours {
      * segmentation using adaptive mean thresholding, for example)
      */
     public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
-        int largestGroupLimit, boolean segmentedToLineDrawing) {
+        int largestGroupLimit, SegmentedImageHelper.SegmentationType type,
+        boolean segmentedToLineDrawing) {
 
         blobs = new ArrayList<Set<PairInt>>();
 
@@ -69,6 +72,8 @@ public class BlobsAndContours {
         
         this.largestGroupLimit = largestGroupLimit;
         
+        this.type = type;
+            
         init(img);
     }
 
@@ -85,7 +90,8 @@ public class BlobsAndContours {
      * @param debugTag
      */
     public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
-        int largestGroupLimit, boolean segmentedToLineDrawing, String debugTag) {
+        int largestGroupLimit, SegmentedImageHelper.SegmentationType type,
+        boolean segmentedToLineDrawing, String debugTag) {
 
         blobs = new ArrayList<Set<PairInt>>();
 
@@ -94,6 +100,8 @@ public class BlobsAndContours {
         contours = new ArrayList<List<CurvatureScaleSpaceContour>>();
 
         this.segmentedToLineDrawing = segmentedToLineDrawing;
+        
+        this.type = type;
         
         debug = true;
 
@@ -225,7 +233,7 @@ public class BlobsAndContours {
             EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
 
             if (debug) {
-                //extractor.setToDebug();
+                extractor.setToDebug();
             }
 
             PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(
@@ -347,7 +355,8 @@ public class BlobsAndContours {
     }
 
     protected void populateContours(final List<PairIntArray> closedContours,
-        final List<List<CurvatureScaleSpaceContour>> outputContours) {
+        final List<List<CurvatureScaleSpaceContour>> outputContours
+    ) {
 
         outputContours.clear();
 
@@ -355,13 +364,21 @@ public class BlobsAndContours {
             = new ArrayList<ScaleSpaceCurveImage>();
 
         boolean setToExtractWeakCurvesTooIfNeeded = false;
+        
+        if (type.equals(SegmentedImageHelper.SegmentationType.BINARY)) {
+            // might need to restrict this to the binned images
+            setToExtractWeakCurvesTooIfNeeded = true;
+        }
 
         boolean allContoursZero = true;
 
         for (int edgeIndex = 0; edgeIndex < closedContours.size(); ++edgeIndex) {
 
             PairIntArray edge = closedContours.get(edgeIndex);
-            
+    
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+double[] xycen = curveHelper.calculateXYCentroids(edge);
+
             ScaleSpaceCurveImage sscImg =
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.createScaleSpaceImage(
                     edge, edgeIndex);
@@ -452,6 +469,8 @@ public class BlobsAndContours {
         // the exterior because later feature matching should be better
         // for points outside of the blob which is largely similar content.
         
+        boolean preferExterior = true;
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         Map<PairInt, Integer> blobCenters = new HashMap<PairInt, Integer>();
@@ -476,7 +495,8 @@ public class BlobsAndContours {
                 int h1 = minMaxXY1[3] - minMaxXY1[2];
                 int w2 = minMaxXY2[1] - minMaxXY2[0];
                 int h2 = minMaxXY2[3] - minMaxXY2[2];
-                if ((w1 < w2) && (h1 < h2)) {
+                if ((preferExterior && (w1 < w2) && (h1 < h2)) ||
+                    (!preferExterior && (w1 > w2) && (h1 > h2))) {
                     remove.add(Integer.valueOf(i));
                     continue;
                 }
@@ -521,11 +541,12 @@ public class BlobsAndContours {
                 int[] minMaxXY2 = MiscMath.findMinMaxXY(blob2);
                 int w2 = minMaxXY2[1] - minMaxXY2[0];
                 int h2 = minMaxXY2[3] - minMaxXY2[2];
-                if ((w1 < w2) && (h1 < h2)) {                
-                    // keep blob 2
+                if ((preferExterior && (w1 < w2) && (h1 < h2)) ||
+                    (!preferExterior && (w1 >w2) && (h1 > h2))) {                
+                    // keep blob 2 for preferExterior
                     remove.add(index);
                 } else {
-                    // keep blob 1
+                    // keep blob 1 for preferExterior
                     remove.add(index2);
                 }
                 break;

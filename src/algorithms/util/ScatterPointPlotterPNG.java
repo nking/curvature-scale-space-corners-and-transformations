@@ -7,17 +7,28 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.imageio.ImageIO;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartRenderingInfo;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.labels.ItemLabelAnchor;
+import org.jfree.chart.labels.ItemLabelPosition;
+import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.labels.XYItemLabelGenerator;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.title.Title;
 import org.jfree.data.Range;
+import org.jfree.data.xy.AbstractXYDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.TextAnchor;
 
 /**
  *
@@ -212,6 +223,80 @@ public class ScatterPointPlotterPNG {
         
         imgToWrite = chart.createBufferedImage(500, 500, imageType, chartInfo);
     }
+    
+    /**
+     * 
+     * @param xmn
+     * @param xmx
+     * @param ymn
+     * @param ymx
+     * @param xPoints
+     * @param yPoints
+     * @param plotLabel 
+     */
+    public void plotLabeledPoints(float xmn, float xmx, float ymn, float ymx,
+        float[] xPoints, float[] yPoints, String plotLabel, String xAxisLabel, 
+        String yAxisLabel) {
+
+        if (xPoints == null) {
+            return;
+        }
+        
+        //  ===== add points data =====
+        LabeledXYDataset data = new LabeledXYDataset();
+        for (int i = 0; i < xPoints.length; i++) {
+            data.add(xPoints[i], yPoints[i], Integer.toString(i));
+        }
+
+        JFreeChart chart = ChartFactory.createScatterPlot(
+            null,
+            plotLabel, null, 
+            (XYDataset)data
+        );
+        chart.setTitle(plotLabel);
+        
+        Paint bPaint = Color.WHITE;
+        
+        chart.setBackgroundPaint(bPaint);
+        
+        final XYPlot plot = chart.getXYPlot();
+        
+        //http://stackoverflow.com/questions/14458402/jfreecart-line-chart-with-text-each-point
+        XYItemRenderer renderer = plot.getRenderer();
+        renderer.setBaseItemLabelGenerator(new LabelGenerator());
+        renderer.setBaseItemLabelPaint(Color.green.darker());
+        renderer.setBasePositiveItemLabelPosition(
+            new ItemLabelPosition(ItemLabelAnchor.CENTER, TextAnchor.TOP_CENTER));
+        renderer.setBaseItemLabelFont(
+            renderer.getBaseItemLabelFont().deriveFont(10f));
+        renderer.setBaseItemLabelsVisible(true);
+        renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+                
+        Range xRange = new Range(xmn, xmx);
+        Range yRange = new Range(ymn, ymx);
+        
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setRange(xRange, true, false);
+        yAxis.setRange(yRange, true, false);
+        //yAxis.setTickUnit(new NumberTickUnit(1));
+        
+        plot.setDomainAxis(xAxis);
+        plot.setRangeAxis(yAxis);
+        
+        plot.setBackgroundPaint(bPaint);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setRangeGridlinePaint(Color.BLACK);
+        
+        ChartRenderingInfo chartInfo = new ChartRenderingInfo();
+        
+        int imageType = BufferedImage.TYPE_INT_ARGB;
+        
+        // in the absence of an X11 environment, may need to set this:
+        System.setProperty("java.awt.headless", "true");
+       
+        imgToWrite = chart.createBufferedImage(500, 500, imageType, chartInfo);
+    }
 
     public void plot(double[] xPoints, double[] yPoints, String plotLabel) {
 
@@ -225,6 +310,56 @@ public class ScatterPointPlotterPNG {
     	}
         
         plot(xx, yy, null, null, plotLabel);
+    }
+    
+    private static class LabelGenerator implements XYItemLabelGenerator {
+        @Override
+        public String generateLabel(XYDataset dataset, int series, int item) {
+            LabeledXYDataset labelSource = (LabeledXYDataset) dataset;
+            return labelSource.getLabel(series, item);
+        }
+    }
+    
+    private static class LabeledXYDataset extends AbstractXYDataset {
+
+        private List<Number> x = new ArrayList<Number>();
+        private List<Number> y = new ArrayList<Number>();
+        private List<String> label = new ArrayList<String>();
+
+        public void add(double x, double y, String label){
+            this.x.add(x);
+            this.y.add(y);
+            this.label.add(label);
+        }
+
+        public String getLabel(int series, int item) {
+            return label.get(item);
+        }
+
+        @Override
+        public int getSeriesCount() {
+            return 1;
+        }
+
+        @Override
+        public Comparable getSeriesKey(int series) {
+            return "labeled";
+        }
+
+        @Override
+        public int getItemCount(int series) {
+            return label.size();
+        }
+
+        @Override
+        public Number getX(int series, int item) {
+            return x.get(item);
+        }
+
+        @Override
+        public Number getY(int series, int item) {
+            return y.get(item);
+        }
     }
 
     public String writeFile() throws IOException {
