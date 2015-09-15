@@ -84,18 +84,14 @@ public class BlobScaleFinder {
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
         IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
 
-        FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1 =
-            new FixedSizeSortedVector<>(2, IntensityFeatureComparisonStats.class);
+        // keeping the best match for each index1
+        // the final answer looks at cost, similarity in diffTheta and scale,
+        // (the combinedStat would need to be re-calculated with normalization
+        // considerations to make the numbers comparable)
+        Map<Integer, IntensityFeatureComparisonStats> index1BestMap =
+            new HashMap<Integer, IntensityFeatureComparisonStats>();
 
-        //TODO: this section needs to be simplified
-
-        double bestOverallStatSqSum = Double.MAX_VALUE;
-        int bestOverallIdx1 = -1;
-        int bestOverallC1 = 0;
-        int bestOverallIdx2 = -1;
-        int bestOverallC2 = 0;
-        int bestOverallNMatched = -1;
-        List<FeatureComparisonStat> bestOverallCompStats = null;
+        //List<FeatureComparisonStat> bestOverallCompStats = null;
 
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
@@ -113,7 +109,7 @@ public class BlobScaleFinder {
 
             double bestStatSqSum = Double.MAX_VALUE;
             double bestScale = -1;
- //double bestCost consider comparisons by cost between matches
+            double bestCost = -1;
             int bestIdx2 = -1;
             int bestC2 = 0;
             int bestNMatched = -1;
@@ -196,9 +192,10 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                     bestC2 = contours2List.get(bestIdx2).size();
                     bestNMatched = mapper.getMatcher().getSolutionMatchedContours1().size();
                     bestCompStats = compStats;
+                    bestCost = mapper.getMatcher().getSolvedCost();
                     bestScale = mapper.getMatcher().getSolvedScale();
                     log.info("  new best for [" + index1.toString() + "] ["
-                        + index2.toString() + "] combinedStat=" + combinedStat 
+                        + index2.toString() + "] combinedStat=" + combinedStat
                         + " with n=" + bestCompStats.size());
                 }
             }
@@ -219,45 +216,38 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 (float)bestStatSqSum));
             log.info(sb.toString());
 
-            IntensityFeatureComparisonStats stats = new IntensityFeatureComparisonStats();
+            IntensityFeatureComparisonStats stats =
+                new IntensityFeatureComparisonStats(bestCost, bestScale);
             stats.addAll(bestCompStats);
-            topForIndex1.add(stats);
 
-            if (bestStatSqSum < bestOverallStatSqSum) {
-
-                bestOverallStatSqSum = bestStatSqSum;
-                bestOverallIdx1 = index1.intValue();
-                bestOverallIdx2 = bestIdx2;
-                bestOverallC1 = contours1List.get(bestOverallIdx1).size();
-                bestOverallC2 = bestC2;
-                bestOverallNMatched = bestNMatched;
-                bestOverallCompStats = bestCompStats;
-
-                log.info("  best overall for [" + bestOverallIdx1 + "] [" +
-                    bestOverallIdx2 + "]  combinedStat=" + bestOverallStatSqSum);
-            }
+            index1BestMap.put(index1, stats);
         }
 
-        addSimilarToBestOverall(bestOverallCompStats, topForIndex1);
-
         // -------- process the single solution compStats ------------
-        if (bestOverallCompStats == null || bestOverallCompStats.isEmpty()) {
+        List<FeatureComparisonStat> bestOverall = null;
+        if (index1BestMap.isEmpty()) {
 
             if (singleSolnMap.size() > 1) {
-                processSingleSolutionsIfNoBest(img1, img2, bestOverallCompStats,
+                bestOverall = processSingleSolutionsIfNoBest(img1, img2,
                     singleSolnMap, blobs1, blobs2, perimeters1, perimeters2,
                     features1, features2);
             }
 
-            if ((bestOverallCompStats == null) || bestOverallCompStats.isEmpty()) {
+            if (index1BestMap.isEmpty()) {
                 return null;
             }
+        } else {
+            bestOverall = filterToBestConsistent(index1BestMap);
+        }
+
+        if (bestOverall == null) {
+            return null;
         }
 
         TransformationParameters params = calculateTransformation(
             img1Helper, type1, useBinned1,
             img2Helper, type2, useBinned2,
-            bestOverallCompStats, outputScaleRotTransXYStDev);
+            bestOverall, outputScaleRotTransXYStDev);
 
         if (params == null) {
             return null;
@@ -762,73 +752,99 @@ int z = 1;
         compStats.addAll(filteredCompStats);
     }
 
-    protected float calculateRotationDifferences(List<FeatureComparisonStat>
-        compStats) {
+    protected List<FeatureComparisonStat> filterToBestConsistent(
+        Map<Integer, IntensityFeatureComparisonStats> index1StatsMap) {
 
-        if (compStats == null || compStats.isEmpty()) {
-            return Float.POSITIVE_INFINITY;
+        if (index1StatsMap == null || index1StatsMap.isEmpty()) {
+            return null;
         }
 
-        double sumDiff = 0;
-
-        for (FeatureComparisonStat stat : compStats) {
-
-            float diff = AngleUtil.getAngleDifference(stat.getImg1PointRotInDegrees(),
-                stat.getImg2PointRotInDegrees());
-
-            sumDiff += diff;
+        /*
+        the characteristics which produce the correct combined result appear to
+        be:
+        rank by contour matching solution cost
+        rank by similarity in diffTheta and contour matching solution scale
+        */
+        
+        float[][] meanStDev = new float[index1StatsMap.size()][];
+        for (int i = 0; i < meanStDev.length; ++i) {
+            meanStDev[i] = new float[2];
         }
+        float[] scales = new float[meanStDev.length];
+        float[] costs = new float[meanStDev.length];
+        List<List<FeatureComparisonStat>> fcs = new ArrayList<List<FeatureComparisonStat>>();
+        
+        float minStDev = Float.MAX_VALUE;
+        int minStDevIdx = -1;
 
-        return (float)(sumDiff/(double)compStats.size());
-    }
+        int count = 0;
+        for (Entry<Integer, IntensityFeatureComparisonStats> entry : index1StatsMap.entrySet()) {
 
-    private void addSimilarToBestOverall(List<FeatureComparisonStat>
-        bestOverallCompStats,
-        FixedSizeSortedVector<IntensityFeatureComparisonStats> topForIndex1) {
+            IntensityFeatureComparisonStats stats = entry.getValue();
 
-        // ---- add to bestOverallCompStats for solutions similar to best -----
-        if (bestOverallCompStats != null) {
+            List<FeatureComparisonStat> list = stats.getComparisonStats();
+            float[] values = new float[list.size()];
+            for (int i = 0; i < list.size(); ++i) {
+                FeatureComparisonStat stat = list.get(i);
+                float diff = AngleUtil.getAngleDifference(
+                    stat.getImg1PointRotInDegrees(),
+                    stat.getImg2PointRotInDegrees());
+                values[i] = diff;
+            }
+            float[] msv = MiscMath.getAvgAndStDev(values);
+            if (msv[1] > 20) {
+                continue;
+            }
+            
+            meanStDev[count] = MiscMath.getAvgAndStDev(values);
+            
+            scales[count] = (float)stats.getScale();
+            costs[count] = (float)stats.getCost();
+            fcs.add(list);
 
-log.info("looking for solutions similar to "+bestOverallCompStats);
-
-            float rotationBest = calculateRotationDifferences(bestOverallCompStats);
-
-            for (int i = 0; i < topForIndex1.getNumberOfItems(); ++i) {
-
-                IntensityFeatureComparisonStats cStats = topForIndex1.getArray()[i];
-
-                List<FeatureComparisonStat> stats = cStats.getComparisonStats();
-
-                if (stats.equals(bestOverallCompStats)) {
-                    continue;
-                }
-
-                boolean similar = true;
-
-                for (FeatureComparisonStat stat : stats) {
-
-                    float rot1 = stat.getImg1PointRotInDegrees();
-                    float rot2 = stat.getImg2PointRotInDegrees();
-
-                    float rot = AngleUtil.getAngleDifference(rot1, rot2);
-
-                    if (Math.abs(rot - rotationBest) > 30) {
-                        similar = false;
-                        break;
-                    }
-                }
-
-                if (similar) {
-log.info("  found similar:" + stats);
-                    bestOverallCompStats.addAll(stats);
+            if (meanStDev[count][1] < minStDev) {
+                minStDev = meanStDev[count][1];
+                minStDevIdx = count;
+            } else if (meanStDev[count][1] == minStDev) {
+                if (costs[count] < costs[minStDevIdx]) {
+                    minStDev = meanStDev[count][1];
+                    minStDevIdx = count;
                 }
             }
+            
+            count++;
         }
+        
+        /*
+        have removed the sets whose diff in diff rot between points is larger
+        than 20,
+        so now need to exclude outlier scales.
+        */
+        
+        float[] scaleMeanStDev = MiscMath.getAvgAndStDev(scales, count);
+
+        boolean[] exclude = new boolean[count];
+                
+        for (int i = 0; i < count; ++i) {
+            
+            float scl = scales[i];
+            float diff = Math.abs(scl - scaleMeanStDev[0]);
+            if (diff > 2*scaleMeanStDev[1]) {
+                exclude[i] = true;
+            }
+        }
+        
+        List<FeatureComparisonStat> output = new ArrayList<FeatureComparisonStat>();
+        for (int i = 0; i < count; ++i) {
+            if (!exclude[i]) {
+                output.addAll(fcs.get(i));
+            }
+        }
+        return output;
     }
 
-    private void processSingleSolutionsIfNoBest(
+    private List<FeatureComparisonStat> processSingleSolutionsIfNoBest(
         GreyscaleImage img1, GreyscaleImage img2,
-        List<FeatureComparisonStat> bestOverallCompStats,
         Map<PairInt, CSSContourMatcherWrapper> singleSolnMap,
         List<Set<PairInt>> blobs1, List<Set<PairInt>> blobs2,
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2,
@@ -898,6 +914,9 @@ compStats.size()));
                 continue;
             }
 
+            //TODO: combined stat needs to be recalculated so that can compare
+            // different matchings
+
             compStatMap.put(p, compStats);
 
             double combStat = calculateCombinedIntensityStat(compStats);
@@ -925,9 +944,11 @@ compStats.size()));
             }
             removeOutliers(csList);
             if (csList.size() > 1) {
-                bestOverallCompStats = new ArrayList<FeatureComparisonStat>();
-                bestOverallCompStats.addAll(csList);
+                return csList;
             }
         }
+
+        return null;
     }
+
 }
