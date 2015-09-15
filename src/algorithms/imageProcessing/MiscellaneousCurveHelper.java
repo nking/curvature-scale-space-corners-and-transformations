@@ -3624,13 +3624,46 @@ for (int i = 0; i < edge.getN(); i++) {
         throw new UnsupportedOperationException("not yet implemented");
     }
     
-    public List<Set<Integer>> findXCrossings(PairIntArray closedCurve) throws Exception {
+    public boolean correctForXCrossings(PairIntArray closedCurve) throws Exception {
                 
         // method will look for x-sections in the curve and then assert that the
         // point order in the curve does not cross the x-section, instead
         // enters on one side and later exits on the other side of the x-section.
-        // points that violate that are returned in point sets for each
-        // x-section.
+        // points that violate that are corrected and counted.
+        
+        // at the end of the method, returns whether changes were made or not.
+        
+        /*
+        examples:
+            9
+          0 1 8 7
+              2
+        
+            9
+            1 8 7
+          0   2
+        
+        then pattern transformed by x and y times -1
+        
+        the method will make a Set of PairInts for every point.
+        while nIter==0 or nChanges > 0
+           scan each point in closedCurve looking for the x-crossing
+           pattern and if found:
+               check that points are ordered as expected
+               and if not, change the point order and restart the loop with nIter++
+        
+        The check that points are ordered as expected needs to make corrections
+        for wrap around for endpoints.
+                   
+        A violation of the crossing would be:
+            9                   9
+          0 1 2 3               1 2 3
+              8               0   8
+        
+        The check that points are ordered as expected should probably 
+        just try each of 4 correct patterns for point order and stop 
+        with a "ordered=true" when found.
+        */
         
         throw new UnsupportedOperationException("not yet implemented");
     }
