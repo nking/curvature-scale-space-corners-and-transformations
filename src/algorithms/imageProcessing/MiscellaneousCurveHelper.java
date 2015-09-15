@@ -3526,7 +3526,7 @@ for (int i = 0; i < edge.getN(); i++) {
      * @return list of points that are part of the 2 pixel width patterns in
      * a curve where the curve closes, but is still connected.
      */
-    public List<Set<PairInt>> findButterlySections(PairIntArray closedCurve) {
+    public List<Set<PairInt>> findButterflySections(PairIntArray closedCurve) {
         
         /*
         endpoints for vert:
@@ -3620,6 +3620,17 @@ for (int i = 0; i < edge.getN(); i++) {
         runtime complexity is linear in the number of points in the given
         closed curve.
         */
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    public List<Set<Integer>> findXCrossings(PairIntArray closedCurve) throws Exception {
+                
+        // method will look for x-sections in the curve and then assert that the
+        // point order in the curve does not cross the x-section, instead
+        // enters on one side and later exits on the other side of the x-section.
+        // points that violate that are returned in point sets for each
+        // x-section.
         
         throw new UnsupportedOperationException("not yet implemented");
     }

@@ -930,6 +930,22 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         }
     }
     
+    public void testFindButterflySections() throws Exception {
+        //blob_butterfly_01.dat
+        //blob_x_01.dat
+        //blob_not_butterfly_01.dat
+    }
+    
+    public void testFindXCrossings() throws Exception {
+        
+        //blob_x_01.dat
+        
+        // method does not exist yet. 
+        // when it does, it will test that curve point order 
+        // does not cross for x sections in line and returns the
+        // points that violate that
+    }
+    
     public PairIntArray getEdge0() {
         
         PairIntArray xy = new PairIntArray();
