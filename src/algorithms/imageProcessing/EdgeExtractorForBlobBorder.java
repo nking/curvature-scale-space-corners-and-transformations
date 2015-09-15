@@ -185,7 +185,9 @@ MiscDebug.writeImageCopy(img3, "border_before_spur_removal_" + MiscDebug.getCurr
 }
 
         SpurRemover spurRm = new SpurRemover();
-        
+        if (debug) {
+            spurRm.setToDebug();
+        }
         spurRm.remove(borderPixels, imageWidth, imageHeight);
 
         if (borderPixels.isEmpty()) {

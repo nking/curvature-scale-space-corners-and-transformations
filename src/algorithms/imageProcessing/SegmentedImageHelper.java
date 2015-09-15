@@ -299,6 +299,8 @@ public class SegmentedImageHelper {
             segImg = gsImg.copyImage();
             
             imageProcessor.applyImageSegmentation(segImg, 2);
+            // consider
+            //imageProcessor.convertToCIEXYPolarTheta( color binned, 2);
             
             imageProcessor.applyAdaptiveMeanThresholding(segImg, scl);
             

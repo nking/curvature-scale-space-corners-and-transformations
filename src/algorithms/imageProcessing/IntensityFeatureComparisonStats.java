@@ -9,6 +9,15 @@ import java.util.List;
  */
 public class IntensityFeatureComparisonStats implements Comparable<IntensityFeatureComparisonStats> {
     
+    private final double cost;
+    
+    private final double scale;
+    
+    public IntensityFeatureComparisonStats(double solutionCost, double solutionScale) {
+        cost = solutionCost;
+        scale = solutionScale;
+    }
+    
     private final List<FeatureComparisonStat> comparisonStats 
         = new ArrayList<FeatureComparisonStat>();
     
@@ -51,5 +60,19 @@ public class IntensityFeatureComparisonStats implements Comparable<IntensityFeat
         sum /= (double)compStats.size();
 
         return sum;
+    }
+
+    /**
+     * @return the cost
+     */
+    public double getCost() {
+        return cost;
+    }
+
+    /**
+     * @return the scale
+     */
+    public double getScale() {
+        return scale;
     }
 }

@@ -30,6 +30,10 @@ public class BlobsAndContours {
     private final List<PairIntArray> blobOrderedPerimeters;
 
     private final List<List<CurvatureScaleSpaceContour>> contours;
+    
+    private final int smallestGroupLimit;
+    
+    private final int largestGroupLimit;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -61,7 +65,11 @@ public class BlobsAndContours {
 
         this.segmentedToLineDrawing = segmentedToLineDrawing;
         
-        init(img, smallestGroupLimit, largestGroupLimit);
+        this.smallestGroupLimit = smallestGroupLimit;
+        
+        this.largestGroupLimit = largestGroupLimit;
+        
+        init(img);
     }
 
     /**
@@ -91,16 +99,19 @@ public class BlobsAndContours {
 
         this.debugTag = debugTag;
 
-        init(img, smallestGroupLimit, largestGroupLimit);
+        this.smallestGroupLimit = smallestGroupLimit;
+        
+        this.largestGroupLimit = largestGroupLimit;
+        
+        init(img);
     }
 
-    protected void init(GreyscaleImage img, int smallestGroupLimit,
-        int largestGroupLimit) {
+    protected void init(GreyscaleImage img) {
 
         extractBlobsFromSegmentedImage(img, blobs, smallestGroupLimit,
             largestGroupLimit);
 
-         boolean discardWhenCavityIsSmallerThanBorder = true;
+        boolean discardWhenCavityIsSmallerThanBorder = true;
 
         extractBoundsOfBlobs(img, blobs, blobOrderedPerimeters,
             discardWhenCavityIsSmallerThanBorder);
@@ -360,6 +371,11 @@ public class BlobsAndContours {
             List<CurvatureScaleSpaceContour> c =
                 CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
                 sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded, edge);
+            
+            /*if (c.isEmpty() && (somewhat large)) {
+                c = CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
+                    sscImg, edgeIndex, true, edge);
+            }*/
 
             outputContours.add(c);
 
