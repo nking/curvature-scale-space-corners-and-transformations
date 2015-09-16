@@ -109,7 +109,10 @@ public class ButterflySectionFinder {
             allPoints.addAll(endPoints);
             allPoints.addAll(endPoints2);
             for (Segment segment : section) {
-                allPoints.addAll(segment.points);
+                allPoints.add(segment.p0);
+                allPoints.add(segment.p1);
+                allPoints.add(segment.p2);
+                allPoints.add(segment.p3);
             }
 
             output.add(allPoints);
@@ -243,16 +246,6 @@ public class ButterflySectionFinder {
         return null;
     }
 
-    private void fillWithPattern(int x, int y, Pattern pattern, Segment 
-        outputSegment) {
-        
-        for (PairInt p : pattern.ones) {
-            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());
-            outputSegment.points.add(p2);
-        }
-        outputSegment.points.add(new PairInt(x, y));        
-    }
-
     private void swapYDirection(Pattern pattern) {
         // ----- change the sign of y  -----
         for (PairInt p : pattern.zeroes) {
@@ -277,9 +270,8 @@ public class ButterflySectionFinder {
         Set<PairInt> exclude, boolean checkFirstSegment) {
         
         Segment segment = checkFirstSegment ? section.getFirst() : section.getLast();
-        
+                
         throw new UnsupportedOperationException("not yet implemented");
-        
         /*
         if (segment instanceof VertSegment) {
             return checkForAdjacentEndpointsForVertSegment(section, exclude, 
@@ -297,7 +289,6 @@ public class ButterflySectionFinder {
         
         return null;
         */
-        
         /*endpoints for horiz:
                        #           #
             # .        - .       - - .
@@ -320,28 +311,73 @@ public class ButterflySectionFinder {
     }
 
     private Set<PairInt> checkForAdjacentEndpointsForVertSegment(
-        LinkedList<Segment> section, Set<PairInt> exclude, 
+        Set<PairInt> points, LinkedList<Segment> section, Set<PairInt> exclude, 
         boolean checkFirstSegment) {
         
         VertSegment segment = checkFirstSegment ? (VertSegment)section.getFirst() :
             (VertSegment)section.getLast();
         
         throw new UnsupportedOperationException("not yet implemented");
-        
         /*
         endpoints for vert:
                 -        - -       -
               # - #    # - - #   # - #
               . .        . .       . .
         
-                         0
-              .  .      -2
+                 -      -4
+              #  -  #   -3
+           -  .  .  -   -2
            -  2  1  -   -1
            -  3  0  -    0
-              .  .       1
+                        
+          -2 -1  0  1
+        
+                         
+           -  2  1  -    1
+           -  3  0  -    0
+           -  .  .  -   -1
+              #  -  #   -2
+                 -      
           -2 -1  0  1
         */
         
+        /*
+        endpoints for vert:
+              -  -      -4
+           #  -  -  #   -3
+           -  .  .  -   -2
+           -  2  1  -   -1
+           -  3  0  -    0
+                        
+          -2 -1  0  1
+        
+                         
+           -  2  1  -    1
+           -  3  0  -    0
+           -  .  .  -   -1
+           #  -  -  #   -2
+              -  -      
+          -2 -1  0  1
+        */
+     
+        /*
+        endpoints for vert:        
+              -         -4
+           #  -  #      -3
+           -  .  .  -   -2
+           -  2  1  -   -1
+           -  3  0  -    0
+                        
+          -2 -1  0  1
+        
+                         
+           -  2  1  -    1
+           -  3  0  -    0
+           -  .  .  -   -1
+           #  -  #      -2
+              -         
+          -2 -1  0  1
+        */
     }
 
     /*
@@ -351,42 +387,41 @@ public class ButterflySectionFinder {
     */
     public static class Segment {
         // the 4 points matching the segment
-        Set<PairInt> points = new HashSet<PairInt>();
+        PairInt p0;
+        PairInt p1;
+        PairInt p2;
+        PairInt p3;
     }
     public static class VertSegment extends Segment {
-        /*              0
-              .  .      1
-           -  2  1  -   2
-           -  3  0  -   3
-              .  .      4
-        0  1  2  3  4
+        /*    .  .      -2
+           -  2  1  -   -1
+           -  3  0  -    0
+              .  .       1
+          -2 -1  0  1
         */
     }
     public static class HorizSegment extends Segment {
-        /*             0
-              -  -     1
-           .  2  1  .  2
-           .  3  0  .  3
-              -  -     4
-        0  1  2  3  4
+        /*    -  -      -2
+           .  2  1  .   -1
+           .  3  0  .    0
+              -  -       1
+          -2 -1  0  1
         */
     }
     public static class UUDiagSegment extends Segment {
-        /*
-             - -     3
-           - - 2 1 - 2
-           - 3 0 - - 1
-               - -   0
-        0  1 2 3 4 5
+        /*      -  -      -2
+          -  2  1  -  -   -1
+          -  -  3  0  -    0
+             -  -          1
+         -3 -2 -1  0  1
         */
     }
     public static class ULDiagSegment extends Segment {
-        /*
-               - -   3
-           - 2 1 - - 2
-           - - 3 0 - 1
-             - -     0
-        0  1 2 3 4 5
+        /*      -  -      -2
+          -  2  1  -  -   -1
+          -  -  3  0  -    0
+             -  -          1
+          3  2  1  0 -1
         */
     }
 
@@ -395,35 +430,9 @@ public class ButterflySectionFinder {
         Set<PairInt> zeroes;
     }
 
-    private Segment checkVertSegmentPattern(int x, int y, Set<PairInt> neighbors) {
-
-        Pattern pattern = getVertSegmentPattern();
-        
-        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);
-        
-        if (matchesPattern) {
-            VertSegment segment = new VertSegment();
-            fillWithPattern(x, y, pattern, segment);
-            return segment;
-        }
-        
-        swapYDirection(pattern);
-        
-        matchesPattern = matchesPattern(x, y, neighbors, pattern);
-        
-        if (matchesPattern) {
-            VertSegment segment = new VertSegment();
-            fillWithPattern(x, y, pattern, segment);
-            return segment;
-        }
-        
-        return null;
-    }
-    
     protected Pattern getVertSegmentPattern() {
 
-        /*               0
-              .  .      -2
+        /*    .  .      -2
            -  2  1  -   -1
            -  3  0  -    0
               .  .       1
@@ -444,8 +453,7 @@ public class ButterflySectionFinder {
     
     protected Pattern getHorizSegmentPattern() {
 
-        /*               0
-              -  -      -2
+        /*    -  -      -2
            .  2  1  .   -1
            .  3  0  .    0
               -  -       1
@@ -466,8 +474,7 @@ public class ButterflySectionFinder {
     
     protected Pattern getUUDiagSegmentPattern() {
 
-        /*                 0
-                -  -      -2
+        /*      -  -      -2
           -  2  1  -  -   -1
           -  -  3  0  -    0
              -  -          1
@@ -489,15 +496,72 @@ public class ButterflySectionFinder {
         return pr;
     }
 
+    
+    private Segment checkVertSegmentPattern(int x, int y, Set<PairInt> neighbors) {
+
+        /*    .  .      -2
+           -  2  1  -   -1
+           -  3  0  -    0
+              .  .       1
+          -2 -1  0  1
+        */
+        
+        Pattern pattern = getVertSegmentPattern();
+        
+        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);
+        
+        if (matchesPattern) {
+            VertSegment segment = new VertSegment();
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x, y - 1);
+            segment.p2 = new PairInt(x - 1, y - 1);
+            segment.p3 = new PairInt(x - 1, y);
+            
+            return segment;
+        }
+        
+        swapYDirection(pattern);
+        
+        matchesPattern = matchesPattern(x, y, neighbors, pattern);
+        
+        /*    .  .       2
+           -  2  1  -    1
+           -  3  0  -    0
+              .  .      -1
+          -2 -1  0  1
+        */
+        if (matchesPattern) {
+            VertSegment segment = new VertSegment();
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x, y + 1);
+            segment.p2 = new PairInt(x - 1, y + 1);
+            segment.p3 = new PairInt(x - 1, y);
+            return segment;
+        }
+        
+        return null;
+    }
+    
     private Segment checkHorizSegmentPattern(int x, int y, Set<PairInt> neighbors) {
 
+        /*    -  -      -2
+           .  2  1  .   -1
+           .  3  0  .    0
+              -  -       1
+          -2 -1  0  1
+        */
+        
         Pattern pattern = getHorizSegmentPattern();
         
         boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);
         
         if (matchesPattern) {
             HorizSegment segment = new HorizSegment();
-            fillWithPattern(x, y, pattern, segment);
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x, y - 1);
+            segment.p2 = new PairInt(x - 1, y - 1);
+            segment.p3 = new PairInt(x - 1, y);
+            
             return segment;
         }
         
@@ -505,9 +569,19 @@ public class ButterflySectionFinder {
         
         matchesPattern = matchesPattern(x, y, neighbors, pattern);
         
+        /*    -  -      -2
+           .  2  1  .   -1
+           .  3  0  .    0
+              -  -       1
+           2  1  0 -1
+        */
         if (matchesPattern) {
             HorizSegment segment = new HorizSegment();
-            fillWithPattern(x, y, pattern, segment);
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x, y - 1);
+            segment.p2 = new PairInt(x + 1, y - 1);
+            segment.p3 = new PairInt(x + 1, y);
+            
             return segment;
         }
         
@@ -520,9 +594,19 @@ public class ButterflySectionFinder {
         
         boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);
         
+        /*      -  -      -2
+          -  2  1  -  -   -1
+          -  -  3  0  -    0
+             -  -          1
+         -3 -2 -1  0  1
+        */
         if (matchesPattern) {
             UUDiagSegment segment = new UUDiagSegment();
-            fillWithPattern(x, y, pattern, segment);
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x - 1, y - 1);
+            segment.p2 = new PairInt(x - 2, y - 1);
+            segment.p3 = new PairInt(x - 1, y);
+            
             return segment;
         }
         
@@ -530,9 +614,19 @@ public class ButterflySectionFinder {
         
         matchesPattern = matchesPattern(x, y, neighbors, pattern);
         
+        /*      -  -      -2
+          -  2  1  -  -   -1
+          -  -  3  0  -    0
+             -  -          1
+          3  2  1  0 -1
+        */
         if (matchesPattern) {
             ULDiagSegment segment = new ULDiagSegment();
-            fillWithPattern(x, y, pattern, segment);
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x + 1, y - 1);
+            segment.p2 = new PairInt(x + 2, y - 1);
+            segment.p3 = new PairInt(x + 1, y);
+            
             return segment;
         }
         

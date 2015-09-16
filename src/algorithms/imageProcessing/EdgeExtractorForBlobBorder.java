@@ -436,7 +436,7 @@ MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTi
                 int y1 = curve.getY(i);
                 
                 Set<PairInt> neighbors1 = curveHelper.findNeighbors(x1, y1, 
-                    points, imageWidth, imageHeight);
+                    points);
                 
                 if (neighbors1.size() == 2) {
                     curve.removeRange(0, (idxB - 1));
@@ -456,7 +456,7 @@ MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTi
                     int nWithinR1 = 0;
                     
                     Set<PairInt> neighbors2 = curveHelper.findNeighbors(x2, y2, 
-                        points, imageWidth, imageHeight);
+                        points);
                     Set<PairInt> neighborsTot = new HashSet<PairInt>(neighbors1);
                     neighborsTot.addAll(neighbors2);
                     
