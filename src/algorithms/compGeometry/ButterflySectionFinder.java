@@ -82,6 +82,14 @@ public class ButterflySectionFinder {
         }
 
         Set<PairInt> exclude = new HashSet<PairInt>();
+        for (LinkedList<Segment> section : candidateSections) {
+            for (Segment segment : section) {
+                exclude.add(segment.p0);
+                exclude.add(segment.p1);
+                exclude.add(segment.p2);
+                exclude.add(segment.p3);
+            }
+        }
 
         List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
 
@@ -90,14 +98,14 @@ public class ButterflySectionFinder {
 
             boolean checkFirstSegment = true;
             
-            Set<PairInt> endPoints = checkForAdjacentEndpoints(section,
+            Set<PairInt> endPoints = checkForAdjacentEndpoints(points, section,
                 exclude, checkFirstSegment);
 
             if (endPoints == null || endPoints.isEmpty()) {
                 continue;
             }
 
-            Set<PairInt> endPoints2 = checkForAdjacentEndpoints(
+            Set<PairInt> endPoints2 = checkForAdjacentEndpoints(points,
                 section, endPoints, checkFirstSegment);
 
             if (endPoints2 == null || endPoints2.isEmpty()) {
@@ -266,15 +274,15 @@ public class ButterflySectionFinder {
         }
     }
 
-    private Set<PairInt> checkForAdjacentEndpoints(LinkedList<Segment> section, 
-        Set<PairInt> exclude, boolean checkFirstSegment) {
+    private Set<PairInt> checkForAdjacentEndpoints(Set<PairInt> points,
+        LinkedList<Segment> section, Set<PairInt> exclude, boolean checkFirstSegment) {
         
         Segment segment = checkFirstSegment ? section.getFirst() : section.getLast();
                 
         throw new UnsupportedOperationException("not yet implemented");
         /*
         if (segment instanceof VertSegment) {
-            return checkForAdjacentEndpointsForVertSegment(section, exclude, 
+            return checkForAdjacentEndpointsForVertSegment(points, section, exclude, 
                 checkFirstSegment);
         } else if (segment instanceof HorizSegment) {
             return checkForAdjacentEndpointsForHorizSegment(section, exclude, 
@@ -316,13 +324,61 @@ public class ButterflySectionFinder {
         
         VertSegment segment = checkFirstSegment ? (VertSegment)section.getFirst() :
             (VertSegment)section.getLast();
-        
-        throw new UnsupportedOperationException("not yet implemented");
-        /*
-        endpoints for vert:
+                
+        /*endpoints for vert:
                 -        - -       -
               # - #    # - - #   # - #
               . .        . .       . .
+        */
+       
+        Set<PairInt> endPoints = findEndPointsVertPatterns(points, segment,
+            exclude);
+        
+        return endPoints;
+    }
+
+    private Set<PairInt> findEndPointsVertPatterns(Set<PairInt> points, 
+        VertSegment segment, Set<PairInt> exclude) {
+        
+        int x0 = segment.p0.getX();
+        int y0 = segment.p0.getY();
+        
+        Pattern[] patterns = new Pattern[] {
+            getEndPointsVertPattern1(), getEndPointsVertPattern1Opp(),
+            getEndPointsVertPattern2(), getEndPointsVertPattern2Opp(),
+            getEndPointsVertPattern3(), getEndPointsVertPattern3Opp()
+        };
+        
+        for (Pattern pattern : patterns) {
+            boolean found = true;
+            for (PairInt p : pattern.zeroes) {
+                PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
+                if (points.contains(p2) || exclude.contains(p2)) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                Set<PairInt> endPoints = new HashSet<PairInt>();
+                for (PairInt p : pattern.ones) {
+                    PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
+                    if (exclude.contains(p2) || !points.contains(p2)) {
+                        found = false;
+                        break;
+                    }
+                    endPoints.add(p2);
+                }
+                if (found) {
+                    return endPoints;
+                }
+            }
+        }        
+        return null;
+    }
+    
+    private Pattern getEndPointsVertPattern1() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
         
                  -      -4
               #  -  #   -3
@@ -331,18 +387,49 @@ public class ButterflySectionFinder {
            -  3  0  -    0
                         
           -2 -1  0  1
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
         
-                         
+        pattern.ones.add(new PairInt(0, -2)); pattern.ones.add(new PairInt(-1, -2));
+        pattern.ones.add(new PairInt(1, -3)); pattern.ones.add(new PairInt(-1, -3));
+        
+        pattern.zeroes.add(new PairInt(-2, -2)); pattern.zeroes.add(new PairInt(1, -2));
+        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));
+        return pattern;
+    }
+    
+    private Pattern getEndPointsVertPattern1Opp() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+                            
            -  2  1  -    1
            -  3  0  -    0
            -  .  .  -   -1
               #  -  #   -2
-                 -      
+                 -      -3
           -2 -1  0  1
         */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
         
-        /*
-        endpoints for vert:
+        pattern.ones.add(new PairInt(-1, -1)); pattern.ones.add(new PairInt(-1, -2)); 
+        pattern.ones.add(new PairInt(0, -1));
+        pattern.ones.add(new PairInt(1, -2));
+        
+        pattern.zeroes.add(new PairInt(-2, -1)); 
+        pattern.zeroes.add(new PairInt(0, -2)); pattern.zeroes.add(new PairInt(0, -3));
+        pattern.zeroes.add(new PairInt(1, -1));
+        return pattern;
+    }
+    
+    private Pattern getEndPointsVertPattern2() {
+        
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
               -  -      -4
            #  -  -  #   -3
            -  .  .  -   -2
@@ -350,36 +437,109 @@ public class ButterflySectionFinder {
            -  3  0  -    0
                         
           -2 -1  0  1
+        */
         
-                         
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+        
+        pattern.ones.add(new PairInt(-1, -2)); pattern.ones.add(new PairInt(0, -2));
+        pattern.ones.add(new PairInt(-2, -3)); pattern.ones.add(new PairInt(1, -3));
+        
+        pattern.zeroes.add(new PairInt(-2, -2)); pattern.zeroes.add(new PairInt(1, -2));
+        pattern.zeroes.add(new PairInt(-1, -3)); pattern.zeroes.add(new PairInt(-1, -4));
+        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsVertPattern2Opp() {
+        
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
            -  2  1  -    1
            -  3  0  -    0
            -  .  .  -   -1
            #  -  -  #   -2
-              -  -      
+              -  -      -3
           -2 -1  0  1
         */
      
-        /*
-        endpoints for vert:        
-              -         -4
-           #  -  #      -3
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+        
+        pattern.ones.add(new PairInt(-2, -2)); 
+        pattern.ones.add(new PairInt(-1, -1));
+        pattern.ones.add(new PairInt(0, -1)); 
+        pattern.ones.add(new PairInt(1, -2));
+        
+        pattern.zeroes.add(new PairInt(-2, -1)); 
+        pattern.zeroes.add(new PairInt(-1, -2)); pattern.zeroes.add(new PairInt(-1, -3));
+        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -2));
+        
+        return pattern;
+    }
+
+    private Pattern getEndPointsVertPattern3() {
+        
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+                
+                 -      -4
+              #  -  #   -3
            -  .  .  -   -2
            -  2  1  -   -1
            -  3  0  -    0
                         
           -2 -1  0  1
+       
+        */
         
-                         
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+        
+        pattern.ones.add(new PairInt(-1, -2)); pattern.ones.add(new PairInt(1, -3));
+        pattern.ones.add(new PairInt(0, -2));
+        pattern.ones.add(new PairInt(1, -3)); 
+        
+        pattern.zeroes.add(new PairInt(-2, -2)); 
+        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));
+        pattern.zeroes.add(new PairInt(1, -2)); 
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsVertPattern3Opp() {
+        
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+                                 
            -  2  1  -    1
            -  3  0  -    0
            -  .  .  -   -1
-           #  -  #      -2
-              -         
+              #  -  #   -2
+                 -      -3
           -2 -1  0  1
         */
+        
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+        
+        pattern.ones.add(new PairInt(-1, -1)); pattern.ones.add(new PairInt(-1, -2));
+        pattern.ones.add(new PairInt(0, -1)); 
+        pattern.ones.add(new PairInt(1, -2));
+        
+        pattern.zeroes.add(new PairInt(-2, -1)); 
+        pattern.zeroes.add(new PairInt(0, -2)); pattern.zeroes.add(new PairInt(0, -3));
+        pattern.zeroes.add(new PairInt(1, -1));
+        
+        return pattern;
     }
-
+    
     /*
     may change these classes to have ordered points or to specify the
     indexes of points that are the connections, that is the '.'s in sketches
