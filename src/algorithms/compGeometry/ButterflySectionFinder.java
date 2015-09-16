@@ -45,7 +45,7 @@ public class ButterflySectionFinder {
 
             int x = closedCurve.getX(i);
             int y = closedCurve.getY(i);
-
+            
             Set<PairInt> neighbors = curveHelper.findNeighbors(x, y, points);
 
             // scanning for segments
@@ -105,8 +105,11 @@ public class ButterflySectionFinder {
                 continue;
             }
 
+            Set<PairInt> exclude2 = new HashSet<PairInt>(exclude);
+            exclude2.addAll(endPoints);
+
             Set<PairInt> endPoints2 = checkForAdjacentEndpoints(points,
-                section, endPoints, checkFirstSegment);
+                section, exclude2, checkFirstSegment);
 
             if (endPoints2 == null || endPoints2.isEmpty()) {
                 continue;
@@ -275,28 +278,25 @@ public class ButterflySectionFinder {
     }
 
     private Set<PairInt> checkForAdjacentEndpoints(Set<PairInt> points,
-        LinkedList<Segment> section, Set<PairInt> exclude, boolean checkFirstSegment) {
+        LinkedList<Segment> section, Set<PairInt> exclude, 
+        boolean checkFirstSegment) {
         
-        Segment segment = checkFirstSegment ? section.getFirst() : section.getLast();
-                
-        throw new UnsupportedOperationException("not yet implemented");
-        /*
+        Segment segment = checkFirstSegment ? section.getFirst() : 
+            section.getLast();
+                        
         if (segment instanceof VertSegment) {
-            return checkForAdjacentEndpointsForVertSegment(points, section, exclude, 
-                checkFirstSegment);
+            return checkForAdjacentEndpointsForVertSegment(points, section, 
+                exclude, checkFirstSegment);
         } else if (segment instanceof HorizSegment) {
-            return checkForAdjacentEndpointsForHorizSegment(section, exclude, 
-                checkFirstSegment);
+            return checkForAdjacentEndpointsForHorizSegment(points, section, 
+                exclude, checkFirstSegment);
         } else if (segment instanceof UUDiagSegment) {
-            return checkForAdjacentEndpointsForUUDiagSegment(section, exclude, 
-                checkFirstSegment);
-        } else if (segment instanceof ULDiagSegment) {
-            return checkForAdjacentEndpointsForULDiagSegment(section, exclude, 
-                checkFirstSegment);
+            return checkForAdjacentEndpointsForUUDiagSegment(points, section, 
+                exclude, checkFirstSegment);
         }
         
         return null;
-        */
+        
         /*endpoints for horiz:
                        #           #
             # .        - .       - - .
@@ -362,6 +362,9 @@ public class ButterflySectionFinder {
                 Set<PairInt> endPoints = new HashSet<PairInt>();
                 for (PairInt p : pattern.ones) {
                     PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
+                    if (segment.contains(p2)) {
+                        continue;
+                    }
                     if (exclude.contains(p2) || !points.contains(p2)) {
                         found = false;
                         break;
@@ -540,6 +543,409 @@ public class ButterflySectionFinder {
         return pattern;
     }
     
+    private Set<PairInt> checkForAdjacentEndpointsForHorizSegment(
+        Set<PairInt> points, LinkedList<Segment> section, Set<PairInt> exclude, 
+        boolean checkFirstSegment) {
+        
+        HorizSegment segment = checkFirstSegment ? (HorizSegment)section.getFirst() :
+            (HorizSegment)section.getLast();
+                
+        Set<PairInt> endPoints = findEndPointsHorizPatterns(points, segment,
+            exclude);
+        
+        return endPoints;
+    }
+    
+    private Set<PairInt> findEndPointsHorizPatterns(Set<PairInt> points, 
+        HorizSegment segment, Set<PairInt> exclude) {
+        
+        int x0 = segment.p0.getX();
+        int y0 = segment.p0.getY();
+        
+        Pattern[] patterns = new Pattern[] {
+            getEndPointsHorizPattern1(), getEndPointsHorizPattern1Opp(),
+            getEndPointsHorizPattern2(), getEndPointsHorizPattern2Opp(),
+            getEndPointsHorizPattern3(), getEndPointsHorizPattern3Opp()
+        };
+        
+        for (Pattern pattern : patterns) {
+            boolean found = true;
+            for (PairInt p : pattern.zeroes) {
+                PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
+                if (points.contains(p2) || exclude.contains(p2)) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                Set<PairInt> endPoints = new HashSet<PairInt>();
+                for (PairInt p : pattern.ones) {
+                    PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
+                    if (segment.contains(p2)) {
+                        continue;
+                    }
+                    if (exclude.contains(p2) || !points.contains(p2)) {
+                        found = false;
+                        break;
+                    }
+                    endPoints.add(p2);
+                }
+                if (found) {
+                    return endPoints;
+                }
+            }
+        }        
+        return null;
+    }
+    
+    private Pattern getEndPointsHorizPattern1() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                 -  -  -       -2
+              .  2  1  .  #    -1
+              .  3  0  .  -  -  0
+                 -  -  -  #     1
+             -2 -1  0  1  2  3
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+    
+        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));
+        pattern.ones.add(new PairInt(2, 1)); pattern.ones.add(new PairInt(2, -1));
+        
+        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));
+        pattern.zeroes.add(new PairInt(2, 0)); 
+        pattern.zeroes.add(new PairInt(3, 0));
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsHorizPattern1Opp() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                 -  -  -       -2
+              .  2  1  .  #    -1
+              .  3  0  .  -  -  0
+                 -  -  -  #     1
+              2  1  0 -1 -2 -3
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+     
+        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));
+        pattern.ones.add(new PairInt(-2, 1)); pattern.ones.add(new PairInt(-2, -1));
+        
+        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));
+        pattern.zeroes.add(new PairInt(-2, 0)); pattern.zeroes.add(new PairInt(-3, 0));
+        
+        return pattern;
+    }
+   
+    private Pattern getEndPointsHorizPattern2() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                 -  -  -  #    -2
+              .  2  1  .  -    -1
+              .  3  0  .  -  -  0
+                 -  -  -  #     1
+             -2 -1  0  1  2  3
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+     
+        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));
+        pattern.ones.add(new PairInt(2, 1)); pattern.ones.add(new PairInt(2, -2));
+        
+        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));
+        pattern.zeroes.add(new PairInt(2, 0)); pattern.zeroes.add(new PairInt(2, -1));
+        pattern.zeroes.add(new PairInt(3, 0));
+        
+        return pattern;
+    }
+     
+    private Pattern getEndPointsHorizPattern2Opp() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                 -  -  -  #    -2
+              .  2  1  .  -    -1
+              .  3  0  .  -  -  0
+                 -  -  -  #     1
+              2  1  0 -1 -2 -3
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+    
+        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));
+        pattern.ones.add(new PairInt(-2, 1)); pattern.ones.add(new PairInt(-2, -2));
+        
+        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));
+        pattern.zeroes.add(new PairInt(-2, 0)); pattern.zeroes.add(new PairInt(-2, -1));
+        pattern.zeroes.add(new PairInt(-3, 0));
+        
+        return pattern;
+    }
+ 
+    private Pattern getEndPointsHorizPattern3() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                 -  -  -  #    -2
+              .  2  1  .  -  - -1
+              .  3  0  .  #     0
+                 -  -  -        1
+             -2 -1  0  1  2  3
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+    
+        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));
+        pattern.ones.add(new PairInt(2, 0)); pattern.ones.add(new PairInt(2, -2));
+        
+        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));
+        pattern.zeroes.add(new PairInt(2, -1)); pattern.zeroes.add(new PairInt(3, -1));
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsHorizPattern3Opp() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                 -  -  -  #     -2
+              .  2  1  .  -  -  -1
+              .  3  0  .  #      0
+                 -  -  -         1
+              2  1  0 -1 -2 -3
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+    
+        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));
+        pattern.ones.add(new PairInt(-2, 0)); pattern.ones.add(new PairInt(-2, -2));
+        
+        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));
+        pattern.zeroes.add(new PairInt(-2, -1)); pattern.zeroes.add(new PairInt(-3, -1));
+        
+        return pattern;
+    }
+    
+    private Set<PairInt> checkForAdjacentEndpointsForUUDiagSegment(
+        Set<PairInt> points, LinkedList<Segment> section, Set<PairInt> exclude, 
+        boolean checkFirstSegment) {
+        
+        UUDiagSegment segment = checkFirstSegment ? (UUDiagSegment)section.getFirst() :
+            (UUDiagSegment)section.getLast();
+                
+        Set<PairInt> endPoints = findEndPointsUUDiagPatterns(points, segment,
+            exclude);
+        
+        return endPoints;
+    }
+    
+    private Set<PairInt> findEndPointsUUDiagPatterns(Set<PairInt> points, 
+        UUDiagSegment segment, Set<PairInt> exclude) {
+        
+        int x0 = segment.p0.getX();
+        int y0 = segment.p0.getY();
+        
+        Pattern[] patterns = new Pattern[] {
+            getEndPointsUUDiagPattern1(), getEndPointsULDiagPattern1(),
+            getEndPointsUUDiagPattern2(), getEndPointsULDiagPattern2(),
+            getEndPointsUUDiagPattern3(), getEndPointsULDiagPattern3()
+        };
+        
+        for (Pattern pattern : patterns) {
+            boolean found = true;
+            for (PairInt p : pattern.zeroes) {
+                PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
+                if (points.contains(p2) || exclude.contains(p2)) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                Set<PairInt> endPoints = new HashSet<PairInt>();
+                for (PairInt p : pattern.ones) {
+                    PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
+                    //TODO: check this segment test with tests
+                    if (segment.contains(p2)) {
+                        continue;
+                    }
+                    if (exclude.contains(p2) || !points.contains(p2)) {
+                        found = false;
+                        break;
+                    }
+                    endPoints.add(p2);
+                }
+                if (found) {
+                    return endPoints;
+                }
+            }
+        }        
+        return null;
+    }
+    
+    private Pattern getEndPointsUUDiagPattern1() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                -  -          -2
+          -  2  1  -  -       -1
+          -  -  3 .0  #        0
+             -  .  -           1
+                -  #           2
+        
+         -3 -2 -1  0  1
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+    
+        pattern.ones.add(new PairInt(-1, 1)); 
+        pattern.ones.add(new PairInt(0, 2));
+        pattern.ones.add(new PairInt(1, 0));
+        
+        pattern.zeroes.add(new PairInt(-1, 1));
+        pattern.zeroes.add(new PairInt(0, 1)); 
+        pattern.zeroes.add(new PairInt(0, -1));
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsULDiagPattern1() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.        
+        
+                -  -          -2
+          -  2  1  -  -       -1
+          -  -  3 .0  #        0
+             -  .  -  -        1
+                -  #           2
+        
+          3  2  1  0  -1
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+
+        pattern.ones.add(new PairInt(1, 1)); 
+        pattern.ones.add(new PairInt(0, 2));
+        pattern.ones.add(new PairInt(-1, 0));
+        
+        pattern.zeroes.add(new PairInt(1, 2)); 
+        pattern.zeroes.add(new PairInt(0, 1)); pattern.zeroes.add(new PairInt(0, -1));
+        pattern.zeroes.add(new PairInt(-1, 1)); 
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsUUDiagPattern2() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+                -  -          -2
+          -  2  1  -  -       -1
+          -  -  3 .0  #        0
+             -  .  -           1
+                #  -           2
+        
+         -3 -2 -1  0  1
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+
+        pattern.ones.add(new PairInt(-1, 2)); pattern.ones.add(new PairInt(-1, 1));
+        
+        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 1)); pattern.zeroes.add(new PairInt(0, 1));
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsULDiagPattern2() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                 -  -         -2
+          -  2  1  -  -       -1
+          -  -  3 .0  #        0
+             -  .  -  -        1
+                #  -           2
+        
+          3  2  1  0 -1
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+   
+        pattern.ones.add(new PairInt(1, 2)); pattern.ones.add(new PairInt(1, 1));
+        pattern.ones.add(new PairInt(-1, 0));
+        
+        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 1)); pattern.zeroes.add(new PairInt(0, -1));
+        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -1)); 
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsUUDiagPattern3() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                -  -          -2
+          -  2  1  -          -1
+          -  -  3 .0  -        0
+             -  .  -  #        1
+                #  -           2
+        
+         -3 -2 -1  0  1
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+   
+        pattern.ones.add(new PairInt(-1, 2)); pattern.ones.add(new PairInt(-1, 1));
+        pattern.ones.add(new PairInt(1, 1));
+       
+        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 1)); pattern.zeroes.add(new PairInt(0, -1));
+        pattern.zeroes.add(new PairInt(1, 0)); 
+        
+        return pattern;
+    }
+    
+    private Pattern getEndPointsULDiagPattern3() {
+        /* the pattern returned is relative to 
+        position '0', just like the other patterns.
+        
+                -  -          -2
+          -  2  1  -          -1
+          -  -  3 .0  -        0
+             -  .  -  #        1
+                #  -           2
+        
+          3  2  1  0 -1
+        */
+        Pattern pattern = new Pattern();
+        pattern.ones = new HashSet<PairInt>();
+        pattern.zeroes = new HashSet<PairInt>();
+    
+        pattern.ones.add(new PairInt(1, 2)); pattern.ones.add(new PairInt(1, 1));
+        pattern.ones.add(new PairInt(-1, 1));
+        
+        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 1)); pattern.zeroes.add(new PairInt(0, -1));
+        pattern.zeroes.add(new PairInt(-1, 0));
+        
+        return pattern;
+    }
+    
     /*
     may change these classes to have ordered points or to specify the
     indexes of points that are the connections, that is the '.'s in sketches
@@ -551,7 +957,20 @@ public class ButterflySectionFinder {
         PairInt p1;
         PairInt p2;
         PairInt p3;
+        boolean contains(PairInt p) {
+            if (p0.equals(p)) {
+                return true;
+            } else if (p1.equals(p)) {
+                return true;
+            } else if (p2.equals(p)) {
+                return true;
+            } else if (p3.equals(p)) {
+                return true;
+            }
+            return false;
+        }
     }
+    
     public static class VertSegment extends Segment {
         /*    .  .      -2
            -  2  1  -   -1
@@ -626,7 +1045,7 @@ public class ButterflySectionFinder {
         pr.zeroes.add(new PairInt(-1, 1)); pr.zeroes.add(new PairInt(-1, -2));
         pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, -2));
 
-        pr.ones.add(new PairInt(-2, 0)); pr.ones.add(new PairInt(-2, -1));
+        pr.ones.add(new PairInt(-1, 0)); pr.ones.add(new PairInt(-1, -1));
         pr.ones.add(new PairInt(1, 0)); pr.ones.add(new PairInt(1, -1));
 
         return pr;

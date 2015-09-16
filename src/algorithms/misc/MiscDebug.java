@@ -1084,4 +1084,15 @@ public class MiscDebug {
         ImageIOHelper.writeOutputImage(
             dirPath + "/" + suffix + ".png", img);
     }
+    
+    public static void writeImage(PairIntArray edge,
+        Image img, int nExtraDot, String suffix) throws IOException {
+        
+        ImageIOHelper.addCurveToImage(edge, img, nExtraDot, 255, 0, 0);
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/" + suffix + ".png", img);
+    }
 }
