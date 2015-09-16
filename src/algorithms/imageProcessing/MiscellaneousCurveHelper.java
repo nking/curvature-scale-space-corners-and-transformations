@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.misc.AverageUtil;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
@@ -3027,8 +3028,7 @@ for (int i = 0; i < edge.getN(); i++) {
         }
     }
 
-    public Set<PairInt> findNeighbors(int x, int y, Set<PairInt> points,
-        int imageWidth, int imageHeight) {
+    public Set<PairInt> findNeighbors(int x, int y, Set<PairInt> points) {
 
         Set<PairInt> neighbors = new HashSet<PairInt>();
 
@@ -3036,11 +3036,6 @@ for (int i = 0; i < edge.getN(); i++) {
 
             int x2 = x + eightNeighborsX[i];
             int y2 = y + eightNeighborsY[i];
-
-            if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) ||
-                (y2 > (imageHeight - 1))) {
-                continue;
-            }
 
             PairInt p2 = new PairInt(x2, y2);
 
@@ -3511,119 +3506,6 @@ for (int i = 0; i < edge.getN(); i++) {
         return nEdgeReplaced;
     }
 
-    /**
-     * Find sections of the closed curve that are two pixels wide and separate
-     * loops in the curve:
-     * <pre>
-     * for example:         #  #
-     *    #  #  #         #     #
-     *  #         #  #  #      #
-     *   #   #  # #  #  #  #  # 
-     * </pre>
-     * These sections are thinned to width of '1' by the line thinner,
-     * so need to be restored afterwards or prevented from being removed.
-     * @param closedCurve
-     * @return list of points that are part of the 2 pixel width patterns in
-     * a curve where the curve closes, but is still connected.
-     */
-    public List<Set<PairInt>> findButterflySections(PairIntArray closedCurve) {
-        
-        /*
-        endpoints for vert:
-                       #           #
-            # .      = - .      -  - .
-          - - .  or  - - .  or     # .
-            #          #
-        
-        endpoints for horiz:
-                -        - -       -
-              # - #    # - - #   # - #
-              . .        . .       . .
-        
-        endpoints for diag:
-        
-            -  #             -  #               -  #
-            -    .        -  -  .            #  -  .
-            #  .   .      #  .    .          -  .    .
-                 .              .                  .
-        
-        The sections of line which are 2 pixels wide and 1 further from the
-        endpoint have 3 non-point neighbors each and 5 point set neighbors
-        An area limit further constrains the geometry.
-        For sections matching the patterns below, could consider storing
-        the pattern for each pix as 'v', 'h', or 'd'...not an apparent use for 
-        that yet though.
-        
-        Segment patterns between endpoints:
-                       4
-           -  -  -  -  3
-           .  #  #  .  2
-           .  #  #  .  1
-           -  -  -  -  0
-        0  1  2  3  4
-        
-                          4
-           -  -  -  -  -  3
-           .  #  #  #  .  2
-           .  #  #  #  .  1
-           -  -  -  -  -  0
-        0  1  2  3  4  5
-        
-           # # - -   3
-           - # # - - 2
-           - - # #   1
-           - - - - - 0
-        0  1 2 3 4 5
-        
-        Scan the line,
-           if a point fits one of the 4 segment patterns (4th is diag transformed by x=-x), 
-           add it to a group and add the remaining pts fitting the pattern to a stack
-           -- traverse the stack adding contiguous points to the group that fit the
-              pattern.
-           -- note where the first point in the pattern started, because
-              when there are no more contiguous pattern matching points,
-              the scan will continue at the next point after that first,
-              but will skip those already added to a group.
-          
-        When the scan for groups has finished,
-             for each group, need to apply the above endpoint patterns to see
-             if the candidate segment is surrounded by 2 endpoints.
-           
-             test all candidate group points as adjacent to potential endpoints.
-        
-             When a match is found, have to exclude all of the matching pattern
-             from the oppossing endpoint tests.
-        
-             This is the smallest pattern which will match that suggestion:
-              - - - -
-            # # @ # #  
-          - - # @ # -
-            # - - - #
-             The '@'s are the candidate group points.  The #'s are points 
-             matching endoint patterns.
-            
-             The found endpoints for one end, the left for example, would
-             be excluded from a search for matching to the other endpoints.
-     
-        Note that this pattern and variants of it as very short sections and
-        endpoints should be scanned after the above to find the shortest
-        butterfly segments.
-              - -
-            # # @ #   
-          - - # @ -
-            # - - #     
-        
-        For each segment group which has 2 matching endpoints, those should 
-        be stored as butterfly sections in a set.  Each one of those
-        should be passed back in a list as the return of this method.
-        
-        runtime complexity is linear in the number of points in the given
-        closed curve.
-        */
-        
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-    
     public boolean correctForXCrossings(PairIntArray closedCurve) throws Exception {
                 
         // method will look for x-sections in the curve and then assert that the

@@ -1,6 +1,7 @@
 package algorithms.misc;
 
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.File;
 import java.util.HashSet;
@@ -24,6 +25,8 @@ public class MiscTest extends TestCase {
             points.add(new PairInt(i, i));
         }
         
+        Set<PairInt> points2 = new HashSet<PairInt>(points);
+        
         String fileName = "blob_100_150.dat";
         
         String outPath = Misc.persistToFile(fileName, points);
@@ -41,6 +44,17 @@ public class MiscTest extends TestCase {
         }
         
         assertTrue(points.isEmpty());
+        
+        PairIntArray pointsR2 = Misc.deserializePairIntArray(filePath);
+
+        assertTrue(pointsR2.getN() == points2.size());
+        
+        for (int i = 0; i < pointsR2.getN(); ++i) {
+            PairInt p2 = new PairInt(pointsR2.getX(i), pointsR2.getY(i));
+            assertTrue(points2.remove(p2));
+        }
+        
+        assertTrue(points2.isEmpty());
     }    
     
 }

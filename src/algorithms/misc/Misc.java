@@ -98,6 +98,39 @@ public class Misc {
         return outFilePath;
     }
     
+    public static PairIntArray deserializePairIntArray(String filePath) throws IOException {
+                    
+        FileInputStream fs = null;
+        ObjectInputStream os = null;
+        
+        PairIntArray out = new PairIntArray();
+        
+        try {
+            File file = new File(filePath);
+
+            fs = new FileInputStream(file);
+            os = new ObjectInputStream(fs);
+                        
+            while (true) {
+                int x = os.readInt();
+                int y = os.readInt();                
+                out.add(x, y);
+            }
+        } catch (EOFException e) {
+            // expected
+        } finally {
+
+            if (os != null) {
+                os.close();
+            }
+            if (fs != null) {
+                fs.close();
+            }            
+        }
+        
+        return out;
+    }
+    
     public static Set<PairInt> deserializeSetPairInt(String filePath) throws IOException {
                     
         FileInputStream fs = null;

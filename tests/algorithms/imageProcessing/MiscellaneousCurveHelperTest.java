@@ -930,12 +930,6 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         }
     }
     
-    public void testFindButterflySections() throws Exception {
-        //blob_butterfly_01.dat
-        //blob_x_01.dat
-        //blob_not_butterfly_01.dat
-    }
-    
     public void testFindXCrossings() throws Exception {
         
         //blob_x_01.dat
