@@ -405,7 +405,7 @@ public class WaterShed extends AbstractWaterShed {
             for (int j = 0; j < h; ++j) {
                 PairInt pPoint = new PairInt(i, j);
 
-                PairInt repr = resolveIterative(pPoint, dag);
+                PairInt repr = resolve(pPoint, dag);
 
                 int value;
                 if (repr.equals(sentinel)) {
