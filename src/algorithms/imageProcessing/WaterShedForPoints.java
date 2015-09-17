@@ -257,7 +257,7 @@ public class WaterShedForPoints extends AbstractWaterShed {
 
             PairInt pPoint = entry.getKey();
 
-            PairInt repr = resolveIterative(pPoint, dag);
+            PairInt repr = resolve(pPoint, dag);
 
             Integer value;
             if (repr.equals(sentinel)) {
