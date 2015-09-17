@@ -170,12 +170,21 @@ public abstract class AbstractWaterShed {
 
             repr = findResult(rs, resultsMap);
 
-            if (repr == sentinel) {
+            if ((repr != null) && repr.equals(sentinel)) {
                 addToResults(createRootKey(0, p), repr, resultsMap);
                 dag.setToResolved(rs.getP(), repr);
                 break;
             } else if (rs.isRecursionBase()) {
+
                 addToResults(repr, rs, resultsMap);
+                                
+                PairInt tRepr = findResult(p, 0, 0, resultsMap);
+                if ((tRepr != null) && tRepr.equals(sentinel)) {
+                    break;
+                }
+                if ((repr != null) && dag.isResolved(repr)) {
+                    continue;
+                }
             }
             //}
 
@@ -216,7 +225,7 @@ public abstract class AbstractWaterShed {
 
                 assert (lowerNode != null);
 
-                if (!lowerNode.equals(rs.p) && !lowerNode.equals(sentinel)) {
+                if (!lowerNode.equals(rs.p) && !lowerNode.equals(sentinel) && !dag.isResolved(lowerNode)) {
 
                     // ---- add to stack to replace recursion ---
                     //PairInt prevLowerNode = lowerNode;
@@ -244,6 +253,7 @@ public abstract class AbstractWaterShed {
                     addToResults(createRootKey(0, p), repr, resultsMap);
                     break;
                 }
+                
                 ++i;
             }
         }
@@ -332,8 +342,13 @@ public abstract class AbstractWaterShed {
      */
     protected PairInt findResult(PairInt p, int level, int i, Map<String,
         Set<PairInt>> resultsMap) {
+        
+        String rootKey = createRootKey(level, p);
+        
+        String reprKey = createKey(level, p, i);
 
-        Set<PairInt> reprSet = resultsMap.remove(createKey(level, p, i));
+        Set<PairInt> reprSet = !reprKey.equals(rootKey) ? 
+            resultsMap.remove(reprKey) : null;
 
         Set<PairInt> rootSet = resultsMap.get(createRootKey(level, p));
 
@@ -387,7 +402,7 @@ public abstract class AbstractWaterShed {
         if (list == null) {
             list = new HashSet<PairInt>();
         }
-
+        
         list.add(resolved);
 
         resultsMap.put(key, list);

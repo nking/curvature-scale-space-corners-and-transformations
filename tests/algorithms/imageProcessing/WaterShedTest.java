@@ -597,10 +597,11 @@ public class WaterShedTest extends TestCase {
         //imageProcessor.applyInvert255(img);
         
         float minDimension = 300.f;//200.f
-        int binFactor = (int) Math.ceil(
+        /*int binFactor = (int) Math.ceil(
             Math.max((float)img.getWidth()/minDimension,
             (float)img.getHeight()/minDimension));
-
+        */
+        
         /*
         venturi:
             img0 = imageProcessor.createGreyscaleFromColorSegmentation(img, 4)
@@ -619,6 +620,7 @@ public class WaterShedTest extends TestCase {
              img0 = imageProcessor.binImage(img0, binFactor);
              imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
         */
+        /*
         GreyscaleImage img0 =
             //imageProcessor.createGreyscaleFromColorSegmentation(img, 4);//4,8 Venturi, books;  3 or alt for bl2003?
             img.copyToGreyscale();
@@ -630,10 +632,12 @@ public class WaterShedTest extends TestCase {
         imageProcessor.applyAdaptiveMeanThresholding(img0, 2);//2// 15 for bl2003
 
         ImageIOHelper.writeOutputImage(bin + "/test_thresh.png", img0);
-
+        */
+        
+        GreyscaleImage img0 = img.copyToGreyscale();
         int w = img0.getWidth();
         int h = img0.getHeight();
-/*
+
         WaterShed ws = new WaterShed();
 
         int[][] labelled2 = ws.createLabelledImage(img0);
@@ -647,6 +651,6 @@ public class WaterShedTest extends TestCase {
         }
 
         ImageIOHelper.writeOutputImage(bin + "/test_labelled.png", imgL);
-*/
+
     }
 }
