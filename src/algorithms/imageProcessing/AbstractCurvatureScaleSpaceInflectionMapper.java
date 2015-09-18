@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -165,6 +166,8 @@ public GreyscaleImage debugImg2 = null;
             HashMap<Integer, List<CurvatureScaleSpaceContour>>();
         
         Map<Integer, Float> bestScales = new HashMap<Integer, Float>();
+        
+        Map<Integer, Integer> bestI2I1 = new HashMap<Integer, Integer>();
         
         TreeMap<Double, Set<Integer>> bestCosts = new TreeMap<Double, Set<Integer>>();
         
@@ -348,7 +351,6 @@ try {
                 /*
                 the xy1, xy2 coordinates are w.r.t. the original image coordinate
                 reference frame (the offsets have been added back in).
-                
                 */
                 
                 TransformationParameters params = null;
@@ -404,15 +406,19 @@ try {
                 }
                 bestCosts.get(key2).add(key);
                 
-                i2CostMap.put(Integer.valueOf(bestI2ForThisI1), key2);
-int z = 1;                
+                i2CostMap.put(Integer.valueOf(bestI2ForThisI1), key2);     
+                
+                bestI2I1.put(Integer.valueOf(bestI2ForThisI1), key);
             }
         }
         
-//TODO: need to discard the solutions with only 2 contours above
-// or handle the comparison here.
-// would prefer keep them in case that is the only solution
-        
+        /*
+        the sigmas of the peaks of the contours need to be used here when
+        combining or prefering solutions between edges having no common edge.
+        Will use the "penalty" formula from the paper which adds the difference
+        from the tallest first peak to all other tallest first peaks to the costs.
+        */
+        adjustCostToTallesContourPeak1(bestMatches1, bestI2I1, bestCosts, i2CostMap);
         
         /*
         compare the solutions, starting with the smallest cost solution.
@@ -420,81 +426,67 @@ int z = 1;
         int nTransformations = bestParams.size();
         
         /* calculate the highest number of similar transformations and the 
-        lowest cost from those.
-        store nSimilar, indexes, cost for each iteration
-        */   
+        lowest cost from those.  store nSimilar, indexes, cost for each iteration*/   
         int[] nSimilarSummary = new int[nTransformations];
         Integer[][] indexesSummary = new Integer[nTransformations][];
         double[] costsSummary = new double[nTransformations];
         int[] mainIndexSummary = new int[nTransformations];
         
         int count = 0;
-        
-        /*
-        TODO: the sigmas of the peaks of the contours need to be used here when
-        combining or prefering solutions.
-        */
-        
+                
         for (Map.Entry<Double, Set<Integer>> entry : bestCosts.entrySet()) {
                         
-            Set<Integer> indexes = entry.getValue();
+            Set<Integer> indexes2 = entry.getValue();
                                     
-            for (Integer key : indexes) {
+            for (Integer index2 : indexes2) {
                 
-                Set<Integer> similar = new HashSet<Integer>();
+                Integer index1 = bestI2I1.get(index2);
                 
-                TransformationParameters params = bestParams.get(key);
+                Set<Integer> similarParamsIndexes1 = new HashSet<Integer>();
+                
+                TransformationParameters params = bestParams.get(index1);
                 
                 if (params == null) {
                     continue;
                 }
                      
-                similar.add(key);
+                similarParamsIndexes1.add(index1);
                 
-                for (int j = 0; j < contourLists1.size(); ++j) {
-                    if (j == key.intValue()) {
-                        continue;
-                    }                    
-                    Integer key2 = Integer.valueOf(j);
-                    TransformationParameters params2 = bestParams.get(key2);
-                    if (params2 == null) {
+                for (Entry<Integer, TransformationParameters> entryP : bestParams.entrySet()) {
+                    Integer index1P = entryP.getKey();
+                    if (index1P.equals(index1)) {
                         continue;
                     }
-                    if (Math.abs(params.getScale() - params2.getScale()) < 0.05) {
-                        if (Math.abs(params.getRotationInDegrees() - params2.getRotationInDegrees()) < 10) {
-                            if (Math.abs(params.getTranslationX() - params2.getTranslationX()) < 10) {
-                                if (Math.abs(params.getTranslationY() - params2.getTranslationY()) < 10) {
-                                    similar.add(key2);
+                    TransformationParameters paramsP = entryP.getValue();
+                    if (paramsP == null) {
+                        continue;
+                    }
+                    if (Math.abs(params.getScale() - paramsP.getScale()) < 0.05) {
+                        if (Math.abs(params.getRotationInDegrees() - paramsP.getRotationInDegrees()) < 10) {
+                            if (Math.abs(params.getTranslationX() - paramsP.getTranslationX()) < 10) {
+                                if (Math.abs(params.getTranslationY() - paramsP.getTranslationY()) < 10) {
+                                    similarParamsIndexes1.add(index1P);
                                 }
                             }
                         }
                     }
                 }
-                nSimilarSummary[count] = similar.size();
-                indexesSummary[count] = similar.toArray(new Integer[similar.size()]);
+                nSimilarSummary[count] = similarParamsIndexes1.size();
+                indexesSummary[count] = similarParamsIndexes1.toArray(new Integer[similarParamsIndexes1.size()]);
                 costsSummary[count] = entry.getKey();
-                mainIndexSummary[count] = key.intValue();
+                mainIndexSummary[count] = index1.intValue();
                 count++;
             }
         }
         
         if (count == 0) {
-            int z = 1;
             return;
         }
-                
-//==>TODO: change to make sure using unique matchings only in "indexes"
-        
-        /*
-        nSimilarSummary[count]
-        costsSummary[count]
-        indexesSummary[count]
-        mainIndexSummary[count]        
-        */
-        MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary,
-            indexesSummary, mainIndexSummary);
        
-        int nSimilar = nSimilarSummary[0];
+        //MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary, indexesSummary, mainIndexSummary);
+        
+        MultiArrayMergeSort.sortBy1stAscThen2ndDesc(costsSummary, nSimilarSummary, indexesSummary, mainIndexSummary, 0, costsSummary.length - 1);
+       
         Integer[] indexes = indexesSummary[0];
         int mainIndex = mainIndexSummary[0];
         
@@ -514,10 +506,10 @@ int z = 1;
                 
         for (int i = 0; i < indexes.length; ++i) {
                     
-            Integer index = indexes[i];
+            Integer index1 = indexes[i];
                 
-            List<CurvatureScaleSpaceContour> m1 = bestMatches1.get(index);
-            List<CurvatureScaleSpaceContour> m2 = bestMatchesTo1.get(index);
+            List<CurvatureScaleSpaceContour> m1 = bestMatches1.get(index1);
+            List<CurvatureScaleSpaceContour> m2 = bestMatchesTo1.get(index1);
             matchedContours1.addAll(m1);
             matchedContours2.addAll(m2);
 
@@ -531,24 +523,20 @@ int z = 1;
                 e2Index = Integer.valueOf(c2.getEdgeNumber());
             }
 
-            matchedXY1ByEdgeInOrigRefFrame.put(e1Index,
-                bestMatchesXY1.get(index));
-            matchedXY2ByEdgeInOrigRefFrame.put(e2Index,
-                bestMatchesXY2.get(index));
-            matchedXY1ByEdgeWeights.put(e1Index,
-                bestMatchesXYWeights1.get(index));
-            matchedXY2ByEdgeWeights.put(e2Index,
-                bestMatchesXYWeights2.get(index));
+            matchedXY1ByEdgeInOrigRefFrame.put(e1Index, bestMatchesXY1.get(index1));
+            matchedXY2ByEdgeInOrigRefFrame.put(e2Index, bestMatchesXY2.get(index1));
             
-            matchedXY1.addAll(bestMatchesXY1.get(index));
-            matchedXY2.addAll(bestMatchesXY2.get(index));
+            //These do not have the adjusted costs included:
+            matchedXY1ByEdgeWeights.put(e1Index, bestMatchesXYWeights1.get(index1));
+            matchedXY2ByEdgeWeights.put(e2Index, bestMatchesXYWeights2.get(index1));
+            
+            matchedXY1.addAll(bestMatchesXY1.get(index1));
+            matchedXY2.addAll(bestMatchesXY2.get(index1));
             
             matchedEdge1Indexes[i] = e1Index;
             matchedEdge2Indexes[i] = e2Index;
         }
-        
     }
-    
     
     public abstract TransformationParameters createEuclideanTransformationImpl();
     
@@ -963,5 +951,64 @@ int z = 1;
             int idx = remove.get(i);
             contours.remove(idx);
         }
+    }
+
+    private float findMapSigmaOfFirstPeaks(
+        Map<Integer, List<CurvatureScaleSpaceContour>> bestMatches1) {
+        
+        float maxPeakSigma = Float.MIN_VALUE;
+        
+        for (Entry<Integer, List<CurvatureScaleSpaceContour>> entry : bestMatches1.entrySet()) {
+            
+            List<CurvatureScaleSpaceContour> list = entry.getValue();
+            if (list.isEmpty()) {
+                continue;
+            }
+            CurvatureScaleSpaceContour contour = list.get(0);
+            float peakSigma = contour.getPeakSigma();
+            if (peakSigma > maxPeakSigma) {
+                maxPeakSigma = peakSigma;
+            }
+        }
+
+        return maxPeakSigma;
+    }
+
+    private void adjustCostToTallesContourPeak1(
+        Map<Integer, List<CurvatureScaleSpaceContour>> bestMatches1, 
+        Map<Integer, Integer> bestI2I1, TreeMap<Double, Set<Integer>> bestCosts, 
+        Map<Integer, Double> i2CostMap) {
+        
+        float maxPeakSigma = findMapSigmaOfFirstPeaks(bestMatches1);
+        
+        TreeMap<Double, Set<Integer>> bestCostsUpdated = new TreeMap<Double, Set<Integer>>();
+        
+        for (Entry<Double, Set<Integer>> entry : bestCosts.entrySet()) {
+            
+            double cost = entry.getKey().doubleValue();
+            
+            for (Integer index2 : entry.getValue()) {
+                
+                Integer index1 = bestI2I1.get(index2);
+                
+                float peak = bestMatches1.get(index1).get(0).getPeakSigma();
+                
+                double penalty = maxPeakSigma - peak;
+                                
+                Double updatedCost = Double.valueOf(cost + penalty);
+                
+                Set<Integer> set = bestCostsUpdated.get(entry.getKey());
+                if (set == null) {
+                    set = new HashSet<Integer>();
+                }
+                set.add(index2);
+                bestCostsUpdated.put(updatedCost, set);
+                
+                i2CostMap.put(index2, updatedCost);
+            }
+        }
+        
+        bestCosts.clear();
+        bestCosts.putAll(bestCostsUpdated);
     }
 }

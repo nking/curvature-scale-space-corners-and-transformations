@@ -463,6 +463,21 @@ public class MultiArrayMergeSort {
         }
     }
     
+    public static void sortBy1stAscThen2ndDesc(double[] a1, int[] a2, 
+        Integer[][] a3, int[] a4, int idxLo, int idxHi) {
+        
+        if (idxLo < idxHi) {
+
+            int idxMid = (idxLo + idxHi) >> 1;
+            
+            sortBy1stAscThen2ndDesc(a1, a2, a3, a4, idxLo, idxMid);
+            
+            sortBy1stAscThen2ndDesc(a1, a2, a3, a4, idxMid + 1, idxHi);
+            
+            mergeBy1stAscThen2ndDesc(a1, a2, a3, a4, idxLo, idxMid, idxHi);
+        }
+    }
+    
     private static void mergeBy1stDescThen2ndAsc(int[] a, double[] b, 
         Integer[][] c, int[] d, int idxLo, int idxMid, int idxHi) {
         
@@ -534,4 +549,73 @@ public class MultiArrayMergeSort {
         
     }
 
+    private static void mergeBy1stAscThen2ndDesc(double[] a1, int[] a2, 
+        Integer[][] a3, int[] a4, int idxLo, int idxMid, int idxHi) {
+
+        double[] aLeft = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
+        int[] bLeft = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        int[] dLeft = Arrays.copyOfRange(a4, idxLo, idxMid + 2);
+        Integer[][] cLeft = new Integer[(idxMid + 2 - idxLo)][];
+        for (int i = 0; i < (cLeft.length - 1); ++i) {
+            int idx = i + idxLo;
+            cLeft[i] = Arrays.copyOf(a3[idx], a3[idx].length);
+        }        
+        
+        double[] aRight = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
+        int[] bRight = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        int[] dRight = Arrays.copyOfRange(a4, idxMid + 1, idxHi + 2);
+        Integer[][] cRight = new Integer[(idxHi + 2) - (idxMid + 1)][];
+        for (int i = 0; i < (cRight.length - 1); ++i) {
+            int idx = i + idxMid + 1;            
+            cRight[i] = Arrays.copyOf(a3[idx], a3[idx].length);
+        }
+        
+        aLeft[aLeft.length - 1] = Double.MAX_VALUE;
+        bLeft[bLeft.length - 1] = Integer.MAX_VALUE;
+        dLeft[dLeft.length - 1] = Integer.MAX_VALUE;
+        cLeft[cLeft.length - 1] = new Integer[a3[idxLo].length];// not compared, so can be 0's
+        
+        aRight[aRight.length - 1] = Double.MAX_VALUE;
+        bRight[bRight.length - 1] = Integer.MAX_VALUE;
+        dRight[dRight.length - 1] = Integer.MAX_VALUE;
+        cRight[cRight.length - 1] = new Integer[a3[idxMid + 1].length];// not compared, so can be 0's
+        
+        int leftPos = 0;
+        int rightPos = 0;
+        
+        for (int k = idxLo; k <= idxHi; k++) {
+            double l = aLeft[leftPos];
+            double r = aRight[rightPos];
+            if (l < r) {
+                a1[k] = aLeft[leftPos];
+                a2[k] = bLeft[leftPos];
+                a3[k] = cLeft[leftPos];
+                a4[k] = dLeft[leftPos];
+                leftPos++;
+            } else if (l == r) {
+                // sort for descending values of b
+                double l2 = bLeft[leftPos];
+                double r2 = bRight[rightPos];
+                if (l2 >= r2) {
+                    a1[k] = aLeft[leftPos];
+                    a2[k] = bLeft[leftPos];
+                    a3[k] = cLeft[leftPos];
+                    a4[k] = dLeft[leftPos];
+                    leftPos++;
+                } else {
+                    a1[k] = aRight[rightPos];
+                    a2[k] = bRight[rightPos];
+                    a3[k] = cRight[rightPos];
+                    a4[k] = dRight[rightPos];
+                    rightPos++;
+                }
+            } else {
+                a1[k] = aRight[rightPos];
+                a2[k] = bRight[rightPos];
+                a3[k] = cRight[rightPos];
+                a4[k] = dRight[rightPos];
+                rightPos++;
+            }
+        }
+    }
 }

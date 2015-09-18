@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -31,8 +32,8 @@ public class InflectionMapperTwoObjectTest extends TestCase {
         
         String[] list2 = new String[]{"110", "160", "180"};
         
-        //list1 = new String[]{"210"};
-        //list2 = new String[]{"110"};
+        //list1 = new String[]{"20"};
+        //list2 = new String[]{"160"};
 
         for (int i = 0; i < list1.length; i++) {
             
@@ -69,7 +70,8 @@ public class InflectionMapperTwoObjectTest extends TestCase {
 
                 //TODO: this needs revision:
                 //mapper.setToRefineTransformations();
-
+mapper.debugImg1 = img1.copyToGreyscale();
+mapper.debugImg2 = img2.copyToGreyscale();
                 TransformationParameters transformationParams = 
                     mapper.createEuclideanTransformation();
 
@@ -91,8 +93,7 @@ public class InflectionMapperTwoObjectTest extends TestCase {
 
                 img2 = ImageIOHelper.readImageExt(filePath2);
 
-                debugDisplay(transformedEdges, img2, 
-                    list1[i] + "->" + list2[j]);
+                debugDisplay(transformedEdges, img2, list1[i] + "->" + list2[j]);
                 
                 int expectedRotDeg = 360 - (rotation2 - rotation1);
                 while (expectedRotDeg > 360) {
@@ -101,10 +102,14 @@ public class InflectionMapperTwoObjectTest extends TestCase {
                 
                 double foundRotDeg = rotDeg;
                 
+                float diffRot = AngleUtil.getAngleDifference(
+                    (float)expectedRotDeg, (float)foundRotDeg);                
+                
                 log.info("PARAMS: " + transformationParams.toString() 
-                    + "\nEXPECTED=" + expectedRotDeg  + " found=" + foundRotDeg);
+                    + "\nEXPECTED=" + expectedRotDeg  + " found=" + foundRotDeg
+                    + " diffRot=" + diffRot);
 
-                assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
+                assertTrue(Math.abs(diffRot) < 10.f);
                 
                 assertTrue(Math.abs(scale - 1.0) < 0.15);
             }

@@ -487,6 +487,50 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(Arrays.equals(indexesSummary[1], new Integer[]{Integer.valueOf(1)}));
     }
     
+    /*
+    private static void mergeBy1stDescThen2ndAsc(double[] a1, int[] a2, 
+        Integer[][] a3, int[] a4, int idxLo, int idxMid, int idxHi) {
+    */
+    public void testSortBy1stAscThen2ndDesc() throws Exception {
+        
+        double[] a1 = new double[]{ 5,  4,  3,  3,  2,  1};
+        int[] a2    = new    int[]{10, 20, 40, 30, 50, 60};
+        Integer[][] a3 = new Integer[6][];
+        for (int i = 0; i < a3.length; ++i) {
+            a3[i] = new Integer[]{i};
+        }
+        int[] a4 = new int[]{100, 200, 300, 400, 500, 550};
+        MultiArrayMergeSort.sortBy1stAscThen2ndDesc(a1, a2, a3, a4, 0, a1.length - 1);
+        
+        assertTrue(a1[0] == 1); 
+        assertTrue(a1[1] == 2); 
+        assertTrue(a1[2] == 3);
+        assertTrue(a1[3] == 3);
+        assertTrue(a1[4] == 4);
+        assertTrue(a1[5] == 5);
+        
+        assertTrue(a2[0] == 60); 
+        assertTrue(a2[1] == 50); 
+        assertTrue(a2[2] == 40);
+        assertTrue(a2[3] == 30);
+        assertTrue(a2[4] == 20);
+        assertTrue(a2[5] == 10);
+        
+        assertTrue(a3[0][0] == 5); 
+        assertTrue(a3[1][0] == 4); 
+        assertTrue(a3[2][0] == 2);
+        assertTrue(a3[3][0] == 3);
+        assertTrue(a3[4][0] == 1);
+        assertTrue(a3[5][0] == 0);
+        
+        assertTrue(a4[0] == 550); 
+        assertTrue(a4[1] == 500); 
+        assertTrue(a4[2] == 300);
+        assertTrue(a4[3] == 400);
+        assertTrue(a4[4] == 200);
+        assertTrue(a4[5] == 100);
+    }
+    
     /**
      * Test suite
      * @return static Test
