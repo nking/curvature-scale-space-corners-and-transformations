@@ -153,6 +153,11 @@ public GreyscaleImage debugImg2 = null;
             return;
         }
         
+        final int centroidX1 = 0;
+        final int centroidY1 = 0;
+        final int centroidX2 = 0;
+        final int centroidY2 = 0;
+                
         Map<Integer, List<CurvatureScaleSpaceContour>> bestMatches1 = new
             HashMap<Integer, List<CurvatureScaleSpaceContour>>();
         
@@ -177,7 +182,9 @@ public GreyscaleImage debugImg2 = null;
         
         Map<Integer, List<Float>> bestMatchesXYWeights2 = new 
             HashMap<Integer, List<Float>>();
-        //i1=4 i2=3
+        
+        Map<Integer, Double> i2CostMap = new HashMap<Integer, Double>();
+        
         boolean alreadySorted = true;
         
         for (int i1 = 0; i1 < contourLists1.size(); ++i1) {
@@ -187,8 +194,10 @@ public GreyscaleImage debugImg2 = null;
             double minCost = Double.MAX_VALUE;
             List<CurvatureScaleSpaceContour> bestM1 = null;
             List<CurvatureScaleSpaceContour> bestM2 = null;
+            int bestI2ForThisI1 = -1;
             double bestScale = 1;
             double bestCost = Double.MAX_VALUE;
+            
 if (debug && (debugImg1 != null)){           
 Image img3 = new Image(debugImg1.getWidth(), debugImg1.getHeight());
 for (int j = 0; j < edges1.get(i1).getN(); ++j) {
@@ -230,7 +239,7 @@ for (int j = 0; j < edges2.get(i2).getN(); ++j) {
 }
 MiscDebug.writeImageCopy(img3, "edge2_" + i2 + "_.png");     
 }
-
+log.info("i1=" + i1 + " i2=" + i2);
 log.info("offsetImage 1=(" + offsetImageX1 + "," + offsetImageY1 + ")");
 log.info("offsetImage 2=(" + offsetImageX2 + "," + offsetImageY2 + ")");
 
@@ -282,11 +291,29 @@ int z = 1;
 */                
 
                 if ((cost < minCost) || ((bestM1 != null) && (m1.size() > 2) && (bestM1.size() < 3))) {
-                    minCost = cost;
-                    bestM1 = m1;
-                    bestM2 = m2;
-                    bestScale = matcher.getSolvedScale();
-                    bestCost = cost;
+                    
+                    // if i2 is already matched to the best of i1 and the
+                    // cost there is smaller, cannot set to best here
+                    
+                    Double prevI2Cost = i2CostMap.get(Integer.valueOf(i2));
+                    
+                    boolean assign = (prevI2Cost == null);
+                    
+                    if (!assign) {
+                        assign = (cost < prevI2Cost.doubleValue());
+                    }
+                        
+                    if (assign) {
+                        
+                        bestI2ForThisI1 = i2;
+                        minCost = cost;
+                        bestM1 = m1;
+                        bestM2 = m2;
+                        bestScale = matcher.getSolvedScale();
+                        bestCost = cost;
+
+                        log.info(" best so far has cost=" + bestCost + " i1=" + i1 + " i2=" + i2); 
+                    }
                 }
             }
             
@@ -324,11 +351,6 @@ try {
                 
                 */
                 
-                int centroidX1 = 0;
-                int centroidY1 = 0;
-                int centroidX2 = 0;
-                int centroidY2 = 0;
-                
                 TransformationParameters params = null;
                 
                 // if scale < 1, we have to swap the order of datasets to avoid
@@ -364,6 +386,7 @@ try {
     Logger.getLogger(CurvatureScaleSpaceInflectionMapper.class.getName()).log(Level.SEVERE, null, ex);
 }
 */
+                
                 Integer key = Integer.valueOf(i1);
                 
                 bestMatches1.put(key, bestM1);
@@ -380,6 +403,9 @@ try {
                     bestCosts.put(key2, new HashSet<Integer>());
                 }
                 bestCosts.get(key2).add(key);
+                
+                i2CostMap.put(Integer.valueOf(bestI2ForThisI1), key2);
+int z = 1;                
             }
         }
         
@@ -403,6 +429,11 @@ try {
         int[] mainIndexSummary = new int[nTransformations];
         
         int count = 0;
+        
+        /*
+        TODO: the sigmas of the peaks of the contours need to be used here when
+        combining or prefering solutions.
+        */
         
         for (Map.Entry<Double, Set<Integer>> entry : bestCosts.entrySet()) {
                         
