@@ -38,6 +38,10 @@ public class HistogramHolder {
             
             int partition = (int)(x/binSize);
             
+            if (partition > (nPartitions - 1)) {
+                partition = nPartitions - 1;
+            }
+            
             area[partition] += (yTerm * xLen);
         }
                 

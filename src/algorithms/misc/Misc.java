@@ -32,7 +32,15 @@ public class Misc {
     
     public static final int[] dx4 = new int[]{-1,  0, 1, 0};
     public static final int[] dy4 = new int[]{ 0, -1, 0, 1};
-        
+    
+    public static PairIntArray convertWithoutOrder(Set<PairInt> points) {
+        PairIntArray out = new PairIntArray(points.size());
+        for (PairInt p : points) {
+            out.add(p.getX(), p.getY());
+        }
+        return out;
+    }
+    
     public static Set<PairInt> convert(PairIntArray points) {
         
         if (points == null) {

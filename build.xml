@@ -312,7 +312,6 @@
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
                 <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
-            	<pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>

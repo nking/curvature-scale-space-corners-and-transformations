@@ -225,7 +225,9 @@ public class CurvatureScaleSpaceImageMakerTest extends TestCase {
             for (int j = 0; j < imageSigmas.length; j++) {
                 assertTrue(imageSigmas[j] != 0);
                 for (int jj = 0; jj < scaleSpaceImage[j].length; jj++) {
-                    assertTrue(scaleSpaceImage[j][jj] != 0);
+                    float v = scaleSpaceImage[j][jj];
+                    boolean t = (v >= 0);
+                    assertTrue(t);
                 }
             }
             

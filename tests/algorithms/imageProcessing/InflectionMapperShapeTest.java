@@ -40,7 +40,7 @@ public class InflectionMapperShapeTest extends TestCase {
             GreyscaleImage imgGrey = readAsBinary(img);
 
             BlobsAndContours blobsAndContours = new BlobsAndContours(imgGrey, 
-                0, 1 << 30, SegmentedImageHelper.SegmentationType.BINARY,
+                imgGrey, 0, 1 << 30, SegmentedImageHelper.SegmentationType.BINARY,
                 segmentedToLineDrawing, fileSuffix);
 
             boolean setToExtractWeakCurvesTooIfNeeded = false;
