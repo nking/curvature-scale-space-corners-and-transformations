@@ -214,9 +214,6 @@ int z = 1;
             }
         }
         
-        UntraversableLobeRemover remover = new UntraversableLobeRemover();
-        remover.applyFilter(borderPixels);
-        
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
@@ -224,7 +221,6 @@ for (PairInt p : borderPixels) {
 }
 MiscDebug.writeImageCopy(img3, "border_before_spur_removal_" + ts + ".png");
 }
-
         SpurRemover spurRm = new SpurRemover();
         if (debug) {
             spurRm.setToDebug();
@@ -241,6 +237,21 @@ for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
 MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+}
+
+        UntraversableLobeRemover remover = new UntraversableLobeRemover();
+        remover.applyFilter(borderPixels);
+        
+        if (borderPixels.isEmpty()) {
+            return null;
+        }
+        
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (PairInt p : borderPixels) {
+    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".png");
 }
 
         //xMin, xMax, yMin, yMax
