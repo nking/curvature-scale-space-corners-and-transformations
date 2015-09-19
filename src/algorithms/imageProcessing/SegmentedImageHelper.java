@@ -376,13 +376,15 @@ public class SegmentedImageHelper {
             //TODO: replace w/ resolution based scl
             
             int scl = 20;
-            
+                        
             segImg = imgGrey.copyImage();
-            
-imageProcessor.blur(segImg, SIGMA.ONE);
-
+                        
+            //imageProcessor.blur(segImg, SIGMA.ZEROPOINTFIVE);
+                        
             imageProcessor.applyImageSegmentation(segImg, 2);
                         
+            imageProcessor.blur(segImg, SIGMA.ZEROPOINTSEVENONE);
+            
             imageProcessor.applyAdaptiveMeanThresholding(segImg, scl);
             
             imgSegmentedMap.put(type, segImg);
@@ -454,10 +456,12 @@ imageProcessor.blur(segImg, SIGMA.ONE);
         }
         
         if (debug) {
-            blobsAndContours = new BlobsAndContours(segImg, smallestGroupLimit, 
+            blobsAndContours = new BlobsAndContours(getGreyscaleImage(),
+                segImg, smallestGroupLimit, 
                 largestGroupLimit, type, segmentedToLineDrawing, debugTag);
         } else {
-            blobsAndContours = new BlobsAndContours(segImg, smallestGroupLimit, 
+            blobsAndContours = new BlobsAndContours(getGreyscaleImage(),
+                segImg, smallestGroupLimit, 
                 largestGroupLimit, type, segmentedToLineDrawing);
         }
         
@@ -486,11 +490,13 @@ imageProcessor.blur(segImg, SIGMA.ONE);
         }
         
         if (debug) {
-            blobsAndContours = new BlobsAndContours(segImg, 
+            blobsAndContours = new BlobsAndContours(getGreyscaleImageBinned(),
+                segImg, 
                 smallestGroupLimitBinned, largestGroupLimitBinned, type,
                 segmentedToLineDrawing, debugTag);
         } else {
-            blobsAndContours = new BlobsAndContours(segImg, 
+            blobsAndContours = new BlobsAndContours(getGreyscaleImageBinned(),
+                segImg, 
                 smallestGroupLimitBinned, largestGroupLimitBinned, type,
                 segmentedToLineDrawing);
         }

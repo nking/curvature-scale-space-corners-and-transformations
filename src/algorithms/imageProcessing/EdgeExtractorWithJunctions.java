@@ -4,19 +4,14 @@ import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.Rotate;
-import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArrayComparator;
 import algorithms.util.PairIntArrayDescendingComparator;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.PointPairInt;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,9 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Level;
-import thirdparty.HungarianAlgorithm;
 
 /**
  * Edge extractor operates on an image that has already been reduced to
@@ -162,7 +155,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //O(N)
         Map<PairInt, PairInt> joinPoints = findJoinPoints(output);
 
-        if (debug) {
+        if (false && debug) {
             algorithms.misc.MiscDebug.printJoinPoints(joinPoints, output);
             algorithms.misc.MiscDebug.writeJoinPointsImage(joinPoints, output,
                 img);

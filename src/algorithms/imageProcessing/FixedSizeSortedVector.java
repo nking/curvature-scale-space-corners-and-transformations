@@ -48,11 +48,12 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
      * runtime complexity is O(log_2(capacity) + less than capacity).
      *
      * @param value
+     * @return true if added, else false
      */
-    public void add(T value) {
+    public boolean add(T value) {
 
         if (value == null) {
-            return;
+            return false;
         }
 
         if (n < a.length) {
@@ -67,7 +68,7 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
             int comp = value.compareTo(a[n - 1]);
 
             if (comp != -1) {
-                return;
+                return false;
             }
 
             // free up the last slot
@@ -78,6 +79,8 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
             // insert value into array at position found by binarySearch
             insertIntoOpenSlot(value);
         }
+        
+        return true;
     }
 
     /**

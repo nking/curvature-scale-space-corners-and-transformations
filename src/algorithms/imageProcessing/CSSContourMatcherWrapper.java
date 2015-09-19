@@ -132,6 +132,10 @@ public final class CSSContourMatcherWrapper {
         boolean solved = mDefault.matchContours() &&
             (mDefault.getSolvedScale() < Double.MAX_VALUE);
 
+        log.info("default order: solved=" + solved + " ambig=" + 
+            mDefault.scaleIsPossiblyAmbiguous() + " possibly scl < 1=" + 
+            mDefault.strongestPeaksImplyScaleSmallerThanOne());
+        
         if (solved && !mDefault.scaleIsPossiblyAmbiguous()
             && !mDefault.strongestPeaksImplyScaleSmallerThanOne()) {
 
@@ -148,6 +152,10 @@ public final class CSSContourMatcherWrapper {
         boolean solvedReverse = mReverse.matchContours() &&
             (mReverse.getSolvedScale() < Double.MAX_VALUE);
 
+        log.info("reverse order: solved=" + solvedReverse + " ambig=" + 
+            mReverse.scaleIsPossiblyAmbiguous() + " possibly scl < 1=" + 
+            mReverse.strongestPeaksImplyScaleSmallerThanOne());
+        
         if (!solvedReverse && solved) {
 
             // take the possibly ambiguous default solution

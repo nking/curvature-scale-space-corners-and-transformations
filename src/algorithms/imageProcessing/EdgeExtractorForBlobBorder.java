@@ -1,11 +1,13 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.ButterflySectionFinder;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -82,9 +84,15 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()
             - nBorder;
                
-        log.info("number of border points=" + nBorder + " nCavity=" + nCavity);
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        double[] xyCen = curveHelper.calculateXYCentroids(out);  
         
-        if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
+log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.round(xyCen[0]),
+(int)Math.round(xyCen[1]), nBorder, nCavity));
+
+        log.fine("LIMIT: number of border points=" + nBorder + " nCavity=" + nCavity);
+        
+        if (discardWhenCavityIsSmallerThanBorder && (nBorder > nCavity)) {
             return null;
         }
         
@@ -142,20 +150,33 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         int nBorder = borderPixels.size();
         int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()
             - nBorder;
-               
+
+long ts = MiscDebug.getCurrentTimeFormatted();
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "border_perimeter_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImageCopy(img3, "border_perimeter_" + ts + ".png");
+}
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        double[] xyCen = curveHelper.calculateXYCentroids(borderPixels);  
+        
+log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.round(xyCen[0]),
+(int)Math.round(xyCen[1]), nBorder, nCavity));
+
+        // expecting nBorder to be < nCavity
+
+/*
+181,240
+*/
+if ((Math.abs(181 - xyCen[0]) < 2) && (Math.abs(240 - xyCen[1]) < 2)) {
+    int z = 1;
 }
 
-        if (discardWhenCavityIsSmallerThanBorder && (nCavity < (0.5*nBorder))) {
-            
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            double[] xyCen = curveHelper.calculateXYCentroids(borderPixels);
-            
+        if (discardWhenCavityIsSmallerThanBorder && (nBorder > nCavity)) {
+           
             log.info(String.format(
                 "discarding (%d, %d) number of border points=%d nCavity=%d ", 
                 (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]), 
@@ -166,6 +187,16 @@ MiscDebug.writeImageCopy(img3, "border_perimeter_" + MiscDebug.getCurrentTimeFor
         
         // ----- remove spurs, merge curves, re-order points to form a 
         //       single closed curve if possible -------
+/*
+try {
+Misc.persistToFile("blob_" + ts + ".dat", borderPixels);
+int z = 1;
+} catch(IOException e){}
+*/
+        // persist specific features to restore if thinned:
+        ButterflySectionFinder finder = new ButterflySectionFinder();
+        List<Set<PairInt>> butterFlySections = finder.findButterflySections(
+            Misc.convertWithoutOrder(borderPixels));
         
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         lt.applyLineThinner(borderPixels, 0, imageWidth, 0, imageHeight);
@@ -176,12 +207,22 @@ MiscDebug.writeImageCopy(img3, "border_perimeter_" + MiscDebug.getCurrentTimeFor
             return null;
         }
         
+        // restore butterFlySections if any
+        if (butterFlySections != null && !butterFlySections.isEmpty()) {
+            for (Set<PairInt> butterFlySection : butterFlySections) {
+                borderPixels.addAll(butterFlySection);
+            }
+        }
+        
+        UntraversableLobeRemover remover = new UntraversableLobeRemover();
+        remover.applyFilter(borderPixels);
+        
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "border_before_spur_removal_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImageCopy(img3, "border_before_spur_removal_" + ts + ".png");
 }
 
         SpurRemover spurRm = new SpurRemover();
@@ -239,21 +280,61 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurre
         Note that the algorithm could be redesigned to look for such regions
         first and discard the smaller half with a warning.
         */
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
-            
+   
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (int i = 0; i < out.getN(); ++i) {
+    img3.setRGB(out.getX(i), out.getY(i), 255, 0, 0);
+}
+img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
+img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
+MiscDebug.writeImageCopy(img3, "border_trimEndpointSpurs.png");
+}
+
             boolean altered = trimEndpointSpursIfAny(out, img.getWidth(), 
                 img.getHeight());
-            
+
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (int i = 0; i < out.getN(); ++i) {
+    img3.setRGB(out.getX(i), out.getY(i), 255, 0, 0);
+}
+img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
+img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
+MiscDebug.writeImageCopy(img3, "border_before_reorder_endpoints.png");
+}
+
             if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
                 
                 extractor.reorderEndpointsIfNeeded(out);
                 
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (int i = 0; i < out.getN(); ++i) {
+    img3.setRGB(out.getX(i), out.getY(i), 255, 0, 0);
+}
+img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
+img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
+MiscDebug.writeImageCopy(img3, "border_after_reorder_endpoints.png");
+}               
+
                 if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
                     
                     trimForMultipleClosedCurves(extractor, out, img.getWidth(), 
                         img.getHeight());
                     
+if (debug) {        
+Image img3 = new Image(imageWidth, imageHeight);
+for (int i = 0; i < out.getN(); ++i) {
+    img3.setRGB(out.getX(i), out.getY(i), 255, 0, 0);
+}
+img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
+img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
+MiscDebug.writeImageCopy(img3, "border_trim_multiple_curves.png");
+int z = 1;
+}                    
+
                 }
             }
         }

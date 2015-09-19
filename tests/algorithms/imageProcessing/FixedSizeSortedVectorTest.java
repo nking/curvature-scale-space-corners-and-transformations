@@ -14,10 +14,10 @@ public class FixedSizeSortedVectorTest extends TestCase {
         FixedSizeSortedVector<Integer> sortedVector = 
             new FixedSizeSortedVector<>(4, Integer.class);
         
-        sortedVector.add(Integer.valueOf(7));
-        sortedVector.add(Integer.valueOf(6));
-        sortedVector.add(Integer.valueOf(5));
-        sortedVector.add(Integer.valueOf(4));
+        assertTrue(sortedVector.add(Integer.valueOf(7)));
+        assertTrue(sortedVector.add(Integer.valueOf(6)));
+        assertTrue(sortedVector.add(Integer.valueOf(5)));
+        assertTrue(sortedVector.add(Integer.valueOf(4)));
         
         Integer[] values = sortedVector.getArray();
         
@@ -28,7 +28,7 @@ public class FixedSizeSortedVectorTest extends TestCase {
         assertTrue(values[2].intValue() == 6);
         assertTrue(values[3].intValue() == 7);
         
-        sortedVector.add(Integer.valueOf(10));
+        assertFalse(sortedVector.add(Integer.valueOf(10)));
 
         values = sortedVector.getArray();
         
@@ -39,7 +39,7 @@ public class FixedSizeSortedVectorTest extends TestCase {
         assertTrue(values[2].intValue() == 6);
         assertTrue(values[3].intValue() == 7);
         
-        sortedVector.add(Integer.valueOf(3));
+        assertTrue(sortedVector.add(Integer.valueOf(3)));
         
         values = sortedVector.getArray();
         

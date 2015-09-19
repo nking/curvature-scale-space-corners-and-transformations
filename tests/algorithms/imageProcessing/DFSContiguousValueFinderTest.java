@@ -153,20 +153,4 @@ public class DFSContiguousValueFinderTest extends TestCase {
         ImageDisplayer.displayImage(Integer.toString(gId), img);
     }
     
-    private class SizeComparator<T extends  Collection> implements Comparator<T> {
-
-        @Override
-        public int compare(T o1, T o2) {
-            
-            if (o1 == null && o2 != null) {
-                return 1;
-            } 
-            if (o1 != null && o2 == null) {
-                return -1;
-            }
-            
-            return Integer.compare(o1.size(), o2.size());
-        }
-
-    }
 }

@@ -1,9 +1,14 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -11,10 +16,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
@@ -84,14 +91,33 @@ public class BlobScaleFinder {
         IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
         IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
 
-        // keeping the best match for each index1
-        // the final answer looks at cost, similarity in diffTheta and scale,
-        // (the combinedStat would need to be re-calculated with normalization
-        // considerations to make the numbers comparable)
-        Map<Integer, IntensityFeatureComparisonStats> index1BestMap =
-            new HashMap<Integer, IntensityFeatureComparisonStats>();
-
-        //List<FeatureComparisonStat> bestOverallCompStats = null;
+        /*
+        Note that the matching contours are improved and filtered by using 
+        feature descriptors.
+        
+        Finding the best match if any for each index1.
+        If a subsequent match to the that index1's index2 is present, it will
+        only be considered if the cost is less than the previous.
+        It's a greedy best approach.
+        After all of the index1 solutions are gathered, the best is found
+        by adjusting the costs by the largest sigma from the first peak contours 
+        from edges1 (i.e. applying the penalty from the paper to smaller peak
+        sigma's costs).
+        The best agreeing solutions are kept.
+        
+        If instead wanted a bipartite matching of best costs, would want to
+        keep the top 2 or so of each index1.
+        Would need to be careful to not include large peak contour false matches.
+        All costs in the top would need to be adjusted by the penalty mentioned
+        above.
+        Then the best among more than one would be defined by cost.  
+        Then more than one solutions points would be kept if similarity
+        in difference of theta and scale were within a limit.
+        */
+       
+        Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
+            index1BestMap = new HashMap<Integer, 
+            FixedSizeSortedVector<IntensityFeatureComparisonStats>>();
 
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
@@ -107,13 +133,12 @@ public class BlobScaleFinder {
 
             double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
 
-            double bestStatSqSum = Double.MAX_VALUE;
-            double bestScale = -1;
-            double bestCost = -1;
-            int bestIdx2 = -1;
-            int bestC2 = 0;
-            int bestNMatched = -1;
-            List<FeatureComparisonStat> bestCompStats = null;
+            // keeping the top '2' for each index1.  comparison is by cost.
+            // choosing more than one because later bipartite matching attempts
+            // to match best for all index1 matchings
+            FixedSizeSortedVector<IntensityFeatureComparisonStats> bestStats 
+                = new FixedSizeSortedVector<IntensityFeatureComparisonStats>(2, 
+                IntensityFeatureComparisonStats.class);
 
             for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
 
@@ -126,8 +151,10 @@ public class BlobScaleFinder {
                 PairIntArray curve2 = perimeters2.get(idx2);
 
                 Set<PairInt> blob2 = blobs2.get(idx2);
-
-//log.info("index1=" + index1.toString() + " index2=" + index2.toString());
+                
+double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
+log.info("index1=" + index1.toString() + " index2=" + index2.toString()
+ + " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
 
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper =
                     new CurvatureScaleSpaceInflectionSingleEdgeMapper(
@@ -145,7 +172,6 @@ public class BlobScaleFinder {
                         singleSolnMap.put(new PairInt(idx1, idx2), mapper.getMatcher());
                     }
 
-double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
 if (mapper.getMatcher() != null) {
 log.info(String.format("discarding [%d] (%d,%d)  [%d] (%d,%d)  nMCs=%d",
 idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
@@ -160,6 +186,7 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                     continue;
                 }
 
+                // edit points using feature descriptors and remove outliers:
                 List<FeatureComparisonStat> compStats =
                     filterContourPointsByFeatures(img1, img2, index1, index2,
                     blob1, blob2, curve1, curve2, features1, features2,
@@ -179,54 +206,63 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 boolean lgDiffN = ((nc1 > nc2) && frac > 2)
                     || ((nc1 < nc2) && frac < 0.5);
 
-                if (lgDiffN) {
+                if (lgDiffN) {                    
+                    log.info(String.format(
+                        "discarding a good match because frac of maxMatchable is low." 
+                         + " nc1=%d nc2=%d (frac=%.2f) nMCs=%d",
+                        nc1, nc2, frac, 
+                        mapper.getMatcher().getSolutionMatchedContours1().size()));
                     continue;
                 }
 
-                double combinedStat = calculateCombinedIntensityStat(compStats);
+                //double combinedStat = calculateCombinedIntensityStat(compStats);
 
-                //TODO: consider keeping top k instead of 1
-                if (combinedStat < bestStatSqSum) {
-                    bestStatSqSum = combinedStat;
-                    bestIdx2 = index2.intValue();
-                    bestC2 = contours2List.get(bestIdx2).size();
-                    bestNMatched = mapper.getMatcher().getSolutionMatchedContours1().size();
-                    bestCompStats = compStats;
-                    bestCost = mapper.getMatcher().getSolvedCost();
-                    bestScale = mapper.getMatcher().getSolvedScale();
-                    log.info("  new best for [" + index1.toString() + "] ["
-                        + index2.toString() + "] combinedStat=" + combinedStat
-                        + " with n=" + bestCompStats.size());
+                IntensityFeatureComparisonStats stats = new 
+                    IntensityFeatureComparisonStats(index1.intValue(), 
+                    index2.intValue(), mapper.getMatcher().getSolvedCost(), 
+                        mapper.getMatcher().getSolvedScale());
+                stats.addAll(compStats);
+                
+                // bestStats keeps the top '2' smallest cost solutions added to it
+                boolean added = bestStats.add(stats);
+                
+                if (added) {
+                    log.info("  added to best for [" + index1.toString() + "] ["
+                        + index2.toString() + "] cost=" + stats.getCost()
+                        + " with n=" + stats.getComparisonStats().size());
                 }
             }
 
-            if (bestCompStats == null) {
+            if (bestStats.getNumberOfItems() == 0) {
                 continue;
             }
 
-            double[] xyCen2 = curveHelper.calculateXYCentroids(blobs2.get(bestIdx2));
+            if (debug) {
+                for (int k = 0; k < bestStats.getNumberOfItems(); ++k) {
+                    IntensityFeatureComparisonStats stats = bestStats.getArray()[k];
+                    double[] xyCen2 = curveHelper.calculateXYCentroids(
+                        blobs2.get(stats.getIndex2()));
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(String.format(
+                        "==>[%d](%d,%d) [%d](%d,%d) cost=%.2f scale=%.2f nMatched=%d(%d,%d) intSqDiff=%.1f",
+                        stats.getIndex1(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+                        stats.getIndex2(), (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
+                        (float)stats.getCost(), (float)stats.getScale(), 
+                        stats.getComparisonStats().size(),
+                        contours1List.get(stats.getIndex1()).size(), 
+                        calculateCombinedIntensityStat(stats.getComparisonStats())));
+                    log.info(sb.toString());
+                }
+            }
 
-            StringBuilder sb = new StringBuilder();
-            sb.append(String.format(
-                "==>[%d](%d,%d) [%d](%d,%d) scale=%.2f  nMatched=%d(%d,%d) intSqDiff=%.1f",
-                index1.intValue(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-                bestIdx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-                bestScale, bestNMatched,
-                contours1List.get(index1.intValue()).size(), bestC2,
-                (float)bestStatSqSum));
-            log.info(sb.toString());
-
-            IntensityFeatureComparisonStats stats =
-                new IntensityFeatureComparisonStats(bestCost, bestScale);
-            stats.addAll(bestCompStats);
-
-            index1BestMap.put(index1, stats);
+            index1BestMap.put(index1, bestStats);
         }
-
-        // -------- process the single solution compStats ------------
+        
         List<FeatureComparisonStat> bestOverall = null;
         if (index1BestMap.isEmpty()) {
-
+            
+            // -------- process the single solution compStats ------------
+            
             if (singleSolnMap.size() > 1) {
                 bestOverall = processSingleSolutionsIfNoBest(img1, img2,
                     singleSolnMap, blobs1, blobs2, perimeters1, perimeters2,
@@ -237,7 +273,8 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 return null;
             }
         } else {
-            bestOverall = filterToBestConsistent(index1BestMap);
+            bestOverall = filterToBestConsistent(index1BestMap, contours1List,
+                contours2List);
         }
 
         if (bestOverall == null) {
@@ -580,9 +617,9 @@ try {
 ImageExt img1C = img1.createColorGreyscaleExt();
 ImageExt img2C = img2.createColorGreyscaleExt();
 MiscDebug.debugPlot(matcher.getSolutionMatchedContours1(), img1C,
-    0, 0, "1_redone");
+    0, 0, "1_" + index1 + "_redone");
 MiscDebug.debugPlot(matcher.getSolutionMatchedContours2(), img2C,
-    0, 0, "2_redone");
+    0, 0, "2_" + index2 + "_redone");
 for (FeatureComparisonStat compStat : compStats) {
     int x1 = compStat.getImg1Point().getX();
     int y1 = compStat.getImg1Point().getY();
@@ -758,96 +795,142 @@ int z = 1;
     }
 
     protected List<FeatureComparisonStat> filterToBestConsistent(
-        Map<Integer, IntensityFeatureComparisonStats> index1StatsMap) {
+        Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
+        index1StatsMap, List<List<CurvatureScaleSpaceContour>> contours1Lists,
+        List<List<CurvatureScaleSpaceContour>> contours2Lists) {
 
         if (index1StatsMap == null || index1StatsMap.isEmpty()) {
             return null;
         }
-
-        /*
-        the characteristics which produce the correct combined result appear to
-        be:
-        rank by contour matching solution cost
-        rank by similarity in diffTheta and contour matching solution scale
-        */
         
-        float[][] meanStDev = new float[index1StatsMap.size()][];
-        for (int i = 0; i < meanStDev.length; ++i) {
-            meanStDev[i] = new float[2];
+        if (index1StatsMap.size() > 1) {
+            // make corrections for cost between different edges            
+            correctCostsUsingMaxSigma(index1StatsMap, contours1Lists);            
         }
-        float[] scales = new float[meanStDev.length];
-        float[] costs = new float[meanStDev.length];
-        List<List<FeatureComparisonStat>> fcs = new ArrayList<List<FeatureComparisonStat>>();
         
-        float minStDev = Float.MAX_VALUE;
-        int minStDevIdx = -1;
+        TreeMap<Double, List<IntensityFeatureComparisonStats>> bestMatches = 
+            findBestMatchesUsingBipartite(index1StatsMap, 
+            contours1Lists.size(), contours2Lists.size());
+
+        int nMaxMatchable = 2 * Math.max(contours1Lists.size(), contours2Lists.size());
+     
+        Map<Integer, IntensityFeatureComparisonStats> index1Map = new
+            HashMap<Integer, IntensityFeatureComparisonStats>();
+            
+        Map<PairInt, PairFloat> indexesDiffTheta = new HashMap<PairInt, PairFloat>();
+        
+        /* calculate the highest number of similar transformations and the
+        lowest cost from those.  store nSimilar, indexes, cost for each iteration*/
+        int[] nSimilarSummary = new int[nMaxMatchable];
+        Integer[][] indexesSummary = new Integer[nMaxMatchable][];
+        double[] costsSummary = new double[nMaxMatchable];
+        int[] mainIndexSummary = new int[nMaxMatchable];
 
         int count = 0;
-        for (Entry<Integer, IntensityFeatureComparisonStats> entry : index1StatsMap.entrySet()) {
+        
+        for (Map.Entry<Double, List<IntensityFeatureComparisonStats>> entry : bestMatches.entrySet()) {
 
-            IntensityFeatureComparisonStats stats = entry.getValue();
-
-            List<FeatureComparisonStat> list = stats.getComparisonStats();
-            float[] values = new float[list.size()];
-            for (int i = 0; i < list.size(); ++i) {
-                FeatureComparisonStat stat = list.get(i);
-                float diff = AngleUtil.getAngleDifference(
-                    stat.getImg1PointRotInDegrees(),
-                    stat.getImg2PointRotInDegrees());
-                values[i] = diff;
-            }
-            float[] msv = MiscMath.getAvgAndStDev(values);
-            if (msv[1] > 20) {
-                continue;
-            }
+            Double adjustedCost = entry.getKey();
             
-            meanStDev[count] = MiscMath.getAvgAndStDev(values);
+            List<IntensityFeatureComparisonStats> stats = entry.getValue();
             
-            scales[count] = (float)stats.getScale();
-            costs[count] = (float)stats.getCost();
-            fcs.add(list);
-
-            if (meanStDev[count][1] < minStDev) {
-                minStDev = meanStDev[count][1];
-                minStDevIdx = count;
-            } else if (meanStDev[count][1] == minStDev) {
-                if (costs[count] < costs[minStDevIdx]) {
-                    minStDev = meanStDev[count][1];
-                    minStDevIdx = count;
+            for (IntensityFeatureComparisonStats stat : stats) {
+                int idx1 = stat.getIndex1();
+                int idx2 = stat.getIndex2();
+                assert(index1Map.get(Integer.valueOf(idx1)) == null);
+                index1Map.put(Integer.valueOf(idx1), stat);
+                PairInt p = new PairInt(idx1, idx2);
+                PairFloat diffThetaMnStdv = indexesDiffTheta.get(p);
+                if (diffThetaMnStdv == null) {
+                    float[] diffThetas = new float[stat.getComparisonStats().size()];
+                    for (int i = 0; i < stat.getComparisonStats().size(); ++i) {
+                        FeatureComparisonStat fcs = stat.getComparisonStats().get(i);                
+                        float diff = AngleUtil.getAngleDifference(
+                           fcs.getImg1PointRotInDegrees(), fcs.getImg2PointRotInDegrees());
+                        diffThetas[i] = diff;
+                    } 
+                    float[] msv = MiscMath.getAvgAndStDev(diffThetas);
+                    
+                    // TODO: consider whether need to exclude points further from
+                    // the mean than a difference in thetaDiff of 20
+                    // unless edits have changed it, this was run previously,
+                    // so what is present here should already be consistent
+                    // diffThetas:
+                    //removeDiscrepantThetaDiff(stat.getComparisonStats());
+                    
+                    diffThetaMnStdv = new PairFloat(msv[0], msv[1]);
                 }
-            }
-            
-            count++;
-        }
-        
-        /*
-        have removed the sets whose diff in diff rot between points is larger
-        than 20,
-        so now need to exclude outlier scales.
-        */
-        
-        float[] scaleMeanStDev = MiscMath.getAvgAndStDev(scales, count);
-
-        boolean[] exclude = new boolean[count];
                 
-        for (int i = 0; i < count; ++i) {
-            
-            float scl = scales[i];
-            float diff = Math.abs(scl - scaleMeanStDev[0]);
-            if (diff > 2*scaleMeanStDev[1]) {
-                exclude[i] = true;
+                double scale = stat.getScale();
+                
+                Set<Integer> similarParamsIndexes1 = new HashSet<Integer>();
+                similarParamsIndexes1.add(Integer.valueOf(idx1));
+                
+                // count the number of solutions similar in diffTheta and scale
+                for (Map.Entry<Double, List<IntensityFeatureComparisonStats>> entry2 : bestMatches.entrySet()) {
+                    Double adjustedCost2 = entry2.getKey();
+                    if (adjustedCost2.equals(adjustedCost)) {
+                        continue;
+                    }
+                    for (IntensityFeatureComparisonStats stat2 : entry2.getValue()) {
+                        int idx1P = stat2.getIndex1();
+                        int idx2P = stat2.getIndex2();
+                        // bipartite matching should have made unique idx1 already:
+                        assert(idx1 != idx1P);
+                        PairInt p2 = new PairInt(idx1P, idx2P);
+                        PairFloat diffThetaMnStdv2 = indexesDiffTheta.get(p2);
+                        if (diffThetaMnStdv2 == null) {
+                            float[] diffThetas = new float[stat2.getComparisonStats().size()];
+                            for (int i = 0; i < stat2.getComparisonStats().size(); ++i) {
+                                FeatureComparisonStat fcs = stat2.getComparisonStats().get(i);                
+                                float diff = AngleUtil.getAngleDifference(
+                                    fcs.getImg1PointRotInDegrees(), fcs.getImg2PointRotInDegrees());
+                                diffThetas[i] = diff;
+                            }
+                            float[] msv = MiscMath.getAvgAndStDev(diffThetas);
+                            diffThetaMnStdv2 = new PairFloat(msv[0], msv[1]);
+                        }
+                        
+                        //--- compare diffTheta and scale with ---
+                        if ((Math.abs(diffThetaMnStdv.getX() - diffThetaMnStdv2.getX()) < 10)
+                            && (Math.abs(scale - stat2.getScale()) < 0.1)) {
+                            similarParamsIndexes1.add(Integer.valueOf(idx1P));
+                        }
+                    }
+                }
+                
+                // store for sort and combine
+                nSimilarSummary[count] = similarParamsIndexes1.size();
+                indexesSummary[count] = similarParamsIndexes1.toArray(new Integer[similarParamsIndexes1.size()]);
+                costsSummary[count] = adjustedCost;
+                mainIndexSummary[count] = idx1;
+                
+                count++;
             }
         }
         
+        nSimilarSummary = Arrays.copyOf(nSimilarSummary, count);
+        indexesSummary = Arrays.copyOf(indexesSummary, count);
+        costsSummary = Arrays.copyOf(costsSummary, count);
+        mainIndexSummary = Arrays.copyOf(mainIndexSummary, count);
+        
+        // sort to prefer the solution w/ largest number of similar solutions:
+        //MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary, indexesSummary, mainIndexSummary);
+
+        // OR sort to refer the solution w/ best cost and any it is similar to:
+        //--- these are still sorted by costs already, so no need to resort again ---
+        // MultiArrayMergeSort.sortBy1stAscThen2ndDesc(costsSummary, nSimilarSummary, indexesSummary, mainIndexSummary, 0, costsSummary.length - 1);
+
+        Integer[] indexes = indexesSummary[0];
+       
         List<FeatureComparisonStat> output = new ArrayList<FeatureComparisonStat>();
-        for (int i = 0; i < count; ++i) {
-            if (!exclude[i]) {
-                output.addAll(fcs.get(i));
-            }
+        for (Integer index1 : indexes) {
+            IntensityFeatureComparisonStats stats = index1Map.get(index1);
+            output.addAll(stats.getComparisonStats());
         }
         return output;
     }
-
+    
     private List<FeatureComparisonStat> processSingleSolutionsIfNoBest(
         GreyscaleImage img1, GreyscaleImage img2,
         Map<PairInt, CSSContourMatcherWrapper> singleSolnMap,
@@ -995,6 +1078,132 @@ compStats.size()));
             int idx = remove.get(i);
             compStats.remove(idx);
         }
+    }
+
+    private void correctCostsUsingMaxSigma(
+        Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
+            index1StatsMap, List<List<CurvatureScaleSpaceContour>> contours1Lists) {
+                
+        float maxPeakSigma = Float.MIN_VALUE;
+        
+        Map<Integer, Float> index1PeakSigma = new HashMap<Integer, Float>();
+        
+        for (Entry<Integer, FixedSizeSortedVector<
+            IntensityFeatureComparisonStats>> entry : index1StatsMap.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            
+            List<CurvatureScaleSpaceContour> contours = contours1Lists.get(index1.intValue());
+           
+            // contours are ordered, so just need the first.
+            if (contours.isEmpty()) {
+                continue;
+            }
+            float peakSigma = contours.get(0).getPeakSigma();
+            if (peakSigma > maxPeakSigma) {
+                maxPeakSigma = peakSigma;
+            }
+            // contour 6 is not a strong blob by has maxsigma=166 which is >4*expected from 0
+            index1PeakSigma.put(index1, Float.valueOf(peakSigma));
+        }
+        
+        for (Entry<Integer, Float> entry : index1PeakSigma.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            double penalty = maxPeakSigma - entry.getValue().floatValue();
+            
+            FixedSizeSortedVector<IntensityFeatureComparisonStats> index1Stats =
+                index1StatsMap.get(index1);
+            
+            for (int i = 0; i < index1Stats.getNumberOfItems(); ++i) {
+                
+                IntensityFeatureComparisonStats stats = index1Stats.getArray()[i];
+                                
+                stats.setAdjustedCost(stats.getCost() + penalty);
+            }
+        }
+    }
+
+    private TreeMap<Double, List<IntensityFeatureComparisonStats>> 
+    findBestMatchesUsingBipartite(Map<Integer, 
+        FixedSizeSortedVector<IntensityFeatureComparisonStats>> index1StatsMap,
+        int n1, int n2) {
+        
+        TreeMap<Double, List<IntensityFeatureComparisonStats>> matched = new
+            TreeMap<Double, List<IntensityFeatureComparisonStats>>();
+        
+        int maxMatchable = 2 * Math.max(n1, n2);
+                
+        double[] costs = new double[maxMatchable];
+        int[] idx1s = new int[maxMatchable];
+        int[] idx2s = new int[maxMatchable];
+        IntensityFeatureComparisonStats[] ics = new IntensityFeatureComparisonStats[maxMatchable];
+        
+        int count = 0;
+        for (Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>>
+            entry : index1StatsMap.entrySet()) {
+            Integer index1 = entry.getKey();            
+            for (IntensityFeatureComparisonStats stats : entry.getValue().getArray()) {
+                if (stats == null) {
+                    continue;
+                }
+                assert(index1.intValue() == stats.getIndex1());
+                costs[count] = stats.getAdjustedCost();
+                idx1s[count] = stats.getIndex1();
+                idx2s[count] = stats.getIndex2();
+                ics[count] = stats;
+                count++;
+            }
+        }
+        costs = Arrays.copyOf(costs, count);
+        idx1s = Arrays.copyOf(idx1s, count);
+        idx2s = Arrays.copyOf(idx2s, count);
+        ics = Arrays.copyOf(ics, count);
+        int[] lookupIndexes = new int[count];
+        for (int i = 0; i < count; ++i) {
+            lookupIndexes[i] = i;
+        }
+        
+        MultiArrayMergeSort.sortByDecr(costs, lookupIndexes);
+        // best answers at highest indexes
+        
+        Set<Integer> chosen1 = new HashSet<Integer>();
+        Set<Integer> chosen2 = new HashSet<Integer>();
+        
+        for (int i = (count - 1); i > -1; --i) {
+            
+            int idx0 = lookupIndexes[i];
+            
+            Integer index1 = Integer.valueOf(idx1s[idx0]);
+            Integer index2 = Integer.valueOf(idx2s[idx0]);
+            
+            if (chosen1.contains(index1)) {
+                continue;
+            }
+            if (chosen2.contains(index2)) {
+                continue;
+            }
+            
+            Double cost = Double.valueOf(costs[i]);
+            IntensityFeatureComparisonStats ifcs = ics[idx0];
+                       
+            assert(Math.abs(cost.doubleValue() - ifcs.getAdjustedCost()) < 0.01);
+            
+            /*
+            TreeMap<Double, List<IntensityFeatureComparisonStats>> matched
+            */
+            List<IntensityFeatureComparisonStats> ifcsList = matched.get(cost);
+            if (ifcsList == null) {
+                ifcsList = new ArrayList<IntensityFeatureComparisonStats>();
+                matched.put(cost, ifcsList);
+            }
+            ifcsList.add(ifcs);
+                
+            chosen1.add(index1);
+            chosen2.add(index2);
+        }
+        
+        return matched;
     }
 
 }

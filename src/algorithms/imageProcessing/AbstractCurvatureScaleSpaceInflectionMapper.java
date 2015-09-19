@@ -419,7 +419,7 @@ try {
         from the tallest first peak to all other tallest first peaks to the costs.
         */
         if (bestI2I1.size() > 1) {
-            adjustCostToTallesContourPeak1(bestMatches1, bestI2I1, bestCosts, i2CostMap);
+            adjustCostToTallestContourPeak1(bestMatches1, bestI2I1, bestCosts, i2CostMap);
         }
 
         /*
@@ -484,6 +484,11 @@ try {
         if (count == 0) {
             return;
         }
+        
+        nSimilarSummary = Arrays.copyOf(nSimilarSummary, count);
+        indexesSummary = Arrays.copyOf(indexesSummary, count);
+        costsSummary = Arrays.copyOf(costsSummary, count);
+        mainIndexSummary = Arrays.copyOf(mainIndexSummary, count);
 
         //MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary, indexesSummary, mainIndexSummary);
 
@@ -955,7 +960,7 @@ try {
         }
     }
 
-    private float findMapSigmaOfFirstPeaks(
+    private float findMaxSigmaOfFirstPeaks(
         Map<Integer, List<CurvatureScaleSpaceContour>> bestMatches1) {
 
         float maxPeakSigma = Float.MIN_VALUE;
@@ -976,12 +981,12 @@ try {
         return maxPeakSigma;
     }
 
-    private void adjustCostToTallesContourPeak1(
+    private void adjustCostToTallestContourPeak1(
         Map<Integer, List<CurvatureScaleSpaceContour>> bestMatches1,
         Map<Integer, Integer> bestI2I1, TreeMap<Double, Set<Integer>> bestCosts,
         Map<Integer, Double> i2CostMap) {
 
-        float maxPeakSigma = findMapSigmaOfFirstPeaks(bestMatches1);
+        float maxPeakSigma = findMaxSigmaOfFirstPeaks(bestMatches1);
 
         TreeMap<Double, Set<Integer>> bestCostsUpdated = new TreeMap<Double, Set<Integer>>();
 

@@ -19,7 +19,11 @@ public class IntensityFeatureComparisonStatsTest extends TestCase {
         FixedSizeSortedVector<IntensityFeatureComparisonStats> vec = new 
             FixedSizeSortedVector<>(2, IntensityFeatureComparisonStats.class);
         
-        IntensityFeatureComparisonStats cStats0 = new IntensityFeatureComparisonStats(1.0, 1.0);
+        double cst1 = 1.0;
+        double scl1 = 1.0;
+        
+        IntensityFeatureComparisonStats cStats0 = new IntensityFeatureComparisonStats(
+            0, 0, 1.0, 1.0);
         List<FeatureComparisonStat> statList0 = new ArrayList<FeatureComparisonStat>();
         FeatureComparisonStat c0 = new FeatureComparisonStat();
         c0.setSumIntensitySqDiff(10);
@@ -27,7 +31,8 @@ public class IntensityFeatureComparisonStatsTest extends TestCase {
         statList0.add(c0);
         cStats0.addAll(statList0);
         
-        IntensityFeatureComparisonStats cStats1 = new IntensityFeatureComparisonStats(1.0, 1.0);
+        IntensityFeatureComparisonStats cStats1 = new IntensityFeatureComparisonStats(
+            1, 1, 1.0, 1.0);
         List<FeatureComparisonStat> statList1 = new ArrayList<FeatureComparisonStat>();
         FeatureComparisonStat c1 = new FeatureComparisonStat();
         c1.setSumIntensitySqDiff(100);
@@ -35,7 +40,8 @@ public class IntensityFeatureComparisonStatsTest extends TestCase {
         statList1.add(c1);
         cStats1.addAll(statList1);
         
-        IntensityFeatureComparisonStats cStats2 = new IntensityFeatureComparisonStats(1.0, 1.0);
+        IntensityFeatureComparisonStats cStats2 = new IntensityFeatureComparisonStats(
+            2, 2, 1.0, 1.0);
         List<FeatureComparisonStat> statList2 = new ArrayList<FeatureComparisonStat>();
         FeatureComparisonStat c2 = new FeatureComparisonStat();
         c2.setSumIntensitySqDiff(50);

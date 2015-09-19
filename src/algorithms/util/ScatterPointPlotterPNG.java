@@ -322,6 +322,8 @@ public class ScatterPointPlotterPNG {
     
     private static class LabeledXYDataset extends AbstractXYDataset {
 
+        protected static final long serialVersionUID = 1111122222;
+        
         private List<Number> x = new ArrayList<Number>();
         private List<Number> y = new ArrayList<Number>();
         private List<String> label = new ArrayList<String>();
@@ -341,6 +343,7 @@ public class ScatterPointPlotterPNG {
             return 1;
         }
 
+        @SuppressWarnings({"rawtypes"})
         @Override
         public Comparable getSeriesKey(int series) {
             return "labeled";

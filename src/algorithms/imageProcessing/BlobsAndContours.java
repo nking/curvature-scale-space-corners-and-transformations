@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -10,6 +11,7 @@ import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,10 @@ public class BlobsAndContours {
 
     protected final boolean segmentedToLineDrawing;
     
+    protected final GreyscaleImage imgGrey;
+    
+    protected final GreyscaleImage imgSeg;
+    
     private boolean debug = false;
 
     private String debugTag = "";
@@ -49,15 +55,18 @@ public class BlobsAndContours {
      * constructor, does all the work of extracting blobs, perimeter, and
      * scale space image contours.
      *
-     * @param img
+     * @param imgGrey
+     * @param imgSeg
      * @param smallestGroupLimit
      * @param largestGroupLimit
+     * @param type
      * @param segmentedToLineDrawing true if image contains mostly white
      * pixels and black lines for object contours (this is the result of
      * segmentation using adaptive mean thresholding, for example)
      */
-    public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
-        int largestGroupLimit, SegmentedImageHelper.SegmentationType type,
+    public BlobsAndContours(GreyscaleImage imgGrey, GreyscaleImage imgSeg,
+        int smallestGroupLimit, int largestGroupLimit, 
+        SegmentedImageHelper.SegmentationType type, 
         boolean segmentedToLineDrawing) {
 
         blobs = new ArrayList<Set<PairInt>>();
@@ -73,24 +82,32 @@ public class BlobsAndContours {
         this.largestGroupLimit = largestGroupLimit;
         
         this.type = type;
+        
+        this.imgGrey = imgGrey;
+        
+        this.imgSeg = imgSeg;
             
-        init(img);
+        init();
     }
 
     /**
      * constructor for using in debug mode, does all the work of extracting
      * blobs, perimeter, and scale space image contours.
      *
-     * @param img
+     * @param imgGrey
+     * @param imgSeg
      * @param smallestGroupLimit
      * @param largestGroupLimit
      * segmentedToLineDrawing true if image contains mostly white
      * pixels and black lines for object contours (this is the result of
      * segmentation using adaptive mean thresholding, for example)
+     * @param type
+     * @param segmentedToLineDrawing
      * @param debugTag
      */
-    public BlobsAndContours(GreyscaleImage img, int smallestGroupLimit,
-        int largestGroupLimit, SegmentedImageHelper.SegmentationType type,
+    public BlobsAndContours(GreyscaleImage imgGrey, GreyscaleImage imgSeg,
+        int smallestGroupLimit, int largestGroupLimit, 
+        SegmentedImageHelper.SegmentationType type,
         boolean segmentedToLineDrawing, String debugTag) {
 
         blobs = new ArrayList<Set<PairInt>>();
@@ -111,17 +128,21 @@ public class BlobsAndContours {
         
         this.largestGroupLimit = largestGroupLimit;
         
-        init(img);
+        this.imgGrey = imgGrey;
+        
+        this.imgSeg = imgSeg;
+            
+        init();
     }
 
-    protected void init(GreyscaleImage img) {
+    protected void init() {
 
-        extractBlobsFromSegmentedImage(img, blobs, smallestGroupLimit,
+        extractBlobsFromSegmentedImage(imgSeg, blobs, smallestGroupLimit,
             largestGroupLimit);
 
         boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        extractBoundsOfBlobs(img, blobs, blobOrderedPerimeters,
+        extractBoundsOfBlobs(imgGrey, imgSeg, blobs, blobOrderedPerimeters,
             discardWhenCavityIsSmallerThanBorder);
 
         populateContours(blobOrderedPerimeters, contours);
@@ -208,12 +229,13 @@ public class BlobsAndContours {
     /**
      * given the list of blob points, extract the ordered boundaries of them
      * and remove any blobs for which the bounds were not extractable.
+     * @param greyImg
      * @param segImg
      * @param inOutBlobs
      * @param outputBounds
      * @param discardWhenCavityIsSmallerThanBorder
      */
-    protected void extractBoundsOfBlobs(final GreyscaleImage segImg,
+    protected void extractBoundsOfBlobs(final GreyscaleImage greyImg, final GreyscaleImage segImg,
         final List<Set<PairInt>> inOutBlobs,
         final List<PairIntArray> outputBounds,
         boolean discardWhenCavityIsSmallerThanBorder) {
@@ -243,32 +265,34 @@ public class BlobsAndContours {
             if ((closedEdge != null) &&
                 (curveHelper.isAdjacent(closedEdge, 0, closedEdge.getN() - 1))) {
 
-                /*
-                int nChanged = 0;
+                if (false && type.equals(SegmentationType.BINARY)) {
+                
+                    int nChanged = 0;
 
-                adjusting the edges using the unsegmented image did not work
-                as well on some images, so have disable this block.
-                keeping it until can review if it helps with some types of
-                segmentation.
+                    //adjusting the edges using the unsegmented image did not work
+                    //as well on some images, so have disable this block.
+                    //keeping it until can review if it helps with some types of
+                    //segmentation.
 
-                if (blobIsDarkerThanExterior(blob, closedEdge, img)) {
-                    nChanged = curveHelper.adjustEdgesTowardsBrighterPixels(
-                        closedEdge, img);
+                    if (blobIsDarkerThanExterior(blob, closedEdge, greyImg)) {
+                        nChanged = curveHelper.adjustEdgesTowardsBrighterPixels(
+                            closedEdge, greyImg);
 
-                } else {
-                    nChanged = curveHelper.adjustEdgesTowardsDarkerPixels(
-                        closedEdge, img);
+                    } else {
+                        nChanged = curveHelper.adjustEdgesTowardsDarkerPixels(
+                            closedEdge, greyImg);
+                    }
+
+                    if (nChanged > 0) {
+
+                        //TODO: this method needs to be revisited...
+                        //curveHelper.removeRedundantPoints(closedEdge);
+
+                        curveHelper.pruneAdjacentNeighborsTo2(closedEdge);
+
+                        curveHelper.correctCheckeredSegments(closedEdge);
+                    }
                 }
-
-                if (nChanged > 0) {
-
-                    //TODO: this method needs to be revisited...
-                    //curveHelper.removeRedundantPoints(closedEdge);
-
-                    curveHelper.pruneAdjacentNeighborsTo2(closedEdge);
-
-                    curveHelper.correctCheckeredSegments(closedEdge);
-                }*/
 
                 if (debug) {
                     Image img0 = ImageIOHelper.convertImage(segImg);
@@ -307,6 +331,8 @@ public class BlobsAndContours {
             lengths[i] = outputBounds.get(i).getN();
         }
         MultiArrayMergeSort.sortByDecr(lengths, indexes);
+        
+//TODO: filter by area...cannot use 
 
         List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
         List<PairIntArray> curves = new ArrayList<PairIntArray>();
@@ -561,6 +587,57 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
             int idx = rm.get(i).intValue();
             outputBlobs.remove(idx);
         }
+    }
+
+    private boolean blobIsDarkerThanExterior(Set<PairInt> blob, 
+        PairIntArray closedEdge, GreyscaleImage greyImg) {
+        
+        int w = greyImg.getWidth();
+        int h = greyImg.getHeight();
+        
+        long sumInside = 0;
+        
+        long sumOutside = 0;
+        
+        Set<PairInt> counted = new HashSet<PairInt>();
+        
+        // looking at a band of pixels within a distance of 2 pixels
+        // on both sides of the edge.
+        
+        for (int i = 0; i < closedEdge.getN(); ++i) {
+            int x = closedEdge.getX(i);
+            int y = closedEdge.getY(i);
+            
+            for (int dx = -2; dx <= 2; ++dx) {
+                int x2 = x + dx;
+                if ((x2 < 0) || (x2 > (w - 1))) {
+                    continue;
+                }
+                for (int dy = -2; dy <= 2; ++dy) {
+                    int y2 = y + dy;
+                    if ((y2 < 0) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (counted.contains(p2)) {
+                        continue;
+                    }
+                    int v = greyImg.getValue(x2, y2);
+                    if (blob.contains(p2)) {
+                        sumInside += v;
+                    } else {
+                        sumOutside += v;
+                    }
+                    counted.add(p2);
+                }
+            }
+        }
+        
+        if (sumInside < sumOutside) {
+            return true;
+        }
+        
+        return false;
     }
 
 }
