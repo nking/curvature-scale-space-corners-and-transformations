@@ -1067,16 +1067,14 @@ compStats.size()));
                 continue;
             }
 
-            //TODO: combined stat needs to be recalculated so that can compare
-            // different matchings
-
-            compStatMap.put(p, compStats);
-
+            
             double combStat = calculateCombinedIntensityStat(compStats);
 
             int cIdx1 = sIndexes1.get(Integer.valueOf(idx1)).intValue();
             int cIdx2 = sIndexes2.get(Integer.valueOf(idx2)).intValue();
             cost[cIdx1][cIdx2] = (float)combStat;
+            
+            compStatMap.put(new PairInt(cIdx1, cIdx2), compStats);
 
             nCS++;
         }
