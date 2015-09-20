@@ -15,8 +15,8 @@ import java.util.Set;
  * @author nichole
  */
 public class ButterflySectionFinder {
-
-     /**
+    
+    /**
      * Find sections of the closed curve that are two pixels wide and separate
      * loops in the curve:
      * <pre>
@@ -32,10 +32,48 @@ public class ButterflySectionFinder {
      * a curve where the curve closes, but is still connected.
      */
     public List<Set<PairInt>> findButterflySections(PairIntArray closedCurve) {
+        
+        Set<PairInt> points = Misc.convert(closedCurve);
+        
+        List<Set<PairInt>> sections = findButterflySectionsLarge(closedCurve, 
+            points);
+
+        List<Set<PairInt>> sectionsSmall = findButterflySectionsSmall(
+            closedCurve, points);
+        
+        if (sections == null && sectionsSmall == null) {
+            return null;
+        } else if (sections == null && sectionsSmall != null) {
+            return sectionsSmall;
+        } else if (sections != null && sectionsSmall == null) {
+            return sections;
+        } else if (sections != null && sectionsSmall != null) {
+            sections.addAll(sectionsSmall);
+        }
+        
+        return sections;
+    }
+
+     /**
+     * Find sections of the closed curve that are two pixels wide and separate
+     * loops in the curve:
+     * <pre>
+     * for example:         #  #
+     *    #  #  #         #     #
+     *  #         #  #  #      #
+     *   #   #  # #  #  #  #  #
+     * </pre>
+     * These sections are thinned to width of '1' by the line thinner,
+     * so need to be restored afterwards or prevented from being removed.
+     * @param closedCurve
+     * @param points
+     * @return list of points that are part of the 2 pixel width patterns in
+     * a curve where the curve closes, but is still connected.
+     */
+    protected List<Set<PairInt>> findButterflySectionsLarge(PairIntArray 
+        closedCurve, Set<PairInt> points) {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        Set<PairInt> points = Misc.convert(closedCurve);
 
         List<LinkedList<Segment>> candidateSections = new ArrayList<LinkedList<Segment>>();
 
@@ -222,6 +260,12 @@ public class ButterflySectionFinder {
             # # @ #
           - - # @ -
             # - - #
+        
+          #  
+            #
+              # # #
+        # # #
+              # # #
 
         For each segment group which has 2 matching endpoints, those should
         be stored as butterfly sections in a set.  Each one of those
@@ -231,6 +275,57 @@ public class ButterflySectionFinder {
         closed curve.
         */
 
+    }
+    
+    protected List<Set<PairInt>> findButterflySectionsSmall(PairIntArray 
+        closedCurve, Set<PairInt> points) {
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();    
+
+        for (int i = 0; i < closedCurve.getN(); ++i) {
+
+            int x = closedCurve.getX(i);
+            int y = closedCurve.getY(i);
+            
+            Set<PairInt> neighbors = curveHelper.findNeighbors(x, y, points);
+
+            // scanning for segments
+            if (neighbors.size() != 3) {
+                continue;
+            }
+                            
+            Segment segment = checkZigZagSegmentPattern(x, y, points);
+
+            if (segment == null) {
+                continue;
+            }
+
+            /*
+            Each of the 4 segment points needs at least one neighbor that is 
+            not one of the 4 points in the zig zap and all of their neighbors 
+            cannot be adjacent to any of the other neighbors.
+            */
+          
+            Set<PairInt> endPoints = checkForZigZagEndPoints(points, segment);
+                
+            if (endPoints == null || endPoints.isEmpty()) {
+                continue;
+            }
+            
+            // add all section and endpoints to a set to add to output
+            Set<PairInt> allPoints = new HashSet<PairInt>();
+            allPoints.addAll(endPoints);
+            allPoints.add(segment.p0);
+            allPoints.add(segment.p1);
+            allPoints.add(segment.p2);
+            allPoints.add(segment.p3);
+
+            output.add(allPoints);
+        }
+
+        return output;
     }
 
     private Segment checkSegmentPatterns(final int x, final int y, 
@@ -945,6 +1040,64 @@ public class ButterflySectionFinder {
         
         return pattern;
     }
+
+    private Set<PairInt> checkForZigZagEndPoints(Set<PairInt> points, 
+        Segment segment) {
+        
+        /*Each of the 4 needs at least one neighbor that is not one of the 4
+        points in the zig zap and all of their neighbors cannot be adjacent
+        to any of the other neighbors.*/
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        List<Set<PairInt>> listOfNeighbors = new ArrayList<Set<PairInt>>();
+        Set<PairInt> segmentPoints = new HashSet<PairInt>();
+        segmentPoints.add(segment.p0);
+        segmentPoints.add(segment.p1);
+        segmentPoints.add(segment.p2);
+        segmentPoints.add(segment.p3);
+        for (PairInt p : segmentPoints) {
+            Set<PairInt> neighbors = curveHelper.findNeighbors(p.getX(), 
+                p.getY(), points);
+            neighbors.removeAll(segmentPoints);
+            if (neighbors.size() != 1) {
+                return null;
+            }
+            listOfNeighbors.add(neighbors);
+        }
+        // assert that each in list has no members adjacent to any other members
+        // TODO: could use a data structure that uses spatial indexing to make 
+        // this faster, but there are not very many points per 4 sets to compare...
+        for (int i = 0; i < listOfNeighbors.size(); ++i) {
+            Set<PairInt> setI = listOfNeighbors.get(i);
+            for (PairInt pI : setI) {
+                for (int j = (i + 1); j < listOfNeighbors.size(); ++j) {
+                    Set<PairInt> setJ = listOfNeighbors.get(j);
+                    for (PairInt pJ : setJ) {
+                        if (areAdjacent(pI, pJ)) {
+                            return null;
+                        }
+                    }
+                }
+            }
+        }
+        // if arrive here, all neighbor sets have at least one point and none
+        // are adjacent to points in a different set.
+        Set<PairInt> output = new HashSet<PairInt>();
+        for (Set<PairInt> set : listOfNeighbors) {
+            output.addAll(set);
+        }
+        return output;
+    }
+    
+    private boolean areAdjacent(PairInt p0, PairInt p1) {
+        int diffX = Math.abs(p0.getX() - p1.getX());
+        int diffY = Math.abs(p0.getY() - p1.getY());
+        if ((diffX < 2) && (diffY < 2)) {
+            return true;
+        }
+        return false;
+    }
     
     /*
     may change these classes to have ordered points or to specify the
@@ -952,7 +1105,7 @@ public class ButterflySectionFinder {
     below.
     */
     public static class Segment {
-        // the 4 points matching the segment
+        // the 4 points matching the segment as 0, 1, 2, 3 in the subclasses
         PairInt p0;
         PairInt p1;
         PairInt p2;
@@ -1001,6 +1154,16 @@ public class ButterflySectionFinder {
           -  -  3  0  -    0
              -  -          1
           3  2  1  0 -1
+        */
+    }
+    public static class ZigZagSegment extends Segment {
+        /*
+                   2  -      -2
+                   -  1      -1
+                   0  -       0
+                   -  3       1
+
+         -3 -2 -1  0  1
         */
     }
 
@@ -1075,6 +1238,32 @@ public class ButterflySectionFinder {
         return pr;
     }
 
+    protected Pattern getZigZagSegmentPattern() {
+
+        /*
+                   2  -      -2
+                   -  1      -1
+                   0  -       0
+                   -  3       1
+                       
+         -3 -2 -1  0  1
+        
+        Each of the 4 needs at least one neighbor that is not one of the 4
+        points in the zig zap and all of their neighbors cannot be adjacent
+        to any of the other neighbors.
+        */
+        Pattern pr = new Pattern();
+        pr.ones = new HashSet<PairInt>();
+        pr.zeroes = new HashSet<PairInt>();
+
+        pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, -1));
+        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, -2));
+
+        pr.ones.add(new PairInt(0, -2));
+        pr.ones.add(new PairInt(1, 1)); pr.ones.add(new PairInt(1, -1));
+
+        return pr;
+    }
     
     private Segment checkVertSegmentPattern(int x, int y, Set<PairInt> neighbors) {
 
@@ -1205,6 +1394,55 @@ public class ButterflySectionFinder {
             segment.p1 = new PairInt(x + 1, y - 1);
             segment.p2 = new PairInt(x + 2, y - 1);
             segment.p3 = new PairInt(x + 1, y);
+            
+            return segment;
+        }
+        
+        return null;
+    }
+    
+    private Segment checkZigZagSegmentPattern(int x, int y, Set<PairInt> points) {
+
+        Pattern pattern = getZigZagSegmentPattern();
+        
+        boolean matchesPattern = matchesPattern(x, y, points, pattern);
+        
+        /*
+                   2  -      -2
+                   -  1      -1
+                   0  -       0
+                   -  3       1
+                       
+         -3 -2 -1  0  1
+        */
+        if (matchesPattern) {
+            ZigZagSegment segment = new ZigZagSegment();
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x + 1, y - 1);
+            segment.p2 = new PairInt(x, y - 2);
+            segment.p3 = new PairInt(x + 1, y + 1);
+            
+            return segment;
+        }
+        
+        swapXDirection(pattern);
+        
+        matchesPattern = matchesPattern(x, y, points, pattern);
+        
+        /*
+                -  2      -2
+                1  -      -1
+                -  0       0
+                3  -       1
+                       
+         -3 -2 -1  0  1
+        */
+        if (matchesPattern) {
+            ZigZagSegment segment = new ZigZagSegment();
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x - 1, y - 1);
+            segment.p2 = new PairInt(x, y - 2);
+            segment.p3 = new PairInt(x - 1, y + 1);
             
             return segment;
         }

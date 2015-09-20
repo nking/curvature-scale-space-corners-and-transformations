@@ -26,7 +26,7 @@ public class ButterflySectionFinderTest extends TestCase {
         PairIntArray closedCurve = Misc.deserializePairIntArray(filePath);
         
         Image img = new Image(512, 512);
-        MiscDebug.writeImage(closedCurve, img, 0, "butterfly");
+        MiscDebug.writeImage(closedCurve, img, 0, "_butterfly");
 
         assertNotNull(closedCurve);
         
@@ -55,4 +55,31 @@ public class ButterflySectionFinderTest extends TestCase {
         
     }
     
+    public void testFindButterflySections3() throws Exception {
+        
+        int w = 258;
+        int h = 187;
+        String fileName = "blob_butterfly_03.dat";
+
+        String filePath = ResourceFinder.findDirectory("testresources") + "/" + fileName;
+
+        PairIntArray closedCurve = Misc.deserializePairIntArray(filePath);
+        
+        Image img = new Image(w, h);
+        MiscDebug.writeImage(closedCurve, img, 0, "_butterfly3");
+
+        assertNotNull(closedCurve);
+        
+        assertTrue(closedCurve.getN() > 0);
+        
+        ButterflySectionFinder finder = new ButterflySectionFinder();
+        
+        List<Set<PairInt>> sections = finder.findButterflySections(closedCurve);
+        
+        assertTrue(sections.size() == 1);
+        
+        Set<PairInt> bPoints = sections.get(0);
+        
+        assertTrue(bPoints.size() == 8);
+    }
 }
