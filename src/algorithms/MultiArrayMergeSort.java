@@ -72,7 +72,6 @@ public class MultiArrayMergeSort {
         sortByYThenX(xy, 0, xy.getN() - 1);
     }
     
-    
     /**
      * sort so that a is decreasing in value for higher indexes and b is
      * is increasing in value for higher indexes for the same a.  swap
@@ -112,6 +111,38 @@ public class MultiArrayMergeSort {
         }
         
         sortBy1stDescThen2ndAsc(a, b, c, d, 0, a.length - 1);
+    }
+    
+    /**
+     * sort so that a is decreasing in value for higher indexes and b is
+     * is increasing in value for higher indexes for the same a.  swap
+     * operations for a and b logic are performed on c and d too.
+     * 
+     * @param a
+     * @param b
+     * @param c
+     */
+    public static void sortBy1stDescThen2ndAsc(int[] a, double[] b, int[] c) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (c == null) {
+            throw new IllegalArgumentException("c cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException(
+            "number of items in a must be the same as in b");
+        }
+        if (a.length != c.length) {
+            throw new IllegalArgumentException(
+            "number of items in a must be the same as in c");
+        }
+        
+        sortBy1stDescThen2ndAsc(a, b, c, 0, a.length - 1);
     }
     
     /**
@@ -449,6 +480,21 @@ public class MultiArrayMergeSort {
     }
     
     protected static void sortBy1stDescThen2ndAsc(int[] a, double[] b, 
+        int[] c, int idxLo, int idxHi) {
+        
+        if (idxLo < idxHi) {
+
+            int idxMid = (idxLo + idxHi) >> 1;
+            
+            sortBy1stDescThen2ndAsc(a, b, c, idxLo, idxMid);
+            
+            sortBy1stDescThen2ndAsc(a, b, c, idxMid + 1, idxHi);
+            
+            mergeBy1stDescThen2ndAsc(a, b, c, idxLo, idxMid, idxHi);
+        }
+    }
+    
+    protected static void sortBy1stDescThen2ndAsc(int[] a, double[] b, 
         Integer[][] c, int[] d, int idxLo, int idxHi) {
         
         if (idxLo < idxHi) {
@@ -549,6 +595,61 @@ public class MultiArrayMergeSort {
         
     }
 
+    private static void mergeBy1stDescThen2ndAsc(int[] a, double[] b, 
+        int[] c, int idxLo, int idxMid, int idxHi) {
+        
+        int[] aLeft = Arrays.copyOfRange(a, idxLo, idxMid + 2);
+        double[] bLeft = Arrays.copyOfRange(b, idxLo, idxMid + 2);
+        int[] cLeft = Arrays.copyOfRange(c, idxLo, idxMid + 2);
+        
+        int[] aRight = Arrays.copyOfRange(a, idxMid + 1, idxHi + 2);
+        double[] bRight = Arrays.copyOfRange(b, idxMid + 1, idxHi + 2);
+        int[] cRight = Arrays.copyOfRange(c, idxMid + 1, idxHi + 2);
+        
+        aLeft[aLeft.length - 1] = Integer.MIN_VALUE;
+        bLeft[bLeft.length - 1] = Double.MIN_VALUE;
+        cLeft[cLeft.length - 1] = Integer.MIN_VALUE;
+        
+        aRight[aRight.length - 1] = Integer.MIN_VALUE;
+        bRight[bRight.length - 1] = Double.MIN_VALUE;
+        cRight[cRight.length - 1] = Integer.MIN_VALUE;
+        
+        int leftPos = 0;
+        int rightPos = 0;
+
+        for (int k = idxLo; k <= idxHi; k++) {
+            int l = aLeft[leftPos];
+            int r = aRight[rightPos];
+            if (l > r) {
+                a[k] = aLeft[leftPos];
+                b[k] = bLeft[leftPos];
+                c[k] = cLeft[leftPos];
+                leftPos++;
+            } else if (l == r) {
+                // sort for ascending values of b
+                double l2 = bLeft[leftPos];
+                double r2 = bRight[rightPos];
+                if (l2 <= r2) {
+                    a[k] = aLeft[leftPos];
+                    b[k] = bLeft[leftPos];
+                    c[k] = cLeft[leftPos];
+                    leftPos++;
+                } else {
+                    a[k] = aRight[rightPos];
+                    b[k] = bRight[rightPos];
+                    c[k] = cRight[rightPos];
+                    rightPos++;
+                }
+            } else {
+                a[k] = aRight[rightPos];
+                b[k] = bRight[rightPos];
+                c[k] = cRight[rightPos];
+                rightPos++;
+            }
+        }
+        
+    }
+    
     private static void mergeBy1stAscThen2ndDesc(double[] a1, int[] a2, 
         Integer[][] a3, int[] a4, int idxLo, int idxMid, int idxHi) {
 

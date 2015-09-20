@@ -2,10 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -41,8 +39,16 @@ public class UntraversableLobeRemoverTest extends TestCase {
         closedCurve.remove(new PairInt(9, 3));
         closedCurve.remove(new PairInt(15, 2));
         
+        int nBefore = closedCurve.size();
+        
         UntraversableLobeRemover rm = new UntraversableLobeRemover();
         rm.applyFilter(closedCurve);
+        
+        int nAfter = closedCurve.size();
+        // TODO: assert size removed
+        // and that the points are all contiguous
+        assertTrue(nBefore - nAfter >= 9);
+        assertTrue(nAfter > 100);
                
         int w = 58;
         int h = 41;

@@ -2,12 +2,8 @@ package algorithms;
 
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -112,7 +108,7 @@ public class LongestPath {
         }
         if (!lastIsSrcOrDest) {
             //TODO: improve...
-            Logger.getLogger(this.getClass().getName()).info(
+            Logger.getLogger(this.getClass().getName()).fine(
             "WARNING: neither src nor dest nodes reached");
         }
 

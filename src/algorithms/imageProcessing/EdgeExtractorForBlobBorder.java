@@ -7,7 +7,6 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -167,13 +166,6 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
 (int)Math.round(xyCen[1]), nBorder, nCavity));
 
         // expecting nBorder to be < nCavity
-
-/*
-181,240
-*/
-if ((Math.abs(181 - xyCen[0]) < 2) && (Math.abs(240 - xyCen[1]) < 2)) {
-    int z = 1;
-}
 
         if (discardWhenCavityIsSmallerThanBorder && (nBorder > nCavity)) {
            

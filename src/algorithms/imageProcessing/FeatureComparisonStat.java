@@ -119,8 +119,29 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
             return -1;
         }
         
+        boolean hasIntensity = Float.isFinite(sumIntensitySqDiff);
+        boolean hasTheta = Float.isFinite(sumThetaSqDiff);
+        boolean hasGradient = Float.isFinite(sumGradientSqDiff);
+        
+        if (hasIntensity && !hasTheta && !hasGradient) {
+            return compareToUsingIntensity(other);
+        }
+        
         throw new UnsupportedOperationException("not yet implemented");
         
+    }
+    
+    public int compareToUsingIntensity(FeatureComparisonStat other) {
+        
+        // prefer smaller intensities
+        
+        if (sumIntensitySqDiff < other.sumIntensitySqDiff) {
+            return -1;
+        } else if (sumIntensitySqDiff > other.sumIntensitySqDiff) {
+            return 1;
+        }
+        
+        return 0;
     }
 
     /**

@@ -255,7 +255,7 @@ public class BlobsAndContours {
             EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
 
             if (debug) {
-                extractor.setToDebug();
+                //extractor.setToDebug();
             }
 
             PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(

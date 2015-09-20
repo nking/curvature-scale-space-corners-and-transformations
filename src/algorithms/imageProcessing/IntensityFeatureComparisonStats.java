@@ -7,7 +7,8 @@ import java.util.List;
  *
  * @author nichole
  */
-public class IntensityFeatureComparisonStats implements Comparable<IntensityFeatureComparisonStats> {
+public class IntensityFeatureComparisonStats implements 
+    Comparable<IntensityFeatureComparisonStats> {
     
     private final double cost;
     
@@ -42,11 +43,16 @@ public class IntensityFeatureComparisonStats implements Comparable<IntensityFeat
     @Override
     public int compareTo(IntensityFeatureComparisonStats other) {
         
-        //int comb0 = compareByCombinedIntStat(other);
+        boolean compareByCost = decideByCost(other);
         
-        int comb1 = compareByCost(other);
-        
-        return comb1;
+        if (compareByCost) {
+            
+            return compareByCost(other);
+            
+        } else {
+            
+            return compareByCombinedIntStat(other);
+        }
     }
     
     public int compareByCombinedIntStat(IntensityFeatureComparisonStats other) {
@@ -129,5 +135,14 @@ public class IntensityFeatureComparisonStats implements Comparable<IntensityFeat
     
     public int getIndex2() {
         return idx2;
+    }
+
+    private boolean decideByCost(IntensityFeatureComparisonStats other) {
+        
+        if (other.getComparisonStats().size() > 2 && comparisonStats.size() > 2) {
+            return true;
+        }
+        
+        return false;        
     }
 }

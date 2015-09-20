@@ -205,7 +205,7 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 float frac = (float)nc1/(float)nc2;
                 boolean lgDiffN = ((nc1 > nc2) && frac > 2)
                     || ((nc1 < nc2) && frac < 0.5);
-
+                
                 if (lgDiffN) {                    
                     log.info(String.format(
                         "discarding a good match because frac of maxMatchable is low." 
@@ -214,7 +214,7 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                         mapper.getMatcher().getSolutionMatchedContours1().size()));
                     continue;
                 }
-
+                
                 //double combinedStat = calculateCombinedIntensityStat(compStats);
 
                 IntensityFeatureComparisonStats stats = new 
@@ -224,6 +224,7 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 stats.addAll(compStats);
                 
                 // bestStats keeps the top '2' smallest cost solutions added to it
+                // (though combinedStats are used when nMatched is 2 or less)
                 boolean added = bestStats.add(stats);
                 
                 if (added) {
@@ -527,11 +528,13 @@ redoStats = true;
             
             log.info("redone: " + printToString(compStats) + " combinedStat="
                 + calculateCombinedIntensityStat(compStats));
-            
+       
             removeDiscrepantThetaDiff(compStats);
 
             log.info("theta diff filtered: " + printToString(compStats) + " combinedStat="
                 + calculateCombinedIntensityStat(compStats));
+            
+            removeIntensityOutliers(compStats);
         }
 
         return compStats;
@@ -636,7 +639,9 @@ int z = 1;
 }
 }
 
-        removeOutliers(compStats);
+        removeOutliersByLocation(compStats);
+        
+        //removeOutliers(compStats);
 
         return compStats;
     }
@@ -682,6 +687,8 @@ int z = 1;
         float[] outputScaleRotTransXYStDev) {
 
         assert(compStats.isEmpty() == false);
+        
+        removeIntensityOutliers(compStats);
 
         int binFactor1 = img1Helper.getBinFactor(useBinned1);
 
@@ -732,6 +739,64 @@ int z = 1;
             outputScaleRotTransXYStDev);
 
         return params;
+    }
+    
+    /**
+     * NOTE: this should only be used on a small area because it assumes that
+     * rotation is negligible within region compared here.  It's assumed that
+     * it's used on a blob of the size within min and max ranges passed
+     * from BlobScaleFinderWrapper.
+     * 
+     * @param compStats 
+     */
+    protected void removeOutliersByLocation(List<FeatureComparisonStat> compStats) {
+        
+        if (compStats.size() < 2) {
+            return;
+        }
+        
+        /* calculating avg dx and dy from the smallest intensities
+        
+        sorting by ascending SSD of intensity and keeping top half of them.
+        then calculating avg dx and dy from those.
+        */
+        
+        int n = compStats.size();
+        int nHalf = n/2;
+        if (nHalf == 0) {
+            nHalf = 1;
+        }
+        FixedSizeSortedVector<FeatureComparisonStat> sorted 
+            = new FixedSizeSortedVector<FeatureComparisonStat>(nHalf,
+            FeatureComparisonStat.class);    
+        for (int i = 0; i < n; ++i) {
+            sorted.add(compStats.get(i));
+        }
+        double avgDX = 0;
+        double avgDY = 0;
+        for (int i = 0; i < sorted.getNumberOfItems(); ++i) {
+            FeatureComparisonStat stat = sorted.getArray()[i];
+            int diffX = stat.getImg1Point().getX() - stat.getImg2Point().getX();
+            int diffY = stat.getImg1Point().getY() - stat.getImg2Point().getY();
+            avgDX += diffX;
+            avgDY += diffY;
+        }
+        avgDX /= (double)sorted.getNumberOfItems();
+        avgDY /= (double)sorted.getNumberOfItems();
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        for (int i = 0; i < n; ++i) {
+            FeatureComparisonStat stat = compStats.get(i);
+            int diffX = stat.getImg1Point().getX() - stat.getImg2Point().getX();
+            int diffY = stat.getImg1Point().getY() - stat.getImg2Point().getY();
+            if ((Math.abs(diffX - avgDX) > 5) || (Math.abs(diffY - avgDY) > 5)) {
+                remove.add(Integer.valueOf(i));
+            }
+        }
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i).intValue();
+            compStats.remove(idx);
+        }
     }
 
     protected void removeOutliers(List<FeatureComparisonStat> compStats) {
@@ -807,7 +872,7 @@ int z = 1;
             // make corrections for cost between different edges            
             correctCostsUsingMaxSigma(index1StatsMap, contours1Lists);            
         }
-        
+       
         TreeMap<Double, List<IntensityFeatureComparisonStats>> bestMatches = 
             findBestMatchesUsingBipartite(index1StatsMap, 
             contours1Lists.size(), contours2Lists.size());
@@ -848,7 +913,7 @@ int z = 1;
                         float diff = AngleUtil.getAngleDifference(
                            fcs.getImg1PointRotInDegrees(), fcs.getImg2PointRotInDegrees());
                         diffThetas[i] = diff;
-                    } 
+                    }
                     float[] msv = MiscMath.getAvgAndStDev(diffThetas);
                     
                     // TODO: consider whether need to exclude points further from
@@ -1038,11 +1103,11 @@ compStats.size()));
 
         return null;
     }
-
-    private void removeDiscrepantThetaDiff(List<FeatureComparisonStat> compStats) {
+    
+    private float[] calculateThetaDiff(List<FeatureComparisonStat> compStats) {
         
         if (compStats == null || compStats.isEmpty()) {
-            return;
+            return null;
         }
         
         float[] values = new float[compStats.size()];
@@ -1053,6 +1118,18 @@ compStats.size()));
                 stat.getImg2PointRotInDegrees());
             values[i] = diff;
         }
+        
+        return values;
+    }
+
+    private void removeDiscrepantThetaDiff(List<FeatureComparisonStat> compStats) {
+        
+        if (compStats == null || compStats.isEmpty()) {
+            return;
+        }
+        
+        float[] values = calculateThetaDiff(compStats);
+        
         // 20 degree wide bins
         HistogramHolder hist = Histogram.createSimpleHistogram(20.f,
             values, Errors.populateYErrorsBySqrt(values));
@@ -1124,6 +1201,14 @@ compStats.size()));
         }
     }
 
+    /**
+     * bipartite matching after sorting by largest number of matches and lowest
+     * cost then greedily choosing from that order.
+     * @param index1StatsMap
+     * @param n1
+     * @param n2
+     * @return 
+     */
     private TreeMap<Double, List<IntensityFeatureComparisonStats>> 
     findBestMatchesUsingBipartite(Map<Integer, 
         FixedSizeSortedVector<IntensityFeatureComparisonStats>> index1StatsMap,
@@ -1137,6 +1222,7 @@ compStats.size()));
         double[] costs = new double[maxMatchable];
         int[] idx1s = new int[maxMatchable];
         int[] idx2s = new int[maxMatchable];
+        int[] nMatches = new int[maxMatchable];
         IntensityFeatureComparisonStats[] ics = new IntensityFeatureComparisonStats[maxMatchable];
         
         int count = 0;
@@ -1148,10 +1234,16 @@ compStats.size()));
                     continue;
                 }
                 assert(index1.intValue() == stats.getIndex1());
-                costs[count] = stats.getAdjustedCost();
+                
                 idx1s[count] = stats.getIndex1();
                 idx2s[count] = stats.getIndex2();
                 ics[count] = stats;
+                nMatches[count] = stats.getComparisonStats().size();
+                
+                //ssd of intensity is a better selector for one dataset. this may change w/ more testing
+                //costs[count] = stats.getAdjustedCost();
+                costs[count] = calculateCombinedIntensityStat(stats.getComparisonStats());
+                
                 count++;
             }
         }
@@ -1159,23 +1251,75 @@ compStats.size()));
         idx1s = Arrays.copyOf(idx1s, count);
         idx2s = Arrays.copyOf(idx2s, count);
         ics = Arrays.copyOf(ics, count);
+        nMatches = Arrays.copyOf(nMatches, count);
         int[] lookupIndexes = new int[count];
         for (int i = 0; i < count; ++i) {
             lookupIndexes[i] = i;
         }
         
-        MultiArrayMergeSort.sortByDecr(costs, lookupIndexes);
-        // best answers at highest indexes
+        //sort for the highest number of matches having the lowest costs.
+        // decr nMatches, asc costs
+        MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nMatches, costs, lookupIndexes);
+        
+        /*
+        adding another filter based upon the SSD of intensity features for the
+        top number of matches and lowest cost.
+        This uses the average and standard deviation from it if there are
+        more than 2 SSD stats and removes all other matches in the list
+        where the SSD is larger than 2 sigma or so from that difference.
+        It's not the most stable filter considering that some regions surrounding
+        a contour may have extremely high variability, but it should usually be
+        better to use this filter.
+        
+        Also, looks like it's necessary to filter for the difference in theta
+        when it's much larger than the top difference in theta.
+        */
+        float[] ssdMeanStDv = calcIntensitySSDMeanAndStDev(
+            ics[lookupIndexes[0]].getComparisonStats());
+        
+        float diffInThetaMean = calculateDiffThetaMean(ics[lookupIndexes[0]].getComparisonStats());
+        
+        int count2 = 0;
+        double[] costs2 = new double[count];
+        int[] idx1s2 = new int[count];
+        int[] idx2s2 = new int[count];
+        int[] nMatches2 = new int[count];
+        IntensityFeatureComparisonStats[] ics2 = new IntensityFeatureComparisonStats[count];
+        for (int i = 0; i < count; ++i) {
+            int idx0 = lookupIndexes[i];
+            IntensityFeatureComparisonStats ifcs = ics[idx0];
+            double ssd = calculateCombinedIntensityStat(ifcs.getComparisonStats());
+            
+            if (ssd > (ssdMeanStDv[0] + (2 * ssdMeanStDv[1]))) {
+                continue;
+            }
+                            
+            float dtm = calculateDiffThetaMean(ifcs.getComparisonStats());
+                
+            if (Math.abs(dtm - diffInThetaMean) > 20) {
+                continue;
+            }
+                
+            costs2[count2] = costs[i];
+            idx1s2[count2] = idx1s[idx0];
+            idx2s2[count2] = idx2s[idx0];
+            ics2[count2] = ics[idx0];
+            nMatches2[count2] = nMatches[i];
+            count2++;
+        }
+        costs2 = Arrays.copyOf(costs2, count2);
+        idx1s2 = Arrays.copyOf(idx1s2, count2);
+        idx2s2 = Arrays.copyOf(idx2s2, count2);
+        ics2 = Arrays.copyOf(ics2, count2);
+        nMatches2 = Arrays.copyOf(nMatches2, count2);
         
         Set<Integer> chosen1 = new HashSet<Integer>();
         Set<Integer> chosen2 = new HashSet<Integer>();
         
-        for (int i = (count - 1); i > -1; --i) {
-            
-            int idx0 = lookupIndexes[i];
-            
-            Integer index1 = Integer.valueOf(idx1s[idx0]);
-            Integer index2 = Integer.valueOf(idx2s[idx0]);
+        for (int i = 0; i < count2; ++i) {
+                        
+            Integer index1 = Integer.valueOf(idx1s2[i]);
+            Integer index2 = Integer.valueOf(idx2s2[i]);
             
             if (chosen1.contains(index1)) {
                 continue;
@@ -1184,10 +1328,11 @@ compStats.size()));
                 continue;
             }
             
-            Double cost = Double.valueOf(costs[i]);
-            IntensityFeatureComparisonStats ifcs = ics[idx0];
-                       
-            assert(Math.abs(cost.doubleValue() - ifcs.getAdjustedCost()) < 0.01);
+            Double cost = Double.valueOf(costs2[i]);
+            IntensityFeatureComparisonStats ifcs = ics2[i];
+              
+            // only true if still using costs rather than SSD:
+            //assert(Math.abs(cost.doubleValue() - ifcs.getAdjustedCost()) < 0.01);
             
             /*
             TreeMap<Double, List<IntensityFeatureComparisonStats>> matched
@@ -1204,6 +1349,64 @@ compStats.size()));
         }
         
         return matched;
+    }
+    
+    private float[] calcIntensitySSDMeanAndStDev(List<FeatureComparisonStat> compStats) {
+        
+        int n = compStats.size();
+        
+        float[] ssds = new float[n];
+        
+        for (int i = 0; i < n; ++i) {
+            FeatureComparisonStat stat = compStats.get(i);
+            ssds[i] = stat.getSumIntensitySqDiff();
+        }
+        
+        float[] meanStDv = MiscMath.getAvgAndStDev(ssds);
+        
+        return meanStDv;
+    }
+
+    private void removeIntensityOutliers(List<FeatureComparisonStat> compStats) {
+        
+        if (compStats.size() < 3) {
+            return;
+        }
+                
+        int n = compStats.size();
+        
+        float[] meanStDv = calcIntensitySSDMeanAndStDev(compStats);
+        
+        List<Integer> rm = new ArrayList<Integer>();
+        for (int i = 0; i < n; ++i) {
+            FeatureComparisonStat stat = compStats.get(i);
+            float diff = Math.abs(stat.getSumIntensitySqDiff() - meanStDv[0]);
+            if (diff > (1.25*meanStDv[1])) {
+                rm.add(Integer.valueOf(i));
+            }
+        }
+        
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int idx = rm.get(i).intValue();
+            compStats.remove(idx);
+        }
+    }
+
+    private float calculateDiffThetaMean(List<FeatureComparisonStat> comparisonStats) {
+        
+        float[] values = calculateThetaDiff(comparisonStats);
+        
+        if (values == null || values.length == 0) {
+            return Float.POSITIVE_INFINITY;
+        }
+
+        double sum = 0;
+        
+        for (int i = 0; i < values.length; ++i) {
+            sum += values[i];
+        }
+        
+        return (float)(sum/((float)values.length));
     }
 
 }
