@@ -23,7 +23,7 @@ class UntraversableLobeRemover {
      * @param closedCurve
      * @return true if points were removed
      */
-    public boolean applyFilter(Set<PairInt> closedCurve) {
+    public boolean applyFilter(Set<PairInt> closedCurve, Set<PairInt> exclude) {
 
         /*
         Example:
@@ -65,6 +65,10 @@ class UntraversableLobeRemover {
             nChanges = 0;
 
             for (PairInt p : closedCurve) {
+                
+                if (exclude.contains(p)) {
+                    continue;
+                }
 
                 Set<PairInt> junctionPoints = findJunction(p.getX(), p.getY(),
                     closedCurve);

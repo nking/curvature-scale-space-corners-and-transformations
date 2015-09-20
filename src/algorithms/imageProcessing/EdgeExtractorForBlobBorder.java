@@ -228,11 +228,18 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
 }
 
+        Set<PairInt> exclude = new HashSet<PairInt>();
+        if (butterFlySections != null && !butterFlySections.isEmpty()) {
+            for (Set<PairInt> butterFlySection : butterFlySections) {
+                exclude.addAll(butterFlySection);
+            }
+        }
+
         UntraversableLobeRemover remover = new UntraversableLobeRemover();
-        remover.applyFilter(borderPixels);
+        remover.applyFilter(borderPixels, exclude);
         
         if (borderPixels.isEmpty()) {
             return null;
@@ -362,7 +369,7 @@ for (int j = 0; j < out.getN(); ++j) {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
     }
 }
-MiscDebug.writeImageCopy(img3, "output_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImageCopy(img3, "output_" + ts + ".png");
 }
 
         return out;
