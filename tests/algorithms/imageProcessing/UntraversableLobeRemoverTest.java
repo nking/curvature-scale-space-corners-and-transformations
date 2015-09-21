@@ -67,6 +67,9 @@ public class UntraversableLobeRemoverTest extends TestCase {
     
     public void testApplyFilter2() throws Exception {
         
+        int w = 258;
+        int h = 187;
+        
         String filePath = ResourceFinder.findFileInTestResources("blob_butterfly_03.dat");
         Set<PairInt> closedCurve = Misc.deserializeSetPairInt(filePath);
         
@@ -88,8 +91,6 @@ public class UntraversableLobeRemoverTest extends TestCase {
         UntraversableLobeRemover rm = new UntraversableLobeRemover();
         rm.applyFilter(closedCurve, exclude);
         
-        int w = 258;
-        int h = 187;
         GreyscaleImage img2 = new GreyscaleImage(w, h);
         for (PairInt p : closedCurve) {
             img2.setValue(p.getX(), p.getY(), 255);

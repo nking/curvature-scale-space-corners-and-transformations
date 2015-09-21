@@ -91,7 +91,7 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
 
         log.fine("LIMIT: number of border points=" + nBorder + " nCavity=" + nCavity);
         
-        if (discardWhenCavityIsSmallerThanBorder && (nBorder > nCavity)) {
+        if (discardWhenCavityIsSmallerThanBorder && (nBorder > 0.8*nCavity)) {
             return null;
         }
         
@@ -167,7 +167,7 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
 
         // expecting nBorder to be < nCavity
 
-        if (discardWhenCavityIsSmallerThanBorder && (nBorder > nCavity)) {
+        if (discardWhenCavityIsSmallerThanBorder && (nBorder > 0.8*nCavity)) {
            
             log.info(String.format(
                 "discarding (%d, %d) number of border points=%d nCavity=%d ", 

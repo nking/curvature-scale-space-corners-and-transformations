@@ -206,12 +206,23 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 boolean lgDiffN = ((nc1 > nc2) && frac > 2)
                     || ((nc1 < nc2) && frac < 0.5);
                 
+                // also, discard if fraction of matched/maxmatchable is too low
+                if (!lgDiffN) {
+                    float nmm = Math.min(nc1, nc2);
+                    float nm = compStats.size();
+                    if ((nm/nmm) < 0.5) {
+                        lgDiffN = true;
+                    }
+                }
+                
+                log.info(String.format(
+                    "   nc1=%d nc2=%d (frac=%.2f) nMCs=%d",
+                    nc1, nc2, frac, 
+                    mapper.getMatcher().getSolutionMatchedContours1().size()));
+                
                 if (lgDiffN) {                    
-                    log.info(String.format(
-                        "discarding a good match because frac of maxMatchable is low." 
-                         + " nc1=%d nc2=%d (frac=%.2f) nMCs=%d",
-                        nc1, nc2, frac, 
-                        mapper.getMatcher().getSolutionMatchedContours1().size()));
+                    log.info(
+                        "discarding a good match because frac of maxMatchable is low.");
                     continue;
                 }
                 
