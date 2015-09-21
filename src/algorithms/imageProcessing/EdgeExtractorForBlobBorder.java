@@ -230,10 +230,19 @@ for (PairInt p : borderPixels) {
 }
 MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
 }
-
+        // one more pass after line thinner and spur remover
+        finder = new ButterflySectionFinder();
+        List<Set<PairInt>> butterFlySections2 = finder.findButterflySections(
+            Misc.convertWithoutOrder(borderPixels));
+        
         Set<PairInt> exclude = new HashSet<PairInt>();
         if (butterFlySections != null && !butterFlySections.isEmpty()) {
             for (Set<PairInt> butterFlySection : butterFlySections) {
+                exclude.addAll(butterFlySection);
+            }
+        }
+        if (butterFlySections2 != null && !butterFlySections2.isEmpty()) {
+            for (Set<PairInt> butterFlySection : butterFlySections2) {
                 exclude.addAll(butterFlySection);
             }
         }
