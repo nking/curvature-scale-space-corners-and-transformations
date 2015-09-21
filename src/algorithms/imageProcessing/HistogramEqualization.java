@@ -76,6 +76,11 @@ public class HistogramEqualization {
         for (int i = 0; i < img.getWidth(); i++) {
             for (int j = 0; j < img.getHeight(); j++) {
                 int a = img.getValue(i, j);
+                if (a > 255) {
+                    a = 255;
+                } else if (a < 0) {
+                    a = 0;
+                }
                 aHist[a]++;
             }
         }
@@ -116,6 +121,11 @@ public class HistogramEqualization {
             for (int j = 0; j < img.getHeight(); j++) {
                 
                 int a = img.getValue(i, j);
+                if (a > 255) {
+                    a = 255;
+                } else if (a < 0) {
+                    a = 0;
+                }
                 
                 long aC = aHistC[a];
                 
