@@ -19,7 +19,7 @@ public class BlobScaleFinderTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 0; i < 1;/*3;*/ ++i) {
+        for (int i = 0; i < 3;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -43,6 +43,8 @@ public class BlobScaleFinderTest extends TestCase {
             String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
             ImageExt img2Orig = ImageIOHelper.readImageExt(filePath2);
 
+            log.info("test for " + fileName1 + ", " + fileName2);
+            
             BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
                 img1Orig, img2Orig);
             

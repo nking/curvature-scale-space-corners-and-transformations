@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
@@ -1092,6 +1093,11 @@ compStats.size()));
 
         if (nCS > 1) {
             List<FeatureComparisonStat> csList = new ArrayList<FeatureComparisonStat>();
+            boolean transposed = false;
+            if (cost.length > cost[0].length) {
+                cost = MatrixUtil.transpose(cost);
+                transposed = true;
+            }
             HungarianAlgorithm b = new HungarianAlgorithm();
             int[][] match = b.computeAssignments(cost);
             for (int ii = 0; ii < match.length; ii++) {
@@ -1099,6 +1105,11 @@ compStats.size()));
                 int idx2 = match[ii][1];
                 if (idx1 == -1 || idx2 == -1) {
                     continue;
+                }
+                if (transposed) {
+                    int swap = idx1;
+                    idx1 = idx2;
+                    idx2 = swap;
                 }
                 PairInt p = new PairInt(idx1, idx2);
                 List<FeatureComparisonStat> stats = compStatMap.get(p);

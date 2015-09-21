@@ -102,7 +102,7 @@ public class BlobScaleFinderWrapper {
         boolean[] orderOfBinning1;
         SegmentationType[] orderOfSeg2;
         boolean[] orderOfBinning2;
-        /*if (stats1.getHistAreas()[1] >= 0.75) {
+        if (stats1.getHistAreas()[1] >= 0.75) {
             orderOfSeg1 = new SegmentationType[]{
                 SegmentationType.BINARY, SegmentationType.BINARY,
                 SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
@@ -117,20 +117,18 @@ public class BlobScaleFinderWrapper {
             log.info("didApplyHistEq=" + didApplyHistEq);
         }
         if (stats2.getHistAreas()[1] >= 0.75) {
+            // for BINARY should only use binning
             orderOfSeg2 = new SegmentationType[]{
                 SegmentationType.BINARY, SegmentationType.BINARY,
                 SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
             orderOfBinning2 = new boolean[] {true, false, true, false};
         } else {
+            // for COLOR_POLARCIEXY_ADAPT: looks like should not use binning
             orderOfSeg2 = new SegmentationType[]{
                 SegmentationType.GREYSCALE_KMPP, SegmentationType.GREYSCALE_KMPP,
                 SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
             orderOfBinning2 = new boolean[] {true, false, true, false};
-        }*/
-        orderOfSeg1 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
-        orderOfBinning1 = new boolean[] {false};
-        orderOfSeg2 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
-        orderOfBinning2 = new boolean[] {false};
+        }
         
         int ordered1Idx = 0;
         int ordered2Idx = 0;
