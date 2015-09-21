@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SimpleDAG.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.graphs</a> &gt; <span class="el_source">SimpleDAG.java</span></div><h1>SimpleDAG.java</h1><pre class="source lang-java linenums">package algorithms.graphs;
+
+/**
+ *
+ * @author nichole
+ */
+public class SimpleDAG {
+
+    protected LinkedListNode[] vertices;
+<span class="fc" id="L10">    protected int nVertices = 0;</span>
+
+<span class="fc" id="L12">    public SimpleDAG(boolean[][] connected) {</span>
+
+<span class="fc" id="L14">        vertices = new LinkedListNode[connected.length];</span>
+
+<span class="fc bfc" id="L16" title="All 2 branches covered.">        for (int i = 0; i &lt; connected.length; i++) {</span>
+
+<span class="fc bfc" id="L18" title="All 2 branches covered.">            if (vertices[i] == null) {</span>
+<span class="fc" id="L19">                vertices[i] = new LinkedListNode(i);</span>
+            }
+
+<span class="fc bfc" id="L22" title="All 2 branches covered.">            for (int j = 0; j &lt; connected[i].length; j++) {</span>
+<span class="fc" id="L23">                boolean con = connected[i][j];</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">                if (con) {</span>
+                    // add incoming for i and outgoing for j
+
+<span class="fc bfc" id="L27" title="All 2 branches covered.">                    if (vertices[j] == null) {</span>
+<span class="fc" id="L28">                        vertices[j] = new LinkedListNode(j);</span>
+                    }
+
+<span class="fc" id="L31">                    vertices[i].insertOutgoing(j);</span>
+<span class="fc" id="L32">                    vertices[j].insertIncoming(i);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L37">        nVertices = connected.length;</span>
+<span class="fc" id="L38">    }</span>
+    
+    public LinkedListNode[] getNodes() {
+<span class="fc" id="L41">        return vertices;</span>
+    }
+
+    public boolean isEmpty() {
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        return (nVertices == 0);</span>
+    }
+
+    public void removeNode(int nodeNumber) {
+
+<span class="fc" id="L50">        LinkedListNode node = vertices[nodeNumber];</span>
+
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (node != null) {</span>
+            // get incomingEdges list and remove this nodeNumber from each of their outgoing lists
+            // get outgoingEdges list and remove this nodeNumber from each of their incoming lists
+
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (int i = 0; i &lt; node.incoming.length; i++) {</span>
+<span class="fc" id="L57">                int num = node.incoming[i];</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                if (vertices[num] != null) {</span>
+<span class="fc" id="L59">                    vertices[num].removeOutgoing(nodeNumber);</span>
+                }
+            }
+
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            for (int i = 0; i &lt; node.outgoing.length; i++) {</span>
+<span class="fc" id="L64">                int num = node.outgoing[i];</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">                if (vertices[num] != null) {</span>
+<span class="fc" id="L66">                    vertices[num].removeIncoming(nodeNumber);</span>
+                }
+            }
+
+<span class="fc" id="L70">            vertices[nodeNumber] = null;</span>
+
+<span class="fc" id="L72">            nVertices--;</span>
+        }
+<span class="fc" id="L74">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

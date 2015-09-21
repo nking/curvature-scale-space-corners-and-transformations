@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CustomWatershedDAG.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.graphs</a> &gt; <span class="el_source">CustomWatershedDAG.java</span></div><h1>CustomWatershedDAG.java</h1><pre class="source lang-java linenums">package algorithms.graphs;
+
+import algorithms.QuickSort;
+import algorithms.util.PairInt;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * customized DAG for the Watershed class to store the connections between
+ * a pixel and it's lower intensity neighbors, ordered by steepness.
+ * 
+ * Unused functions have been removed, for example, the nodes do not store
+ * incoming connections.
+ * 
+ * @author nichole
+ */
+public class CustomWatershedDAG {
+
+    /*TODO: could consider using the image internal index here and converting
+    the (x,y) coordinate into it to use an array if usage will always be
+    on the entire image.  protected CustomWatershedNode[] vertices;
+    
+    Because Watershed is being designed for use on Sets of points rather than 
+    the entire image, will use a Map instead.
+    */
+    protected final Map&lt;PairInt, CustomWatershedNode&gt; vertices;
+    
+<span class="fc" id="L28">    protected int nVertices = 0;</span>
+
+<span class="fc" id="L30">    public CustomWatershedDAG() {</span>
+<span class="fc" id="L31">        vertices = new HashMap&lt;PairInt, CustomWatershedNode&gt;();</span>
+<span class="fc" id="L32">    }</span>
+    
+<span class="fc" id="L34">    public CustomWatershedDAG(int expectedNVertices) {</span>
+<span class="fc" id="L35">        vertices = new HashMap&lt;PairInt, CustomWatershedNode&gt;(expectedNVertices);</span>
+<span class="fc" id="L36">    }</span>
+    
+    /**
+     * insert into DAG for key, the list of nodes ordered such that the steepest
+     * is at smallest indexes.  It's the invoker's responsibility to insure
+     * that the order is correct.
+     * @param key
+     * @param orderedSLN 
+     */
+    public void insert(PairInt key, CustomWatershedNode orderedSLN) {
+        
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L48">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (orderedSLN == null) {</span>
+<span class="nc" id="L51">            throw new IllegalStateException(&quot;orderedSLN cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L54">        vertices.put(key, orderedSLN);</span>
+<span class="fc" id="L55">    }</span>
+    
+    /**
+     * insert into DAG for key, the list of nodes after sorting them here such 
+     * that the steepest is at smallest indexes.
+     * @param key
+     * @param intensityDifferences an array of lenUsable items holding the
+     * difference in intensity of the pixel at key to the intensity of the
+     * pixel located in points.  Note that the order of this array is 
+     * altered here.
+     * @param points an array of lenUsable items holding the neighbors of
+     * key which had intensities lower than the key's intensity.  Note that the 
+     * order of this array is altered here.
+     * @param lenUsable the number of items in the arrays 
+     * intensityDifferences and points to read and store.
+     */
+    public void orderAndInsert(PairInt key, int[] intensityDifferences, 
+        PairInt[] points, int lenUsable) {
+        
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L75">            throw new IllegalArgumentException(&quot;key cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (intensityDifferences == null) {</span>
+<span class="nc" id="L78">            throw new IllegalArgumentException(&quot;intensityDifferences cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L81">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (intensityDifferences.length &lt; lenUsable) {</span>
+<span class="nc" id="L84">            throw new IllegalArgumentException(</span>
+            &quot;intensityDifferences is smaller than lenUsable&quot;);
+        }
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (points.length &lt; lenUsable) {</span>
+<span class="nc" id="L88">            throw new IllegalArgumentException(&quot;points is smaller than lenUsable&quot;);</span>
+        }
+        
+        CustomWatershedNode orderedSLN;
+        
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (lenUsable == 0) {</span>
+<span class="nc" id="L94">            orderedSLN = new CustomWatershedNode(key, 0);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        } else if (lenUsable == 1) {</span>
+<span class="fc" id="L96">            orderedSLN = new CustomWatershedNode(key, 1);</span>
+<span class="fc" id="L97">            orderedSLN.insertOutgoing(points[0]);</span>
+        } else {
+            // ascending sort, so smallest are at index 0
+<span class="fc" id="L100">            QuickSort.sortBy1stArg(intensityDifferences, points, 0, lenUsable - 1);</span>
+<span class="fc" id="L101">            orderedSLN = new CustomWatershedNode(key, lenUsable);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (int i = (lenUsable - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L103">                PairInt p = points[i];</span>
+<span class="fc" id="L104">                orderedSLN.insertOutgoing(p);</span>
+            }
+        }
+                
+<span class="fc" id="L108">        vertices.put(key, orderedSLN);</span>
+<span class="fc" id="L109">    }</span>
+    
+    public boolean isEmpty() {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        return (nVertices == 0);</span>
+    }
+
+    public void setToResolved(PairInt key, PairInt resolution) {
+
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L118">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (resolution == null) {</span>
+<span class="nc" id="L121">            throw new IllegalStateException(&quot;resolution cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L124">        CustomWatershedNode node = vertices.get(key);</span>
+
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (node != null) {</span>
+<span class="fc" id="L127">            node.setToResolved(resolution);</span>
+        }
+<span class="fc" id="L129">    }</span>
+    
+    public PairInt getResolved(PairInt key) {
+
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L134">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L137">        CustomWatershedNode node  = vertices.get(key);</span>
+
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (node != null) {</span>
+<span class="fc" id="L140">            return node.getResolved();</span>
+        }
+        
+<span class="nc" id="L143">        return null;</span>
+    }
+    
+    /**
+     * return whether the node at key has been processed as resolved yet.
+     * Note that an IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public boolean isResolved(PairInt key) {
+
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L155">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L158">        CustomWatershedNode node  = vertices.get(key);</span>
+
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L161">            throw new IllegalArgumentException(&quot;key was not found in dag&quot;);</span>
+        }
+        
+<span class="fc" id="L164">        return node.isResolved();</span>
+    }
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public int getConnectedNumber(PairInt key) {
+
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L176">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L179">        CustomWatershedNode node  = vertices.get(key);</span>
+
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L182">            throw new IllegalArgumentException(&quot;key was not found in dag&quot;);</span>
+        }
+        
+<span class="fc" id="L185">        return node.getConnectedNumber();</span>
+    }
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public PairInt getConnectedNode(PairInt key, int nodeNumber) {
+
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L197">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L200">        CustomWatershedNode node  = vertices.get(key);</span>
+
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L203">            throw new IllegalArgumentException(&quot;key was not found in dag&quot;);</span>
+        }
+        
+<span class="fc" id="L206">        return node.get(nodeNumber);</span>
+    }
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     */
+    public void resetConnectedNode(PairInt key, int nodeNumber, PairInt nodeValue) {
+
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L217">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L220">        CustomWatershedNode node  = vertices.get(key);</span>
+
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L223">            throw new IllegalArgumentException(&quot;key was not found in dag&quot;);</span>
+        }
+        
+<span class="fc" id="L226">        node.reset(nodeNumber, nodeValue);</span>
+<span class="fc" id="L227">    }</span>
+    
+    /**
+     * returned the connected number for the node at key.  Note that an 
+     * IllegalArgumentException is thrown if key is not in the dag.
+     * @param key
+     * @return 
+     */
+    public boolean contains(PairInt key) {
+
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L238">            throw new IllegalStateException(&quot;key cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L241">        return vertices.containsKey(key);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

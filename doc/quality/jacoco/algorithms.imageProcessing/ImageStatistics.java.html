@@ -21,107 +21,109 @@ public class ImageStatistics {
     
 <span class="fc" id="L22">    private float[] quartiles = null;</span>
     
+<span class="fc" id="L24">    private float[] histAreas = null;</span>
+    
     /*
     if this is set a value less than Double.MAX_VALUE, its the threshold
     used on the image likely, after these stats were calculated
     */
-<span class="fc" id="L28">    private double lowThresholdApplied = Double.MAX_VALUE;</span>
+<span class="fc" id="L30">    private double lowThresholdApplied = Double.MAX_VALUE;</span>
     
-<span class="fc" id="L30">    private HistogramHolder histogram = null;</span>
+<span class="fc" id="L32">    private HistogramHolder histogram = null;</span>
     
-<span class="fc" id="L32">    public ImageStatistics() {</span>
+<span class="fc" id="L34">    public ImageStatistics() {</span>
         
-<span class="fc" id="L34">    }</span>
+<span class="fc" id="L36">    }</span>
 
     /**
      * @return the mean
      */
     public double getMean() {
-<span class="fc" id="L40">        return mean;</span>
+<span class="fc" id="L42">        return mean;</span>
     }
 
     /**
      * @param theMean the mean to set
      */
     public void setMean(double theMean) {
-<span class="fc" id="L47">        this.mean = theMean;</span>
-<span class="fc" id="L48">    }</span>
+<span class="fc" id="L49">        this.mean = theMean;</span>
+<span class="fc" id="L50">    }</span>
 
     /**
      * @return the mode
      */
     public double getMode() {
-<span class="nc" id="L54">        return mode;</span>
+<span class="nc" id="L56">        return mode;</span>
     }
 
     /**
      * @param theMode the mode to set
      */
     public void setMode(double theMode) {
-<span class="fc" id="L61">        this.mode = theMode;</span>
-<span class="fc" id="L62">    }</span>
+<span class="fc" id="L63">        this.mode = theMode;</span>
+<span class="fc" id="L64">    }</span>
 
     /**
      * @return the median
      */
     public double getMedian() {
-<span class="nc" id="L68">        return median;</span>
+<span class="nc" id="L70">        return median;</span>
     }
 
     /**
      * @param theMedian the median to set
      */
     public void setMedian(double theMedian) {
-<span class="fc" id="L75">        this.median = theMedian;</span>
-<span class="fc" id="L76">    }</span>
+<span class="fc" id="L77">        this.median = theMedian;</span>
+<span class="fc" id="L78">    }</span>
 
     /**
      * @return the min
      */
     public double getMin() {
-<span class="fc" id="L82">        return min;</span>
+<span class="fc" id="L84">        return min;</span>
     }
 
     /**
      * @param theMin the min to set
      */
     public void setMin(double theMin) {
-<span class="fc" id="L89">        this.min = theMin;</span>
-<span class="fc" id="L90">    }</span>
+<span class="fc" id="L91">        this.min = theMin;</span>
+<span class="fc" id="L92">    }</span>
 
     /**
      * @return the max
      */
     public double getMax() {
-<span class="fc" id="L96">        return max;</span>
+<span class="fc" id="L98">        return max;</span>
     }
 
     /**
      * @param theMax the max to set
      */
     public void setMax(double theMax) {
-<span class="fc" id="L103">        this.max = theMax;</span>
-<span class="fc" id="L104">    }</span>
+<span class="fc" id="L105">        this.max = theMax;</span>
+<span class="fc" id="L106">    }</span>
 
     /**
      * @return the histogram
      */
     public HistogramHolder getHistogram() {
-<span class="nc" id="L110">        return histogram;</span>
+<span class="nc" id="L112">        return histogram;</span>
     }
 
     /**
      * @param theHistogram the histogram to set
      */
     public void setHistogram(HistogramHolder theHistogram) {
-<span class="fc" id="L117">        this.histogram = theHistogram;</span>
-<span class="fc" id="L118">    }</span>
+<span class="fc" id="L119">        this.histogram = theHistogram;</span>
+<span class="fc" id="L120">    }</span>
     
     /**
      * @return the quartiles
      */
     public float[] getQuartiles() {
-<span class="nc" id="L124">        return quartiles;</span>
+<span class="nc" id="L126">        return quartiles;</span>
     }
 
     /**
@@ -129,41 +131,58 @@ public class ImageStatistics {
      */
     public void setQuartiles(float[] theQuartiles) {
         
-<span class="fc" id="L132">        this.quartiles = theQuartiles;</span>
-<span class="fc" id="L133">    }</span>
+<span class="fc" id="L134">        this.quartiles = theQuartiles;</span>
+<span class="fc" id="L135">    }</span>
     
+    public void setHistogramAreaFraction(float[] histArea) {
+<span class="fc" id="L138">        this.histAreas = histArea;</span>
+<span class="fc" id="L139">    }</span>
+    
+    @Override
     public String toString() {
         
-<span class="nc" id="L137">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L144">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L139">        sb.append(&quot;min=&quot;).append(Double.toString(min)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L140">        sb.append(&quot;max=&quot;).append(Double.toString(max)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L141">        sb.append(&quot;mean=&quot;).append(Double.toString(mean)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L142">        sb.append(&quot;median=&quot;).append(Double.toString(median)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L143">        sb.append(&quot;mode=&quot;).append(Double.toString(mode)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L144">        sb.append(&quot;quartiles=&quot;);</span>
-<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (quartiles != null) {</span>
-<span class="nc" id="L146">            sb.append(Arrays.toString(quartiles));</span>
+<span class="nc" id="L146">        sb.append(&quot;min=&quot;).append(Double.toString(min)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L147">        sb.append(&quot;max=&quot;).append(Double.toString(max)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L148">        sb.append(&quot;mean=&quot;).append(Double.toString(mean)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L149">        sb.append(&quot;median=&quot;).append(Double.toString(median)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L150">        sb.append(&quot;mode=&quot;).append(Double.toString(mode)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L151">        sb.append(&quot;quartiles=&quot;);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        if (quartiles != null) {</span>
+<span class="nc" id="L153">            sb.append(Arrays.toString(quartiles));</span>
         }
-<span class="nc" id="L148">        sb.append(&quot;\n&quot;);</span>
-<span class="nc" id="L149">        sb.append(&quot;histogram=&quot;);</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (histogram != null) {</span>
-<span class="nc" id="L151">            sb.append(histogram.toString()).append(&quot;\n&quot;);</span>
-        }
-        
-<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
-<span class="nc" id="L155">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
+<span class="nc" id="L155">        sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L156">        sb.append(&quot;histogram=&quot;);</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (histogram != null) {</span>
+<span class="nc" id="L158">            sb.append(histogram.toString());</span>
         }
         
-<span class="nc" id="L158">        return sb.toString();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (histAreas != null) {</span>
+<span class="nc" id="L162">            sb.append(&quot;histAreas=&quot;).append(Arrays.toString(histAreas)).append(&quot;\n&quot;);</span>
+        }
+        
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
+<span class="nc" id="L166">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
+<span class="nc" id="L167">            sb.append(&quot;\n&quot;);</span>
+        }
+        
+<span class="nc" id="L170">        return sb.toString();</span>
     }
 
     public void setLowThresholdApplied(double lowThresh) {
-<span class="nc" id="L162">        lowThresholdApplied = lowThresh;</span>
-<span class="nc" id="L163">    }</span>
+<span class="nc" id="L174">        lowThresholdApplied = lowThresh;</span>
+<span class="nc" id="L175">    }</span>
     
     public double getLowThresholdApplied() {
-<span class="nc" id="L166">        return lowThresholdApplied;</span>
+<span class="nc" id="L178">        return lowThresholdApplied;</span>
+    }
+
+    /**
+     * @return the histAreas
+     */
+    public float[] getHistAreas() {
+<span class="nc" id="L185">        return histAreas;</span>
     }
 
 }

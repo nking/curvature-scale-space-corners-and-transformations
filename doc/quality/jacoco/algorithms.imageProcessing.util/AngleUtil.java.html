@@ -162,13 +162,13 @@ import algorithms.MultiArrayMergeSort;
                 
 <span class="pc bpc" id="L163" title="5 of 6 branches missed.">        assert((q &gt; 0) &amp;&amp; (q &lt; 5));</span>
         
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        double theta = (x == 0) ? Math.PI/2. : Math.atan(y/x);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        double theta = (x == 0) ? Math.PI/2. : Math.atan(y/x);</span>
         
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (x == 0) {</span>
-<span class="nc bnc" id="L168" title="All 2 branches missed.">            if (y == 0) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (x == 0) {</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            if (y == 0) {</span>
 <span class="nc" id="L169">                theta = 0;</span>
-<span class="nc bnc" id="L170" title="All 2 branches missed.">            } else if (y &gt; 0) {</span>
-<span class="nc" id="L171">                theta = 3*Math.PI/2.;</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            } else if (y &gt; 0) {</span>
+<span class="fc" id="L171">                theta = 3*Math.PI/2.;</span>
             }
             // else Math.PI/2 is correct
 <span class="fc bfc" id="L174" title="All 2 branches covered.">        } else if (q == 1) {</span>
@@ -230,12 +230,12 @@ import algorithms.MultiArrayMergeSort;
         */
         
 <span class="fc bfc" id="L232" title="All 2 branches covered.">        if (q0 == 1) {</span>
-<span class="pc bpc" id="L233" title="1 of 2 branches missed.">            if (q1 == 3) {</span>
-<span class="nc" id="L234">                double diff = rot1 - rot0;</span>
-<span class="nc bnc" id="L235" title="All 2 branches missed.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="nc" id="L236">                    rot0 += twoPI;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">            if (q1 == 3) {</span>
+<span class="fc" id="L234">                double diff = rot1 - rot0;</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L236">                    rot0 += twoPI;</span>
                 }
-<span class="pc bfc" id="L238" title="All 2 branches covered.">            } else if (q1 == 4) {</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">            } else if (q1 == 4) {</span>
 <span class="fc" id="L239">                rot0 += twoPI;</span>
             }
 <span class="fc bfc" id="L241" title="All 2 branches covered.">        } else if (q0 == 2) {</span>
@@ -248,8 +248,8 @@ import algorithms.MultiArrayMergeSort;
             */
 <span class="fc bfc" id="L249" title="All 2 branches covered.">            if (q1 == 4) {</span>
 <span class="fc" id="L250">                double diff = rot1 - rot0;</span>
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="nc" id="L252">                    rot0 += twoPI;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L252">                    rot0 += twoPI;</span>
                 }
 <span class="fc" id="L254">            }</span>
 <span class="fc bfc" id="L255" title="All 2 branches covered.">        } else if (q0 == 3) {</span>
@@ -260,12 +260,12 @@ import algorithms.MultiArrayMergeSort;
                II  |  I
                    90
             */
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">            if (q1 == 1) {</span>
-<span class="nc" id="L264">                double diff = rot0 - rot1;</span>
-<span class="nc bnc" id="L265" title="All 2 branches missed.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="nc" id="L266">                    rot1 += twoPI;</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (q1 == 1) {</span>
+<span class="fc" id="L264">                double diff = rot0 - rot1;</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L266">                    rot1 += twoPI;</span>
                 }
-<span class="nc" id="L268">            }</span>
+<span class="fc" id="L268">            }</span>
 <span class="pc bpc" id="L269" title="1 of 2 branches missed.">        } else if (q0 == 4) {</span>
             /*
                   270
@@ -276,10 +276,10 @@ import algorithms.MultiArrayMergeSort;
             */
 <span class="fc bfc" id="L277" title="All 2 branches covered.">            if (q1 == 1) {</span>
 <span class="fc" id="L278">                rot1 += twoPI;</span>
-<span class="pc bpc" id="L279" title="1 of 2 branches missed.">            } else if (q1 == 2) {</span>
-<span class="nc" id="L280">                double diff = (rot0 - rot1);</span>
-<span class="nc bnc" id="L281" title="All 2 branches missed.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="nc" id="L282">                    rot1 += twoPI;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            } else if (q1 == 2) {</span>
+<span class="fc" id="L280">                double diff = (rot0 - rot1);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L282">                    rot1 += twoPI;</span>
                 }
             }
         }
@@ -739,18 +739,18 @@ import algorithms.MultiArrayMergeSort;
         */
         
 <span class="fc" id="L741">        int q = 1;</span>
-<span class="pc bpc" id="L742" title="1 of 2 branches missed.">        if (xCoord == 0) {</span>
-<span class="nc bnc" id="L743" title="All 2 branches missed.">            if (yCoord == 0) {</span>
+<span class="fc bfc" id="L742" title="All 2 branches covered.">        if (xCoord == 0) {</span>
+<span class="pc bpc" id="L743" title="1 of 2 branches missed.">            if (yCoord == 0) {</span>
                 //TODO: might be more consistent for origin to be in 4
 <span class="nc" id="L745">                q = 1;</span>
-<span class="nc bnc" id="L746" title="All 2 branches missed.">            } else if (yCoord &gt; 0) {</span>
-<span class="nc" id="L747">                q = 4;</span>
+<span class="fc bfc" id="L746" title="All 2 branches covered.">            } else if (yCoord &gt; 0) {</span>
+<span class="fc" id="L747">                q = 4;</span>
             } else {
-<span class="nc" id="L749">                q = 1;</span>
+<span class="fc" id="L749">                q = 1;</span>
             }
 <span class="fc bfc" id="L751" title="All 2 branches covered.">        } else if (yCoord == 0) {</span>
-<span class="pc bpc" id="L752" title="1 of 2 branches missed.">            if (xCoord &gt; 0) {</span>
-<span class="nc" id="L753">                q = 1;</span>
+<span class="fc bfc" id="L752" title="All 2 branches covered.">            if (xCoord &gt; 0) {</span>
+<span class="fc" id="L753">                q = 1;</span>
             } else {
 <span class="fc" id="L755">                q = 3;</span>
             }            

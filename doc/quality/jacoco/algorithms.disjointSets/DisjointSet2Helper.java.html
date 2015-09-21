@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DisjointSet2Helper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.disjointSets</a> &gt; <span class="el_source">DisjointSet2Helper.java</span></div><h1>DisjointSet2Helper.java</h1><pre class="source lang-java linenums">package algorithms.disjointSets;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * a disjoint set implemented as a forest.
+ * 
+ * based upon pseudocode from &quot;Introduction to Algorithms&quot; by Cormen et al.
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L13">public class DisjointSet2Helper {</span>
+
+     /**
+     * make a set out of the given node.
+     * runtime complexity is O(1).
+     * @param x
+     * @return
+     */
+    public &lt;T&gt; DisjointSet2Node&lt;T&gt; makeSet(DisjointSet2Node&lt;T&gt; x) {
+<span class="fc" id="L22">        x.setParent(x);</span>
+<span class="fc" id="L23">        x.setRank(0);</span>
+<span class="fc" id="L24">        return x;</span>
+    }
+    
+    /**
+     * &lt;pre&gt;
+     * find the set representative for the given node.  As a side effect,
+     * also updates x and all of it's ancestors with the found result so that
+     * they directly point to the top most parent ans subsequent lookups are
+     * faster.
+     * runtime complexity:
+     *     the method uses iteration.  
+     *     if we represent x_height as the number of nodes between x's tree 
+     *     root and x, we have 2 times x_height iterations of statements,
+     * so O(x_height).   With path compression here, the amoritzed
+     * worst-case running time is Θ(α(n)) where α is the inverse Ackermann 
+     * function.  
+     * 
+     * The inverse Ackermann function is α(n) = min{k : A_k(1) ≥ n}.
+     * For most purposes, α(n) = O(1) so then the amoritized running time is O(1).
+     * &lt;/pre&gt;
+     * 
+     * @param x
+     * @return
+     */
+    public &lt;T&gt; DisjointSet2Node&lt;T&gt; findSet(DisjointSet2Node&lt;T&gt; x) {
+        
+        // iterative
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (!x.equals(x.getParent())) {</span>
+            
+<span class="fc" id="L53">            List&lt;DisjointSet2Node&lt;T&gt;&gt; update = new ArrayList&lt;DisjointSet2Node&lt;T&gt;&gt;();</span>
+            
+<span class="fc" id="L55">            DisjointSet2Node&lt;T&gt; parent = x;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            while (!parent.equals(parent.getParent())) {</span>
+<span class="fc" id="L57">                update.add(parent);</span>
+<span class="fc" id="L58">                parent = parent.getParent();</span>
+            }
+            
+            // update the nodes with parent
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            for (DisjointSet2Node&lt;T&gt; node : update) {</span>
+<span class="fc" id="L63">                node.setParent(parent);</span>
+<span class="fc" id="L64">            }</span>
+        }
+        
+<span class="fc" id="L67">        return x.getParent();</span>
+    }
+    
+    /**
+      implement part of path compression:
+          for each node in the path from x to root, reassign the parent as the 
+          root.
+          (the path compression then becomes useful on the next findSet for any 
+          mode along the path).
+          
+       Runtime complexity is O(1).
+       
+     * @param x
+     * @param y
+     * @return the root found to be the one with equal number of nodes or more nodes
+     */
+    private &lt;T&gt; DisjointSet2Node&lt;T&gt; link(DisjointSet2Node&lt;T&gt; x, DisjointSet2Node&lt;T&gt; y) {
+        
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (x.equals(y)) {</span>
+<span class="fc" id="L86">            return x;</span>
+        }
+        
+        DisjointSet2Node&lt;T&gt; parent;
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (x.getRank() &gt;= y.getRank()) {</span>
+<span class="fc" id="L91">            parent = x;</span>
+<span class="fc" id="L92">            y.setParent(parent);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (x.getRank() == y.getRank()) {</span>
+<span class="fc" id="L94">                parent.setRank(parent.getRank() + 1);</span>
+            }
+        } else {
+<span class="nc" id="L97">            parent = y;</span>
+<span class="nc" id="L98">            x.setParent(parent);</span>
+        }
+<span class="fc" id="L100">        return parent;</span>
+    }
+    
+    /**
+     * append the shorter list onto the end of the longer's list.
+     * The amortized runtime complexity is O(1) due to the path compression
+     * in findSet.
+     * The method is also known as &quot;union-find&quot; because it uses findSet 
+     * as the first steps before link.
+     * 
+     * @param x
+     * @param y
+     * @return
+     */
+    public &lt;T&gt; DisjointSet2Node&lt;T&gt; union(DisjointSet2Node&lt;T&gt; x, DisjointSet2Node&lt;T&gt; y) {
+        
+<span class="fc" id="L116">        x = findSet(x);</span>
+        
+<span class="fc" id="L118">        y = findSet(y);</span>
+        
+<span class="fc" id="L120">        DisjointSet2Node&lt;T&gt; parent = link(x, y);</span>
+
+<span class="fc" id="L122">        return parent;</span>
+    }
+    
+    public static &lt;T&gt; String print(DisjointSet2Node&lt;T&gt; x) {
+                
+<span class="nc" id="L127">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="nc" id="L129">        sb.append(x.toString());</span>
+        
+<span class="nc" id="L131">        DisjointSet2Node&lt;T&gt; p = x.getParent();</span>
+        
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        while (p != null) {</span>
+<span class="nc" id="L134">            DisjointSet2Node&lt;T&gt; nextP = p.getParent();</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (nextP.equals(p)) {</span>
+<span class="nc" id="L136">                break;</span>
+            }
+<span class="nc" id="L138">            sb.append(&quot;parent-&gt;&quot;).append(p.toString());</span>
+<span class="nc" id="L139">            p = nextP;</span>
+<span class="nc" id="L140">        }</span>
+        
+<span class="nc" id="L142">        return sb.toString();</span>
+    }
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

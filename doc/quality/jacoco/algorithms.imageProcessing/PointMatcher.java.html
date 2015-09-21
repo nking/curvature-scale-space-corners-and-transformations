@@ -292,14 +292,14 @@ import thirdparty.HungarianAlgorithm;
     public TransformationPointFit calculateEuclideanTransformation(
         PairIntArray set1, PairIntArray set2) {
 
-<span class="nc" id="L295">        int n1 = set1.getN();</span>
-<span class="nc" id="L296">        int n2 = set2.getN();</span>
+<span class="fc" id="L295">        int n1 = set1.getN();</span>
+<span class="fc" id="L296">        int n2 = set2.getN();</span>
 
-<span class="nc" id="L298">        long nPairPerm = estimateNStepsPairCalculation(n1, n2);</span>
+<span class="fc" id="L298">        long nPairPerm = estimateNStepsPairCalculation(n1, n2);</span>
 
-<span class="nc" id="L300">        log.info(&quot;nPairPerm=&quot; + nPairPerm + &quot; n1=&quot; + n1 + &quot; n2=&quot; + n2);</span>
+<span class="fc" id="L300">        log.info(&quot;nPairPerm=&quot; + nPairPerm + &quot; n1=&quot; + n1 + &quot; n2=&quot; + n2);</span>
 
-<span class="nc bnc" id="L302" title="All 2 branches missed.">        if (nPairPerm &gt; 10e9) {</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">        if (nPairPerm &gt; 10e9) {</span>
 <span class="nc" id="L303">            log.warning(&quot;assuming scale=1 to solve.&quot; +</span>
             &quot;currently not able to solve for scale too in large sets in reasonable time so &quot; +
             &quot; you can reduce your set sizes or use vert trans methods for better solutions.&quot;);
@@ -308,53 +308,53 @@ import thirdparty.HungarianAlgorithm;
 <span class="nc" id="L308">            return preSearch(set1, set2, scale, useGreedyMatching);</span>
         }
 
-<span class="nc" id="L311">        boolean earlyConvergeReturn = true;</span>
+<span class="fc" id="L311">        boolean earlyConvergeReturn = true;</span>
 
-<span class="nc" id="L313">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L313">        long t0 = System.currentTimeMillis();</span>
 
-<span class="nc" id="L315">        List&lt;TransformationPointFit&gt; fits = calculateEuclideanTransformationUsingPairs(</span>
+<span class="fc" id="L315">        List&lt;TransformationPointFit&gt; fits = calculateEuclideanTransformationUsingPairs(</span>
             set1, set2, earlyConvergeReturn);
 
-<span class="nc" id="L318">        long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L318">        long t1 = System.currentTimeMillis();</span>
 
-<span class="nc" id="L320">        log.info(&quot;calculateEuclideanTransformationUsingPairs seconds=&quot; +</span>
+<span class="fc" id="L320">        log.info(&quot;calculateEuclideanTransformationUsingPairs seconds=&quot; +</span>
             ((t1 - t0)*1e-3));
 
-<span class="nc bnc" id="L323" title="All 4 branches missed.">        if (fits == null || fits.isEmpty()) {</span>
+<span class="pc bpc" id="L323" title="2 of 4 branches missed.">        if (fits == null || fits.isEmpty()) {</span>
 <span class="nc" id="L324">            return null;</span>
         }
 
-<span class="nc" id="L327">        boolean useGreedyMatching = true;</span>
+<span class="fc" id="L327">        boolean useGreedyMatching = true;</span>
 
         // find the best fit to corners1, corners2
-<span class="nc" id="L330">        TransformationPointFit bestFit = null;</span>
-<span class="nc bnc" id="L331" title="All 2 branches missed.">        for (int i = 0; i &lt; fits.size(); ++i) {</span>
+<span class="fc" id="L330">        TransformationPointFit bestFit = null;</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        for (int i = 0; i &lt; fits.size(); ++i) {</span>
 
-<span class="nc" id="L333">            TransformationPointFit fit  = fits.get(i);</span>
+<span class="fc" id="L333">            TransformationPointFit fit  = fits.get(i);</span>
 
-<span class="nc" id="L335">            TransformationPointFit fitA = evaluateForUnmatched(</span>
-<span class="nc" id="L336">                fit.getParameters(), set1, set2,</span>
+<span class="fc" id="L335">            TransformationPointFit fitA = evaluateForUnmatched(</span>
+<span class="fc" id="L336">                fit.getParameters(), set1, set2,</span>
                 generalTolerance, generalTolerance, useGreedyMatching);
 
-<span class="nc" id="L339">            log.info(&quot;test fit w/ corners=&quot; + fitA.toString());</span>
+<span class="fc" id="L339">            log.info(&quot;test fit w/ corners=&quot; + fitA.toString());</span>
 
-<span class="nc bnc" id="L341" title="All 2 branches missed.">            if (fitIsBetter(bestFit, fitA)) {</span>
-<span class="nc" id="L342">                bestFit = fitA;</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">            if (fitIsBetter(bestFit, fitA)) {</span>
+<span class="fc" id="L342">                bestFit = fitA;</span>
             }
         }
 
-<span class="nc" id="L346">        log.info(&quot;best fitting to all corners from best fits=&quot;</span>
-<span class="nc" id="L347">            + bestFit.toString());</span>
+<span class="fc" id="L346">        log.info(&quot;best fitting to all corners from best fits=&quot;</span>
+<span class="fc" id="L347">            + bestFit.toString());</span>
 
-<span class="nc" id="L349">        TransformationPointFit fit2 = refineAfterCalculationWithPairs(</span>
-<span class="nc" id="L350">            bestFit.getParameters().copy(), set1, set2,</span>
+<span class="fc" id="L349">        TransformationPointFit fit2 = refineAfterCalculationWithPairs(</span>
+<span class="fc" id="L350">            bestFit.getParameters().copy(), set1, set2,</span>
             useGreedyMatching);
 
-<span class="nc bnc" id="L353" title="All 2 branches missed.">        if (fitIsBetter(bestFit, fit2)) {</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">        if (fitIsBetter(bestFit, fit2)) {</span>
 <span class="nc" id="L354">            bestFit = fit2;</span>
         }
 
-<span class="nc" id="L357">        return bestFit;</span>
+<span class="fc" id="L357">        return bestFit;</span>
     }
 
     /**
@@ -875,7 +875,7 @@ private void writeTransformed(TransformationParameters parameters,
             }
         }
 
-<span class="pc bpc" id="L878" title="1 of 2 branches missed.">        avg = (nMatched == 0) ? Double.MAX_VALUE :</span>
+<span class="fc bfc" id="L878" title="All 2 branches covered.">        avg = (nMatched == 0) ? Double.MAX_VALUE :</span>
             avg / (double)nMatched;
 
 <span class="fc" id="L881">        double stDev = 0;</span>
@@ -884,7 +884,7 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L884">            stDev += (d * d);</span>
         }
 
-<span class="pc bpc" id="L887" title="1 of 2 branches missed.">        stDev = (nMatched == 0) ? Double.MAX_VALUE :</span>
+<span class="fc bfc" id="L887" title="All 2 branches covered.">        stDev = (nMatched == 0) ? Double.MAX_VALUE :</span>
 <span class="fc" id="L888">            Math.sqrt(stDev/((double)nMatched - 1.));</span>
 
 <span class="fc" id="L890">        TransformationPointFit fit = new TransformationPointFit(params.copy(),</span>
@@ -1903,7 +1903,7 @@ private void writeTransformed(TransformationParameters parameters,
 
 <span class="fc" id="L1904">        TransformationParameters[] lastParams = extractParameters(fits);</span>
 
-<span class="pc bpc" id="L1906" title="1 of 4 branches missed.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+<span class="fc bfc" id="L1906" title="All 4 branches covered.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
 
 <span class="pc bpc" id="L1908" title="1 of 2 branches missed.">            if (fits.length == 0) {</span>
 <span class="nc" id="L1909">                break;</span>
@@ -1928,17 +1928,17 @@ private void writeTransformed(TransformationParameters parameters,
                 }
             }
 
-<span class="pc bpc" id="L1931" title="1 of 2 branches missed.">            if (nIter &gt; 0) {</span>
+<span class="fc bfc" id="L1931" title="All 2 branches covered.">            if (nIter &gt; 0) {</span>
 
-<span class="nc" id="L1933">                TransformationParameters[] currentParams = extractParameters(fits);</span>
+<span class="fc" id="L1933">                TransformationParameters[] currentParams = extractParameters(fits);</span>
 
-<span class="nc" id="L1935">                boolean areTheSame = areEqual(lastParams, currentParams);</span>
+<span class="fc" id="L1935">                boolean areTheSame = areEqual(lastParams, currentParams);</span>
 
-<span class="nc bnc" id="L1937" title="All 2 branches missed.">                if (areTheSame) {</span>
+<span class="pc bpc" id="L1937" title="1 of 2 branches missed.">                if (areTheSame) {</span>
 <span class="nc" id="L1938">                    break;</span>
                 }
 
-<span class="nc bnc" id="L1941" title="All 2 branches missed.">                if (nIter &gt; 50) {</span>
+<span class="pc bpc" id="L1941" title="1 of 2 branches missed.">                if (nIter &gt; 50) {</span>
 <span class="nc" id="L1942">                    double[] stdevs = getStandardDeviation(currentParams);</span>
 <span class="nc bnc" id="L1943" title="All 4 branches missed.">                    if (stdevs != null &amp;&amp; (stdevs.length &gt; 0)) {</span>
 <span class="nc" id="L1944">                        boolean areNearlyZero = true;</span>
@@ -1953,7 +1953,7 @@ private void writeTransformed(TransformationParameters parameters,
                     }
                 }
 
-<span class="nc" id="L1956">                lastParams = currentParams;</span>
+<span class="fc" id="L1956">                lastParams = currentParams;</span>
             }
 
             // determine center for all points excepting the worse fit
@@ -1993,7 +1993,7 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L1993">                paramsReflect.setOriginY(fits[worstFitIdx].getParameters().getOriginY());</span>
             }
 
-<span class="pc bpc" id="L1996" title="3 of 4 branches missed.">            switch(lastAlt) {</span>
+<span class="pc bpc" id="L1996" title="1 of 4 branches missed.">            switch(lastAlt) {</span>
                 case 0: {
                     // change translation X
 <span class="fc" id="L1999">                    txReflect = transX + (alpha</span>
@@ -2003,13 +2003,13 @@ private void writeTransformed(TransformationParameters parameters,
                 }
                 case 1: {
                     // change translation Y
-<span class="nc" id="L2006">                    tyReflect = transY + (alpha</span>
-<span class="nc" id="L2007">                        * (transY - fits[worstFitIdx].getTranslationY()));</span>
-<span class="nc" id="L2008">                    paramsReflect.setTranslationY(tyReflect);</span>
-<span class="nc" id="L2009">                    break;</span>
+<span class="fc" id="L2006">                    tyReflect = transY + (alpha</span>
+<span class="fc" id="L2007">                        * (transY - fits[worstFitIdx].getTranslationY()));</span>
+<span class="fc" id="L2008">                    paramsReflect.setTranslationY(tyReflect);</span>
+<span class="fc" id="L2009">                    break;</span>
                 }
                 case 2: {
-<span class="nc bnc" id="L2012" title="All 2 branches missed.">                    if (searchScaleToo) {</span>
+<span class="pc bpc" id="L2012" title="1 of 2 branches missed.">                    if (searchScaleToo) {</span>
 <span class="nc" id="L2013">                        scaleReflect  = scale + (alpha</span>
 <span class="nc" id="L2014">                            * (scale - fits[worstFitIdx].getScale()));</span>
 <span class="nc" id="L2015">                        paramsReflect.setScale(scaleReflect);</span>
@@ -2019,14 +2019,14 @@ private void writeTransformed(TransformationParameters parameters,
                 }
                 default: {
                     // change rotation
-<span class="nc" id="L2022">                    rotReflect = rotInRadians + (alpha</span>
-<span class="nc" id="L2023">                        * (rotInRadians - fits[worstFitIdx].getRotationInRadians()));</span>
-<span class="nc bnc" id="L2024" title="All 2 branches missed.">                    if (rotReflect &lt; 0) {</span>
-<span class="nc" id="L2025">                        rotReflect = rotReflect + (float)(2.*Math.PI);</span>
-<span class="nc bnc" id="L2026" title="All 2 branches missed.">                    } else if (rotReflect &gt;= (2.*Math.PI)) {</span>
+<span class="fc" id="L2022">                    rotReflect = rotInRadians + (alpha</span>
+<span class="fc" id="L2023">                        * (rotInRadians - fits[worstFitIdx].getRotationInRadians()));</span>
+<span class="fc bfc" id="L2024" title="All 2 branches covered.">                    if (rotReflect &lt; 0) {</span>
+<span class="fc" id="L2025">                        rotReflect = rotReflect + (float)(2.*Math.PI);</span>
+<span class="pc bpc" id="L2026" title="1 of 2 branches missed.">                    } else if (rotReflect &gt;= (2.*Math.PI)) {</span>
 <span class="nc" id="L2027">                        rotReflect = rotReflect - (float)(2.*Math.PI);</span>
                     }
-<span class="nc" id="L2029">                    paramsReflect.setRotationInRadians(rotReflect);</span>
+<span class="fc" id="L2029">                    paramsReflect.setRotationInRadians(rotReflect);</span>
                     break;
                 }
             }
@@ -2038,10 +2038,10 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L2038">            int comp0 = compare(fits[bestFitIdx], fitReflected);</span>
 <span class="fc" id="L2039">            int compLast = compare(fits[worstFitIdx], fitReflected);</span>
 
-<span class="pc bpc" id="L2041" title="2 of 4 branches missed.">            if ((comp0 &lt; 1) &amp;&amp; (compLast == 1)) {</span>
+<span class="pc bpc" id="L2041" title="1 of 4 branches missed.">            if ((comp0 &lt; 1) &amp;&amp; (compLast == 1)) {</span>
 
                 // replace last with f_refl
-<span class="nc" id="L2044">                fits[worstFitIdx] = fitReflected;</span>
+<span class="fc" id="L2044">                fits[worstFitIdx] = fitReflected;</span>
 
 <span class="pc bpc" id="L2046" title="1 of 2 branches missed.">            } else if (comp0 == 1) {</span>
 
@@ -2122,7 +2122,7 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L2122">                paramsContraction.setOriginX(fits[worstFitIdx].getParameters().getOriginX());</span>
 <span class="fc" id="L2123">                paramsContraction.setOriginY(fits[worstFitIdx].getParameters().getOriginY());</span>
 
-<span class="pc bpc" id="L2125" title="3 of 4 branches missed.">                switch (lastAlt) {</span>
+<span class="pc bpc" id="L2125" title="1 of 4 branches missed.">                switch (lastAlt) {</span>
                     case 0: {
                         // change translation X
 <span class="fc" id="L2128">                        float txContraction = transX + (beta</span>
@@ -2132,13 +2132,13 @@ private void writeTransformed(TransformationParameters parameters,
                     }
                     case 1: {
                         // change translation Y
-<span class="nc" id="L2135">                        float tyContraction = transY + (beta</span>
-<span class="nc" id="L2136">                            * (fits[worstFitIdx].getTranslationY() - transY));</span>
-<span class="nc" id="L2137">                        paramsContraction.setTranslationY(tyContraction);</span>
-<span class="nc" id="L2138">                        break;</span>
+<span class="fc" id="L2135">                        float tyContraction = transY + (beta</span>
+<span class="fc" id="L2136">                            * (fits[worstFitIdx].getTranslationY() - transY));</span>
+<span class="fc" id="L2137">                        paramsContraction.setTranslationY(tyContraction);</span>
+<span class="fc" id="L2138">                        break;</span>
                     }
                     case 2: {
-<span class="nc bnc" id="L2141" title="All 2 branches missed.">                        if (searchScaleToo) {</span>
+<span class="pc bpc" id="L2141" title="1 of 2 branches missed.">                        if (searchScaleToo) {</span>
 <span class="nc" id="L2142">                            float scaleContraction = scale + (beta</span>
 <span class="nc" id="L2143">                                * (fits[worstFitIdx].getScale() - scale));</span>
 <span class="nc" id="L2144">                            paramsContraction.setScale(scaleContraction);</span>
@@ -2148,15 +2148,15 @@ private void writeTransformed(TransformationParameters parameters,
                     }
                     default: {
                         // change rotation
-<span class="nc" id="L2151">                        float rotContraction = rotInRadians + (beta</span>
-<span class="nc" id="L2152">                            * (fits[worstFitIdx].getRotationInRadians() - rotInRadians));</span>
-<span class="nc bnc" id="L2153" title="All 2 branches missed.">                        if (rotContraction &lt; 0) {</span>
-<span class="nc" id="L2154">                            rotContraction = rotContraction + (float)(2.*Math.PI);</span>
-<span class="nc bnc" id="L2155" title="All 2 branches missed.">                        } else if (rotContraction &gt;= (2.*Math.PI)) {</span>
+<span class="fc" id="L2151">                        float rotContraction = rotInRadians + (beta</span>
+<span class="fc" id="L2152">                            * (fits[worstFitIdx].getRotationInRadians() - rotInRadians));</span>
+<span class="fc bfc" id="L2153" title="All 2 branches covered.">                        if (rotContraction &lt; 0) {</span>
+<span class="fc" id="L2154">                            rotContraction = rotContraction + (float)(2.*Math.PI);</span>
+<span class="pc bpc" id="L2155" title="1 of 2 branches missed.">                        } else if (rotContraction &gt;= (2.*Math.PI)) {</span>
 <span class="nc" id="L2156">                            rotContraction = rotContraction - (float)(2.*Math.PI);</span>
                         }
-<span class="nc" id="L2158">                        paramsContraction.setRotationInRadians(rotContraction);</span>
-<span class="nc" id="L2159">                        break;</span>
+<span class="fc" id="L2158">                        paramsContraction.setRotationInRadians(rotContraction);</span>
+<span class="fc" id="L2159">                        break;</span>
                     }
                 }
 
@@ -2166,9 +2166,9 @@ private void writeTransformed(TransformationParameters parameters,
 
 <span class="fc" id="L2167">                int compC = compare(fits[worstFitIdx], fitContraction);</span>
 
-<span class="pc bpc" id="L2169" title="1 of 2 branches missed.">                if (compC &gt; -1) {</span>
+<span class="fc bfc" id="L2169" title="All 2 branches covered.">                if (compC &gt; -1) {</span>
 
-<span class="nc" id="L2171">                    fits[worstFitIdx] = fitContraction;</span>
+<span class="fc" id="L2171">                    fits[worstFitIdx] = fitContraction;</span>
 
                 } else {
 
@@ -2194,7 +2194,7 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L2194">                        paramsI.setOriginX(fits[i].getParameters().getOriginX());</span>
 <span class="fc" id="L2195">                        paramsI.setOriginY(fits[i].getParameters().getOriginY());</span>
 
-<span class="pc bpc" id="L2197" title="3 of 4 branches missed.">                        switch (lastAlt) {</span>
+<span class="pc bpc" id="L2197" title="1 of 4 branches missed.">                        switch (lastAlt) {</span>
                             case 0: {
                                 // change translation X
 <span class="fc" id="L2200">                                float txReduction</span>
@@ -2206,15 +2206,15 @@ private void writeTransformed(TransformationParameters parameters,
                             }
                             case 1: {
                                 // change translation Y
-<span class="nc" id="L2209">                                float tyReduction</span>
-<span class="nc" id="L2210">                                    = (fits[bestFitIdx].getTranslationY()</span>
-<span class="nc" id="L2211">                                    + (tau * (fits[i].getTranslationY()</span>
-<span class="nc" id="L2212">                                    - fits[bestFitIdx].getTranslationY())));</span>
-<span class="nc" id="L2213">                                paramsI.setTranslationY(tyReduction);</span>
-<span class="nc" id="L2214">                                break;</span>
+<span class="fc" id="L2209">                                float tyReduction</span>
+<span class="fc" id="L2210">                                    = (fits[bestFitIdx].getTranslationY()</span>
+<span class="fc" id="L2211">                                    + (tau * (fits[i].getTranslationY()</span>
+<span class="fc" id="L2212">                                    - fits[bestFitIdx].getTranslationY())));</span>
+<span class="fc" id="L2213">                                paramsI.setTranslationY(tyReduction);</span>
+<span class="fc" id="L2214">                                break;</span>
                             }
                             case 2: {
-<span class="nc bnc" id="L2217" title="All 2 branches missed.">                                if (searchScaleToo) {</span>
+<span class="pc bpc" id="L2217" title="1 of 2 branches missed.">                                if (searchScaleToo) {</span>
 <span class="nc" id="L2218">                                    float scaleReduction</span>
 <span class="nc" id="L2219">                                        = (fits[bestFitIdx].getScale()</span>
 <span class="nc" id="L2220">                                        + (tau * (fits[i].getScale()</span>
@@ -2226,17 +2226,17 @@ private void writeTransformed(TransformationParameters parameters,
                             }
                             default: {
                                 // change rotation
-<span class="nc" id="L2229">                                float rotReduction</span>
-<span class="nc" id="L2230">                                    = (fits[bestFitIdx].getRotationInRadians()</span>
-<span class="nc" id="L2231">                                    + (tau * (fits[i].getRotationInRadians()</span>
-<span class="nc" id="L2232">                                    - fits[bestFitIdx].getRotationInRadians())));</span>
-<span class="nc bnc" id="L2233" title="All 2 branches missed.">                                if (rotReduction &lt; 0) {</span>
-<span class="nc" id="L2234">                                    rotReduction = rotReduction + (float)(2.*Math.PI);</span>
-<span class="nc bnc" id="L2235" title="All 2 branches missed.">                                } else if (rotReduction &gt;= (2.*Math.PI)) {</span>
+<span class="fc" id="L2229">                                float rotReduction</span>
+<span class="fc" id="L2230">                                    = (fits[bestFitIdx].getRotationInRadians()</span>
+<span class="fc" id="L2231">                                    + (tau * (fits[i].getRotationInRadians()</span>
+<span class="fc" id="L2232">                                    - fits[bestFitIdx].getRotationInRadians())));</span>
+<span class="fc bfc" id="L2233" title="All 2 branches covered.">                                if (rotReduction &lt; 0) {</span>
+<span class="fc" id="L2234">                                    rotReduction = rotReduction + (float)(2.*Math.PI);</span>
+<span class="pc bpc" id="L2235" title="1 of 2 branches missed.">                                } else if (rotReduction &gt;= (2.*Math.PI)) {</span>
 <span class="nc" id="L2236">                                    rotReduction = rotReduction - (float)(2.*Math.PI);</span>
                                 }
-<span class="nc" id="L2238">                                paramsI.setRotationInRadians(rotReduction);</span>
-<span class="nc" id="L2239">                                break;</span>
+<span class="fc" id="L2238">                                paramsI.setRotationInRadians(rotReduction);</span>
+<span class="fc" id="L2239">                                break;</span>
                             }
                         }
 <span class="fc" id="L2242">                        fits[i] = evaluateForUnmatched(paramsI, set1, set2,</span>
@@ -2252,18 +2252,18 @@ private void writeTransformed(TransformationParameters parameters,
 
 <span class="fc" id="L2253">            nIter++;</span>
 <span class="fc" id="L2254">            lastAlt++;</span>
-<span class="pc bpc" id="L2255" title="2 of 4 branches missed.">            if (searchScaleToo &amp;&amp; (lastAlt &gt; 3)) {</span>
+<span class="pc bpc" id="L2255" title="1 of 4 branches missed.">            if (searchScaleToo &amp;&amp; (lastAlt &gt; 3)) {</span>
 <span class="nc" id="L2256">                lastAlt = 0;</span>
-<span class="pc bpc" id="L2257" title="3 of 4 branches missed.">            } else if (!searchScaleToo &amp;&amp; (lastAlt &gt; 2)) {</span>
-<span class="nc" id="L2258">                lastAlt = 0;</span>
+<span class="fc bfc" id="L2257" title="All 4 branches covered.">            } else if (!searchScaleToo &amp;&amp; (lastAlt &gt; 2)) {</span>
+<span class="fc" id="L2258">                lastAlt = 0;</span>
             }
 
-<span class="pc bpc" id="L2261" title="1 of 2 branches missed.">            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)</span>
+<span class="fc bfc" id="L2261" title="All 2 branches covered.">            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)</span>
 <span class="pc bpc" id="L2262" title="1 of 2 branches missed.">                &amp;&amp; (fits[bestFitIdx].getMeanDistFromModel() &lt; eps)) {</span>
 <span class="fc" id="L2263">                go = false;</span>
-<span class="nc bnc" id="L2264" title="All 4 branches missed.">            } else if ((transX &gt; txMax) || (transX &lt; txMin)) {</span>
+<span class="pc bpc" id="L2264" title="2 of 4 branches missed.">            } else if ((transX &gt; txMax) || (transX &lt; txMin)) {</span>
 <span class="nc" id="L2265">                go = false;</span>
-<span class="nc bnc" id="L2266" title="All 4 branches missed.">            } else if ((transY &gt; tyMax) || (transY &lt; tyMin)) {</span>
+<span class="pc bpc" id="L2266" title="2 of 4 branches missed.">            } else if ((transY &gt; tyMax) || (transY &lt; tyMin)) {</span>
 <span class="nc" id="L2267">                go = false;</span>
             }
 <span class="fc" id="L2269">        }</span>
@@ -2287,7 +2287,7 @@ private void writeTransformed(TransformationParameters parameters,
                 tolTransX, tolTransY, useGreedyMatching);
 
 <span class="fc" id="L2289">            int comp = compare(fits[bestFitIdx], fitAvg);</span>
-<span class="pc bpc" id="L2290" title="1 of 2 branches missed.">            if (comp == 1) {</span>
+<span class="fc bfc" id="L2290" title="All 2 branches covered.">            if (comp == 1) {</span>
 <span class="fc" id="L2291">                fits[bestFitIdx] = fitAvg;</span>
             }
         }
@@ -3202,11 +3202,11 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc bfc" id="L3202" title="All 2 branches covered.">            if (ty &lt; minTransY) {</span>
 <span class="fc" id="L3203">                minTransY = ty;</span>
             }
-<span class="pc bpc" id="L3205" title="1 of 2 branches missed.">            if (tx &gt; maxTransX) {</span>
-<span class="nc" id="L3206">                maxTransX = tx;</span>
+<span class="fc bfc" id="L3205" title="All 2 branches covered.">            if (tx &gt; maxTransX) {</span>
+<span class="fc" id="L3206">                maxTransX = tx;</span>
             }
-<span class="pc bpc" id="L3208" title="1 of 2 branches missed.">            if (ty &gt; maxTransY) {</span>
-<span class="nc" id="L3209">                maxTransY = ty;</span>
+<span class="fc bfc" id="L3208" title="All 2 branches covered.">            if (ty &gt; maxTransY) {</span>
+<span class="fc" id="L3209">                maxTransY = ty;</span>
             }
 <span class="fc bfc" id="L3211" title="All 2 branches covered.">            if (tolX &gt; maxTolTransX) {</span>
 <span class="fc" id="L3212">                maxTolTransX = tolX;</span>
@@ -3340,10 +3340,10 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L3340">        float tolTransX = 0.5f*transXDelta + (float)(Math.sin(rotDeltaInDegrees*Math.PI/180.)*transXDelta);</span>
 <span class="fc" id="L3341">        float tolTransY = 0.5f*transYDelta + (float)(Math.sin(rotDeltaInDegrees*Math.PI/180.)*transYDelta);</span>
 
-<span class="pc bpc" id="L3343" title="1 of 2 branches missed.">        if (tolTransX &lt; minTolerance) {</span>
+<span class="fc bfc" id="L3343" title="All 2 branches covered.">        if (tolTransX &lt; minTolerance) {</span>
 <span class="fc" id="L3344">            tolTransX = generalTolerance;//minTolerance;</span>
         }
-<span class="pc bpc" id="L3346" title="1 of 2 branches missed.">        if (tolTransY &lt; minTolerance) {</span>
+<span class="fc bfc" id="L3346" title="All 2 branches covered.">        if (tolTransY &lt; minTolerance) {</span>
 <span class="fc" id="L3347">            tolTransY = generalTolerance;//minTolerance;</span>
         }
 
@@ -3377,8 +3377,8 @@ private void writeTransformed(TransformationParameters parameters,
         }
 
 <span class="fc" id="L3379">        int nS = (int) Math.ceil(2*scaleHalfRange / scaleDelta);</span>
-<span class="pc bpc" id="L3380" title="1 of 2 branches missed.">        if (nS == 0) {</span>
-<span class="nc" id="L3381">            nS = 1;</span>
+<span class="fc bfc" id="L3380" title="All 2 branches covered.">        if (nS == 0) {</span>
+<span class="fc" id="L3381">            nS = 1;</span>
         }
 <span class="fc" id="L3383">        float[] scales = new float[nS];</span>
 <span class="fc" id="L3384">        scales[0] = params.getScale() - scaleHalfRange;</span>
@@ -3505,79 +3505,79 @@ private void writeTransformed(TransformationParameters parameters,
         float transYHalfRange, float transYDelta,
         boolean useGreedyMatching) {
 
-<span class="nc bnc" id="L3508" title="All 2 branches missed.">        if (params == null) {</span>
+<span class="pc bpc" id="L3508" title="1 of 2 branches missed.">        if (params == null) {</span>
 <span class="nc" id="L3509">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L3511" title="All 2 branches missed.">        if (set1 == null) {</span>
+<span class="pc bpc" id="L3511" title="1 of 2 branches missed.">        if (set1 == null) {</span>
 <span class="nc" id="L3512">            throw new IllegalArgumentException(&quot;set1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L3514" title="All 2 branches missed.">        if (set2 == null) {</span>
+<span class="pc bpc" id="L3514" title="1 of 2 branches missed.">        if (set2 == null) {</span>
 <span class="nc" id="L3515">            throw new IllegalArgumentException(&quot;set2 cannot be null&quot;);</span>
         }
 
-<span class="nc" id="L3518">        float scaleHalfRange = 0;</span>
-<span class="nc" id="L3519">        float scaleDelta = 1;</span>
+<span class="fc" id="L3518">        float scaleHalfRange = 0;</span>
+<span class="fc" id="L3519">        float scaleDelta = 1;</span>
 
-<span class="nc" id="L3521">        TransformationPointFit[] fits = boundedGridSearch(</span>
+<span class="fc" id="L3521">        TransformationPointFit[] fits = boundedGridSearch(</span>
             set1, set2, params,
             scaleHalfRange, scaleDelta,
             rotHalfRangeInDegrees, rotDeltaInDegrees,
             transXHalfRange, transXDelta,
             transYHalfRange, transYDelta, useGreedyMatching);
 
-<span class="nc bnc" id="L3528" title="All 2 branches missed.">        if (fits == null) {</span>
+<span class="pc bpc" id="L3528" title="1 of 2 branches missed.">        if (fits == null) {</span>
 <span class="nc" id="L3529">            return null;</span>
         }
 
-<span class="nc" id="L3532">        int nMaxMatchable = Math.min(set1.getN(), set2.getN());</span>
+<span class="fc" id="L3532">        int nMaxMatchable = Math.min(set1.getN(), set2.getN());</span>
 
-<span class="nc bnc" id="L3534" title="All 2 branches missed.">        if (hasConverged(fits[0], nMaxMatchable)) {</span>
-<span class="nc" id="L3535">            return fits[0];</span>
+<span class="fc bfc" id="L3534" title="All 2 branches covered.">        if (hasConverged(fits[0], nMaxMatchable)) {</span>
+<span class="fc" id="L3535">            return fits[0];</span>
         }
 
         // finest grid so no need for downhill simplex search
-<span class="nc bnc" id="L3539" title="All 6 branches missed.">        if ((rotDeltaInDegrees == 1) &amp;&amp; (transXDelta == 1) &amp;&amp; (transYDelta == 1)) {</span>
+<span class="pc bpc" id="L3539" title="5 of 6 branches missed.">        if ((rotDeltaInDegrees == 1) &amp;&amp; (transXDelta == 1) &amp;&amp; (transYDelta == 1)) {</span>
 <span class="nc" id="L3540">            return fits[0];</span>
         }
 
-<span class="nc" id="L3543">        boolean searchScaleToo = false;</span>
+<span class="fc" id="L3543">        boolean searchScaleToo = false;</span>
 
-<span class="nc" id="L3545">        TransformationPointFit[] fits2 =</span>
-<span class="nc" id="L3546">            refineTransformationWithDownhillSimplexWrapper(fits, set1, set2,</span>
+<span class="fc" id="L3545">        TransformationPointFit[] fits2 =</span>
+<span class="fc" id="L3546">            refineTransformationWithDownhillSimplexWrapper(fits, set1, set2,</span>
             searchScaleToo, useGreedyMatching);
 
-<span class="nc bnc" id="L3549" title="All 4 branches missed.">        if ((fits2 == null) || (fits2.length == 0)) {</span>
+<span class="pc bpc" id="L3549" title="2 of 4 branches missed.">        if ((fits2 == null) || (fits2.length == 0)) {</span>
 <span class="nc" id="L3550">            return null;</span>
         }
 
-<span class="nc" id="L3553">        TransformationPointFit fit2 = fits2[0];</span>
+<span class="fc" id="L3553">        TransformationPointFit fit2 = fits2[0];</span>
 
-<span class="nc bnc" id="L3555" title="All 2 branches missed.">        if (hasConverged(fit2, nMaxMatchable)) {</span>
+<span class="pc bpc" id="L3555" title="1 of 2 branches missed.">        if (hasConverged(fit2, nMaxMatchable)) {</span>
 <span class="nc" id="L3556">            return fit2;</span>
         }
 
         // one last refinement
-<span class="nc" id="L3560">        scaleHalfRange = 0;</span>
-<span class="nc" id="L3561">        scaleDelta = 1;</span>
-<span class="nc" id="L3562">        rotHalfRangeInDegrees = 5;</span>
-<span class="nc" id="L3563">        rotDeltaInDegrees = 1;</span>
-<span class="nc" id="L3564">        transXHalfRange = 20;</span>
-<span class="nc" id="L3565">        transYHalfRange = transXHalfRange;</span>
-<span class="nc" id="L3566">        transXDelta = 1;</span>
-<span class="nc" id="L3567">        transYDelta = transXDelta;</span>
+<span class="fc" id="L3560">        scaleHalfRange = 0;</span>
+<span class="fc" id="L3561">        scaleDelta = 1;</span>
+<span class="fc" id="L3562">        rotHalfRangeInDegrees = 5;</span>
+<span class="fc" id="L3563">        rotDeltaInDegrees = 1;</span>
+<span class="fc" id="L3564">        transXHalfRange = 20;</span>
+<span class="fc" id="L3565">        transYHalfRange = transXHalfRange;</span>
+<span class="fc" id="L3566">        transXDelta = 1;</span>
+<span class="fc" id="L3567">        transYDelta = transXDelta;</span>
 
-<span class="nc" id="L3569">        TransformationPointFit[] fits3 = boundedGridSearch(</span>
-<span class="nc" id="L3570">            set1, set2, fit2.getParameters(),</span>
+<span class="fc" id="L3569">        TransformationPointFit[] fits3 = boundedGridSearch(</span>
+<span class="fc" id="L3570">            set1, set2, fit2.getParameters(),</span>
             scaleHalfRange, scaleDelta,
             rotHalfRangeInDegrees, rotDeltaInDegrees,
             transXHalfRange, transXDelta,
             transYHalfRange, transYDelta, useGreedyMatching);
 
-<span class="nc bnc" id="L3576" title="All 4 branches missed.">        if ((fits3 == null) || (fits3.length == 0)) {</span>
+<span class="pc bpc" id="L3576" title="2 of 4 branches missed.">        if ((fits3 == null) || (fits3.length == 0)) {</span>
 <span class="nc" id="L3577">            return null;</span>
         }
 
-<span class="nc" id="L3580">        return fits3[0];</span>
+<span class="fc" id="L3580">        return fits3[0];</span>
     }
 
     /**
@@ -3769,14 +3769,14 @@ private void writeTransformed(TransformationParameters parameters,
     calculateEuclideanTransformationUsingPairs(
         PairIntArray set1, PairIntArray set2, boolean earlyConvergeReturn) {
 
-<span class="nc" id="L3772">        boolean useLargestToleranceForOutput = true;</span>
-<span class="nc" id="L3773">        boolean useGreedyMatching = true;</span>
+<span class="fc" id="L3772">        boolean useLargestToleranceForOutput = true;</span>
+<span class="fc" id="L3773">        boolean useGreedyMatching = true;</span>
 
-<span class="nc" id="L3775">        List&lt;TransformationPointFit&gt;  fits = calculateEuclideanTransformationUsingPairs(</span>
+<span class="fc" id="L3775">        List&lt;TransformationPointFit&gt;  fits = calculateEuclideanTransformationUsingPairs(</span>
             set1, set2, earlyConvergeReturn,
             useLargestToleranceForOutput, useGreedyMatching);
 
-<span class="nc" id="L3779">        return fits;</span>
+<span class="fc" id="L3779">        return fits;</span>
     }
 
     protected List&lt;TransformationPointFit&gt;
@@ -3809,15 +3809,15 @@ private void writeTransformed(TransformationParameters parameters,
         float toleranceTransX, float toleranceTransY,
         boolean useGreedyMatching) {
 
-<span class="nc" id="L3812">        int n1 = set1.getN();</span>
-<span class="nc" id="L3813">        int n2 = set2.getN();</span>
+<span class="fc" id="L3812">        int n1 = set1.getN();</span>
+<span class="fc" id="L3813">        int n2 = set2.getN();</span>
 
-<span class="nc" id="L3815">        int k = 2;</span>
+<span class="fc" id="L3815">        int k = 2;</span>
 
-<span class="nc" id="L3817">        SubsetChooser s1 = new SubsetChooser(n1, k);</span>
+<span class="fc" id="L3817">        SubsetChooser s1 = new SubsetChooser(n1, k);</span>
 
-<span class="nc" id="L3819">        int[] selected1 = new int[k];</span>
-<span class="nc" id="L3820">        int[] selected2 = new int[k];</span>
+<span class="fc" id="L3819">        int[] selected1 = new int[k];</span>
+<span class="fc" id="L3820">        int[] selected2 = new int[k];</span>
 
         /*
         save bestFit for scale near 1,
@@ -3825,175 +3825,175 @@ private void writeTransformed(TransformationParameters parameters,
                    bestFit for scale &lt; 1
         and normalized for each.
         */
-<span class="nc" id="L3828">        TransformationPointFit bestFitScaleGT1 = null;</span>
-<span class="nc" id="L3829">        TransformationPointFit bestFitScaleLT1 = null;</span>
-<span class="nc" id="L3830">        TransformationPointFit bestFitScale1 = null;</span>
-<span class="nc" id="L3831">        TransformationPointFit bestFitNormalizedScaleGT1 = null;</span>
-<span class="nc" id="L3832">        TransformationPointFit bestFitNormalizedScaleLT1 = null;</span>
-<span class="nc" id="L3833">        TransformationPointFit bestFitNormalizedScale1 = null;</span>
+<span class="fc" id="L3828">        TransformationPointFit bestFitScaleGT1 = null;</span>
+<span class="fc" id="L3829">        TransformationPointFit bestFitScaleLT1 = null;</span>
+<span class="fc" id="L3830">        TransformationPointFit bestFitScale1 = null;</span>
+<span class="fc" id="L3831">        TransformationPointFit bestFitNormalizedScaleGT1 = null;</span>
+<span class="fc" id="L3832">        TransformationPointFit bestFitNormalizedScaleLT1 = null;</span>
+<span class="fc" id="L3833">        TransformationPointFit bestFitNormalizedScale1 = null;</span>
 
-<span class="nc" id="L3835">        int maxNMatchable = Math.min(n1, n2);</span>
+<span class="fc" id="L3835">        int maxNMatchable = Math.min(n1, n2);</span>
 
-<span class="nc" id="L3837">        MatchedPointsTransformationCalculator tc = new</span>
+<span class="fc" id="L3837">        MatchedPointsTransformationCalculator tc = new</span>
             MatchedPointsTransformationCalculator();
 
-<span class="nc" id="L3840">        TransformationPointFit bestFitNormalized = null;</span>
-<span class="nc" id="L3841">        TransformationPointFit bestFit = null;</span>
+<span class="fc" id="L3840">        TransformationPointFit bestFitNormalized = null;</span>
+<span class="fc" id="L3841">        TransformationPointFit bestFit = null;</span>
 
-<span class="nc" id="L3843">        List&lt;TransformationPointFit&gt; similarToBestFitNormalized = new ArrayList&lt;TransformationPointFit&gt;();</span>
-<span class="nc" id="L3844">        List&lt;TransformationPointFit&gt; similarToBestFit = new ArrayList&lt;TransformationPointFit&gt;();</span>
+<span class="fc" id="L3843">        List&lt;TransformationPointFit&gt; similarToBestFitNormalized = new ArrayList&lt;TransformationPointFit&gt;();</span>
+<span class="fc" id="L3844">        List&lt;TransformationPointFit&gt; similarToBestFit = new ArrayList&lt;TransformationPointFit&gt;();</span>
 
-<span class="nc" id="L3846">        long n1Count = 0;</span>
+<span class="fc" id="L3846">        long n1Count = 0;</span>
 
-<span class="nc bnc" id="L3848" title="All 2 branches missed.">        while (s1.getNextSubset(selected1) != -1) {</span>
+<span class="fc bfc" id="L3848" title="All 2 branches covered.">        while (s1.getNextSubset(selected1) != -1) {</span>
 
-<span class="nc bnc" id="L3850" title="All 2 branches missed.">            if (n1Count &gt; n1Iterations) {</span>
-<span class="nc" id="L3851">                break;</span>
+<span class="fc bfc" id="L3850" title="All 2 branches covered.">            if (n1Count &gt; n1Iterations) {</span>
+<span class="fc" id="L3851">                break;</span>
             }
 
-<span class="nc" id="L3854">            int idx10 = selected1[0];</span>
-<span class="nc" id="L3855">            int idx11 = selected1[1];</span>
+<span class="fc" id="L3854">            int idx10 = selected1[0];</span>
+<span class="fc" id="L3855">            int idx11 = selected1[1];</span>
 
-<span class="nc" id="L3857">            SubsetChooser s2 = new SubsetChooser(n2, k);</span>
+<span class="fc" id="L3857">            SubsetChooser s2 = new SubsetChooser(n2, k);</span>
 
             //TODO: could save the calculations for point 1 here
 
-<span class="nc bnc" id="L3861" title="All 2 branches missed.">            while (s2.getNextSubset(selected2) != -1) {</span>
+<span class="fc bfc" id="L3861" title="All 2 branches covered.">            while (s2.getNextSubset(selected2) != -1) {</span>
 
-<span class="nc" id="L3863">                int idx20 = selected2[0];</span>
-<span class="nc" id="L3864">                int idx21 = selected2[1];</span>
+<span class="fc" id="L3863">                int idx20 = selected2[0];</span>
+<span class="fc" id="L3864">                int idx21 = selected2[1];</span>
 
-<span class="nc bnc" id="L3866" title="All 2 branches missed.">                for (int order = 0; order &lt; 2; ++order) {</span>
+<span class="fc bfc" id="L3866" title="All 2 branches covered.">                for (int order = 0; order &lt; 2; ++order) {</span>
 
-<span class="nc bnc" id="L3868" title="All 2 branches missed.">                    if (order == 1) {</span>
-<span class="nc" id="L3869">                        int swap = idx20;</span>
-<span class="nc" id="L3870">                        idx20 = idx21;</span>
-<span class="nc" id="L3871">                        idx21 = swap;</span>
+<span class="fc bfc" id="L3868" title="All 2 branches covered.">                    if (order == 1) {</span>
+<span class="fc" id="L3869">                        int swap = idx20;</span>
+<span class="fc" id="L3870">                        idx20 = idx21;</span>
+<span class="fc" id="L3871">                        idx21 = swap;</span>
                     }
 
-<span class="nc" id="L3874">                    TransformationParameters params = tc.calulateEuclidean(</span>
-<span class="nc" id="L3875">                        set1.getX(idx10), set1.getY(idx10),</span>
-<span class="nc" id="L3876">                        set1.getX(idx11), set1.getY(idx11),</span>
-<span class="nc" id="L3877">                        set2.getX(idx20), set2.getY(idx20),</span>
-<span class="nc" id="L3878">                        set2.getX(idx21), set2.getY(idx21),</span>
+<span class="fc" id="L3874">                    TransformationParameters params = tc.calulateEuclidean(</span>
+<span class="fc" id="L3875">                        set1.getX(idx10), set1.getY(idx10),</span>
+<span class="fc" id="L3876">                        set1.getX(idx11), set1.getY(idx11),</span>
+<span class="fc" id="L3877">                        set2.getX(idx20), set2.getY(idx20),</span>
+<span class="fc" id="L3878">                        set2.getX(idx21), set2.getY(idx21),</span>
                         0, 0);
 
-<span class="nc" id="L3881">                    TransformationPointFit fit = evaluateForUnmatched(params,</span>
+<span class="fc" id="L3881">                    TransformationPointFit fit = evaluateForUnmatched(params,</span>
                         fullSet1, fullSet2, toleranceTransX, toleranceTransY,
                         useGreedyMatching);
 
-<span class="nc bnc" id="L3885" title="All 4 branches missed.">                    if ((fit == null) || (fit.getNumberOfMatchedPoints() &lt; 2)) {</span>
+<span class="pc bpc" id="L3885" title="2 of 4 branches missed.">                    if ((fit == null) || (fit.getNumberOfMatchedPoints() &lt; 2)) {</span>
 <span class="nc" id="L3886">                        continue;</span>
                     }
 
-<span class="nc" id="L3889">                    float scale = params.getScale();</span>
+<span class="fc" id="L3889">                    float scale = params.getScale();</span>
 
-<span class="nc bnc" id="L3891" title="All 4 branches missed.">                    if ((scale &gt;= 0.95) &amp;&amp; (scale &lt;= 1.05)) {</span>
-<span class="nc bnc" id="L3892" title="All 2 branches missed.">                        if (fitIsBetter(bestFitScale1, fit)) {</span>
-<span class="nc" id="L3893">                            bestFitScale1 = fit;</span>
+<span class="fc bfc" id="L3891" title="All 4 branches covered.">                    if ((scale &gt;= 0.95) &amp;&amp; (scale &lt;= 1.05)) {</span>
+<span class="fc bfc" id="L3892" title="All 2 branches covered.">                        if (fitIsBetter(bestFitScale1, fit)) {</span>
+<span class="fc" id="L3893">                            bestFitScale1 = fit;</span>
                         }
-<span class="nc bnc" id="L3895" title="All 2 branches missed.">                        if (fitIsBetterNormalized(bestFitNormalizedScale1, fit)) {</span>
-<span class="nc" id="L3896">                            bestFitNormalizedScale1 = fit;</span>
+<span class="fc bfc" id="L3895" title="All 2 branches covered.">                        if (fitIsBetterNormalized(bestFitNormalizedScale1, fit)) {</span>
+<span class="fc" id="L3896">                            bestFitNormalizedScale1 = fit;</span>
                         }
-<span class="nc bnc" id="L3898" title="All 2 branches missed.">                    } else if (scale &gt; 1.05) {</span>
-<span class="nc bnc" id="L3899" title="All 2 branches missed.">                        if (fitIsBetter(bestFitScaleGT1, fit)) {</span>
-<span class="nc" id="L3900">                            bestFitScaleGT1 = fit;</span>
+<span class="fc bfc" id="L3898" title="All 2 branches covered.">                    } else if (scale &gt; 1.05) {</span>
+<span class="fc bfc" id="L3899" title="All 2 branches covered.">                        if (fitIsBetter(bestFitScaleGT1, fit)) {</span>
+<span class="fc" id="L3900">                            bestFitScaleGT1 = fit;</span>
                         }
-<span class="nc bnc" id="L3902" title="All 2 branches missed.">                        if (fitIsBetterNormalized(bestFitNormalizedScaleGT1, fit)) {</span>
-<span class="nc" id="L3903">                            bestFitNormalizedScaleGT1 = fit;</span>
+<span class="fc bfc" id="L3902" title="All 2 branches covered.">                        if (fitIsBetterNormalized(bestFitNormalizedScaleGT1, fit)) {</span>
+<span class="fc" id="L3903">                            bestFitNormalizedScaleGT1 = fit;</span>
                         }
-<span class="nc bnc" id="L3905" title="All 2 branches missed.">                    } else if (scale &lt; 0.95) {</span>
-<span class="nc bnc" id="L3906" title="All 2 branches missed.">                        if (fitIsBetter(bestFitScaleLT1, fit)) {</span>
-<span class="nc" id="L3907">                            bestFitScaleLT1 = fit;</span>
+<span class="pc bpc" id="L3905" title="1 of 2 branches missed.">                    } else if (scale &lt; 0.95) {</span>
+<span class="fc bfc" id="L3906" title="All 2 branches covered.">                        if (fitIsBetter(bestFitScaleLT1, fit)) {</span>
+<span class="fc" id="L3907">                            bestFitScaleLT1 = fit;</span>
                         }
-<span class="nc bnc" id="L3909" title="All 2 branches missed.">                        if (fitIsBetterNormalized(bestFitNormalizedScaleLT1, fit)) {</span>
-<span class="nc" id="L3910">                            bestFitNormalizedScaleLT1 = fit;</span>
+<span class="fc bfc" id="L3909" title="All 2 branches covered.">                        if (fitIsBetterNormalized(bestFitNormalizedScaleLT1, fit)) {</span>
+<span class="fc" id="L3910">                            bestFitNormalizedScaleLT1 = fit;</span>
                         }
                     }
 
-<span class="nc bnc" id="L3914" title="All 2 branches missed.">                    if (fitIsBetterNormalized(bestFitNormalized, fit)) {</span>
-<span class="nc bnc" id="L3915" title="All 4 branches missed.">                        if ((bestFitNormalized != null) &amp;&amp; (bestFitNormalized.getMeanDistFromModel() &lt; 1)</span>
-<span class="nc bnc" id="L3916" title="All 2 branches missed.">                            &amp;&amp; (fit.getMeanDistFromModel() &lt; 1)) {</span>
-<span class="nc bnc" id="L3917" title="All 2 branches missed.">                            if (similarToBestFitNormalized.isEmpty()) {</span>
-<span class="nc" id="L3918">                                similarToBestFitNormalized.add(bestFitNormalized);</span>
+<span class="fc bfc" id="L3914" title="All 2 branches covered.">                    if (fitIsBetterNormalized(bestFitNormalized, fit)) {</span>
+<span class="fc bfc" id="L3915" title="All 4 branches covered.">                        if ((bestFitNormalized != null) &amp;&amp; (bestFitNormalized.getMeanDistFromModel() &lt; 1)</span>
+<span class="fc bfc" id="L3916" title="All 2 branches covered.">                            &amp;&amp; (fit.getMeanDistFromModel() &lt; 1)) {</span>
+<span class="fc bfc" id="L3917" title="All 2 branches covered.">                            if (similarToBestFitNormalized.isEmpty()) {</span>
+<span class="fc" id="L3918">                                similarToBestFitNormalized.add(bestFitNormalized);</span>
                             }
-<span class="nc" id="L3920">                            similarToBestFitNormalized.add(fit);</span>
+<span class="fc" id="L3920">                            similarToBestFitNormalized.add(fit);</span>
                         } else {
-<span class="nc" id="L3922">                            similarToBestFitNormalized.clear();</span>
+<span class="fc" id="L3922">                            similarToBestFitNormalized.clear();</span>
                         }
-<span class="nc" id="L3924">                        bestFitNormalized = fit;</span>
+<span class="fc" id="L3924">                        bestFitNormalized = fit;</span>
                     }
-<span class="nc bnc" id="L3926" title="All 2 branches missed.">                    if (fitIsBetter(bestFit, fit)) {</span>
-<span class="nc bnc" id="L3927" title="All 4 branches missed.">                        if ((bestFit != null) &amp;&amp; (bestFit.getMeanDistFromModel() &lt; 1)</span>
-<span class="nc bnc" id="L3928" title="All 2 branches missed.">                            &amp;&amp; (fit.getMeanDistFromModel() &lt; 1)) {</span>
-<span class="nc bnc" id="L3929" title="All 2 branches missed.">                            if (similarToBestFit.isEmpty()) {</span>
-<span class="nc" id="L3930">                                similarToBestFit.add(bestFit);</span>
+<span class="fc bfc" id="L3926" title="All 2 branches covered.">                    if (fitIsBetter(bestFit, fit)) {</span>
+<span class="fc bfc" id="L3927" title="All 4 branches covered.">                        if ((bestFit != null) &amp;&amp; (bestFit.getMeanDistFromModel() &lt; 1)</span>
+<span class="fc bfc" id="L3928" title="All 2 branches covered.">                            &amp;&amp; (fit.getMeanDistFromModel() &lt; 1)) {</span>
+<span class="fc bfc" id="L3929" title="All 2 branches covered.">                            if (similarToBestFit.isEmpty()) {</span>
+<span class="fc" id="L3930">                                similarToBestFit.add(bestFit);</span>
                             }
-<span class="nc" id="L3932">                            similarToBestFit.add(fit);</span>
+<span class="fc" id="L3932">                            similarToBestFit.add(fit);</span>
                         } else {
-<span class="nc" id="L3934">                            similarToBestFit.clear();</span>
+<span class="fc" id="L3934">                            similarToBestFit.clear();</span>
                         }
-<span class="nc" id="L3936">                        bestFit = fit;</span>
+<span class="fc" id="L3936">                        bestFit = fit;</span>
                     }
                 }
-<span class="nc" id="L3939">            }</span>
+<span class="fc" id="L3939">            }</span>
 
-<span class="nc" id="L3941">            n1Count++;</span>
-<span class="nc" id="L3942">        }</span>
+<span class="fc" id="L3941">            n1Count++;</span>
+<span class="fc" id="L3942">        }</span>
 
-<span class="nc" id="L3944">        log.info(&quot;similarToBestFit.size=&quot; + similarToBestFit.size());</span>
-<span class="nc bnc" id="L3945" title="All 2 branches missed.">        if (similarToBestFit.size() &gt; 1) {</span>
-<span class="nc bnc" id="L3946" title="All 2 branches missed.">            for (TransformationPointFit fit : similarToBestFit) {</span>
-<span class="nc" id="L3947">                log.info(&quot;similarFit=&quot; + fit.toString());</span>
-<span class="nc" id="L3948">            }</span>
+<span class="fc" id="L3944">        log.info(&quot;similarToBestFit.size=&quot; + similarToBestFit.size());</span>
+<span class="pc bpc" id="L3945" title="1 of 2 branches missed.">        if (similarToBestFit.size() &gt; 1) {</span>
+<span class="fc bfc" id="L3946" title="All 2 branches covered.">            for (TransformationPointFit fit : similarToBestFit) {</span>
+<span class="fc" id="L3947">                log.info(&quot;similarFit=&quot; + fit.toString());</span>
+<span class="fc" id="L3948">            }</span>
         }
-<span class="nc" id="L3950">        log.info(&quot;similarToBestFitNormalized.size=&quot; + similarToBestFitNormalized.size());</span>
-<span class="nc bnc" id="L3951" title="All 2 branches missed.">        if (similarToBestFitNormalized.size() &gt; 1) {</span>
-<span class="nc bnc" id="L3952" title="All 2 branches missed.">            for (TransformationPointFit fit : similarToBestFitNormalized) {</span>
-<span class="nc" id="L3953">                log.info(&quot;similarFit=&quot; + fit.toString());</span>
-<span class="nc" id="L3954">            }</span>
-<span class="nc bnc" id="L3955" title="All 4 branches missed.">        } else if (similarToBestFitNormalized.isEmpty() &amp;&amp; (bestFitNormalized != null)) {</span>
-<span class="nc" id="L3956">            log.info(&quot;bestFitNormalized=&quot; + bestFitNormalized.toString());</span>
-<span class="nc" id="L3957">            similarToBestFitNormalized.add(bestFitNormalized);</span>
+<span class="fc" id="L3950">        log.info(&quot;similarToBestFitNormalized.size=&quot; + similarToBestFitNormalized.size());</span>
+<span class="fc bfc" id="L3951" title="All 2 branches covered.">        if (similarToBestFitNormalized.size() &gt; 1) {</span>
+<span class="fc bfc" id="L3952" title="All 2 branches covered.">            for (TransformationPointFit fit : similarToBestFitNormalized) {</span>
+<span class="fc" id="L3953">                log.info(&quot;similarFit=&quot; + fit.toString());</span>
+<span class="fc" id="L3954">            }</span>
+<span class="pc bpc" id="L3955" title="2 of 4 branches missed.">        } else if (similarToBestFitNormalized.isEmpty() &amp;&amp; (bestFitNormalized != null)) {</span>
+<span class="fc" id="L3956">            log.info(&quot;bestFitNormalized=&quot; + bestFitNormalized.toString());</span>
+<span class="fc" id="L3957">            similarToBestFitNormalized.add(bestFitNormalized);</span>
         }
-<span class="nc" id="L3959">        log.info(&quot;bestFit(not normalized)=&quot; + bestFit.toString());</span>
-<span class="nc" id="L3960">        similarToBestFitNormalized.add(0, bestFit);</span>
+<span class="fc" id="L3959">        log.info(&quot;bestFit(not normalized)=&quot; + bestFit.toString());</span>
+<span class="fc" id="L3960">        similarToBestFitNormalized.add(0, bestFit);</span>
 
-<span class="nc bnc" id="L3962" title="All 2 branches missed.">        if (bestFitNormalized != null) {</span>
-<span class="nc" id="L3963">            log.info(&quot;bestFit(normalized)=&quot; + bestFitNormalized.toString());</span>
-        }
-
-<span class="nc bnc" id="L3966" title="All 2 branches missed.">        if (bestFitScaleGT1 != null) {</span>
-<span class="nc" id="L3967">            log.info(&quot;bestFitScaleGT1=&quot; + bestFitScaleGT1.toString());</span>
-<span class="nc" id="L3968">            similarToBestFitNormalized.add(bestFitScaleGT1);</span>
+<span class="pc bpc" id="L3962" title="1 of 2 branches missed.">        if (bestFitNormalized != null) {</span>
+<span class="fc" id="L3963">            log.info(&quot;bestFit(normalized)=&quot; + bestFitNormalized.toString());</span>
         }
 
-<span class="nc bnc" id="L3971" title="All 2 branches missed.">        if (bestFitScaleLT1 != null) {</span>
-<span class="nc" id="L3972">            log.info(&quot;bestFitScaleLT1=&quot; + bestFitScaleLT1.toString());</span>
-<span class="nc" id="L3973">            similarToBestFitNormalized.add(bestFitScaleLT1);</span>
+<span class="pc bpc" id="L3966" title="1 of 2 branches missed.">        if (bestFitScaleGT1 != null) {</span>
+<span class="fc" id="L3967">            log.info(&quot;bestFitScaleGT1=&quot; + bestFitScaleGT1.toString());</span>
+<span class="fc" id="L3968">            similarToBestFitNormalized.add(bestFitScaleGT1);</span>
         }
 
-<span class="nc bnc" id="L3976" title="All 2 branches missed.">        if (bestFitScale1 != null) {</span>
-<span class="nc" id="L3977">            log.info(&quot;bestFitScale1=&quot; + bestFitScale1.toString());</span>
-<span class="nc" id="L3978">            similarToBestFitNormalized.add(bestFitScale1);</span>
+<span class="pc bpc" id="L3971" title="1 of 2 branches missed.">        if (bestFitScaleLT1 != null) {</span>
+<span class="fc" id="L3972">            log.info(&quot;bestFitScaleLT1=&quot; + bestFitScaleLT1.toString());</span>
+<span class="fc" id="L3973">            similarToBestFitNormalized.add(bestFitScaleLT1);</span>
         }
 
-<span class="nc bnc" id="L3981" title="All 2 branches missed.">        if (bestFitNormalizedScaleGT1 != null) {</span>
-<span class="nc" id="L3982">            log.info(&quot;bestFitNormalizedScaleGT1=&quot; + bestFitNormalizedScaleGT1.toString());</span>
-<span class="nc" id="L3983">            similarToBestFitNormalized.add(bestFitNormalizedScaleGT1);</span>
+<span class="pc bpc" id="L3976" title="1 of 2 branches missed.">        if (bestFitScale1 != null) {</span>
+<span class="fc" id="L3977">            log.info(&quot;bestFitScale1=&quot; + bestFitScale1.toString());</span>
+<span class="fc" id="L3978">            similarToBestFitNormalized.add(bestFitScale1);</span>
         }
 
-<span class="nc bnc" id="L3986" title="All 2 branches missed.">        if (bestFitNormalizedScaleLT1 != null) {</span>
-<span class="nc" id="L3987">            log.info(&quot;bestFitNormalizedScaleLT1=&quot; + bestFitNormalizedScaleLT1.toString());</span>
-<span class="nc" id="L3988">            similarToBestFitNormalized.add(bestFitNormalizedScaleLT1);</span>
+<span class="pc bpc" id="L3981" title="1 of 2 branches missed.">        if (bestFitNormalizedScaleGT1 != null) {</span>
+<span class="fc" id="L3982">            log.info(&quot;bestFitNormalizedScaleGT1=&quot; + bestFitNormalizedScaleGT1.toString());</span>
+<span class="fc" id="L3983">            similarToBestFitNormalized.add(bestFitNormalizedScaleGT1);</span>
         }
 
-<span class="nc bnc" id="L3991" title="All 2 branches missed.">        if (bestFitNormalizedScale1 != null) {</span>
-<span class="nc" id="L3992">            log.info(&quot;bestFitNormalizedScale1=&quot; + bestFitNormalizedScale1.toString());</span>
-<span class="nc" id="L3993">            similarToBestFitNormalized.add(bestFitNormalizedScale1);</span>
+<span class="pc bpc" id="L3986" title="1 of 2 branches missed.">        if (bestFitNormalizedScaleLT1 != null) {</span>
+<span class="fc" id="L3987">            log.info(&quot;bestFitNormalizedScaleLT1=&quot; + bestFitNormalizedScaleLT1.toString());</span>
+<span class="fc" id="L3988">            similarToBestFitNormalized.add(bestFitNormalizedScaleLT1);</span>
         }
 
-<span class="nc" id="L3996">        return similarToBestFitNormalized;</span>
+<span class="pc bpc" id="L3991" title="1 of 2 branches missed.">        if (bestFitNormalizedScale1 != null) {</span>
+<span class="fc" id="L3992">            log.info(&quot;bestFitNormalizedScale1=&quot; + bestFitNormalizedScale1.toString());</span>
+<span class="fc" id="L3993">            similarToBestFitNormalized.add(bestFitNormalizedScale1);</span>
+        }
+
+<span class="fc" id="L3996">        return similarToBestFitNormalized;</span>
     }
 
     protected List&lt;TransformationPointFit&gt;
@@ -4274,20 +4274,20 @@ private void writeTransformed(TransformationParameters parameters,
         PairIntArray set1, PairIntArray set2, boolean earlyConvergeReturn,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
-<span class="nc" id="L4277">        int n1 = set1.getN();</span>
-<span class="nc" id="L4278">        int n2 = set2.getN();</span>
+<span class="fc" id="L4277">        int n1 = set1.getN();</span>
+<span class="fc" id="L4278">        int n2 = set2.getN();</span>
 
         float toleranceTransX;
         float toleranceTransY;
-<span class="nc bnc" id="L4282" title="All 2 branches missed.">        if (useLargestToleranceForOutput) {</span>
-<span class="nc" id="L4283">            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);</span>
-<span class="nc" id="L4284">            toleranceTransY = toleranceTransX;</span>
+<span class="pc bpc" id="L4282" title="1 of 2 branches missed.">        if (useLargestToleranceForOutput) {</span>
+<span class="fc" id="L4283">            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);</span>
+<span class="fc" id="L4284">            toleranceTransY = toleranceTransX;</span>
         } else {
 <span class="nc" id="L4286">            toleranceTransX = 4;</span>
 <span class="nc" id="L4287">            toleranceTransY = 4;</span>
         }
 
-<span class="nc" id="L4290">        return calculateEuclideanTransformationUsingPairs(</span>
+<span class="fc" id="L4290">        return calculateEuclideanTransformationUsingPairs(</span>
             set1, set2, toleranceTransX, toleranceTransY, earlyConvergeReturn,
             useGreedyMatching);
     }
@@ -4297,16 +4297,16 @@ private void writeTransformed(TransformationParameters parameters,
         float toleranceTransX, float toleranceTransY,
         boolean earlyConvergeReturn, boolean useGreedyMatching) {
 
-<span class="nc" id="L4300">        int n1 = set1.getN();</span>
-<span class="nc" id="L4301">        int n2 = set2.getN();</span>
+<span class="fc" id="L4300">        int n1 = set1.getN();</span>
+<span class="fc" id="L4301">        int n2 = set2.getN();</span>
 
-<span class="nc" id="L4303">        long np = numberOfPairPermutations(n1, n2);</span>
+<span class="fc" id="L4303">        long np = numberOfPairPermutations(n1, n2);</span>
 
         // if np is very large, need to be able to exit the algorithm
         // earlier than the full try of all permutations.
         // TODO: this may need to be set as an option to allow it to finish
         //     if user really does want all permutations tried.
-<span class="nc bnc" id="L4309" title="All 6 branches missed.">        if ((np &gt; 1e8) || ((n2 &gt; largeSearchLimit) &amp;&amp; earlyConvergeReturn)){</span>
+<span class="pc bpc" id="L4309" title="2 of 6 branches missed.">        if ((np &gt; 1e8) || ((n2 &gt; largeSearchLimit) &amp;&amp; earlyConvergeReturn)){</span>
             /*
             if reduce set2 to a randomly sampled smaller set, the percentage
             of truly matchable points should remain the same.
@@ -4318,14 +4318,14 @@ private void writeTransformed(TransformationParameters parameters,
             reducing n2 to 30 and randomly sampling 30 from n1 results in
             0.17 billion steps.
             */
-<span class="nc" id="L4321">            return calculateEuclideanTransformationUsingPairsPartitioned(</span>
+<span class="fc" id="L4321">            return calculateEuclideanTransformationUsingPairsPartitioned(</span>
                  set1, set2, toleranceTransX, toleranceTransY,
                  useGreedyMatching);
         }
 
-<span class="nc" id="L4326">        long n1P = (set1.getN() * (set1.getN() - 1))/2;</span>
+<span class="fc" id="L4326">        long n1P = (set1.getN() * (set1.getN() - 1))/2;</span>
 
-<span class="nc" id="L4328">        return calculateEuclideanTransformationForSmallSets(set1, set2,</span>
+<span class="fc" id="L4328">        return calculateEuclideanTransformationForSmallSets(set1, set2,</span>
             set1, set2, n1P,
             toleranceTransX, toleranceTransY, useGreedyMatching);
     }
@@ -4385,24 +4385,24 @@ private void writeTransformed(TransformationParameters parameters,
             n1Min ~ Math.sqrt(1e9/(n2*(n2-1)*(1./4.)*n1*n2))
         */
 
-<span class="nc" id="L4388">        int n1 = set1.getN();</span>
-<span class="nc" id="L4389">        int n2 = set2.getN();</span>
-<span class="nc" id="L4390">        PairIntArray shuffledSet1 = null;</span>
+<span class="fc" id="L4388">        int n1 = set1.getN();</span>
+<span class="fc" id="L4389">        int n2 = set2.getN();</span>
+<span class="fc" id="L4390">        PairIntArray shuffledSet1 = null;</span>
         try {
-<span class="nc" id="L4392">            shuffledSet1 = MiscMath.shuffle(set1);</span>
+<span class="fc" id="L4392">            shuffledSet1 = MiscMath.shuffle(set1);</span>
 <span class="nc" id="L4393">        } catch (NoSuchAlgorithmException ex) {</span>
 <span class="nc" id="L4394">            throw new RuntimeException(ex);</span>
-<span class="nc" id="L4395">        }</span>
+<span class="fc" id="L4395">        }</span>
 
-<span class="nc" id="L4397">        long n1Min = Math.round(Math.sqrt(1e9/(n2*(n2-1)*(1./2.)*n1*n2)));</span>
-<span class="nc bnc" id="L4398" title="All 2 branches missed.">        if (n1Min &lt; 10) {</span>
+<span class="fc" id="L4397">        long n1Min = Math.round(Math.sqrt(1e9/(n2*(n2-1)*(1./2.)*n1*n2)));</span>
+<span class="pc bpc" id="L4398" title="1 of 2 branches missed.">        if (n1Min &lt; 10) {</span>
             //this can still take minutes if n1&gt;150 and n2 &gt; 150
 <span class="nc" id="L4400">            n1Min = 10;</span>
         }
 
-<span class="nc" id="L4403">        log.info(&quot;n1Min=&quot; + n1Min);</span>
+<span class="fc" id="L4403">        log.info(&quot;n1Min=&quot; + n1Min);</span>
 
-<span class="nc" id="L4405">        return calculateEuclideanTransformationForSmallSets(shuffledSet1,</span>
+<span class="fc" id="L4405">        return calculateEuclideanTransformationForSmallSets(shuffledSet1,</span>
             set2, shuffledSet1, set2, n1Min,
             toleranceTransX, toleranceTransY, useGreedyMatching);
     }
@@ -4594,31 +4594,31 @@ private void writeTransformed(TransformationParameters parameters,
 
     protected long numberOfPairPermutations(int n1, int n2) {
 
-<span class="nc" id="L4597">        long n1p = (MiscMath.computeNDivNMinusK(n1, 2)) &gt;&gt; 1;</span>
+<span class="fc" id="L4597">        long n1p = (MiscMath.computeNDivNMinusK(n1, 2)) &gt;&gt; 1;</span>
 
-<span class="nc" id="L4599">        long n2p = (MiscMath.computeNDivNMinusK(n2, 2)) &gt;&gt; 1;</span>
+<span class="fc" id="L4599">        long n2p = (MiscMath.computeNDivNMinusK(n2, 2)) &gt;&gt; 1;</span>
 
-<span class="nc" id="L4601">        double lg1 = Math.log(n1p)/Math.log(2);</span>
-<span class="nc" id="L4602">        double lg2 = Math.log(n2p)/Math.log(2);</span>
+<span class="fc" id="L4601">        double lg1 = Math.log(n1p)/Math.log(2);</span>
+<span class="fc" id="L4602">        double lg2 = Math.log(n2p)/Math.log(2);</span>
 
-<span class="nc bnc" id="L4604" title="All 2 branches missed.">        if ((lg1 + lg2) &gt; 63) {</span>
+<span class="pc bpc" id="L4604" title="1 of 2 branches missed.">        if ((lg1 + lg2) &gt; 63) {</span>
 <span class="nc" id="L4605">            return Long.MAX_VALUE;</span>
         }
 
-<span class="nc" id="L4608">        return n1p * n2p;</span>
+<span class="fc" id="L4608">        return n1p * n2p;</span>
     }
 
     protected long estimateNStepsPairCalculation(int n1, int n2) {
 
-<span class="nc" id="L4613">        long np = numberOfPairPermutations(n1, n2);</span>
+<span class="fc" id="L4613">        long np = numberOfPairPermutations(n1, n2);</span>
 
-<span class="nc bnc" id="L4615" title="All 2 branches missed.">        if (np == Long.MAX_VALUE) {</span>
+<span class="pc bpc" id="L4615" title="1 of 2 branches missed.">        if (np == Long.MAX_VALUE) {</span>
 <span class="nc" id="L4616">            return np;</span>
         }
 
-<span class="nc" id="L4619">        long nPerFitGreedy = n1 * n2;</span>
+<span class="fc" id="L4619">        long nPerFitGreedy = n1 * n2;</span>
 
-<span class="nc" id="L4621">        return np * 2 * nPerFitGreedy;</span>
+<span class="fc" id="L4621">        return np * 2 * nPerFitGreedy;</span>
     }
 
     protected void reduceToIntersection(
@@ -4666,8 +4666,8 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc bfc" id="L4666" title="All 4 branches covered.">            if ((x &lt; (minX1 - tolTransX)) || (x &gt; (maxX1 + tolTransX))) {</span>
 <span class="fc" id="L4667">                continue;</span>
             }
-<span class="pc bpc" id="L4669" title="1 of 4 branches missed.">            if ((y &lt; (minY1 - tolTransY)) || (y &gt; (maxY1 + tolTransY))) {</span>
-<span class="nc" id="L4670">                continue;</span>
+<span class="fc bfc" id="L4669" title="All 4 branches covered.">            if ((y &lt; (minY1 - tolTransY)) || (y &gt; (maxY1 + tolTransY))) {</span>
+<span class="fc" id="L4670">                continue;</span>
             }
 <span class="fc" id="L4672">            outputSet2.add(Math.round(x), Math.round(y));</span>
         }
@@ -4729,53 +4729,53 @@ private void writeTransformed(TransformationParameters parameters,
         TransformationParameters params, PairIntArray set1, PairIntArray set2,
         boolean useGreedyMatching) {
 
-<span class="nc" id="L4732">        float rotHalfRange = 25;</span>
-<span class="nc" id="L4733">        float rotDelta = 5.f;</span>
-<span class="nc" id="L4734">        float transHalfRange = 75;</span>
-<span class="nc" id="L4735">        float transDelta = 15;</span>
+<span class="fc" id="L4732">        float rotHalfRange = 25;</span>
+<span class="fc" id="L4733">        float rotDelta = 5.f;</span>
+<span class="fc" id="L4734">        float transHalfRange = 75;</span>
+<span class="fc" id="L4735">        float transDelta = 15;</span>
 
-<span class="nc" id="L4737">        int nMaxMatchable = Math.min(set1.getN(), set2.getN());</span>
+<span class="fc" id="L4737">        int nMaxMatchable = Math.min(set1.getN(), set2.getN());</span>
 
-<span class="nc" id="L4739">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L4739">        long t0 = System.currentTimeMillis();</span>
 
-<span class="nc" id="L4741">        TransformationPointFit fit2 = null;</span>
+<span class="fc" id="L4741">        TransformationPointFit fit2 = null;</span>
 
-<span class="nc bnc" id="L4743" title="All 2 branches missed.">        if (params.getScale() &gt;= 1.0) {</span>
-<span class="nc" id="L4744">            fit2 = refineTheTransformation(</span>
+<span class="fc bfc" id="L4743" title="All 2 branches covered.">        if (params.getScale() &gt;= 1.0) {</span>
+<span class="fc" id="L4744">            fit2 = refineTheTransformation(</span>
                 params, set1, set2,
                 rotHalfRange, rotDelta,
                 transHalfRange, transDelta, transHalfRange, transDelta,
                 useGreedyMatching);
         } else {
             // scale is &lt; 1 so reverse order of sets and fit
-<span class="nc" id="L4751">            MatchedPointsTransformationCalculator tc = new</span>
+<span class="fc" id="L4751">            MatchedPointsTransformationCalculator tc = new</span>
                 MatchedPointsTransformationCalculator();
-<span class="nc" id="L4753">            TransformationParameters revParams = tc.swapReferenceFrames(</span>
-<span class="nc" id="L4754">                params.copy());</span>
+<span class="fc" id="L4753">            TransformationParameters revParams = tc.swapReferenceFrames(</span>
+<span class="fc" id="L4754">                params.copy());</span>
 
-<span class="nc" id="L4756">            TransformationPointFit revFit = refineTheTransformation(</span>
+<span class="fc" id="L4756">            TransformationPointFit revFit = refineTheTransformation(</span>
                 revParams, set2, set1,
                 rotHalfRange, rotDelta,
                 transHalfRange, transDelta, transHalfRange, transDelta,
                 useGreedyMatching);
             // reverse the parameters.
 
-<span class="nc" id="L4763">            TransformationParameters revRevParams = tc.swapReferenceFrames(</span>
-<span class="nc" id="L4764">                revFit.getParameters().copy());</span>
-<span class="nc" id="L4765">            fit2 = new TransformationPointFit(revRevParams,</span>
-<span class="nc" id="L4766">                revFit.getNumberOfMatchedPoints(),</span>
-<span class="nc" id="L4767">                revFit.getMeanDistFromModel(),</span>
-<span class="nc" id="L4768">                revFit.getStDevFromMean(),</span>
-<span class="nc" id="L4769">                revFit.getTranslationXTolerance(),</span>
-<span class="nc" id="L4770">                revFit.getTranslationYTolerance());</span>
-<span class="nc bnc" id="L4771" title="All 2 branches missed.">            if (fit2 != null) {</span>
-<span class="nc" id="L4772">               fit2.setMaximumNumberMatchable(nMaxMatchable);</span>
+<span class="fc" id="L4763">            TransformationParameters revRevParams = tc.swapReferenceFrames(</span>
+<span class="fc" id="L4764">                revFit.getParameters().copy());</span>
+<span class="fc" id="L4765">            fit2 = new TransformationPointFit(revRevParams,</span>
+<span class="fc" id="L4766">                revFit.getNumberOfMatchedPoints(),</span>
+<span class="fc" id="L4767">                revFit.getMeanDistFromModel(),</span>
+<span class="fc" id="L4768">                revFit.getStDevFromMean(),</span>
+<span class="fc" id="L4769">                revFit.getTranslationXTolerance(),</span>
+<span class="fc" id="L4770">                revFit.getTranslationYTolerance());</span>
+<span class="pc bpc" id="L4771" title="1 of 2 branches missed.">            if (fit2 != null) {</span>
+<span class="fc" id="L4772">               fit2.setMaximumNumberMatchable(nMaxMatchable);</span>
             }
         }
-<span class="nc" id="L4775">        long t1 = System.currentTimeMillis();</span>
-<span class="nc" id="L4776">        log.info(&quot;refine seconds=&quot; + ((t1 - t0)*1e-3));</span>
+<span class="fc" id="L4775">        long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L4776">        log.info(&quot;refine seconds=&quot; + ((t1 - t0)*1e-3));</span>
 
-<span class="nc" id="L4778">        return fit2;</span>
+<span class="fc" id="L4778">        return fit2;</span>
     }
 
     public List&lt;TransformationPointFit&gt; calculateEuclideanTransformationUsingPairs(

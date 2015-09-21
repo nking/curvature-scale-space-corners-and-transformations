@@ -16,9 +16,9 @@ import org.ejml.simple.*;
  * 
  * @author nichole
  */
-<span class="nc" id="L19">public class EllipseHelper {</span>
+<span class="fc" id="L19">public class EllipseHelper {</span>
     
-<span class="nc" id="L21">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L21">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
     /**
      &lt;pre&gt;
@@ -41,7 +41,7 @@ import org.ejml.simple.*;
      */
     public double[] fitEllipseToPoints(PairFloatArray xyPoints) {
         
-<span class="nc" id="L44">        return fitEllipseToPointsWithAlgLSQ(xyPoints);</span>
+<span class="fc" id="L44">        return fitEllipseToPointsWithAlgLSQ(xyPoints);</span>
     }
     
     /**
@@ -145,19 +145,19 @@ import org.ejml.simple.*;
      */
     protected double[] fitEllipseToPointsWithAlgLSQ(PairFloatArray xyPoints) {
         
-<span class="nc" id="L148">        int nPoints = xyPoints.getN();</span>
+<span class="fc" id="L148">        int nPoints = xyPoints.getN();</span>
         
         //x*x, x*y, y*y, x, y, 1
-<span class="nc" id="L151">        SimpleMatrix a = new SimpleMatrix(nPoints, 6);</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">        for (int row = 0; row &lt; nPoints; row++) {</span>
-<span class="nc" id="L153">            float x = xyPoints.getX(row);</span>
-<span class="nc" id="L154">            float y = xyPoints.getY(row);</span>
-<span class="nc" id="L155">            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);</span>
+<span class="fc" id="L151">        SimpleMatrix a = new SimpleMatrix(nPoints, 6);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int row = 0; row &lt; nPoints; row++) {</span>
+<span class="fc" id="L153">            float x = xyPoints.getX(row);</span>
+<span class="fc" id="L154">            float y = xyPoints.getY(row);</span>
+<span class="fc" id="L155">            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);</span>
         }
        
         try {
             
-<span class="nc" id="L160">            return fitEllipseToPointsWithAlgLSQ(a);</span>
+<span class="fc" id="L160">            return fitEllipseToPointsWithAlgLSQ(a);</span>
                         
 <span class="nc" id="L162">        } catch(RuntimeException t) {</span>
 <span class="nc" id="L163">            log.warning(t.getMessage());</span>
@@ -183,9 +183,10 @@ import org.ejml.simple.*;
      * @param a
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
      */
+    @SuppressWarnings({&quot;unchecked&quot;})
     protected double[] fitEllipseToPointsWithAlgLSQ(SimpleMatrix a) {
         
-<span class="nc" id="L188">        int nPoints = a.numRows();</span>
+<span class="fc" id="L189">        int nPoints = a.numRows();</span>
         
         /*
         adapted from:
@@ -219,7 +220,7 @@ import org.ejml.simple.*;
              4    4*C
         */
    
-<span class="nc" id="L222">        SimpleMatrix s = a.transpose().mult(a);</span>
+<span class="fc" id="L223">        SimpleMatrix s = a.transpose().mult(a);</span>
        
         //T = S(1:3,1:3) - S(1:3,4:6)*(S(4:6,4:6)'\S(4:6,1:3));
         //      0:2, 0:2     0:2,3:5     3:5,3:5     3:5,0:2
@@ -230,53 +231,53 @@ import org.ejml.simple.*;
         //          equation xA = B. 
         //          Matrices A and B must have the same number of rows.
         
-<span class="nc" id="L233">        SimpleMatrix matrixA = new SimpleMatrix(3, 3);</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">        for (int row = 3; row &lt;= 5; row++) {</span>
-<span class="nc bnc" id="L235" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
-<span class="nc" id="L236">                matrixA.set(row-3, col-3, s.get(row, col));</span>
+<span class="fc" id="L234">        SimpleMatrix matrixA = new SimpleMatrix(3, 3);</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        for (int row = 3; row &lt;= 5; row++) {</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="fc" id="L237">                matrixA.set(row-3, col-3, s.get(row, col));</span>
             }
         }
-<span class="nc" id="L239">        matrixA = matrixA.transpose();</span>
+<span class="fc" id="L240">        matrixA = matrixA.transpose();</span>
         
-<span class="nc" id="L241">        SimpleMatrix matrixB = new SimpleMatrix(3, 3);</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">        for (int row = 3; row &lt;= 5; row++) {</span>
-<span class="nc bnc" id="L243" title="All 2 branches missed.">            for (int col = 0; col &lt;= 2; col++) {</span>
-<span class="nc" id="L244">                matrixB.set(row-3, col, s.get(row, col));</span>
+<span class="fc" id="L242">        SimpleMatrix matrixB = new SimpleMatrix(3, 3);</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        for (int row = 3; row &lt;= 5; row++) {</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            for (int col = 0; col &lt;= 2; col++) {</span>
+<span class="fc" id="L245">                matrixB.set(row-3, col, s.get(row, col));</span>
             }
         }
         
         //xA = B.   x is [3x3]
-<span class="nc" id="L249">        SimpleMatrix x = matrixA.solve(matrixB);</span>
+<span class="fc" id="L250">        SimpleMatrix x = matrixA.solve(matrixB);</span>
         
         //T = S(1:3,1:3) - S(1:3,4:6)*(x);
         //      0:2, 0:2     0:2,3:5   
         
-<span class="nc" id="L254">        SimpleMatrix matrixC = new SimpleMatrix(3, 3);</span>
-<span class="nc bnc" id="L255" title="All 2 branches missed.">        for (int row = 0; row &lt;= 2; row++) {</span>
-<span class="nc bnc" id="L256" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
-<span class="nc" id="L257">                matrixC.set(row, col-3, s.get(row, col));</span>
+<span class="fc" id="L255">        SimpleMatrix matrixC = new SimpleMatrix(3, 3);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        for (int row = 0; row &lt;= 2; row++) {</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="fc" id="L258">                matrixC.set(row, col-3, s.get(row, col));</span>
             }
         }
         
-<span class="nc" id="L261">        matrixC = matrixC.mult(x);</span>
+<span class="fc" id="L262">        matrixC = matrixC.mult(x);</span>
         
-<span class="nc" id="L263">        SimpleMatrix matrixD = new SimpleMatrix(3, 3);</span>
-<span class="nc bnc" id="L264" title="All 2 branches missed.">        for (int row = 0; row &lt;= 2; row++) {</span>
-<span class="nc bnc" id="L265" title="All 2 branches missed.">            for (int col = 0; col &lt;= 2; col++) {</span>
-<span class="nc" id="L266">                matrixD.set(row, col, s.get(row, col));</span>
+<span class="fc" id="L264">        SimpleMatrix matrixD = new SimpleMatrix(3, 3);</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        for (int row = 0; row &lt;= 2; row++) {</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">            for (int col = 0; col &lt;= 2; col++) {</span>
+<span class="fc" id="L267">                matrixD.set(row, col, s.get(row, col));</span>
             }
         }
         
         //T = matrixD - matrixC
-<span class="nc" id="L271">        SimpleMatrix matrixT = matrixD.minus(matrixC);</span>
+<span class="fc" id="L272">        SimpleMatrix matrixT = matrixD.minus(matrixC);</span>
         
         //T = diag([1,2,1])*T;
-<span class="nc" id="L274">        SimpleMatrix diag = new SimpleMatrix(3, 3);</span>
-<span class="nc" id="L275">        diag.set(0, 0, 1);</span>
-<span class="nc" id="L276">        diag.set(1, 1, 2);</span>
-<span class="nc" id="L277">        diag.set(2, 2, 1);</span>
+<span class="fc" id="L275">        SimpleMatrix diag = new SimpleMatrix(3, 3);</span>
+<span class="fc" id="L276">        diag.set(0, 0, 1);</span>
+<span class="fc" id="L277">        diag.set(1, 1, 2);</span>
+<span class="fc" id="L278">        diag.set(2, 2, 1);</span>
         
-<span class="nc" id="L279">        matrixT = diag.mult(matrixT);</span>
+<span class="fc" id="L280">        matrixT = diag.mult(matrixT);</span>
         
         /*
         [V, D] = eig(T);
@@ -284,85 +285,85 @@ import org.ejml.simple.*;
         D is a diagonal matrix containing the eigenvalues. 
         V is a matrix whose columns are the corresponding right eigenvectors.
         */
-<span class="nc" id="L287">        SimpleEVD evd = matrixT.eig();</span>
+<span class="fc" id="L288">        SimpleEVD&lt;SimpleMatrix&gt; evd = matrixT.eig();</span>
         
         //3X3
-<span class="nc" id="L290">        DenseMatrix64F v = EigenOps.createMatrixV(evd.getEVD());</span>
+<span class="fc" id="L291">        DenseMatrix64F v = EigenOps.createMatrixV(evd.getEVD());</span>
         //v.print();
-<span class="nc" id="L292">        SimpleMatrix vMatrix = new SimpleMatrix(v);</span>
+<span class="fc" id="L293">        SimpleMatrix vMatrix = new SimpleMatrix(v);</span>
       
-<span class="nc" id="L294">        double emin = 0;</span>
-<span class="nc" id="L295">        int kmin = -1;</span>
-<span class="nc bnc" id="L296" title="All 2 branches missed.">        for (int k = 0; k &lt; 3; k++) {</span>
-<span class="nc" id="L297">            double aa = v.get(0, k);</span>
-<span class="nc" id="L298">            double bb = v.get(1, k);</span>
-<span class="nc" id="L299">            double cc = v.get(2, k);</span>
-<span class="nc" id="L300">            double i0 = aa + cc;</span>
-<span class="nc" id="L301">            double i1 = (aa * cc) - ((bb*bb)/4.);</span>
-<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (i1 &lt;= 0) {</span>
+<span class="fc" id="L295">        double emin = 0;</span>
+<span class="fc" id="L296">        int kmin = -1;</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">        for (int k = 0; k &lt; 3; k++) {</span>
+<span class="fc" id="L298">            double aa = v.get(0, k);</span>
+<span class="fc" id="L299">            double bb = v.get(1, k);</span>
+<span class="fc" id="L300">            double cc = v.get(2, k);</span>
+<span class="fc" id="L301">            double i0 = aa + cc;</span>
+<span class="fc" id="L302">            double i1 = (aa * cc) - ((bb*bb)/4.);</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            if (i1 &lt;= 0) {</span>
                 // not an ellipse
             } else {
-<span class="nc" id="L305">                double val = (i0*i0 - 4*i1)/(i0*i0 - 2*i1);</span>
-<span class="nc bnc" id="L306" title="All 4 branches missed.">                if ((emin == 0) || (val &lt; emin)) {</span>
-<span class="nc" id="L307">                    emin = val;</span>
-<span class="nc" id="L308">                    kmin = k;</span>
+<span class="fc" id="L306">                double val = (i0*i0 - 4*i1)/(i0*i0 - 2*i1);</span>
+<span class="pc bpc" id="L307" title="3 of 4 branches missed.">                if ((emin == 0) || (val &lt; emin)) {</span>
+<span class="fc" id="L308">                    emin = val;</span>
+<span class="fc" id="L309">                    kmin = k;</span>
                 }
             }
         }
-<span class="nc bnc" id="L312" title="All 2 branches missed.">        if (kmin == -1) {</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">        if (kmin == -1) {</span>
             // not an ellipse, or my port to java is wrong
-<span class="nc" id="L314">            log.severe(&quot;not an ellipse, or error in my port to java?  need more tests for this&quot;);</span>
-<span class="nc" id="L315">            return null;</span>
+<span class="nc" id="L315">            log.severe(&quot;not an ellipse, or error in my port to java?  need more tests for this&quot;);</span>
+<span class="nc" id="L316">            return null;</span>
         }
         
-<span class="nc" id="L318">        SimpleMatrix y1 = vMatrix.extractVector(false, kmin);</span>
+<span class="fc" id="L319">        SimpleMatrix y1 = vMatrix.extractVector(false, kmin);</span>
         
         //-(S(4:6,4:6)')
-<span class="nc" id="L321">        SimpleMatrix numer = new SimpleMatrix(3, 3);</span>
-<span class="nc bnc" id="L322" title="All 2 branches missed.">        for (int row = 3; row &lt;= 5; row++) {</span>
-<span class="nc bnc" id="L323" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
-<span class="nc" id="L324">                numer.set(row - 3, col - 3, s.get(row, col));</span>
+<span class="fc" id="L322">        SimpleMatrix numer = new SimpleMatrix(3, 3);</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">        for (int row = 3; row &lt;= 5; row++) {</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="fc" id="L325">                numer.set(row - 3, col - 3, s.get(row, col));</span>
             }
         }
-<span class="nc" id="L327">        numer = numer.transpose();</span>
+<span class="fc" id="L328">        numer = numer.transpose();</span>
         
         //(S(1:3,4:6)'*y1);
-<span class="nc" id="L330">        SimpleMatrix denom = new SimpleMatrix(3, 3);</span>
-<span class="nc bnc" id="L331" title="All 2 branches missed.">        for (int row = 0; row &lt;= 2; row++) {</span>
-<span class="nc bnc" id="L332" title="All 2 branches missed.">            for (int col = 3; col &lt;= 5; col++) {</span>
-<span class="nc" id="L333">                denom.set(row, col - 3, s.get(row, col));</span>
+<span class="fc" id="L331">        SimpleMatrix denom = new SimpleMatrix(3, 3);</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">        for (int row = 0; row &lt;= 2; row++) {</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">            for (int col = 3; col &lt;= 5; col++) {</span>
+<span class="fc" id="L334">                denom.set(row, col - 3, s.get(row, col));</span>
             }
         }
-<span class="nc" id="L336">        denom = denom.transpose();</span>
-<span class="nc" id="L337">        denom = denom.mult(y1);</span>
+<span class="fc" id="L337">        denom = denom.transpose();</span>
+<span class="fc" id="L338">        denom = denom.mult(y1);</span>
         
         // y2 = -(S(4:6,4:6)')\(S(1:3,4:6)'*y1);
-<span class="nc" id="L340">        SimpleMatrix y2 = numer.solve(denom);</span>
-<span class="nc" id="L341">        y2 = y2.scale(-1);</span>
+<span class="fc" id="L341">        SimpleMatrix y2 = numer.solve(denom);</span>
+<span class="fc" id="L342">        y2 = y2.scale(-1);</span>
         
         // u  = [y1; y2]; where ';' is matlab notation for row separator
         // 
-<span class="nc" id="L345">        int nRows = y1.numRows() + y2.numRows();</span>
-<span class="nc" id="L346">        SimpleMatrix uMatrix = new SimpleMatrix(nRows, y1.numCols());</span>
+<span class="fc" id="L346">        int nRows = y1.numRows() + y2.numRows();</span>
+<span class="fc" id="L347">        SimpleMatrix uMatrix = new SimpleMatrix(nRows, y1.numCols());</span>
         
-<span class="nc" id="L348">        int row = 0;</span>
-<span class="nc bnc" id="L349" title="All 2 branches missed.">        for (int j = 0; j &lt; y1.numRows(); j++) {</span>
-<span class="nc bnc" id="L350" title="All 2 branches missed.">            for (int col = 0; col &lt; y1.numCols(); col++) {</span>
-<span class="nc" id="L351">                uMatrix.set(row, col, y1.get(j, col));</span>
+<span class="fc" id="L349">        int row = 0;</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">        for (int j = 0; j &lt; y1.numRows(); j++) {</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">            for (int col = 0; col &lt; y1.numCols(); col++) {</span>
+<span class="fc" id="L352">                uMatrix.set(row, col, y1.get(j, col));</span>
             }
-<span class="nc" id="L353">            row++;</span>
+<span class="fc" id="L354">            row++;</span>
         }
-<span class="nc bnc" id="L355" title="All 2 branches missed.">        for (int j = 0; j &lt; y2.numRows(); j++) {</span>
-<span class="nc bnc" id="L356" title="All 2 branches missed.">            for (int col = 0; col &lt; y2.numCols(); col++) {</span>
-<span class="nc" id="L357">                uMatrix.set(row, col, y2.get(j, col));</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">        for (int j = 0; j &lt; y2.numRows(); j++) {</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">            for (int col = 0; col &lt; y2.numCols(); col++) {</span>
+<span class="fc" id="L358">                uMatrix.set(row, col, y2.get(j, col));</span>
             }
-<span class="nc" id="L359">            row++;</span>
+<span class="fc" id="L360">            row++;</span>
         }
         
         //get the ellipse parameters from algebraic equation 
         //    u(0)x^2 + u(1)xy + u(2)y^2 + u(3)x + u(4)y + u(5) = 0.
         
-<span class="nc" id="L365">        return extractEllipseParams(uMatrix);</span>
+<span class="fc" id="L366">        return extractEllipseParams(uMatrix);</span>
     }
     
     /**
@@ -381,78 +382,79 @@ import org.ejml.simple.*;
      * @param u
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
      */
+    @SuppressWarnings({&quot;unchecked&quot;})
     private double[] extractEllipseParams(SimpleMatrix u) {
         
-<span class="nc bnc" id="L386" title="All 2 branches missed.">        if (u == null) {</span>
-<span class="nc" id="L387">            throw new IllegalArgumentException(&quot;u cannot be null&quot;);</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (u == null) {</span>
+<span class="nc" id="L389">            throw new IllegalArgumentException(&quot;u cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L389" title="All 2 branches missed.">        if (u.numCols() != 1) {</span>
-<span class="nc" id="L390">            throw new IllegalArgumentException(&quot;u must have 1 column only&quot;);</span>
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (u.numCols() != 1) {</span>
+<span class="nc" id="L392">            throw new IllegalArgumentException(&quot;u must have 1 column only&quot;);</span>
         }
-<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (u.numRows() != 6) {</span>
-<span class="nc" id="L393">            throw new IllegalArgumentException(&quot;u must have 6 rows&quot;);</span>
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">        if (u.numRows() != 6) {</span>
+<span class="nc" id="L395">            throw new IllegalArgumentException(&quot;u must have 6 rows&quot;);</span>
         }
         
-<span class="nc" id="L396">        SimpleMatrix a = new SimpleMatrix(2, 2);</span>
-<span class="nc" id="L397">        a.setRow(0, 0, u.get(0, 0), u.get(1, 0)/2.);</span>
-<span class="nc" id="L398">        a.setRow(1, 0, u.get(1, 0)/2., u.get(2, 0));</span>
+<span class="fc" id="L398">        SimpleMatrix a = new SimpleMatrix(2, 2);</span>
+<span class="fc" id="L399">        a.setRow(0, 0, u.get(0, 0), u.get(1, 0)/2.);</span>
+<span class="fc" id="L400">        a.setRow(1, 0, u.get(1, 0)/2., u.get(2, 0));</span>
         
-<span class="nc" id="L400">        SimpleMatrix bb = new SimpleMatrix(2, 1);</span>
-<span class="nc" id="L401">        bb.set(0, 0, u.get(3, 0));</span>
-<span class="nc" id="L402">        bb.set(1, 0, u.get(4, 0));</span>
+<span class="fc" id="L402">        SimpleMatrix bb = new SimpleMatrix(2, 1);</span>
+<span class="fc" id="L403">        bb.set(0, 0, u.get(3, 0));</span>
+<span class="fc" id="L404">        bb.set(1, 0, u.get(4, 0));</span>
         
-<span class="nc" id="L404">        SimpleMatrix c = new SimpleMatrix(1, 1);</span>
-<span class="nc" id="L405">        c.set(0, 0, u.get(5, 0));</span>
+<span class="fc" id="L406">        SimpleMatrix c = new SimpleMatrix(1, 1);</span>
+<span class="fc" id="L407">        c.set(0, 0, u.get(5, 0));</span>
         
-<span class="nc" id="L407">        SimpleEVD qd = a.eig();</span>
+<span class="fc" id="L409">        SimpleEVD&lt;SimpleMatrix&gt; qd = a.eig();</span>
         
-<span class="nc" id="L409">        DenseMatrix64F q = EigenOps.createMatrixV(qd.getEVD());</span>
+<span class="fc" id="L411">        DenseMatrix64F q = EigenOps.createMatrixV(qd.getEVD());</span>
         //q.print();
         
-<span class="nc" id="L412">        DenseMatrix64F d = EigenOps.createMatrixD(qd.getEVD());</span>
+<span class="fc" id="L414">        DenseMatrix64F d = EigenOps.createMatrixD(qd.getEVD());</span>
         //d.print();
         
-<span class="nc" id="L415">        double det = d.get(0, 0) * d.get(1, 1);</span>
+<span class="fc" id="L417">        double det = d.get(0, 0) * d.get(1, 1);</span>
         
-<span class="nc bnc" id="L417" title="All 2 branches missed.">        if (det &lt;= 0) {</span>
-<span class="nc" id="L418">            log.severe(&quot;error while extracting ellipse parameters&quot;);</span>
-<span class="nc" id="L419">            return null;</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">        if (det &lt;= 0) {</span>
+<span class="nc" id="L420">            log.severe(&quot;error while extracting ellipse parameters&quot;);</span>
+<span class="nc" id="L421">            return null;</span>
         }
         
-<span class="nc" id="L422">        SimpleMatrix qMatrix = new SimpleMatrix(q);</span>
+<span class="fc" id="L424">        SimpleMatrix qMatrix = new SimpleMatrix(q);</span>
         
-<span class="nc" id="L424">        SimpleMatrix bs = (qMatrix.transpose()).mult(bb);</span>
+<span class="fc" id="L426">        SimpleMatrix bs = (qMatrix.transpose()).mult(bb);</span>
         
-<span class="nc" id="L426">        double alpha = Math.atan2(q.get(1, 0), q.get(0, 0));</span>
+<span class="fc" id="L428">        double alpha = Math.atan2(q.get(1, 0), q.get(0, 0));</span>
         
-<span class="nc" id="L428">        SimpleMatrix numer = new SimpleMatrix(d);</span>
-<span class="nc" id="L429">        numer = numer.scale(-2.);</span>
-<span class="nc" id="L430">        SimpleMatrix zs = numer.solve(bs);</span>
+<span class="fc" id="L430">        SimpleMatrix numer = new SimpleMatrix(d);</span>
+<span class="fc" id="L431">        numer = numer.scale(-2.);</span>
+<span class="fc" id="L432">        SimpleMatrix zs = numer.solve(bs);</span>
         
-<span class="nc" id="L432">        SimpleMatrix z = qMatrix.mult(zs);</span>
+<span class="fc" id="L434">        SimpleMatrix z = qMatrix.mult(zs);</span>
         
-<span class="nc" id="L434">        SimpleMatrix h = bs.transpose().mult(zs);</span>
-<span class="nc" id="L435">        h = h.divide(-2.);</span>
-<span class="nc" id="L436">        h = h.minus(c);</span>
+<span class="fc" id="L436">        SimpleMatrix h = bs.transpose().mult(zs);</span>
+<span class="fc" id="L437">        h = h.divide(-2.);</span>
+<span class="fc" id="L438">        h = h.minus(c);</span>
 
-<span class="nc" id="L438">        double aParam = Math.sqrt(h.get(0, 0)/d.get(0, 0));</span>
-<span class="nc" id="L439">        double bParam = Math.sqrt(h.get(0, 0)/d.get(1, 1));</span>
+<span class="fc" id="L440">        double aParam = Math.sqrt(h.get(0, 0)/d.get(0, 0));</span>
+<span class="fc" id="L441">        double bParam = Math.sqrt(h.get(0, 0)/d.get(1, 1));</span>
         
-<span class="nc" id="L441">        double z0 = z.get(0, 0);</span>
-<span class="nc" id="L442">        double z1 = z.get(1, 0);</span>
+<span class="fc" id="L443">        double z0 = z.get(0, 0);</span>
+<span class="fc" id="L444">        double z1 = z.get(1, 0);</span>
         
         /*
         TODO: check this
         making a correction for aParam &lt; bParam
         */
-<span class="nc bnc" id="L448" title="All 2 branches missed.">        if (aParam &lt; bParam) {</span>
-<span class="nc" id="L449">            double swap = aParam;</span>
-<span class="nc" id="L450">            aParam = bParam;</span>
-<span class="nc" id="L451">            bParam = swap;</span>
-<span class="nc" id="L452">            alpha += (Math.PI/2.);</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">        if (aParam &lt; bParam) {</span>
+<span class="fc" id="L451">            double swap = aParam;</span>
+<span class="fc" id="L452">            aParam = bParam;</span>
+<span class="fc" id="L453">            bParam = swap;</span>
+<span class="fc" id="L454">            alpha += (Math.PI/2.);</span>
         }
         
-<span class="nc" id="L455">        return new double[]{z0, z1, aParam, bParam, alpha};</span>
+<span class="fc" id="L457">        return new double[]{z0, z1, aParam, bParam, alpha};</span>
     }
     
     /**
@@ -468,38 +470,39 @@ import org.ejml.simple.*;
      * @param alphaParam
      * @return new double[avgResid, stDevResid]
      */
+    @SuppressWarnings({&quot;unchecked&quot;})
     public double[] calculateEllipseResidualStats(float[] xP, float[] yP, 
         float xCenterParam, float yCenterParam, float aParam, float bParam, 
         float alphaParam) {
         
-<span class="nc bnc" id="L475" title="All 2 branches missed.">        if (bParam &gt;= aParam) {</span>
-<span class="nc" id="L476">            throw new IllegalArgumentException(&quot;for an ellipse, a &lt; b&quot;);</span>
+<span class="pc bpc" id="L478" title="1 of 2 branches missed.">        if (bParam &gt;= aParam) {</span>
+<span class="nc" id="L479">            throw new IllegalArgumentException(&quot;for an ellipse, a &lt; b&quot;);</span>
         }
         
-<span class="nc" id="L479">        double[][] translated = new double[xP.length][];</span>
-<span class="nc bnc" id="L480" title="All 2 branches missed.">        for (int row = 0; row &lt; xP.length; row++) {</span>
-<span class="nc" id="L481">            translated[row] = new double[]{xP[row] - xCenterParam, </span>
+<span class="fc" id="L482">        double[][] translated = new double[xP.length][];</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">        for (int row = 0; row &lt; xP.length; row++) {</span>
+<span class="fc" id="L484">            translated[row] = new double[]{xP[row] - xCenterParam, </span>
                 yP[row] - yCenterParam};
         }
   
-<span class="nc" id="L485">        double sine = Math.sin(alphaParam);</span>
-<span class="nc" id="L486">        double cosine = Math.cos(alphaParam);</span>
+<span class="fc" id="L488">        double sine = Math.sin(alphaParam);</span>
+<span class="fc" id="L489">        double cosine = Math.cos(alphaParam);</span>
         
-<span class="nc" id="L488">        SimpleMatrix q = new SimpleMatrix(2, 2);</span>
-<span class="nc" id="L489">        q.setRow(0, 0, cosine, -1*sine);</span>
-<span class="nc" id="L490">        q.setRow(1, 0, sine, cosine);</span>
+<span class="fc" id="L491">        SimpleMatrix q = new SimpleMatrix(2, 2);</span>
+<span class="fc" id="L492">        q.setRow(0, 0, cosine, -1*sine);</span>
+<span class="fc" id="L493">        q.setRow(1, 0, sine, cosine);</span>
   
-<span class="nc" id="L492">        SimpleMatrix transformed = (new SimpleMatrix(translated)).mult(q);</span>
+<span class="fc" id="L495">        SimpleMatrix transformed = (new SimpleMatrix(translated)).mult(q);</span>
                 
         // c^2 = a^2 - b^2 and focii are at (+-c, 0)
-<span class="nc" id="L495">        double c = Math.sqrt(aParam*aParam - bParam*bParam);</span>
+<span class="fc" id="L498">        double c = Math.sqrt(aParam*aParam - bParam*bParam);</span>
         
-<span class="nc" id="L497">        double[] resid = new double[xP.length];</span>
+<span class="fc" id="L500">        double[] resid = new double[xP.length];</span>
                 
-<span class="nc bnc" id="L499" title="All 2 branches missed.">        for (int row = 0; row &lt; xP.length; row++) {</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">        for (int row = 0; row &lt; xP.length; row++) {</span>
             
-<span class="nc" id="L501">            double xPoint = transformed.get(row, 0);</span>
-<span class="nc" id="L502">            double yPoint = transformed.get(row, 1);</span>
+<span class="fc" id="L504">            double xPoint = transformed.get(row, 0);</span>
+<span class="fc" id="L505">            double yPoint = transformed.get(row, 1);</span>
             
             /*
             compute the residual as the difference between 
@@ -507,21 +510,21 @@ import org.ejml.simple.*;
             2*a = dist to F1 + dist to F2 for any point on the ellipse
             */
             
-<span class="nc" id="L510">            double diffX1 = xPoint - c;</span>
-<span class="nc" id="L511">            double diffX0 = xPoint - -c;</span>
+<span class="fc" id="L513">            double diffX1 = xPoint - c;</span>
+<span class="fc" id="L514">            double diffX0 = xPoint - -c;</span>
                         
-<span class="nc" id="L513">            double distF1 = Math.sqrt(diffX1*diffX1 + yPoint*yPoint);</span>
+<span class="fc" id="L516">            double distF1 = Math.sqrt(diffX1*diffX1 + yPoint*yPoint);</span>
             
-<span class="nc" id="L515">            double distF0 = Math.sqrt(diffX0*diffX0 + yPoint*yPoint);</span>
+<span class="fc" id="L518">            double distF0 = Math.sqrt(diffX0*diffX0 + yPoint*yPoint);</span>
             
-<span class="nc" id="L517">            double residSum = 2.*aParam - (distF1 + distF0);</span>
+<span class="fc" id="L520">            double residSum = 2.*aParam - (distF1 + distF0);</span>
                         
-<span class="nc" id="L519">            resid[row] = residSum;</span>
+<span class="fc" id="L522">            resid[row] = residSum;</span>
         }
         
-<span class="nc" id="L522">        double[] avgStdDev = MiscMath.getAvgAndStDev(resid);</span>
+<span class="fc" id="L525">        double[] avgStdDev = MiscMath.getAvgAndStDev(resid);</span>
                 
-<span class="nc" id="L524">        return new double[]{avgStdDev[0], avgStdDev[1]};</span>
+<span class="fc" id="L527">        return new double[]{avgStdDev[0], avgStdDev[1]};</span>
     }
     
     public void plotEllipseAndPoints(Set&lt;PairInt&gt; points, 
@@ -529,39 +532,39 @@ import org.ejml.simple.*;
         float alphaParam, int xMin, int xMax, int yMin, int yMax,
         int plotNumber, String plotLabel) throws IOException {
         
-<span class="nc" id="L532">        float[] ellipseX = new float[360];</span>
-<span class="nc" id="L533">        float[] ellipseY = new float[360];</span>
-<span class="nc" id="L534">        double ca = Math.cos(alphaParam);</span>
-<span class="nc" id="L535">        double sa = Math.sin(alphaParam);</span>
+<span class="nc" id="L535">        float[] ellipseX = new float[360];</span>
+<span class="nc" id="L536">        float[] ellipseY = new float[360];</span>
+<span class="nc" id="L537">        double ca = Math.cos(alphaParam);</span>
+<span class="nc" id="L538">        double sa = Math.sin(alphaParam);</span>
             
-<span class="nc bnc" id="L537" title="All 2 branches missed.">        for (int angle = 0; angle &lt; 360; angle++) {</span>
-<span class="nc" id="L538">            double theta = ((double)angle) * Math.PI/180.;</span>
-<span class="nc" id="L539">            double ct = Math.cos(theta);</span>
-<span class="nc" id="L540">            double st = Math.sin(theta);</span>
-<span class="nc" id="L541">            double g = xCenterParam + (aParam * ca * ct) - (bParam * sa * st);</span>
-<span class="nc" id="L542">            ellipseX[angle] = (float)g;</span>
-<span class="nc" id="L543">            double h = yCenterParam + (aParam * sa * ct) + (bParam * ca * st);</span>
-<span class="nc" id="L544">            ellipseY[angle] = (float)h;</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        for (int angle = 0; angle &lt; 360; angle++) {</span>
+<span class="nc" id="L541">            double theta = ((double)angle) * Math.PI/180.;</span>
+<span class="nc" id="L542">            double ct = Math.cos(theta);</span>
+<span class="nc" id="L543">            double st = Math.sin(theta);</span>
+<span class="nc" id="L544">            double g = xCenterParam + (aParam * ca * ct) - (bParam * sa * st);</span>
+<span class="nc" id="L545">            ellipseX[angle] = (float)g;</span>
+<span class="nc" id="L546">            double h = yCenterParam + (aParam * sa * ct) + (bParam * ca * st);</span>
+<span class="nc" id="L547">            ellipseY[angle] = (float)h;</span>
         }
         
-<span class="nc" id="L547">        float[] xp = new float[points.size()];</span>
-<span class="nc" id="L548">        float[] yp = new float[xp.length];</span>
-<span class="nc" id="L549">        int i = 0;</span>
-<span class="nc bnc" id="L550" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L551">            xp[i] = p.getX();</span>
-<span class="nc" id="L552">            yp[i] = p.getY();</span>
-<span class="nc" id="L553">            i++;</span>
-<span class="nc" id="L554">        }</span>
+<span class="nc" id="L550">        float[] xp = new float[points.size()];</span>
+<span class="nc" id="L551">        float[] yp = new float[xp.length];</span>
+<span class="nc" id="L552">        int i = 0;</span>
+<span class="nc bnc" id="L553" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L554">            xp[i] = p.getX();</span>
+<span class="nc" id="L555">            yp[i] = p.getY();</span>
+<span class="nc" id="L556">            i++;</span>
+<span class="nc" id="L557">        }</span>
         
-<span class="nc" id="L556">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xMin, xMax, </span>
+<span class="nc" id="L559">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xMin, xMax, </span>
             yMin, yMax);
         
-<span class="nc" id="L559">        plotter.addPlot(xp, yp, ellipseX, ellipseY, plotLabel);</span>
+<span class="nc" id="L562">        plotter.addPlot(xp, yp, ellipseX, ellipseY, plotLabel);</span>
         
-<span class="nc" id="L561">        String fileName = plotter.writeFile(Integer.valueOf(plotNumber));</span>
+<span class="nc" id="L564">        String fileName = plotter.writeFile(Integer.valueOf(plotNumber));</span>
         
-<span class="nc" id="L563">        log.info(&quot;wrote to file: &quot; + fileName);</span>
-<span class="nc" id="L564">    }</span>
+<span class="nc" id="L566">        log.info(&quot;wrote to file: &quot; + fileName);</span>
+<span class="nc" id="L567">    }</span>
         
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

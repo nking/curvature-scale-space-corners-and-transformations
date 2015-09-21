@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DisjointSet.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.disjointSets</a> &gt; <span class="el_source">DisjointSet.java</span></div><h1>DisjointSet.java</h1><pre class="source lang-java linenums">package algorithms.disjointSets;
+
+/**
+ * based upon pseudocode from &quot;Introduction to Algorithms&quot; by Cormen et al.
+ * 
+ * @author nichole
+ * @param &lt;T&gt; 
+ */
+<span class="fc" id="L9">public class DisjointSet&lt;T&gt; {</span>
+
+    //1st obj in each linked list is the set representative
+    protected DisjointSetNode&lt;T&gt; head;
+    protected DisjointSetNode&lt;T&gt; tail;
+    protected int numberOfNodes;
+    
+    public DisjointSetNode&lt;T&gt; getHead() {
+<span class="fc" id="L17">        return head;</span>
+    }
+    public void setHead(DisjointSetNode&lt;T&gt; head) {
+<span class="fc" id="L20">        this.head = head;</span>
+<span class="fc" id="L21">    }</span>
+    public DisjointSetNode&lt;T&gt; getTail() {
+<span class="fc" id="L23">        return tail;</span>
+    }
+    public void setTail(DisjointSetNode&lt;T&gt; tail) {
+<span class="fc" id="L26">        this.tail = tail;</span>
+<span class="fc" id="L27">    }</span>
+    public int getNumberOfNodes() {
+<span class="fc" id="L29">        return numberOfNodes;</span>
+    }
+    public void setNumberOfNodes(int numberOfNodes) {
+<span class="fc" id="L32">        this.numberOfNodes = numberOfNodes;</span>
+<span class="fc" id="L33">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

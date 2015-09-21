@@ -733,68 +733,68 @@ import java.util.logging.Logger;
     protected void generatePolynomialPoints(Set&lt;PairInt&gt; points, 
         float[] polyCoeff, float[] outputX, float[] outputY) {
        
-<span class="nc" id="L736">        PolynomialFitter fitter = new PolynomialFitter();</span>
-<span class="nc" id="L737">        float[] minXYMaxXY = fitter.determineGoodEndPoints(polyCoeff, points);</span>
+<span class="fc" id="L736">        PolynomialFitter fitter = new PolynomialFitter();</span>
+<span class="fc" id="L737">        float[] minXYMaxXY = fitter.determineGoodEndPoints(polyCoeff, points);</span>
         
         // find the furthest points that have the smallest residuals on each side
-<span class="nc" id="L740">        int minX = (int)minXYMaxXY[0];</span>
-<span class="nc" id="L741">        int yForMinX = (int)minXYMaxXY[1];</span>
-<span class="nc" id="L742">        int maxX = (int)minXYMaxXY[2];</span>
-<span class="nc" id="L743">        int yForMaxX = (int)minXYMaxXY[3];</span>
+<span class="fc" id="L740">        int minX = (int)minXYMaxXY[0];</span>
+<span class="fc" id="L741">        int yForMinX = (int)minXYMaxXY[1];</span>
+<span class="fc" id="L742">        int maxX = (int)minXYMaxXY[2];</span>
+<span class="fc" id="L743">        int yForMaxX = (int)minXYMaxXY[3];</span>
         
-<span class="nc" id="L745">        log.info(&quot;polyCoeff=&quot; + Arrays.toString(polyCoeff) </span>
+<span class="fc" id="L745">        log.info(&quot;polyCoeff=&quot; + Arrays.toString(polyCoeff) </span>
             + &quot; endpoints=(&quot; + minX + &quot;,&quot; + yForMinX + &quot;) (&quot; + maxX + &quot;,&quot; 
             + yForMaxX + &quot;)&quot;);
        
-<span class="nc" id="L749">        int n = outputX.length;</span>
+<span class="fc" id="L749">        int n = outputX.length;</span>
         
         // max-min divided by 9 gives 8 more points
-<span class="nc" id="L752">        float deltaX = (maxX - minX)/(float)(n - 1);</span>
+<span class="fc" id="L752">        float deltaX = (maxX - minX)/(float)(n - 1);</span>
         
-<span class="nc" id="L754">        outputX[0] = minX;</span>
-<span class="nc" id="L755">        outputY[0] = yForMinX;</span>
-<span class="nc bnc" id="L756" title="All 2 branches missed.">        for (int i = 1; i &lt; (n - 1); i++) {</span>
-<span class="nc" id="L757">            outputX[i] = outputX[i - 1] + deltaX;</span>
-<span class="nc" id="L758">            outputY[i] = polyCoeff[0] + polyCoeff[1] * outputX[i] </span>
+<span class="fc" id="L754">        outputX[0] = minX;</span>
+<span class="fc" id="L755">        outputY[0] = yForMinX;</span>
+<span class="fc bfc" id="L756" title="All 2 branches covered.">        for (int i = 1; i &lt; (n - 1); i++) {</span>
+<span class="fc" id="L757">            outputX[i] = outputX[i - 1] + deltaX;</span>
+<span class="fc" id="L758">            outputY[i] = polyCoeff[0] + polyCoeff[1] * outputX[i] </span>
                 + polyCoeff[2] * outputX[i] * outputX[i];
             
         }
         
-<span class="nc" id="L763">        outputX[n - 1] = maxX;</span>
-<span class="nc" id="L764">        outputY[n - 1] = yForMaxX;</span>
+<span class="fc" id="L763">        outputX[n - 1] = maxX;</span>
+<span class="fc" id="L764">        outputY[n - 1] = yForMaxX;</span>
         
-<span class="nc" id="L766">    }</span>
+<span class="fc" id="L766">    }</span>
     
     protected float maxOfPointMinDistances(Set&lt;PairInt&gt; rainbowPoints, 
         float[] xc, float[] yc) {
         
-<span class="nc" id="L771">        double maxDistSq = Double.MIN_VALUE;</span>
+<span class="fc" id="L771">        double maxDistSq = Double.MIN_VALUE;</span>
         
-<span class="nc bnc" id="L773" title="All 2 branches missed.">        for (PairInt p : rainbowPoints) {</span>
-<span class="nc" id="L774">            int x = p.getX();</span>
-<span class="nc" id="L775">            int y = p.getY();</span>
-<span class="nc" id="L776">            double minDistSq = Double.MAX_VALUE;</span>
-<span class="nc" id="L777">            int minIdx = -1;</span>
-<span class="nc bnc" id="L778" title="All 2 branches missed.">            for (int i = 0; i &lt; xc.length; i++) {</span>
-<span class="nc" id="L779">                float diffX = xc[i] - x;</span>
-<span class="nc" id="L780">                float diffY = yc[i] - y;</span>
-<span class="nc" id="L781">                float dist = (diffX * diffX) + (diffY * diffY);</span>
-<span class="nc bnc" id="L782" title="All 2 branches missed.">                if (dist &lt; minDistSq) {</span>
-<span class="nc" id="L783">                    minDistSq = dist;</span>
-<span class="nc" id="L784">                    minIdx = i;</span>
+<span class="fc bfc" id="L773" title="All 2 branches covered.">        for (PairInt p : rainbowPoints) {</span>
+<span class="fc" id="L774">            int x = p.getX();</span>
+<span class="fc" id="L775">            int y = p.getY();</span>
+<span class="fc" id="L776">            double minDistSq = Double.MAX_VALUE;</span>
+<span class="fc" id="L777">            int minIdx = -1;</span>
+<span class="fc bfc" id="L778" title="All 2 branches covered.">            for (int i = 0; i &lt; xc.length; i++) {</span>
+<span class="fc" id="L779">                float diffX = xc[i] - x;</span>
+<span class="fc" id="L780">                float diffY = yc[i] - y;</span>
+<span class="fc" id="L781">                float dist = (diffX * diffX) + (diffY * diffY);</span>
+<span class="fc bfc" id="L782" title="All 2 branches covered.">                if (dist &lt; minDistSq) {</span>
+<span class="fc" id="L783">                    minDistSq = dist;</span>
+<span class="fc" id="L784">                    minIdx = i;</span>
                 }
             }
-<span class="nc bnc" id="L787" title="All 2 branches missed.">            if (minDistSq &gt; maxDistSq) {</span>
-<span class="nc" id="L788">                maxDistSq = minDistSq;</span>
+<span class="fc bfc" id="L787" title="All 2 branches covered.">            if (minDistSq &gt; maxDistSq) {</span>
+<span class="fc" id="L788">                maxDistSq = minDistSq;</span>
             }
             
             /*log.info(String.format(
                 &quot;(%d,%d) is closest to poly point (%f,%f) dist=%f&quot;, x, y, 
                 xc[minIdx], yc[minIdx], (float)Math.sqrt(minDistSq)));
             */
-<span class="nc" id="L795">        }</span>
+<span class="fc" id="L795">        }</span>
         
-<span class="nc" id="L797">        return (float)Math.sqrt(maxDistSq);</span>
+<span class="fc" id="L797">        return (float)Math.sqrt(maxDistSq);</span>
     }
 
     /**

@@ -123,12 +123,12 @@ import java.util.logging.Logger;
             */
         }
         
-<span class="fc" id="L126">        calculateZeroCrossings(scaleSpaceCurve, curve);</span>
+<span class="fc" id="L126">        calculateZeroCrossings(scaleSpaceCurve, curve, isClosedCurved);</span>
 
 <span class="fc" id="L128">        return scaleSpaceCurve;</span>
     }
      
-    private boolean isZeroCrossing(float kPrev, float k) {
+    private boolean isZeroCrossing(final float kPrev, final float k) {
 <span class="fc bfc" id="L132" title="All 2 branches covered.">        if (k &lt;= 0) {</span>
 <span class="fc bfc" id="L133" title="All 2 branches covered.">            if (kPrev &gt;= 0) {</span>
 <span class="fc" id="L134">                return true;</span>
@@ -143,52 +143,195 @@ import java.util.logging.Logger;
     }
 
     private void calculateZeroCrossings(ScaleSpaceCurve scaleSpaceCurve,
-        PairIntArray curve) {
+        PairIntArray curve, boolean isClosedCurved) {
 
-        /*
-        // find the points where the curvature changes from + to -, but
-        // discard such changes when they are noise.
-        float[] x = new float[scaleSpaceCurve.getK().length];
-        float[] y = new float[x.length];
-        for (int i = 0; i &lt; x.length; i++) {
-            x[i] = i;
-            y[i] = scaleSpaceCurve.getK(i);
+<span class="fc" id="L148">        final int n = scaleSpaceCurve.getSize();</span>
+        
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (n &lt; 3) {</span>
+<span class="nc" id="L151">            scaleSpaceCurve.compressKIsZeroIdx();</span>
+<span class="nc" id="L152">            return;</span>
         }
-        float yMin = 1.2f*MiscMath.findMin(y);
-        float yMax = 1.2f*MiscMath.findMax(y);
-        try {
-            String time = Long.toString((long)Math.floor(
-                System.currentTimeMillis()));
-            time = time.substring(4, time.length());
-            int fileNumber = Long.valueOf(time).intValue();
-            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
-            plotter.plot(0.0f, x[x.length - 1], yMin, yMax,
-                x, y, &quot;curvature&quot;, &quot;t&quot;, &quot;k&quot;);
-            plotter.writeFile(fileNumber);
-
-            StringBuilder sb = new StringBuilder(fileNumber + &quot; coords:&quot;);
-            for (int i = 0; i &lt; curve.getN(); i++) {
-                sb.append(String.format(&quot;t=%d (%d,%d)\n&quot;, i, curve.getX(i), curve.getY(i)));
-            }
-            log.info(sb.toString());
-            
-        } catch (IOException e) {
-            log.severe(e.getMessage());
-        }
-        */
-
-        //TODO: adjust this to avoid noise
-<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (int i = 1; i &lt; scaleSpaceCurve.getK().length; ++i) {</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),</span>
-<span class="fc" id="L183">                scaleSpaceCurve.getK(i))) {</span>
-
-<span class="fc" id="L185">                scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));</span>
+      
+        // simple zero crossings works well on curves, but not as well on straight lines
+        //log.info(&quot;new curve (&quot; + scaleSpaceCurve.getSize() + &quot;) sigma=&quot; + scaleSpaceCurve.getSigma());
+<span class="fc" id="L157">        float maxInflectionK = Integer.MIN_VALUE;</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (isClosedCurved) {</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            if (isZeroCrossing(scaleSpaceCurve.getK(n - 1),</span>
+<span class="nc" id="L160">                scaleSpaceCurve.getK(0))) {</span>
+<span class="nc" id="L161">                float k = scaleSpaceCurve.getK(0);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                if (k &lt; 0) {</span>
+<span class="nc" id="L163">                    k *= -1;</span>
+                }
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                if (k &gt; maxInflectionK) {</span>
+<span class="nc" id="L166">                    maxInflectionK = k;</span>
+                }
+<span class="nc" id="L168">                scaleSpaceCurve.addKIsZeroIdx(0, curve.getX(0), curve.getY(0));</span>
+                //info(&quot;   i=&quot; + 0 + &quot; x=&quot; + curve.getX(0) + &quot; y=&quot; + curve.getY(0) + &quot; k=&quot; + k);
             }
         }
 
-<span class="fc" id="L189">        scaleSpaceCurve.compressKIsZeroIdx();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (int i = 1; i &lt; scaleSpaceCurve.getK().length; ++i) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),</span>
+<span class="fc" id="L175">                scaleSpaceCurve.getK(i))) {</span>
+<span class="fc" id="L176">                float k = scaleSpaceCurve.getK(i);</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                if (k &lt; 0) {</span>
+<span class="fc" id="L178">                    k *= -1;</span>
+                }
+<span class="fc bfc" id="L180" title="All 2 branches covered.">                if (k &gt; maxInflectionK) {</span>
+<span class="fc" id="L181">                    maxInflectionK = k;</span>
+                }
+<span class="fc" id="L183">                scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));</span>
+                //log.info(&quot;   i=&quot; + i + &quot; x=&quot; + curve.getX(i) + &quot; y=&quot; + curve.getY(i) + &quot; k=&quot; + k);
+            }
+        }
+        
+<span class="fc" id="L188">        scaleSpaceCurve.compressKIsZeroIdx();</span>
+        
+//log.info(&quot;k=&quot; + java.util.Arrays.toString(scaleSpaceCurve.getK()));
+//log.info(&quot;k=&quot; + java.util.Arrays.toString(scaleSpaceCurve.getKIsZeroIdx()));
 
-<span class="fc" id="L191">    }</span>
+<span class="fc" id="L193">    }</span>
 
+    private void calculateZeroCrossingsAsMinima(ScaleSpaceCurve scaleSpaceCurve,
+        PairIntArray curve, boolean isClosedCurved) {
+
+<span class="nc" id="L198">        final int n = scaleSpaceCurve.getSize();</span>
+        
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (n &lt; 3) {</span>
+<span class="nc" id="L201">            scaleSpaceCurve.compressKIsZeroIdx();</span>
+<span class="nc" id="L202">            return;</span>
+        }
+        
+        // TODO: need to improve defining a lower limit k magnitude as a substitute
+        // for strict zero-crossings.  looks like finding wide minima would help
+         
+        // simple zero crossings works well on curves, but not on straight lines
+        //log.info(&quot;new curve (&quot; + scaleSpaceCurve.getSize() + &quot;) sigma=&quot; + scaleSpaceCurve.getSigma());
+<span class="nc" id="L210">        float maxInflectionK = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (isClosedCurved) {</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (isZeroCrossing(scaleSpaceCurve.getK(n - 1),</span>
+<span class="nc" id="L213">                scaleSpaceCurve.getK(0))) {</span>
+<span class="nc" id="L214">                float k = scaleSpaceCurve.getK(0);</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">                if (k &lt; 0) {</span>
+<span class="nc" id="L216">                    k *= -1;</span>
+                }
+<span class="nc bnc" id="L218" title="All 2 branches missed.">                if (k &gt; maxInflectionK) {</span>
+<span class="nc" id="L219">                    maxInflectionK = k;</span>
+                }
+                //info(&quot;   i=&quot; + 0 + &quot; x=&quot; + curve.getX(0) + &quot; y=&quot; + curve.getY(0) + &quot; k=&quot; + k);
+            }
+        }
+
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (int i = 1; i &lt; scaleSpaceCurve.getK().length; ++i) {</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">            if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),</span>
+<span class="nc" id="L227">                scaleSpaceCurve.getK(i))) {</span>
+<span class="nc" id="L228">                float k = scaleSpaceCurve.getK(i);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">                if (k &lt; 0) {</span>
+<span class="nc" id="L230">                    k *= -1;</span>
+                }
+<span class="nc bnc" id="L232" title="All 2 branches missed.">                if (k &gt; maxInflectionK) {</span>
+<span class="nc" id="L233">                    maxInflectionK = k;</span>
+                }
+                //log.info(&quot;   i=&quot; + i + &quot; x=&quot; + curve.getX(i) + &quot; y=&quot; + curve.getY(i) + &quot; k=&quot; + k);
+            }
+        }
+        
+        //log.info(&quot;maxInflectionK=&quot; + maxInflectionK);
+        /*if (maxInflectionK &lt; 0.002) {
+            maxInflectionK = 0.005f;
+        }*/
+        
+        //adjusting for straight lines.  consecutive points ~0 should
+        //be summarized to just the mid point as the inflection point
+        
+<span class="nc" id="L247">        int endingIdx = -1;</span>
+<span class="nc" id="L248">        int beginningIdx = -1;</span>
+<span class="nc" id="L249">        boolean addToEnd = false;</span>
+<span class="nc" id="L250">        int addIdx = -1;</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">        if (isClosedCurved) {</span>
+            // scan the wrap around of end to beginning
+<span class="nc bnc" id="L253" title="All 2 branches missed.">            if ((Math.abs(scaleSpaceCurve.getK()[n - 1]) &lt;= maxInflectionK) &amp;&amp; </span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">                (Math.abs(scaleSpaceCurve.getK()[0]) &lt;= maxInflectionK)) {</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">                for (int i = (n - 1); i &gt; -1; --i) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                    if (Math.abs(scaleSpaceCurve.getK()[i]) &lt;= maxInflectionK) {</span>
+<span class="nc" id="L257">                        endingIdx = i;</span>
+                    } else {
+                        break;
+                    }
+                }
+<span class="nc bnc" id="L262" title="All 2 branches missed.">                for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">                    if (Math.abs(scaleSpaceCurve.getK()[i]) &lt;= maxInflectionK) {</span>
+<span class="nc" id="L264">                        beginningIdx = i;</span>
+                    } else {
+                        break;
+                    }
+                }
+<span class="nc" id="L269">                int midIdx = endingIdx + ((n - endingIdx + beginningIdx)/2);</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">                if (midIdx &gt; (n - 1)) {</span>
+<span class="nc" id="L271">                    midIdx = midIdx - n;</span>
+                } else {
+<span class="nc" id="L273">                    addToEnd = true;</span>
+<span class="nc" id="L274">                    addIdx = midIdx;</span>
+                }
+                //log.info(&quot;   beginningIdx=&quot; + beginningIdx + &quot; endIdx=&quot; + endingIdx + &quot; midIdx=&quot; + midIdx);
+                //log.info(&quot;     &quot; + beginningIdx + &quot; (&quot; + curve.getX(beginningIdx) + &quot;,&quot; + curve.getY(beginningIdx) + &quot;)&quot;
+                //    + &quot;   &quot; + endingIdx + &quot; (&quot; + curve.getX(endingIdx) + &quot;,&quot; + curve.getY(endingIdx) + &quot;)&quot;
+                //);
+<span class="nc bnc" id="L280" title="All 2 branches missed.">                if (!addToEnd) { </span>
+                    //log.info(&quot;    --&gt; adding (&quot; + curve.getX(midIdx) + &quot; &quot; + curve.getY(midIdx) + &quot;) t=&quot; + scaleSpaceCurve.getT()[midIdx]);
+<span class="nc" id="L282">                    scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));</span>
+                }
+            }
+        }
+        
+<span class="nc bnc" id="L287" title="All 2 branches missed.">        int i0 = (beginningIdx &gt; -1) ? (beginningIdx + 1) : 0;</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        int i1 = (endingIdx &gt; -1) ? endingIdx : n;</span>
+<span class="nc" id="L289">        int startIdx = -1;</span>
+<span class="nc" id="L290">        int endIdx = -1;</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        for (int i = i0; i &lt; i1; ++i) {</span>
+<span class="nc" id="L292">            float k = scaleSpaceCurve.getK()[i];</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (Math.abs(k) &lt;= maxInflectionK) {</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">                if (startIdx == -1) {</span>
+<span class="nc" id="L295">                    startIdx = i;</span>
+<span class="nc" id="L296">                    endIdx = i;</span>
+                } else {
+<span class="nc" id="L298">                    endIdx = i;</span>
+                }
+            } else {
+<span class="nc bnc" id="L301" title="All 2 branches missed.">                if (startIdx &gt; -1) {</span>
+<span class="nc" id="L302">                    int midIdx = (startIdx + endIdx)/2;</span>
+                    //log.info(&quot;   startIdx=&quot; + startIdx + &quot; endIdx=&quot; + (i-1) + &quot; midIdx=&quot; + midIdx);
+                    //log.info(&quot;     &quot; + startIdx + &quot; (&quot; + curve.getX(startIdx) + &quot;,&quot; + curve.getY(startIdx) + &quot;)&quot;
+                    //    + &quot;   &quot; + (i-1) + &quot; (&quot; + curve.getX(i-1) + &quot;,&quot; + curve.getY(i-1) + &quot;)&quot;
+                    //);
+                    //log.info(&quot;    --&gt; adding (&quot; + curve.getX(midIdx) + &quot; &quot; + curve.getY(midIdx) + &quot;) t=&quot; + scaleSpaceCurve.getT()[midIdx]);
+                    
+<span class="nc" id="L309">                    scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));</span>
+                }
+<span class="nc" id="L311">                startIdx = -1;</span>
+<span class="nc" id="L312">                endIdx = -1;</span>
+            }
+        }
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        if (startIdx &gt; -1) {</span>
+<span class="nc" id="L316">             int midIdx = (startIdx + endIdx)/2;</span>
+             //log.info(&quot;   startIdx=&quot; + startIdx + &quot; endIdx=&quot; + endIdx + &quot; midIdx=&quot; + midIdx);
+             //   log.info(&quot;     &quot; + startIdx + &quot; (&quot; + curve.getX(startIdx) + &quot;,&quot; + curve.getY(startIdx) + &quot;)&quot;
+             //   + &quot;   &quot; + (endIdx) + &quot; (&quot; + curve.getX(endIdx) + &quot;,&quot; + curve.getY(endIdx) + &quot;)&quot;
+             //);
+             //log.info(&quot;    --&gt; adding (&quot; + curve.getX(midIdx) + &quot; &quot; + curve.getY(midIdx) + &quot;) t=&quot; + scaleSpaceCurve.getT()[midIdx]);
+             
+<span class="nc" id="L323">             scaleSpaceCurve.addKIsZeroIdx(midIdx, curve.getX(midIdx), curve.getY(midIdx));</span>
+        }
+<span class="nc bnc" id="L325" title="All 2 branches missed.">        if (addToEnd) { </span>
+            //log.info(&quot;    --&gt; adding (&quot; + curve.getX(addIdx) + &quot; &quot; + curve.getY(addIdx) + &quot;) t=&quot; + scaleSpaceCurve.getT()[addIdx]);
+<span class="nc" id="L327">            scaleSpaceCurve.addKIsZeroIdx(addIdx, curve.getX(addIdx), curve.getY(addIdx));</span>
+        }
+       
+<span class="nc" id="L330">        scaleSpaceCurve.compressKIsZeroIdx();</span>
+        
+//log.info(&quot;k=&quot; + java.util.Arrays.toString(scaleSpaceCurve.getK()));
+//log.info(&quot;k=&quot; + java.util.Arrays.toString(scaleSpaceCurve.getKIsZeroIdx()));
+
+<span class="nc" id="L335">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

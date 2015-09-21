@@ -7,7 +7,7 @@
  * 
  * @author nichole
  */
-<span class="nc" id="L10">public class RANSACAlgorithmIterations {</span>
+<span class="fc" id="L10">public class RANSACAlgorithmIterations {</span>
     
     /**
      The estimate assumes that at least 25 percent of the nMatchedPoints
@@ -118,8 +118,8 @@
     public int estimateNIterForFiftyPercentOutliersFor7Points(int nMatchedPoints) {
         
         double p;
-<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (nMatchedPoints &lt;= 30) {</span>
-<span class="nc" id="L122">            p = 0.003;</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (nMatchedPoints &lt;= 30) {</span>
+<span class="fc" id="L122">            p = 0.003;</span>
 <span class="nc bnc" id="L123" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 50) {</span>
 <span class="nc" id="L124">            p = 0.0048;</span>
 <span class="nc bnc" id="L125" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 100) {</span>
@@ -128,9 +128,9 @@
 <span class="nc" id="L128">            p = 0.0075;</span>
         }
         
-<span class="nc" id="L131">        int nIter = (int)Math.round(1./p);</span>
+<span class="fc" id="L131">        int nIter = (int)Math.round(1./p);</span>
         
-<span class="nc" id="L133">        return nIter;</span>
+<span class="fc" id="L133">        return nIter;</span>
     }
 
     /**

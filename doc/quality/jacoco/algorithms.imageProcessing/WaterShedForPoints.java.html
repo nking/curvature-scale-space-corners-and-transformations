@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>WaterShedForPoints.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">WaterShedForPoints.java</span></div><h1>WaterShedForPoints.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.Misc;
+import algorithms.disjointSets.DisjointSet2Helper;
+import algorithms.disjointSets.DisjointSet2Node;
+import algorithms.graphs.CustomWatershedDAG;
+import algorithms.graphs.CustomWatershedNode;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+/**
+ * A watershed algorithm for use in image segmentation that is based upon
+ * the algorithms described in
+  &lt;pre&gt;
+  Roerdink and Meijster 2001
+  &quot;The Watershed Transform: Definitions, Algorithms and Parallelization Strategies&quot;,
+  Fundamenta Informaticae 41 (2001) 187–228, Section 4.2.4
+  and
+  Meijster and Roerdink (1998?),
+  &quot;A Disjoint Set Algorihm for the Watershed Transform&quot;
+  http://www.researchgate.net/publication/2407714_A_Disjoint_Set_Algorithm_For_The_Watershed_Transform
+
+ Note the above authors credit the 2 Disjoint Set methods,
+ especially the disjoint set path compression,
+ used in the watershed union find to
+ Tarjan, R. E. Data Structures and Network Algorithms. SIAM, 1983.
+ Those are not yet implemented strictly as suggested here.
+ Instead, the current implementation for disjoint sets follows &quot;Introduction
+ to Algorithms&quot; by Cormen et al. which include improvements suggested by
+ Tarjan too.
+
+ Notes on parallelization are in Section 5 of Roerdink and Meijster 2001.
+ &lt;/pre&gt;
+
+ * The image is first transformed into a lower complete image and then
+ * the watershed is computed.
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">public class WaterShedForPoints extends AbstractWaterShed {</span>
+
+    /**
+     * two dimensional matrix of the shortest distance of a pixel to
+     * a lower intensity pixel with respect to the original image reference
+     * frame.  For example, if a pixel is surrounded by pixels with the same
+     * intensity, the shortest distance for it will be larger than '1' because
+     * no neighbors have a smaller intensity.
+     * This is populated by the method named lower.
+     */
+<span class="fc" id="L59">    private Map&lt;PairInt, Integer&gt; distToLowerIntensityPixel = null;</span>
+
+    /**
+     * create for the points in the image, a component labelled image with
+     * watershed pixels labelled as '0'.
+     * runtime is quasi-linear.
+     * @param img
+     * @param points
+     * @return
+     */
+    public Map&lt;PairInt, Integer&gt; createLabelledImage(GreyscaleImage img,
+        Set&lt;PairInt&gt; points) {
+
+<span class="fc" id="L72">        Map&lt;PairInt, Integer&gt; lowerComplete = lower(img, points);</span>
+
+<span class="fc" id="L74">        Map&lt;PairInt, Integer&gt; labelled2 = unionFindWatershed(lowerComplete);</span>
+
+<span class="fc" id="L76">        return labelled2;</span>
+    }
+
+    /**
+     * get the two dimensional matrix of the shortest distance of a pixel to
+     * a lower intensity pixel with respect to the original image reference
+     * frame.  For example, if a pixel is surrounded by pixels with the same
+     * intensity, the shortest distance for it will be larger than '1' because
+     * no neighbors have a smaller intensity.
+     * @return the distToLowerIntensityPixel
+     */
+    public Map&lt;PairInt, Integer&gt; getDistToLowerIntensityPixel() {
+<span class="nc" id="L88">        return distToLowerIntensityPixel;</span>
+    }
+
+     /**
+     * This method alters the image, specifically the plateaus, so that a best
+     * path to lowest intensity is possible and less ambiguous. A plateau is a
+     * region of where the pixels have the same intensities.
+     * After this has finished, there should be no pixel which does not
+     * have a neighbor of lower intensity if the pixel is not a regional
+     * minimum.
+     * runtime complexity is O(N_points).
+     *
+     * @param img
+     * @param points
+     * @return
+     */
+    protected Map&lt;PairInt, Integer&gt; lower(GreyscaleImage img, Set&lt;PairInt&gt; points) {
+
+<span class="fc" id="L106">        int w = img.getWidth();</span>
+<span class="fc" id="L107">        int h = img.getHeight();</span>
+
+<span class="fc" id="L109">        Map&lt;PairInt, Integer&gt; lc = new HashMap&lt;PairInt, Integer&gt;();</span>
+
+<span class="fc" id="L111">        distToLowerIntensityPixel = new HashMap&lt;PairInt, Integer&gt;();</span>
+
+<span class="fc" id="L113">        regionalMinima = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L115">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L116">        int[] dys8 = Misc.dy8;</span>
+
+        int dist;
+
+<span class="fc" id="L120">        ArrayDeque&lt;PairInt&gt; queue = new ArrayDeque&lt;PairInt&gt;(points.size());</span>
+
+        // ---- init queue with points which have lower intensity neighbors ---
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L124">            int x = p.getX();</span>
+<span class="fc" id="L125">            int y = p.getY();</span>
+<span class="fc" id="L126">            int v = img.getValue(x, y);</span>
+
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            for (int vIdx = 0; vIdx &lt; dxs8.length; ++vIdx) {</span>
+<span class="fc" id="L129">                int x2 = x + dxs8[vIdx];</span>
+<span class="fc" id="L130">                int y2 = y + dys8[vIdx];</span>
+<span class="fc" id="L131">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                if (points.contains(p2)) {</span>
+<span class="fc" id="L133">                    int v2 = img.getValue(x2, y2);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                    if (v2 &lt; v) {</span>
+<span class="fc" id="L135">                        queue.add(p);</span>
+<span class="fc" id="L136">                        lc.put(p, Integer.valueOf(-1));</span>
+<span class="fc" id="L137">                        break;</span>
+                    }
+                }
+            }
+<span class="fc" id="L141">        }</span>
+
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (queue.isEmpty()) {</span>
+            // points contains only pixels of same intensity
+<span class="nc" id="L145">            return null;</span>
+        }
+
+<span class="fc" id="L148">        dist = 1;</span>
+<span class="fc" id="L149">        queue.add(sentinel);</span>
+
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        while (!queue.isEmpty()) {</span>
+
+<span class="fc" id="L153">            PairInt p = queue.poll();</span>
+
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            if (p.equals(sentinel)) {</span>
+
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">                if (!queue.isEmpty()) {</span>
+
+<span class="nc" id="L159">                    queue.add(sentinel);</span>
+
+                    //any point originally lacking lower intensity neighbors,
+                    //now gets a larger distance
+
+<span class="nc" id="L164">                    dist++;</span>
+                }
+                continue;
+            }
+
+<span class="fc" id="L169">            int x = p.getX();</span>
+<span class="fc" id="L170">            int y = p.getY();</span>
+
+<span class="fc" id="L172">            lc.put(p, Integer.valueOf(dist));</span>
+
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            for (int vIdx = 0; vIdx &lt; dxs8.length; ++vIdx) {</span>
+<span class="fc" id="L175">                int x2 = x + dxs8[vIdx];</span>
+<span class="fc" id="L176">                int y2 = y + dys8[vIdx];</span>
+
+<span class="fc" id="L178">                PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="fc bfc" id="L180" title="All 2 branches covered.">                if (!points.contains(p2)) {</span>
+<span class="fc" id="L181">                    continue;</span>
+                }
+
+<span class="fc" id="L184">                Integer value2 = lc.get(p2);</span>
+
+<span class="fc bfc" id="L186" title="All 2 branches covered.">                int v2 = (value2 == null) ? 0 : value2.intValue();</span>
+
+<span class="pc bpc" id="L188" title="1 of 4 branches missed.">                if ((img.getValue(x, y) == img.getValue(x2, y2)) &amp;&amp; (v2 == 0)) {</span>
+
+<span class="nc" id="L190">                    queue.add(new PairInt(x2, y2));</span>
+
+<span class="nc" id="L192">                    lc.put(p2, Integer.valueOf(-1));</span>
+                }
+            }
+<span class="fc" id="L195">        }</span>
+
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+
+<span class="fc" id="L199">            int x = p.getX();</span>
+<span class="fc" id="L200">            int y = p.getY();</span>
+
+<span class="fc" id="L202">            Integer value = lc.get(p);</span>
+
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            int v = (value == null) ? 0 : value.intValue();</span>
+
+<span class="fc" id="L206">            distToLowerIntensityPixel.put(p, Integer.valueOf(v));</span>
+
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            if (v != 0) {</span>
+
+<span class="fc" id="L210">                int v2 = dist * img.getValue(x, y) + v - 1;</span>
+
+<span class="fc" id="L212">                lc.put(p, Integer.valueOf(v2));</span>
+
+<span class="fc" id="L214">            } else {</span>
+
+<span class="fc" id="L216">                regionalMinima.add(p);</span>
+
+                //as suggested by later paper, adapted for watershed by Union-Find
+<span class="fc" id="L219">                int v2 = dist * img.getValue(x, y);</span>
+
+<span class="fc" id="L221">                lc.put(p, Integer.valueOf(v2));</span>
+            }
+<span class="fc" id="L223">        }</span>
+
+<span class="fc" id="L225">        return lc;</span>
+    }
+
+    /**
+     * Algorithm 4.8 Watershed transform w.r.t. topographical distance based on
+     * disjoint sets.
+     *
+     * Note this method uses the by-products of the method named lower.
+     * To use this method as a standalone invocation requires some changes to
+     * accept arguments for the by-products or to re-solve for similar data in
+     * this method.
+     *
+     * @param im a lower complete image
+     * @return
+     */
+    protected Map&lt;PairInt, Integer&gt; unionFindWatershed(Map&lt;PairInt, Integer&gt; im) {
+
+<span class="pc bpc" id="L242" title="2 of 4 branches missed.">        if ((distToLowerIntensityPixel == null) || (regionalMinima == null)) {</span>
+<span class="nc" id="L243">            throw new IllegalStateException(&quot;algorithm currently depends upon &quot;</span>
+            + &quot;previous use of the methods named lower&quot;);
+        }
+
+        // uses regionalMinima
+<span class="fc" id="L248">        CustomWatershedDAG dag = createLowerIntensityDAG(im);</span>
+
+<span class="fc" id="L250">        final Integer wshed = Integer.valueOf(0);</span>
+
+        //initialize image lab with distinct labels for minima
+        //LabelInit
+<span class="fc" id="L254">        Map&lt;PairInt, Integer&gt; labeled = unionFindComponentLabelling(im);</span>
+
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        for (Entry&lt;PairInt, Integer&gt; entry : labeled.entrySet()) {</span>
+
+<span class="fc" id="L258">            PairInt pPoint = entry.getKey();</span>
+
+<span class="fc" id="L260">            PairInt repr = resolve(pPoint, dag);</span>
+
+            Integer value;
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (repr.equals(sentinel)) {</span>
+<span class="fc" id="L264">                value = wshed;</span>
+            } else {
+<span class="fc" id="L266">                value = labeled.get(repr);</span>
+            }
+<span class="fc" id="L268">            labeled.put(pPoint, value);</span>
+<span class="fc" id="L269">        }</span>
+
+<span class="fc" id="L271">        return labeled;</span>
+    }
+
+    protected CustomWatershedDAG createLowerIntensityDAG(
+        Map&lt;PairInt, Integer&gt; lowerCompleteIm) {
+
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (regionalMinima == null) {</span>
+<span class="nc" id="L278">            throw new IllegalStateException(</span>
+                &quot;method needs lower to have been invoked before using this&quot;);
+        }
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">        if (lowerCompleteIm == null) {</span>
+<span class="nc" id="L282">            throw new IllegalStateException(&quot;lowerCompleteIm cannot be null&quot;);</span>
+        }
+
+<span class="fc" id="L285">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L286">        int[] dys8 = Misc.dy8;</span>
+
+<span class="fc" id="L288">        CustomWatershedDAG dag = new CustomWatershedDAG(lowerCompleteIm.size());</span>
+
+<span class="fc" id="L290">        int[] diffInt = new int[8];</span>
+<span class="fc" id="L291">        PairInt[] neighbors = new PairInt[8];</span>
+
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (Entry&lt;PairInt, Integer&gt; entry : lowerCompleteIm.entrySet()) {</span>
+
+<span class="fc" id="L295">            PairInt p = entry.getKey();</span>
+
+<span class="fc" id="L297">            Integer value = entry.getValue();</span>
+
+<span class="fc bfc" id="L299" title="All 2 branches covered.">            if (regionalMinima.contains(p)) {</span>
+
+                // componentLabelMap has the representative for this node
+<span class="fc" id="L302">                dag.insert(p, new CustomWatershedNode(p, 0));</span>
+
+            } else {
+
+<span class="fc" id="L306">                int x = p.getX();</span>
+<span class="fc" id="L307">                int y = p.getY();</span>
+
+<span class="fc" id="L309">                int nc = 0;</span>
+
+<span class="fc bfc" id="L311" title="All 2 branches covered.">                for (int nIdx = 0; nIdx &lt; dxs8.length; ++nIdx) {</span>
+<span class="fc" id="L312">                    int x2 = x + dxs8[nIdx];</span>
+<span class="fc" id="L313">                    int y2 = y + dys8[nIdx];</span>
+<span class="fc" id="L314">                    PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="fc bfc" id="L316" title="All 2 branches covered.">                    if (!lowerCompleteIm.containsKey(p2)) {</span>
+<span class="fc" id="L317">                        continue;</span>
+                    }
+
+<span class="fc" id="L320">                    Integer value2 = lowerCompleteIm.get(p2);</span>
+
+<span class="fc bfc" id="L322" title="All 2 branches covered.">                    if (value2.intValue() &lt; value.intValue()) {</span>
+<span class="fc" id="L323">                        diffInt[nc] = value.intValue() - value2.intValue();</span>
+<span class="fc" id="L324">                        neighbors[nc] = new PairInt(x2, y2);</span>
+<span class="fc" id="L325">                        nc++;</span>
+                    }
+                }
+
+<span class="fc" id="L329">                dag.orderAndInsert(p, diffInt, neighbors, nc);</span>
+
+<span class="pc bpc" id="L331" title="3 of 4 branches missed.">                assert(nc != 0);</span>
+            }
+<span class="fc" id="L333">        }</span>
+
+<span class="fc" id="L335">        return dag;</span>
+    }
+
+    /**
+     * Algorithm 4.7 Scan-line algorithm for labelling level components based on
+     * disjoint sets.
+     * from
+      &quot;The Watershed Transform: Definitions, Algorithms and Parallelization Strategies&quot;
+      Roerdink and Meijster, 2001, Fundamenta Informaticae 41 (2001) 187–228
+
+     The runtime is quasi-linear in the number of points (not the number of pixels).
+     *
+     * @param im greyscale image (does not need to be lower complete)
+     * @return
+     */
+    protected Map&lt;PairInt, Integer&gt; unionFindComponentLabelling(
+        Map&lt;PairInt, Integer&gt; im) {
+
+<span class="fc" id="L353">        LinkedHashSet&lt;PairInt&gt; lOrderedPoints =</span>
+<span class="fc" id="L354">            MiscMath.lexicographicallyOrderPointsBySort(im.keySet());</span>
+
+        /*
+        search for neighbors q of p that have smaller lexicographical values
+        q ≺ p : (i_q &lt; i_p) ∨ ((i_q == i_p) ∧(j_q &lt; j_p))
+
+          (-1, 1)
+          (-1, 0)   p=(0,  0)
+          (-1,-1)     (0, -1)
+        */
+<span class="fc" id="L364">        int[] dLOX = new int[]{-1, -1, -1,  0};</span>
+<span class="fc" id="L365">        int[] dLOY = new int[]{ 1,  0, -1, -1};</span>
+
+<span class="fc" id="L367">        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();</span>
+
+<span class="fc" id="L369">        Map&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt; parentMap = new</span>
+            HashMap&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt;();
+
+        // init map
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        for (PairInt pPoint : lOrderedPoints) {</span>
+<span class="fc" id="L374">            DisjointSet2Node&lt;PairInt&gt; pNode = disjointSetHelper.makeSet(</span>
+                new DisjointSet2Node&lt;PairInt&gt;(pPoint));
+<span class="fc" id="L376">            parentMap.put(pPoint, pNode);</span>
+<span class="fc" id="L377">        }</span>
+
+        //Firstpass
+        PairInt reprPoint;
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        for (PairInt pPoint : lOrderedPoints) {</span>
+
+<span class="fc" id="L383">            reprPoint = pPoint;</span>
+
+<span class="fc" id="L385">            int x = pPoint.getX();</span>
+<span class="fc" id="L386">            int y = pPoint.getY();</span>
+
+<span class="fc" id="L388">            Integer value = im.get(pPoint);</span>
+
+<span class="pc bpc" id="L390" title="3 of 4 branches missed.">            assert(value != null);</span>
+
+<span class="fc" id="L392">            int vP = value.intValue();</span>
+
+<span class="fc" id="L394">            List&lt;PairInt&gt; qPoints = new ArrayList&lt;PairInt&gt;();</span>
+
+            //for all q ∈ Neighbor(p) with q ≺ p
+<span class="fc bfc" id="L397" title="All 2 branches covered.">            for (int vIdx = 0; vIdx &lt; dLOX.length; ++vIdx) {</span>
+<span class="fc" id="L398">                int x2 = x + dLOX[vIdx];</span>
+<span class="fc" id="L399">                int y2 = y + dLOY[vIdx];</span>
+
+<span class="fc" id="L401">                PairInt qPoint = new PairInt(x2, y2);</span>
+
+<span class="fc bfc" id="L403" title="All 2 branches covered.">                if (!lOrderedPoints.contains(qPoint)) {</span>
+<span class="fc" id="L404">                    continue;</span>
+                }
+
+<span class="fc" id="L407">                Integer value2 = im.get(qPoint);</span>
+
+<span class="pc bpc" id="L409" title="3 of 4 branches missed.">                assert(value2 != null);</span>
+
+<span class="fc" id="L411">                int vQ = value2.intValue();</span>
+
+<span class="fc bfc" id="L413" title="All 2 branches covered.">                if (vP == vQ) {</span>
+
+                    // find r, the representative of the neighbors with
+                    // same image intensity, as the lexicographically
+                    // smallest location
+
+                    //r ← r min FindRoot(q);
+
+<span class="fc" id="L421">                    DisjointSet2Node&lt;PairInt&gt; qParent = disjointSetHelper.findSet(</span>
+<span class="fc" id="L422">                        parentMap.get(qPoint));</span>
+
+<span class="fc bfc" id="L424" title="All 2 branches covered.">                    if (qParent.getMember().getX() &lt; reprPoint.getX()) {</span>
+<span class="fc" id="L425">                        reprPoint = qPoint;</span>
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">                    } else if ((qParent.getMember().getX() == reprPoint.getX())</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">                        &amp;&amp; (qParent.getMember().getY() &lt; reprPoint.getY())) {</span>
+<span class="nc" id="L428">                        reprPoint = qPoint;</span>
+                    }
+<span class="fc" id="L430">                    qPoints.add(qPoint);</span>
+                }
+            }
+
+            //parent[p] ← r
+<span class="fc bfc" id="L435" title="All 2 branches covered.">            if (!qPoints.isEmpty()) {</span>
+
+<span class="fc" id="L437">                DisjointSet2Node&lt;PairInt&gt; parent = disjointSetHelper.union(</span>
+<span class="fc" id="L438">                    parentMap.get(reprPoint), parentMap.get(pPoint));</span>
+
+<span class="fc bfc" id="L440" title="All 2 branches covered.">                for (PairInt qPoint : qPoints) {</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">                    if (qPoint.equals(reprPoint)) {</span>
+<span class="fc" id="L442">                        continue;</span>
+                    }
+                    //PathCompress(q, r)
+
+<span class="fc" id="L446">                    DisjointSet2Node&lt;PairInt&gt; qParent = disjointSetHelper.union(</span>
+<span class="fc" id="L447">                        parentMap.get(reprPoint), parentMap.get(qPoint));</span>
+<span class="fc" id="L448">                }</span>
+            }
+<span class="fc" id="L450">        }</span>
+
+//System.out.println(printParents(parentMap));
+
+        /*
+        In a second pass through the input image, the output image lab is
+        created. All root pixels get a distinct label; for any other pixel p
+        its path is compressed, making explicit use of the order imposed on
+        parent (see line 29 in Algorithm 4.7), and p gets the label of its
+        representative.
+        */
+
+<span class="fc" id="L462">        Map&lt;PairInt, Integer&gt; label = new HashMap&lt;PairInt, Integer&gt;();</span>
+
+        //Secondpass
+<span class="fc" id="L465">        int curLabel = 1;</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (PairInt pPoint : lOrderedPoints) {</span>
+
+<span class="fc" id="L468">            DisjointSet2Node&lt;PairInt&gt; parent = disjointSetHelper.findSet(</span>
+<span class="fc" id="L469">                parentMap.get(pPoint));</span>
+
+<span class="fc bfc" id="L471" title="All 2 branches covered.">            if (parent.getMember().equals(pPoint)) {</span>
+
+                // root pixel
+<span class="fc" id="L474">                label.put(pPoint, Integer.valueOf(curLabel));</span>
+
+<span class="fc" id="L476">                curLabel++;</span>
+
+            } else {
+
+                //Resolve unresolved equivalences
+                // parent[p] = parent[parent[p]]
+<span class="fc" id="L482">                parentMap.put(pPoint, parent);</span>
+
+<span class="fc" id="L484">                PairInt ePoint = new PairInt(parent.getMember().getX(),</span>
+<span class="fc" id="L485">                    parent.getMember().getY());</span>
+
+<span class="fc" id="L487">                Integer eLabel = label.get(ePoint);</span>
+
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">                if (eLabel == null) {</span>
+<span class="nc" id="L490">                    eLabel = Integer.valueOf(0);</span>
+                }
+
+<span class="fc" id="L493">                label.put(pPoint, eLabel);</span>
+            }
+<span class="fc" id="L495">        }</span>
+
+<span class="fc" id="L497">        componentLabelMap = parentMap;</span>
+
+<span class="fc" id="L499">        return label;</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -119,13 +119,13 @@
     @Override
     public boolean equals(Object obj) {
         
-<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (!(obj instanceof TransformationParameters)) {</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (!(obj instanceof TransformationParameters)) {</span>
 <span class="nc" id="L123">            return false;</span>
         }
         
-<span class="nc" id="L126">        TransformationParameters other = (TransformationParameters)obj;</span>
+<span class="fc" id="L126">        TransformationParameters other = (TransformationParameters)obj;</span>
         
-<span class="nc bnc" id="L128" title="All 12 branches missed.">        return ((other.rotationInRadians == rotationInRadians) &amp;&amp;</span>
+<span class="pc bpc" id="L128" title="3 of 12 branches missed.">        return ((other.rotationInRadians == rotationInRadians) &amp;&amp;</span>
             (other.translationX == translationX) &amp;&amp; 
             (other.translationY == translationY) &amp;&amp;
             (other.scale == scale) &amp;&amp;

@@ -3,10 +3,10 @@
 import algorithms.imageProcessing.GreyscaleImage;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 /**
@@ -50,51 +50,62 @@ public class KMeansPlusPlus {
     protected final static int nMaxIter = 20;
 <span class="fc" id="L51">    protected int nIter = 0;</span>
     
-<span class="fc" id="L53">    public KMeansPlusPlus() {</span>
-<span class="fc" id="L54">    }</span>
+    private final ThreadLocalRandom sr;
+    
+<span class="fc" id="L55">    public KMeansPlusPlus() {</span>
+<span class="fc" id="L56">         sr = ThreadLocalRandom.current();</span>
+<span class="fc" id="L57">    }</span>
     
     protected void init(int k) {
-<span class="fc" id="L57">        this.nSeeds = k;</span>
-<span class="fc" id="L58">        this.nIter = 0;</span>
-<span class="fc" id="L59">        this.seedVariances = new float[nSeeds];</span>
-<span class="fc" id="L60">    }</span>
+<span class="fc" id="L60">        this.nSeeds = k;</span>
+<span class="fc" id="L61">        this.nIter = 0;</span>
+<span class="fc" id="L62">        this.seedVariances = new float[nSeeds];</span>
+<span class="fc" id="L63">    }</span>
     
+    /**
+     * note that an internal method binPoints makes an assumption that the
+     * minimum values in an img pixel is 0 and a maximum is 255.
+     * @param k
+     * @param img
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
     public void computeMeans(int k, GreyscaleImage img) throws IOException, 
         NoSuchAlgorithmException {
          
-<span class="fc" id="L65">        init(k);</span>
+<span class="fc" id="L76">        init(k);</span>
         
         // starter seeds, sorted by increasing value
-<span class="fc" id="L68">        int[] seeds = createStartSeeds(img);</span>
+<span class="fc" id="L79">        int[] seeds = createStartSeeds(img);</span>
         
-<span class="fc" id="L70">        int[] imgSeedIndexes = null;</span>
+<span class="fc" id="L81">        int[] imgSeedIndexes = null;</span>
 
-<span class="fc" id="L72">        boolean hasConverged = false;</span>
+<span class="fc" id="L83">        boolean hasConverged = false;</span>
 
-<span class="pc bpc" id="L74" title="1 of 4 branches missed.">        while (!hasConverged &amp;&amp; (nIter &lt; nMaxIter) ) {</span>
+<span class="pc bpc" id="L85" title="1 of 4 branches missed.">        while (!hasConverged &amp;&amp; (nIter &lt; nMaxIter) ) {</span>
 
-<span class="fc" id="L76">            imgSeedIndexes = binPoints(img, seeds);</span>
+<span class="fc" id="L87">            imgSeedIndexes = binPoints(img, seeds);</span>
 
-<span class="fc" id="L78">            seeds = calculateMeanOfSeedPoints(img, imgSeedIndexes);</span>
+<span class="fc" id="L89">            seeds = calculateMeanOfSeedPoints(img, imgSeedIndexes);</span>
 
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            if (seeds == null) {</span>
-<span class="nc" id="L81">                nIter = 0;</span>
-<span class="nc" id="L82">                seeds = createStartSeeds(img);</span>
-<span class="nc" id="L83">                continue;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">            if (seeds == null) {</span>
+<span class="nc" id="L92">                nIter = 0;</span>
+<span class="nc" id="L93">                seeds = createStartSeeds(img);</span>
+<span class="nc" id="L94">                continue;</span>
             }
 
-<span class="fc" id="L86">            hasConverged = calculateVarianceFromSeedCenters(img, seeds, </span>
+<span class="fc" id="L97">            hasConverged = calculateVarianceFromSeedCenters(img, seeds, </span>
                 imgSeedIndexes);
 
-<span class="fc" id="L89">            nIter++;</span>
+<span class="fc" id="L100">            nIter++;</span>
         }
 
         // store final numbers
-<span class="fc" id="L93">        center = seeds;</span>
+<span class="fc" id="L104">        center = seeds;</span>
 
         // calculate final stats
-<span class="fc" id="L96">        calculateFinalStats(img, imgSeedIndexes);</span>
-<span class="fc" id="L97">    }</span>
+<span class="fc" id="L107">        calculateFinalStats(img, imgSeedIndexes);</span>
+<span class="fc" id="L108">    }</span>
 
     /**
      * choose seeds sequentially by distance weighted probabilities
@@ -104,83 +115,80 @@ public class KMeansPlusPlus {
      */
     private int[] createStartSeeds(GreyscaleImage img) throws 
         NoSuchAlgorithmException {
-        
-<span class="fc" id="L108">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
-<span class="fc" id="L109">        sr.setSeed(System.currentTimeMillis());</span>
-        
-<span class="fc" id="L111">        int[] seed = new int[nSeeds];</span>
-        
-<span class="fc" id="L113">        int[] indexes = new int[nSeeds];</span>
-
-<span class="fc" id="L115">        int index = getModeIdx(img);</span>
-
-<span class="fc" id="L117">        int nSeedsChosen = 0;</span>
-<span class="fc" id="L118">        seed[nSeedsChosen] = img.getValue(index);</span>
-<span class="fc" id="L119">        indexes[nSeedsChosen] = index;</span>
-        
-<span class="fc" id="L121">        log.fine(String.format(&quot;choose seed %d) %d&quot;, nSeedsChosen, </span>
-<span class="fc" id="L122">            seed[nSeedsChosen]));</span>
-        
-<span class="fc" id="L124">        nSeedsChosen++;</span>
-        
-<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (int n = 1; n &lt; nSeeds; n++) {</span>
-
-<span class="fc" id="L128">            int[] distOfSeeds = new int[img.getNPixels()];</span>
-<span class="fc" id="L129">            int[] indexOfDistOfSeeds = new int[img.getNPixels()];</span>
-
-<span class="fc" id="L131">            int minAllDist = Integer.MAX_VALUE;</span>
-
-<span class="fc bfc" id="L133" title="All 2 branches covered.">            for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
                 
-<span class="fc bfc" id="L135" title="All 2 branches covered.">                if (contains(indexes, nSeedsChosen, xyIndex)) {</span>
-<span class="fc" id="L136">                    continue;</span>
+<span class="fc" id="L119">        int[] seed = new int[nSeeds];</span>
+        
+<span class="fc" id="L121">        int[] indexes = new int[nSeeds];</span>
+
+<span class="fc" id="L123">        int index = getModeIdx(img);</span>
+
+<span class="fc" id="L125">        int nSeedsChosen = 0;</span>
+<span class="fc" id="L126">        seed[nSeedsChosen] = img.getValue(index);</span>
+<span class="fc" id="L127">        indexes[nSeedsChosen] = index;</span>
+        
+<span class="fc" id="L129">        log.fine(String.format(&quot;choose seed %d) %d&quot;, nSeedsChosen, </span>
+<span class="fc" id="L130">            seed[nSeedsChosen]));</span>
+        
+<span class="fc" id="L132">        nSeedsChosen++;</span>
+        
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (int n = 1; n &lt; nSeeds; n++) {</span>
+
+<span class="fc" id="L136">            int[] distOfSeeds = new int[img.getNPixels()];</span>
+<span class="fc" id="L137">            int[] indexOfDistOfSeeds = new int[img.getNPixels()];</span>
+
+<span class="fc" id="L139">            int minAllDist = Integer.MAX_VALUE;</span>
+
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
+                
+<span class="fc bfc" id="L143" title="All 2 branches covered.">                if (contains(indexes, nSeedsChosen, xyIndex)) {</span>
+<span class="fc" id="L144">                    continue;</span>
                 }
                 
-<span class="fc" id="L139">                int pt = img.getValue(xyIndex);</span>
+<span class="fc" id="L147">                int pt = img.getValue(xyIndex);</span>
                 
-<span class="fc" id="L141">                int minDist = Integer.MAX_VALUE;</span>
+<span class="fc" id="L149">                int minDist = Integer.MAX_VALUE;</span>
 
-<span class="fc bfc" id="L143" title="All 2 branches covered.">                for (int seedIndex = 0; seedIndex &lt; nSeedsChosen; seedIndex++) {</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">                for (int seedIndex = 0; seedIndex &lt; nSeedsChosen; seedIndex++) {</span>
                     
-<span class="fc" id="L145">                    int dist = Math.abs(pt - seed[seedIndex]);</span>
+<span class="fc" id="L153">                    int dist = Math.abs(pt - seed[seedIndex]);</span>
                     
-<span class="fc bfc" id="L147" title="All 2 branches covered.">                    if (dist &lt; minDist) {</span>
-<span class="fc" id="L148">                        minDist = dist;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">                    if (dist &lt; minDist) {</span>
+<span class="fc" id="L156">                        minDist = dist;</span>
                     }
                 }
                 
-<span class="fc" id="L152">                distOfSeeds[xyIndex] = minDist;</span>
-<span class="fc" id="L153">                indexOfDistOfSeeds[xyIndex] = xyIndex;</span>
+<span class="fc" id="L160">                distOfSeeds[xyIndex] = minDist;</span>
+<span class="fc" id="L161">                indexOfDistOfSeeds[xyIndex] = xyIndex;</span>
 
-<span class="fc bfc" id="L155" title="All 2 branches covered.">                if (minDist &lt; minAllDist) {</span>
-<span class="fc" id="L156">                    minAllDist = minDist;</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">                if (minDist &lt; minAllDist) {</span>
+<span class="fc" id="L164">                    minAllDist = minDist;</span>
                 }
             }
             
-<span class="fc" id="L160">            index = chooseRandomlyFromNumbersPresentByProbability(distOfSeeds, </span>
-                indexOfDistOfSeeds, sr, indexes, nSeedsChosen);
+<span class="fc" id="L168">            index = chooseRandomlyFromNumbersPresentByProbability(distOfSeeds, </span>
+                indexOfDistOfSeeds, indexes, nSeedsChosen);
 
-<span class="fc" id="L163">            seed[nSeedsChosen] = img.getValue(index);</span>
-<span class="fc" id="L164">            indexes[nSeedsChosen] = index;</span>
+<span class="fc" id="L171">            seed[nSeedsChosen] = img.getValue(index);</span>
+<span class="fc" id="L172">            indexes[nSeedsChosen] = index;</span>
 
-<span class="fc" id="L166">            log.fine(String.format(&quot;choose seed %d) %d&quot;, nSeedsChosen, </span>
-<span class="fc" id="L167">                seed[nSeedsChosen]));</span>
+<span class="fc" id="L174">            log.fine(String.format(&quot;choose seed %d) %d&quot;, nSeedsChosen, </span>
+<span class="fc" id="L175">                seed[nSeedsChosen]));</span>
             
-<span class="fc" id="L169">            nSeedsChosen++;</span>
+<span class="fc" id="L177">            nSeedsChosen++;</span>
         }
         
-<span class="fc" id="L172">        Arrays.sort(seed);</span>
+<span class="fc" id="L180">        Arrays.sort(seed);</span>
 
-<span class="fc" id="L174">        return seed;</span>
+<span class="fc" id="L182">        return seed;</span>
     }
     
     protected boolean contains(int[] array, int nArray, int value) {
-<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (int i = 0; i &lt; nArray; i++) {</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (array[i] == value) {</span>
-<span class="fc" id="L180">                return true;</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int i = 0; i &lt; nArray; i++) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            if (array[i] == value) {</span>
+<span class="fc" id="L188">                return true;</span>
             }
         }
-<span class="fc" id="L183">        return false;</span>
+<span class="fc" id="L191">        return false;</span>
     }
     
     /**
@@ -195,32 +203,32 @@ public class KMeansPlusPlus {
     protected int[] calculateMeanOfSeedPoints(final GreyscaleImage img, 
         final int[] imgSeedIndexes) {
 
-<span class="fc" id="L198">        int[] sum = new int[nSeeds];</span>
-<span class="fc" id="L199">        int[] nSum = new int[nSeeds];</span>
+<span class="fc" id="L206">        int[] sum = new int[nSeeds];</span>
+<span class="fc" id="L207">        int[] nSum = new int[nSeeds];</span>
 
-<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
 
-<span class="fc" id="L203">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+<span class="fc" id="L211">            int seedIndex = imgSeedIndexes[xyIndex];</span>
 
-<span class="fc" id="L205">            sum[seedIndex] += img.getValue(xyIndex);</span>
+<span class="fc" id="L213">            sum[seedIndex] += img.getValue(xyIndex);</span>
             
-<span class="fc" id="L207">            nSum[seedIndex]++;</span>
+<span class="fc" id="L215">            nSum[seedIndex]++;</span>
         }
 
-<span class="fc bfc" id="L210" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
             
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">            if (nSum[i] == 0) {</span>
-<span class="nc" id="L213">                return null;</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">            if (nSum[i] == 0) {</span>
+<span class="nc" id="L221">                return null;</span>
             } else {
-<span class="fc" id="L215">                sum[i] /= nSum[i];</span>
+<span class="fc" id="L223">                sum[i] /= nSum[i];</span>
             }
 
-<span class="fc" id="L218">            log.fine(String.format(&quot;seed mean = %d) %d number of points=%d&quot;, </span>
-<span class="fc" id="L219">                i, sum[i], nSum[i]));</span>
+<span class="fc" id="L226">            log.fine(String.format(&quot;seed mean = %d) %d number of points=%d&quot;, </span>
+<span class="fc" id="L227">                i, sum[i], nSum[i]));</span>
             
         }
 
-<span class="fc" id="L223">        return sum;</span>
+<span class="fc" id="L231">        return sum;</span>
     }
 
     /**
@@ -245,83 +253,83 @@ public class KMeansPlusPlus {
         be very small, near zero.
         */
  
-<span class="fc" id="L248">        float[] sumVariance = new float[nSeeds];</span>
-<span class="fc" id="L249">        int[] nSumVariance = new int[nSeeds];</span>
+<span class="fc" id="L256">        float[] sumVariance = new float[nSeeds];</span>
+<span class="fc" id="L257">        int[] nSumVariance = new int[nSeeds];</span>
 
-<span class="fc bfc" id="L251" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
 
-<span class="fc" id="L253">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+<span class="fc" id="L261">            int seedIndex = imgSeedIndexes[xyIndex];</span>
 
-<span class="fc" id="L255">            int d = img.getValue(xyIndex) - seed[seedIndex];</span>
+<span class="fc" id="L263">            int d = img.getValue(xyIndex) - seed[seedIndex];</span>
             
-<span class="fc" id="L257">            sumVariance[seedIndex] += (d * d);</span>
+<span class="fc" id="L265">            sumVariance[seedIndex] += (d * d);</span>
             
-<span class="fc" id="L259">            nSumVariance[seedIndex]++;</span>
+<span class="fc" id="L267">            nSumVariance[seedIndex]++;</span>
         }
 
-<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
-<span class="fc" id="L264">                sumVariance[i] /= (float)nSumVariance[i];</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
+<span class="fc" id="L272">                sumVariance[i] /= (float)nSumVariance[i];</span>
             } else {
-<span class="nc" id="L266">                sumVariance[i] = 0;</span>
+<span class="nc" id="L274">                sumVariance[i] = 0;</span>
             }
         }
 
         // store in the instance fields
 
-<span class="fc" id="L272">        boolean allAreBelowCriticalLimit = true;</span>
+<span class="fc" id="L280">        boolean allAreBelowCriticalLimit = true;</span>
 
-<span class="fc bfc" id="L274" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
-<span class="fc" id="L275">            float diff = seedVariances[i] - sumVariance[i];</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">            if (diff &lt; 0) {</span>
-<span class="fc" id="L277">                diff *= -1;</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+<span class="fc" id="L283">            float diff = seedVariances[i] - sumVariance[i];</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">            if (diff &lt; 0) {</span>
+<span class="fc" id="L285">                diff *= -1;</span>
             }
             // TODO:  may want to change the critical factor
-<span class="fc bfc" id="L280" title="All 2 branches covered.">            if (diff &gt; 0.0*seedVariances[i]) {</span>
-<span class="fc" id="L281">                allAreBelowCriticalLimit = false;</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">            if (diff &gt; 0.0*seedVariances[i]) {</span>
+<span class="fc" id="L289">                allAreBelowCriticalLimit = false;</span>
             }
             
-<span class="fc" id="L284">            seedVariances[i] = sumVariance[i];</span>
+<span class="fc" id="L292">            seedVariances[i] = sumVariance[i];</span>
         }
 
-<span class="fc" id="L287">        return allAreBelowCriticalLimit;</span>
+<span class="fc" id="L295">        return allAreBelowCriticalLimit;</span>
     }
     
     protected void calculateFinalStats(final GreyscaleImage img, 
         final int[] imgSeedIndexes) {
 
-<span class="fc" id="L293">        float[] sumStDev = new float[nSeeds];</span>
-<span class="fc" id="L294">        int[] nSumStDev = new int[nSeeds];</span>
+<span class="fc" id="L301">        float[] sumStDev = new float[nSeeds];</span>
+<span class="fc" id="L302">        int[] nSumStDev = new int[nSeeds];</span>
 
-<span class="fc bfc" id="L296" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
 
-<span class="fc" id="L298">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+<span class="fc" id="L306">            int seedIndex = imgSeedIndexes[xyIndex];</span>
 
-<span class="fc" id="L300">            int d = img.getValue(xyIndex) - center[seedIndex];</span>
+<span class="fc" id="L308">            int d = img.getValue(xyIndex) - center[seedIndex];</span>
             
-<span class="fc" id="L302">            sumStDev[seedIndex] += (d * d);</span>
+<span class="fc" id="L310">            sumStDev[seedIndex] += (d * d);</span>
             
-<span class="fc" id="L304">            nSumStDev[seedIndex]++;</span>
+<span class="fc" id="L312">            nSumStDev[seedIndex]++;</span>
         }
 
-<span class="fc bfc" id="L307" title="All 2 branches covered.">        for (int i = 0; i &lt; sumStDev.length; i++) {</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        for (int i = 0; i &lt; sumStDev.length; i++) {</span>
 
-<span class="pc bpc" id="L309" title="1 of 2 branches missed.">            if ((float)(nSumStDev[i] - 1) &gt; 0) {</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">            if ((float)(nSumStDev[i] - 1) &gt; 0) {</span>
                 // divide by N-1 rather because mean was calc'ed from the data
-<span class="fc" id="L311">                sumStDev[i] = </span>
-<span class="fc" id="L312">                    (float)Math.sqrt(sumStDev[i]/(float)(nSumStDev[i] - 1.));</span>
+<span class="fc" id="L319">                sumStDev[i] = </span>
+<span class="fc" id="L320">                    (float)Math.sqrt(sumStDev[i]/(float)(nSumStDev[i] - 1.));</span>
             } else {
-<span class="nc" id="L314">                sumStDev[i] = 0;</span>
+<span class="nc" id="L322">                sumStDev[i] = 0;</span>
             }
-<span class="fc" id="L316">            seedVariances[i] = sumStDev[i];</span>
+<span class="fc" id="L324">            seedVariances[i] = sumStDev[i];</span>
 
-<span class="fc" id="L318">            log.fine(String.format(&quot;seed %d) %d stDev=%.2f number of points=%d&quot;, </span>
-<span class="fc" id="L319">                i, center[i], seedVariances[i], nSumStDev[i]));</span>
+<span class="fc" id="L326">            log.fine(String.format(&quot;seed %d) %d stDev=%.2f number of points=%d&quot;, </span>
+<span class="fc" id="L327">                i, center[i], seedVariances[i], nSumStDev[i]));</span>
             
         }
 
-<span class="fc" id="L323">        numberOfPointsPerSeedCell = nSumStDev;</span>
-<span class="fc" id="L324">    }</span>
+<span class="fc" id="L331">        numberOfPointsPerSeedCell = nSumStDev;</span>
+<span class="fc" id="L332">    }</span>
     
      /**
      *
@@ -332,46 +340,61 @@ public class KMeansPlusPlus {
     protected int[] binPoints(final GreyscaleImage img,
         int[] seed) throws IOException {
 
-<span class="pc bpc" id="L335" title="1 of 2 branches missed.">        if (img == null) {</span>
-<span class="nc" id="L336">            throw new IllegalArgumentException(&quot;img cannot be null&quot;);</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">        if (img == null) {</span>
+<span class="nc" id="L344">            throw new IllegalArgumentException(&quot;img cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L338" title="1 of 2 branches missed.">        if (seed == null) {</span>
-<span class="nc" id="L339">            throw new IllegalArgumentException(&quot;seed cannot be null&quot;);</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (seed == null) {</span>
+<span class="nc" id="L347">            throw new IllegalArgumentException(&quot;seed cannot be null&quot;);</span>
         }
         
         //TODO: review to improve this:
 
-<span class="fc" id="L344">        int[] seedNumber = new int[img.getNPixels()];</span>
+<span class="fc" id="L352">        int[] seedNumber = new int[img.getNPixels()];</span>
 
-<span class="fc bfc" id="L346" title="All 2 branches covered.">        for (int seedIndex = 0; seedIndex &lt; seed.length; seedIndex++) {</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">        for (int seedIndex = 0; seedIndex &lt; seed.length; seedIndex++) {</span>
 
-<span class="fc bfc" id="L348" title="All 2 branches covered.">            int bisectorBelow = ((seedIndex - 1) &gt; -1) ?</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">            int bisectorBelow = ((seedIndex - 1) &gt; -1) ?</span>
                 ((seed[seedIndex - 1] + seed[seedIndex])/2) : 0;
                 
-<span class="fc bfc" id="L351" title="All 2 branches covered.">            int bisectorAbove = ((seedIndex + 1) &gt; (seed.length - 1)) ?</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">            int bisectorAbove = ((seedIndex + 1) &gt; (seed.length - 1)) ?</span>
                 255 : ((seed[seedIndex + 1] + seed[seedIndex])/2);
                        
-<span class="fc bfc" id="L354" title="All 2 branches covered.">            for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">            for (int xyIndex = 0; xyIndex &lt; img.getNPixels(); xyIndex++) {</span>
 
-<span class="fc" id="L356">                int pt = img.getValue(xyIndex);</span>
+<span class="fc" id="L364">                int pt = img.getValue(xyIndex);</span>
 
-<span class="fc bfc" id="L358" title="All 4 branches covered.">                boolean isInCell = (pt &gt;= bisectorBelow) &amp;&amp;  (pt &lt;= bisectorAbove);</span>
+<span class="fc bfc" id="L366" title="All 4 branches covered.">                boolean isInCell = (pt &gt;= bisectorBelow) &amp;&amp;  (pt &lt;= bisectorAbove);</span>
 
-<span class="fc bfc" id="L360" title="All 2 branches covered.">                if (isInCell) {</span>
-<span class="fc" id="L361">                    seedNumber[xyIndex] = seedIndex;</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">                if (isInCell) {</span>
+<span class="fc" id="L369">                    seedNumber[xyIndex] = seedIndex;</span>
                     //break;
                 }
             }
         }
 
-<span class="fc" id="L367">        return seedNumber;</span>
+<span class="fc" id="L375">        return seedNumber;</span>
     }
     
+    /**
+     * an algorithm to choose randomly from values using a probability 
+     * function based upon the value.  In other words, if the values were
+     * [2, 3, 4] their presence in a bin to choose from using their indexes
+     * as the bin values would be [0, 0, 1, 1, 1, 2, 2, 2, 2] and choosing
+     * '2' from the bin would be more likely and '2' is the index so the result
+     * would more often be values[2] = 4.
+     * The additional arguments are present for uses specific to KMeansPlusPlus
+     * where one doesn't want two similar seeds as a result.
+     * @param distOfSeeds
+     * @param indexOfDistOfSeeds
+     * @param sr
+     * @param indexesAlreadyChosen
+     * @param nIndexesAlreadyChosen
+     * @return 
+     */
     int chooseRandomlyFromNumbersPresentByProbability(int[] distOfSeeds, 
-        int[] indexOfDistOfSeeds, SecureRandom sr, 
-        int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
+        int[] indexOfDistOfSeeds, int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
         
-        //TODO: update these notes.  no longer using random in this method
+        //TODO: update these notes. 
         
         // we want to choose randomly from the indexes based upon probabilities 
         // that scale by distance
@@ -384,73 +407,73 @@ public class KMeansPlusPlus {
         // find the value for the position once the position has been 
         // drawn randomly
 
-<span class="fc" id="L387">        int chosenIndex = -1;</span>
-
-<span class="fc" id="L389">        int nDistDistr = 0;</span>
-<span class="fc bfc" id="L390" title="All 2 branches covered.">        for (int i = 0; i &lt; distOfSeeds.length; i++) {            </span>
-<span class="fc" id="L391">            int nValues = distOfSeeds[i];</span>
+<span class="fc" id="L410">        int chosenIndex = -1;</span>
+        
+<span class="fc" id="L412">        long nDistDistr = 0;</span>
+<span class="fc bfc" id="L413" title="All 2 branches covered.">        for (int i = 0; i &lt; distOfSeeds.length; i++) {            </span>
+<span class="fc" id="L414">            int nValues = distOfSeeds[i];</span>
             // value should be present nValues number of times
-<span class="fc" id="L393">            nDistDistr += nValues;</span>
+<span class="fc" id="L416">            nDistDistr += nValues;</span>
         }
         
-<span class="pc bpc" id="L396" title="1 of 2 branches missed.">        if (nDistDistr &lt; 1) {</span>
-<span class="nc" id="L397">            throw new IllegalStateException(&quot;distOfSeeds is in error: &quot; + </span>
-<span class="nc" id="L398">                Arrays.toString(distOfSeeds));</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">        if (nDistDistr &lt; 1) {</span>
+<span class="nc" id="L420">            throw new IllegalStateException(&quot;distOfSeeds is in error: &quot; + </span>
+<span class="nc" id="L421">                Arrays.toString(distOfSeeds));</span>
         }
                 
-<span class="fc bfc" id="L401" title="All 2 branches covered.">        while ((chosenIndex == -1) || </span>
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)){</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">        while ((chosenIndex == -1) || </span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)) {</span>
             
-<span class="fc" id="L404">            int chosen = sr.nextInt(nDistDistr);</span>
+<span class="fc" id="L427">            long chosen = sr.nextLong(nDistDistr);</span>
 
             // walk thru same iteration to obtain the chosen index
-<span class="fc" id="L407">            int n = 0;</span>
-<span class="pc bpc" id="L408" title="1 of 2 branches missed.">            for (int i = 0; i &lt; distOfSeeds.length; i++) {            </span>
-<span class="fc" id="L409">                int nValues = distOfSeeds[i];</span>
+<span class="fc" id="L430">            long n = 0;</span>
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">            for (int i = 0; i &lt; distOfSeeds.length; i++) {            </span>
+<span class="fc" id="L432">                int nValues = distOfSeeds[i];</span>
                 // value should be present nValues number of times
                 
-<span class="pc bpc" id="L412" title="1 of 4 branches missed.">                if ((chosen &gt;= n) &amp;&amp; (chosen &lt; (n + nValues))) {</span>
-<span class="fc" id="L413">                    chosenIndex = indexOfDistOfSeeds[i];</span>
-<span class="fc" id="L414">                    break;</span>
+<span class="pc bpc" id="L435" title="1 of 4 branches missed.">                if ((chosen &gt;= n) &amp;&amp; (chosen &lt; (n + nValues))) {</span>
+<span class="fc" id="L436">                    chosenIndex = indexOfDistOfSeeds[i];</span>
+<span class="fc" id="L437">                    break;</span>
                 }
-<span class="fc" id="L416">                n += nValues;</span>
+<span class="fc" id="L439">                n += nValues;</span>
             }
-<span class="fc" id="L418">        }</span>
+<span class="fc" id="L441">        }</span>
         
-<span class="fc" id="L420">        return chosenIndex;</span>
+<span class="fc" id="L443">        return chosenIndex;</span>
     }
     
     public float[] getStandardDeviationsFromCenters() {
-<span class="fc" id="L424">        return this.seedVariances;</span>
+<span class="fc" id="L447">        return this.seedVariances;</span>
     }
 
     public int[] getCenters() {
-<span class="fc" id="L428">        return this.center;</span>
+<span class="fc" id="L451">        return this.center;</span>
     }
 
     public int[] getNumberOfPointsPerSeedCell() {
-<span class="fc" id="L432">        return numberOfPointsPerSeedCell;</span>
+<span class="fc" id="L455">        return numberOfPointsPerSeedCell;</span>
     }
 
     private int getModeIdx(GreyscaleImage img) {
         
-<span class="fc" id="L437">        Map&lt;Integer, Integer&gt; counts = new HashMap&lt;Integer, Integer&gt;();</span>
-<span class="fc" id="L438">        int maxCounts = 0;</span>
-<span class="fc" id="L439">        int maxCountsIdx = -1;</span>
+<span class="fc" id="L460">        Map&lt;Integer, Integer&gt; counts = new HashMap&lt;Integer, Integer&gt;();</span>
+<span class="fc" id="L461">        int maxCounts = 0;</span>
+<span class="fc" id="L462">        int maxCountsIdx = -1;</span>
         
-<span class="fc bfc" id="L441" title="All 2 branches covered.">        for (int idx = 0; idx &lt; img.getNPixels(); idx++) {</span>
-<span class="fc" id="L442">            int v = img.getValue(idx);</span>
-<span class="fc" id="L443">            Integer key = Integer.valueOf(v);</span>
-<span class="fc" id="L444">            Integer value = counts.get(key);</span>
-<span class="fc bfc" id="L445" title="All 2 branches covered.">            int f = (value == null) ? 1 : (value.intValue() + 1);</span>
-<span class="fc" id="L446">            counts.put(key, Integer.valueOf(f));</span>
-<span class="fc bfc" id="L447" title="All 2 branches covered.">            if (f &gt; maxCounts) {</span>
-<span class="fc" id="L448">                maxCounts = f;</span>
-<span class="fc" id="L449">                maxCountsIdx = idx;</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">        for (int idx = 0; idx &lt; img.getNPixels(); idx++) {</span>
+<span class="fc" id="L465">            int v = img.getValue(idx);</span>
+<span class="fc" id="L466">            Integer key = Integer.valueOf(v);</span>
+<span class="fc" id="L467">            Integer value = counts.get(key);</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">            int f = (value == null) ? 1 : (value.intValue() + 1);</span>
+<span class="fc" id="L469">            counts.put(key, Integer.valueOf(f));</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">            if (f &gt; maxCounts) {</span>
+<span class="fc" id="L471">                maxCounts = f;</span>
+<span class="fc" id="L472">                maxCountsIdx = idx;</span>
             }
         }
         
-<span class="fc" id="L453">        return maxCountsIdx;</span>
+<span class="fc" id="L476">        return maxCountsIdx;</span>
     }
 
 }

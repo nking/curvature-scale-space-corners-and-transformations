@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DisjointSetHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.disjointSets</a> &gt; <span class="el_source">DisjointSetHelper.java</span></div><h1>DisjointSetHelper.java</h1><pre class="source lang-java linenums">package algorithms.disjointSets;
+
+/**
+ * a disjoint set implemented with doubly linked lists based upon pseudocode
+ * from &quot;Introduction to Algorithms&quot; by Cormen et al.
+ *
+ * Each set has a single representative which all members point to.   This
+ * makes comparing whether two objects are in the same set fast by checking
+ * that their representatives are the same.
+ *
+ * @author nichole
+ */
+<span class="fc" id="L13">public class DisjointSetHelper {</span>
+
+    /**
+     * make a set out of the given node.
+     * runtime complexity is O(1).
+     *
+     * @param x
+     * @return
+     */
+    public &lt;T&gt; DisjointSet&lt;T&gt; makeSet(DisjointSetNode&lt;T&gt; x) {
+<span class="fc" id="L23">        x.setRepresentative(x);</span>
+<span class="fc" id="L24">        DisjointSet&lt;T&gt; list = new DisjointSet&lt;T&gt;();</span>
+<span class="fc" id="L25">        list.setHead(x);</span>
+<span class="fc" id="L26">        list.setTail(x);</span>
+<span class="fc" id="L27">        list.setNumberOfNodes(1);</span>
+<span class="fc" id="L28">        return list;</span>
+    }
+
+    /**
+     * find the set representative for the given node.
+     * runtime complexity is O(1).
+     * @param x
+     * @return
+     */
+    public &lt;T&gt; DisjointSetNode&lt;T&gt; findSet(DisjointSetNode&lt;T&gt; x) {
+<span class="nc" id="L38">        return x.getRepresentative();</span>
+    }
+
+    /**
+     * append the shorter list onto the end of the longer's list (&quot;link by size&quot;).
+     * runtime complexity is  O(N_shorter).
+     * @param x
+     * @param y
+     * @return
+     */
+    public &lt;T&gt; DisjointSet&lt;T&gt; union(DisjointSet&lt;T&gt; x, DisjointSet&lt;T&gt; y) {
+
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (x.equals(y)) {</span>
+<span class="nc" id="L51">            return x;</span>
+        }
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (x.getHead().getRepresentative().equals(y.getHead().getRepresentative())) {</span>
+<span class="nc" id="L54">            return x;</span>
+        }
+
+        DisjointSet&lt;T&gt; longer, shorter;
+
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (x.getNumberOfNodes() &gt;= y.getNumberOfNodes()) {</span>
+<span class="fc" id="L60">            longer = x;</span>
+<span class="fc" id="L61">            shorter = y;</span>
+        } else {
+<span class="nc" id="L63">            longer = y;</span>
+<span class="nc" id="L64">            shorter = x;</span>
+        }
+
+        //note that the doubly linked list node characteristic of &quot;previous&quot;
+        //is served by the &quot;representative&quot;
+
+        // add next references to longer
+
+        // longer.tail.next might not be pointing to last of next, so walk to end
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (longer.getTail().getNext() != null) {</span>
+<span class="nc" id="L74">            DisjointSetNode&lt;T&gt; tmp = longer.getTail().getNext();</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            while (tmp.getNext() != null) {</span>
+<span class="nc" id="L76">               tmp = tmp.getNext();</span>
+            }
+<span class="nc" id="L78">            longer.setTail(tmp);</span>
+        }
+
+<span class="fc" id="L81">        longer.getTail().setNext(shorter.getHead());</span>
+
+<span class="fc" id="L83">        DisjointSetNode&lt;T&gt; latest = shorter.getHead();</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        while (latest != null) {</span>
+<span class="fc" id="L85">            latest.setRepresentative(longer.getHead());</span>
+<span class="fc" id="L86">            latest = latest.getNext();</span>
+        }
+<span class="fc" id="L88">        longer.setTail(shorter.getTail());</span>
+
+<span class="fc" id="L90">        longer.setNumberOfNodes(longer.getNumberOfNodes() + shorter.getNumberOfNodes());</span>
+
+<span class="fc" id="L92">        return longer;</span>
+    }
+
+    public static &lt;T&gt; String print(DisjointSet&lt;T&gt; x) {
+
+<span class="nc" id="L97">        DisjointSetNode&lt;T&gt; current = x.getHead();</span>
+
+<span class="nc" id="L99">        int nIter = 0;</span>
+
+<span class="nc" id="L101">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">        while (current != null &amp;&amp; (nIter &lt; x.getNumberOfNodes())) {</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (sb.length() &gt; 0) {</span>
+<span class="nc" id="L104">                sb.append(&quot;, &quot;);</span>
+            }
+<span class="nc" id="L106">            sb.append(&quot;[&quot;).append(current.getMember().toString()).append(&quot;] &quot;)</span>
+<span class="nc" id="L107">            .append(&quot;repr=&quot;).append(current.getRepresentative().getMember().toString())</span>
+            ;
+<span class="nc" id="L109">            current = current.getNext();</span>
+<span class="nc" id="L110">            nIter++;</span>
+        }
+<span class="nc" id="L112">        sb.append(&quot;, tail=&quot;).append(x.getTail().getMember().toString());</span>
+
+<span class="nc" id="L114">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

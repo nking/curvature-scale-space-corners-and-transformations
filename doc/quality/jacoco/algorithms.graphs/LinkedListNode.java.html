@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LinkedListNode.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.graphs</a> &gt; <span class="el_source">LinkedListNode.java</span></div><h1>LinkedListNode.java</h1><pre class="source lang-java linenums">package algorithms.graphs;
+
+import java.util.Arrays;
+
+/**
+ *
+ * @author nichole
+ */
+public class LinkedListNode {
+
+<span class="pc" id="L11">    protected int key = -1;</span>
+
+<span class="pc" id="L13">    protected int[] incoming = null;</span>
+<span class="pc" id="L14">    protected int nIncoming = 0;</span>
+<span class="pc" id="L15">    protected int[] outgoing = null;</span>
+<span class="pc" id="L16">    protected int nOutgoing = 0;</span>
+
+    /**
+     * construct a node with a start capacity for edges of edgeCapacity.
+     * @param nodeNumber
+     */
+<span class="fc" id="L22">    public LinkedListNode(int nodeNumber) {</span>
+<span class="fc" id="L23">        this.key = nodeNumber;</span>
+<span class="fc" id="L24">        incoming = new int[1];</span>
+<span class="fc" id="L25">        outgoing = new int[1];</span>
+<span class="fc" id="L26">    }</span>
+    /**
+     * construct a node with a start capacity for edges of edgeCapacity.
+     * @param nodeNumber
+     * @param edgeCapacity
+     */
+<span class="nc" id="L32">    public LinkedListNode(int nodeNumber, int edgeCapacity) {</span>
+<span class="nc" id="L33">        this.key = nodeNumber;</span>
+<span class="nc" id="L34">        incoming = new int[edgeCapacity];</span>
+<span class="nc" id="L35">        outgoing = new int[edgeCapacity];</span>
+<span class="nc" id="L36">    }</span>
+
+    public void insertIncoming(int nodeNumber) {
+
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if ((nIncoming + 1) &gt; incoming.length) {</span>
+<span class="fc" id="L41">            int expand = 2*nIncoming;</span>
+<span class="fc" id="L42">            incoming = Arrays.copyOf(incoming, expand);</span>
+        }
+<span class="fc" id="L44">        incoming[nIncoming] = nodeNumber;</span>
+<span class="fc" id="L45">        nIncoming++;</span>
+<span class="fc" id="L46">    }</span>
+
+    public void insertOutgoing(int nodeNumber) {
+
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if ((nOutgoing + 1) &gt; outgoing.length) {</span>
+<span class="fc" id="L51">            int expand = 2*nOutgoing;</span>
+<span class="fc" id="L52">            outgoing = Arrays.copyOf(outgoing, expand);</span>
+        }
+<span class="fc" id="L54">        outgoing[nOutgoing] = nodeNumber;</span>
+<span class="fc" id="L55">        nOutgoing++;</span>
+<span class="fc" id="L56">    }</span>
+
+    public void removeIncoming(int nodeNumber) {
+<span class="fc" id="L59">        int indexNumber = -1;</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 0; i &lt; incoming.length; i++) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (incoming[i] == nodeNumber) {</span>
+<span class="fc" id="L62">                indexNumber = i;</span>
+<span class="fc" id="L63">                break;</span>
+            }
+        }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (indexNumber &gt; -1) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            if (indexNumber &lt; (nIncoming - 1)) {</span>
+<span class="fc" id="L68">                int nLen = nIncoming - indexNumber - 1;</span>
+<span class="fc" id="L69">                System.arraycopy(incoming, (indexNumber + 1), incoming, indexNumber, nLen);</span>
+            }
+<span class="fc" id="L71">            nIncoming--;</span>
+        }
+<span class="fc" id="L73">    }</span>
+
+    public void removeOutgoing(int nodeNumber) {
+<span class="fc" id="L76">        int indexNumber = -1;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; outgoing.length; i++) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (outgoing[i] == nodeNumber) {</span>
+<span class="fc" id="L79">                indexNumber = i;</span>
+<span class="fc" id="L80">                break;</span>
+            }
+        }
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (indexNumber &gt; -1) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            if (indexNumber &lt; (nOutgoing - 1)) {</span>
+<span class="fc" id="L85">                int nLen = nOutgoing - indexNumber - 1;</span>
+<span class="fc" id="L86">                System.arraycopy(outgoing, (indexNumber + 1), outgoing, indexNumber, nLen);</span>
+            }
+<span class="fc" id="L88">            nOutgoing--;</span>
+        }
+<span class="fc" id="L90">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

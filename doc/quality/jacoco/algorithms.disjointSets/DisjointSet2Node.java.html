@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DisjointSet2Node.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.disjointSets</a> &gt; <span class="el_source">DisjointSet2Node.java</span></div><h1>DisjointSet2Node.java</h1><pre class="source lang-java linenums">package algorithms.disjointSets;
+
+/**
+ * a node for the forest implementation of the disjoint set.
+ * 
+ * @author nichole
+ * @param &lt;T&gt; 
+ */
+public class DisjointSet2Node&lt;T&gt; {
+
+    // the set member data to be held in a disjoint set
+<span class="fc" id="L12">    protected T member = null;</span>
+    
+    // pointer to the set representative
+<span class="fc" id="L15">    protected DisjointSet2Node&lt;T&gt; parent = null;</span>
+
+    // upper bound of edges between this node and the longest path to it's descendants
+<span class="fc" id="L18">    protected int rank = 0;</span>
+
+<span class="fc" id="L20">    public DisjointSet2Node(T member) {</span>
+<span class="fc" id="L21">        this.member = member;</span>
+<span class="fc" id="L22">    }</span>
+    
+<span class="fc" id="L24">    public DisjointSet2Node() {</span>
+<span class="fc" id="L25">    }</span>
+   
+    public T getMember() {
+<span class="fc" id="L28">        return member;</span>
+    }
+
+    public void setMember(T member) {
+<span class="fc" id="L32">        this.member = member;</span>
+<span class="fc" id="L33">    }</span>
+
+    public DisjointSet2Node&lt;T&gt; getParent() {
+<span class="fc" id="L36">        return parent;</span>
+    }
+
+    public void setParent(DisjointSet2Node&lt;T&gt; theParent) {
+<span class="fc" id="L40">        this.parent = theParent;</span>
+<span class="fc" id="L41">    }</span>
+
+    public int getRank() {
+<span class="fc" id="L44">        return rank;</span>
+    }
+
+    public void setRank(int rank) {
+<span class="fc" id="L48">        this.rank = rank;</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L54">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="nc" id="L56">        sb.append(&quot;[member=&quot;);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (member != null) {</span>
+<span class="nc" id="L58">            sb.append(member.toString());</span>
+        }
+<span class="nc" id="L60">        sb.append(&quot;; &quot;);</span>
+<span class="nc" id="L61">        sb.append(&quot;rank=&quot;).append(Integer.toString(rank)).append(&quot;; &quot;);</span>
+        
+<span class="nc" id="L63">        sb.append(&quot;parent=&quot;);</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (parent != null) {</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">            if (parent.equals(this)) {</span>
+<span class="nc" id="L66">                sb.append(&quot;self&quot;);</span>
+            } else {
+<span class="nc" id="L68">                sb.append(parent.toString());</span>
+            }
+        }
+<span class="nc" id="L71">        sb.append(&quot;;] &quot;);</span>
+        
+<span class="nc" id="L73">        return sb.toString();</span>
+    }
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

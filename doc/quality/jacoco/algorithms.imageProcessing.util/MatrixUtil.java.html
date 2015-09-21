@@ -247,24 +247,24 @@ import org.ejml.simple.*;
     
     public static double[][] dot(SimpleMatrix m1, SimpleMatrix m2) {
         
-<span class="nc bnc" id="L250" title="All 2 branches missed.">        if (m1 == null) {</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">        if (m1 == null) {</span>
 <span class="nc" id="L251">            throw new IllegalArgumentException(&quot;m1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (m2 == null) {</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (m2 == null) {</span>
 <span class="nc" id="L254">            throw new IllegalArgumentException(&quot;m2 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L256" title="All 2 branches missed.">        if (m1.numCols() != m2.numRows()) {</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        if (m1.numCols() != m2.numRows()) {</span>
 <span class="nc" id="L257">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m1 != number of rows in m2&quot;);
         }
         
-<span class="nc" id="L261">        int cCols = m2.numCols();</span>
-<span class="nc" id="L262">        int cRows = m1.numRows();</span>
+<span class="fc" id="L261">        int cCols = m2.numCols();</span>
+<span class="fc" id="L262">        int cRows = m1.numRows();</span>
         
         // m1 dot m2
-<span class="nc" id="L265">        double[][] m = new double[cRows][cCols];</span>
-<span class="nc bnc" id="L266" title="All 2 branches missed.">        for (int i = 0; i &lt; cRows; i++) {</span>
-<span class="nc" id="L267">            m[i] = new double[cCols];</span>
+<span class="fc" id="L265">        double[][] m = new double[cRows][cCols];</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        for (int i = 0; i &lt; cRows; i++) {</span>
+<span class="fc" id="L267">            m[i] = new double[cCols];</span>
         }
         /*
         0     1     0     2  1
@@ -275,9 +275,9 @@ import org.ejml.simple.*;
         1000*2 + 100*3 + 10*4    1000*1 +  100*0 + 10*0
         */
                 
-<span class="nc bnc" id="L278" title="All 2 branches missed.">        for (int colAdd = 0; colAdd &lt; m2.numCols(); colAdd++) {</span>
-<span class="nc bnc" id="L279" title="All 2 branches missed.">            for (int cRow = 0; cRow &lt; cRows; cRow++) {</span>
-<span class="nc bnc" id="L280" title="All 2 branches missed.">                for (int col = 0; col &lt; m1.numCols(); col++) {</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        for (int colAdd = 0; colAdd &lt; m2.numCols(); colAdd++) {</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            for (int cRow = 0; cRow &lt; cRows; cRow++) {</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">                for (int col = 0; col &lt; m1.numCols(); col++) {</span>
                 
                     // a[0][0]  b[0][0]
                     // a[0][1]  b[1][0]
@@ -287,14 +287,14 @@ import org.ejml.simple.*;
                     //
                     // a[1][0]  b[0][0]
                     //
-<span class="nc" id="L290">                    double a = m1.get(cRow, col);</span>
-<span class="nc" id="L291">                    double b = m2.get(col, colAdd);</span>
-<span class="nc" id="L292">                    m[cRow][colAdd] += (a * b);</span>
+<span class="fc" id="L290">                    double a = m1.get(cRow, col);</span>
+<span class="fc" id="L291">                    double b = m2.get(col, colAdd);</span>
+<span class="fc" id="L292">                    m[cRow][colAdd] += (a * b);</span>
                 }
             }
         }
 
-<span class="nc" id="L297">        return m;</span>
+<span class="fc" id="L297">        return m;</span>
     }
     
     public static float[][] transpose(float[][] m) {

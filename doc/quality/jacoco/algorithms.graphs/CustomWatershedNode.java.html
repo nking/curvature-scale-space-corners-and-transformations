@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CustomWatershedNode.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.graphs</a> &gt; <span class="el_source">CustomWatershedNode.java</span></div><h1>CustomWatershedNode.java</h1><pre class="source lang-java linenums">package algorithms.graphs;
+
+import algorithms.util.PairInt;
+import java.util.Arrays;
+
+/**
+ *
+ * @author nichole
+ */
+public class CustomWatershedNode {
+
+<span class="pc" id="L12">    protected PairInt key = null;</span>
+    
+    /**
+     * flag indicating whether node resolution has occurred (if true,
+     * can just use first and only result in outgoing).
+     * Note that if flag has been set to resolved, the single outgoing
+     * connection may hold a value that it is not directly connected too,
+     * but is the representative of its contiguous group.
+     */
+<span class="pc" id="L21">    protected boolean resolved = false;</span>
+
+<span class="pc" id="L23">    protected PairInt[] outgoing = null;</span>
+    
+<span class="pc" id="L25">    protected int nOutgoing = 0;</span>
+
+    /**
+     * construct a node with a start capacity for edges of edgeCapacity.
+     * @param nodeLocation
+     */
+<span class="nc" id="L31">    public CustomWatershedNode(PairInt nodeLocation) {</span>
+        
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        if (nodeLocation == null) {</span>
+<span class="nc" id="L34">            throw new IllegalStateException(&quot;nodeLocation cannot be null&quot;);</span>
+        }
+        
+<span class="nc" id="L37">        this.key = nodeLocation;</span>
+<span class="nc" id="L38">        outgoing = new PairInt[1];</span>
+<span class="nc" id="L39">    }</span>
+    
+    /**
+     * construct a node with a start capacity for edges of edgeCapacity.
+     * @param nodeLocation
+     * @param edgeCapacity
+     */
+<span class="fc" id="L46">    public CustomWatershedNode(PairInt nodeLocation, int edgeCapacity) {</span>
+        
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (nodeLocation == null) {</span>
+<span class="nc" id="L49">            throw new IllegalStateException(&quot;nodeLocation cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L52">        this.key = nodeLocation;</span>
+<span class="fc" id="L53">        outgoing = new PairInt[edgeCapacity];</span>
+<span class="fc" id="L54">    }</span>
+
+    public void insertOutgoing(PairInt nodeLocation) {
+        
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (resolved) {</span>
+<span class="fc" id="L59">            throw new IllegalStateException(&quot;this node has been set to resolved&quot;);</span>
+        }
+
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if ((nOutgoing + 1) &gt; outgoing.length) {</span>
+<span class="nc" id="L63">            int expand = 2*nOutgoing;</span>
+<span class="nc" id="L64">            outgoing = Arrays.copyOf(outgoing, expand);</span>
+        }
+<span class="fc" id="L66">        outgoing[nOutgoing] = nodeLocation;</span>
+        
+<span class="fc" id="L68">        nOutgoing++;</span>
+<span class="fc" id="L69">    }</span>
+
+    public void setToResolved(PairInt nodeLocation) {
+        
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (resolved) {</span>
+<span class="nc" id="L74">            throw new IllegalStateException(&quot;this node has already been set to resolved&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (nodeLocation == null) {</span>
+<span class="nc" id="L78">            throw new IllegalStateException(&quot;nodeLocation cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L81">        resolved = true;</span>
+        
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (nOutgoing == 0) {</span>
+<span class="fc" id="L84">            outgoing = new PairInt[]{nodeLocation};</span>
+        } else {
+<span class="fc" id="L86">            outgoing[0] = nodeLocation;</span>
+            //TODO: compress if needed... there are at most 8 items in outgoing
+        }
+        
+<span class="fc" id="L90">        nOutgoing = 1;        </span>
+<span class="fc" id="L91">    }</span>
+    
+    public boolean isResolved() {
+<span class="fc" id="L94">        return resolved;</span>
+    }
+    
+    public PairInt getResolved() {
+        
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">        if (resolved) {</span>
+<span class="fc" id="L100">            return outgoing[0];</span>
+        }
+        
+<span class="nc" id="L103">        return null;</span>
+    }
+    
+    public int getConnectedNumber() {
+<span class="fc" id="L107">        return nOutgoing;</span>
+    }
+    
+    public PairInt get(int nodeNumber) {
+        
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">        if (nodeNumber &lt; 0 || nodeNumber &gt; (nOutgoing - 1)) {</span>
+<span class="nc" id="L113">            throw new IllegalArgumentException(&quot;nodeNumber is out of bounds&quot;);</span>
+        }
+        
+<span class="fc" id="L116">        return outgoing[nodeNumber];</span>
+    }
+
+    public void reset(int nodeNumber, PairInt nodeValue) {
+        
+<span class="pc bpc" id="L121" title="2 of 4 branches missed.">        if (nodeNumber &lt; 0 || nodeNumber &gt; (nOutgoing - 1)) {</span>
+<span class="nc" id="L122">            throw new IllegalArgumentException(&quot;nodeNumber is out of bounds&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (nodeValue == null) {</span>
+<span class="nc" id="L126">            throw new IllegalArgumentException(&quot;nodeValue cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L129">        outgoing[nodeNumber] = nodeValue;</span>
+<span class="fc" id="L130">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

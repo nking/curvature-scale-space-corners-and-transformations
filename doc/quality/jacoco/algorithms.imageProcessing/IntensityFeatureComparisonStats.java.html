@@ -7,50 +7,143 @@ import java.util.List;
  *
  * @author nichole
  */
-<span class="fc" id="L10">public class IntensityFeatureComparisonStats implements Comparable&lt;IntensityFeatureComparisonStats&gt; {</span>
+public class IntensityFeatureComparisonStats implements 
+    Comparable&lt;IntensityFeatureComparisonStats&gt; {
     
-<span class="fc" id="L12">    private final List&lt;FeatureComparisonStat&gt; comparisonStats </span>
+    private final double cost;
+    
+    private double adjustedCost;
+    
+    private final double scale;
+    
+    private final int idx1;
+    
+    private final int idx2;
+    
+<span class="fc" id="L23">    private final List&lt;FeatureComparisonStat&gt; comparisonStats </span>
         = new ArrayList&lt;FeatureComparisonStat&gt;();
     
+    public IntensityFeatureComparisonStats(final int index1, final int index2,
+<span class="fc" id="L27">        double solutionCost, double solutionScale) {</span>
+<span class="fc" id="L28">        cost = solutionCost;</span>
+<span class="fc" id="L29">        scale = solutionScale;</span>
+<span class="fc" id="L30">        idx1 = index1;</span>
+<span class="fc" id="L31">        idx2 = index2;</span>
+<span class="fc" id="L32">        adjustedCost = cost;</span>
+<span class="fc" id="L33">    }</span>
+    
     public void addAll(List&lt;FeatureComparisonStat&gt; stats) {
-<span class="fc" id="L16">        comparisonStats.addAll(stats);</span>
-<span class="fc" id="L17">    }</span>
+<span class="fc" id="L36">        comparisonStats.addAll(stats);</span>
+<span class="fc" id="L37">    }</span>
     
     public List&lt;FeatureComparisonStat&gt; getComparisonStats() {
-<span class="fc" id="L20">        return comparisonStats;</span>
+<span class="fc" id="L40">        return comparisonStats;</span>
     }
 
     @Override
     public int compareTo(IntensityFeatureComparisonStats other) {
         
-<span class="fc" id="L26">        double otherCS = calculateCombinedIntensityStat(other.getComparisonStats());</span>
+<span class="fc" id="L46">        boolean compareByCost = decideByCost(other);</span>
         
-<span class="fc" id="L28">        double cs = calculateCombinedIntensityStat(comparisonStats);</span>
-        
-<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        if (otherCS == cs) {</span>
-<span class="nc" id="L31">            return 0;</span>
-<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        } else if (cs &lt; otherCS) {</span>
-            // prefer the smaller
-<span class="fc" id="L34">            return -1;</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (compareByCost) {</span>
+            
+<span class="nc" id="L50">            return compareByCost(other);</span>
+            
+        } else {
+            
+<span class="fc" id="L54">            return compareByCombinedIntStat(other);</span>
         }
-<span class="nc" id="L36">        return 1;</span>
+    }
+    
+    public int compareByCombinedIntStat(IntensityFeatureComparisonStats other) {
+        
+<span class="fc" id="L60">        double otherCS = calculateCombinedIntensityStat(other.getComparisonStats());</span>
+        
+<span class="fc" id="L62">        double cs = calculateCombinedIntensityStat(comparisonStats);</span>
+        
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (otherCS == cs) {</span>
+<span class="nc" id="L65">            return 0;</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        } else if (cs &lt; otherCS) {</span>
+            // prefer the smaller
+<span class="fc" id="L68">            return -1;</span>
+        }
+<span class="nc" id="L70">        return 1;</span>
+    }
+    
+    /**
+     * note, should only compare by cost if there is an edge in common, else
+     * a correction has to be made for difference in peak sigma before use
+     * here.
+     * @param other
+     * @return 
+     */
+    public int compareByCost(IntensityFeatureComparisonStats other) {
+        
+<span class="nc" id="L82">        double otherCost = other.adjustedCost;</span>
+        
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (otherCost == adjustedCost) {</span>
+<span class="nc" id="L85">            return 0;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        } else if (adjustedCost &lt; otherCost) {</span>
+            // prefer the smaller
+<span class="nc" id="L88">            return -1;</span>
+        }
+<span class="nc" id="L90">        return 1;</span>
     }
     
     private double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; compStats) {
 
-<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (compStats.isEmpty()) {</span>
-<span class="nc" id="L42">            return Double.POSITIVE_INFINITY;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (compStats.isEmpty()) {</span>
+<span class="nc" id="L96">            return Double.POSITIVE_INFINITY;</span>
         }
         
-<span class="fc" id="L45">        double sum = 0;</span>
+<span class="fc" id="L99">        double sum = 0;</span>
 
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
-<span class="fc" id="L48">            sum += compStat.getSumIntensitySqDiff();</span>
-<span class="fc" id="L49">        }</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="fc" id="L102">            sum += compStat.getSumIntensitySqDiff();</span>
+<span class="fc" id="L103">        }</span>
 
-<span class="fc" id="L51">        sum /= (double)compStats.size();</span>
+<span class="fc" id="L105">        sum /= (double)compStats.size();</span>
 
-<span class="fc" id="L53">        return sum;</span>
+<span class="fc" id="L107">        return sum;</span>
+    }
+
+    /**
+     * @return the cost
+     */
+    public double getCost() {
+<span class="nc" id="L114">        return cost;</span>
+    }
+    
+    public void setAdjustedCost(double adjCost) {
+<span class="nc" id="L118">        adjustedCost = adjCost;</span>
+<span class="nc" id="L119">    }</span>
+    
+    public double getAdjustedCost() {
+<span class="nc" id="L122">        return adjustedCost;</span>
+    }
+
+    /**
+     * @return the scale
+     */
+    public double getScale() {
+<span class="nc" id="L129">        return scale;</span>
+    }
+    
+    public int getIndex1() {
+<span class="nc" id="L133">        return idx1;</span>
+    }
+    
+    public int getIndex2() {
+<span class="nc" id="L137">        return idx2;</span>
+    }
+
+    private boolean decideByCost(IntensityFeatureComparisonStats other) {
+        
+<span class="pc bpc" id="L142" title="3 of 4 branches missed.">        if (other.getComparisonStats().size() &gt; 2 &amp;&amp; comparisonStats.size() &gt; 2) {</span>
+<span class="nc" id="L143">            return true;</span>
+        }
+        
+<span class="fc" id="L146">        return false;        </span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

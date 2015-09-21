@@ -137,8 +137,8 @@ import java.io.IOException;
 <span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (compareFit == null) {</span>
 <span class="nc" id="L138">            return false;</span>
         }
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (bestFit == null) {</span>
-<span class="nc" id="L141">            return true;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (bestFit == null) {</span>
+<span class="fc" id="L141">            return true;</span>
         }
 <span class="fc" id="L143">        int comp = bestFit.compareTo(compareFit);</span>
 <span class="fc bfc" id="L144" title="All 2 branches covered.">        if (comp == 1) {</span>
@@ -150,20 +150,20 @@ import java.io.IOException;
     public boolean fitIsBetterNormalized(TransformationPointFit bestFit, 
         TransformationPointFit compareFit) {
         
-<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (compareFit == null) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (compareFit == null) {</span>
 <span class="nc" id="L154">            return false;</span>
         }
-<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (bestFit == null) {</span>
-<span class="nc" id="L157">            return true;</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (bestFit == null) {</span>
+<span class="fc" id="L157">            return true;</span>
         }
         
-<span class="nc" id="L160">        boolean ans = false;</span>
-<span class="nc" id="L161">        int comp = bestFit.compareToUsingNormalizedMatches(compareFit);</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (comp == 1) {</span>
-<span class="nc" id="L163">            ans = true;</span>
+<span class="fc" id="L160">        boolean ans = false;</span>
+<span class="fc" id="L161">        int comp = bestFit.compareToUsingNormalizedMatches(compareFit);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (comp == 1) {</span>
+<span class="fc" id="L163">            ans = true;</span>
         }
         
-<span class="nc" id="L166">        return ans;</span>
+<span class="fc" id="L166">        return ans;</span>
     }
 
     /**
@@ -299,20 +299,20 @@ import java.io.IOException;
     }
 
     protected boolean areEqual(TransformationParameters[] lastParams, TransformationParameters[] currentParams) {
-<span class="nc bnc" id="L302" title="All 2 branches missed.">        if (lastParams.length != currentParams.length) {</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">        if (lastParams.length != currentParams.length) {</span>
 <span class="nc" id="L303">            throw new IllegalArgumentException(&quot;lastParams.length must be equal to currentParams.length&quot;);</span>
         }
-<span class="nc bnc" id="L305" title="All 2 branches missed.">        for (int i = 0; i &lt; lastParams.length; ++i) {</span>
-<span class="nc" id="L306">            TransformationParameters p0 = lastParams[i];</span>
-<span class="nc" id="L307">            TransformationParameters p1 = currentParams[i];</span>
-<span class="nc bnc" id="L308" title="All 4 branches missed.">            if ((p0 == null) &amp;&amp; (p1 != null)) {</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">        for (int i = 0; i &lt; lastParams.length; ++i) {</span>
+<span class="fc" id="L306">            TransformationParameters p0 = lastParams[i];</span>
+<span class="fc" id="L307">            TransformationParameters p1 = currentParams[i];</span>
+<span class="pc bpc" id="L308" title="3 of 4 branches missed.">            if ((p0 == null) &amp;&amp; (p1 != null)) {</span>
 <span class="nc" id="L309">                return false;</span>
-<span class="nc bnc" id="L310" title="All 4 branches missed.">            } else if ((p0 != null) &amp;&amp; (p1 == null)) {</span>
+<span class="pc bpc" id="L310" title="2 of 4 branches missed.">            } else if ((p0 != null) &amp;&amp; (p1 == null)) {</span>
 <span class="nc" id="L311">                return false;</span>
-<span class="nc bnc" id="L312" title="All 4 branches missed.">            } else if (p0 == null &amp;&amp; p1 == null) {</span>
+<span class="pc bpc" id="L312" title="3 of 4 branches missed.">            } else if (p0 == null &amp;&amp; p1 == null) {</span>
 <span class="nc" id="L313">                continue;</span>
-<span class="nc bnc" id="L314" title="All 2 branches missed.">            } else if (!p0.equals(p1)) {</span>
-<span class="nc" id="L315">                return false;</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">            } else if (!p0.equals(p1)) {</span>
+<span class="fc" id="L315">                return false;</span>
             }
         }
 <span class="nc" id="L318">        return true;</span>
@@ -387,7 +387,7 @@ import java.io.IOException;
 <span class="fc" id="L387">        float fracMatched = (float)bestNMatches/(float)nMaxMatchable;</span>
 
 <span class="pc bpc" id="L389" title="1 of 4 branches missed.">        if ((bestAvg &lt; 1) &amp;&amp; (bestS &lt; 1)) {</span>
-<span class="pc bpc" id="L390" title="1 of 2 branches missed.">            if (fracMatched &gt; 0.9) {</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">            if (fracMatched &gt; 0.9) {</span>
 <span class="fc" id="L391">                return true;</span>
             }
 <span class="pc bpc" id="L393" title="3 of 4 branches missed.">        } else if ((bestAvg &lt; 0.5) &amp;&amp; (bestS &lt; 0.5)) {</span>

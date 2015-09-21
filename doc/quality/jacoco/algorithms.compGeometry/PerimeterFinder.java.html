@@ -724,15 +724,15 @@ import java.util.logging.Logger;
 <span class="fc" id="L724">                    PairInt add = new PairInt(col, col);</span>
 <span class="fc" id="L725">                    colRanges.add(add);</span>
                 }
-<span class="fc bfc" id="L727" title="All 2 branches covered.">            } else if (n == 1) {</span>
+<span class="pc bpc" id="L727" title="1 of 2 branches missed.">            } else if (n == 1) {</span>
                 // was not before or after the only range, so check within
-<span class="fc" id="L729">                PairInt current = colRanges.get(0);</span>
-<span class="pc bpc" id="L730" title="2 of 4 branches missed.">                if (!((col &gt;= current.getX()) &amp;&amp; (col &lt;= current.getY()))) {</span>
+<span class="nc" id="L729">                PairInt current = colRanges.get(0);</span>
+<span class="nc bnc" id="L730" title="All 4 branches missed.">                if (!((col &gt;= current.getX()) &amp;&amp; (col &lt;= current.getY()))) {</span>
                     // not in range.  this should not happen
 <span class="nc" id="L732">                    throw new IllegalStateException(&quot;error in algorithm: point &quot;</span>
                         + col + &quot;, &quot; + row + &quot; was not added to rowColRanges&quot;);
                 }
-<span class="fc" id="L735">            } else {</span>
+<span class="nc" id="L735">            } else {</span>
 
                 //case: point is between ranges in colRanges
                 // or
@@ -1419,11 +1419,11 @@ import java.util.logging.Logger;
 <span class="fc" id="L1419">                    PairInt t = new PairInt(x, row);</span>
 <span class="fc" id="L1420">                    Set&lt;PairInt&gt; keep = null;</span>
 <span class="pc bpc" id="L1421" title="1 of 2 branches missed.">                    for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
-<span class="pc bpc" id="L1422" title="1 of 2 branches missed.">                        if (set.contains(t)) {</span>
+<span class="fc bfc" id="L1422" title="All 2 branches covered.">                        if (set.contains(t)) {</span>
 <span class="fc" id="L1423">                            keep = set;</span>
 <span class="fc" id="L1424">                            break;</span>
                         }
-<span class="nc" id="L1426">                    }</span>
+<span class="fc" id="L1426">                    }</span>
 <span class="pc bpc" id="L1427" title="1 of 2 branches missed.">                    if (keep != null) {</span>
 <span class="fc" id="L1428">                        contigNonMembersConnectedToBounds.addAll(keep);</span>
 <span class="fc" id="L1429">                        contigNonMembers.remove(keep);</span>

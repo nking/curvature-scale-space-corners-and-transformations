@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AbstractWaterShed.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">AbstractWaterShed.java</span></div><h1>AbstractWaterShed.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.disjointSets.DisjointSet2Node;
+import algorithms.graphs.CustomWatershedDAG;
+import algorithms.util.PairInt;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+
+/**
+ * A watershed algorithm for use in image segmentation that is based upon
+ * the algorithms described in
+  &lt;pre&gt;
+  Roerdink and Meijster 2001
+  &quot;The Watershed Transform: Definitions, Algorithms and Parallelization Strategies&quot;,
+  Fundamenta Informaticae 41 (2001) 187–228, Section 4.2.4
+  and
+  Meijster and Roerdink (1998?),
+  &quot;A Disjoint Set Algorihm for the Watershed Transform&quot;
+  http://www.researchgate.net/publication/2407714_A_Disjoint_Set_Algorithm_For_The_Watershed_Transform
+
+ Note the above authors credit the 2 Disjoint Set methods,
+ especially the disjoint set path compression,
+ used in the watershed union find to
+ Tarjan, R. E. Data Structures and Network Algorithms. SIAM, 1983.
+ Those are not yet implemented strictly as suggested here.
+ Instead, the current implementation for disjoint sets follows &quot;Introduction
+ to Algorithms&quot; by Cormen et al. which include improvements suggested by
+ Tarjan too.
+
+ Notes on parallelization are in Section 5 of Roerdink and Meijster 2001.
+ &lt;/pre&gt;
+
+ * The image is first transformed into a lower complete image and then
+ * the watershed is computed.
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">public abstract class AbstractWaterShed {</span>
+
+<span class="fc" id="L43">    protected static final PairInt sentinel = new PairInt(-1, -1);</span>
+
+<span class="fc" id="L45">    protected static final Integer sentinelInt = Integer.MIN_VALUE;</span>
+
+    /**
+     * a set of points found as the regional minima.
+     * This is populated by the method named lower.
+     */
+<span class="fc" id="L51">    protected Set&lt;PairInt&gt; regionalMinima = null;</span>
+
+    /**
+     * a map with key = PairInt(x, y) and value = disjoint set of the level
+     * components (contiguous pixels of same intensity) whose set parent is
+     * the representative for that level (which may be a regional minima).
+     * This is populated by the method named unionFindComponentLabelling.
+     */
+<span class="fc" id="L59">    protected Map&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt; componentLabelMap = null;</span>
+
+    public Set&lt;PairInt&gt; getRegionalMinima() {
+<span class="nc" id="L62">        return regionalMinima;</span>
+    }
+
+    /**
+     *
+     * @param p
+     * @param dag
+     * @return repr value indicating whether the point is a watershed (indicated
+     * by returning the sentinel) or should be assigned the component level of
+     * the returned point.
+     */
+    protected PairInt resolve(PairInt p, CustomWatershedDAG dag) {
+
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (componentLabelMap == null) {</span>
+<span class="nc" id="L76">            throw new IllegalStateException(&quot;algorithm currently depends upon &quot;</span>
+            + &quot;previous use of the methods named lower and unionFindComponentLabelling&quot;);
+        }
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (dag.isResolved(p)) {</span>
+<span class="fc" id="L81">            return dag.getResolved(p);</span>
+        }
+
+<span class="fc" id="L84">        PairInt repr = componentLabelMap.get(p).getParent().getMember();</span>
+
+<span class="fc" id="L86">        int n = dag.getConnectedNumber(p);</span>
+
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (n == 0) {</span>
+<span class="fc" id="L89">            dag.setToResolved(p, repr);</span>
+<span class="fc" id="L90">            return repr;</span>
+        }
+
+<span class="fc" id="L93">        int i = 0;</span>
+
+<span class="fc bfc" id="L95" title="All 4 branches covered.">        while ((i &lt; n) &amp;&amp; !repr.equals(sentinel)) {</span>
+
+<span class="fc" id="L97">            PairInt lowerNode = dag.getConnectedNode(p, i);</span>
+
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">            if (!lowerNode.equals(p) &amp;&amp; !lowerNode.equals(sentinel)) {</span>
+<span class="fc" id="L100">                PairInt prevLowerNode = lowerNode;</span>
+<span class="fc" id="L101">                lowerNode = resolve(prevLowerNode, dag);</span>
+<span class="fc" id="L102">                dag.resetConnectedNode(p, i, lowerNode);</span>
+            }
+
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L106">                repr = lowerNode;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">            } else if (!lowerNode.equals(repr)) {</span>
+<span class="fc" id="L108">                repr = sentinel;</span>
+            }
+<span class="fc" id="L110">            ++i;</span>
+<span class="fc" id="L111">        }</span>
+
+<span class="fc" id="L113">        dag.setToResolved(p, repr);</span>
+
+<span class="fc" id="L115">        return repr;</span>
+    }
+
+    /**
+     *
+     * @param p
+     * @param dag
+     * @return repr value indicating whether the point is a watershed (indicated
+     * by returning the sentinel) or should be assigned the component level of
+     * the returned point.
+     */
+    protected PairInt resolveIterative(final PairInt p, final CustomWatershedDAG dag) {
+
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (componentLabelMap == null) {</span>
+<span class="nc" id="L129">            throw new IllegalStateException(&quot;algorithm currently depends upon &quot;</span>
+            + &quot;previous use of the methods named lower and unionFindComponentLabelling&quot;);
+        }
+
+        /*
+        To improve the use of memory when the potential depth of recursion is
+        large, because tail recursion cannot be used in java, the recursive
+        method is replaced with an iterative method.
+        To make iterative, have to replace the method frame loading and
+        unloading with parallel stacks of arguments given to a loop which pops
+        each stack to get current arguments, computes the result and stores that
+        in a results map accessible to subsequent iterations.
+        The composite key for the results is referred to as prevCompKey here
+        and for simplicity while testing is a string, but should be changed to
+        use encoding to be more efficient.
+        TODO: improve the results map key
+        level  p            i in level    prevCompKey
+        0      p            0
+        1      p.c[0]       0             &quot;0 p      0&quot;  &lt;---place result here for i=0
+        2      p.c[0].c[0]  0             &quot;1 p.c[0] 0&quot;  &lt;---place result here
+        1      p.c[1]       1             &quot;0 p      0&quot;  &lt;---place result here for i=1
+         */
+
+<span class="nc" id="L152">        Map&lt;String, Set&lt;PairInt&gt;&gt; resultsMap = new HashMap&lt;String, Set&lt;PairInt&gt;&gt;();</span>
+
+<span class="nc" id="L154">        final Stack&lt;ResolveState&gt; stack = new Stack&lt;ResolveState&gt;();</span>
+
+<span class="nc" id="L156">        addToStack(0, p, 0, null, -1, false, stack);</span>
+
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
+
+<span class="nc" id="L160">            ResolveState rs = stack.pop();</span>
+
+            PairInt repr;
+
+            // instead of only processing at base or recursion, will check results
+            // each time to possibly break earlier for sentinel
+            //if (rs.isRecursionBase()) {
+
+            //process the logic from the recursion as the returned result of
+            //lowerNode = resolve(...)
+
+<span class="nc" id="L171">            repr = findResult(rs, resultsMap);</span>
+
+<span class="nc bnc" id="L173" title="All 4 branches missed.">            if ((repr != null) &amp;&amp; repr.equals(sentinel)) {</span>
+<span class="nc" id="L174">                addToResults(createRootKey(0, p), repr, resultsMap);</span>
+<span class="nc" id="L175">                dag.setToResolved(rs.getP(), repr);</span>
+<span class="nc" id="L176">                break;</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            } else if (rs.isRecursionBase()) {</span>
+
+<span class="nc" id="L179">                addToResults(repr, rs, resultsMap);</span>
+                                
+<span class="nc" id="L181">                PairInt tRepr = findResult(p, 0, 0, resultsMap);</span>
+<span class="nc bnc" id="L182" title="All 4 branches missed.">                if ((tRepr != null) &amp;&amp; tRepr.equals(sentinel)) {</span>
+<span class="nc" id="L183">                    break;</span>
+                }
+<span class="nc bnc" id="L185" title="All 4 branches missed.">                if ((repr != null) &amp;&amp; dag.isResolved(repr)) {</span>
+<span class="nc" id="L186">                    continue;</span>
+                }
+            }
+            //}
+
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            if (dag.isResolved(rs.getP())) {</span>
+<span class="nc" id="L192">                repr = dag.getResolved(rs.getP());</span>
+<span class="nc" id="L193">                addToResults(repr, rs, resultsMap);</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                if (rs.getPrevious() == null) {</span>
+<span class="nc" id="L195">                    break;</span>
+                }
+            }
+
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            if (repr == null) {</span>
+<span class="nc" id="L200">                repr = componentLabelMap.get(rs.getP()).getParent().getMember();</span>
+            }
+
+<span class="nc bnc" id="L203" title="All 4 branches missed.">            assert (repr != null);</span>
+
+<span class="nc" id="L205">            int n = dag.getConnectedNumber(rs.getP());</span>
+
+<span class="nc bnc" id="L207" title="All 2 branches missed.">            if (n == 0) {</span>
+
+<span class="nc" id="L209">                dag.setToResolved(rs.getP(), repr);</span>
+
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                if (rs.getPrevious() != null) {</span>
+<span class="nc" id="L212">                    dag.resetConnectedNode(rs.getPrevious().getP(), rs.getPreviousI(), repr);</span>
+                }
+
+<span class="nc" id="L215">                addToResults(repr, rs, resultsMap);</span>
+
+<span class="nc" id="L217">                continue;</span>
+            }
+
+<span class="nc" id="L220">            int i = rs.getI();</span>
+
+<span class="nc bnc" id="L222" title="All 4 branches missed.">            while ((i &lt; n) &amp;&amp; !repr.equals(sentinel)) {</span>
+
+<span class="nc" id="L224">                PairInt lowerNode = dag.getConnectedNode(rs.getP(), i);</span>
+
+<span class="nc bnc" id="L226" title="All 4 branches missed.">                assert (lowerNode != null);</span>
+
+<span class="nc bnc" id="L228" title="All 6 branches missed.">                if (!lowerNode.equals(rs.p) &amp;&amp; !lowerNode.equals(sentinel) &amp;&amp; !dag.isResolved(lowerNode)) {</span>
+
+                    // ---- add to stack to replace recursion ---
+                    //PairInt prevLowerNode = lowerNode;
+                    //lowerNode = resolve(prevLowerNode, dag);
+                    //dag.resetConnectedNode(p, i, lowerNode);
+                    // add current state to process the about to be added stack items:
+                    // set rs0's i to i+1 so when popped, after processing result, starts at next
+
+<span class="nc bnc" id="L237" title="All 2 branches missed.">                    int prevI = (rs.getPrevious() == null) ? -1 : i;</span>
+
+<span class="nc" id="L239">                    ResolveState rs0 = addToStack(rs.getLevel(), rs.getP(),</span>
+<span class="nc" id="L240">                        i + 1, rs.getPrevious(), prevI, true, stack);</span>
+
+<span class="nc" id="L242">                    addToStack(rs.getLevel() + 1, lowerNode, 0, rs0, i, false,</span>
+                        stack);
+
+<span class="nc" id="L245">                    break;</span>
+                }
+
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                if (i == 0) {</span>
+<span class="nc" id="L249">                    repr = lowerNode;</span>
+<span class="nc" id="L250">                    addToResults(repr, rs, resultsMap);</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                } else if (!lowerNode.equals(repr)) {</span>
+<span class="nc" id="L252">                    repr = sentinel;</span>
+<span class="nc" id="L253">                    addToResults(createRootKey(0, p), repr, resultsMap);</span>
+<span class="nc" id="L254">                    break;</span>
+                }
+                
+<span class="nc" id="L257">                ++i;</span>
+<span class="nc" id="L258">            }</span>
+<span class="nc" id="L259">        }</span>
+
+<span class="nc" id="L261">        PairInt repr = findRootResult(p, resultsMap);</span>
+
+<span class="nc bnc" id="L263" title="All 4 branches missed.">        if (repr != null &amp;&amp; !dag.isResolved(p)) {</span>
+<span class="nc" id="L264">            dag.setToResolved(p, repr);</span>
+        }
+
+<span class="nc" id="L267">        return repr;</span>
+    }
+
+    protected String createKey(int level, PairInt p, int i) {
+        //TODO: replace this with encoding to a long using characteristics
+        // such as image dimensions (coords converted to image index),
+        // max level expected (nPixels), and knowledge that i will always be &lt;= 8
+<span class="nc" id="L274">        String key = String.format(&quot;%d_%d_%d_%d&quot;, level, p.getX(), p.getY(), i);</span>
+<span class="nc" id="L275">        return key;</span>
+    }
+
+    protected String createRootKey(int level, PairInt p) {
+        //TODO: replace this with encoding to a long using characteristics
+        // such as image dimensions (coords converted to image index),
+        // max level expected (nPixels), and knowledge that i will always be &lt;= 8
+<span class="nc" id="L282">        String key = String.format(&quot;%d_%d_%d&quot;, level, p.getX(), p.getY());</span>
+<span class="nc" id="L283">        return key;</span>
+    }
+
+    protected ResolveState addToStack(int level, PairInt p, int i,
+        ResolveState invokedFrom, int invokedFromI, boolean isRecursionBase,
+        Stack&lt;ResolveState&gt; stack) {
+
+<span class="nc" id="L290">        ResolveState rs = new ResolveState(level, p, i, invokedFrom,</span>
+            invokedFromI, isRecursionBase);
+
+<span class="nc" id="L293">        stack.add(rs);</span>
+
+<span class="nc" id="L295">        return rs;</span>
+    }
+
+    protected void addToResults(PairInt resolved, ResolveState rs,
+        Map&lt;String, Set&lt;PairInt&gt;&gt; resultsMap) {
+
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        if (rs.getPrevious() == null) {</span>
+            // special case.  this is the original p resolve is invoked for
+<span class="nc" id="L303">            addToResults(createRootKey(rs.getLevel(), rs.getP()), resolved,</span>
+                resultsMap);
+
+<span class="nc" id="L306">            return;</span>
+        }
+
+        // add to root results
+<span class="nc" id="L310">        addToResults(createRootKey(rs.getPrevious().getLevel(),</span>
+<span class="nc" id="L311">            rs.getPrevious().getP()), resolved, resultsMap);</span>
+
+<span class="nc" id="L313">        addToResults(createKey(rs.getPrevious().getLevel(),</span>
+<span class="nc" id="L314">            rs.getPrevious().getP(), rs.getPrevious().getI()), resolved,</span>
+            resultsMap);
+<span class="nc" id="L316">    }</span>
+
+    /**
+     * look for more than one result in the &quot;root&quot; key and if found, return
+     * the sentinel (note that the invoker is responsible for sentinel state
+     * logic), else get the specific key value from the resultsMap and remove
+     * it while at it and return it.
+     * @param rs
+     * @param resultsMap
+     * @return
+     */
+    protected PairInt findResult(ResolveState rs, Map&lt;String, Set&lt;PairInt&gt;&gt;
+        resultsMap) {
+<span class="nc" id="L329">        return findResult(rs.getP(), rs.getLevel(), rs.getI(), resultsMap);</span>
+    }
+
+    /**
+     * look for more than one result in the &quot;root&quot; key and if found, return
+     * the sentinel (note that the invoker is responsible for sentinel state
+     * logic), else get the specific key value from the resultsMap and remove
+     * it while at it and return it.
+     * @param p
+     * @param level
+     * @param i
+     * @param resultsMap
+     * @return
+     */
+    protected PairInt findResult(PairInt p, int level, int i, Map&lt;String,
+        Set&lt;PairInt&gt;&gt; resultsMap) {
+        
+<span class="nc" id="L346">        String rootKey = createRootKey(level, p);</span>
+        
+<span class="nc" id="L348">        String reprKey = createKey(level, p, i);</span>
+
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        Set&lt;PairInt&gt; reprSet = !reprKey.equals(rootKey) ? </span>
+<span class="nc" id="L351">            resultsMap.remove(reprKey) : null;</span>
+
+<span class="nc" id="L353">        Set&lt;PairInt&gt; rootSet = resultsMap.get(createRootKey(level, p));</span>
+
+<span class="nc bnc" id="L355" title="All 4 branches missed.">        if ((rootSet != null) &amp;&amp; rootSet.size() &gt; 1) {</span>
+<span class="nc" id="L356">            return sentinel;</span>
+        }
+
+<span class="nc bnc" id="L359" title="All 4 branches missed.">        if ((reprSet != null) &amp;&amp; reprSet.size() &gt; 0) {</span>
+<span class="nc bnc" id="L360" title="All 4 branches missed.">            assert (reprSet.size() == 1);</span>
+<span class="nc" id="L361">            return reprSet.iterator().next();</span>
+        }
+
+<span class="nc bnc" id="L364" title="All 4 branches missed.">        if ((rootSet != null) &amp;&amp; !rootSet.isEmpty()) {</span>
+<span class="nc bnc" id="L365" title="All 4 branches missed.">            assert (rootSet.size() == 1);</span>
+<span class="nc" id="L366">            return rootSet.iterator().next();</span>
+        }
+
+<span class="nc" id="L369">        return null;</span>
+    }
+
+    /**
+     * look for more than one result in the &quot;root&quot; key and if found, return
+     * the sentinel (note that the invoker is responsible for sentinel state
+     * logic), else get the specific key value from the resultsMap and remove
+     * it while at it and return it.
+     * @param resultsMap
+     * @return
+     */
+    protected PairInt findRootResult(PairInt p, Map&lt;String,
+        Set&lt;PairInt&gt;&gt; resultsMap) {
+
+<span class="nc" id="L383">        Set&lt;PairInt&gt; rootSet = resultsMap.get(createRootKey(0, p));</span>
+
+<span class="nc bnc" id="L385" title="All 4 branches missed.">        if ((rootSet != null) &amp;&amp; rootSet.size() &gt; 1) {</span>
+<span class="nc" id="L386">            return sentinel;</span>
+        }
+
+<span class="nc bnc" id="L389" title="All 4 branches missed.">        if ((rootSet != null) &amp;&amp; !rootSet.isEmpty()) {</span>
+<span class="nc bnc" id="L390" title="All 4 branches missed.">            assert (rootSet.size() == 1);</span>
+<span class="nc" id="L391">            return rootSet.iterator().next();</span>
+        }
+
+<span class="nc" id="L394">        return null;</span>
+    }
+
+    protected void addToResults(String key, PairInt resolved, Map&lt;String,
+        Set&lt;PairInt&gt;&gt; resultsMap) {
+
+<span class="nc" id="L400">        Set&lt;PairInt&gt; list = resultsMap.get(key);</span>
+
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        if (list == null) {</span>
+<span class="nc" id="L403">            list = new HashSet&lt;PairInt&gt;();</span>
+        }
+        
+<span class="nc" id="L406">        list.add(resolved);</span>
+
+<span class="nc" id="L408">        resultsMap.put(key, list);</span>
+<span class="nc" id="L409">    }</span>
+
+<span class="fc" id="L411">    protected static class ResolveState {</span>
+        /*
+        represents  resolve() invoked for p from an invocation from state previous.
+                    level is the depth of &quot;recursion&quot; for p (it should be
+                    equal to the previous.level + 1 if previous != null, else
+                    is 0).
+                    i is the position that when popped, after processing found
+                    results, the local i will be set to.
+                    previousI is the position that this p is in the dag's
+                    connections for previous.p.
+                    in other words, previous.p's previousI'th connection is
+                    this p.  previousI is useful to save when wanting to update
+                    the dag for p's i'th connection with this result.
+                    boolean isRecursionBase is true when this is the start of the
+                    replacement recursion (popped after the recursion steps).
+        */
+        private final PairInt p;
+        private final int i;
+        private final int level;
+        private final ResolveState previous;
+        private final int previousI;
+        private final boolean isRecursionBase;
+
+        public ResolveState(int level, PairInt p, int pI, ResolveState previous,
+<span class="nc" id="L435">            int previousI, boolean isRecursionBase) {</span>
+<span class="nc" id="L436">            this.p = p;</span>
+<span class="nc" id="L437">            this.i = pI;</span>
+<span class="nc" id="L438">            this.level = level;</span>
+<span class="nc" id="L439">            this.previous = previous;</span>
+<span class="nc" id="L440">            this.previousI = previousI;</span>
+<span class="nc" id="L441">            this.isRecursionBase = isRecursionBase;</span>
+<span class="nc" id="L442">        }</span>
+
+        public PairInt getP() {
+<span class="nc" id="L445">            return p;</span>
+        }
+        public int getI() {
+<span class="nc" id="L448">            return i;</span>
+        }
+        public int getLevel() {
+<span class="nc" id="L451">            return level;</span>
+        }
+        public ResolveState getPrevious() {
+<span class="nc" id="L454">            return previous;</span>
+        }
+        public int getPreviousI() {
+<span class="nc" id="L457">            return previousI;</span>
+        }
+        public boolean isRecursionBase() {
+<span class="nc" id="L460">            return isRecursionBase;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

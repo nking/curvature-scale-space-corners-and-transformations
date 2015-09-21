@@ -20,7 +20,7 @@ public class StereoProjectionTransformerFit {
      * that were possible to match.  This may not always be populated, so 
      * check value before using.
      */
-<span class="nc" id="L23">    private long nMaxMatchable = Long.MIN_VALUE;</span>
+<span class="fc" id="L23">    private long nMaxMatchable = Long.MIN_VALUE;</span>
     
     /**
      * tolerance in distance of a point from the epipolar line it belongs to
@@ -39,37 +39,37 @@ public class StereoProjectionTransformerFit {
     
     private final SimpleMatrix fundamentalMatrix;
     
-<span class="nc" id="L42">    private List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L42">    private List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();</span>
 
     public StereoProjectionTransformerFit(SimpleMatrix theFundamentalMatrix,
         long theNumberOfMatches, 
         double theTolerance, double theAverageDistance, 
-<span class="nc" id="L47">        double theStandardDeviationFromAverage) {</span>
+<span class="fc" id="L47">        double theStandardDeviationFromAverage) {</span>
         
-<span class="nc" id="L49">        fundamentalMatrix = theFundamentalMatrix;</span>
-<span class="nc" id="L50">        nMatches = theNumberOfMatches;</span>
-<span class="nc" id="L51">        tolerance = theTolerance;</span>
-<span class="nc" id="L52">        meanDistance = theAverageDistance;</span>
-<span class="nc" id="L53">        stDevFromMean = theStandardDeviationFromAverage;</span>
-<span class="nc" id="L54">    }</span>
+<span class="fc" id="L49">        fundamentalMatrix = theFundamentalMatrix;</span>
+<span class="fc" id="L50">        nMatches = theNumberOfMatches;</span>
+<span class="fc" id="L51">        tolerance = theTolerance;</span>
+<span class="fc" id="L52">        meanDistance = theAverageDistance;</span>
+<span class="fc" id="L53">        stDevFromMean = theStandardDeviationFromAverage;</span>
+<span class="fc" id="L54">    }</span>
     
     public SimpleMatrix getFundamentalMatrix() {
-<span class="nc" id="L57">        return fundamentalMatrix;</span>
+<span class="fc" id="L57">        return fundamentalMatrix;</span>
     }
     
     /**
      * @return the nMatches
      */
     public long getNMatches() {
-<span class="nc" id="L64">        return nMatches;</span>
+<span class="fc" id="L64">        return nMatches;</span>
     }
     
     /**
      * @param theNumberOfPossibleMatches
      */
     public void setNMaxMatchable(long theNumberOfPossibleMatches) {
-<span class="nc" id="L71">        nMaxMatchable = theNumberOfPossibleMatches;</span>
-<span class="nc" id="L72">    }</span>
+<span class="fc" id="L71">        nMaxMatchable = theNumberOfPossibleMatches;</span>
+<span class="fc" id="L72">    }</span>
     
     /**
      * @return the nMaxMatchable
@@ -89,7 +89,7 @@ public class StereoProjectionTransformerFit {
      * @return the avgDistance
      */
     public double getMeanDistance() {
-<span class="nc" id="L92">        return meanDistance;</span>
+<span class="fc" id="L92">        return meanDistance;</span>
     }
 
     /**
@@ -138,33 +138,33 @@ public class StereoProjectionTransformerFit {
 
     public void setInlierIndexes(List&lt;Integer&gt; theInlierIndexes) {
         
-<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (theInlierIndexes == null) {</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (theInlierIndexes == null) {</span>
 <span class="nc bnc" id="L142" title="All 2 branches missed.">            if (!inlierIndexes.isEmpty()) {</span>
 <span class="nc" id="L143">                inlierIndexes.clear();</span>
             }
 <span class="nc" id="L145">            return;</span>
         }
-<span class="nc" id="L147">        inlierIndexes = theInlierIndexes;</span>
-<span class="nc" id="L148">    }</span>
+<span class="fc" id="L147">        inlierIndexes = theInlierIndexes;</span>
+<span class="fc" id="L148">    }</span>
 
     public List&lt;Integer&gt; getInlierIndexes() {
         
-<span class="nc" id="L152">        return inlierIndexes;</span>
+<span class="fc" id="L152">        return inlierIndexes;</span>
     }
     
     @Override
     public String toString() {
         
-<span class="nc" id="L158">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L158">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L160">        sb.append(&quot;nMatchedPoints=&quot;).append(Long.toString(nMatches))</span>
-<span class="nc" id="L161">            .append(&quot; nMaxMatchable=&quot;).append(Long.toString(nMaxMatchable))</span>
-<span class="nc" id="L162">            .append(&quot; tolerance=&quot;).append(Double.toString(tolerance))</span>
-<span class="nc" id="L163">            .append(&quot; meanDistFromModel=&quot;).append(Double.toString(meanDistance))</span>
-<span class="nc" id="L164">            .append(&quot; stDevFromMean=&quot;).append(Double.toString(stDevFromMean))</span>
+<span class="fc" id="L160">        sb.append(&quot;nMatchedPoints=&quot;).append(Long.toString(nMatches))</span>
+<span class="fc" id="L161">            .append(&quot; nMaxMatchable=&quot;).append(Long.toString(nMaxMatchable))</span>
+<span class="fc" id="L162">            .append(&quot; tolerance=&quot;).append(Double.toString(tolerance))</span>
+<span class="fc" id="L163">            .append(&quot; meanDistFromModel=&quot;).append(Double.toString(meanDistance))</span>
+<span class="fc" id="L164">            .append(&quot; stDevFromMean=&quot;).append(Double.toString(stDevFromMean))</span>
             ;
         
-<span class="nc" id="L167">        return sb.toString();</span>
+<span class="fc" id="L167">        return sb.toString();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

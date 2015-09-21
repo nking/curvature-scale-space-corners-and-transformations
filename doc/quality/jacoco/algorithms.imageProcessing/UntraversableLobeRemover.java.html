@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>UntraversableLobeRemover.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">UntraversableLobeRemover.java</span></div><h1>UntraversableLobeRemover.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.LongestPath;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L16" title="1 of 2 branches missed.">class UntraversableLobeRemover {</span>
+
+    /**
+     * NOTE: very important that spurs be removed before using this because
+     * a short spur found as a junction can lead to a false finding of the
+     * shortest segment as a segment that isn't the spur.
+     *
+     * @param closedCurve
+     * @return true if points were removed
+     */
+    public boolean applyFilter(Set&lt;PairInt&gt; closedCurve, Set&lt;PairInt&gt; exclude) {
+
+        /*
+        Example:
+                         -3
+                 #       -2
+              -  #       -1    The center pattern can be found, then if each
+           #  #  -  -     0    of the 3 has a neighbor that isn't adjacent
+              -  #        1    to the others and those spokes are single pixel,
+                    #          widths, it is a junction that cannot be traversed
+                               one way and then the other.
+       -2 -1  0  1  2
+
+        To further locate the untraversable section, can find the longest path
+        from each spoke back to a pixel adjacent to itself and
+        the shortest of the longest paths can be trimmed.
+
+        For example:
+                        #         -3
+             #          #         -2
+          #     #     S2          -1
+          #     #  S1              0
+             #        S3           1
+                         #         2
+                            #      3
+         -3 -2 -1  0  1  2  3
+
+        Of the longest paths for S1, S2, and S3, that of S1 would be the
+        shortest so could be trimmed.
+        */
+
+<span class="fc" id="L57">        int nChanges = 0;</span>
+<span class="fc" id="L58">        int nIter = 0;</span>
+<span class="fc" id="L59">        int nIterMax = 10;</span>
+        
+<span class="fc" id="L61">        boolean wasChanged = false;</span>
+
+<span class="pc bpc" id="L63" title="3 of 6 branches missed.">        while ((nIter == 0) || ((nChanges &gt; 0) &amp;&amp; (nIter &lt; nIterMax))) {</span>
+
+<span class="fc" id="L65">            nChanges = 0;</span>
+
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            for (PairInt p : closedCurve) {</span>
+                
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">                if (exclude.contains(p)) {</span>
+<span class="nc" id="L70">                    continue;</span>
+                }
+
+<span class="fc" id="L73">                Set&lt;PairInt&gt; junctionPoints = findJunction(p.getX(), p.getY(),</span>
+                    closedCurve);
+
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                if (junctionPoints == null) {</span>
+<span class="fc" id="L77">                    continue;</span>
+                }
+
+<span class="nc bnc" id="L80" title="All 4 branches missed.">                assert(junctionPoints.size() == 3);</span>
+
+<span class="nc" id="L82">                Junction spokes = findSpokesOfJunction(junctionPoints,</span>
+                    closedCurve);
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                if (spokes == null) {</span>
+<span class="nc" id="L86">                    continue;</span>
+                }
+
+<span class="nc" id="L89">                List&lt;Set&lt;PairInt&gt;&gt; longestPaths = findLongestPaths(spokes,</span>
+                    closedCurve);
+
+<span class="nc bnc" id="L92" title="All 4 branches missed.">                assert(longestPaths.size() == 3);</span>
+
+<span class="nc" id="L94">                removeShortestPath(spokes, longestPaths, closedCurve);</span>
+
+<span class="nc bnc" id="L96" title="All 4 branches missed.">                assert(closedCurve.size() &gt; 0);</span>
+
+<span class="nc" id="L98">                nChanges++;</span>
+                
+<span class="nc" id="L100">                wasChanged = true;</span>
+
+<span class="nc" id="L102">                break;</span>
+            }
+
+<span class="fc" id="L105">            nIter++;</span>
+        }
+        
+        // if any have changed, use contiguous pix finder to keep only
+        // the contiguous
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (wasChanged) {</span>
+<span class="nc" id="L111">            int[] minMaxXY = MiscMath.findMinMaxXY(closedCurve);</span>
+<span class="nc" id="L112">            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();</span>
+<span class="nc" id="L113">            finder.findConnectedPointGroups(closedCurve, minMaxXY[1] + 1, </span>
+                minMaxXY[3] + 1);
+<span class="nc" id="L115">            int nMax = Integer.MIN_VALUE;</span>
+<span class="nc" id="L116">            int maxIdx = -1;</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            for (int i = 0; i &lt; finder.getNumberOfGroups(); ++i) {</span>
+<span class="nc" id="L118">                int n = finder.getNumberofGroupMembers(i);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                if (n &gt; nMax) {</span>
+<span class="nc" id="L120">                    nMax = n;</span>
+<span class="nc" id="L121">                    maxIdx = i;</span>
+                }
+            }
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (maxIdx &gt; -1) {</span>
+<span class="nc" id="L125">                closedCurve.clear();</span>
+<span class="nc" id="L126">                closedCurve.addAll(finder.getXY(maxIdx));</span>
+                
+<span class="nc" id="L128">                SpurRemover spurRm = new SpurRemover();</span>
+<span class="nc" id="L129">                spurRm.remove(closedCurve, minMaxXY[1] + 1, minMaxXY[3] + 1);</span>
+            }
+        }
+
+<span class="fc" id="L133">        return wasChanged;</span>
+    }
+
+    private Set&lt;PairInt&gt; findJunction(int x, int y, Set&lt;PairInt&gt; points) {
+
+<span class="fc" id="L138">        Pattern pattern = getHorizPattern();</span>
+
+<span class="fc" id="L140">        Set&lt;PairInt&gt; patternPoints = findPattern(x, y, points, pattern);</span>
+
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
+<span class="nc" id="L143">            return patternPoints;</span>
+        }
+
+<span class="fc" id="L146">        swapXDirection(pattern);</span>
+
+<span class="fc" id="L148">        patternPoints = findPattern(x, y, points, pattern);</span>
+
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
+<span class="nc" id="L151">            return patternPoints;</span>
+        }
+
+<span class="fc" id="L154">        pattern = getVertPattern();</span>
+
+<span class="fc" id="L156">        patternPoints = findPattern(x, y, points, pattern);</span>
+
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
+<span class="nc" id="L159">            return patternPoints;</span>
+        }
+
+<span class="fc" id="L162">        swapYDirection(pattern);</span>
+
+<span class="fc" id="L164">        patternPoints = findPattern(x, y, points, pattern);</span>
+
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
+<span class="nc" id="L167">            return patternPoints;</span>
+        }
+
+<span class="fc" id="L170">        return null;</span>
+    }
+
+    protected Pattern getHorizPattern() {
+
+        /*
+                         -3
+                 .       -2
+              -  #       -1
+           .  #  -  -     0
+              -  #        1
+                    .
+
+       -2 -1  0  1  2
+        */
+<span class="fc" id="L185">        Pattern pr = new Pattern();</span>
+<span class="fc" id="L186">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L187">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L189">        pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, -1));</span>
+<span class="fc" id="L190">        pr.zeroes.add(new PairInt(1, 0));</span>
+<span class="fc" id="L191">        pr.zeroes.add(new PairInt(2, 0));</span>
+
+<span class="fc" id="L193">        pr.ones.add(new PairInt(1, 1)); pr.ones.add(new PairInt(1, -1));</span>
+
+<span class="fc" id="L195">        return pr;</span>
+    }
+
+    protected Pattern getVertPattern() {
+
+        /*
+              .          -1
+           -  #  -        0
+           #  -  #        1
+              -           2
+       -2 -1  0  1  2
+        */
+<span class="fc" id="L207">        Pattern pr = new Pattern();</span>
+<span class="fc" id="L208">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L209">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L211">        pr.zeroes.add(new PairInt(-1, 0));</span>
+<span class="fc" id="L212">        pr.zeroes.add(new PairInt(0, 2)); pr.zeroes.add(new PairInt(0, 1));</span>
+<span class="fc" id="L213">        pr.zeroes.add(new PairInt(1, 0));</span>
+
+<span class="fc" id="L215">        pr.ones.add(new PairInt(-1, 1)); pr.ones.add(new PairInt(1, 1));</span>
+
+<span class="fc" id="L217">        return pr;</span>
+    }
+
+    private void swapYDirection(Pattern pattern) {
+        // ----- change the sign of y  -----
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        for (PairInt p : pattern.zeroes) {</span>
+<span class="fc" id="L223">            p.setY(-1 * p.getY());</span>
+<span class="fc" id="L224">        }</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        for (PairInt p : pattern.ones) {</span>
+<span class="fc" id="L226">            p.setY(-1 * p.getY());</span>
+<span class="fc" id="L227">        }</span>
+<span class="fc" id="L228">    }</span>
+
+    private void swapXDirection(Pattern pattern) {
+        // ----- change the sign of x  -----
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        for (PairInt p : pattern.zeroes) {</span>
+<span class="fc" id="L233">            p.setX(-1 * p.getX());</span>
+<span class="fc" id="L234">        }</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        for (PairInt p : pattern.ones) {</span>
+<span class="fc" id="L236">            p.setX(-1 * p.getX());</span>
+<span class="fc" id="L237">        }</span>
+<span class="fc" id="L238">    }</span>
+
+    private Set&lt;PairInt&gt; findPattern(int x, int y, Set&lt;PairInt&gt; points,
+        Pattern pattern) {
+
+<span class="fc" id="L243">        Set&lt;PairInt&gt; patternPoints = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        for (PairInt p : pattern.zeroes) {</span>
+<span class="fc" id="L246">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">            if (points.contains(p2)) {</span>
+<span class="fc" id="L248">                return null;</span>
+            }
+<span class="fc" id="L250">        }</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">        for (PairInt p : pattern.ones) {</span>
+<span class="fc" id="L252">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">            if (!points.contains(p2)) {</span>
+<span class="fc" id="L254">                return null;</span>
+            }
+<span class="fc" id="L256">            patternPoints.add(p2);</span>
+<span class="fc" id="L257">        }</span>
+
+<span class="nc" id="L259">        patternPoints.add(new PairInt(x, y));</span>
+
+<span class="nc" id="L261">        return patternPoints;</span>
+    }
+
+    private Junction findSpokesOfJunction(Set&lt;PairInt&gt; junctionPoints,
+        Set&lt;PairInt&gt; closedCurve) {
+
+<span class="nc bnc" id="L267" title="All 4 branches missed.">        assert(junctionPoints.size() == 3);</span>
+
+<span class="nc" id="L269">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+
+        /*
+        Example:
+                 S       -2
+              -  #       -1    The center pattern can be found, then if each
+           S  #  -  -     0    of the 3 has a neighbor that isn't adjacent
+              -  #        1    to the others and those spokes are single pixel,
+                    S          widths, it is a junction that cannot be traversed
+                               one way and then the other.
+       -2 -1  0  1  2
+        */
+
+<span class="nc" id="L282">        List&lt;Set&lt;PairInt&gt;&gt; spokes = null;</span>
+
+<span class="nc" id="L284">        Junction junction = new Junction();</span>
+
+<span class="nc" id="L286">        int count = 0;</span>
+
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        for (PairInt p : junctionPoints) {</span>
+
+<span class="nc" id="L290">            Set&lt;PairInt&gt; neighbors = curveHelper.findNeighbors(p.getX(),</span>
+<span class="nc" id="L291">                p.getY(), closedCurve);</span>
+
+            // remove the points that are other junction points
+<span class="nc bnc" id="L294" title="All 2 branches missed.">            for (PairInt jp : junctionPoints) {</span>
+<span class="nc" id="L295">                neighbors.remove(jp);</span>
+<span class="nc" id="L296">            }</span>
+
+<span class="nc bnc" id="L298" title="All 4 branches missed.">            if (neighbors.size() &gt; 2 || neighbors.isEmpty()) {</span>
+<span class="nc" id="L299">                return null;</span>
+            }
+
+<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (count == 0) {</span>
+<span class="nc" id="L303">                junction.j0 = p;</span>
+<span class="nc" id="L304">                spokes = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">            } else if (count == 1) {</span>
+<span class="nc" id="L306">                junction.j1 = p;</span>
+            } else {
+<span class="nc" id="L308">                junction.j2 = p;</span>
+            }
+<span class="nc" id="L310">            Set&lt;PairInt&gt; spoke = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L311">            spoke.addAll(neighbors);</span>
+<span class="nc" id="L312">            spokes.add(spoke);</span>
+
+<span class="nc" id="L314">            count++;</span>
+<span class="nc" id="L315">        }</span>
+
+<span class="nc bnc" id="L317" title="All 4 branches missed.">        assert(spokes.size() == 3);</span>
+
+        // assert that the points in one spoke are not adjacent to others
+        // and not adjacent to the oppossing junction points
+<span class="nc bnc" id="L321" title="All 2 branches missed.">        for (int i = 0; i &lt; spokes.size(); ++i) {</span>
+<span class="nc" id="L322">            Set&lt;PairInt&gt; spokeI = spokes.get(i);</span>
+<span class="nc bnc" id="L323" title="All 4 branches missed.">            assert(!spokeI.isEmpty());</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            for (PairInt pI : spokeI) {</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">                for (int j = (i + 1); j &lt; spokes.size(); ++j) {</span>
+<span class="nc" id="L326">                    Set&lt;PairInt&gt; spokeJ = spokes.get(j);</span>
+<span class="nc bnc" id="L327" title="All 4 branches missed.">                    assert(!spokeJ.isEmpty());</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">                    for (PairInt pJ : spokeJ) {</span>
+<span class="nc" id="L329">                        int diffX = Math.abs(pI.getX() - pJ.getX());</span>
+<span class="nc" id="L330">                        int diffY = Math.abs(pI.getY() - pJ.getY());</span>
+<span class="nc bnc" id="L331" title="All 4 branches missed.">                        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L332">                            return null;</span>
+                        }
+<span class="nc" id="L334">                    }</span>
+                }
+<span class="nc bnc" id="L336" title="All 2 branches missed.">                if (i == 0) {</span>
+<span class="nc" id="L337">                    int diffX = Math.abs(pI.getX() - junction.j1.getX());</span>
+<span class="nc" id="L338">                    int diffY = Math.abs(pI.getY() - junction.j1.getY());</span>
+<span class="nc bnc" id="L339" title="All 4 branches missed.">                    if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L340">                        return null;</span>
+                    }
+<span class="nc" id="L342">                    diffX = Math.abs(pI.getX() - junction.j2.getX());</span>
+<span class="nc" id="L343">                    diffY = Math.abs(pI.getY() - junction.j2.getY());</span>
+<span class="nc bnc" id="L344" title="All 4 branches missed.">                    if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L345">                        return null;</span>
+                    }
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                } else if (i == 1) {</span>
+<span class="nc" id="L348">                    int diffX = Math.abs(pI.getX() - junction.j0.getX());</span>
+<span class="nc" id="L349">                    int diffY = Math.abs(pI.getY() - junction.j0.getY());</span>
+<span class="nc bnc" id="L350" title="All 4 branches missed.">                    if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L351">                        return null;</span>
+                    }
+<span class="nc" id="L353">                    diffX = Math.abs(pI.getX() - junction.j2.getX());</span>
+<span class="nc" id="L354">                    diffY = Math.abs(pI.getY() - junction.j2.getY());</span>
+<span class="nc bnc" id="L355" title="All 4 branches missed.">                    if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L356">                        return null;</span>
+                    }
+<span class="nc" id="L358">                } else {</span>
+<span class="nc" id="L359">                    int diffX = Math.abs(pI.getX() - junction.j0.getX());</span>
+<span class="nc" id="L360">                    int diffY = Math.abs(pI.getY() - junction.j0.getY());</span>
+<span class="nc bnc" id="L361" title="All 4 branches missed.">                    if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L362">                        return null;</span>
+                    }
+<span class="nc" id="L364">                    diffX = Math.abs(pI.getX() - junction.j1.getX());</span>
+<span class="nc" id="L365">                    diffY = Math.abs(pI.getY() - junction.j1.getY());</span>
+<span class="nc bnc" id="L366" title="All 4 branches missed.">                    if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L367">                        return null;</span>
+                    }
+                }
+<span class="nc" id="L370">            }</span>
+        }
+
+<span class="nc" id="L373">        junction.s0 = spokes.get(0).iterator().next();</span>
+<span class="nc" id="L374">        junction.s1 = spokes.get(1).iterator().next();</span>
+<span class="nc" id="L375">        junction.s2 = spokes.get(2).iterator().next();</span>
+
+<span class="nc" id="L377">        return junction;</span>
+    }
+
+    private void removeShortestPath(Junction spokes, List&lt;Set&lt;PairInt&gt;&gt; longestPaths,
+        Set&lt;PairInt&gt; closedCurve) {
+
+<span class="nc" id="L383">        int minLen = Integer.MAX_VALUE;</span>
+<span class="nc" id="L384">        int minIdx = -1;</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">        for (int i = 0; i &lt; longestPaths.size(); ++i) {</span>
+<span class="nc" id="L386">            int n = longestPaths.get(i).size();</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">            if (n &lt; minLen) {</span>
+<span class="nc" id="L388">                minLen = n;</span>
+<span class="nc" id="L389">                minIdx = i;</span>
+            }
+        }
+<span class="nc bnc" id="L392" title="All 4 branches missed.">        assert(minIdx != -1);</span>
+<span class="nc" id="L393">        Set&lt;PairInt&gt; rm = longestPaths.get(minIdx);</span>
+
+        // make sure the junction points don't get removed
+<span class="nc" id="L396">        rm.remove(spokes.j0);</span>
+<span class="nc" id="L397">        rm.remove(spokes.j1);</span>
+<span class="nc" id="L398">        rm.remove(spokes.j2);</span>
+
+<span class="nc" id="L400">        closedCurve.removeAll(rm);</span>
+<span class="nc" id="L401">    }</span>
+
+    private List&lt;Set&lt;PairInt&gt;&gt; findLongestPaths(Junction spokes,
+        Set&lt;PairInt&gt; closedCurve) {
+
+        /*
+        each path source is spokes.si and dest is one of spokes.jj or a point
+        on the path for that spoke.
+        */
+
+<span class="nc" id="L411">        List&lt;Set&lt;PairInt&gt;&gt; paths = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+
+<span class="nc" id="L413">        LongestPath longestPath = new LongestPath();</span>
+
+<span class="nc" id="L415">        Set&lt;PairInt&gt; dest = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L416">        dest.add(spokes.j1);</span>
+<span class="nc" id="L417">        dest.add(spokes.j2);</span>
+<span class="nc" id="L418">        Set&lt;PairInt&gt; path0 = longestPath.findMaxCostPath(closedCurve,</span>
+            spokes.s0, dest);
+<span class="nc" id="L420">        paths.add(path0);</span>
+
+<span class="nc" id="L422">        dest = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L423">        dest.add(spokes.j0);</span>
+<span class="nc" id="L424">        dest.add(spokes.j2);</span>
+<span class="nc" id="L425">        Set&lt;PairInt&gt; path1 = longestPath.findMaxCostPath(closedCurve,</span>
+            spokes.s1, dest);
+<span class="nc" id="L427">        paths.add(path1);</span>
+
+<span class="nc" id="L429">        dest = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L430">        dest.add(spokes.j0);</span>
+<span class="nc" id="L431">        dest.add(spokes.j1);</span>
+<span class="nc" id="L432">        Set&lt;PairInt&gt; path2 = longestPath.findMaxCostPath(closedCurve,</span>
+            spokes.s2, dest);
+<span class="nc" id="L434">        paths.add(path2);</span>
+
+<span class="nc" id="L436">        return paths;</span>
+    }
+
+<span class="fc" id="L439">    public static class Pattern {</span>
+        Set&lt;PairInt&gt; ones;
+        Set&lt;PairInt&gt; zeroes;
+    }
+
+<span class="pc" id="L444">    public static class Junction {</span>
+<span class="nc" id="L445">        PairInt j0 = null;</span>
+<span class="nc" id="L446">        PairInt j1 = null;</span>
+<span class="nc" id="L447">        PairInt j2 = null;</span>
+<span class="nc" id="L448">        PairInt s0 = null;</span>
+<span class="nc" id="L449">        PairInt s1 = null;</span>
+<span class="nc" id="L450">        PairInt s2 = null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

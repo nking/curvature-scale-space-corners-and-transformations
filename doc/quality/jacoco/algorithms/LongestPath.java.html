@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LongestPath.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">LongestPath.java</span></div><h1>LongestPath.java</h1><pre class="source lang-java linenums">package algorithms;
+
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.Stack;
+import java.util.logging.Logger;
+
+/**
+ * A version of a path builder that prefers the longest path between src
+ * and either destination node or back to itself.
+ * The algorithm is not currently optimal and is meant for use to quickly
+ * compare knots in closed curves.  It may be improved over time as needed.
+ *
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">public class LongestPath {</span>
+
+<span class="fc" id="L24">    protected Map&lt;PairInt, Double&gt; dist = null;</span>
+<span class="fc" id="L25">    protected Map&lt;PairInt, PairInt&gt; prev = null;</span>
+<span class="fc" id="L26">    protected Map&lt;PairInt, Double&gt; heur = null;</span>
+<span class="fc" id="L27">    protected Set&lt;PairInt&gt; unVisited = null;</span>
+
+<span class="fc" id="L29">    protected Set&lt;PairInt&gt; dest = null;</span>
+
+<span class="fc" id="L31">    protected final static PairInt sentinel = new PairInt(-1, -1);</span>
+
+<span class="fc" id="L33">    public LongestPath() {</span>
+<span class="fc" id="L34">        dist = new HashMap&lt;PairInt, Double&gt;();</span>
+<span class="fc" id="L35">        prev = new HashMap&lt;PairInt, PairInt&gt;();</span>
+<span class="fc" id="L36">        heur = new HashMap&lt;PairInt, Double&gt;();</span>
+<span class="fc" id="L37">        unVisited = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L39">        dest = null;</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * find the path that maximizes the cost from the source to one of the
+     * given destinations or the longest path if those destinations are not
+     * in the path (one use case is for a portion of a curve which may double
+     * back on itself and another is for a portion of a curve which continues
+     * from one side to the other and reaches the destination).
+     *
+     * runtime is O(|V||E|).
+     *
+     * @return
+     */
+    public Set&lt;PairInt&gt; findMaxCostPath(Set&lt;PairInt&gt; points, PairInt src,
+        Set&lt;PairInt&gt; potentialDest) {
+
+<span class="fc" id="L56">        dest = potentialDest;</span>
+
+        /*
+        goal is to visit nodes from src to dest or until nodes run out to
+        find the longest path for that segment.
+
+        a DFS style visit pattern is applied with modifications.
+
+        the maximum distance of v among all of u's neighbors is found where
+           maximum distance is the largest distance from u to v,
+        else if equal is the max distance from v to the src,
+        else if equal is the larger of the heuristic of potential v's if any.
+
+        this method invokes search for the traversal.
+        if search returns that the number of adjacent visited nodes
+        is less than all nodes expected in path, this method
+        sets the heuristic to the current dist map, initializes the
+        data structures, and tries again.
+        this has the effect of choosing the other path for equally distant
+        neighbors and can help to correct crossed paths if there is only
+        one in the path.
+
+        for more complex curves, one could consider storing such choices
+        and trying all combinations of them and keeping the first that
+        spans from dest to src or adjacent to src...improving the heuristic
+        with each combination...
+        */
+
+<span class="fc" id="L84">        PairInt nVisited = search(points, src, potentialDest);</span>
+
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (nVisited.getY() &gt; 1) {</span>
+
+<span class="fc" id="L88">            heur.putAll(dist);</span>
+<span class="fc" id="L89">            dist = new HashMap&lt;PairInt, Double&gt;();</span>
+<span class="fc" id="L90">            prev = new HashMap&lt;PairInt, PairInt&gt;();</span>
+<span class="fc" id="L91">            unVisited = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L93">            nVisited = search(points, src, potentialDest);</span>
+        }
+
+<span class="fc" id="L96">        PairInt lastPoint = findMaxDist();</span>
+<span class="fc" id="L97">        boolean lastIsSrcOrDest = lastPoint.equals(src);</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (!lastIsSrcOrDest) {</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            for (PairInt p : dest) {</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">                if (lastPoint.equals(p)) {</span>
+<span class="nc" id="L101">                    lastIsSrcOrDest = true;</span>
+<span class="nc" id="L102">                    break;</span>
+                }
+<span class="fc" id="L104">            }</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (!lastIsSrcOrDest) {</span>
+<span class="fc" id="L106">                lastIsSrcOrDest = areAdjacent(lastPoint, src);</span>
+            }
+        }
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (!lastIsSrcOrDest) {</span>
+            //TODO: improve...
+<span class="fc" id="L111">            Logger.getLogger(this.getClass().getName()).fine(</span>
+            &quot;WARNING: neither src nor dest nodes reached&quot;);
+        }
+
+<span class="fc" id="L115">        Set&lt;PairInt&gt; pathPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L116">        pathPoints.addAll(dist.keySet());</span>
+<span class="fc" id="L117">        pathPoints.addAll(unVisited);</span>
+
+<span class="fc" id="L119">        return pathPoints;</span>
+    }
+
+    private boolean areAdjacent(PairInt p0, PairInt p1) {
+<span class="fc" id="L123">        int diffX = Math.abs(p0.getX() - p1.getX());</span>
+<span class="fc" id="L124">        int diffY = Math.abs(p0.getY() - p1.getY());</span>
+<span class="fc bfc" id="L125" title="All 4 branches covered.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="fc" id="L126">            return true;</span>
+        }
+<span class="fc" id="L128">        return false;</span>
+    }
+
+    /**
+     * find the path that maximizes the cost from the source to one of the
+     * given destinations or the longest path if those destinations are not
+     * in the path (one use case is for a portion of a curve which may double
+     * back on itself and another is for a portion of a curve which continues
+     * from one side to the other and reaches the destination).
+     * runtime is O(|V||E|).
+     *
+     * @return
+     */
+    private PairInt search(Set&lt;PairInt&gt; points, PairInt src,
+        Set&lt;PairInt&gt; potentialDest) {
+
+<span class="fc" id="L144">        dest = potentialDest;</span>
+
+<span class="fc" id="L146">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+
+        // source index is presumed to be index=0
+<span class="fc" id="L149">        dist.put(src, Double.valueOf(0));</span>
+
+<span class="fc" id="L151">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
+<span class="fc" id="L152">        stack.add(src);</span>
+
+        //visited.add(src);
+
+<span class="fc" id="L156">        int nIter = 0;</span>
+
+<span class="fc" id="L158">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L159">        int[] dys8 = Misc.dy8;</span>
+
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        while (!stack.isEmpty()) {</span>
+
+<span class="fc" id="L163">            PairInt uPoint = stack.pop();</span>
+
+<span class="fc" id="L165">            double maxDist = Double.MIN_VALUE;</span>
+<span class="fc" id="L166">            PairInt maxDistVPoint = null;</span>
+
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (int vIdx = 0; vIdx &lt; dxs8.length; ++vIdx) {</span>
+
+<span class="fc" id="L170">                PairInt vPoint = new PairInt(uPoint.getX() + dxs8[vIdx],</span>
+<span class="fc" id="L171">                    uPoint.getY() + dys8[vIdx]);</span>
+
+<span class="fc bfc" id="L173" title="All 4 branches covered.">                if (visited.contains(vPoint) || !points.contains(vPoint)) {</span>
+<span class="fc" id="L174">                    continue;</span>
+                }
+
+                // prefer the more distant of neighbors:
+<span class="fc" id="L178">                int diffX = uPoint.getX() - vPoint.getX();</span>
+<span class="fc" id="L179">                int diffY = uPoint.getY() - vPoint.getY();</span>
+<span class="fc" id="L180">                double uvDist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+
+<span class="fc" id="L182">                unVisited.add(vPoint);</span>
+
+<span class="fc bfc" id="L184" title="All 2 branches covered.">                if (uvDist &gt; maxDist) {</span>
+<span class="fc" id="L185">                    maxDist = uvDist;</span>
+<span class="fc" id="L186">                    maxDistVPoint = vPoint;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                } else if (uvDist == maxDist) {</span>
+                    // choose which is more distant from src
+<span class="fc" id="L189">                    int diffX0 = src.getX() - maxDistVPoint.getX();</span>
+<span class="fc" id="L190">                    int diffY0 = src.getY() - maxDistVPoint.getY();</span>
+<span class="fc" id="L191">                    double dist0 = Math.sqrt(diffX0*diffX0 + diffY0*diffY0);</span>
+
+<span class="fc" id="L193">                    int diffX1 = src.getX() - vPoint.getX();</span>
+<span class="fc" id="L194">                    int diffY1 = src.getY() - vPoint.getY();</span>
+<span class="fc" id="L195">                    double dist1 = Math.sqrt(diffX1*diffX1 + diffY1*diffY1);</span>
+
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">                    if (dist1 &gt; dist0) {</span>
+<span class="nc" id="L198">                        maxDist = uvDist;</span>
+<span class="nc" id="L199">                        maxDistVPoint = vPoint;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                    } else if (dist1 == dist0) {</span>
+<span class="fc" id="L201">                        Double vHeur = heur.get(vPoint);</span>
+<span class="fc" id="L202">                        Double maxDistVHeur = heur.get(maxDistVPoint);</span>
+<span class="pc bpc" id="L203" title="1 of 4 branches missed.">                        if (vHeur == null || maxDistVHeur == null) {</span>
+<span class="nc" id="L204">                            continue;</span>
+                        }
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">                        if (vHeur.doubleValue() &gt; maxDistVHeur.doubleValue()) {</span>
+<span class="fc" id="L207">                            maxDist = uvDist;</span>
+<span class="fc" id="L208">                            maxDistVPoint = vPoint;</span>
+                        }
+                    }
+                }
+            }
+
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            if (maxDistVPoint != null) {</span>
+
+<span class="fc" id="L216">                Double distU = dist.get(uPoint);</span>
+
+                // break if have reached destination or are adj to src
+                //TODO: consider whether this can use distU &gt; 1
+<span class="fc" id="L220">                boolean reached = false;</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">                if (distU &gt; 2) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                    for (PairInt p : dest) {</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">                        if (maxDistVPoint.equals(p)) {</span>
+<span class="nc" id="L224">                            reached = true;</span>
+<span class="nc" id="L225">                            break;</span>
+                        }
+<span class="fc" id="L227">                    }</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">                    if (reached) {</span>
+<span class="nc" id="L229">                        break;</span>
+                    }
+<span class="fc bfc" id="L231" title="All 2 branches covered.">                    if (areAdjacent(maxDistVPoint, src)) {</span>
+<span class="fc" id="L232">                        break;</span>
+                    }
+                }
+
+<span class="pc bpc" id="L236" title="3 of 4 branches missed.">                assert(distU != null);</span>
+<span class="fc" id="L237">                double uPlusUV = distU.doubleValue() + maxDist;</span>
+<span class="fc" id="L238">                dist.put(maxDistVPoint, Double.valueOf(uPlusUV));</span>
+<span class="fc" id="L239">                prev.put(maxDistVPoint, uPoint);</span>
+<span class="fc" id="L240">                stack.add(maxDistVPoint);</span>
+
+<span class="fc" id="L242">                visited.add(uPoint);</span>
+<span class="fc" id="L243">                visited.add(maxDistVPoint);</span>
+<span class="fc" id="L244">                unVisited.remove(maxDistVPoint);</span>
+
+            } else {
+
+                break;
+            }
+
+<span class="fc" id="L251">            nIter++;</span>
+<span class="fc" id="L252">        }</span>
+
+<span class="fc" id="L254">        PairInt nVisited = new PairInt(visited.size(), unVisited.size());</span>
+
+<span class="fc" id="L256">        return nVisited;</span>
+    }
+
+    private PairInt findMaxDist() {
+
+<span class="fc" id="L261">        PairInt p = null;</span>
+
+<span class="fc" id="L263">        double maxDist = Double.MIN_VALUE;</span>
+
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        for (Entry&lt;PairInt, Double&gt; entry : dist.entrySet()) {</span>
+
+<span class="fc" id="L267">            Double d = entry.getValue();</span>
+
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            if (d.doubleValue() &gt; maxDist) {</span>
+<span class="fc" id="L270">                maxDist = d.doubleValue();</span>
+<span class="fc" id="L271">                p = entry.getKey();</span>
+            }
+<span class="fc" id="L273">        }</span>
+
+<span class="fc" id="L275">        return p;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -72,7 +72,6 @@ import java.util.Arrays;
 <span class="fc" id="L72">        sortByYThenX(xy, 0, xy.getN() - 1);</span>
 <span class="fc" id="L73">    }</span>
     
-    
     /**
      * sort so that a is decreasing in value for higher indexes and b is
      * is increasing in value for higher indexes for the same a.  swap
@@ -86,33 +85,65 @@ import java.util.Arrays;
     public static void sortBy1stDescThen2ndAsc(int[] a, double[] b, 
         Integer[][] c, int[] d) {
         
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L90">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L89">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L93">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (c == null) {</span>
-<span class="nc" id="L96">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (c == null) {</span>
+<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (d == null) {</span>
-<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;d cannot be null&quot;);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (d == null) {</span>
+<span class="nc" id="L98">            throw new IllegalArgumentException(&quot;d cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L102">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L101">            throw new IllegalArgumentException(</span>
             &quot;number of items in a must be the same as in b&quot;);
         }
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (a.length != c.length) {</span>
-<span class="nc" id="L106">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (a.length != c.length) {</span>
+<span class="nc" id="L105">            throw new IllegalArgumentException(</span>
             &quot;number of items in a must be the same as in c&quot;);
         }
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (a.length != d.length) {</span>
-<span class="nc" id="L110">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (a.length != d.length) {</span>
+<span class="nc" id="L109">            throw new IllegalArgumentException(</span>
             &quot;number of items in a must be the same as in d&quot;);
         }
         
-<span class="fc" id="L114">        sortBy1stDescThen2ndAsc(a, b, c, d, 0, a.length - 1);</span>
-<span class="fc" id="L115">    }</span>
+<span class="fc" id="L113">        sortBy1stDescThen2ndAsc(a, b, c, d, 0, a.length - 1);</span>
+<span class="fc" id="L114">    }</span>
+    
+    /**
+     * sort so that a is decreasing in value for higher indexes and b is
+     * is increasing in value for higher indexes for the same a.  swap
+     * operations for a and b logic are performed on c and d too.
+     * 
+     * @param a
+     * @param b
+     * @param c
+     */
+    public static void sortBy1stDescThen2ndAsc(int[] a, double[] b, int[] c) {
+        
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L128">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L131">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (c == null) {</span>
+<span class="nc" id="L134">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L137">            throw new IllegalArgumentException(</span>
+            &quot;number of items in a must be the same as in b&quot;);
+        }
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (a.length != c.length) {</span>
+<span class="nc" id="L141">            throw new IllegalArgumentException(</span>
+            &quot;number of items in a must be the same as in c&quot;);
+        }
+        
+<span class="nc" id="L145">        sortBy1stDescThen2ndAsc(a, b, c, 0, a.length - 1);</span>
+<span class="nc" id="L146">    }</span>
     
     /**
      * @param a1 array of points to be sorted
@@ -123,16 +154,16 @@ import java.util.Arrays;
     private static void sortBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, 
         int idxHi) {
 
-<span class="fc" id="L126">        int indexMid = -1;</span>
+<span class="fc" id="L157">        int indexMid = -1;</span>
 
-<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L130">            indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
-<span class="fc" id="L131">            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);</span>
-<span class="fc" id="L132">            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);</span>
-<span class="fc" id="L133">            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi);</span>
+<span class="fc" id="L161">            indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+<span class="fc" id="L162">            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);</span>
+<span class="fc" id="L163">            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);</span>
+<span class="fc" id="L164">            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi);</span>
         }
-<span class="fc" id="L135">    }</span>
+<span class="fc" id="L166">    }</span>
     
     /**
      * @param a1 array of points to be sorted
@@ -143,16 +174,16 @@ import java.util.Arrays;
     private static void sortBy1stArgThen2nd(int[] a1, int[] a2, int idxLo, 
         int idxHi) {
 
-<span class="fc" id="L146">        int indexMid = -1;</span>
+<span class="fc" id="L177">        int indexMid = -1;</span>
 
-<span class="fc bfc" id="L148" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L150">            indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
-<span class="fc" id="L151">            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);</span>
-<span class="fc" id="L152">            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);</span>
-<span class="fc" id="L153">            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi);</span>
+<span class="fc" id="L181">            indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+<span class="fc" id="L182">            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);</span>
+<span class="fc" id="L183">            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);</span>
+<span class="fc" id="L184">            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi);</span>
         }
-<span class="fc" id="L155">    }</span>
+<span class="fc" id="L186">    }</span>
     
     /**
      * @param xy array of points to be sorted
@@ -161,152 +192,152 @@ import java.util.Arrays;
      */
     private static void sortByYThenX(PairIntArray xy, int idxLo, int idxHi) {
 
-<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L166">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
-<span class="fc" id="L167">            sortByYThenX(xy, idxLo, indexMid);</span>
-<span class="fc" id="L168">            sortByYThenX(xy, indexMid + 1, idxHi);</span>
-<span class="fc" id="L169">            mergeByYThenX(xy, idxLo, indexMid, idxHi);</span>
+<span class="fc" id="L197">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+<span class="fc" id="L198">            sortByYThenX(xy, idxLo, indexMid);</span>
+<span class="fc" id="L199">            sortByYThenX(xy, indexMid + 1, idxHi);</span>
+<span class="fc" id="L200">            mergeByYThenX(xy, idxLo, indexMid, idxHi);</span>
         }
-<span class="fc" id="L171">    }</span>
+<span class="fc" id="L202">    }</span>
 
     private static void mergeBy1stArgThen2nd( float[] a1, float[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-<span class="fc" id="L176">        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
-<span class="fc" id="L177">        float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
+<span class="fc" id="L207">        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L208">        float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
         
-<span class="fc" id="L179">        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L180">        float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L210">        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L211">        float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
         
-<span class="fc" id="L182">        a1Left[a1Left.length - 1] = Float.MAX_VALUE;</span>
-<span class="fc" id="L183">        a2Left[a2Left.length - 1] = Float.MAX_VALUE;</span>
-<span class="fc" id="L184">        a1Right[a1Right.length - 1] = Float.MAX_VALUE;</span>
-<span class="fc" id="L185">        a2Right[a2Right.length - 1] = Float.MAX_VALUE;</span>
+<span class="fc" id="L213">        a1Left[a1Left.length - 1] = Float.MAX_VALUE;</span>
+<span class="fc" id="L214">        a2Left[a2Left.length - 1] = Float.MAX_VALUE;</span>
+<span class="fc" id="L215">        a1Right[a1Right.length - 1] = Float.MAX_VALUE;</span>
+<span class="fc" id="L216">        a2Right[a2Right.length - 1] = Float.MAX_VALUE;</span>
 
-<span class="fc" id="L187">        int leftPos = 0;</span>
-<span class="fc" id="L188">        int rightPos = 0;</span>
+<span class="fc" id="L218">        int leftPos = 0;</span>
+<span class="fc" id="L219">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
-<span class="fc" id="L191">            float l = a1Left[leftPos];</span>
-<span class="fc" id="L192">            float r = a1Right[rightPos];</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L222">            float l = a1Left[leftPos];</span>
+<span class="fc" id="L223">            float r = a1Right[rightPos];</span>
 
-<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (l == r) {</span>
-<span class="fc" id="L195">                float lx = a2Left[leftPos];</span>
-<span class="fc" id="L196">                float rx = a2Right[rightPos];</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            if (l == r) {</span>
+<span class="fc" id="L226">                float lx = a2Left[leftPos];</span>
+<span class="fc" id="L227">                float rx = a2Right[rightPos];</span>
 
-<span class="fc bfc" id="L198" title="All 2 branches covered.">                if (lx &lt;= rx) {</span>
-<span class="fc" id="L199">                    a2[k] = a2Left[leftPos];</span>
-<span class="fc" id="L200">                    a1[k] = a1Left[leftPos];</span>
-<span class="fc" id="L201">                    leftPos++;</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">                if (lx &lt;= rx) {</span>
+<span class="fc" id="L230">                    a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L231">                    a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L232">                    leftPos++;</span>
                 } else {
-<span class="fc" id="L203">                    a2[k] = a2Right[rightPos];</span>
-<span class="fc" id="L204">                    a1[k] = a1Right[rightPos];</span>
-<span class="fc" id="L205">                    rightPos++;</span>
+<span class="fc" id="L234">                    a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L235">                    a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L236">                    rightPos++;</span>
                 }
-<span class="fc bfc" id="L207" title="All 2 branches covered.">            } else if (l &lt; r) {</span>
-<span class="fc" id="L208">                a2[k] = a2Left[leftPos];</span>
-<span class="fc" id="L209">                a1[k] = a1Left[leftPos];</span>
-<span class="fc" id="L210">                leftPos++;</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">            } else if (l &lt; r) {</span>
+<span class="fc" id="L239">                a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L240">                a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L241">                leftPos++;</span>
             } else {
-<span class="fc" id="L212">                a2[k] = a2Right[rightPos];</span>
-<span class="fc" id="L213">                a1[k] = a1Right[rightPos];</span>
-<span class="fc" id="L214">                rightPos++;</span>
+<span class="fc" id="L243">                a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L244">                a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L245">                rightPos++;</span>
             }
         }
-<span class="fc" id="L217">    }</span>
+<span class="fc" id="L248">    }</span>
     
     private static void mergeBy1stArgThen2nd(int[] a1, int[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-<span class="fc" id="L222">        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
-<span class="fc" id="L223">        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
+<span class="fc" id="L253">        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L254">        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
         
-<span class="fc" id="L225">        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L226">        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L256">        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L257">        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
         
-<span class="fc" id="L228">        a1Left[a1Left.length - 1] = Integer.MAX_VALUE;</span>
-<span class="fc" id="L229">        a2Left[a2Left.length - 1] = Integer.MAX_VALUE;</span>
-<span class="fc" id="L230">        a1Right[a1Right.length - 1] = Integer.MAX_VALUE;</span>
-<span class="fc" id="L231">        a2Right[a2Right.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L259">        a1Left[a1Left.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L260">        a2Left[a2Left.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L261">        a1Right[a1Right.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L262">        a2Right[a2Right.length - 1] = Integer.MAX_VALUE;</span>
 
-<span class="fc" id="L233">        int leftPos = 0;</span>
-<span class="fc" id="L234">        int rightPos = 0;</span>
+<span class="fc" id="L264">        int leftPos = 0;</span>
+<span class="fc" id="L265">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L236" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
-<span class="fc" id="L237">            float l = a1Left[leftPos];</span>
-<span class="fc" id="L238">            float r = a1Right[rightPos];</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L268">            float l = a1Left[leftPos];</span>
+<span class="fc" id="L269">            float r = a1Right[rightPos];</span>
 
-<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (l == r) {</span>
-<span class="fc" id="L241">                float lx = a2Left[leftPos];</span>
-<span class="fc" id="L242">                float rx = a2Right[rightPos];</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            if (l == r) {</span>
+<span class="fc" id="L272">                float lx = a2Left[leftPos];</span>
+<span class="fc" id="L273">                float rx = a2Right[rightPos];</span>
 
-<span class="fc bfc" id="L244" title="All 2 branches covered.">                if (lx &lt;= rx) {</span>
-<span class="fc" id="L245">                    a2[k] = a2Left[leftPos];</span>
-<span class="fc" id="L246">                    a1[k] = a1Left[leftPos];</span>
-<span class="fc" id="L247">                    leftPos++;</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">                if (lx &lt;= rx) {</span>
+<span class="fc" id="L276">                    a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L277">                    a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L278">                    leftPos++;</span>
                 } else {
-<span class="fc" id="L249">                    a2[k] = a2Right[rightPos];</span>
-<span class="fc" id="L250">                    a1[k] = a1Right[rightPos];</span>
-<span class="fc" id="L251">                    rightPos++;</span>
+<span class="fc" id="L280">                    a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L281">                    a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L282">                    rightPos++;</span>
                 }
-<span class="fc bfc" id="L253" title="All 2 branches covered.">            } else if (l &lt; r) {</span>
-<span class="fc" id="L254">                a2[k] = a2Left[leftPos];</span>
-<span class="fc" id="L255">                a1[k] = a1Left[leftPos];</span>
-<span class="fc" id="L256">                leftPos++;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">            } else if (l &lt; r) {</span>
+<span class="fc" id="L285">                a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L286">                a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L287">                leftPos++;</span>
             } else {
-<span class="fc" id="L258">                a2[k] = a2Right[rightPos];</span>
-<span class="fc" id="L259">                a1[k] = a1Right[rightPos];</span>
-<span class="fc" id="L260">                rightPos++;</span>
+<span class="fc" id="L289">                a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L290">                a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L291">                rightPos++;</span>
             }
         }
-<span class="fc" id="L263">    }</span>
+<span class="fc" id="L294">    }</span>
     
     private static void mergeByYThenX(PairIntArray xy, int idxLo, 
         int idxMid, int idxHi) {
 
-<span class="fc" id="L268">        int[] yLeft = Arrays.copyOfRange(xy.getY(), idxLo, idxMid + 2);</span>
-<span class="fc" id="L269">        int[] xLeft = Arrays.copyOfRange(xy.getX(), idxLo, idxMid + 2);</span>
+<span class="fc" id="L299">        int[] yLeft = Arrays.copyOfRange(xy.getY(), idxLo, idxMid + 2);</span>
+<span class="fc" id="L300">        int[] xLeft = Arrays.copyOfRange(xy.getX(), idxLo, idxMid + 2);</span>
         
-<span class="fc" id="L271">        int[] yRight = Arrays.copyOfRange(xy.getY(), idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L272">        int[] xRight = Arrays.copyOfRange(xy.getX(), idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L302">        int[] yRight = Arrays.copyOfRange(xy.getY(), idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L303">        int[] xRight = Arrays.copyOfRange(xy.getX(), idxMid + 1, idxHi + 2);</span>
         
-<span class="fc" id="L274">        yLeft[yLeft.length - 1] = Integer.MAX_VALUE;</span>
-<span class="fc" id="L275">        xLeft[xLeft.length - 1] = Integer.MAX_VALUE;</span>
-<span class="fc" id="L276">        yRight[yRight.length - 1] = Integer.MAX_VALUE;</span>
-<span class="fc" id="L277">        xRight[xRight.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L305">        yLeft[yLeft.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L306">        xLeft[xLeft.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L307">        yRight[yRight.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L308">        xRight[xRight.length - 1] = Integer.MAX_VALUE;</span>
 
-<span class="fc" id="L279">        int leftPos = 0;</span>
-<span class="fc" id="L280">        int rightPos = 0;</span>
+<span class="fc" id="L310">        int leftPos = 0;</span>
+<span class="fc" id="L311">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L282" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
-<span class="fc" id="L283">            int l = yLeft[leftPos];</span>
-<span class="fc" id="L284">            int r = yRight[rightPos];</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L314">            int l = yLeft[leftPos];</span>
+<span class="fc" id="L315">            int r = yRight[rightPos];</span>
 
-<span class="fc bfc" id="L286" title="All 2 branches covered.">            if (l == r) {</span>
-<span class="fc" id="L287">                int lx = xLeft[leftPos];</span>
-<span class="fc" id="L288">                int rx = xRight[rightPos];</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">            if (l == r) {</span>
+<span class="fc" id="L318">                int lx = xLeft[leftPos];</span>
+<span class="fc" id="L319">                int rx = xRight[rightPos];</span>
 
-<span class="fc bfc" id="L290" title="All 2 branches covered.">                if (lx &lt;= rx) {</span>
-<span class="fc" id="L291">                    xy.getX()[k] = xLeft[leftPos];</span>
-<span class="fc" id="L292">                    xy.getY()[k] = yLeft[leftPos];</span>
-<span class="fc" id="L293">                    leftPos++;</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">                if (lx &lt;= rx) {</span>
+<span class="fc" id="L322">                    xy.getX()[k] = xLeft[leftPos];</span>
+<span class="fc" id="L323">                    xy.getY()[k] = yLeft[leftPos];</span>
+<span class="fc" id="L324">                    leftPos++;</span>
                 } else {
-<span class="fc" id="L295">                    xy.getX()[k] = xRight[rightPos];</span>
-<span class="fc" id="L296">                    xy.getY()[k] = yRight[rightPos];</span>
-<span class="fc" id="L297">                    rightPos++;</span>
+<span class="fc" id="L326">                    xy.getX()[k] = xRight[rightPos];</span>
+<span class="fc" id="L327">                    xy.getY()[k] = yRight[rightPos];</span>
+<span class="fc" id="L328">                    rightPos++;</span>
                 }
-<span class="fc bfc" id="L299" title="All 2 branches covered.">            } else if (l &lt; r) {</span>
-<span class="fc" id="L300">                xy.getX()[k] = xLeft[leftPos];</span>
-<span class="fc" id="L301">                xy.getY()[k] = yLeft[leftPos];</span>
-<span class="fc" id="L302">                leftPos++;</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">            } else if (l &lt; r) {</span>
+<span class="fc" id="L331">                xy.getX()[k] = xLeft[leftPos];</span>
+<span class="fc" id="L332">                xy.getY()[k] = yLeft[leftPos];</span>
+<span class="fc" id="L333">                leftPos++;</span>
             } else {
-<span class="fc" id="L304">                xy.getX()[k] = xRight[rightPos];</span>
-<span class="fc" id="L305">                xy.getY()[k] = yRight[rightPos];</span>
-<span class="fc" id="L306">                rightPos++;</span>
+<span class="fc" id="L335">                xy.getX()[k] = xRight[rightPos];</span>
+<span class="fc" id="L336">                xy.getY()[k] = yRight[rightPos];</span>
+<span class="fc" id="L337">                rightPos++;</span>
             }
         }
-<span class="fc" id="L309">    }</span>
+<span class="fc" id="L340">    }</span>
 
     /**
      * sort by decreasing value a1 and apply same changes to a2.
@@ -317,20 +348,20 @@ import java.util.Arrays;
      * @param a2 array of points to apply a1 sorting to also
      */
     public static void sortByDecr(int[] a1, int[] a2) {
-<span class="pc bpc" id="L320" title="1 of 2 branches missed.">        if (a1 == null) {</span>
-<span class="nc" id="L321">            throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">        if (a1 == null) {</span>
+<span class="nc" id="L352">            throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L323" title="1 of 2 branches missed.">        if (a2 == null) {</span>
-<span class="nc" id="L324">            throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">        if (a2 == null) {</span>
+<span class="nc" id="L355">            throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">        if (a1.length != a2.length) {</span>
-<span class="nc" id="L327">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">        if (a1.length != a2.length) {</span>
+<span class="nc" id="L358">            throw new IllegalArgumentException(</span>
             &quot;number of items in a1 must be the same as in a2&quot;);
         }
         
-<span class="fc" id="L331">        sortByDecr(a1, a2, 0, a1.length - 1);</span>
+<span class="fc" id="L362">        sortByDecr(a1, a2, 0, a1.length - 1);</span>
               
-<span class="fc" id="L333">    }</span>
+<span class="fc" id="L364">    }</span>
     
     /**
      * sort by decreasing value a1 and apply same changes to a2.
@@ -341,198 +372,352 @@ import java.util.Arrays;
      * @param a2 array of points to apply a1 sorting to also
      */
     public static void sortByDecr(double[] a1, int[] a2) {
-<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        if (a1 == null) {</span>
-<span class="nc" id="L345">            throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">        if (a1 == null) {</span>
+<span class="nc" id="L376">            throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        if (a2 == null) {</span>
-<span class="nc" id="L348">            throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">        if (a2 == null) {</span>
+<span class="nc" id="L379">            throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L350" title="1 of 2 branches missed.">        if (a1.length != a2.length) {</span>
-<span class="nc" id="L351">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">        if (a1.length != a2.length) {</span>
+<span class="nc" id="L382">            throw new IllegalArgumentException(</span>
             &quot;number of items in a1 must be the same as in a2&quot;);
         }
         
-<span class="fc" id="L355">        sortByDecr(a1, a2, 0, a1.length - 1);</span>
+<span class="fc" id="L386">        sortByDecr(a1, a2, 0, a1.length - 1);</span>
               
-<span class="fc" id="L357">    }</span>
+<span class="fc" id="L388">    }</span>
     
     public static void sortByDecr(int[] a1, int[] a2, int idxLo, int idxHi) {
 
-<span class="fc bfc" id="L361" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L363">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+<span class="fc" id="L394">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
             
-<span class="fc" id="L365">            sortByDecr(a1, a2, idxLo, indexMid);</span>
+<span class="fc" id="L396">            sortByDecr(a1, a2, idxLo, indexMid);</span>
             
-<span class="fc" id="L367">            sortByDecr(a1, a2, indexMid + 1, idxHi);</span>
+<span class="fc" id="L398">            sortByDecr(a1, a2, indexMid + 1, idxHi);</span>
             
-<span class="fc" id="L369">            mergeByDecr(a1, a2, idxLo, indexMid, idxHi);</span>
+<span class="fc" id="L400">            mergeByDecr(a1, a2, idxLo, indexMid, idxHi);</span>
         }
-<span class="fc" id="L371">    }</span>
+<span class="fc" id="L402">    }</span>
     
     public static void sortByDecr(double[] a1, int[] a2, int idxLo, int idxHi) {
 
-<span class="fc bfc" id="L375" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L377">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+<span class="fc" id="L408">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
             
-<span class="fc" id="L379">            sortByDecr(a1, a2, idxLo, indexMid);</span>
+<span class="fc" id="L410">            sortByDecr(a1, a2, idxLo, indexMid);</span>
             
-<span class="fc" id="L381">            sortByDecr(a1, a2, indexMid + 1, idxHi);</span>
+<span class="fc" id="L412">            sortByDecr(a1, a2, indexMid + 1, idxHi);</span>
             
-<span class="fc" id="L383">            mergeByDecr(a1, a2, idxLo, indexMid, idxHi);</span>
+<span class="fc" id="L414">            mergeByDecr(a1, a2, idxLo, indexMid, idxHi);</span>
         }
-<span class="fc" id="L385">    }</span>
+<span class="fc" id="L416">    }</span>
     
     private static void mergeByDecr(int[] a1, int[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-<span class="fc" id="L390">        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
-<span class="fc" id="L391">        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
+<span class="fc" id="L421">        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L422">        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
         
-<span class="fc" id="L393">        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L394">        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L424">        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L425">        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
         
-<span class="fc" id="L396">        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L397">        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L398">        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L399">        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L427">        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L428">        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L429">        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L430">        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L401">        int leftPos = 0;</span>
-<span class="fc" id="L402">        int rightPos = 0;</span>
+<span class="fc" id="L432">        int leftPos = 0;</span>
+<span class="fc" id="L433">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L404" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
-<span class="fc" id="L405">            int l = a1Left[leftPos];</span>
-<span class="fc" id="L406">            int r = a1Right[rightPos];</span>
-<span class="fc bfc" id="L407" title="All 2 branches covered.">            if (l &gt; r) {</span>
-<span class="fc" id="L408">                a2[k] = a2Left[leftPos];</span>
-<span class="fc" id="L409">                a1[k] = a1Left[leftPos];</span>
-<span class="fc" id="L410">                leftPos++;</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L436">            int l = a1Left[leftPos];</span>
+<span class="fc" id="L437">            int r = a1Right[rightPos];</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">            if (l &gt; r) {</span>
+<span class="fc" id="L439">                a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L440">                a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L441">                leftPos++;</span>
             } else {
-<span class="fc" id="L412">                a2[k] = a2Right[rightPos];</span>
-<span class="fc" id="L413">                a1[k] = a1Right[rightPos];</span>
-<span class="fc" id="L414">                rightPos++;</span>
+<span class="fc" id="L443">                a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L444">                a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L445">                rightPos++;</span>
             }
         }
-<span class="fc" id="L417">    }</span>
+<span class="fc" id="L448">    }</span>
     
     private static void mergeByDecr(double[] a1, int[] a2, int idxLo, 
         int idxMid, int idxHi) {
 
-<span class="fc" id="L422">        double[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
-<span class="fc" id="L423">        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
+<span class="fc" id="L453">        double[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L454">        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
         
-<span class="fc" id="L425">        double[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L426">        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L456">        double[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L457">        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
         
-<span class="fc" id="L428">        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L429">        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L430">        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L431">        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L459">        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L460">        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L461">        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L462">        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L433">        int leftPos = 0;</span>
-<span class="fc" id="L434">        int rightPos = 0;</span>
+<span class="fc" id="L464">        int leftPos = 0;</span>
+<span class="fc" id="L465">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L436" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
-<span class="fc" id="L437">            double l = a1Left[leftPos];</span>
-<span class="fc" id="L438">            double r = a1Right[rightPos];</span>
-<span class="fc bfc" id="L439" title="All 2 branches covered.">            if (l &gt; r) {</span>
-<span class="fc" id="L440">                a2[k] = a2Left[leftPos];</span>
-<span class="fc" id="L441">                a1[k] = a1Left[leftPos];</span>
-<span class="fc" id="L442">                leftPos++;</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L468">            double l = a1Left[leftPos];</span>
+<span class="fc" id="L469">            double r = a1Right[rightPos];</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">            if (l &gt; r) {</span>
+<span class="fc" id="L471">                a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L472">                a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L473">                leftPos++;</span>
             } else {
-<span class="fc" id="L444">                a2[k] = a2Right[rightPos];</span>
-<span class="fc" id="L445">                a1[k] = a1Right[rightPos];</span>
-<span class="fc" id="L446">                rightPos++;</span>
+<span class="fc" id="L475">                a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L476">                a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L477">                rightPos++;</span>
             }
         }
-<span class="fc" id="L449">    }</span>
+<span class="fc" id="L480">    }</span>
+    
+    protected static void sortBy1stDescThen2ndAsc(int[] a, double[] b, 
+        int[] c, int idxLo, int idxHi) {
+        
+<span class="nc bnc" id="L485" title="All 2 branches missed.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="nc" id="L487">            int idxMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+            
+<span class="nc" id="L489">            sortBy1stDescThen2ndAsc(a, b, c, idxLo, idxMid);</span>
+            
+<span class="nc" id="L491">            sortBy1stDescThen2ndAsc(a, b, c, idxMid + 1, idxHi);</span>
+            
+<span class="nc" id="L493">            mergeBy1stDescThen2ndAsc(a, b, c, idxLo, idxMid, idxHi);</span>
+        }
+<span class="nc" id="L495">    }</span>
     
     protected static void sortBy1stDescThen2ndAsc(int[] a, double[] b, 
         Integer[][] c, int[] d, int idxLo, int idxHi) {
         
-<span class="fc bfc" id="L454" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L500" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L456">            int idxMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+<span class="fc" id="L502">            int idxMid = (idxLo + idxHi) &gt;&gt; 1;</span>
             
-<span class="fc" id="L458">            sortBy1stDescThen2ndAsc(a, b, c, d, idxLo, idxMid);</span>
+<span class="fc" id="L504">            sortBy1stDescThen2ndAsc(a, b, c, d, idxLo, idxMid);</span>
             
-<span class="fc" id="L460">            sortBy1stDescThen2ndAsc(a, b, c, d, idxMid + 1, idxHi);</span>
+<span class="fc" id="L506">            sortBy1stDescThen2ndAsc(a, b, c, d, idxMid + 1, idxHi);</span>
             
-<span class="fc" id="L462">            mergeBy1stDescThen2ndAsc(a, b, c, d, idxLo, idxMid, idxHi);</span>
+<span class="fc" id="L508">            mergeBy1stDescThen2ndAsc(a, b, c, d, idxLo, idxMid, idxHi);</span>
         }
-<span class="fc" id="L464">    }</span>
+<span class="fc" id="L510">    }</span>
+    
+    public static void sortBy1stAscThen2ndDesc(double[] a1, int[] a2, 
+        Integer[][] a3, int[] a4, int idxLo, int idxHi) {
+        
+<span class="fc bfc" id="L515" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L517">            int idxMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+            
+<span class="fc" id="L519">            sortBy1stAscThen2ndDesc(a1, a2, a3, a4, idxLo, idxMid);</span>
+            
+<span class="fc" id="L521">            sortBy1stAscThen2ndDesc(a1, a2, a3, a4, idxMid + 1, idxHi);</span>
+            
+<span class="fc" id="L523">            mergeBy1stAscThen2ndDesc(a1, a2, a3, a4, idxLo, idxMid, idxHi);</span>
+        }
+<span class="fc" id="L525">    }</span>
     
     private static void mergeBy1stDescThen2ndAsc(int[] a, double[] b, 
         Integer[][] c, int[] d, int idxLo, int idxMid, int idxHi) {
         
-<span class="fc" id="L469">        int[] aLeft = Arrays.copyOfRange(a, idxLo, idxMid + 2);</span>
-<span class="fc" id="L470">        double[] bLeft = Arrays.copyOfRange(b, idxLo, idxMid + 2);</span>
-<span class="fc" id="L471">        int[] dLeft = Arrays.copyOfRange(d, idxLo, idxMid + 2);</span>
-<span class="fc" id="L472">        Integer[][] cLeft = new Integer[(idxMid + 2 - idxLo)][];</span>
-<span class="fc bfc" id="L473" title="All 2 branches covered.">        for (int i = 0; i &lt; (cLeft.length - 1); ++i) {</span>
-<span class="fc" id="L474">            int idx = i + idxLo;</span>
-<span class="fc" id="L475">            cLeft[i] = Arrays.copyOf(c[idx], c[idx].length);</span>
+<span class="fc" id="L530">        int[] aLeft = Arrays.copyOfRange(a, idxLo, idxMid + 2);</span>
+<span class="fc" id="L531">        double[] bLeft = Arrays.copyOfRange(b, idxLo, idxMid + 2);</span>
+<span class="fc" id="L532">        int[] dLeft = Arrays.copyOfRange(d, idxLo, idxMid + 2);</span>
+<span class="fc" id="L533">        Integer[][] cLeft = new Integer[(idxMid + 2 - idxLo)][];</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">        for (int i = 0; i &lt; (cLeft.length - 1); ++i) {</span>
+<span class="fc" id="L535">            int idx = i + idxLo;</span>
+<span class="fc" id="L536">            cLeft[i] = Arrays.copyOf(c[idx], c[idx].length);</span>
         }        
         
-<span class="fc" id="L478">        int[] aRight = Arrays.copyOfRange(a, idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L479">        double[] bRight = Arrays.copyOfRange(b, idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L480">        int[] dRight = Arrays.copyOfRange(d, idxMid + 1, idxHi + 2);</span>
-<span class="fc" id="L481">        Integer[][] cRight = new Integer[(idxHi + 2) - (idxMid + 1)][];</span>
-<span class="fc bfc" id="L482" title="All 2 branches covered.">        for (int i = 0; i &lt; (cRight.length - 1); ++i) {</span>
-<span class="fc" id="L483">            int idx = i + idxMid + 1;            </span>
-<span class="fc" id="L484">            cRight[i] = Arrays.copyOf(c[idx], c[idx].length);</span>
+<span class="fc" id="L539">        int[] aRight = Arrays.copyOfRange(a, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L540">        double[] bRight = Arrays.copyOfRange(b, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L541">        int[] dRight = Arrays.copyOfRange(d, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L542">        Integer[][] cRight = new Integer[(idxHi + 2) - (idxMid + 1)][];</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">        for (int i = 0; i &lt; (cRight.length - 1); ++i) {</span>
+<span class="fc" id="L544">            int idx = i + idxMid + 1;            </span>
+<span class="fc" id="L545">            cRight[i] = Arrays.copyOf(c[idx], c[idx].length);</span>
         }
         
-<span class="fc" id="L487">        aLeft[aLeft.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L488">        bLeft[bLeft.length - 1] = Double.MIN_VALUE;</span>
-<span class="fc" id="L489">        dLeft[dLeft.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L490">        cLeft[cLeft.length - 1] = new Integer[c[idxLo].length];// not compared, so can be 0's</span>
+<span class="fc" id="L548">        aLeft[aLeft.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L549">        bLeft[bLeft.length - 1] = Double.MIN_VALUE;</span>
+<span class="fc" id="L550">        dLeft[dLeft.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L551">        cLeft[cLeft.length - 1] = new Integer[c[idxLo].length];// not compared, so can be 0's</span>
         
-<span class="fc" id="L492">        aRight[aRight.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L493">        bRight[bRight.length - 1] = Double.MIN_VALUE;</span>
-<span class="fc" id="L494">        dRight[dRight.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L495">        cRight[cRight.length - 1] = new Integer[c[idxMid + 1].length];// not compared, so can be 0's</span>
+<span class="fc" id="L553">        aRight[aRight.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L554">        bRight[bRight.length - 1] = Double.MIN_VALUE;</span>
+<span class="fc" id="L555">        dRight[dRight.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L556">        cRight[cRight.length - 1] = new Integer[c[idxMid + 1].length];// not compared, so can be 0's</span>
         
-<span class="fc" id="L497">        int leftPos = 0;</span>
-<span class="fc" id="L498">        int rightPos = 0;</span>
+<span class="fc" id="L558">        int leftPos = 0;</span>
+<span class="fc" id="L559">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L500" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
-<span class="fc" id="L501">            int l = aLeft[leftPos];</span>
-<span class="fc" id="L502">            int r = aRight[rightPos];</span>
-<span class="fc bfc" id="L503" title="All 2 branches covered.">            if (l &gt; r) {</span>
-<span class="fc" id="L504">                a[k] = aLeft[leftPos];</span>
-<span class="fc" id="L505">                b[k] = bLeft[leftPos];</span>
-<span class="fc" id="L506">                c[k] = cLeft[leftPos];</span>
-<span class="fc" id="L507">                d[k] = dLeft[leftPos];</span>
-<span class="fc" id="L508">                leftPos++;</span>
-<span class="fc bfc" id="L509" title="All 2 branches covered.">            } else if (l == r) {</span>
+<span class="fc bfc" id="L561" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L562">            int l = aLeft[leftPos];</span>
+<span class="fc" id="L563">            int r = aRight[rightPos];</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">            if (l &gt; r) {</span>
+<span class="fc" id="L565">                a[k] = aLeft[leftPos];</span>
+<span class="fc" id="L566">                b[k] = bLeft[leftPos];</span>
+<span class="fc" id="L567">                c[k] = cLeft[leftPos];</span>
+<span class="fc" id="L568">                d[k] = dLeft[leftPos];</span>
+<span class="fc" id="L569">                leftPos++;</span>
+<span class="fc bfc" id="L570" title="All 2 branches covered.">            } else if (l == r) {</span>
                 // sort for ascending values of b
-<span class="fc" id="L511">                double l2 = bLeft[leftPos];</span>
-<span class="fc" id="L512">                double r2 = bRight[rightPos];</span>
-<span class="fc bfc" id="L513" title="All 2 branches covered.">                if (l2 &lt;= r2) {</span>
-<span class="fc" id="L514">                    a[k] = aLeft[leftPos];</span>
-<span class="fc" id="L515">                    b[k] = bLeft[leftPos];</span>
-<span class="fc" id="L516">                    c[k] = cLeft[leftPos];</span>
-<span class="fc" id="L517">                    d[k] = dLeft[leftPos];</span>
-<span class="fc" id="L518">                    leftPos++;</span>
+<span class="fc" id="L572">                double l2 = bLeft[leftPos];</span>
+<span class="fc" id="L573">                double r2 = bRight[rightPos];</span>
+<span class="fc bfc" id="L574" title="All 2 branches covered.">                if (l2 &lt;= r2) {</span>
+<span class="fc" id="L575">                    a[k] = aLeft[leftPos];</span>
+<span class="fc" id="L576">                    b[k] = bLeft[leftPos];</span>
+<span class="fc" id="L577">                    c[k] = cLeft[leftPos];</span>
+<span class="fc" id="L578">                    d[k] = dLeft[leftPos];</span>
+<span class="fc" id="L579">                    leftPos++;</span>
                 } else {
-<span class="fc" id="L520">                    a[k] = aRight[rightPos];</span>
-<span class="fc" id="L521">                    b[k] = bRight[rightPos];</span>
-<span class="fc" id="L522">                    c[k] = cRight[rightPos];</span>
-<span class="fc" id="L523">                    d[k] = dRight[rightPos];</span>
-<span class="fc" id="L524">                    rightPos++;</span>
+<span class="fc" id="L581">                    a[k] = aRight[rightPos];</span>
+<span class="fc" id="L582">                    b[k] = bRight[rightPos];</span>
+<span class="fc" id="L583">                    c[k] = cRight[rightPos];</span>
+<span class="fc" id="L584">                    d[k] = dRight[rightPos];</span>
+<span class="fc" id="L585">                    rightPos++;</span>
                 }
-<span class="fc" id="L526">            } else {</span>
-<span class="fc" id="L527">                a[k] = aRight[rightPos];</span>
-<span class="fc" id="L528">                b[k] = bRight[rightPos];</span>
-<span class="fc" id="L529">                c[k] = cRight[rightPos];</span>
-<span class="fc" id="L530">                d[k] = dRight[rightPos];</span>
-<span class="fc" id="L531">                rightPos++;</span>
+<span class="fc" id="L587">            } else {</span>
+<span class="fc" id="L588">                a[k] = aRight[rightPos];</span>
+<span class="fc" id="L589">                b[k] = bRight[rightPos];</span>
+<span class="fc" id="L590">                c[k] = cRight[rightPos];</span>
+<span class="fc" id="L591">                d[k] = dRight[rightPos];</span>
+<span class="fc" id="L592">                rightPos++;</span>
             }
         }
         
-<span class="fc" id="L535">    }</span>
+<span class="fc" id="L596">    }</span>
 
+    private static void mergeBy1stDescThen2ndAsc(int[] a, double[] b, 
+        int[] c, int idxLo, int idxMid, int idxHi) {
+        
+<span class="nc" id="L601">        int[] aLeft = Arrays.copyOfRange(a, idxLo, idxMid + 2);</span>
+<span class="nc" id="L602">        double[] bLeft = Arrays.copyOfRange(b, idxLo, idxMid + 2);</span>
+<span class="nc" id="L603">        int[] cLeft = Arrays.copyOfRange(c, idxLo, idxMid + 2);</span>
+        
+<span class="nc" id="L605">        int[] aRight = Arrays.copyOfRange(a, idxMid + 1, idxHi + 2);</span>
+<span class="nc" id="L606">        double[] bRight = Arrays.copyOfRange(b, idxMid + 1, idxHi + 2);</span>
+<span class="nc" id="L607">        int[] cRight = Arrays.copyOfRange(c, idxMid + 1, idxHi + 2);</span>
+        
+<span class="nc" id="L609">        aLeft[aLeft.length - 1] = Integer.MIN_VALUE;</span>
+<span class="nc" id="L610">        bLeft[bLeft.length - 1] = Double.MIN_VALUE;</span>
+<span class="nc" id="L611">        cLeft[cLeft.length - 1] = Integer.MIN_VALUE;</span>
+        
+<span class="nc" id="L613">        aRight[aRight.length - 1] = Integer.MIN_VALUE;</span>
+<span class="nc" id="L614">        bRight[bRight.length - 1] = Double.MIN_VALUE;</span>
+<span class="nc" id="L615">        cRight[cRight.length - 1] = Integer.MIN_VALUE;</span>
+        
+<span class="nc" id="L617">        int leftPos = 0;</span>
+<span class="nc" id="L618">        int rightPos = 0;</span>
+
+<span class="nc bnc" id="L620" title="All 2 branches missed.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="nc" id="L621">            int l = aLeft[leftPos];</span>
+<span class="nc" id="L622">            int r = aRight[rightPos];</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">            if (l &gt; r) {</span>
+<span class="nc" id="L624">                a[k] = aLeft[leftPos];</span>
+<span class="nc" id="L625">                b[k] = bLeft[leftPos];</span>
+<span class="nc" id="L626">                c[k] = cLeft[leftPos];</span>
+<span class="nc" id="L627">                leftPos++;</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">            } else if (l == r) {</span>
+                // sort for ascending values of b
+<span class="nc" id="L630">                double l2 = bLeft[leftPos];</span>
+<span class="nc" id="L631">                double r2 = bRight[rightPos];</span>
+<span class="nc bnc" id="L632" title="All 2 branches missed.">                if (l2 &lt;= r2) {</span>
+<span class="nc" id="L633">                    a[k] = aLeft[leftPos];</span>
+<span class="nc" id="L634">                    b[k] = bLeft[leftPos];</span>
+<span class="nc" id="L635">                    c[k] = cLeft[leftPos];</span>
+<span class="nc" id="L636">                    leftPos++;</span>
+                } else {
+<span class="nc" id="L638">                    a[k] = aRight[rightPos];</span>
+<span class="nc" id="L639">                    b[k] = bRight[rightPos];</span>
+<span class="nc" id="L640">                    c[k] = cRight[rightPos];</span>
+<span class="nc" id="L641">                    rightPos++;</span>
+                }
+<span class="nc" id="L643">            } else {</span>
+<span class="nc" id="L644">                a[k] = aRight[rightPos];</span>
+<span class="nc" id="L645">                b[k] = bRight[rightPos];</span>
+<span class="nc" id="L646">                c[k] = cRight[rightPos];</span>
+<span class="nc" id="L647">                rightPos++;</span>
+            }
+        }
+        
+<span class="nc" id="L651">    }</span>
+    
+    private static void mergeBy1stAscThen2ndDesc(double[] a1, int[] a2, 
+        Integer[][] a3, int[] a4, int idxLo, int idxMid, int idxHi) {
+
+<span class="fc" id="L656">        double[] aLeft = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L657">        int[] bLeft = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
+<span class="fc" id="L658">        int[] dLeft = Arrays.copyOfRange(a4, idxLo, idxMid + 2);</span>
+<span class="fc" id="L659">        Integer[][] cLeft = new Integer[(idxMid + 2 - idxLo)][];</span>
+<span class="fc bfc" id="L660" title="All 2 branches covered.">        for (int i = 0; i &lt; (cLeft.length - 1); ++i) {</span>
+<span class="fc" id="L661">            int idx = i + idxLo;</span>
+<span class="fc" id="L662">            cLeft[i] = Arrays.copyOf(a3[idx], a3[idx].length);</span>
+        }        
+        
+<span class="fc" id="L665">        double[] aRight = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L666">        int[] bRight = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L667">        int[] dRight = Arrays.copyOfRange(a4, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L668">        Integer[][] cRight = new Integer[(idxHi + 2) - (idxMid + 1)][];</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">        for (int i = 0; i &lt; (cRight.length - 1); ++i) {</span>
+<span class="fc" id="L670">            int idx = i + idxMid + 1;            </span>
+<span class="fc" id="L671">            cRight[i] = Arrays.copyOf(a3[idx], a3[idx].length);</span>
+        }
+        
+<span class="fc" id="L674">        aLeft[aLeft.length - 1] = Double.MAX_VALUE;</span>
+<span class="fc" id="L675">        bLeft[bLeft.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L676">        dLeft[dLeft.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L677">        cLeft[cLeft.length - 1] = new Integer[a3[idxLo].length];// not compared, so can be 0's</span>
+        
+<span class="fc" id="L679">        aRight[aRight.length - 1] = Double.MAX_VALUE;</span>
+<span class="fc" id="L680">        bRight[bRight.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L681">        dRight[dRight.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L682">        cRight[cRight.length - 1] = new Integer[a3[idxMid + 1].length];// not compared, so can be 0's</span>
+        
+<span class="fc" id="L684">        int leftPos = 0;</span>
+<span class="fc" id="L685">        int rightPos = 0;</span>
+        
+<span class="fc bfc" id="L687" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L688">            double l = aLeft[leftPos];</span>
+<span class="fc" id="L689">            double r = aRight[rightPos];</span>
+<span class="fc bfc" id="L690" title="All 2 branches covered.">            if (l &lt; r) {</span>
+<span class="fc" id="L691">                a1[k] = aLeft[leftPos];</span>
+<span class="fc" id="L692">                a2[k] = bLeft[leftPos];</span>
+<span class="fc" id="L693">                a3[k] = cLeft[leftPos];</span>
+<span class="fc" id="L694">                a4[k] = dLeft[leftPos];</span>
+<span class="fc" id="L695">                leftPos++;</span>
+<span class="fc bfc" id="L696" title="All 2 branches covered.">            } else if (l == r) {</span>
+                // sort for descending values of b
+<span class="fc" id="L698">                double l2 = bLeft[leftPos];</span>
+<span class="fc" id="L699">                double r2 = bRight[rightPos];</span>
+<span class="pc bpc" id="L700" title="1 of 2 branches missed.">                if (l2 &gt;= r2) {</span>
+<span class="fc" id="L701">                    a1[k] = aLeft[leftPos];</span>
+<span class="fc" id="L702">                    a2[k] = bLeft[leftPos];</span>
+<span class="fc" id="L703">                    a3[k] = cLeft[leftPos];</span>
+<span class="fc" id="L704">                    a4[k] = dLeft[leftPos];</span>
+<span class="fc" id="L705">                    leftPos++;</span>
+                } else {
+<span class="nc" id="L707">                    a1[k] = aRight[rightPos];</span>
+<span class="nc" id="L708">                    a2[k] = bRight[rightPos];</span>
+<span class="nc" id="L709">                    a3[k] = cRight[rightPos];</span>
+<span class="nc" id="L710">                    a4[k] = dRight[rightPos];</span>
+<span class="nc" id="L711">                    rightPos++;</span>
+                }
+<span class="fc" id="L713">            } else {</span>
+<span class="fc" id="L714">                a1[k] = aRight[rightPos];</span>
+<span class="fc" id="L715">                a2[k] = bRight[rightPos];</span>
+<span class="fc" id="L716">                a3[k] = cRight[rightPos];</span>
+<span class="fc" id="L717">                a4[k] = dRight[rightPos];</span>
+<span class="fc" id="L718">                rightPos++;</span>
+            }
+        }
+<span class="fc" id="L721">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
