@@ -1,19 +1,19 @@
--- scale calculation from blobs:
+-- control flow graph for method called resolve()
+   and same for resolveIterative to simplify the later
 
-   -- rearrange order of attempted segmentation/binning combinations:
-      (1) B&W binned, k=2
-      (2) Clr binned, k=2
-          -- possibly watershed on blobs if no solution
-      (3) Clr binned, k=3 or k=4
-          -- possibly watershed on blobs if no solution
-      (4) B&W not binned, k=2
-      (5) Clr not binned, k=2
+-- implement the recursive methods for the gaussian and it's derivatives
 
--- for the blob scale tests, consider rotating an image by 90 degrees.
-   shouldn't result in a change of solution...
--- complete a runner that finds scale, then uses that with the Feature Matcher
-   to make a correspondence list then uses the epipolar projection solver.
--- add tests, and bring coverage up
+-- considering implementing a max-tree (Meister and Wilkinson)
+   -- for a shape filter for blobs for example
+       http://www.cs.rug.nl/michael/mt-pres.pdf
+
+-- impl wavelets using "lifted wavelets".  see Sweldens 1996 and 1997
+
+-- consider making a segmentation algorithm from my 2-pt correl clustering code
+   (anywhere I'm using k segmentation and greyscale could be replaced with
+    my clustering code it I make the gev fitting/peak determination faster).
+   --> what does the distance transform look like for my code w/ inverted points?
+
 -- update the command line runners.
 -- begin outline for rectification code
 
