@@ -72,11 +72,31 @@ public class HistogramEqualizationForColor {
         
         for (int i = 0; i < img.getWidth(); i++) {
             for (int j = 0; j < img.getHeight(); j++) {
+                
                 int r = img.getR(i, j);
-                rHist[r]++;
+                
                 int g = img.getG(i, j);
-                gHist[g]++;
+                
                 int b = img.getB(i, j);
+                
+                if (r > 255) {
+                    r = 255;
+                } else if (r < 0) {
+                    r = 0;
+                }
+                if (g > 255) {
+                    g = 255;
+                } else if (g < 0) {
+                    g = 0;
+                }
+                if (b > 255) {
+                    b = 255;
+                } else if (b < 0) {
+                    b = 0;
+                }
+                
+                gHist[g]++;
+                rHist[r]++;
                 bHist[b]++;
             }
         }
@@ -128,12 +148,29 @@ public class HistogramEqualizationForColor {
             for (int j = 0; j < img.getHeight(); j++) {
                 
                 int r = img.getR(i, j);
+                int g = img.getG(i, j);
+                int b = img.getB(i, j);
+                
+                if (r > 255) {
+                    r = 255;
+                } else if (r < 0) {
+                    r = 0;
+                }
+                if (g > 255) {
+                    g = 255;
+                } else if (g < 0) {
+                    g = 0;
+                }
+                if (b > 255) {
+                    b = 255;
+                } else if (b < 0) {
+                    b = 0;
+                }
+                
                 long rC = rHistC[r];
                 
-                int g = img.getG(i, j);
                 long gC = gHistC[g];
                 
-                int b = img.getB(i, j);
                 long bC = bHistC[b];
                 
                 /*
