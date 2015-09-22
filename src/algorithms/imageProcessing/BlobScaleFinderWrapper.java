@@ -104,42 +104,50 @@ public class BlobScaleFinderWrapper {
 
         SegmentationType[] orderOfSeg1;
         boolean[] orderOfBinning1;
-        int[] numTriesAllowed1;
+        int[] numExtraTriesAllowed1;
         int[] numTries1;
         SegmentationType[] orderOfSeg2;
         boolean[] orderOfBinning2;
-        int[] numTriesAllowed2;
+        int[] numExtraTriesAllowed2;
         int[] numTries2;
         
         orderOfSeg1 = new SegmentationType[]{
             SegmentationType.BINARY, SegmentationType.COLOR_POLARCIEXY_ADAPT};
         orderOfBinning1 = new boolean[] {false, false};
-        numTriesAllowed1 = new int[]{2, 2};
+        numExtraTriesAllowed1 = new int[]{1, 1};
         numTries1 = new int[]{0, 0};
         
         orderOfSeg2 = new SegmentationType[]{
             SegmentationType.BINARY, SegmentationType.COLOR_POLARCIEXY_ADAPT};
         orderOfBinning2 = new boolean[] {false, false};
-        numTriesAllowed2 = new int[]{2, 2};
+        numExtraTriesAllowed2 = new int[]{1, 1};
         numTries2 = new int[]{0, 0};
         
         /*
+        retries need to be revised:
+        sometimes a pair from same camera have different segmentation due to
+           rules regarding number of contours from a previous attempt leading
+           to them having different order idx numbers.
+        also, can have faster fails by testing w/ binned first and if there
+        are no contours produced from the binned, skip the full image segmentation.
+        */
+        /*
         orderOfSeg1 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
         orderOfBinning1 = new boolean[] {false};
-        numTriesAllowed1 = new int[]{2};
+        numExtraTriesAllowed1 = new int[]{2};
         numTries1 = new int[]{0};
         orderOfSeg2 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
         orderOfBinning2 = new boolean[] {false};
-        numTriesAllowed2 = new int[]{2};
+        numExtraTriesAllowed2 = new int[]{2};
         numTries2 = new int[]{0};
         */
         
         assert(orderOfSeg1.length == orderOfBinning1.length);
         assert(orderOfSeg1.length == numTries1.length);
-        assert(orderOfSeg1.length == numTriesAllowed1.length);
+        assert(orderOfSeg1.length == numExtraTriesAllowed1.length);
         assert(orderOfSeg2.length == orderOfBinning2.length);
         assert(orderOfSeg2.length == numTries2.length);
-        assert(orderOfSeg2.length == numTriesAllowed2.length);
+        assert(orderOfSeg2.length == numExtraTriesAllowed2.length);
         
         int ordered1Idx = 0;
         int ordered2Idx = 0;
@@ -209,9 +217,9 @@ public class BlobScaleFinderWrapper {
             int nContours2 = sumContours(img2Helper, segmentationType2, useBinned2);
             
             // new logic to repeat if process uses random and the num tries allowed is high enough:
-            if (((numTries1[ordered1Idx] < numTriesAllowed1[ordered1Idx])
+            if (((numTries1[ordered1Idx] < numExtraTriesAllowed1[ordered1Idx])
                 && (nContours1 > 3)) ||
-                ((numTries2[ordered2Idx] < numTriesAllowed2[ordered2Idx])
+                ((numTries2[ordered2Idx] < numExtraTriesAllowed2[ordered2Idx])
                 && (nContours2 > 3))
                 ) {
                                 
