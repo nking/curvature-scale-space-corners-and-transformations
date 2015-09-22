@@ -55,6 +55,8 @@ public class ResourceFinder {
 
         String cwd = System.getProperty("user.dir");
         
+        assert(cwd != null && !cwd.equals(""));
+        
         String filePath = cwd + sep + dirName;
 
         File f = new File(filePath);
@@ -62,14 +64,18 @@ public class ResourceFinder {
             filePath = cwd + sep + ".." + sep + dirName;
             f = new File(filePath);
             if (!f.exists()) {
-                ClassLoader cls = ResourceFinder.class.getClassLoader();
-                URL url = cls.getResource(dirName);
-                if (url == null) {
-                    throw new IOException("could not find directory named " + dirName);
-                }
-                f = new File(url.getPath());
+                filePath = cwd + sep + ".." + sep + ".." + sep + dirName;
+                f = new File(filePath);
                 if (!f.exists()) {
-                    throw new IOException("could not find directory named " + dirName);
+                    ClassLoader cls = ResourceFinder.class.getClassLoader();
+                    URL url = cls.getResource(dirName);
+                    if (url == null) {
+                        throw new IOException("could not find directory named " + dirName);
+                    }
+                    f = new File(url.getPath());
+                    if (!f.exists()) {
+                        throw new IOException("could not find directory named " + dirName);
+                    }
                 }
             }
         }

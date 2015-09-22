@@ -14,11 +14,9 @@ cwd=`pwd`
 
 jacocoJar=${JACOCO_HOME}/lib/jacocoant.jar
 
-emmaJar=${cwd}/lib/emma/emma.jar
-
 jarFiles3=$ANT_HOME/lib/ant.jar:~/.m2/repository/cglib/cglib-nodep/2.1_3/cglib-nodep-2.1_3.jar:$JAVA_HOME/lib/tools.jar:${cwd}/lib/junit.jar:${cwd}/lib/ejml-0.25.jar:${cwd}/lib/jfreechart-1.0.19.jar:jcommon-1.0.23.jar:${lib}/lib/servlet-api-2.5.jar
 
-classPath=$emmaJar:$jarFiles3
+classPath=$jarFiles3
 
 logLevel="INFO"
 echo "making a logging.properties with level=${logLevel}"
@@ -39,6 +37,8 @@ echo "CLASSPATH=$clsPath" >> ${cwd}/test_log.txt
 echo "" >> ${cwd}/test_log.txt
 echo "FILELIST=$filelist" >> ${cwd}/test_log.txt
 echo "" >> ${cwd}/test_log.txt
+
+ant clean
 
 for file in $filelist; do
    echo "run test on $file" >> ${cwd}/test_log.txt

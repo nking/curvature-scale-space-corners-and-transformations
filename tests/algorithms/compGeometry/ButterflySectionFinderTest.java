@@ -21,7 +21,7 @@ public class ButterflySectionFinderTest extends TestCase {
         String fileName = "blob_butterfly_01.dat";
         //String fileName = "blob_not_butterfly_01.dat";
 
-        String filePath = ResourceFinder.findDirectory("testresources") + "/" + fileName;
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
 
         PairIntArray closedCurve = Misc.deserializePairIntArray(filePath);
         
@@ -61,7 +61,7 @@ public class ButterflySectionFinderTest extends TestCase {
         int h = 187;
         String fileName = "blob_butterfly_03.dat";
 
-        String filePath = ResourceFinder.findDirectory("testresources") + "/" + fileName;
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
 
         PairIntArray closedCurve = Misc.deserializePairIntArray(filePath);
         
