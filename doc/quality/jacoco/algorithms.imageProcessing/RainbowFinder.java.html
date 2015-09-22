@@ -27,7 +27,7 @@ import java.util.logging.Logger;
     
 <span class="fc" id="L28">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="nc" id="L30">    static class Hull {</span>
+    static class Hull {
         float[] xHull;
         float[] yHull;
     }
@@ -70,66 +70,66 @@ import java.util.logging.Logger;
         boolean skyIsDarkGrey, GroupPixelColors allSkyColor, 
         RemovedSets removedSets) {
 
-<span class="nc" id="L73">        rainbowCoeff = findRainbowPoints(skyPoints, </span>
-<span class="nc" id="L74">            removedSets.getReflectedSunRemoved(), colorImg, </span>
+<span class="fc" id="L73">        rainbowCoeff = findRainbowPoints(skyPoints, </span>
+<span class="fc" id="L74">            removedSets.getReflectedSunRemoved(), colorImg, </span>
             xOffset, yOffset, imageWidth, imageHeight,
             skyIsDarkGrey, allSkyColor, outputRainbowPoints);
 
-<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (outputRainbowPoints.size() &lt; 10) {</span>
-<span class="nc" id="L79">            outputRainbowPoints.clear();</span>
-<span class="nc" id="L80">            rainbowCoeff = null;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (outputRainbowPoints.size() &lt; 10) {</span>
+<span class="fc" id="L79">            outputRainbowPoints.clear();</span>
+<span class="fc" id="L80">            rainbowCoeff = null;</span>
         }
         
-<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (rainbowCoeff != null) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (rainbowCoeff != null) {</span>
             
-<span class="nc" id="L85">            rainbowHull = createRainbowHull(rainbowCoeff, </span>
+<span class="fc" id="L85">            rainbowHull = createRainbowHull(rainbowCoeff, </span>
                 outputRainbowPoints, colorImg, xOffset, yOffset);
             
-<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (rainbowHull != null) {</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">            if (rainbowHull != null) {</span>
                 
                 //TODO: may need adjustment for a boundary being an image boundary
                 
-<span class="nc" id="L92">                int minXHull = (int)MiscMath.findMin(rainbowHull.xHull);</span>
-<span class="nc" id="L93">                int maxXHull = (int)Math.ceil(MiscMath.findMax(rainbowHull.xHull));</span>
-<span class="nc" id="L94">                int minYHull = (int)MiscMath.findMin(rainbowHull.yHull);</span>
-<span class="nc" id="L95">                int maxYHull = (int)Math.ceil(MiscMath.findMax(rainbowHull.yHull));</span>
-<span class="nc" id="L96">                PointInPolygon p = new PointInPolygon();</span>
-<span class="nc bnc" id="L97" title="All 2 branches missed.">                for (int col = minXHull; col &lt;= maxXHull; col++) {</span>
-<span class="nc bnc" id="L98" title="All 2 branches missed.">                    for (int row = minYHull; row &lt;= maxYHull; row++) {</span>
-<span class="nc" id="L99">                        boolean in = p.isInSimpleCurve(col, row, </span>
+<span class="fc" id="L92">                int minXHull = (int)MiscMath.findMin(rainbowHull.xHull);</span>
+<span class="fc" id="L93">                int maxXHull = (int)Math.ceil(MiscMath.findMax(rainbowHull.xHull));</span>
+<span class="fc" id="L94">                int minYHull = (int)MiscMath.findMin(rainbowHull.yHull);</span>
+<span class="fc" id="L95">                int maxYHull = (int)Math.ceil(MiscMath.findMax(rainbowHull.yHull));</span>
+<span class="fc" id="L96">                PointInPolygon p = new PointInPolygon();</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                for (int col = minXHull; col &lt;= maxXHull; col++) {</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                    for (int row = minYHull; row &lt;= maxYHull; row++) {</span>
+<span class="fc" id="L99">                        boolean in = p.isInSimpleCurve(col, row, </span>
                             rainbowHull.xHull, rainbowHull.yHull, 
                             rainbowHull.yHull.length);
-<span class="nc bnc" id="L102" title="All 2 branches missed.">                        if (in) {</span>
-<span class="nc" id="L103">                            excludePointsInRainbowHull.add(new PairInt(col, row));</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                        if (in) {</span>
+<span class="fc" id="L103">                            excludePointsInRainbowHull.add(new PairInt(col, row));</span>
                         }
                     }
                 }
                 
-<span class="nc bnc" id="L108" title="All 2 branches missed.">                if (!excludePointsInRainbowHull.isEmpty()) {</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">                if (!excludePointsInRainbowHull.isEmpty()) {</span>
                     // addRainbow to Hull, but only if there are sky points adjacent to hull
-<span class="nc" id="L110">                    addRainbowToPoints(skyPoints, imageWidth - 1, imageHeight - 1);</span>
+<span class="fc" id="L110">                    addRainbowToPoints(skyPoints, imageWidth - 1, imageHeight - 1);</span>
                 }
             }
         }
-<span class="nc" id="L114">    }</span>
+<span class="fc" id="L114">    }</span>
     
     public Set&lt;PairInt&gt; getPointsToExcludeInHull() {
-<span class="nc" id="L117">        return excludePointsInRainbowHull;</span>
+<span class="fc" id="L117">        return excludePointsInRainbowHull;</span>
     }
     
     public Set&lt;PairInt&gt; getRainbowPoints() {
-<span class="nc" id="L121">        return outputRainbowPoints;</span>
+<span class="fc" id="L121">        return outputRainbowPoints;</span>
     }
     
     public float[] getRainbowCoeff() {
-<span class="nc" id="L125">        return rainbowCoeff;</span>
+<span class="fc" id="L125">        return rainbowCoeff;</span>
     }
     
     public void addRainbowToSkyPoints(Set&lt;PairInt&gt; skyPoints, 
         int lastImgCol, int lastImgRow) {
         
-<span class="nc" id="L131">        addRainbowToPoints(skyPoints, lastImgCol, lastImgRow);</span>
-<span class="nc" id="L132">    }</span>
+<span class="fc" id="L131">        addRainbowToPoints(skyPoints, lastImgCol, lastImgRow);</span>
+<span class="fc" id="L132">    }</span>
     
     private void addRainbowToPoints(Set&lt;PairInt&gt; skyPoints, 
         int lastImgCol, int lastImgRow) {
@@ -146,106 +146,106 @@ import java.util.logging.Logger;
         size and only add points to skypoints within the segment polygon.
         */ 
         
-<span class="nc" id="L149">        int nHull = rainbowHull.xHull.length;</span>
-<span class="nc" id="L150">        int nHalf = nHull &gt;&gt; 1;</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">        for (int c = 0; c &lt; nHalf; c++) {</span>
+<span class="fc" id="L149">        int nHull = rainbowHull.xHull.length;</span>
+<span class="fc" id="L150">        int nHalf = nHull &gt;&gt; 1;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (int c = 0; c &lt; nHalf; c++) {</span>
             
-<span class="nc" id="L153">            int count0 = c;</span>
-<span class="nc" id="L154">            int count1 = nHull - 2 - c;</span>
+<span class="fc" id="L153">            int count0 = c;</span>
+<span class="fc" id="L154">            int count1 = nHull - 2 - c;</span>
             
-<span class="nc" id="L156">            double dy0 = rainbowHull.yHull[count0 + 1] - rainbowHull.yHull[count0];</span>
-<span class="nc" id="L157">            double dx0 = rainbowHull.xHull[count0 + 1] - rainbowHull.xHull[count0];</span>
-<span class="nc" id="L158">            int dist0 = (int)Math.sqrt(dx0*dx0 + dy0*dy0);</span>
+<span class="fc" id="L156">            double dy0 = rainbowHull.yHull[count0 + 1] - rainbowHull.yHull[count0];</span>
+<span class="fc" id="L157">            double dx0 = rainbowHull.xHull[count0 + 1] - rainbowHull.xHull[count0];</span>
+<span class="fc" id="L158">            int dist0 = (int)Math.sqrt(dx0*dx0 + dy0*dy0);</span>
 
-<span class="nc" id="L160">            double dy1 = rainbowHull.yHull[count1 - 1] - rainbowHull.yHull[count1];</span>
-<span class="nc" id="L161">            double dx1 = rainbowHull.xHull[count1 - 1] - rainbowHull.xHull[count1];</span>
-<span class="nc" id="L162">            int dist1 = (int)Math.sqrt(dx1*dx1 + dy1*dy1);</span>
+<span class="fc" id="L160">            double dy1 = rainbowHull.yHull[count1 - 1] - rainbowHull.yHull[count1];</span>
+<span class="fc" id="L161">            double dx1 = rainbowHull.xHull[count1 - 1] - rainbowHull.xHull[count1];</span>
+<span class="fc" id="L162">            int dist1 = (int)Math.sqrt(dx1*dx1 + dy1*dy1);</span>
 
-<span class="nc" id="L164">            boolean removeSection = false;</span>
+<span class="fc" id="L164">            boolean removeSection = false;</span>
             
-<span class="nc bnc" id="L166" title="All 2 branches missed.">            int dist = (dist0 &lt; dist1) ? dist0 : dist1;</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">            for (int i = 0; i &lt; dist; i++) {</span>
-<span class="nc" id="L168">                int x0 = (int)(rainbowHull.xHull[count0] + i*dx0);</span>
-<span class="nc" id="L169">                int y0 = (int)(rainbowHull.yHull[count0] + i*dy0);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            int dist = (dist0 &lt; dist1) ? dist0 : dist1;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            for (int i = 0; i &lt; dist; i++) {</span>
+<span class="fc" id="L168">                int x0 = (int)(rainbowHull.xHull[count0] + i*dx0);</span>
+<span class="fc" id="L169">                int y0 = (int)(rainbowHull.yHull[count0] + i*dy0);</span>
 
-<span class="nc" id="L171">                int x1 = (int)(rainbowHull.xHull[count1] + i*dx1);</span>
-<span class="nc" id="L172">                int y1 = (int)(rainbowHull.yHull[count1] + i*dy1);</span>
+<span class="fc" id="L171">                int x1 = (int)(rainbowHull.xHull[count1] + i*dx1);</span>
+<span class="fc" id="L172">                int y1 = (int)(rainbowHull.yHull[count1] + i*dy1);</span>
 
-<span class="nc" id="L174">                int n0Sky = 0;</span>
-<span class="nc" id="L175">                int n0SkyPossible = 0;</span>
-<span class="nc" id="L176">                int n1Sky = 0;</span>
-<span class="nc" id="L177">                int n1SkyPossible = 0;</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">                for (int type = 0; type &lt; 2; type++) {</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">                    int x = (type == 0) ? x0 : x1;</span>
-<span class="nc bnc" id="L180" title="All 2 branches missed.">                    int y = (type == 0) ? y0 : y1;</span>
-<span class="nc" id="L181">                    int n = 0;</span>
-<span class="nc" id="L182">                    int nPossible = 0;</span>
-<span class="nc bnc" id="L183" title="All 2 branches missed.">                    for (int col = (x - 1); col &lt;= (x + 1); col++) {</span>
-<span class="nc bnc" id="L184" title="All 4 branches missed.">                        if ((col &lt; 0) || (col &gt; lastImgCol)) {</span>
-<span class="nc" id="L185">                            continue;</span>
+<span class="fc" id="L174">                int n0Sky = 0;</span>
+<span class="fc" id="L175">                int n0SkyPossible = 0;</span>
+<span class="fc" id="L176">                int n1Sky = 0;</span>
+<span class="fc" id="L177">                int n1SkyPossible = 0;</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">                for (int type = 0; type &lt; 2; type++) {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">                    int x = (type == 0) ? x0 : x1;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">                    int y = (type == 0) ? y0 : y1;</span>
+<span class="fc" id="L181">                    int n = 0;</span>
+<span class="fc" id="L182">                    int nPossible = 0;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                    for (int col = (x - 1); col &lt;= (x + 1); col++) {</span>
+<span class="fc bfc" id="L184" title="All 4 branches covered.">                        if ((col &lt; 0) || (col &gt; lastImgCol)) {</span>
+<span class="fc" id="L185">                            continue;</span>
                         }
-<span class="nc bnc" id="L187" title="All 2 branches missed.">                        for (int row = (y - 1); row &lt;= (y + 1); row++) {</span>
-<span class="nc bnc" id="L188" title="All 4 branches missed.">                            if ((row &lt; 0) || (row &gt; lastImgRow)) {</span>
-<span class="nc" id="L189">                                continue;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                        for (int row = (y - 1); row &lt;= (y + 1); row++) {</span>
+<span class="fc bfc" id="L188" title="All 4 branches covered.">                            if ((row &lt; 0) || (row &gt; lastImgRow)) {</span>
+<span class="fc" id="L189">                                continue;</span>
                             }
-<span class="nc" id="L191">                            PairInt p = new PairInt(col, row);</span>
-<span class="nc bnc" id="L192" title="All 2 branches missed.">                            if (!excludePointsInRainbowHull.contains(p)) {</span>
-<span class="nc" id="L193">                                nPossible++;</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">                                if (skyPoints.contains(p)) {</span>
-<span class="nc" id="L195">                                    n++;</span>
+<span class="fc" id="L191">                            PairInt p = new PairInt(col, row);</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">                            if (!excludePointsInRainbowHull.contains(p)) {</span>
+<span class="fc" id="L193">                                nPossible++;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">                                if (skyPoints.contains(p)) {</span>
+<span class="fc" id="L195">                                    n++;</span>
                                 }
                             }
                         }
                     }
-<span class="nc bnc" id="L200" title="All 2 branches missed.">                    if (type == 0) {</span>
-<span class="nc" id="L201">                        n0Sky = n;</span>
-<span class="nc" id="L202">                        n0SkyPossible = nPossible;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                    if (type == 0) {</span>
+<span class="fc" id="L201">                        n0Sky = n;</span>
+<span class="fc" id="L202">                        n0SkyPossible = nPossible;</span>
                     } else {
-<span class="nc" id="L204">                        n1Sky = n;</span>
-<span class="nc" id="L205">                        n1SkyPossible = nPossible;</span>
+<span class="fc" id="L204">                        n1Sky = n;</span>
+<span class="fc" id="L205">                        n1SkyPossible = nPossible;</span>
                     }
                 }
                 // evaluate the n's and shorten rainbowHull values for count0 and count1 if needed
-<span class="nc" id="L209">                float n0Div = (float)n0Sky/(float)n0SkyPossible;</span>
-<span class="nc" id="L210">                float n1Div = (float)n1Sky/(float)n1SkyPossible;</span>
-<span class="nc bnc" id="L211" title="All 4 branches missed.">                if ((n0Div &lt; 0.5) || (n1Div &lt; 0.5)) {</span>
-<span class="nc" id="L212">                    removeSection = true;</span>
-<span class="nc" id="L213">                    break;</span>
+<span class="fc" id="L209">                float n0Div = (float)n0Sky/(float)n0SkyPossible;</span>
+<span class="fc" id="L210">                float n1Div = (float)n1Sky/(float)n1SkyPossible;</span>
+<span class="fc bfc" id="L211" title="All 4 branches covered.">                if ((n0Div &lt; 0.5) || (n1Div &lt; 0.5)) {</span>
+<span class="fc" id="L212">                    removeSection = true;</span>
+<span class="fc" id="L213">                    break;</span>
                 }
             } // end for i
-<span class="nc bnc" id="L216" title="All 2 branches missed.">            if (removeSection) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">            if (removeSection) {</span>
                 
                 // remove points from rainbowHull
-<span class="nc" id="L219">                float[] xh = new float[]{</span>
+<span class="fc" id="L219">                float[] xh = new float[]{</span>
                     rainbowHull.xHull[count0], rainbowHull.xHull[count0 + 1],
                     rainbowHull.xHull[count1 - 1], rainbowHull.xHull[count1],
                     rainbowHull.xHull[count0]};
-<span class="nc" id="L223">                float[] yh = new float[]{</span>
+<span class="fc" id="L223">                float[] yh = new float[]{</span>
                     rainbowHull.yHull[count0], rainbowHull.yHull[count0 + 1],
                     rainbowHull.yHull[count1 - 1], rainbowHull.yHull[count1],
                     rainbowHull.yHull[count0]};
                 
-<span class="nc" id="L228">                int minXHull = (int)MiscMath.findMin(xh);</span>
-<span class="nc" id="L229">                int maxXHull = (int)Math.ceil(MiscMath.findMax(xh));</span>
-<span class="nc" id="L230">                int minYHull = (int)MiscMath.findMin(yh);</span>
-<span class="nc" id="L231">                int maxYHull = (int)Math.ceil(MiscMath.findMax(yh));</span>
-<span class="nc" id="L232">                PointInPolygon p = new PointInPolygon();</span>
-<span class="nc bnc" id="L233" title="All 2 branches missed.">                for (int col = minXHull; col &lt;= maxXHull; col++) {</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">                    for (int row = minYHull; row &lt;= maxYHull; row++) {</span>
+<span class="fc" id="L228">                int minXHull = (int)MiscMath.findMin(xh);</span>
+<span class="fc" id="L229">                int maxXHull = (int)Math.ceil(MiscMath.findMax(xh));</span>
+<span class="fc" id="L230">                int minYHull = (int)MiscMath.findMin(yh);</span>
+<span class="fc" id="L231">                int maxYHull = (int)Math.ceil(MiscMath.findMax(yh));</span>
+<span class="fc" id="L232">                PointInPolygon p = new PointInPolygon();</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">                for (int col = minXHull; col &lt;= maxXHull; col++) {</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">                    for (int row = minYHull; row &lt;= maxYHull; row++) {</span>
               
-<span class="nc" id="L236">                        boolean in = p.isInSimpleCurve(col, row, xh, yh, </span>
+<span class="fc" id="L236">                        boolean in = p.isInSimpleCurve(col, row, xh, yh, </span>
                             xh.length);
-<span class="nc bnc" id="L238" title="All 2 branches missed.">                        if (in) {</span>
-<span class="nc" id="L239">                            excludePointsInRainbowHull.remove(new PairInt(col, row));</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">                        if (in) {</span>
+<span class="fc" id="L239">                            excludePointsInRainbowHull.remove(new PairInt(col, row));</span>
                         }
                     }
                 }
             }
         }
         
-<span class="nc" id="L246">        skyPoints.addAll(excludePointsInRainbowHull);</span>
+<span class="fc" id="L246">        skyPoints.addAll(excludePointsInRainbowHull);</span>
         
-<span class="nc" id="L248">    }</span>
+<span class="fc" id="L248">    }</span>
 
     /**
      * search for rainbow colored points over the entire image, fit an
@@ -277,20 +277,20 @@ import java.util.logging.Logger;
         boolean skyIsDarkGrey, GroupPixelColors allSkyColor,
         Set&lt;PairInt&gt; outputRainbowPoints) {
 
-<span class="nc" id="L280">        Set&lt;PairInt&gt; rainbowPoints = findRainbowColoredPoints(colorImg, </span>
+<span class="fc" id="L280">        Set&lt;PairInt&gt; rainbowPoints = findRainbowColoredPoints(colorImg, </span>
             reflectedSunRemoved, xOffset, yOffset, skyIsDarkGrey);
 
-<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (rainbowPoints.isEmpty()) {</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">        if (rainbowPoints.isEmpty()) {</span>
 <span class="nc" id="L284">            return null;</span>
         }
         
-<span class="nc bnc" id="L287" title="All 2 branches missed.">        if (rainbowPoints.size() &lt; 12) {</span>
-<span class="nc" id="L288">            return null;</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (rainbowPoints.size() &lt; 12) {</span>
+<span class="fc" id="L288">            return null;</span>
         }
         
-<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (rainbowPoints.size() &gt; 0.25*(colorImg.getWidth()*colorImg.getHeight())) {</span>
-<span class="nc bnc" id="L292" title="All 2 branches missed.">            if ((allSkyColor.getAvgBlue()/allSkyColor.getAvgRed()) &lt; 0.5) {</span>
-<span class="nc" id="L293">                return null;</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        if (rainbowPoints.size() &gt; 0.25*(colorImg.getWidth()*colorImg.getHeight())) {</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">            if ((allSkyColor.getAvgBlue()/allSkyColor.getAvgRed()) &lt; 0.5) {</span>
+<span class="fc" id="L293">                return null;</span>
             }
         }
         
@@ -299,48 +299,48 @@ import java.util.logging.Logger;
         // orientation of groups of them is not always a slab perpendicular to 
         // the camera
 
-<span class="nc" id="L302">        int[] minMaxXY = MiscMath.findMinMaxXY(rainbowPoints);</span>
-<span class="nc" id="L303">        log.fine(&quot;rainbow range in x: &quot; + minMaxXY[0] + &quot; to &quot; + minMaxXY[1]);</span>
+<span class="fc" id="L302">        int[] minMaxXY = MiscMath.findMinMaxXY(rainbowPoints);</span>
+<span class="fc" id="L303">        log.fine(&quot;rainbow range in x: &quot; + minMaxXY[0] + &quot; to &quot; + minMaxXY[1]);</span>
         
         //TODO: consider contiguous subsets at this point
         
-<span class="nc" id="L307">        PolynomialFitter polyFitter = new PolynomialFitter();</span>
+<span class="fc" id="L307">        PolynomialFitter polyFitter = new PolynomialFitter();</span>
         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-<span class="nc" id="L309">        float[] coef = polyFitter.solveAfterRandomSampling(rainbowPoints);</span>
+<span class="fc" id="L309">        float[] coef = polyFitter.solveAfterRandomSampling(rainbowPoints);</span>
              
-<span class="nc bnc" id="L311" title="All 2 branches missed.">        if (coef == null) {</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (coef == null) {</span>
 <span class="nc" id="L312">            return null;</span>
         }
         
-<span class="nc" id="L315">        log.info(&quot;rainbow polynomial coefficients = &quot; + Arrays.toString(coef));</span>
-<span class="nc" id="L316">        log.info(&quot;image dimensions are &quot; + colorImg.getWidth() + &quot; X &quot; + </span>
-<span class="nc" id="L317">            colorImg.getHeight() + &quot; pixels^2&quot;);</span>
+<span class="fc" id="L315">        log.info(&quot;rainbow polynomial coefficients = &quot; + Arrays.toString(coef));</span>
+<span class="fc" id="L316">        log.info(&quot;image dimensions are &quot; + colorImg.getWidth() + &quot; X &quot; + </span>
+<span class="fc" id="L317">            colorImg.getHeight() + &quot; pixels^2&quot;);</span>
          
-<span class="nc" id="L319">        polyFitter.plotFit(coef, rainbowPoints, colorImg.getWidth(),</span>
-<span class="nc" id="L320">            colorImg.getHeight(), 23, &quot;rainbow points&quot;);</span>
+<span class="fc" id="L319">        polyFitter.plotFit(coef, rainbowPoints, colorImg.getWidth(),</span>
+<span class="fc" id="L320">            colorImg.getHeight(), 23, &quot;rainbow points&quot;);</span>
         
-<span class="nc" id="L322">        double resid = polyFitter.calcResiduals(coef, rainbowPoints);</span>
+<span class="fc" id="L322">        double resid = polyFitter.calcResiduals(coef, rainbowPoints);</span>
 
         //TODO: determine this more accurately:
-<span class="nc bnc" id="L325" title="All 2 branches missed.">        if (resid &gt; 5) {</span>
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">        if (resid &gt; 5) {</span>
             
-<span class="nc bnc" id="L327" title="All 2 branches missed.">            AbstractSkyRainbowColors colors = skyIsDarkGrey ?</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">            AbstractSkyRainbowColors colors = skyIsDarkGrey ?</span>
                 new DarkSkyRainbowColors() : new BrightSkyRainbowColors();
             
-<span class="nc" id="L330">            Set&lt;PairInt&gt; bestFittingPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L330">            Set&lt;PairInt&gt; bestFittingPoints = new HashSet&lt;PairInt&gt;();</span>
             
-<span class="nc" id="L332">            coef = polyFitter.solveForBestFittingContiguousSubSets(</span>
-<span class="nc" id="L333">                rainbowPoints, bestFittingPoints, colorImg.getWidth(), </span>
-<span class="nc" id="L334">                colorImg.getHeight());</span>
+<span class="fc" id="L332">            coef = polyFitter.solveForBestFittingContiguousSubSets(</span>
+<span class="fc" id="L333">                rainbowPoints, bestFittingPoints, colorImg.getWidth(), </span>
+<span class="fc" id="L334">                colorImg.getHeight());</span>
             
-<span class="nc bnc" id="L336" title="All 2 branches missed.">            if (coef == null) {</span>
-<span class="nc" id="L337">                return null;</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">            if (coef == null) {</span>
+<span class="fc" id="L337">                return null;</span>
             }
             
-<span class="nc" id="L340">            int w = colorImg.getWidth() - xOffset;</span>
-<span class="nc" id="L341">            int h = colorImg.getHeight() - yOffset;</span>
-<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (bestFittingPoints.size() &gt; (0.3f * (float)(w*h))) {</span>
-<span class="nc" id="L343">                return null;</span>
+<span class="fc" id="L340">            int w = colorImg.getWidth() - xOffset;</span>
+<span class="fc" id="L341">            int h = colorImg.getHeight() - yOffset;</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">            if (bestFittingPoints.size() &gt; (0.3f * (float)(w*h))) {</span>
+<span class="fc" id="L343">                return null;</span>
             }
  
             // assert that colors are as expected, that is, that we don't
@@ -350,114 +350,114 @@ import java.util.logging.Logger;
             //    cieX &gt; 0.4 and cieY &lt; 0.3
             // filter to keep only those with red
             
-<span class="nc" id="L353">            int nGTX = 0;</span>
-<span class="nc" id="L354">            int nLTY = 0;</span>
-<span class="nc" id="L355">            int nPurpRed = 0;</span>
-<span class="nc" id="L356">            int nOranRed = 0;</span>
-<span class="nc" id="L357">            int nYellow = 0;</span>
-<span class="nc" id="L358">            int nGreen = 0;</span>
-<span class="nc" id="L359">            int nRed = 0;</span>
-<span class="nc" id="L360">            int nWhite = 0;</span>
-<span class="nc" id="L361">            int nBroadlyRed = 0;</span>
+<span class="fc" id="L353">            int nGTX = 0;</span>
+<span class="fc" id="L354">            int nLTY = 0;</span>
+<span class="fc" id="L355">            int nPurpRed = 0;</span>
+<span class="fc" id="L356">            int nOranRed = 0;</span>
+<span class="fc" id="L357">            int nYellow = 0;</span>
+<span class="fc" id="L358">            int nGreen = 0;</span>
+<span class="fc" id="L359">            int nRed = 0;</span>
+<span class="fc" id="L360">            int nWhite = 0;</span>
+<span class="fc" id="L361">            int nBroadlyRed = 0;</span>
 
             //MiscDebug.plotSkyColor(bestFittingPoints, colorImg, xOffset, yOffset);
 
-<span class="nc" id="L365">            CIEChromaticity cieC = new CIEChromaticity();</span>
-<span class="nc" id="L366">            ArrayPair cPurpRed = cieC.getRedThroughPurplishRedPolynomial();</span>
-<span class="nc" id="L367">            ArrayPair cOranRed = cieC.getOrangePolynomial();</span>
-<span class="nc" id="L368">            ArrayPair cYellow = cieC.getGreenishYellowThroughOrangePolynomial();</span>
-<span class="nc" id="L369">            ArrayPair cGreen = cieC.getGreenPolynomial();</span>
-<span class="nc" id="L370">            ArrayPair cRed = cieC.getRedPolynomial();</span>
-<span class="nc" id="L371">            PointInPolygon pInPoly = new PointInPolygon();</span>
+<span class="fc" id="L365">            CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L366">            ArrayPair cPurpRed = cieC.getRedThroughPurplishRedPolynomial();</span>
+<span class="fc" id="L367">            ArrayPair cOranRed = cieC.getOrangePolynomial();</span>
+<span class="fc" id="L368">            ArrayPair cYellow = cieC.getGreenishYellowThroughOrangePolynomial();</span>
+<span class="fc" id="L369">            ArrayPair cGreen = cieC.getGreenPolynomial();</span>
+<span class="fc" id="L370">            ArrayPair cRed = cieC.getRedPolynomial();</span>
+<span class="fc" id="L371">            PointInPolygon pInPoly = new PointInPolygon();</span>
             
-<span class="nc" id="L373">            float minCIEX = Float.MAX_VALUE;</span>
-<span class="nc" id="L374">            float maxCIEX = Float.MIN_VALUE;</span>
-<span class="nc" id="L375">            float minCIEY = Float.MAX_VALUE;</span>
-<span class="nc" id="L376">            float maxCIEY = Float.MIN_VALUE;</span>
-<span class="nc bnc" id="L377" title="All 2 branches missed.">            for (PairInt p : bestFittingPoints) {</span>
+<span class="fc" id="L373">            float minCIEX = Float.MAX_VALUE;</span>
+<span class="fc" id="L374">            float maxCIEX = Float.MIN_VALUE;</span>
+<span class="fc" id="L375">            float minCIEY = Float.MAX_VALUE;</span>
+<span class="fc" id="L376">            float maxCIEY = Float.MIN_VALUE;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">            for (PairInt p : bestFittingPoints) {</span>
                 
-<span class="nc" id="L379">                int x = p.getX();</span>
-<span class="nc" id="L380">                int y = p.getY();</span>
+<span class="fc" id="L379">                int x = p.getX();</span>
+<span class="fc" id="L380">                int y = p.getY();</span>
                 
-<span class="nc" id="L382">                int idx = colorImg.getInternalIndex(x + xOffset, y + yOffset);</span>
+<span class="fc" id="L382">                int idx = colorImg.getInternalIndex(x + xOffset, y + yOffset);</span>
                 
-<span class="nc" id="L384">                int r = colorImg.getR(idx);</span>
-<span class="nc" id="L385">                int g = colorImg.getG(idx);</span>
-<span class="nc" id="L386">                int b = colorImg.getB(idx);</span>
-<span class="nc" id="L387">                float rDivB = (float)r/(float)b;</span>
-<span class="nc" id="L388">                float cieX = colorImg.getCIEX(idx);</span>
-<span class="nc" id="L389">                float cieY = colorImg.getCIEY(idx);</span>
+<span class="fc" id="L384">                int r = colorImg.getR(idx);</span>
+<span class="fc" id="L385">                int g = colorImg.getG(idx);</span>
+<span class="fc" id="L386">                int b = colorImg.getB(idx);</span>
+<span class="fc" id="L387">                float rDivB = (float)r/(float)b;</span>
+<span class="fc" id="L388">                float cieX = colorImg.getCIEX(idx);</span>
+<span class="fc" id="L389">                float cieY = colorImg.getCIEY(idx);</span>
 
-<span class="nc" id="L391">log.fine(String.format(</span>
+<span class="fc" id="L391">log.fine(String.format(</span>
                     &quot;(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f  hue=%f&quot;,
-<span class="nc" id="L393">                    x, y, r, g, b, rDivB, cieX, cieY, colorImg.getHue(idx)));</span>
+<span class="fc" id="L393">                    x, y, r, g, b, rDivB, cieX, cieY, colorImg.getHue(idx)));</span>
 
-<span class="nc" id="L395">                boolean isWhite = cieC.isCentralWhite(cieX, cieY);</span>
+<span class="fc" id="L395">                boolean isWhite = cieC.isCentralWhite(cieX, cieY);</span>
                 
-<span class="nc bnc" id="L397" title="All 2 branches missed.">                if (cieX &gt;= 0.35) {</span>
-<span class="nc" id="L398">                    nGTX++;</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">                if (cieX &gt;= 0.35) {</span>
+<span class="fc" id="L398">                    nGTX++;</span>
                 }
-<span class="nc bnc" id="L400" title="All 4 branches missed.">                if ((cieY &lt;= 0.3) || (rDivB &lt; 0.89f)) {</span>
-<span class="nc" id="L401">                    nLTY++;</span>
+<span class="pc bpc" id="L400" title="1 of 4 branches missed.">                if ((cieY &lt;= 0.3) || (rDivB &lt; 0.89f)) {</span>
+<span class="fc" id="L401">                    nLTY++;</span>
                 }
-<span class="nc bnc" id="L403" title="All 2 branches missed.">                if (cieX &lt; minCIEX) {</span>
-<span class="nc" id="L404">                    minCIEX = cieX;</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">                if (cieX &lt; minCIEX) {</span>
+<span class="fc" id="L404">                    minCIEX = cieX;</span>
                 }
-<span class="nc bnc" id="L406" title="All 2 branches missed.">                if (cieX &gt; maxCIEX) {</span>
-<span class="nc" id="L407">                    maxCIEX = cieX;</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">                if (cieX &gt; maxCIEX) {</span>
+<span class="fc" id="L407">                    maxCIEX = cieX;</span>
                 }
-<span class="nc bnc" id="L409" title="All 2 branches missed.">                if (cieY &lt; minCIEY) {</span>
-<span class="nc" id="L410">                    minCIEY = cieY;</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">                if (cieY &lt; minCIEY) {</span>
+<span class="fc" id="L410">                    minCIEY = cieY;</span>
                 }
-<span class="nc bnc" id="L412" title="All 2 branches missed.">                if (cieY &gt; maxCIEY) {</span>
-<span class="nc" id="L413">                    maxCIEY = cieY;</span>
-                }
-                
-<span class="nc bnc" id="L416" title="All 2 branches missed.">                if (!isWhite) {</span>
-<span class="nc bnc" id="L417" title="All 2 branches missed.">                    if (pInPoly.isInSimpleCurve(cieX,cieY, cPurpRed.getX(), </span>
-<span class="nc" id="L418">                        cPurpRed.getY(), cPurpRed.getX().length)) {</span>
-<span class="nc" id="L419">                        nPurpRed++;</span>
-                    }
-<span class="nc bnc" id="L421" title="All 2 branches missed.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cOranRed.getX(), </span>
-<span class="nc" id="L422">                        cOranRed.getY(), cOranRed.getX().length)) {</span>
-<span class="nc" id="L423">                        nOranRed++;</span>
-                    }
-<span class="nc bnc" id="L425" title="All 2 branches missed.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cYellow.getX(), </span>
-<span class="nc" id="L426">                        cYellow.getY(), cYellow.getX().length)) {</span>
-<span class="nc" id="L427">                        nYellow++;</span>
-                    }
-<span class="nc bnc" id="L429" title="All 2 branches missed.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cGreen.getX(), </span>
-<span class="nc" id="L430">                        cGreen.getY(), cGreen.getX().length)) {</span>
-<span class="nc" id="L431">                        nGreen++;</span>
-                    }
-<span class="nc bnc" id="L433" title="All 2 branches missed.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cRed.getX(), </span>
-<span class="nc" id="L434">                        cRed.getY(), cRed.getX().length)) {</span>
-<span class="nc" id="L435">                        nRed++;</span>
-                    }
+<span class="fc bfc" id="L412" title="All 2 branches covered.">                if (cieY &gt; maxCIEY) {</span>
+<span class="fc" id="L413">                    maxCIEY = cieY;</span>
                 }
                 
-<span class="nc bnc" id="L439" title="All 2 branches missed.">                if (colors.isInBroadRedRainbowSpace(cieX, cieY)) {</span>
-<span class="nc" id="L440">                    nBroadlyRed++;</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">                if (!isWhite) {</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">                    if (pInPoly.isInSimpleCurve(cieX,cieY, cPurpRed.getX(), </span>
+<span class="fc" id="L418">                        cPurpRed.getY(), cPurpRed.getX().length)) {</span>
+<span class="fc" id="L419">                        nPurpRed++;</span>
+                    }
+<span class="fc bfc" id="L421" title="All 2 branches covered.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cOranRed.getX(), </span>
+<span class="fc" id="L422">                        cOranRed.getY(), cOranRed.getX().length)) {</span>
+<span class="fc" id="L423">                        nOranRed++;</span>
+                    }
+<span class="fc bfc" id="L425" title="All 2 branches covered.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cYellow.getX(), </span>
+<span class="fc" id="L426">                        cYellow.getY(), cYellow.getX().length)) {</span>
+<span class="fc" id="L427">                        nYellow++;</span>
+                    }
+<span class="fc bfc" id="L429" title="All 2 branches covered.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cGreen.getX(), </span>
+<span class="fc" id="L430">                        cGreen.getY(), cGreen.getX().length)) {</span>
+<span class="fc" id="L431">                        nGreen++;</span>
+                    }
+<span class="fc bfc" id="L433" title="All 2 branches covered.">                    if (pInPoly.isInSimpleCurve(cieX, cieY, cRed.getX(), </span>
+<span class="fc" id="L434">                        cRed.getY(), cRed.getX().length)) {</span>
+<span class="fc" id="L435">                        nRed++;</span>
+                    }
                 }
-<span class="nc" id="L442">            }</span>
+                
+<span class="fc bfc" id="L439" title="All 2 branches covered.">                if (colors.isInBroadRedRainbowSpace(cieX, cieY)) {</span>
+<span class="fc" id="L440">                    nBroadlyRed++;</span>
+                }
+<span class="fc" id="L442">            }</span>
             
-<span class="nc" id="L444">            float cieXRange = maxCIEX - minCIEX;</span>
-<span class="nc" id="L445">            float cieYRange = maxCIEY - minCIEY;</span>
+<span class="fc" id="L444">            float cieXRange = maxCIEX - minCIEX;</span>
+<span class="fc" id="L445">            float cieYRange = maxCIEY - minCIEY;</span>
             
-<span class="nc" id="L447">            float nTot = (float)bestFittingPoints.size();</span>
+<span class="fc" id="L447">            float nTot = (float)bestFittingPoints.size();</span>
             
-<span class="nc" id="L449">            float nOrangeFrac = (float)nOranRed/nTot;</span>
+<span class="fc" id="L449">            float nOrangeFrac = (float)nOranRed/nTot;</span>
             
-<span class="nc" id="L451">            float nPurpleRedFrac = (float)nPurpRed/nTot;</span>
+<span class="fc" id="L451">            float nPurpleRedFrac = (float)nPurpRed/nTot;</span>
             
-<span class="nc" id="L453">            float nGreenFrac = (float)nGreen/nTot;</span>
+<span class="fc" id="L453">            float nGreenFrac = (float)nGreen/nTot;</span>
             
-<span class="nc" id="L455">            float nYellowFrac = (float)nYellow/nTot;</span>
+<span class="fc" id="L455">            float nYellowFrac = (float)nYellow/nTot;</span>
             
-<span class="nc" id="L457">            float nBroadlyRedFrac = (float)nBroadlyRed/nTot;</span>
+<span class="fc" id="L457">            float nBroadlyRedFrac = (float)nBroadlyRed/nTot;</span>
     
-<span class="nc" id="L459">            log.info(&quot;nGTX=&quot; + nGTX + &quot; nLTY=&quot; + nLTY + &quot; n=&quot; </span>
-<span class="nc" id="L460">                + bestFittingPoints.size() + &quot; &quot;</span>
+<span class="fc" id="L459">            log.info(&quot;nGTX=&quot; + nGTX + &quot; nLTY=&quot; + nLTY + &quot; n=&quot; </span>
+<span class="fc" id="L460">                + bestFittingPoints.size() + &quot; &quot;</span>
                 + &quot; CIE: minCIEX=&quot; + minCIEX + &quot; maxCIEX=&quot; + maxCIEX
                 + &quot; minCIEY=&quot; + minCIEY + &quot; maxCIEY=&quot; + maxCIEY
                 + &quot; range=(&quot; + cieXRange + &quot;,&quot; + cieYRange + &quot;)&quot;
@@ -471,53 +471,53 @@ import java.util.logging.Logger;
                 + &quot; nBroadlyRed/nTot=&quot; + nBroadlyRedFrac
             );
 
-<span class="nc" id="L474">            rainbowPoints.clear();</span>
+<span class="fc" id="L474">            rainbowPoints.clear();</span>
 
             //TODO: this entire section could use more testing
-<span class="nc" id="L477">MiscDebug.plotPoints(bestFittingPoints, imageWidth, imageHeight, </span>
-<span class="nc" id="L478">MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L477">MiscDebug.plotPoints(bestFittingPoints, imageWidth, imageHeight, </span>
+<span class="fc" id="L478">MiscDebug.getCurrentTimeFormatted());</span>
 
             /*asserting that all rainbow colors are present but with caveat
             that green wasn't included (to avoid adding common green foreground)
             */
 
-<span class="nc" id="L484">            boolean colorsAreNotRainbow = false;</span>
+<span class="fc" id="L484">            boolean colorsAreNotRainbow = false;</span>
             
-<span class="nc bnc" id="L486" title="All 2 branches missed.">            if (skyIsDarkGrey) {</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">            if (skyIsDarkGrey) {</span>
                 //TODO: this needs to be tested on more night images.
                 // rainbow: nOrange/nTot=0.36870417
                 //          nPurpRed/nTot=0.2621027
                 //          nBroadlyRed/nTot=0.65574574
                 //          nGreen/nTot=0.19
                 //          nYellow/nTot=0.44
-<span class="nc bnc" id="L493" title="All 6 branches missed.">                if (nPurpleRedFrac &lt; 0.1 &amp;&amp; nOrangeFrac &lt; 0.1 &amp;&amp; nGreenFrac &lt; 0.1) {</span>
+<span class="pc bpc" id="L493" title="5 of 6 branches missed.">                if (nPurpleRedFrac &lt; 0.1 &amp;&amp; nOrangeFrac &lt; 0.1 &amp;&amp; nGreenFrac &lt; 0.1) {</span>
 <span class="nc" id="L494">                    colorsAreNotRainbow = true;</span>
                 }
             } else {
-<span class="nc bnc" id="L497" title="All 8 branches missed.">                if (</span>
+<span class="pc bpc" id="L497" title="2 of 8 branches missed.">                if (</span>
                     (nBroadlyRedFrac &gt; 0.1 &amp;&amp; nOrangeFrac &gt; 0.05)
                     || (nPurpleRedFrac &lt; 0.005)
                     || (nYellowFrac &gt; 0.8)
                     ){
-<span class="nc" id="L502">                    colorsAreNotRainbow = true;</span>
+<span class="fc" id="L502">                    colorsAreNotRainbow = true;</span>
                 }
             }
             
-<span class="nc bnc" id="L506" title="All 2 branches missed.">            if (!colorsAreNotRainbow) {</span>
-<span class="nc" id="L507">                rainbowPoints.addAll(bestFittingPoints);</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">            if (!colorsAreNotRainbow) {</span>
+<span class="fc" id="L507">                rainbowPoints.addAll(bestFittingPoints);</span>
             }
         }
         
-<span class="nc" id="L511">        outputRainbowPoints.addAll(rainbowPoints);</span>
+<span class="fc" id="L511">        outputRainbowPoints.addAll(rainbowPoints);</span>
         
-<span class="nc bnc" id="L513" title="All 2 branches missed.">        if (!rainbowPoints.isEmpty()) {</span>
-<span class="nc" id="L514">            polyFitter.plotFit(coef, outputRainbowPoints, colorImg.getWidth(),</span>
-<span class="nc" id="L515">                colorImg.getHeight(), 234, &quot;rainbow points&quot;);</span>
+<span class="fc bfc" id="L513" title="All 2 branches covered.">        if (!rainbowPoints.isEmpty()) {</span>
+<span class="fc" id="L514">            polyFitter.plotFit(coef, outputRainbowPoints, colorImg.getWidth(),</span>
+<span class="fc" id="L515">                colorImg.getHeight(), 234, &quot;rainbow points&quot;);</span>
         }
         
-<span class="nc" id="L518">        log.info(&quot;rainbow points size=&quot; + outputRainbowPoints.size());</span>
+<span class="fc" id="L518">        log.info(&quot;rainbow points size=&quot; + outputRainbowPoints.size());</span>
  
-<span class="nc" id="L520">        return coef;</span>
+<span class="fc" id="L520">        return coef;</span>
     }
    
      /**
@@ -535,46 +535,46 @@ import java.util.logging.Logger;
         Set&lt;PairInt&gt; reflectedSunRemoved,
         int xOffset, int yOffset, boolean skyIsDarkGrey) {
         
-<span class="nc bnc" id="L538" title="All 2 branches missed.">        AbstractSkyRainbowColors colors = skyIsDarkGrey ?</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">        AbstractSkyRainbowColors colors = skyIsDarkGrey ?</span>
             new DarkSkyRainbowColors() : new BrightSkyRainbowColors();
         
-<span class="nc" id="L541">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L541">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc bnc" id="L543" title="All 2 branches missed.">        for (int col = 0; col &lt; colorImg.getWidth(); col++) {</span>
-<span class="nc bnc" id="L544" title="All 2 branches missed.">            for (int row = 0; row &lt; colorImg.getHeight(); row++) {</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">        for (int col = 0; col &lt; colorImg.getWidth(); col++) {</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">            for (int row = 0; row &lt; colorImg.getHeight(); row++) {</span>
                 
-<span class="nc" id="L546">                PairInt p = new PairInt(col - xOffset, row - yOffset);</span>
+<span class="fc" id="L546">                PairInt p = new PairInt(col - xOffset, row - yOffset);</span>
                 
-<span class="nc bnc" id="L548" title="All 2 branches missed.">                if (reflectedSunRemoved.contains(p)) {</span>
-<span class="nc" id="L549">                    continue;</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">                if (reflectedSunRemoved.contains(p)) {</span>
+<span class="fc" id="L549">                    continue;</span>
                 }
                 
-<span class="nc" id="L552">                int idx = colorImg.getInternalIndex(col, row);</span>
+<span class="fc" id="L552">                int idx = colorImg.getInternalIndex(col, row);</span>
       
-<span class="nc" id="L554">                float cieX = colorImg.getCIEX(idx);</span>
-<span class="nc" id="L555">                float cieY = colorImg.getCIEY(idx);</span>
+<span class="fc" id="L554">                float cieX = colorImg.getCIEX(idx);</span>
+<span class="fc" id="L555">                float cieY = colorImg.getCIEY(idx);</span>
 
-<span class="nc" id="L557">                int r = colorImg.getR(idx);</span>
-<span class="nc" id="L558">                int g = colorImg.getG(idx);</span>
-<span class="nc" id="L559">                int b = colorImg.getB(idx);</span>
+<span class="fc" id="L557">                int r = colorImg.getR(idx);</span>
+<span class="fc" id="L558">                int g = colorImg.getG(idx);</span>
+<span class="fc" id="L559">                int b = colorImg.getB(idx);</span>
 
-<span class="nc" id="L561">                float saturation = colorImg.getSaturation(idx);</span>
-<span class="nc" id="L562">                float brightness = colorImg.getBrightness(idx);</span>
+<span class="fc" id="L561">                float saturation = colorImg.getSaturation(idx);</span>
+<span class="fc" id="L562">                float brightness = colorImg.getBrightness(idx);</span>
         
-<span class="nc bnc" id="L564" title="All 2 branches missed.">                if (colors.isInRedThroughPurplishRed(r, g, b, cieX, cieY, </span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">                if (colors.isInRedThroughPurplishRed(r, g, b, cieX, cieY, </span>
                     saturation, brightness)) {
                     
-<span class="nc" id="L567">                    set.add(p);</span>
+<span class="fc" id="L567">                    set.add(p);</span>
 
-<span class="nc bnc" id="L569" title="All 2 branches missed.">                } else if (colors.isInOrangeRed(r, g, b, cieX, cieY, saturation, </span>
+<span class="fc bfc" id="L569" title="All 2 branches covered.">                } else if (colors.isInOrangeRed(r, g, b, cieX, cieY, saturation, </span>
                     brightness)) {
                     
-<span class="nc" id="L572">                    set.add(p);</span>
+<span class="fc" id="L572">                    set.add(p);</span>
                 
-<span class="nc bnc" id="L574" title="All 2 branches missed.">                } else if (colors.isInGreenishYellowOrange(r, g, b, cieX, cieY,</span>
+<span class="fc bfc" id="L574" title="All 2 branches covered.">                } else if (colors.isInGreenishYellowOrange(r, g, b, cieX, cieY,</span>
                     saturation, brightness)) {
                  
-<span class="nc" id="L577">                    set.add(p);</span>
+<span class="fc" id="L577">                    set.add(p);</span>
                     
                 } /*else if (colors.isInYellowishYellowGreen(r, g, b, cieX, cieY, 
                     saturation, brightness)) {
@@ -589,7 +589,7 @@ import java.util.logging.Logger;
         
         //debugPlot(set, colorImg, xOffset, yOffset, &quot;rainbow_colored_points&quot;);
         
-<span class="nc" id="L592">        return set;</span>
+<span class="fc" id="L592">        return set;</span>
     }
     
      /**
@@ -659,20 +659,20 @@ import java.util.logging.Logger;
         method is interesting for use cases which need precision.
         */
         
-<span class="nc" id="L662">        int width = originalColorImage.getWidth() - xOffset;</span>
-<span class="nc" id="L663">        int height = originalColorImage.getHeight() - yOffset;</span>
+<span class="fc" id="L662">        int width = originalColorImage.getWidth() - xOffset;</span>
+<span class="fc" id="L663">        int height = originalColorImage.getHeight() - yOffset;</span>
         
-<span class="nc" id="L665">        rainbowSkeletonX = new float[10];</span>
-<span class="nc" id="L666">        rainbowSkeletonY = new float[10];</span>
-<span class="nc" id="L667">        generatePolynomialPoints(rainbowPoints, rainbowCoeff, rainbowSkeletonX, </span>
+<span class="fc" id="L665">        rainbowSkeletonX = new float[10];</span>
+<span class="fc" id="L666">        rainbowSkeletonY = new float[10];</span>
+<span class="fc" id="L667">        generatePolynomialPoints(rainbowPoints, rainbowCoeff, rainbowSkeletonX, </span>
             rainbowSkeletonY);
        
-<span class="nc" id="L670">        float maxOfPointMinDistances = maxOfPointMinDistances(rainbowPoints,</span>
+<span class="fc" id="L670">        float maxOfPointMinDistances = maxOfPointMinDistances(rainbowPoints,</span>
             rainbowSkeletonX, rainbowSkeletonY);
         
-<span class="nc" id="L673">        float high = 2 * maxOfPointMinDistances;</span>
-<span class="nc" id="L674">        float low = maxOfPointMinDistances / 2;</span>
-<span class="nc" id="L675">        int nMatched = 0;</span>
+<span class="fc" id="L673">        float high = 2 * maxOfPointMinDistances;</span>
+<span class="fc" id="L674">        float low = maxOfPointMinDistances / 2;</span>
+<span class="fc" id="L675">        int nMatched = 0;</span>
         
         /* 
         n=21
@@ -681,53 +681,53 @@ import java.util.logging.Logger;
          19   18   17   16   15   14   13   12   11   10
         */
         
-<span class="nc" id="L684">        float[] xPoly = new float[2 * rainbowSkeletonX.length + 1];</span>
-<span class="nc" id="L685">        float[] yPoly = new float[xPoly.length];</span>
-<span class="nc" id="L686">        int nMaxIter = 5;</span>
-<span class="nc" id="L687">        int nIter = 0;</span>
+<span class="fc" id="L684">        float[] xPoly = new float[2 * rainbowSkeletonX.length + 1];</span>
+<span class="fc" id="L685">        float[] yPoly = new float[xPoly.length];</span>
+<span class="fc" id="L686">        int nMaxIter = 5;</span>
+<span class="fc" id="L687">        int nIter = 0;</span>
         
-<span class="nc" id="L689">        int eps = (int)(0.15f * rainbowPoints.size());</span>
+<span class="fc" id="L689">        int eps = (int)(0.15f * rainbowPoints.size());</span>
         
-<span class="nc bnc" id="L691" title="All 4 branches missed.">        while ((low &lt; high) &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+<span class="pc bpc" id="L691" title="1 of 4 branches missed.">        while ((low &lt; high) &amp;&amp; (nIter &lt; nMaxIter)) {</span>
             
-<span class="nc" id="L693">            float mid = (high + low)/2.f;</span>
+<span class="fc" id="L693">            float mid = (high + low)/2.f;</span>
             
-<span class="nc" id="L695">            hullHalfWidth = mid;</span>
+<span class="fc" id="L695">            hullHalfWidth = mid;</span>
             
-<span class="nc" id="L697">            populatePolygon(rainbowSkeletonX, rainbowSkeletonY, mid, </span>
+<span class="fc" id="L697">            populatePolygon(rainbowSkeletonX, rainbowSkeletonY, mid, </span>
                 xPoly, yPoly, rainbowCoeff, width, height);
             
-<span class="nc" id="L700">            nMatched = nPointsInPolygon(rainbowPoints, xPoly, yPoly);</span>
+<span class="fc" id="L700">            nMatched = nPointsInPolygon(rainbowPoints, xPoly, yPoly);</span>
             
-<span class="nc" id="L702">            log.info(&quot;low=&quot; + low + &quot; high=&quot; + high + &quot; mid=&quot; + mid </span>
-<span class="nc" id="L703">                + &quot; nMatched=&quot; + nMatched + &quot; out of &quot; + rainbowPoints.size());</span>
+<span class="fc" id="L702">            log.info(&quot;low=&quot; + low + &quot; high=&quot; + high + &quot; mid=&quot; + mid </span>
+<span class="fc" id="L703">                + &quot; nMatched=&quot; + nMatched + &quot; out of &quot; + rainbowPoints.size());</span>
 
-<span class="nc bnc" id="L705" title="All 2 branches missed.">            if (Math.abs(nMatched - rainbowPoints.size()) &lt; eps) {</span>
-<span class="nc bnc" id="L706" title="All 2 branches missed.">                if (low &lt; mid) {</span>
+<span class="fc bfc" id="L705" title="All 2 branches covered.">            if (Math.abs(nMatched - rainbowPoints.size()) &lt; eps) {</span>
+<span class="pc bpc" id="L706" title="1 of 2 branches missed.">                if (low &lt; mid) {</span>
                     // decrease high so next mid is lower
-<span class="nc" id="L708">                    high = mid;</span>
+<span class="fc" id="L708">                    high = mid;</span>
                 } else {
                     break;
                 }
             } else {
                 // nMatched &lt; rainbowPoints.size()
                 // increase low so next mid is higher
-<span class="nc" id="L715">                low = mid;</span>
+<span class="fc" id="L715">                low = mid;</span>
             }
             
-<span class="nc" id="L718">            nIter++;</span>
-<span class="nc" id="L719">        }</span>
+<span class="fc" id="L718">            nIter++;</span>
+<span class="fc" id="L719">        }</span>
         
         //TODO: once a reasonable hullHalfWidth has been determined,
         // may want to regenerate the hull with higher resolution,
         // that is 5 or 10 times the number of skeleton points on 
         // each side
          
-<span class="nc" id="L726">        Hull hull = new Hull();</span>
-<span class="nc" id="L727">        hull.xHull = xPoly;</span>
-<span class="nc" id="L728">        hull.yHull = yPoly;</span>
+<span class="fc" id="L726">        Hull hull = new Hull();</span>
+<span class="fc" id="L727">        hull.xHull = xPoly;</span>
+<span class="fc" id="L728">        hull.yHull = yPoly;</span>
 
-<span class="nc" id="L730">        return hull;</span>
+<span class="fc" id="L730">        return hull;</span>
     }
     
     protected void generatePolynomialPoints(Set&lt;PairInt&gt; points, 
@@ -878,9 +878,9 @@ import java.util.logging.Logger;
             
 <span class="fc" id="L879">            double dx = dist * Math.cos(theta);</span>
             
-<span class="pc bpc" id="L881" title="1 of 4 branches missed.">            if ((count0 == 0) &amp;&amp; (x[i] == 0)) {</span>
-<span class="nc" id="L882">                dy = dist;</span>
-<span class="nc" id="L883">                dx = 0;</span>
+<span class="fc bfc" id="L881" title="All 4 branches covered.">            if ((count0 == 0) &amp;&amp; (x[i] == 0)) {</span>
+<span class="fc" id="L882">                dy = dist;</span>
+<span class="fc" id="L883">                dx = 0;</span>
 <span class="pc bpc" id="L884" title="1 of 6 branches missed.">            } else if (</span>
                 ((count0 == ((x.length/2) - 1) || (count0 == (x.length/2))))
                 &amp;&amp; (x[i] == (imgWidth - 1))) {
@@ -918,17 +918,17 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L918" title="All 2 branches covered.">            if (yLow &lt; 0) {</span>
 <span class="fc" id="L919">                yLow = 0;</span>
             }
-<span class="pc bpc" id="L921" title="1 of 2 branches missed.">            if (xLow &gt; (imgWidth - 1)) {</span>
-<span class="nc" id="L922">                xLow = (imgWidth - 1);</span>
+<span class="fc bfc" id="L921" title="All 2 branches covered.">            if (xLow &gt; (imgWidth - 1)) {</span>
+<span class="fc" id="L922">                xLow = (imgWidth - 1);</span>
             }
-<span class="pc bpc" id="L924" title="1 of 2 branches missed.">            if (xHigh &gt; (imgWidth - 1)) {</span>
-<span class="nc" id="L925">                xHigh = (imgWidth - 1);</span>
+<span class="fc bfc" id="L924" title="All 2 branches covered.">            if (xHigh &gt; (imgWidth - 1)) {</span>
+<span class="fc" id="L925">                xHigh = (imgWidth - 1);</span>
             }
 <span class="pc bpc" id="L927" title="1 of 2 branches missed.">            if (yLow &gt; (imgHeight - 1)) {</span>
 <span class="nc" id="L928">                yLow = (imgHeight - 1);</span>
             }
-<span class="pc bpc" id="L930" title="1 of 2 branches missed.">            if (yHigh &gt; (imgHeight - 1)) {</span>
-<span class="nc" id="L931">                yHigh = (imgHeight - 1);</span>
+<span class="fc bfc" id="L930" title="All 2 branches covered.">            if (yHigh &gt; (imgHeight - 1)) {</span>
+<span class="fc" id="L931">                yHigh = (imgHeight - 1);</span>
             }
             
 <span class="fc" id="L934">            outputXPoly[count0] = xHigh;</span>
@@ -946,22 +946,22 @@ import java.util.logging.Logger;
     protected int nPointsInPolygon(Set&lt;PairInt&gt; rainbowPoints, 
         float[] xPoly, float[] yPoly) {
         
-<span class="nc" id="L949">        PointInPolygon pIn = new PointInPolygon();</span>
+<span class="fc" id="L949">        PointInPolygon pIn = new PointInPolygon();</span>
         
-<span class="nc" id="L951">        int nInside = 0;</span>
+<span class="fc" id="L951">        int nInside = 0;</span>
         
-<span class="nc bnc" id="L953" title="All 2 branches missed.">        for (PairInt p : rainbowPoints) {</span>
-<span class="nc" id="L954">            float x = p.getX();</span>
-<span class="nc" id="L955">            float y = p.getY();</span>
+<span class="fc bfc" id="L953" title="All 2 branches covered.">        for (PairInt p : rainbowPoints) {</span>
+<span class="fc" id="L954">            float x = p.getX();</span>
+<span class="fc" id="L955">            float y = p.getY();</span>
             
-<span class="nc" id="L957">            boolean ans = pIn.isInSimpleCurve(x, y, xPoly, yPoly, xPoly.length);</span>
+<span class="fc" id="L957">            boolean ans = pIn.isInSimpleCurve(x, y, xPoly, yPoly, xPoly.length);</span>
             
-<span class="nc bnc" id="L959" title="All 2 branches missed.">            if (ans) {</span>
-<span class="nc" id="L960">                nInside++;</span>
+<span class="fc bfc" id="L959" title="All 2 branches covered.">            if (ans) {</span>
+<span class="fc" id="L960">                nInside++;</span>
             }
-<span class="nc" id="L962">        }</span>
+<span class="fc" id="L962">        }</span>
         
-<span class="nc" id="L964">        return nInside;</span>
+<span class="fc" id="L964">        return nInside;</span>
     }
     
     void debugPlot(Set&lt;PairInt&gt; extSkyPoints, Image originalColorImage, 
@@ -974,17 +974,17 @@ import java.util.logging.Logger;
     @Override
     public String toString() {
         
-<span class="nc" id="L977">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L977">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L979">        sb.append(&quot;Number of rainbowPoints=&quot;)</span>
-<span class="nc" id="L980">            .append(Integer.toString(outputRainbowPoints.size())).append(&quot;\n&quot;);</span>
+<span class="fc" id="L979">        sb.append(&quot;Number of rainbowPoints=&quot;)</span>
+<span class="fc" id="L980">            .append(Integer.toString(outputRainbowPoints.size())).append(&quot;\n&quot;);</span>
         
-<span class="nc bnc" id="L982" title="All 2 branches missed.">        if (rainbowCoeff != null) {</span>
-<span class="nc" id="L983">            sb.append(&quot;rainbow fit coeff=&quot;).append(Arrays.toString(rainbowCoeff))</span>
-<span class="nc" id="L984">                .append(&quot;\n&quot;);</span>
+<span class="fc bfc" id="L982" title="All 2 branches covered.">        if (rainbowCoeff != null) {</span>
+<span class="fc" id="L983">            sb.append(&quot;rainbow fit coeff=&quot;).append(Arrays.toString(rainbowCoeff))</span>
+<span class="fc" id="L984">                .append(&quot;\n&quot;);</span>
         }
         
-<span class="nc" id="L987">        return sb.toString();</span>
+<span class="fc" id="L987">        return sb.toString();</span>
     }
     
 }

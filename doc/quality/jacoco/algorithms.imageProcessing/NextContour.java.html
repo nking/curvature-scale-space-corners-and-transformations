@@ -11,7 +11,7 @@ import java.util.TreeSet;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L14" title="All 2 branches missed.">public class NextContour {</span>
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class NextContour {</span>
     
     /**
      * a list of closed contours extracted from a digital image
@@ -30,57 +30,57 @@ import java.util.TreeSet;
     protected final List&lt;CurvatureScaleSpaceContour&gt; matchedContours1;
     protected final List&lt;CurvatureScaleSpaceContour&gt; matchedContours2;
     
-<span class="nc" id="L33">    protected int matchedEdgeNumber1 = -1;</span>
-<span class="nc" id="L34">    protected int matchedEdgeNumber2 = -1;</span>
+<span class="fc" id="L33">    protected int matchedEdgeNumber1 = -1;</span>
+<span class="fc" id="L34">    protected int matchedEdgeNumber2 = -1;</span>
     
     public NextContour(final List&lt;CurvatureScaleSpaceContour&gt; contours,
-<span class="nc" id="L37">        List&lt;CurvatureScaleSpaceContour&gt; alreadyVisited) {</span>
+<span class="fc" id="L37">        List&lt;CurvatureScaleSpaceContour&gt; alreadyVisited) {</span>
                 
-<span class="nc" id="L39">        origContours = new TreeSet&lt;CurvatureScaleSpaceContour&gt;(</span>
+<span class="fc" id="L39">        origContours = new TreeSet&lt;CurvatureScaleSpaceContour&gt;(</span>
             new DescendingSigmaComparator());
                         
         // populate with contours that haven't been visited
-<span class="nc" id="L43">        remainingContours = new TreeSet&lt;CurvatureScaleSpaceContour&gt;(</span>
+<span class="fc" id="L43">        remainingContours = new TreeSet&lt;CurvatureScaleSpaceContour&gt;(</span>
             new DescendingSigmaComparator());
         
-<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); i++) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (int i = 0; i &lt; contours.size(); i++) {</span>
             
-<span class="nc" id="L48">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
+<span class="fc" id="L48">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
             
-<span class="nc" id="L50">            origContours.add(contour);</span>
+<span class="fc" id="L50">            origContours.add(contour);</span>
             
-<span class="nc bnc" id="L52" title="All 2 branches missed.">            if (alreadyVisited.contains(contour)) {</span>
-<span class="nc" id="L53">                continue;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            if (alreadyVisited.contains(contour)) {</span>
+<span class="fc" id="L53">                continue;</span>
             }
             
-<span class="nc" id="L56">            remainingContours.add(contour);</span>
+<span class="fc" id="L56">            remainingContours.add(contour);</span>
         }
 
-<span class="nc" id="L59">        matchedContours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
+<span class="fc" id="L59">        matchedContours1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
         
-<span class="nc" id="L61">        matchedContours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
-<span class="nc" id="L62">    }</span>
+<span class="fc" id="L61">        matchedContours2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
+<span class="fc" id="L62">    }</span>
     
     public void addMatchedContours(CurvatureScaleSpaceContour contour1,
         CurvatureScaleSpaceContour contour2) {
         
-<span class="nc" id="L67">        markAsVisited(contour1);</span>
+<span class="fc" id="L67">        markAsVisited(contour1);</span>
         
-<span class="nc" id="L69">        matchedContours1.add(contour1);</span>
-<span class="nc" id="L70">        matchedContours2.add(contour2);</span>
+<span class="fc" id="L69">        matchedContours1.add(contour1);</span>
+<span class="fc" id="L70">        matchedContours2.add(contour2);</span>
 
-<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (matchedEdgeNumber1 == -1) {</span>
-<span class="nc" id="L73">            matchedEdgeNumber1 = contour1.getEdgeNumber();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (matchedEdgeNumber1 == -1) {</span>
+<span class="fc" id="L73">            matchedEdgeNumber1 = contour1.getEdgeNumber();</span>
         } else {
-<span class="nc bnc" id="L75" title="All 4 branches missed.">            assert(matchedEdgeNumber1 == contour1.getEdgeNumber());</span>
+<span class="pc bpc" id="L75" title="3 of 4 branches missed.">            assert(matchedEdgeNumber1 == contour1.getEdgeNumber());</span>
         }
         
-<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (matchedEdgeNumber2 == -1) {</span>
-<span class="nc" id="L79">            matchedEdgeNumber2 = contour2.getEdgeNumber();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (matchedEdgeNumber2 == -1) {</span>
+<span class="fc" id="L79">            matchedEdgeNumber2 = contour2.getEdgeNumber();</span>
         } else {
-<span class="nc bnc" id="L81" title="All 4 branches missed.">            assert(matchedEdgeNumber2 == contour2.getEdgeNumber());</span>
+<span class="pc bpc" id="L81" title="3 of 4 branches missed.">            assert(matchedEdgeNumber2 == contour2.getEdgeNumber());</span>
         }    
-<span class="nc" id="L83">    }</span>
+<span class="fc" id="L83">    }</span>
     
     /**
      * find the largest sigma peak within the remaining un-searched contours.  
@@ -92,23 +92,23 @@ import java.util.TreeSet;
      */
     public CurvatureScaleSpaceContour findTallestContourWithinScaleSpace() {
         
-<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (remainingContours.isEmpty()) {</span>
-<span class="nc" id="L96">            return null;</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        if (remainingContours.isEmpty()) {</span>
+<span class="fc" id="L96">            return null;</span>
         }
         
-<span class="nc" id="L99">        CurvatureScaleSpaceContour contour = remainingContours.first();</span>
+<span class="fc" id="L99">        CurvatureScaleSpaceContour contour = remainingContours.first();</span>
         
-<span class="nc" id="L101">        boolean removed = remainingContours.remove(contour);</span>
+<span class="fc" id="L101">        boolean removed = remainingContours.remove(contour);</span>
                 
-<span class="nc bnc" id="L103" title="All 4 branches missed.">        assert(removed == true);</span>
+<span class="pc bpc" id="L103" title="3 of 4 branches missed.">        assert(removed == true);</span>
         
-<span class="nc" id="L105">        return contour;</span>
+<span class="fc" id="L105">        return contour;</span>
     }
     
     public void markAsVisited(CurvatureScaleSpaceContour contour) {
         
-<span class="nc" id="L110">        remainingContours.remove(contour);</span>
-<span class="nc" id="L111">    }</span>
+<span class="fc" id="L110">        remainingContours.remove(contour);</span>
+<span class="fc" id="L111">    }</span>
     
     public int getMatchedEdgeNumber2() {
 <span class="nc" id="L114">        return matchedEdgeNumber2;</span>
@@ -129,34 +129,34 @@ import java.util.TreeSet;
     public CurvatureScaleSpaceContour findTheNextSmallestUnvisitedSibling(
         CurvatureScaleSpaceContour target) { 
 
-<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (target == null) {</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (target == null) {</span>
 <span class="nc" id="L133">            return null;</span>
         }
         
-<span class="nc" id="L136">        CurvatureScaleSpaceContour nextLower = origContours.higher(target);</span>
+<span class="fc" id="L136">        CurvatureScaleSpaceContour nextLower = origContours.higher(target);</span>
         
-<span class="nc bnc" id="L138" title="All 4 branches missed.">        while ((nextLower != null) &amp;&amp; !remainingContours.contains(nextLower)) {</span>
-<span class="nc" id="L139">            nextLower = origContours.higher(nextLower);</span>
+<span class="fc bfc" id="L138" title="All 4 branches covered.">        while ((nextLower != null) &amp;&amp; !remainingContours.contains(nextLower)) {</span>
+<span class="fc" id="L139">            nextLower = origContours.higher(nextLower);</span>
         }
                 
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (nextLower != null) {</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (nextLower != null) {</span>
             
-<span class="nc" id="L144">            boolean removed = remainingContours.remove(nextLower);</span>
+<span class="fc" id="L144">            boolean removed = remainingContours.remove(nextLower);</span>
             
-<span class="nc bnc" id="L146" title="All 4 branches missed.">            assert(removed);</span>
+<span class="pc bpc" id="L146" title="3 of 4 branches missed.">            assert(removed);</span>
             
-<span class="nc" id="L148">            return nextLower;</span>
+<span class="fc" id="L148">            return nextLower;</span>
         }
         
-<span class="nc" id="L151">        return null;</span>
+<span class="fc" id="L151">        return null;</span>
     }
     
     public List&lt;CurvatureScaleSpaceContour&gt; getMatchedContours1() {
-<span class="nc" id="L155">        return matchedContours1;</span>
+<span class="fc" id="L155">        return matchedContours1;</span>
     }
     
     public List&lt;CurvatureScaleSpaceContour&gt; getMatchedContours2() {
-<span class="nc" id="L159">        return matchedContours2;</span>
+<span class="fc" id="L159">        return matchedContours2;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

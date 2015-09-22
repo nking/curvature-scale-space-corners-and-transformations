@@ -8,15 +8,15 @@ import algorithms.misc.MiscMath;
  */
 public class GsGradientDescriptor implements GradientDescriptor {
     
-<span class="nc" id="L11">    protected static int sentinel = Integer.MIN_VALUE;</span>
+<span class="fc" id="L11">    protected static int sentinel = Integer.MIN_VALUE;</span>
     
     protected final int[] grey;
     
-<span class="nc" id="L15">    protected float sumSquaredError = Float.NaN;</span>
+<span class="fc" id="L15">    protected float sumSquaredError = Float.NaN;</span>
     
-<span class="nc" id="L17">    protected boolean hasBeenNormalized = false;</span>
+<span class="fc" id="L17">    protected boolean hasBeenNormalized = false;</span>
     
-<span class="nc" id="L19">    protected int maximum = Integer.MIN_VALUE;</span>
+<span class="fc" id="L19">    protected int maximum = Integer.MIN_VALUE;</span>
     
     /**
      * the index within array grey that the central pixel
@@ -24,35 +24,35 @@ public class GsGradientDescriptor implements GradientDescriptor {
      */
     protected final int centralIndex;
     
-<span class="nc" id="L27">    public GsGradientDescriptor(int[] a, int centralPixelIndex) {</span>
-<span class="nc" id="L28">        this.grey = a;</span>
-<span class="nc" id="L29">        this.centralIndex = centralPixelIndex;</span>
-<span class="nc" id="L30">    }</span>
+<span class="fc" id="L27">    public GsGradientDescriptor(int[] a, int centralPixelIndex) {</span>
+<span class="fc" id="L28">        this.grey = a;</span>
+<span class="fc" id="L29">        this.centralIndex = centralPixelIndex;</span>
+<span class="fc" id="L30">    }</span>
     
     // TODO: may change to use histograms or another technique
     
     @Override
     public float calculateSSD(IDescriptor otherDesc) {
         
-<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (otherDesc == null) {</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (otherDesc == null) {</span>
 <span class="nc" id="L38">            throw new IllegalArgumentException(&quot;otherDesc cannot be null&quot;);</span>
         }
         
-<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (!(otherDesc instanceof GsGradientDescriptor)) {</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (!(otherDesc instanceof GsGradientDescriptor)) {</span>
 <span class="nc" id="L42">            throw new IllegalArgumentException(</span>
             &quot;otherDesc has to be type GsGradientDescriptor&quot;);
         }
         
-<span class="nc" id="L46">        GsGradientDescriptor other = (GsGradientDescriptor)otherDesc;</span>
+<span class="fc" id="L46">        GsGradientDescriptor other = (GsGradientDescriptor)otherDesc;</span>
         
-<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (this.grey.length != other.grey.length) {</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (this.grey.length != other.grey.length) {</span>
 <span class="nc" id="L49">            throw new IllegalArgumentException(</span>
             &quot;this and other arrays must have the same lengths&quot;);
         }
          
-<span class="nc" id="L53">        float ssd = MiscMath.calculateSSD(grey, other.grey, sentinel);</span>
+<span class="fc" id="L53">        float ssd = MiscMath.calculateSSD(grey, other.grey, sentinel);</span>
                 
-<span class="nc" id="L55">        return ssd;</span>
+<span class="fc" id="L55">        return ssd;</span>
     }
     
     /**
@@ -67,22 +67,22 @@ public class GsGradientDescriptor implements GradientDescriptor {
     @Override
     public float sumSquaredError() {
         
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (!Float.isNaN(sumSquaredError)) {</span>
-<span class="nc" id="L71">            return sumSquaredError;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (!Float.isNaN(sumSquaredError)) {</span>
+<span class="fc" id="L71">            return sumSquaredError;</span>
         }
         
-<span class="nc" id="L74">        int vc = grey[centralIndex];</span>
+<span class="fc" id="L74">        int vc = grey[centralIndex];</span>
         
-<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (vc == sentinel) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (vc == sentinel) {</span>
 <span class="nc" id="L77">            throw new IllegalStateException(</span>
             &quot;ERROR: the central value for the array is somehow sentinel&quot;);
         }
         
-<span class="nc" id="L81">        float sqErr = MiscMath.sumSquaredError(grey, sentinel, centralIndex);</span>
+<span class="fc" id="L81">        float sqErr = MiscMath.sumSquaredError(grey, sentinel, centralIndex);</span>
             
-<span class="nc" id="L83">        this.sumSquaredError = sqErr;</span>
+<span class="fc" id="L83">        this.sumSquaredError = sqErr;</span>
         
-<span class="nc" id="L85">        return sumSquaredError;</span>
+<span class="fc" id="L85">        return sumSquaredError;</span>
     }
 
     @Override

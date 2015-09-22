@@ -38,7 +38,7 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     @Override
     public void applyNormalization() {
         
-<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (hasBeenNormalized) {</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (hasBeenNormalized) {</span>
 <span class="nc" id="L42">            return;</span>
         }
         
@@ -53,15 +53,15 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
         source...
         */
         
-<span class="nc" id="L56">        float[] meanAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(grey, </span>
+<span class="fc" id="L56">        float[] meanAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(grey, </span>
             grey.length, sentinel);
         
-<span class="nc bnc" id="L59" title="All 2 branches missed.">        for (int i = 0; i &lt; grey.length; ++i) {</span>
-<span class="nc" id="L60">            grey[i] -= meanAndStDev[0];</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; grey.length; ++i) {</span>
+<span class="fc" id="L60">            grey[i] -= meanAndStDev[0];</span>
         }
         
-<span class="nc" id="L63">        hasBeenNormalized = true;</span>
-<span class="nc" id="L64">    }</span>
+<span class="fc" id="L63">        hasBeenNormalized = true;</span>
+<span class="fc" id="L64">    }</span>
 
     @Override
     public boolean isNormalized() {
@@ -104,8 +104,8 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
     @Override
     public float sumSquaredError() {
         
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (!Float.isNaN(sumSquaredError)) {</span>
-<span class="nc" id="L108">            return sumSquaredError;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (!Float.isNaN(sumSquaredError)) {</span>
+<span class="fc" id="L108">            return sumSquaredError;</span>
         }
         
 <span class="fc" id="L111">        float vc = grey[centralIndex];</span>

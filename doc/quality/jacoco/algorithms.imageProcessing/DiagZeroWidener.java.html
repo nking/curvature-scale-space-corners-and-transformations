@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DiagZeroWidener.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">DiagZeroWidener.java</span></div><h1>DiagZeroWidener.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairInt;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ * looks for diagonal zeros and widens the empty area by setting the opposing
+ * diagonal to zero too.  It's meant to be used to increase segmentation.
+ * 
+ * @author nichole
+ */
+<span class="nc" id="L14">public class DiagZeroWidener extends AbstractLineThinner {</span>
+    
+<span class="nc" id="L16">    protected boolean debug = false;</span>
+    
+<span class="nc" id="L18">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    @Override
+    public void applyFilter(GreyscaleImage input) {
+                
+<span class="nc" id="L23">        int w = input.getWidth();</span>
+<span class="nc" id="L24">        int h = input.getHeight();</span>
+        
+<span class="nc" id="L26">        Set&lt;PairInt&gt; points = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">        for (int col = 0; col &lt; w; col++) {</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">            for (int row = 0; row &lt; h; row++) {</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">                if (input.getValue(col, row) &gt; 0) {</span>
+<span class="nc" id="L30">                    points.add(new PairInt(col, row));</span>
+                }
+            }
+        }
+        
+<span class="nc" id="L35">        applyZeroWidener(points, 0, w - 1, 0, h - 1);</span>
+        
+        // unset points not in &quot;points&quot; and leave remaining values as is
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        for (int col = 0; col &lt; w; col++) {</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">            for (int row = 0; row &lt; h; row++) {</span>
+<span class="nc" id="L40">                PairInt p = new PairInt(col, row);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">                if (!points.contains(p)) {</span>
+<span class="nc" id="L42">                    input.setValue(col, row, 0);</span>
+                }
+            }
+        }
+        
+<span class="nc" id="L47">    }</span>
+    
+    public void applyZeroWidener(Set&lt;PairInt&gt; points, int minX, int maxX,
+        int minY, int maxY) {
+    
+<span class="nc" id="L52">        Pattern pattern = getPattern();</span>
+        
+<span class="nc" id="L54">        applyZeroWidener(points, minX, maxX, minY, maxY, pattern);</span>
+        
+<span class="nc" id="L56">        swapXDirection(pattern);</span>
+        
+<span class="nc" id="L58">        applyZeroWidener(points, minX, maxX, minY, maxY, pattern);</span>
+        
+<span class="nc" id="L60">    }</span>
+    
+    private void applyZeroWidener(Set&lt;PairInt&gt; points, int minX, int maxX,
+        int minY, int maxY, Pattern pattern) {
+            
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        for (int i = minX; i &lt;= maxX; ++i) {</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            for (int j = minY; j &lt;= maxY; ++j) {</span>
+<span class="nc" id="L67">                applyPattern(i, j, points, pattern);</span>
+            }
+        }
+<span class="nc" id="L70">    }</span>
+    
+    private void applyPattern(int x, int y, Set&lt;PairInt&gt; points,
+        Pattern pattern) {
+
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        for (PairInt p : pattern.zeroes) {</span>
+<span class="nc" id="L76">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L78">                return;</span>
+            }
+<span class="nc" id="L80">        }</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (PairInt p : pattern.ones) {</span>
+<span class="nc" id="L82">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (!points.contains(p2)) {</span>
+<span class="nc" id="L84">                return;</span>
+            }
+<span class="nc" id="L86">        }</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        for (PairInt p : pattern.changeToZeroes) {</span>
+<span class="nc" id="L88">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
+<span class="nc" id="L89">            points.remove(p2);</span>
+<span class="nc" id="L90">        }</span>
+<span class="nc" id="L91">    }</span>
+    
+    private Pattern getPattern() {
+        
+<span class="nc" id="L95">        Pattern pattern = new Pattern();</span>
+        
+<span class="nc" id="L97">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L98">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L99">        pattern.changeToZeroes = new HashSet&lt;PairInt&gt;();</span>
+        
+        /*
+             #  #    -1
+             0  #&lt;    0
+             #&lt; 0     1
+             #  #     2
+        
+             0  1
+        */
+<span class="nc" id="L109">        pattern.ones.add(new PairInt(0, 2)); pattern.ones.add(new PairInt(0, 1)); pattern.ones.add(new PairInt(0, -1));</span>
+<span class="nc" id="L110">        pattern.ones.add(new PairInt(1, 2)); pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));</span>
+        
+<span class="nc" id="L112">        pattern.zeroes.add(new PairInt(0, 0));</span>
+<span class="nc" id="L113">        pattern.zeroes.add(new PairInt(1, 1));</span>
+        
+<span class="nc" id="L115">        pattern.changeToZeroes.add(new PairInt(0, 1));</span>
+<span class="nc" id="L116">        pattern.changeToZeroes.add(new PairInt(1, 0));</span>
+        
+<span class="nc" id="L118">        return pattern;</span>
+    }
+    
+    private void swapXDirection(Pattern pattern) {
+        // ----- change the sign of x  -----
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (PairInt p : pattern.zeroes) {</span>
+<span class="nc" id="L124">            p.setX(-1 * p.getX());</span>
+<span class="nc" id="L125">        }</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        for (PairInt p : pattern.ones) {</span>
+<span class="nc" id="L127">            p.setX(-1 * p.getX());</span>
+<span class="nc" id="L128">        }</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        for (PairInt p : pattern.changeToZeroes) {</span>
+<span class="nc" id="L130">            p.setX(-1 * p.getX());</span>
+<span class="nc" id="L131">        }</span>
+<span class="nc" id="L132">    }</span>
+
+<span class="nc" id="L134">    public static class Pattern {</span>
+        Set&lt;PairInt&gt; ones;
+        Set&lt;PairInt&gt; zeroes;
+        Set&lt;PairInt&gt; changeToZeroes;
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

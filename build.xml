@@ -46,7 +46,6 @@
     <property name="tests.dir"           value="${basedir}/tests"/>
     <property name="tests.out.dir"       value="${classes.dir}/test-classes"/>
     <property name="instr.out.dir"       value="${classes.dir}/instr-classes" />
-    <property name="coverage.dir"        value="${classes.dir}/coverage" />
     <property name="log.dir"             value="${basedir}/log"/>
     <property name="logfile"             value="${log.dir}/build.log"/>
 
@@ -132,14 +131,12 @@
         <mkdir  dir="${src.out.dir}"/>
         <mkdir  dir="${tests.out.dir}"/>
         <mkdir  dir="${instr.out.dir}"/>
-        <mkdir  dir="${coverage.dir}"/>
         <mkdir  dir="${log.dir}"/>
         <mkdir  dir="tmpdata"/>
     </target>
 
     <!-- compile sources -->
-    <target name="compile" depends="prepare"
-        description="Compile Java classes">
+    <target name="compile" depends="prepare" description="Compile Java classes">
         <record name="${logfile}" append="yes" loglevel="info"/>
         <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
         <javac srcdir="${src.dir}"
@@ -153,19 +150,14 @@
             <include name="**/*.java"/>
             <exclude name="**/*Test*.java"/>
         </javac>
-
         <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
-        
     </target>
 
     <!-- compile tests  -->
     <target name="compileTests" depends="clean,debug,compile" description="Compile Java tests" >
 
         <record name="${logfile}" append="yes" loglevel="info"/>
-
-        <property name="cclasspath" refid="test.classpath" />
-        <echo message="cclasspath=${cclasspath}" />
-
+        
         <echo message="COMPILE TESTS debug=true"/>
 
     	<javac srcdir="${tests.dir}"
@@ -182,7 +174,6 @@
             <src path="${src.dir}"/>
             <compilerarg value="-Xlint"/>
     	</javac>
-            	
     </target>
 
     <target name="coverage">
@@ -300,7 +291,6 @@
                 </fileset>
             </batchtest>
         </junit>
-
     </target>
     
     <target name="runTestWithAspects" depends="clean,debug,compile,compileTests" 
@@ -657,5 +647,4 @@
         </java>
     </target>
     
-
 </project>

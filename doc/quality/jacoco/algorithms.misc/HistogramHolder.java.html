@@ -38,7 +38,7 @@ import java.io.IOException;
             
 <span class="fc" id="L39">            int partition = (int)(x/binSize);</span>
             
-<span class="pc bpc" id="L41" title="1 of 2 branches missed.">            if (partition &gt; (nPartitions - 1)) {</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (partition &gt; (nPartitions - 1)) {</span>
 <span class="fc" id="L42">                partition = nPartitions - 1;</span>
             }
             
@@ -80,45 +80,45 @@ import java.io.IOException;
     public String plotHistogram(String label, 
         long outputFileNumber) throws IOException {
                 
-<span class="nc" id="L83">        float[] xh = xHist;</span>
-<span class="nc" id="L84">        float[] yh = yHistFloat;</span>
+<span class="fc" id="L83">        float[] xh = xHist;</span>
+<span class="fc" id="L84">        float[] yh = yHistFloat;</span>
         
-<span class="nc" id="L86">        float yMin = MiscMath.findMin(yh);</span>
-<span class="nc" id="L87">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
-<span class="nc" id="L88">        float yMax = yh[yMaxIdx];</span>
+<span class="fc" id="L86">        float yMin = MiscMath.findMin(yh);</span>
+<span class="fc" id="L87">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
+<span class="fc" id="L88">        float yMax = yh[yMaxIdx];</span>
         
-<span class="nc" id="L90">        float xMin = MiscMath.findMin(xh);</span>
-<span class="nc" id="L91">        float xMax = MiscMath.findMax(xh);        </span>
+<span class="fc" id="L90">        float xMin = MiscMath.findMin(xh);</span>
+<span class="fc" id="L91">        float xMax = MiscMath.findMax(xh);        </span>
                 
-<span class="nc" id="L93">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="fc" id="L93">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
 
-<span class="nc" id="L95">        plotter.addPlot(</span>
+<span class="fc" id="L95">        plotter.addPlot(</span>
             xMin, xMax, yMin, yMax,
             xh, yh, xh, yh, label);
 
-<span class="nc" id="L99">        return plotter.writeFile(outputFileNumber);</span>
+<span class="fc" id="L99">        return plotter.writeFile(outputFileNumber);</span>
     }
     
     public String plotHistogram(String label, 
         String outputFileSuffix) throws IOException {
                 
-<span class="nc" id="L105">        float[] xh = xHist;</span>
-<span class="nc" id="L106">        float[] yh = yHistFloat;</span>
+<span class="fc" id="L105">        float[] xh = xHist;</span>
+<span class="fc" id="L106">        float[] yh = yHistFloat;</span>
         
-<span class="nc" id="L108">        float yMin = MiscMath.findMin(yh);</span>
-<span class="nc" id="L109">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
-<span class="nc" id="L110">        float yMax = yh[yMaxIdx];</span>
+<span class="fc" id="L108">        float yMin = MiscMath.findMin(yh);</span>
+<span class="fc" id="L109">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
+<span class="fc" id="L110">        float yMax = yh[yMaxIdx];</span>
         
-<span class="nc" id="L112">        float xMin = MiscMath.findMin(xh);</span>
-<span class="nc" id="L113">        float xMax = MiscMath.findMax(xh);        </span>
+<span class="fc" id="L112">        float xMin = MiscMath.findMin(xh);</span>
+<span class="fc" id="L113">        float xMax = MiscMath.findMax(xh);        </span>
                 
-<span class="nc" id="L115">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="fc" id="L115">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
 
-<span class="nc" id="L117">        plotter.addPlot(</span>
+<span class="fc" id="L117">        plotter.addPlot(</span>
             xMin, xMax, yMin, yMax,
             xh, yh, xh, yh, label);
 
-<span class="nc" id="L121">        return plotter.writeFile(outputFileSuffix);</span>
+<span class="fc" id="L121">        return plotter.writeFile(outputFileSuffix);</span>
     }
     
     public String plotLogHistogram(String label, 
@@ -221,40 +221,40 @@ import java.io.IOException;
     @Override
     public String toString() {
         
-<span class="nc" id="L224">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L224">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L226">        sb.append(&quot;histogram=[&quot;);</span>
+<span class="fc" id="L226">        sb.append(&quot;histogram=[&quot;);</span>
         
-<span class="nc bnc" id="L228" title="All 2 branches missed.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
             
-<span class="nc" id="L230">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
+<span class="fc" id="L230">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
             
-<span class="nc bnc" id="L232" title="All 2 branches missed.">            if (yHist != null) {</span>
-<span class="nc" id="L233">                sb.append(yHist[i]);</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">            if (yHist != null) {</span>
+<span class="fc" id="L233">                sb.append(yHist[i]);</span>
             } else {
 <span class="nc" id="L235">                sb.append(yHistFloat[i]);</span>
             }
-<span class="nc" id="L237">            sb.append(&quot;) &quot;);</span>
+<span class="fc" id="L237">            sb.append(&quot;) &quot;);</span>
             
         }
         
-<span class="nc" id="L241">        sb.append(&quot;]\n&quot;);</span>
+<span class="fc" id="L241">        sb.append(&quot;]\n&quot;);</span>
         
-<span class="nc bnc" id="L243" title="All 2 branches missed.">        if (xErrors != null) {</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (xErrors != null) {</span>
             
-<span class="nc" id="L245">            sb.append(&quot;histogram errors=[&quot;);</span>
+<span class="fc" id="L245">            sb.append(&quot;histogram errors=[&quot;);</span>
             
-<span class="nc bnc" id="L247" title="All 2 branches missed.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
 
-<span class="nc" id="L249">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
+<span class="fc" id="L249">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
 
-<span class="nc" id="L251">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
+<span class="fc" id="L251">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
             }
             
-<span class="nc" id="L254">            sb.append(&quot;]\n&quot;);</span>
+<span class="fc" id="L254">            sb.append(&quot;]\n&quot;);</span>
         }      
         
-<span class="nc" id="L257">        return sb.toString();</span>
+<span class="fc" id="L257">        return sb.toString();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

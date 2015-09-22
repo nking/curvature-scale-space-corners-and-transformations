@@ -82,10 +82,10 @@ public class IntensityFeatures {
         
 <span class="fc" id="L83">        IntensityDescriptor descriptor = null;</span>
         
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (descriptors != null) {</span>
-<span class="nc" id="L86">            descriptor = descriptors.get(rotationKey);</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">            if (descriptor != null) {</span>
-<span class="nc" id="L88">                return descriptor;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (descriptors != null) {</span>
+<span class="fc" id="L86">            descriptor = descriptors.get(rotationKey);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (descriptor != null) {</span>
+<span class="fc" id="L88">                return descriptor;</span>
             }
         } else {
 <span class="fc" id="L91">            descriptors = new HashMap&lt;Integer, IntensityDescriptor&gt;();</span>
@@ -134,8 +134,8 @@ public class IntensityFeatures {
 <span class="nc" id="L134">            descriptor = extractClrIntensityForCells(xCenter, yCenter, rotation);</span>
         }
         
-<span class="pc bpc" id="L137" title="3 of 4 branches missed.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
-<span class="nc" id="L138">            descriptor.applyNormalization();</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
+<span class="fc" id="L138">            descriptor.applyNormalization();</span>
         }
         
 <span class="fc" id="L141">        return descriptor;</span>
@@ -531,30 +531,30 @@ public class IntensityFeatures {
         IntensityDescriptor descIntensity1, final int x1, final int y1,
         IntensityDescriptor descIntensity2, final int x2, final int y2) {
 
-<span class="nc bnc" id="L534" title="All 2 branches missed.">        if (descIntensity1 == null) {</span>
+<span class="pc bpc" id="L534" title="1 of 2 branches missed.">        if (descIntensity1 == null) {</span>
 <span class="nc" id="L535">            throw new IllegalArgumentException(&quot;descIntensity1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (descIntensity2 == null) {</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">        if (descIntensity2 == null) {</span>
 <span class="nc" id="L538">            throw new IllegalArgumentException(&quot;descIntensity2 cannot be null&quot;);</span>
         }
 
-<span class="nc" id="L541">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
+<span class="fc" id="L541">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
 
-<span class="nc" id="L543">        float err1SqIntensity = descIntensity1.sumSquaredError();</span>
+<span class="fc" id="L543">        float err1SqIntensity = descIntensity1.sumSquaredError();</span>
         
         //TODO: revisit this:
         //float errSqIntensity = (err2SqIntensity &gt; err1SqIntensity) ?
         //    err2SqIntensity : err1SqIntensity;
 
-<span class="nc" id="L549">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
+<span class="fc" id="L549">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
 
-<span class="nc" id="L551">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
-<span class="nc" id="L552">        stat.setImg1Point(new PairInt(x1, y1));</span>
-<span class="nc" id="L553">        stat.setImg2Point(new PairInt(x2, y2));</span>
-<span class="nc" id="L554">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
-<span class="nc" id="L555">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
+<span class="fc" id="L551">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="fc" id="L552">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="fc" id="L553">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="fc" id="L554">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
+<span class="fc" id="L555">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
 
-<span class="nc" id="L557">        return stat;</span>
+<span class="fc" id="L557">        return stat;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

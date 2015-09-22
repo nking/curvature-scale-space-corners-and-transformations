@@ -130,39 +130,39 @@ import org.ejml.simple.*;
     
     public static float[] multiply(float[][] m, float[] n) {
 
-<span class="nc bnc" id="L133" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="pc bpc" id="L133" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
 <span class="nc" id="L134">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="nc bnc" id="L136" title="All 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
 <span class="nc" id="L137">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="nc" id="L140">        int mcols = m.length;</span>
+<span class="fc" id="L140">        int mcols = m.length;</span>
 
-<span class="nc" id="L142">        int mrows = m[0].length;</span>
+<span class="fc" id="L142">        int mrows = m[0].length;</span>
 
-<span class="nc" id="L144">        int ncols = n.length;</span>
+<span class="fc" id="L144">        int ncols = n.length;</span>
         
-<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (mcols != ncols) {</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (mcols != ncols) {</span>
 <span class="nc" id="L147">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m must equal the number of rows in n&quot;);
         }
         
-<span class="nc" id="L151">        float[] c = new float[mrows];</span>
+<span class="fc" id="L151">        float[] c = new float[mrows];</span>
 
-<span class="nc" id="L153">        int cCol = 0;</span>
+<span class="fc" id="L153">        int cCol = 0;</span>
         
-<span class="nc bnc" id="L155" title="All 2 branches missed.">        for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
                         
-<span class="nc bnc" id="L157" title="All 2 branches missed.">            for (int col = 0; col &lt; mcols; col++) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            for (int col = 0; col &lt; mcols; col++) {</span>
                 
-<span class="nc" id="L159">                c[cCol] += (m[col][row] * n[col]);</span>
+<span class="fc" id="L159">                c[cCol] += (m[col][row] * n[col]);</span>
             }
             
-<span class="nc" id="L162">            cCol++;        </span>
+<span class="fc" id="L162">            cCol++;        </span>
         }
 
-<span class="nc" id="L165">        return c;</span>
+<span class="fc" id="L165">        return c;</span>
     }
     
     public static void multiply(int[] m, int factor) {
@@ -322,25 +322,25 @@ import org.ejml.simple.*;
     
     public static Complex[][] transpose(Complex[][] m) {
 
-<span class="nc bnc" id="L325" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="pc bpc" id="L325" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
 <span class="nc" id="L326">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="nc" id="L329">        int mRows = m.length;</span>
-<span class="nc" id="L330">        int mCols = m[0].length;</span>
+<span class="fc" id="L329">        int mRows = m.length;</span>
+<span class="fc" id="L330">        int mCols = m[0].length;</span>
         
-<span class="nc" id="L332">        Complex[][] t = new Complex[mCols][];</span>
-<span class="nc bnc" id="L333" title="All 2 branches missed.">        for (int i = 0; i &lt; mCols; i++) {</span>
-<span class="nc" id="L334">            t[i] = new Complex[mRows];</span>
+<span class="fc" id="L332">        Complex[][] t = new Complex[mCols][];</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        for (int i = 0; i &lt; mCols; i++) {</span>
+<span class="fc" id="L334">            t[i] = new Complex[mRows];</span>
         }
         
-<span class="nc bnc" id="L337" title="All 2 branches missed.">        for (int i = 0; i &lt; mRows; i++) {</span>
-<span class="nc bnc" id="L338" title="All 2 branches missed.">            for (int j = 0; j &lt; mCols; j++) {</span>
-<span class="nc" id="L339">                t[j][i] = m[i][j];</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">        for (int i = 0; i &lt; mRows; i++) {</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">            for (int j = 0; j &lt; mCols; j++) {</span>
+<span class="fc" id="L339">                t[j][i] = m[i][j];</span>
             }
         }
         
-<span class="nc" id="L343">        return t;</span>
+<span class="fc" id="L343">        return t;</span>
     }
     
     /**

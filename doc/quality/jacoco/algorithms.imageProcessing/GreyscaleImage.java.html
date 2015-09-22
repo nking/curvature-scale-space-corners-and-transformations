@@ -47,10 +47,10 @@ public class GreyscaleImage {
     
     public void multiply(int factor) {
         
-<span class="nc bnc" id="L50" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; i++) {</span>
-<span class="nc" id="L51">            a[i] *= factor;</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (int i = 0; i &lt; nPixels; i++) {</span>
+<span class="fc" id="L51">            a[i] *= factor;</span>
         }
-<span class="nc" id="L53">    }</span>
+<span class="fc" id="L53">    }</span>
     
     public void divide(int number) {
         
@@ -280,34 +280,34 @@ public class GreyscaleImage {
     
     public ImageExt createColorGreyscaleExt() {
         
-<span class="nc" id="L283">        ImageExt img2 = new ImageExt(width, height);</span>
+<span class="fc" id="L283">        ImageExt img2 = new ImageExt(width, height);</span>
         
-<span class="nc" id="L285">        System.arraycopy(a, 0, img2.r, 0, nPixels);</span>
-<span class="nc" id="L286">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
-<span class="nc" id="L287">        System.arraycopy(a, 0, img2.b, 0, nPixels);</span>
+<span class="fc" id="L285">        System.arraycopy(a, 0, img2.r, 0, nPixels);</span>
+<span class="fc" id="L286">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
+<span class="fc" id="L287">        System.arraycopy(a, 0, img2.b, 0, nPixels);</span>
         
-<span class="nc" id="L289">        return img2;</span>
+<span class="fc" id="L289">        return img2;</span>
     }
     
     public void resetTo(final GreyscaleImage copyThis) {
         
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">        if (copyThis.nPixels == nPixels) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">        if (copyThis.nPixels == nPixels) {</span>
             
 <span class="fc" id="L296">            System.arraycopy(copyThis.a, 0, a, 0, nPixels);</span>
             
         } else {
             
-<span class="nc" id="L300">            a = copyThis.a;</span>
+<span class="fc" id="L300">            a = copyThis.a;</span>
     
-<span class="nc" id="L302">            width = copyThis.width;</span>
+<span class="fc" id="L302">            width = copyThis.width;</span>
     
-<span class="nc" id="L304">            height = copyThis.height;</span>
+<span class="fc" id="L304">            height = copyThis.height;</span>
     
-<span class="nc" id="L306">            nPixels = copyThis.nPixels;</span>
+<span class="fc" id="L306">            nPixels = copyThis.nPixels;</span>
             
-<span class="nc" id="L308">            xRelativeOffset = copyThis.xRelativeOffset;</span>
+<span class="fc" id="L308">            xRelativeOffset = copyThis.xRelativeOffset;</span>
             
-<span class="nc" id="L310">            yRelativeOffset = copyThis.yRelativeOffset;</span>
+<span class="fc" id="L310">            yRelativeOffset = copyThis.yRelativeOffset;</span>
         }
         
 <span class="fc" id="L313">    }</span>
@@ -349,18 +349,18 @@ public class GreyscaleImage {
 
     public boolean isThisSize(int[] offsetsAndDimensions) {
         
-<span class="nc" id="L352">        int w = offsetsAndDimensions[2];</span>
-<span class="nc" id="L353">        int h = offsetsAndDimensions[3];</span>
+<span class="fc" id="L352">        int w = offsetsAndDimensions[2];</span>
+<span class="fc" id="L353">        int h = offsetsAndDimensions[3];</span>
         
-<span class="nc" id="L355">        int offsetX = offsetsAndDimensions[0];</span>
-<span class="nc" id="L356">        int offsetY = offsetsAndDimensions[1];</span>
+<span class="fc" id="L355">        int offsetX = offsetsAndDimensions[0];</span>
+<span class="fc" id="L356">        int offsetY = offsetsAndDimensions[1];</span>
         
-<span class="nc bnc" id="L358" title="All 8 branches missed.">        if (this.width != w || this.height != h || </span>
+<span class="pc bpc" id="L358" title="4 of 8 branches missed.">        if (this.width != w || this.height != h || </span>
             this.xRelativeOffset != offsetX || this.yRelativeOffset != offsetY) {
 <span class="nc" id="L360">            return false;</span>
         }
         
-<span class="nc" id="L363">        return true;</span>
+<span class="fc" id="L363">        return true;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

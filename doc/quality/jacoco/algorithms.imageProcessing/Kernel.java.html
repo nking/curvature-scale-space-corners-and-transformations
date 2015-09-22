@@ -17,43 +17,43 @@ public class Kernel {
      * @param theWidth
      * @param theHeight
      */
-<span class="nc" id="L20">    public Kernel (int theWidth, int theHeight) {</span>
+<span class="fc" id="L20">    public Kernel (int theWidth, int theHeight) {</span>
         
-<span class="nc" id="L22">        nPixels = theWidth * theHeight;</span>
+<span class="fc" id="L22">        nPixels = theWidth * theHeight;</span>
         
-<span class="nc" id="L24">        width = theWidth;</span>
+<span class="fc" id="L24">        width = theWidth;</span>
         
-<span class="nc" id="L26">        height = theHeight;</span>
+<span class="fc" id="L26">        height = theHeight;</span>
      
-<span class="nc" id="L28">        a = new int[nPixels];</span>
-<span class="nc" id="L29">    }</span>
+<span class="fc" id="L28">        a = new int[nPixels];</span>
+<span class="fc" id="L29">    }</span>
     
     public void setValue(int col, int row, int value) {
         
-<span class="nc" id="L33">        int idx = (row * width) + col;</span>
+<span class="fc" id="L33">        int idx = (row * width) + col;</span>
        
-<span class="nc" id="L35">        a[idx] = value;</span>
-<span class="nc" id="L36">    }</span>
+<span class="fc" id="L35">        a[idx] = value;</span>
+<span class="fc" id="L36">    }</span>
         
     public int getValue(int col, int row) {
         
-<span class="nc" id="L40">        int idx = (row * width) + col;</span>
+<span class="fc" id="L40">        int idx = (row * width) + col;</span>
        
-<span class="nc" id="L42">        return a[idx];</span>
+<span class="fc" id="L42">        return a[idx];</span>
     }
 
     /**
      * @return the width
      */
     public int getWidth() {
-<span class="nc" id="L49">        return width;</span>
+<span class="fc" id="L49">        return width;</span>
     }
 
     /**
      * @return the height
      */
     public int getHeight() {
-<span class="nc" id="L56">        return height;</span>
+<span class="fc" id="L56">        return height;</span>
     }
 
     /**

@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import junit.framework.TestCase;
 
 public class CountingSortTest extends TestCase {
@@ -86,26 +84,6 @@ public class CountingSortTest extends TestCase {
         for (int i = 0; i < n; i++) {
             assertTrue(list.get(i).intValue() == b[i]);
         }
-    }
-
-    /**
-    * Test suite
-    * @return static Test
-    */
-    public static Test suite() {
-        
-        System.out.println("Creating a TestSuite for CountingSort");
-
-        return new TestSuite(CountingSortTest.class);
-    }
-
-    /**
-    * Set up a Junit test runner
-    * @param args Not used.
-    */
-    public static void main(String[] args) {
-
-        junit.textui.TestRunner.run(suite());
     }
 
 }

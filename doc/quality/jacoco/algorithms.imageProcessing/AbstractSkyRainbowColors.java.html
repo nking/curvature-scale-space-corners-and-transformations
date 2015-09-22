@@ -8,37 +8,37 @@ import java.awt.Color;
  *
  * @author nichole
  */
-<span class="nc" id="L11">public abstract class AbstractSkyRainbowColors {</span>
+<span class="fc" id="L11">public abstract class AbstractSkyRainbowColors {</span>
     
-<span class="nc" id="L13">    protected CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L13">    protected CIEChromaticity cieC = new CIEChromaticity();</span>
     
-<span class="nc" id="L15">    protected ArrayPair orangeBounds = cieC.getOrangePolynomial();</span>
+<span class="fc" id="L15">    protected ArrayPair orangeBounds = cieC.getOrangePolynomial();</span>
     
-<span class="nc" id="L17">    protected ArrayPair greenishYellowOrangeBounds = </span>
-<span class="nc" id="L18">        cieC.getGreenishYellowThroughOrangePolynomial();</span>
+<span class="fc" id="L17">    protected ArrayPair greenishYellowOrangeBounds = </span>
+<span class="fc" id="L18">        cieC.getGreenishYellowThroughOrangePolynomial();</span>
     
-<span class="nc" id="L20">    protected ArrayPair yellowishGreenYellowGreenBounds = </span>
-<span class="nc" id="L21">        cieC.getYellowishGreenThroughYellowGreenPolynomial();</span>
+<span class="fc" id="L20">    protected ArrayPair yellowishGreenYellowGreenBounds = </span>
+<span class="fc" id="L21">        cieC.getYellowishGreenThroughYellowGreenPolynomial();</span>
     
-<span class="nc" id="L23">    protected ArrayPair redPurplishBounds = </span>
-<span class="nc" id="L24">        cieC.getRedThroughPurplishRedPolynomial();</span>
+<span class="fc" id="L23">    protected ArrayPair redPurplishBounds = </span>
+<span class="fc" id="L24">        cieC.getRedThroughPurplishRedPolynomial();</span>
     
-<span class="nc" id="L26">    protected float orangeSLimit = 0.2f;</span>
+<span class="fc" id="L26">    protected float orangeSLimit = 0.2f;</span>
     
-<span class="nc" id="L28">    protected float greenishYellowOrangeSLimit = 0.1f;</span>
+<span class="fc" id="L28">    protected float greenishYellowOrangeSLimit = 0.1f;</span>
         
-<span class="nc" id="L30">    protected float redPurpleSLimit = 0.05f;</span>
+<span class="fc" id="L30">    protected float redPurpleSLimit = 0.05f;</span>
     
-<span class="nc" id="L32">    protected float totRGBLimit = 0.2f * 768.f;</span>
+<span class="fc" id="L32">    protected float totRGBLimit = 0.2f * 768.f;</span>
             
     public boolean isInRedThroughPurplishRed(int r, int g, int b) {
         
-<span class="nc" id="L36">        float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);</span>
+<span class="fc" id="L36">        float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);</span>
 
-<span class="nc" id="L38">        float[] hsb = new float[3];</span>
-<span class="nc" id="L39">        Color.RGBtoHSB(r, g, b, hsb);</span>
+<span class="fc" id="L38">        float[] hsb = new float[3];</span>
+<span class="fc" id="L39">        Color.RGBtoHSB(r, g, b, hsb);</span>
         
-<span class="nc" id="L41">        return isInRedThroughPurplishRed(r, g, b, pixCIEXY[0], pixCIEXY[1], </span>
+<span class="fc" id="L41">        return isInRedThroughPurplishRed(r, g, b, pixCIEXY[0], pixCIEXY[1], </span>
             hsb[1], hsb[2]);
     }
     
@@ -61,25 +61,25 @@ import java.awt.Color;
     public boolean isInRedThroughPurplishRed(int r, int g, int b, 
         float cieX, float cieY, float saturation, float brightness) {
         
-<span class="nc" id="L64">        int totRGB = r + g + b;</span>
+<span class="fc" id="L64">        int totRGB = r + g + b;</span>
         
-<span class="nc" id="L66">        PointInPolygon pInPoly = new PointInPolygon();</span>
+<span class="fc" id="L66">        PointInPolygon pInPoly = new PointInPolygon();</span>
          
-<span class="nc bnc" id="L68" title="All 6 branches missed.">        if ((r &gt; 15) &amp;&amp; (g &gt; 15) &amp;&amp; (b &gt; 15)) {</span>
+<span class="fc bfc" id="L68" title="All 6 branches covered.">        if ((r &gt; 15) &amp;&amp; (g &gt; 15) &amp;&amp; (b &gt; 15)) {</span>
                     
-<span class="nc bnc" id="L70" title="All 6 branches missed.">            if (</span>
+<span class="fc bfc" id="L70" title="All 6 branches covered.">            if (</span>
                 (saturation &gt; redPurpleSLimit)
                 &amp;&amp; (brightness &gt; 0.25)
                 &amp;&amp; (totRGB &gt; totRGBLimit)
-<span class="nc bnc" id="L74" title="All 2 branches missed.">                &amp;&amp; (pInPoly.isInSimpleCurve(cieX, cieY,</span>
-<span class="nc" id="L75">                redPurplishBounds.getX(), redPurplishBounds.getY(), </span>
-<span class="nc" id="L76">                redPurplishBounds.getX().length))) {</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">                &amp;&amp; (pInPoly.isInSimpleCurve(cieX, cieY,</span>
+<span class="fc" id="L75">                redPurplishBounds.getX(), redPurplishBounds.getY(), </span>
+<span class="fc" id="L76">                redPurplishBounds.getX().length))) {</span>
                 
-<span class="nc" id="L78">                return true;</span>
+<span class="fc" id="L78">                return true;</span>
             }
         }
         
-<span class="nc" id="L82">        return false;</span>
+<span class="fc" id="L82">        return false;</span>
     }
     
     public boolean isInOrangeRed(ImageExt clrImg, int pixelIndex) {
@@ -99,36 +99,36 @@ import java.awt.Color;
     
     public boolean isInOrangeRed(int r, int g, int b) {
         
-<span class="nc" id="L102">        float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);</span>
+<span class="fc" id="L102">        float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);</span>
 
-<span class="nc" id="L104">        float[] hsb = new float[3];</span>
-<span class="nc" id="L105">        Color.RGBtoHSB(r, g, b, hsb);</span>
+<span class="fc" id="L104">        float[] hsb = new float[3];</span>
+<span class="fc" id="L105">        Color.RGBtoHSB(r, g, b, hsb);</span>
         
-<span class="nc" id="L107">        return isInOrangeRed(r, g, b, pixCIEXY[0], pixCIEXY[1], hsb[1], hsb[2]);</span>
+<span class="fc" id="L107">        return isInOrangeRed(r, g, b, pixCIEXY[0], pixCIEXY[1], hsb[1], hsb[2]);</span>
     }
     
     public boolean isInOrangeRed(int r, int g, int b, 
         float cieX, float cieY, float saturation, float brightness) {
         
-<span class="nc" id="L113">        int totRGB = r + g + b;</span>
+<span class="fc" id="L113">        int totRGB = r + g + b;</span>
 
-<span class="nc" id="L115">        PointInPolygon pInPoly = new PointInPolygon();</span>
+<span class="fc" id="L115">        PointInPolygon pInPoly = new PointInPolygon();</span>
          
-<span class="nc bnc" id="L117" title="All 6 branches missed.">        if ((r &gt; 15) &amp;&amp; (g &gt; 15) &amp;&amp; (b &gt; 15)) {</span>
+<span class="fc bfc" id="L117" title="All 6 branches covered.">        if ((r &gt; 15) &amp;&amp; (g &gt; 15) &amp;&amp; (b &gt; 15)) {</span>
                     
-<span class="nc bnc" id="L119" title="All 6 branches missed.">            if (</span>
+<span class="fc bfc" id="L119" title="All 6 branches covered.">            if (</span>
                 (saturation &gt; orangeSLimit)
                 &amp;&amp; (brightness &gt; 0.25)
                 &amp;&amp; (totRGB &gt; totRGBLimit)
-<span class="nc bnc" id="L123" title="All 2 branches missed.">                &amp;&amp; (pInPoly.isInSimpleCurve(cieX, cieY,</span>
-<span class="nc" id="L124">                orangeBounds.getX(), orangeBounds.getY(), </span>
-<span class="nc" id="L125">                orangeBounds.getX().length))) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                &amp;&amp; (pInPoly.isInSimpleCurve(cieX, cieY,</span>
+<span class="fc" id="L124">                orangeBounds.getX(), orangeBounds.getY(), </span>
+<span class="fc" id="L125">                orangeBounds.getX().length))) {</span>
                 
-<span class="nc" id="L127">                return true;</span>
+<span class="fc" id="L127">                return true;</span>
             }
         }
         
-<span class="nc" id="L131">        return false;</span>
+<span class="fc" id="L131">        return false;</span>
     }
     
     public boolean isInGreenishYellowOrange(ImageExt clrImg, int pixelIndex) {
@@ -149,38 +149,38 @@ import java.awt.Color;
     
     public boolean isInGreenishYellowOrange(int r, int g, int b) {
         
-<span class="nc" id="L152">        float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);</span>
+<span class="fc" id="L152">        float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);</span>
 
-<span class="nc" id="L154">        float[] hsb = new float[3];</span>
-<span class="nc" id="L155">        Color.RGBtoHSB(r, g, b, hsb);</span>
+<span class="fc" id="L154">        float[] hsb = new float[3];</span>
+<span class="fc" id="L155">        Color.RGBtoHSB(r, g, b, hsb);</span>
         
-<span class="nc" id="L157">        return isInGreenishYellowOrange(r, g, b, pixCIEXY[0], pixCIEXY[1], </span>
+<span class="fc" id="L157">        return isInGreenishYellowOrange(r, g, b, pixCIEXY[0], pixCIEXY[1], </span>
             hsb[1], hsb[2]);
     }
     
     public boolean isInGreenishYellowOrange(int r, int g, int b, 
         float cieX, float cieY, float saturation, float brightness) {
         
-<span class="nc" id="L164">        int totRGB = r + g + b;</span>
+<span class="fc" id="L164">        int totRGB = r + g + b;</span>
 
-<span class="nc" id="L166">        PointInPolygon pInPoly = new PointInPolygon();</span>
+<span class="fc" id="L166">        PointInPolygon pInPoly = new PointInPolygon();</span>
                   
-<span class="nc bnc" id="L168" title="All 6 branches missed.">        if ((r &gt; 15) &amp;&amp; (g &gt; 15) &amp;&amp; (b &gt; 15)) {</span>
+<span class="fc bfc" id="L168" title="All 6 branches covered.">        if ((r &gt; 15) &amp;&amp; (g &gt; 15) &amp;&amp; (b &gt; 15)) {</span>
                     
-<span class="nc bnc" id="L170" title="All 6 branches missed.">            if (</span>
+<span class="fc bfc" id="L170" title="All 6 branches covered.">            if (</span>
                 (saturation &gt; greenishYellowOrangeSLimit)
                 &amp;&amp; (brightness &gt; 0.25)
                 &amp;&amp; (totRGB &gt; totRGBLimit)
-<span class="nc bnc" id="L174" title="All 2 branches missed.">                &amp;&amp; (pInPoly.isInSimpleCurve(cieX, cieY,</span>
-<span class="nc" id="L175">                greenishYellowOrangeBounds.getX(), </span>
-<span class="nc" id="L176">                greenishYellowOrangeBounds.getY(), </span>
-<span class="nc" id="L177">                greenishYellowOrangeBounds.getX().length))) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">                &amp;&amp; (pInPoly.isInSimpleCurve(cieX, cieY,</span>
+<span class="fc" id="L175">                greenishYellowOrangeBounds.getX(), </span>
+<span class="fc" id="L176">                greenishYellowOrangeBounds.getY(), </span>
+<span class="fc" id="L177">                greenishYellowOrangeBounds.getX().length))) {</span>
                 
-<span class="nc" id="L179">                return true;</span>
+<span class="fc" id="L179">                return true;</span>
             }
         }
         
-<span class="nc" id="L183">        return false;</span>
+<span class="fc" id="L183">        return false;</span>
     }
     
     public boolean isInYellowishYellowGreen(int r, int g, int b, 
@@ -219,12 +219,12 @@ import java.awt.Color;
      */
     public boolean isInBroadRedRainbowSpace(float cieX, float cieY) {
                 
-<span class="nc" id="L222">        PointInPolygon pInPoly = new PointInPolygon();</span>
+<span class="fc" id="L222">        PointInPolygon pInPoly = new PointInPolygon();</span>
       
-<span class="nc" id="L224">        float[] xPoly = new float[]{0.32f, 0.4f, 0.6f, 0.6f,  0.32f};</span>
-<span class="nc" id="L225">        float[] yPoly = new float[]{0.28f,  0.42f, 0.42f, 0.28f, 0.28f};</span>
+<span class="fc" id="L224">        float[] xPoly = new float[]{0.32f, 0.4f, 0.6f, 0.6f,  0.32f};</span>
+<span class="fc" id="L225">        float[] yPoly = new float[]{0.28f,  0.42f, 0.42f, 0.28f, 0.28f};</span>
         
-<span class="nc" id="L227">        return pInPoly.isInSimpleCurve(cieX, cieY, xPoly, yPoly, xPoly.length);        </span>
+<span class="fc" id="L227">        return pInPoly.isInSimpleCurve(cieX, cieY, xPoly, yPoly, xPoly.length);        </span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

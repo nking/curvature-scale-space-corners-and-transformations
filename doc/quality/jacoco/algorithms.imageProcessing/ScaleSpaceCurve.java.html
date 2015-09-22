@@ -60,7 +60,7 @@ public class ScaleSpaceCurve {
 
 <span class="fc" id="L61">        k = new float[curve.getN()];</span>
         
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        xy = (curve instanceof PairIntArrayWithColor) ? </span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        xy = (curve instanceof PairIntArrayWithColor) ? </span>
             (PairIntArrayWithColor) curve : new PairIntArrayWithColor(curve);
         
 <span class="fc bfc" id="L66" title="All 2 branches covered.">        if (curveIsClosed) {</span>
@@ -193,7 +193,7 @@ public class ScaleSpaceCurve {
     }
     
     public boolean curveIsClosed() {
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        return (xy.getColor() == 1);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        return (xy.getColor() == 1);</span>
     }
     
     public PairIntArray getXYCurve() {

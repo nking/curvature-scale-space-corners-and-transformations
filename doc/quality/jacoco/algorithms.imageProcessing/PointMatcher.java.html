@@ -3942,7 +3942,7 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L3942">        }</span>
 
 <span class="fc" id="L3944">        log.info(&quot;similarToBestFit.size=&quot; + similarToBestFit.size());</span>
-<span class="pc bpc" id="L3945" title="1 of 2 branches missed.">        if (similarToBestFit.size() &gt; 1) {</span>
+<span class="fc bfc" id="L3945" title="All 2 branches covered.">        if (similarToBestFit.size() &gt; 1) {</span>
 <span class="fc bfc" id="L3946" title="All 2 branches covered.">            for (TransformationPointFit fit : similarToBestFit) {</span>
 <span class="fc" id="L3947">                log.info(&quot;similarFit=&quot; + fit.toString());</span>
 <span class="fc" id="L3948">            }</span>
@@ -5159,71 +5159,71 @@ private void writeTransformed(TransformationParameters parameters,
         ImageExt img1, ImageExt img2, Transformer transformer,
         final int x1, final int y1) {
 
-<span class="nc" id="L5162">        final int d = 2;</span>
+<span class="fc" id="L5162">        final int d = 2;</span>
 
         // for each pixel (x1, y1) +-d transform the point to image 2
         // and compare the differences.
         // -- compare by division
         // -- compare by sum of block
 
-<span class="nc" id="L5169">        int count = 0;</span>
+<span class="fc" id="L5169">        int count = 0;</span>
         //int sumR = 0;
         //int sumG = 0;
         //int sumB = 0;
         
-<span class="nc" id="L5174">        double sumRDiv = 0;</span>
-<span class="nc" id="L5175">        double sumGDiv = 0;</span>
-<span class="nc" id="L5176">        double sumBDiv = 0;</span>
-<span class="nc" id="L5177">        double sumCieXDiv = 0;</span>
-<span class="nc" id="L5178">        double sumCieYDiv = 0;</span>
+<span class="fc" id="L5174">        double sumRDiv = 0;</span>
+<span class="fc" id="L5175">        double sumGDiv = 0;</span>
+<span class="fc" id="L5176">        double sumBDiv = 0;</span>
+<span class="fc" id="L5177">        double sumCieXDiv = 0;</span>
+<span class="fc" id="L5178">        double sumCieYDiv = 0;</span>
 
-<span class="nc bnc" id="L5180" title="All 2 branches missed.">        for (int x = (x1 - d); x &lt;= (x1 + d); ++x) {</span>
-<span class="nc bnc" id="L5181" title="All 4 branches missed.">            if ((x &lt; 0) || (x &gt; (img1.getWidth() - 1))) {</span>
+<span class="fc bfc" id="L5180" title="All 2 branches covered.">        for (int x = (x1 - d); x &lt;= (x1 + d); ++x) {</span>
+<span class="pc bpc" id="L5181" title="2 of 4 branches missed.">            if ((x &lt; 0) || (x &gt; (img1.getWidth() - 1))) {</span>
 <span class="nc" id="L5182">                continue;</span>
             }
-<span class="nc bnc" id="L5184" title="All 2 branches missed.">            for (int y = (y1 - d); y &lt;= (y1 + d); ++y) {</span>
-<span class="nc bnc" id="L5185" title="All 4 branches missed.">                if ((y &lt; 0) || (y &gt; (img1.getHeight() - 1))) {</span>
+<span class="fc bfc" id="L5184" title="All 2 branches covered.">            for (int y = (y1 - d); y &lt;= (y1 + d); ++y) {</span>
+<span class="pc bpc" id="L5185" title="2 of 4 branches missed.">                if ((y &lt; 0) || (y &gt; (img1.getHeight() - 1))) {</span>
 <span class="nc" id="L5186">                    continue;</span>
                 }
 
-<span class="nc" id="L5189">                int idx1 = img1.getInternalIndex(x, y);</span>
+<span class="fc" id="L5189">                int idx1 = img1.getInternalIndex(x, y);</span>
 
-<span class="nc" id="L5191">                double[] xyT = transformer.applyTransformation(params, x, y);</span>
+<span class="fc" id="L5191">                double[] xyT = transformer.applyTransformation(params, x, y);</span>
 
                 // compare to (x2, y2) given as a check
-<span class="nc" id="L5194">                int x2T = (int)Math.round(xyT[0]);</span>
-<span class="nc" id="L5195">                int y2T = (int)Math.round(xyT[1]);</span>
+<span class="fc" id="L5194">                int x2T = (int)Math.round(xyT[0]);</span>
+<span class="fc" id="L5195">                int y2T = (int)Math.round(xyT[1]);</span>
                 
-<span class="nc bnc" id="L5197" title="All 6 branches missed.">                if ((x2T &lt; 0) || (x2T &gt; (img2.getWidth() - 1)) ||</span>
-<span class="nc bnc" id="L5198" title="All 2 branches missed.">                    (y2T &lt; 0) || (y2T &gt; (img2.getHeight() - 1))) {</span>
+<span class="pc bpc" id="L5197" title="3 of 6 branches missed.">                if ((x2T &lt; 0) || (x2T &gt; (img2.getWidth() - 1)) ||</span>
+<span class="pc bpc" id="L5198" title="1 of 2 branches missed.">                    (y2T &lt; 0) || (y2T &gt; (img2.getHeight() - 1))) {</span>
 <span class="nc" id="L5199">                    continue;</span>
                 }
                 
-<span class="nc bnc" id="L5202" title="All 2 branches missed.">                if (debug) {</span>
-<span class="nc bnc" id="L5203" title="All 4 branches missed.">                    if (y == y1 &amp;&amp; x == x1) {</span>
-<span class="nc" id="L5204">                        log.info(String.format(&quot;(%d,%d) transformed to img2 (%d,%d)&quot;,</span>
-<span class="nc" id="L5205">                            x1, y1, x2T, y2T));</span>
+<span class="pc bpc" id="L5202" title="1 of 2 branches missed.">                if (debug) {</span>
+<span class="fc bfc" id="L5203" title="All 4 branches covered.">                    if (y == y1 &amp;&amp; x == x1) {</span>
+<span class="fc" id="L5204">                        log.info(String.format(&quot;(%d,%d) transformed to img2 (%d,%d)&quot;,</span>
+<span class="fc" id="L5205">                            x1, y1, x2T, y2T));</span>
                     }
                 }
 
-<span class="nc" id="L5209">                float cieX1 = img1.getCIEX(idx1);</span>
-<span class="nc" id="L5210">                float cieY1 = img1.getCIEY(idx1);</span>
-<span class="nc" id="L5211">                int r1 = img1.getR(idx1);</span>
-<span class="nc" id="L5212">                int g1 = img1.getG(idx1);</span>
-<span class="nc" id="L5213">                int b1 = img1.getB(idx1);</span>
+<span class="fc" id="L5209">                float cieX1 = img1.getCIEX(idx1);</span>
+<span class="fc" id="L5210">                float cieY1 = img1.getCIEY(idx1);</span>
+<span class="fc" id="L5211">                int r1 = img1.getR(idx1);</span>
+<span class="fc" id="L5212">                int g1 = img1.getG(idx1);</span>
+<span class="fc" id="L5213">                int b1 = img1.getB(idx1);</span>
                 
-<span class="nc" id="L5215">                int idx2 = img2.getInternalIndex(x2T, y2T);</span>
-<span class="nc" id="L5216">                float cieX2 = img2.getCIEX(idx2);</span>
-<span class="nc" id="L5217">                float cieY2 = img2.getCIEY(idx2);</span>
-<span class="nc" id="L5218">                int r2 = img2.getR(idx2);</span>
-<span class="nc" id="L5219">                int g2 = img2.getG(idx2);</span>
-<span class="nc" id="L5220">                int b2 = img2.getB(idx2);</span>
+<span class="fc" id="L5215">                int idx2 = img2.getInternalIndex(x2T, y2T);</span>
+<span class="fc" id="L5216">                float cieX2 = img2.getCIEX(idx2);</span>
+<span class="fc" id="L5217">                float cieY2 = img2.getCIEY(idx2);</span>
+<span class="fc" id="L5218">                int r2 = img2.getR(idx2);</span>
+<span class="fc" id="L5219">                int g2 = img2.getG(idx2);</span>
+<span class="fc" id="L5220">                int b2 = img2.getB(idx2);</span>
 
-<span class="nc" id="L5222">                float cieXDiv = cieX1/cieX2;</span>
-<span class="nc" id="L5223">                float cieYDiv = cieY1/cieY2;</span>
-<span class="nc" id="L5224">                float rDiv = (float)r1/(float)r2;</span>
-<span class="nc" id="L5225">                float gDiv = (float)g1/(float)g2;</span>
-<span class="nc" id="L5226">                float bDiv = (float)b1/(float)b2;</span>
+<span class="fc" id="L5222">                float cieXDiv = cieX1/cieX2;</span>
+<span class="fc" id="L5223">                float cieYDiv = cieY1/cieY2;</span>
+<span class="fc" id="L5224">                float rDiv = (float)r1/(float)r2;</span>
+<span class="fc" id="L5225">                float gDiv = (float)g1/(float)g2;</span>
+<span class="fc" id="L5226">                float bDiv = (float)b1/(float)b2;</span>
 
                 /*
                 int rDiff = Math.abs(r1 - r2);
@@ -5240,18 +5240,18 @@ private void writeTransformed(TransformationParameters parameters,
                 sumB += bDiff;
                 */
 
-<span class="nc" id="L5243">                sumRDiv += rDiv;</span>
-<span class="nc" id="L5244">                sumGDiv += gDiv;</span>
-<span class="nc" id="L5245">                sumBDiv += bDiv;</span>
+<span class="fc" id="L5243">                sumRDiv += rDiv;</span>
+<span class="fc" id="L5244">                sumGDiv += gDiv;</span>
+<span class="fc" id="L5245">                sumBDiv += bDiv;</span>
                 
-<span class="nc" id="L5247">                sumCieXDiv += cieXDiv;</span>
-<span class="nc" id="L5248">                sumCieYDiv += cieYDiv;</span>
+<span class="fc" id="L5247">                sumCieXDiv += cieXDiv;</span>
+<span class="fc" id="L5248">                sumCieYDiv += cieYDiv;</span>
                 
-<span class="nc" id="L5250">                count++;</span>
+<span class="fc" id="L5250">                count++;</span>
             }
         }
         
-<span class="nc bnc" id="L5254" title="All 2 branches missed.">        if (count == 0) {</span>
+<span class="pc bpc" id="L5254" title="1 of 2 branches missed.">        if (count == 0) {</span>
 <span class="nc" id="L5255">            return false;</span>
         }
 
@@ -5260,28 +5260,28 @@ private void writeTransformed(TransformationParameters parameters,
         float bAvg = (float)sumB/(float)count;
         */
         
-<span class="nc" id="L5263">        double rDivAvg = sumRDiv/(double)count;</span>
-<span class="nc" id="L5264">        double gDivAvg = sumGDiv/(double)count;</span>
-<span class="nc" id="L5265">        double bDivAvg = sumBDiv/(double)count;</span>
+<span class="fc" id="L5263">        double rDivAvg = sumRDiv/(double)count;</span>
+<span class="fc" id="L5264">        double gDivAvg = sumGDiv/(double)count;</span>
+<span class="fc" id="L5265">        double bDivAvg = sumBDiv/(double)count;</span>
         
-<span class="nc" id="L5267">        double cieXDivAvg = sumCieXDiv/(double)count;</span>
-<span class="nc" id="L5268">        double cieYDivAvg = sumCieYDiv/(double)count;</span>
+<span class="fc" id="L5267">        double cieXDivAvg = sumCieXDiv/(double)count;</span>
+<span class="fc" id="L5268">        double cieYDivAvg = sumCieYDiv/(double)count;</span>
         
-<span class="nc bnc" id="L5270" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L5271">            log.info(&quot;rDivAvg=+ &quot; + rDivAvg + &quot; gDivAvg=&quot; + gDivAvg + </span>
+<span class="pc bpc" id="L5270" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L5271">            log.info(&quot;rDivAvg=+ &quot; + rDivAvg + &quot; gDivAvg=&quot; + gDivAvg + </span>
                 &quot; bDivAvg=&quot; + bDivAvg 
                 + &quot; cieXDivAvg=&quot; + cieXDivAvg + &quot; cieYDivAvg=&quot; + cieYDivAvg);
         }
 
-<span class="nc bnc" id="L5276" title="All 6 branches missed.">        if ((rDivAvg &lt; 0.84) || (gDivAvg &lt; 0.84) || (bDivAvg &lt; 0.84)) {</span>
-<span class="nc" id="L5277">            return false;</span>
+<span class="pc bpc" id="L5276" title="1 of 6 branches missed.">        if ((rDivAvg &lt; 0.84) || (gDivAvg &lt; 0.84) || (bDivAvg &lt; 0.84)) {</span>
+<span class="fc" id="L5277">            return false;</span>
         }
         
-<span class="nc bnc" id="L5280" title="All 6 branches missed.">        if ((rDivAvg &gt; 1.19) || (gDivAvg &gt; 1.19) || (bDivAvg &gt; 1.19)) {</span>
-<span class="nc" id="L5281">            return false;</span>
+<span class="pc bpc" id="L5280" title="1 of 6 branches missed.">        if ((rDivAvg &gt; 1.19) || (gDivAvg &gt; 1.19) || (bDivAvg &gt; 1.19)) {</span>
+<span class="fc" id="L5281">            return false;</span>
         }
 
-<span class="nc" id="L5284">        return true;</span>
+<span class="fc" id="L5284">        return true;</span>
     }
 
 }

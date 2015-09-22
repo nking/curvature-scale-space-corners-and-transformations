@@ -58,25 +58,25 @@ public class NearestPoints {
 <span class="fc" id="L58">        int idx = Arrays.binarySearch(x, xCenter);</span>
                     
         // if it's negative, (-(insertion point) - 1)
-<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (idx &lt; 0) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (idx &lt; 0) {</span>
             // idx = -*idx2 - 1
-<span class="nc" id="L63">            idx = -1*(idx + 1);                </span>
+<span class="fc" id="L63">            idx = -1*(idx + 1);                </span>
         }
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (idx &gt; (x.length - 1)) {</span>
-<span class="nc" id="L66">            idx = x.length - 1;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (idx &gt; (x.length - 1)) {</span>
+<span class="fc" id="L66">            idx = x.length - 1;</span>
         }
         
 <span class="fc" id="L69">        int startIdx = idx;</span>
 <span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = idx; i &gt; -1; --i) {</span>
 <span class="fc" id="L71">            int x2 = x[i];</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            if (Math.abs(x2 - xCenter) &gt; radius) {</span>
-<span class="nc" id="L73">                break;</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (Math.abs(x2 - xCenter) &gt; radius) {</span>
+<span class="fc" id="L73">                break;</span>
             }
 <span class="fc" id="L75">            startIdx = i;</span>
         }
         
 <span class="fc" id="L78">        int stopIdx = idx;</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        for (int i = (idx + 1); i &lt; x.length; ++i) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (int i = (idx + 1); i &lt; x.length; ++i) {</span>
 <span class="fc" id="L80">            int x2 = x[i];</span>
 <span class="fc bfc" id="L81" title="All 2 branches covered.">            if (Math.abs(x2 - xCenter) &gt; radius) {</span>
 <span class="fc" id="L82">                break;</span>
@@ -91,7 +91,7 @@ public class NearestPoints {
 <span class="fc" id="L91">            int diffX = x[i] - xCenter;</span>
 <span class="fc" id="L92">            int diffY = y[i] - yCenter;</span>
 <span class="fc" id="L93">            double distSq = (diffX*diffX) + (diffY*diffY);</span>
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">            if (distSq &lt;= rSq) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (distSq &lt;= rSq) {</span>
 <span class="fc" id="L95">                result.add(new PairInt(x[i], y[i]));</span>
             }
         }

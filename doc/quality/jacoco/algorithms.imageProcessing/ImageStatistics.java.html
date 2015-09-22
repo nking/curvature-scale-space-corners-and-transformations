@@ -53,7 +53,7 @@ public class ImageStatistics {
      * @return the mode
      */
     public double getMode() {
-<span class="nc" id="L56">        return mode;</span>
+<span class="fc" id="L56">        return mode;</span>
     }
 
     /**
@@ -67,7 +67,7 @@ public class ImageStatistics {
      * @return the median
      */
     public double getMedian() {
-<span class="nc" id="L70">        return median;</span>
+<span class="fc" id="L70">        return median;</span>
     }
 
     /**
@@ -141,41 +141,41 @@ public class ImageStatistics {
     @Override
     public String toString() {
         
-<span class="nc" id="L144">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L144">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L146">        sb.append(&quot;min=&quot;).append(Double.toString(min)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L147">        sb.append(&quot;max=&quot;).append(Double.toString(max)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L148">        sb.append(&quot;mean=&quot;).append(Double.toString(mean)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L149">        sb.append(&quot;median=&quot;).append(Double.toString(median)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L150">        sb.append(&quot;mode=&quot;).append(Double.toString(mode)).append(&quot;\n&quot;);</span>
-<span class="nc" id="L151">        sb.append(&quot;quartiles=&quot;);</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">        if (quartiles != null) {</span>
-<span class="nc" id="L153">            sb.append(Arrays.toString(quartiles));</span>
+<span class="fc" id="L146">        sb.append(&quot;min=&quot;).append(Double.toString(min)).append(&quot;\n&quot;);</span>
+<span class="fc" id="L147">        sb.append(&quot;max=&quot;).append(Double.toString(max)).append(&quot;\n&quot;);</span>
+<span class="fc" id="L148">        sb.append(&quot;mean=&quot;).append(Double.toString(mean)).append(&quot;\n&quot;);</span>
+<span class="fc" id="L149">        sb.append(&quot;median=&quot;).append(Double.toString(median)).append(&quot;\n&quot;);</span>
+<span class="fc" id="L150">        sb.append(&quot;mode=&quot;).append(Double.toString(mode)).append(&quot;\n&quot;);</span>
+<span class="fc" id="L151">        sb.append(&quot;quartiles=&quot;);</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (quartiles != null) {</span>
+<span class="fc" id="L153">            sb.append(Arrays.toString(quartiles));</span>
         }
-<span class="nc" id="L155">        sb.append(&quot;\n&quot;);</span>
-<span class="nc" id="L156">        sb.append(&quot;histogram=&quot;);</span>
-<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (histogram != null) {</span>
-<span class="nc" id="L158">            sb.append(histogram.toString());</span>
-        }
-        
-<span class="nc bnc" id="L161" title="All 2 branches missed.">        if (histAreas != null) {</span>
-<span class="nc" id="L162">            sb.append(&quot;histAreas=&quot;).append(Arrays.toString(histAreas)).append(&quot;\n&quot;);</span>
+<span class="fc" id="L155">        sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L156">        sb.append(&quot;histogram=&quot;);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (histogram != null) {</span>
+<span class="fc" id="L158">            sb.append(histogram.toString());</span>
         }
         
-<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
-<span class="nc" id="L166">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
-<span class="nc" id="L167">            sb.append(&quot;\n&quot;);</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (histAreas != null) {</span>
+<span class="fc" id="L162">            sb.append(&quot;histAreas=&quot;).append(Arrays.toString(histAreas)).append(&quot;\n&quot;);</span>
         }
         
-<span class="nc" id="L170">        return sb.toString();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (Double.compare(lowThresholdApplied, Double.MAX_VALUE) &lt; 0) {</span>
+<span class="fc" id="L166">            sb.append(&quot;lowThresholdApplied=&quot;).append(lowThresholdApplied);</span>
+<span class="fc" id="L167">            sb.append(&quot;\n&quot;);</span>
+        }
+        
+<span class="fc" id="L170">        return sb.toString();</span>
     }
 
     public void setLowThresholdApplied(double lowThresh) {
-<span class="nc" id="L174">        lowThresholdApplied = lowThresh;</span>
-<span class="nc" id="L175">    }</span>
+<span class="fc" id="L174">        lowThresholdApplied = lowThresh;</span>
+<span class="fc" id="L175">    }</span>
     
     public double getLowThresholdApplied() {
-<span class="nc" id="L178">        return lowThresholdApplied;</span>
+<span class="fc" id="L178">        return lowThresholdApplied;</span>
     }
 
     /**

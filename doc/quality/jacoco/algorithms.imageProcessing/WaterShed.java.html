@@ -43,7 +43,7 @@ import java.util.Map.Entry;
  *
  * @author nichole
  */
-<span class="nc bnc" id="L46" title="All 2 branches missed.">public class WaterShed extends AbstractWaterShed {</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">public class WaterShed extends AbstractWaterShed {</span>
 
     /**
      * two dimensional matrix of the shortest distance of a pixel to
@@ -53,7 +53,7 @@ import java.util.Map.Entry;
      * no neighbors have a smaller intensity.
      * This is populated by the method named lower.
      */
-<span class="nc" id="L56">    private int[][] distToLowerIntensityPixel = null;</span>
+<span class="fc" id="L56">    private int[][] distToLowerIntensityPixel = null;</span>
 
     /**
      * create a component labelled image with watershed pixels labelled as '0'.
@@ -63,11 +63,11 @@ import java.util.Map.Entry;
      */
     public int[][] createLabelledImage(GreyscaleImage img) {
 
-<span class="nc" id="L66">        int[][] lowerComplete = lower(img);</span>
+<span class="fc" id="L66">        int[][] lowerComplete = lower(img);</span>
 
-<span class="nc" id="L68">        int[][] labelled2 = unionFindWatershed(lowerComplete);</span>
+<span class="fc" id="L68">        int[][] labelled2 = unionFindWatershed(lowerComplete);</span>
 
-<span class="nc" id="L70">        return labelled2;</span>
+<span class="fc" id="L70">        return labelled2;</span>
     }
 
     /**
@@ -84,127 +84,127 @@ import java.util.Map.Entry;
      */
     protected int[][] lower(GreyscaleImage img) {
 
-<span class="nc" id="L87">        int w = img.getWidth();</span>
-<span class="nc" id="L88">        int h = img.getHeight();</span>
+<span class="fc" id="L87">        int w = img.getWidth();</span>
+<span class="fc" id="L88">        int h = img.getHeight();</span>
 
-<span class="nc" id="L90">        int[][] lc = new int[w][];</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc" id="L92">            lc[i] = new int[h];</span>
+<span class="fc" id="L90">        int[][] lc = new int[w][];</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L92">            lc[i] = new int[h];</span>
         }
 
-<span class="nc" id="L95">        distToLowerIntensityPixel = new int[w][];</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc" id="L97">            distToLowerIntensityPixel[i] = new int[h];</span>
+<span class="fc" id="L95">        distToLowerIntensityPixel = new int[w][];</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L97">            distToLowerIntensityPixel[i] = new int[h];</span>
         }
 
-<span class="nc" id="L100">        regionalMinima = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L100">        regionalMinima = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L102">        int[] dxs8 = Misc.dx8;</span>
-<span class="nc" id="L103">        int[] dys8 = Misc.dy8;</span>
+<span class="fc" id="L102">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L103">        int[] dys8 = Misc.dy8;</span>
 
         int dist;
 
-<span class="nc" id="L107">        ArrayDeque&lt;Integer&gt; queue = new ArrayDeque&lt;Integer&gt;(img.getNPixels());</span>
+<span class="fc" id="L107">        ArrayDeque&lt;Integer&gt; queue = new ArrayDeque&lt;Integer&gt;(img.getNPixels());</span>
 
         // ---- init queue with points which have lower intensity neighbors ---
-<span class="nc bnc" id="L110" title="All 2 branches missed.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
 
-<span class="nc" id="L113">                int v = img.getValue(x, y);</span>
-<span class="nc" id="L114">                int idx = img.getIndex(x, y);</span>
+<span class="fc" id="L113">                int v = img.getValue(x, y);</span>
+<span class="fc" id="L114">                int idx = img.getIndex(x, y);</span>
 
-<span class="nc bnc" id="L116" title="All 2 branches missed.">                for (int vIdx = 0; vIdx &lt; dxs8.length; ++vIdx) {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                for (int vIdx = 0; vIdx &lt; dxs8.length; ++vIdx) {</span>
 
-<span class="nc" id="L118">                    int x2 = x + dxs8[vIdx];</span>
-<span class="nc" id="L119">                    int y2 = y + dys8[vIdx];</span>
-<span class="nc bnc" id="L120" title="All 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L121">                        continue;</span>
+<span class="fc" id="L118">                    int x2 = x + dxs8[vIdx];</span>
+<span class="fc" id="L119">                    int y2 = y + dys8[vIdx];</span>
+<span class="fc bfc" id="L120" title="All 8 branches covered.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="fc" id="L121">                        continue;</span>
                     }
 
-<span class="nc" id="L124">                    int v2 = img.getValue(x2, y2);</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">                    if (v2 &lt; v) {</span>
-<span class="nc" id="L126">                        queue.add(Integer.valueOf(idx));</span>
-<span class="nc" id="L127">                        lc[x][y] = -1;</span>
-<span class="nc" id="L128">                        break;</span>
+<span class="fc" id="L124">                    int v2 = img.getValue(x2, y2);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">                    if (v2 &lt; v) {</span>
+<span class="fc" id="L126">                        queue.add(Integer.valueOf(idx));</span>
+<span class="fc" id="L127">                        lc[x][y] = -1;</span>
+<span class="fc" id="L128">                        break;</span>
                     }
                 }
             }
         }
 
-<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (queue.isEmpty()) {</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (queue.isEmpty()) {</span>
             // points contains only pixels of same intensity
 <span class="nc" id="L136">            return null;</span>
         }
 
-<span class="nc" id="L139">        dist = 1;</span>
-<span class="nc" id="L140">        queue.add(sentinelInt);</span>
+<span class="fc" id="L139">        dist = 1;</span>
+<span class="fc" id="L140">        queue.add(sentinelInt);</span>
 
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        while (!queue.isEmpty()) {</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        while (!queue.isEmpty()) {</span>
 
-<span class="nc" id="L144">            Integer index = queue.poll();</span>
+<span class="fc" id="L144">            Integer index = queue.poll();</span>
 
-<span class="nc bnc" id="L146" title="All 2 branches missed.">            if (index.equals(sentinelInt)) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            if (index.equals(sentinelInt)) {</span>
 
-<span class="nc bnc" id="L148" title="All 2 branches missed.">                if (!queue.isEmpty()) {</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">                if (!queue.isEmpty()) {</span>
 
-<span class="nc" id="L150">                    queue.add(sentinelInt);</span>
+<span class="fc" id="L150">                    queue.add(sentinelInt);</span>
 
                     //any point originally lacking lower intensity neighbors,
                     //now gets a larger distance
 
-<span class="nc" id="L155">                    dist++;</span>
+<span class="fc" id="L155">                    dist++;</span>
                 }
 
                 continue;
             }
 
-<span class="nc" id="L161">            int x = img.getCol(index.intValue());</span>
-<span class="nc" id="L162">            int y = img.getRow(index.intValue());</span>
+<span class="fc" id="L161">            int x = img.getCol(index.intValue());</span>
+<span class="fc" id="L162">            int y = img.getRow(index.intValue());</span>
 
-<span class="nc" id="L164">            lc[x][y] = dist;</span>
+<span class="fc" id="L164">            lc[x][y] = dist;</span>
 
-<span class="nc bnc" id="L166" title="All 2 branches missed.">            for (int vIdx = 0; vIdx &lt; dxs8.length; ++vIdx) {</span>
-<span class="nc" id="L167">                int x2 = x + dxs8[vIdx];</span>
-<span class="nc" id="L168">                int y2 = y + dys8[vIdx];</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            for (int vIdx = 0; vIdx &lt; dxs8.length; ++vIdx) {</span>
+<span class="fc" id="L167">                int x2 = x + dxs8[vIdx];</span>
+<span class="fc" id="L168">                int y2 = y + dys8[vIdx];</span>
 
-<span class="nc bnc" id="L170" title="All 6 branches missed.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1)) ||</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">                    (y2 &gt; (img.getHeight() - 1))) {</span>
-<span class="nc" id="L172">                    continue;</span>
+<span class="fc bfc" id="L170" title="All 6 branches covered.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1)) ||</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                    (y2 &gt; (img.getHeight() - 1))) {</span>
+<span class="fc" id="L172">                    continue;</span>
                 }
 
-<span class="nc bnc" id="L175" title="All 4 branches missed.">                if ((img.getValue(x, y) == img.getValue(x2, y2)) &amp;&amp;</span>
+<span class="fc bfc" id="L175" title="All 4 branches covered.">                if ((img.getValue(x, y) == img.getValue(x2, y2)) &amp;&amp;</span>
                     (lc[x2][y2] == 0)) {
 
-<span class="nc" id="L178">                    int idx2 = img.getIndex(x2, y2);</span>
+<span class="fc" id="L178">                    int idx2 = img.getIndex(x2, y2);</span>
 
-<span class="nc" id="L180">                    queue.add(Integer.valueOf(idx2));</span>
+<span class="fc" id="L180">                    queue.add(Integer.valueOf(idx2));</span>
 
-<span class="nc" id="L182">                    lc[x2][y2] = -1;</span>
+<span class="fc" id="L182">                    lc[x2][y2] = -1;</span>
                 }
             }
-<span class="nc" id="L185">        }</span>
+<span class="fc" id="L185">        }</span>
 
-<span class="nc bnc" id="L187" title="All 2 branches missed.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
 
-<span class="nc bnc" id="L189" title="All 2 branches missed.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
 
-<span class="nc" id="L191">                distToLowerIntensityPixel[x][y] = lc[x][y];</span>
+<span class="fc" id="L191">                distToLowerIntensityPixel[x][y] = lc[x][y];</span>
 
-<span class="nc bnc" id="L193" title="All 2 branches missed.">                if (lc[x][y] != 0) {</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">                if (lc[x][y] != 0) {</span>
 
-<span class="nc" id="L195">                    lc[x][y] = dist * img.getValue(x, y) + lc[x][y] - 1;</span>
+<span class="fc" id="L195">                    lc[x][y] = dist * img.getValue(x, y) + lc[x][y] - 1;</span>
 
                 } else {
 
-<span class="nc" id="L199">                    regionalMinima.add(new PairInt(x, y));</span>
+<span class="fc" id="L199">                    regionalMinima.add(new PairInt(x, y));</span>
 
                     //as suggested by later paper, adapted for watershed by Union-Find
-<span class="nc" id="L202">                    lc[x][y] = dist * img.getValue(x, y);</span>
+<span class="fc" id="L202">                    lc[x][y] = dist * img.getValue(x, y);</span>
                 }
             }
         }
 
-<span class="nc" id="L207">        return lc;</span>
+<span class="fc" id="L207">        return lc;</span>
     }
 
     /**
@@ -231,8 +231,8 @@ import java.util.Map.Entry;
      */
     protected int[][] unionFindComponentLabelling(int[][] im) {
 
-<span class="nc" id="L234">        int w = im.length;</span>
-<span class="nc" id="L235">        int h = im[0].length;</span>
+<span class="fc" id="L234">        int w = im.length;</span>
+<span class="fc" id="L235">        int h = im[0].length;</span>
 
         /*
         search for neighbors q of p that have smaller lexicographical values
@@ -242,52 +242,52 @@ import java.util.Map.Entry;
           (-1, 0)   p=(0,  0)
           (-1,-1)     (0, -1)
         */
-<span class="nc" id="L245">        int[] dLOX = new int[]{-1, -1, -1,  0};</span>
-<span class="nc" id="L246">        int[] dLOY = new int[]{ 1,  0, -1, -1};</span>
+<span class="fc" id="L245">        int[] dLOX = new int[]{-1, -1, -1,  0};</span>
+<span class="fc" id="L246">        int[] dLOY = new int[]{ 1,  0, -1, -1};</span>
 
-<span class="nc" id="L248">        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();</span>
+<span class="fc" id="L248">        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();</span>
 
-<span class="nc" id="L250">        Map&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt; parentMap = new</span>
+<span class="fc" id="L250">        Map&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt; parentMap = new</span>
             HashMap&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt;();
 
         // init map
-<span class="nc bnc" id="L254" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L255" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="nc" id="L256">                PairInt pPoint = new PairInt(i, j);</span>
-<span class="nc" id="L257">                DisjointSet2Node&lt;PairInt&gt; pNode =</span>
-<span class="nc" id="L258">                    disjointSetHelper.makeSet(new DisjointSet2Node&lt;PairInt&gt;(pPoint));</span>
-<span class="nc" id="L259">                parentMap.put(pPoint, pNode);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L256">                PairInt pPoint = new PairInt(i, j);</span>
+<span class="fc" id="L257">                DisjointSet2Node&lt;PairInt&gt; pNode =</span>
+<span class="fc" id="L258">                    disjointSetHelper.makeSet(new DisjointSet2Node&lt;PairInt&gt;(pPoint));</span>
+<span class="fc" id="L259">                parentMap.put(pPoint, pNode);</span>
             }
         }
 
         //Firstpass
         PairInt reprPoint;
-<span class="nc bnc" id="L265" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L266" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
 
-<span class="nc" id="L268">                PairInt pPoint = new PairInt(i, j);</span>
+<span class="fc" id="L268">                PairInt pPoint = new PairInt(i, j);</span>
 
-<span class="nc" id="L270">                reprPoint = pPoint;</span>
+<span class="fc" id="L270">                reprPoint = pPoint;</span>
 
-<span class="nc" id="L272">                int x = pPoint.getX();</span>
-<span class="nc" id="L273">                int y = pPoint.getY();</span>
-<span class="nc" id="L274">                int vP = im[x][y];</span>
+<span class="fc" id="L272">                int x = pPoint.getX();</span>
+<span class="fc" id="L273">                int y = pPoint.getY();</span>
+<span class="fc" id="L274">                int vP = im[x][y];</span>
 
-<span class="nc" id="L276">                List&lt;PairInt&gt; qPoints = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L276">                List&lt;PairInt&gt; qPoints = new ArrayList&lt;PairInt&gt;();</span>
 
                 //for all q ∈ Neighbor(p) with q ≺ p
-<span class="nc bnc" id="L279" title="All 2 branches missed.">                for (int vIdx = 0; vIdx &lt; dLOX.length; ++vIdx) {</span>
-<span class="nc" id="L280">                    int x2 = x + dLOX[vIdx];</span>
-<span class="nc" id="L281">                    int y2 = y + dLOY[vIdx];</span>
-<span class="nc bnc" id="L282" title="All 8 branches missed.">                    if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L283">                        continue;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                for (int vIdx = 0; vIdx &lt; dLOX.length; ++vIdx) {</span>
+<span class="fc" id="L280">                    int x2 = x + dLOX[vIdx];</span>
+<span class="fc" id="L281">                    int y2 = y + dLOY[vIdx];</span>
+<span class="pc bpc" id="L282" title="1 of 8 branches missed.">                    if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="fc" id="L283">                        continue;</span>
                     }
 
-<span class="nc" id="L286">                    PairInt qPoint = new PairInt(x2, y2);</span>
+<span class="fc" id="L286">                    PairInt qPoint = new PairInt(x2, y2);</span>
 
-<span class="nc" id="L288">                    int vQ = im[x2][y2];</span>
+<span class="fc" id="L288">                    int vQ = im[x2][y2];</span>
 
-<span class="nc bnc" id="L290" title="All 2 branches missed.">                    if (vP == vQ) {</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">                    if (vP == vQ) {</span>
 
                         // find r, the representative of the neighbors with
                         // same image intensity, as the lexicographically
@@ -295,34 +295,34 @@ import java.util.Map.Entry;
 
                         //r ← r min FindRoot(q);
 
-<span class="nc" id="L298">                        DisjointSet2Node&lt;PairInt&gt; qParent = disjointSetHelper.findSet(</span>
-<span class="nc" id="L299">                            parentMap.get(qPoint));</span>
+<span class="fc" id="L298">                        DisjointSet2Node&lt;PairInt&gt; qParent = disjointSetHelper.findSet(</span>
+<span class="fc" id="L299">                            parentMap.get(qPoint));</span>
 
-<span class="nc bnc" id="L301" title="All 2 branches missed.">                        if (qParent.getMember().getX() &lt; reprPoint.getX()) {</span>
-<span class="nc" id="L302">                            reprPoint = qPoint;</span>
-<span class="nc bnc" id="L303" title="All 2 branches missed.">                        } else if ((qParent.getMember().getX() == reprPoint.getX())</span>
-<span class="nc bnc" id="L304" title="All 2 branches missed.">                            &amp;&amp; (qParent.getMember().getY() &lt; reprPoint.getY())) {</span>
-<span class="nc" id="L305">                            reprPoint = qPoint;</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">                        if (qParent.getMember().getX() &lt; reprPoint.getX()) {</span>
+<span class="fc" id="L302">                            reprPoint = qPoint;</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">                        } else if ((qParent.getMember().getX() == reprPoint.getX())</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                            &amp;&amp; (qParent.getMember().getY() &lt; reprPoint.getY())) {</span>
+<span class="fc" id="L305">                            reprPoint = qPoint;</span>
                         }
-<span class="nc" id="L307">                        qPoints.add(qPoint);</span>
+<span class="fc" id="L307">                        qPoints.add(qPoint);</span>
                     }
                 }
 
                 //parent[p] ← r
-<span class="nc bnc" id="L312" title="All 2 branches missed.">                if (!qPoints.isEmpty()) {</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">                if (!qPoints.isEmpty()) {</span>
 
-<span class="nc" id="L314">                    DisjointSet2Node&lt;PairInt&gt; parent = disjointSetHelper.union(</span>
-<span class="nc" id="L315">                        parentMap.get(reprPoint), parentMap.get(pPoint));</span>
+<span class="fc" id="L314">                    DisjointSet2Node&lt;PairInt&gt; parent = disjointSetHelper.union(</span>
+<span class="fc" id="L315">                        parentMap.get(reprPoint), parentMap.get(pPoint));</span>
 
-<span class="nc bnc" id="L317" title="All 2 branches missed.">                    for (PairInt qPoint : qPoints) {</span>
-<span class="nc bnc" id="L318" title="All 2 branches missed.">                        if (qPoint.equals(reprPoint)) {</span>
-<span class="nc" id="L319">                            continue;</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                    for (PairInt qPoint : qPoints) {</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">                        if (qPoint.equals(reprPoint)) {</span>
+<span class="fc" id="L319">                            continue;</span>
                         }
                         //PathCompress(q, r)
 
-<span class="nc" id="L323">                        DisjointSet2Node&lt;PairInt&gt; qParent = disjointSetHelper.union(</span>
-<span class="nc" id="L324">                            parentMap.get(reprPoint), parentMap.get(qPoint));</span>
-<span class="nc" id="L325">                    }</span>
+<span class="fc" id="L323">                        DisjointSet2Node&lt;PairInt&gt; qParent = disjointSetHelper.union(</span>
+<span class="fc" id="L324">                            parentMap.get(reprPoint), parentMap.get(qPoint));</span>
+<span class="fc" id="L325">                    }</span>
                 }
             } // end j loop
         } // end i loop
@@ -337,37 +337,37 @@ import java.util.Map.Entry;
         representative.
         */
 
-<span class="nc" id="L340">        int[][] label = new int[w][];</span>
-<span class="nc bnc" id="L341" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc" id="L342">            label[i] = new int[h];</span>
+<span class="fc" id="L340">        int[][] label = new int[w][];</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L342">            label[i] = new int[h];</span>
         }
 
         //Secondpass
-<span class="nc" id="L346">        int curLabel = 1;</span>
-<span class="nc bnc" id="L347" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L348" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L346">        int curLabel = 1;</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
 
-<span class="nc" id="L350">                PairInt pPoint = new PairInt(i, j);</span>
+<span class="fc" id="L350">                PairInt pPoint = new PairInt(i, j);</span>
 
-<span class="nc" id="L352">                DisjointSet2Node&lt;PairInt&gt; parent = disjointSetHelper.findSet(</span>
-<span class="nc" id="L353">                    parentMap.get(pPoint));</span>
+<span class="fc" id="L352">                DisjointSet2Node&lt;PairInt&gt; parent = disjointSetHelper.findSet(</span>
+<span class="fc" id="L353">                    parentMap.get(pPoint));</span>
 
-<span class="nc bnc" id="L355" title="All 2 branches missed.">                if (parent.getMember().equals(pPoint)) {</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">                if (parent.getMember().equals(pPoint)) {</span>
                     // root pixel
-<span class="nc" id="L357">                    label[i][j] = curLabel;</span>
-<span class="nc" id="L358">                    curLabel++;</span>
+<span class="fc" id="L357">                    label[i][j] = curLabel;</span>
+<span class="fc" id="L358">                    curLabel++;</span>
                 } else {
                     //Resolve unresolved equivalences
                     // parent[p] = parent[parent[p]]
-<span class="nc" id="L362">                    parentMap.put(pPoint, parent);</span>
-<span class="nc" id="L363">                    label[i][j] = label[parent.getMember().getX()][parent.getMember().getY()];</span>
+<span class="fc" id="L362">                    parentMap.put(pPoint, parent);</span>
+<span class="fc" id="L363">                    label[i][j] = label[parent.getMember().getX()][parent.getMember().getY()];</span>
                 }
             }
         }
 
-<span class="nc" id="L368">        componentLabelMap = parentMap;</span>
+<span class="fc" id="L368">        componentLabelMap = parentMap;</span>
 
-<span class="nc" id="L370">        return label;</span>
+<span class="fc" id="L370">        return label;</span>
     }
 
     /**
@@ -384,40 +384,40 @@ import java.util.Map.Entry;
      */
     protected int[][] unionFindWatershed(int[][] im) {
 
-<span class="nc bnc" id="L387" title="All 4 branches missed.">        if ((distToLowerIntensityPixel == null) || (regionalMinima == null)) {</span>
+<span class="pc bpc" id="L387" title="2 of 4 branches missed.">        if ((distToLowerIntensityPixel == null) || (regionalMinima == null)) {</span>
 <span class="nc" id="L388">            throw new IllegalStateException(&quot;algorithm currently depends upon &quot;</span>
             + &quot;previous use of the methods named lower&quot;);
         }
 
         // uses regionalMinima
-<span class="nc" id="L393">        CustomWatershedDAG dag = createLowerIntensityDAG(im);</span>
+<span class="fc" id="L393">        CustomWatershedDAG dag = createLowerIntensityDAG(im);</span>
 
-<span class="nc" id="L395">        int w = im.length;</span>
-<span class="nc" id="L396">        int h = im[0].length;</span>
+<span class="fc" id="L395">        int w = im.length;</span>
+<span class="fc" id="L396">        int h = im[0].length;</span>
 
-<span class="nc" id="L398">        final int wshed = 0;</span>
+<span class="fc" id="L398">        final int wshed = 0;</span>
 
         //initialize image lab with distinct labels for minima
         //LabelInit
-<span class="nc" id="L402">        int[][] labeled = unionFindComponentLabelling(im);</span>
+<span class="fc" id="L402">        int[][] labeled = unionFindComponentLabelling(im);</span>
 
-<span class="nc bnc" id="L404" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L405" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="nc" id="L406">                PairInt pPoint = new PairInt(i, j);</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L406">                PairInt pPoint = new PairInt(i, j);</span>
 
-<span class="nc" id="L408">                PairInt repr = resolve(pPoint, dag);</span>
+<span class="fc" id="L408">                PairInt repr = resolve(pPoint, dag);</span>
 
                 int value;
-<span class="nc bnc" id="L411" title="All 2 branches missed.">                if (repr.equals(sentinel)) {</span>
-<span class="nc" id="L412">                    value = wshed;</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">                if (repr.equals(sentinel)) {</span>
+<span class="fc" id="L412">                    value = wshed;</span>
                 } else {
-<span class="nc" id="L414">                    value = labeled[repr.getX()][repr.getY()];</span>
+<span class="fc" id="L414">                    value = labeled[repr.getX()][repr.getY()];</span>
                 }
-<span class="nc" id="L416">                labeled[pPoint.getX()][pPoint.getY()] = value;</span>
+<span class="fc" id="L416">                labeled[pPoint.getX()][pPoint.getY()] = value;</span>
             }
         }
 
-<span class="nc" id="L420">        return labeled;</span>
+<span class="fc" id="L420">        return labeled;</span>
     }
 
     private String printParents(Map&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt; parentMap) {
@@ -455,67 +455,67 @@ import java.util.Map.Entry;
 
     protected CustomWatershedDAG createLowerIntensityDAG(int[][] lowerCompleteIm) {
 
-<span class="nc bnc" id="L458" title="All 2 branches missed.">        if (regionalMinima == null) {</span>
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">        if (regionalMinima == null) {</span>
 <span class="nc" id="L459">            throw new IllegalStateException(</span>
                 &quot;method needs lower to have been invoked before using this&quot;);
         }
-<span class="nc bnc" id="L462" title="All 2 branches missed.">        if (lowerCompleteIm == null) {</span>
+<span class="pc bpc" id="L462" title="1 of 2 branches missed.">        if (lowerCompleteIm == null) {</span>
 <span class="nc" id="L463">            throw new IllegalStateException(&quot;lowerCompleteIm cannot be null&quot;);</span>
         }
 
-<span class="nc" id="L466">        int w = lowerCompleteIm.length;</span>
-<span class="nc" id="L467">        int h = lowerCompleteIm[0].length;</span>
+<span class="fc" id="L466">        int w = lowerCompleteIm.length;</span>
+<span class="fc" id="L467">        int h = lowerCompleteIm[0].length;</span>
 
-<span class="nc" id="L469">        int[] dxs8 = Misc.dx8;</span>
-<span class="nc" id="L470">        int[] dys8 = Misc.dy8;</span>
+<span class="fc" id="L469">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L470">        int[] dys8 = Misc.dy8;</span>
 
-<span class="nc" id="L472">        CustomWatershedDAG dag = new CustomWatershedDAG(w * h);</span>
+<span class="fc" id="L472">        CustomWatershedDAG dag = new CustomWatershedDAG(w * h);</span>
 
-<span class="nc" id="L474">        int[] diffInt = new int[8];</span>
-<span class="nc" id="L475">        PairInt[] neighbors = new PairInt[8];</span>
+<span class="fc" id="L474">        int[] diffInt = new int[8];</span>
+<span class="fc" id="L475">        PairInt[] neighbors = new PairInt[8];</span>
 
-<span class="nc bnc" id="L477" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L478" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L478" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
 
-<span class="nc" id="L480">                PairInt p = new PairInt(i, j);</span>
+<span class="fc" id="L480">                PairInt p = new PairInt(i, j);</span>
 
-<span class="nc bnc" id="L482" title="All 2 branches missed.">                if (regionalMinima.contains(p)) {</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">                if (regionalMinima.contains(p)) {</span>
 
                     // componentLabelMap has the representative for this node
-<span class="nc" id="L485">                    dag.insert(p, new CustomWatershedNode(p, 0));</span>
+<span class="fc" id="L485">                    dag.insert(p, new CustomWatershedNode(p, 0));</span>
 
                 } else {
 
-<span class="nc" id="L489">                    int x = p.getX();</span>
-<span class="nc" id="L490">                    int y = p.getY();</span>
-<span class="nc" id="L491">                    int v = lowerCompleteIm[x][y];</span>
+<span class="fc" id="L489">                    int x = p.getX();</span>
+<span class="fc" id="L490">                    int y = p.getY();</span>
+<span class="fc" id="L491">                    int v = lowerCompleteIm[x][y];</span>
 
-<span class="nc" id="L493">                    int nc = 0;</span>
+<span class="fc" id="L493">                    int nc = 0;</span>
 
-<span class="nc bnc" id="L495" title="All 2 branches missed.">                    for (int nIdx = 0; nIdx &lt; dxs8.length; ++nIdx) {</span>
-<span class="nc" id="L496">                        int x2 = x + dxs8[nIdx];</span>
-<span class="nc" id="L497">                        int y2 = y + dys8[nIdx];</span>
-<span class="nc bnc" id="L498" title="All 8 branches missed.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L499">                           continue;</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">                    for (int nIdx = 0; nIdx &lt; dxs8.length; ++nIdx) {</span>
+<span class="fc" id="L496">                        int x2 = x + dxs8[nIdx];</span>
+<span class="fc" id="L497">                        int y2 = y + dys8[nIdx];</span>
+<span class="fc bfc" id="L498" title="All 8 branches covered.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="fc" id="L499">                           continue;</span>
                         }
 
-<span class="nc" id="L502">                        int v2 = lowerCompleteIm[x2][y2];</span>
+<span class="fc" id="L502">                        int v2 = lowerCompleteIm[x2][y2];</span>
 
-<span class="nc bnc" id="L504" title="All 2 branches missed.">                        if (v2 &lt; v) {</span>
-<span class="nc" id="L505">                            diffInt[nc] = v - v2;</span>
-<span class="nc" id="L506">                            neighbors[nc] = new PairInt(x2, y2);</span>
-<span class="nc" id="L507">                            nc++;</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">                        if (v2 &lt; v) {</span>
+<span class="fc" id="L505">                            diffInt[nc] = v - v2;</span>
+<span class="fc" id="L506">                            neighbors[nc] = new PairInt(x2, y2);</span>
+<span class="fc" id="L507">                            nc++;</span>
                         }
                     }
 
-<span class="nc" id="L511">                    dag.orderAndInsert(p, diffInt, neighbors, nc);</span>
+<span class="fc" id="L511">                    dag.orderAndInsert(p, diffInt, neighbors, nc);</span>
 
-<span class="nc bnc" id="L513" title="All 4 branches missed.">                    assert(nc != 0);</span>
+<span class="pc bpc" id="L513" title="3 of 4 branches missed.">                    assert(nc != 0);</span>
                 }
             }
         }
 
-<span class="nc" id="L518">        return dag;</span>
+<span class="fc" id="L518">        return dag;</span>
     }
 
 }

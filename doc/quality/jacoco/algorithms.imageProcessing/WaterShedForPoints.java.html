@@ -85,7 +85,7 @@ import java.util.Set;
      * @return the distToLowerIntensityPixel
      */
     public Map&lt;PairInt, Integer&gt; getDistToLowerIntensityPixel() {
-<span class="nc" id="L88">        return distToLowerIntensityPixel;</span>
+<span class="fc" id="L88">        return distToLowerIntensityPixel;</span>
     }
 
      /**
@@ -154,14 +154,14 @@ import java.util.Set;
 
 <span class="fc bfc" id="L155" title="All 2 branches covered.">            if (p.equals(sentinel)) {</span>
 
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">                if (!queue.isEmpty()) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                if (!queue.isEmpty()) {</span>
 
-<span class="nc" id="L159">                    queue.add(sentinel);</span>
+<span class="fc" id="L159">                    queue.add(sentinel);</span>
 
                     //any point originally lacking lower intensity neighbors,
                     //now gets a larger distance
 
-<span class="nc" id="L164">                    dist++;</span>
+<span class="fc" id="L164">                    dist++;</span>
                 }
                 continue;
             }
@@ -185,11 +185,11 @@ import java.util.Set;
 
 <span class="fc bfc" id="L186" title="All 2 branches covered.">                int v2 = (value2 == null) ? 0 : value2.intValue();</span>
 
-<span class="pc bpc" id="L188" title="1 of 4 branches missed.">                if ((img.getValue(x, y) == img.getValue(x2, y2)) &amp;&amp; (v2 == 0)) {</span>
+<span class="fc bfc" id="L188" title="All 4 branches covered.">                if ((img.getValue(x, y) == img.getValue(x2, y2)) &amp;&amp; (v2 == 0)) {</span>
 
-<span class="nc" id="L190">                    queue.add(new PairInt(x2, y2));</span>
+<span class="fc" id="L190">                    queue.add(new PairInt(x2, y2));</span>
 
-<span class="nc" id="L192">                    lc.put(p2, Integer.valueOf(-1));</span>
+<span class="fc" id="L192">                    lc.put(p2, Integer.valueOf(-1));</span>
                 }
             }
 <span class="fc" id="L195">        }</span>
@@ -423,9 +423,9 @@ import java.util.Set;
 
 <span class="fc bfc" id="L424" title="All 2 branches covered.">                    if (qParent.getMember().getX() &lt; reprPoint.getX()) {</span>
 <span class="fc" id="L425">                        reprPoint = qPoint;</span>
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">                    } else if ((qParent.getMember().getX() == reprPoint.getX())</span>
-<span class="nc bnc" id="L427" title="All 2 branches missed.">                        &amp;&amp; (qParent.getMember().getY() &lt; reprPoint.getY())) {</span>
-<span class="nc" id="L428">                        reprPoint = qPoint;</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">                    } else if ((qParent.getMember().getX() == reprPoint.getX())</span>
+<span class="fc bfc" id="L427" title="All 2 branches covered.">                        &amp;&amp; (qParent.getMember().getY() &lt; reprPoint.getY())) {</span>
+<span class="fc" id="L428">                        reprPoint = qPoint;</span>
                     }
 <span class="fc" id="L430">                    qPoints.add(qPoint);</span>
                 }

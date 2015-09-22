@@ -97,16 +97,16 @@ import java.util.logging.Logger;
 <span class="fc" id="L97">        boolean lastIsSrcOrDest = lastPoint.equals(src);</span>
 <span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (!lastIsSrcOrDest) {</span>
 <span class="fc bfc" id="L99" title="All 2 branches covered.">            for (PairInt p : dest) {</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">                if (lastPoint.equals(p)) {</span>
-<span class="nc" id="L101">                    lastIsSrcOrDest = true;</span>
-<span class="nc" id="L102">                    break;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                if (lastPoint.equals(p)) {</span>
+<span class="fc" id="L101">                    lastIsSrcOrDest = true;</span>
+<span class="fc" id="L102">                    break;</span>
                 }
 <span class="fc" id="L104">            }</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (!lastIsSrcOrDest) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            if (!lastIsSrcOrDest) {</span>
 <span class="fc" id="L106">                lastIsSrcOrDest = areAdjacent(lastPoint, src);</span>
             }
         }
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (!lastIsSrcOrDest) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (!lastIsSrcOrDest) {</span>
             //TODO: improve...
 <span class="fc" id="L111">            Logger.getLogger(this.getClass().getName()).fine(</span>
             &quot;WARNING: neither src nor dest nodes reached&quot;);
@@ -194,16 +194,16 @@ import java.util.logging.Logger;
 <span class="fc" id="L194">                    int diffY1 = src.getY() - vPoint.getY();</span>
 <span class="fc" id="L195">                    double dist1 = Math.sqrt(diffX1*diffX1 + diffY1*diffY1);</span>
 
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">                    if (dist1 &gt; dist0) {</span>
-<span class="nc" id="L198">                        maxDist = uvDist;</span>
-<span class="nc" id="L199">                        maxDistVPoint = vPoint;</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                    if (dist1 &gt; dist0) {</span>
+<span class="fc" id="L198">                        maxDist = uvDist;</span>
+<span class="fc" id="L199">                        maxDistVPoint = vPoint;</span>
 <span class="fc bfc" id="L200" title="All 2 branches covered.">                    } else if (dist1 == dist0) {</span>
 <span class="fc" id="L201">                        Double vHeur = heur.get(vPoint);</span>
 <span class="fc" id="L202">                        Double maxDistVHeur = heur.get(maxDistVPoint);</span>
-<span class="pc bpc" id="L203" title="1 of 4 branches missed.">                        if (vHeur == null || maxDistVHeur == null) {</span>
-<span class="nc" id="L204">                            continue;</span>
+<span class="fc bfc" id="L203" title="All 4 branches covered.">                        if (vHeur == null || maxDistVHeur == null) {</span>
+<span class="fc" id="L204">                            continue;</span>
                         }
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">                        if (vHeur.doubleValue() &gt; maxDistVHeur.doubleValue()) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                        if (vHeur.doubleValue() &gt; maxDistVHeur.doubleValue()) {</span>
 <span class="fc" id="L207">                            maxDist = uvDist;</span>
 <span class="fc" id="L208">                            maxDistVPoint = vPoint;</span>
                         }
@@ -220,13 +220,13 @@ import java.util.logging.Logger;
 <span class="fc" id="L220">                boolean reached = false;</span>
 <span class="fc bfc" id="L221" title="All 2 branches covered.">                if (distU &gt; 2) {</span>
 <span class="fc bfc" id="L222" title="All 2 branches covered.">                    for (PairInt p : dest) {</span>
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">                        if (maxDistVPoint.equals(p)) {</span>
-<span class="nc" id="L224">                            reached = true;</span>
-<span class="nc" id="L225">                            break;</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                        if (maxDistVPoint.equals(p)) {</span>
+<span class="fc" id="L224">                            reached = true;</span>
+<span class="fc" id="L225">                            break;</span>
                         }
 <span class="fc" id="L227">                    }</span>
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">                    if (reached) {</span>
-<span class="nc" id="L229">                        break;</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">                    if (reached) {</span>
+<span class="fc" id="L229">                        break;</span>
                     }
 <span class="fc bfc" id="L231" title="All 2 branches covered.">                    if (areAdjacent(maxDistVPoint, src)) {</span>
 <span class="fc" id="L232">                        break;</span>

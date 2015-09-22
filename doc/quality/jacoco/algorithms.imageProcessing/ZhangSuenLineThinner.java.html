@@ -50,12 +50,12 @@ import java.util.logging.Logger;
 <span class="fc" id="L50">        }</span>
 
 <span class="fc" id="L52">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (edgeGuideImage != null) {</span>
-<span class="nc bnc" id="L54" title="All 4 branches missed.">            if (input2.getXRelativeOffset() == 1 &amp;&amp; input2.getYRelativeOffset() == 1) {</span>
-<span class="nc" id="L55">                GreyscaleImage gXY2 = addOnePixelBorders(edgeGuideImage);</span>
-<span class="nc" id="L56">                pltc.setEdgeGuideImage(gXY2);</span>
-<span class="nc" id="L57">            } else {</span>
-<span class="nc" id="L58">                pltc.setEdgeGuideImage(edgeGuideImage);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (edgeGuideImage != null) {</span>
+<span class="fc bfc" id="L54" title="All 4 branches covered.">            if (input2.getXRelativeOffset() == 1 &amp;&amp; input2.getYRelativeOffset() == 1) {</span>
+<span class="fc" id="L55">                GreyscaleImage gXY2 = addOnePixelBorders(edgeGuideImage);</span>
+<span class="fc" id="L56">                pltc.setEdgeGuideImage(gXY2);</span>
+<span class="fc" id="L57">            } else {</span>
+<span class="fc" id="L58">                pltc.setEdgeGuideImage(edgeGuideImage);</span>
             }
         }
 <span class="fc" id="L61">        pltc.correctForArtifacts(input2);</span>

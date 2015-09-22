@@ -51,8 +51,8 @@ import org.ejml.simple.*;
      */
     public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
 
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (closedCurve.getN() &lt; 2) {</span>
-<span class="nc" id="L55">            return false;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (closedCurve.getN() &lt; 2) {</span>
+<span class="fc" id="L55">            return false;</span>
         }
 
 <span class="fc" id="L58">        int nNeg = 0;</span>
@@ -100,7 +100,7 @@ import org.ejml.simple.*;
         //log.info(closedCurve.toString());
         //log.info(&quot;n=&quot; + n + &quot; nNegative=&quot; + nNeg + &quot; nPositive=&quot; + nPos);
 
-<span class="pc bpc" id="L103" title="2 of 6 branches missed.">        return ((n &gt; 2) &amp;&amp; (nNeg &gt;= nPos)) || (nNeg &gt; nPos);</span>
+<span class="pc bpc" id="L103" title="1 of 6 branches missed.">        return ((n &gt; 2) &amp;&amp; (nNeg &gt;= nPos)) || (nNeg &gt; nPos);</span>
      }
 
     public void additionalThinning45DegreeEdges(
@@ -1455,52 +1455,52 @@ import org.ejml.simple.*;
     public PairIntArray findJaggedLineSegments2(final PairIntArray curve) {
 
         //TODO: use minimum curve size
-<span class="nc bnc" id="L1458" title="All 4 branches missed.">        if (curve == null || curve.getN() &lt; 5) {</span>
+<span class="pc bpc" id="L1458" title="2 of 4 branches missed.">        if (curve == null || curve.getN() &lt; 5) {</span>
 <span class="nc" id="L1459">            return null;</span>
         }
 
         // if have a merged larger range, this suggests that starting a
         // search with staircases and following that with search for
         // ledges might result in more total accurately found jagged lines.
-<span class="nc" id="L1465">        PairIntArray jaggedLines2 = findJaggedLineStaircaseSegments(</span>
-<span class="nc" id="L1466">            curve, 0, curve.getN() - 1);</span>
+<span class="fc" id="L1465">        PairIntArray jaggedLines2 = findJaggedLineStaircaseSegments(</span>
+<span class="fc" id="L1466">            curve, 0, curve.getN() - 1);</span>
 
-<span class="nc" id="L1468">        PairIntArray remainingRanges = writeRangesNotAlreadyIncluded(curve,</span>
+<span class="fc" id="L1468">        PairIntArray remainingRanges = writeRangesNotAlreadyIncluded(curve,</span>
             jaggedLines2);
-<span class="nc bnc" id="L1470" title="All 2 branches missed.">        for (int i = 0; i &lt; remainingRanges.getN(); i++) {</span>
-<span class="nc" id="L1471">            int r0 = remainingRanges.getX(i);</span>
-<span class="nc" id="L1472">            int r1 = remainingRanges.getY(i);</span>
-<span class="nc" id="L1473">            findLedgesWithinRange(curve, r0, r1, jaggedLines2);</span>
+<span class="fc bfc" id="L1470" title="All 2 branches covered.">        for (int i = 0; i &lt; remainingRanges.getN(); i++) {</span>
+<span class="fc" id="L1471">            int r0 = remainingRanges.getX(i);</span>
+<span class="fc" id="L1472">            int r1 = remainingRanges.getY(i);</span>
+<span class="fc" id="L1473">            findLedgesWithinRange(curve, r0, r1, jaggedLines2);</span>
         }
 
-<span class="nc" id="L1476">        sortByX(jaggedLines2);</span>
+<span class="fc" id="L1476">        sortByX(jaggedLines2);</span>
 
         // merge adjacent ranges
-<span class="nc" id="L1479">        mergeRanges(curve, jaggedLines2);</span>
+<span class="fc" id="L1479">        mergeRanges(curve, jaggedLines2);</span>
 
         // search for 45 degree lines
-<span class="nc" id="L1482">        remainingRanges =</span>
-<span class="nc" id="L1483">            writeRangesNotAlreadyIncluded(curve, jaggedLines2);</span>
-<span class="nc bnc" id="L1484" title="All 2 branches missed.">        for (int i = 0; i &lt; remainingRanges.getN(); i++) {</span>
-<span class="nc" id="L1485">            int r0 = remainingRanges.getX(i);</span>
-<span class="nc" id="L1486">            int r1 = remainingRanges.getY(i);</span>
-<span class="nc" id="L1487">            PairIntArray lineRanges =</span>
-<span class="nc" id="L1488">                find45DegreeSegments(curve, r0, r1);</span>
-<span class="nc bnc" id="L1489" title="All 2 branches missed.">            if (lineRanges != null) {</span>
-<span class="nc bnc" id="L1490" title="All 2 branches missed.">                for (int j = 0; j &lt; lineRanges.getN(); j++) {</span>
-<span class="nc" id="L1491">                    int s0 = lineRanges.getX(j);</span>
-<span class="nc" id="L1492">                    int s1 = lineRanges.getY(j);</span>
-<span class="nc" id="L1493">                    jaggedLines2.add(s0, s1);</span>
+<span class="fc" id="L1482">        remainingRanges =</span>
+<span class="fc" id="L1483">            writeRangesNotAlreadyIncluded(curve, jaggedLines2);</span>
+<span class="fc bfc" id="L1484" title="All 2 branches covered.">        for (int i = 0; i &lt; remainingRanges.getN(); i++) {</span>
+<span class="fc" id="L1485">            int r0 = remainingRanges.getX(i);</span>
+<span class="fc" id="L1486">            int r1 = remainingRanges.getY(i);</span>
+<span class="fc" id="L1487">            PairIntArray lineRanges =</span>
+<span class="fc" id="L1488">                find45DegreeSegments(curve, r0, r1);</span>
+<span class="pc bpc" id="L1489" title="1 of 2 branches missed.">            if (lineRanges != null) {</span>
+<span class="fc bfc" id="L1490" title="All 2 branches covered.">                for (int j = 0; j &lt; lineRanges.getN(); j++) {</span>
+<span class="fc" id="L1491">                    int s0 = lineRanges.getX(j);</span>
+<span class="fc" id="L1492">                    int s1 = lineRanges.getY(j);</span>
+<span class="fc" id="L1493">                    jaggedLines2.add(s0, s1);</span>
                 }
             }
         }
 
-<span class="nc" id="L1498">        sortByX(jaggedLines2);</span>
+<span class="fc" id="L1498">        sortByX(jaggedLines2);</span>
 
         // merge ranges again
-<span class="nc" id="L1501">        mergeRanges(curve, jaggedLines2);</span>
+<span class="fc" id="L1501">        mergeRanges(curve, jaggedLines2);</span>
 
-<span class="nc" id="L1503">        return jaggedLines2;</span>
+<span class="fc" id="L1503">        return jaggedLines2;</span>
     }
 
     private void mergeRanges(PairIntArray curve, PairIntArray ranges) {
@@ -1528,7 +1528,7 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L1528" title="All 2 branches covered.">                if (diffTheta &gt; (Math.PI/4.)) {</span>
 <span class="fc" id="L1529">                    continue;</span>
                 }
-<span class="pc bpc" id="L1531" title="1 of 2 branches missed.">                if (diffTheta &gt; 0.1) {</span>
+<span class="fc bfc" id="L1531" title="All 2 branches covered.">                if (diffTheta &gt; 0.1) {</span>
                     // this may be 2 regions due to 2 different methods,
                     // the ledges method and then staircase method,
                     // so retry the staircase alone for the full range to
@@ -1545,9 +1545,9 @@ import org.ejml.simple.*;
 <span class="fc" id="L1545">                            log.fine(&quot;       &quot; + s0 + &quot; : &quot; + s1);</span>
                         }
 
-<span class="pc bpc" id="L1548" title="1 of 2 branches missed.">                        if (staircaseRanges.getN() == 0) {</span>
+<span class="fc bfc" id="L1548" title="All 2 branches covered.">                        if (staircaseRanges.getN() == 0) {</span>
                             // do not merge
-<span class="nc" id="L1550">                            continue;</span>
+<span class="fc" id="L1550">                            continue;</span>
 <span class="fc bfc" id="L1551" title="All 2 branches covered.">                        } else if (staircaseRanges.getN() == 1) {</span>
                             // does it match the whole range r2 to r1
                             // or only one of r2:r3 and r0:r1?
@@ -1565,10 +1565,10 @@ import org.ejml.simple.*;
                             // which one is close to zero?
 <span class="fc bfc" id="L1566" title="All 4 branches covered.">                            if ((diff21 &lt; diff10) &amp;&amp; (diff21 &lt; diff32)) {</span>
                                 // let these merge
-<span class="pc bpc" id="L1568" title="1 of 4 branches missed.">                            } else if ((diff32 &lt; diff10) &amp;&amp; (diff32 &lt; diff21)) {</span>
+<span class="fc bfc" id="L1568" title="All 4 branches covered.">                            } else if ((diff32 &lt; diff10) &amp;&amp; (diff32 &lt; diff21)) {</span>
                                 // matches the range r2 to r3, don't merge
 <span class="fc" id="L1570">                                continue;</span>
-<span class="pc bpc" id="L1571" title="2 of 4 branches missed.">                            } else if ((diff10 &lt; diff32) &amp;&amp; (diff10 &lt; diff21)) {</span>
+<span class="fc bfc" id="L1571" title="All 4 branches covered.">                            } else if ((diff10 &lt; diff32) &amp;&amp; (diff10 &lt; diff21)) {</span>
                                 // matches the range r0 to r1, don't merge
 <span class="fc" id="L1573">                                continue;</span>
                             }
@@ -1634,13 +1634,13 @@ import org.ejml.simple.*;
 <span class="fc" id="L1634">        Boolean widthIsAlongX = null;</span>
 <span class="fc bfc" id="L1635" title="All 4 branches covered.">        while ((dx == 0) || (dy == 0)) {</span>
 <span class="fc" id="L1636">            i++;</span>
-<span class="pc bpc" id="L1637" title="1 of 2 branches missed.">            if (i &gt;= stopIndex) {</span>
-<span class="nc" id="L1638">                return lineSegmentRanges;</span>
+<span class="fc bfc" id="L1637" title="All 2 branches covered.">            if (i &gt;= stopIndex) {</span>
+<span class="fc" id="L1638">                return lineSegmentRanges;</span>
             }
 <span class="fc" id="L1640">            dx = (curve.getX(i) - curve.getX(i - 1));</span>
 <span class="fc" id="L1641">            dy = (curve.getY(i) - curve.getY(i - 1));</span>
-<span class="pc bpc" id="L1642" title="1 of 2 branches missed.">            if (dx == 0) {</span>
-<span class="nc" id="L1643">                widthIsAlongX = Boolean.FALSE;</span>
+<span class="fc bfc" id="L1642" title="All 2 branches covered.">            if (dx == 0) {</span>
+<span class="fc" id="L1643">                widthIsAlongX = Boolean.FALSE;</span>
 <span class="fc bfc" id="L1644" title="All 2 branches covered.">            } else if (dy == 0) {</span>
 <span class="fc" id="L1645">                widthIsAlongX = Boolean.TRUE;</span>
             }
@@ -1653,8 +1653,8 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L1653" title="All 2 branches covered.">        if (widthIsAlongX == null) {</span>
 <span class="fc bfc" id="L1654" title="All 4 branches covered.">            while ((dx != 0) &amp;&amp; (dy != 0)) {</span>
 <span class="fc" id="L1655">                i++;</span>
-<span class="pc bpc" id="L1656" title="1 of 2 branches missed.">                if (i &gt;= stopIndex) {</span>
-<span class="nc" id="L1657">                    return lineSegmentRanges;</span>
+<span class="fc bfc" id="L1656" title="All 2 branches covered.">                if (i &gt;= stopIndex) {</span>
+<span class="fc" id="L1657">                    return lineSegmentRanges;</span>
                 }
 <span class="fc" id="L1659">                dx = (curve.getX(i) - curve.getX(i - 1));</span>
 <span class="fc" id="L1660">                dy = (curve.getY(i) - curve.getY(i - 1));</span>
@@ -1740,10 +1740,10 @@ import org.ejml.simple.*;
 
 <span class="fc" id="L1741">                            int endMinus = (int)(endSegment[0] - lastStepWidth);</span>
 
-<span class="pc bpc" id="L1743" title="1 of 2 branches missed.">                            if ((endMinus - lineStart + 1) &gt; 4) {</span>
+<span class="fc bfc" id="L1743" title="All 2 branches covered.">                            if ((endMinus - lineStart + 1) &gt; 4) {</span>
 <span class="fc" id="L1744">                                lineSegmentRanges.add(lineStart, endMinus);</span>
                             } else {
-<span class="nc" id="L1746">                                lineSegmentRanges.add(lineStart, endSegment[0]);</span>
+<span class="fc" id="L1746">                                lineSegmentRanges.add(lineStart, endSegment[0]);</span>
                             }
 <span class="fc" id="L1748">                        } else {</span>
 <span class="fc" id="L1749">                            lineSegmentRanges.add(lineStart, endSegment[0]);</span>
@@ -1805,16 +1805,16 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L1805" title="All 2 branches covered.">                    for (int j = (i - 1); j &gt; tmpI; j--) {</span>
 <span class="fc" id="L1806">                        diffX = (curve.getX(j) - curve.getX(j - 1));</span>
 <span class="fc" id="L1807">                        diffY = (curve.getY(j) - curve.getY(j - 1));</span>
-<span class="pc bpc" id="L1808" title="2 of 6 branches missed.">                        if (widthIsAlongX &amp;&amp; (diffY == 0) &amp;&amp; (diffX == dx)) {</span>
+<span class="fc bfc" id="L1808" title="All 6 branches covered.">                        if (widthIsAlongX &amp;&amp; (diffY == 0) &amp;&amp; (diffX == dx)) {</span>
 <span class="fc" id="L1809">                            i = j;</span>
 <span class="fc" id="L1810">                            iChanged = true;</span>
-<span class="pc bpc" id="L1811" title="3 of 6 branches missed.">                        } else if (!widthIsAlongX &amp;&amp; (diffX == 0)</span>
+<span class="fc bfc" id="L1811" title="All 6 branches covered.">                        } else if (!widthIsAlongX &amp;&amp; (diffX == 0)</span>
                             &amp;&amp; (diffY == dy)) {
 <span class="fc" id="L1813">                            i = j;</span>
 <span class="fc" id="L1814">                            iChanged = true;</span>
                         }
                     }
-<span class="pc bpc" id="L1817" title="1 of 2 branches missed.">                    if (iChanged) {</span>
+<span class="fc bfc" id="L1817" title="All 2 branches covered.">                    if (iChanged) {</span>
 <span class="fc" id="L1818">                        i--;</span>
                     }
                 }
@@ -1858,10 +1858,10 @@ import org.ejml.simple.*;
 <span class="fc" id="L1858">        int dx = 0;</span>
 <span class="fc" id="L1859">        int dy = 0;</span>
 <span class="fc" id="L1860">        int i = startIndex;</span>
-<span class="pc bpc" id="L1861" title="1 of 4 branches missed.">        while ((dx == 0) || (dy == 0)) {</span>
+<span class="fc bfc" id="L1861" title="All 4 branches covered.">        while ((dx == 0) || (dy == 0)) {</span>
 <span class="fc" id="L1862">            i++;</span>
-<span class="pc bpc" id="L1863" title="1 of 2 branches missed.">            if (i &gt;= stopIndex) {</span>
-<span class="nc" id="L1864">                return lineSegmentRanges;</span>
+<span class="fc bfc" id="L1863" title="All 2 branches covered.">            if (i &gt;= stopIndex) {</span>
+<span class="fc" id="L1864">                return lineSegmentRanges;</span>
             }
 <span class="fc" id="L1866">            dx = (curve.getX(i) - curve.getX(i - 1));</span>
 <span class="fc" id="L1867">            dy = (curve.getY(i) - curve.getY(i - 1));</span>
@@ -1980,17 +1980,17 @@ import org.ejml.simple.*;
 
 <span class="fc" id="L1981">            int diffY = (curve.getY(i) - curve.getY(i - 1));</span>
 
-<span class="pc bpc" id="L1983" title="1 of 4 branches missed.">            if ((widthIsAlongX.booleanValue() &amp;&amp; (diffX != dx)) ||</span>
+<span class="fc bfc" id="L1983" title="All 4 branches covered.">            if ((widthIsAlongX.booleanValue() &amp;&amp; (diffX != dx)) ||</span>
 <span class="fc bfc" id="L1984" title="All 6 branches covered.">                (widthIsAlongX.booleanValue() &amp;&amp; (diffY != dy)</span>
                 &amp;&amp; (diffY != 0)) ||
-<span class="pc bpc" id="L1986" title="1 of 4 branches missed.">                (!widthIsAlongX.booleanValue() &amp;&amp; (diffY != dy)) ||</span>
+<span class="fc bfc" id="L1986" title="All 4 branches covered.">                (!widthIsAlongX.booleanValue() &amp;&amp; (diffY != dy)) ||</span>
 <span class="pc bpc" id="L1987" title="1 of 6 branches missed.">                (!widthIsAlongX.booleanValue() &amp;&amp; (diffX != dx)</span>
                 &amp;&amp; (diffX != 0)) ) {
 
 <span class="fc" id="L1990">                int currentStepWidth = i - stepStart;</span>
 <span class="pc bpc" id="L1991" title="1 of 2 branches missed.">                if (currentStepWidth &gt; 0) {</span>
-<span class="pc bpc" id="L1992" title="1 of 2 branches missed.">                    if (Math.abs(currentStepWidth - stepWidth) &gt; plusMinusWidth) {</span>
-<span class="nc" id="L1993">                        return new int[]{(stepStart - 1), currentStepWidth};</span>
+<span class="fc bfc" id="L1992" title="All 2 branches covered.">                    if (Math.abs(currentStepWidth - stepWidth) &gt; plusMinusWidth) {</span>
+<span class="fc" id="L1993">                        return new int[]{(stepStart - 1), currentStepWidth};</span>
                     }
                 } else {
 <span class="nc" id="L1996">                    return new int[]{(stepStart - 1), currentStepWidth};</span>
@@ -2013,10 +2013,10 @@ import org.ejml.simple.*;
 
 <span class="fc" id="L2014">                int currentStepWidth = i - stepStart;</span>
 
-<span class="pc bpc" id="L2016" title="3 of 6 branches missed.">                if ((stepStart == 0) &amp;&amp; (stepWidth == 1) &amp;&amp;</span>
+<span class="fc bfc" id="L2016" title="All 6 branches covered.">                if ((stepStart == 0) &amp;&amp; (stepWidth == 1) &amp;&amp;</span>
                     (currentStepWidth/stepWidth &gt; 1)) {
 
-<span class="nc" id="L2019">                    return new int[]{0, currentStepWidth};</span>
+<span class="fc" id="L2019">                    return new int[]{0, currentStepWidth};</span>
 
 <span class="pc bpc" id="L2021" title="1 of 2 branches missed.">                } else if (currentStepWidth &gt; 0) {</span>
 
@@ -2117,10 +2117,10 @@ import org.ejml.simple.*;
 <span class="fc" id="L2117">        int i = start;</span>
 <span class="fc" id="L2118">        Boolean runIsAlongX = null;</span>
         // looking for straight lines of x or y
-<span class="pc bpc" id="L2120" title="1 of 8 branches missed.">        while (!((dx == 0) &amp;&amp; (dy != 0)) &amp;&amp; !((dy == 0) &amp;&amp; (dx != 0))) {</span>
+<span class="fc bfc" id="L2120" title="All 8 branches covered.">        while (!((dx == 0) &amp;&amp; (dy != 0)) &amp;&amp; !((dy == 0) &amp;&amp; (dx != 0))) {</span>
 <span class="fc" id="L2121">            i++;</span>
-<span class="pc bpc" id="L2122" title="1 of 2 branches missed.">            if (i &gt; (stop - 1)) {</span>
-<span class="nc" id="L2123">                return;</span>
+<span class="fc bfc" id="L2122" title="All 2 branches covered.">            if (i &gt; (stop - 1)) {</span>
+<span class="fc" id="L2123">                return;</span>
             }
 <span class="fc" id="L2125">            dx = (curve.getX(i) - curve.getX(i - 1));</span>
 <span class="fc" id="L2126">            dy = (curve.getY(i) - curve.getY(i - 1));</span>
@@ -2136,11 +2136,11 @@ import org.ejml.simple.*;
 
         // back track to find where the current linestart
         // should be between start and i
-<span class="pc bpc" id="L2139" title="1 of 2 branches missed.">        for (int j = (i - 1); j &gt;= (start + 1); j--) {</span>
-<span class="nc" id="L2140">            int diffX = (curve.getX(j) - curve.getX(j - 1));</span>
-<span class="nc" id="L2141">            int diffY = (curve.getY(j) - curve.getY(j - 1));</span>
-<span class="nc bnc" id="L2142" title="All 4 branches missed.">            if ((diffY != dy) || (diffX != dx)) {</span>
-<span class="nc" id="L2143">                i = j;</span>
+<span class="fc bfc" id="L2139" title="All 2 branches covered.">        for (int j = (i - 1); j &gt;= (start + 1); j--) {</span>
+<span class="fc" id="L2140">            int diffX = (curve.getX(j) - curve.getX(j - 1));</span>
+<span class="fc" id="L2141">            int diffY = (curve.getY(j) - curve.getY(j - 1));</span>
+<span class="pc bpc" id="L2142" title="1 of 4 branches missed.">            if ((diffY != dy) || (diffX != dx)) {</span>
+<span class="fc" id="L2143">                i = j;</span>
             }
         }
 
@@ -2175,19 +2175,19 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L2175" title="All 4 branches covered.">            boolean runStopped = (runIsAlongX &amp;&amp; (diffY != 0)) ||</span>
 <span class="fc bfc" id="L2176" title="All 4 branches covered.">                (!runIsAlongX &amp;&amp; (diffX != 0));</span>
 
-<span class="pc bpc" id="L2178" title="1 of 4 branches missed.">            if ((i == stop) ||</span>
+<span class="fc bfc" id="L2178" title="All 4 branches covered.">            if ((i == stop) ||</span>
                 runStopped ||
-<span class="pc bpc" id="L2180" title="1 of 4 branches missed.">                (runIsAlongX &amp;&amp; (diffX != dx)) ||</span>
-<span class="pc bpc" id="L2181" title="1 of 4 branches missed.">                (!runIsAlongX &amp;&amp; (diffY != dy)) ) {</span>
+<span class="fc bfc" id="L2180" title="All 4 branches covered.">                (runIsAlongX &amp;&amp; (diffX != dx)) ||</span>
+<span class="fc bfc" id="L2181" title="All 4 branches covered.">                (!runIsAlongX &amp;&amp; (diffY != dy)) ) {</span>
 
 <span class="fc" id="L2183">                int rs = i - lineStart;</span>
 
 <span class="fc bfc" id="L2185" title="All 2 branches covered.">                if (rs &gt;= minLedgeWidth) {</span>
-<span class="pc bpc" id="L2186" title="1 of 2 branches missed.">                    if (i == stop) {</span>
-<span class="nc bnc" id="L2187" title="All 2 branches missed.">                        if (runStopped) {</span>
-<span class="nc" id="L2188">                            tmp.add(lineStart, i - 1);</span>
+<span class="fc bfc" id="L2186" title="All 2 branches covered.">                    if (i == stop) {</span>
+<span class="fc bfc" id="L2187" title="All 2 branches covered.">                        if (runStopped) {</span>
+<span class="fc" id="L2188">                            tmp.add(lineStart, i - 1);</span>
                         } else {
-<span class="nc" id="L2190">                            tmp.add(lineStart, i);</span>
+<span class="fc" id="L2190">                            tmp.add(lineStart, i);</span>
                         }
                     } else {
 <span class="fc" id="L2193">                        tmp.add(lineStart, i - 1);</span>
@@ -2195,15 +2195,15 @@ import org.ejml.simple.*;
 <span class="fc" id="L2195">                    tmpRunIsAlongX = runIsAlongX;</span>
 <span class="fc" id="L2196">                    tmpDX = dx;</span>
 <span class="fc" id="L2197">                    tmpDY = dy;</span>
-<span class="pc bpc" id="L2198" title="1 of 2 branches missed.">                } else if ((i == (curve.getN() - 1)) /*&amp;&amp; (tmp.getN() &gt; 0) &amp;&amp;</span>
+<span class="fc bfc" id="L2198" title="All 2 branches covered.">                } else if ((i == (curve.getN() - 1)) /*&amp;&amp; (tmp.getN() &gt; 0) &amp;&amp;</span>
                     (Math.abs(lineStart - tmp.getY(tmp.getN() - 1)) &lt; 2)*/) {
-<span class="nc" id="L2200">                    tmp.add(lineStart, i);</span>
+<span class="fc" id="L2200">                    tmp.add(lineStart, i);</span>
 <span class="fc bfc" id="L2201" title="All 2 branches covered.">                } else if (tmp.getN() == 1) {</span>
 <span class="fc" id="L2202">                    allLedges.add(tmp.getX(0), tmp.getY(0));</span>
 <span class="fc" id="L2203">                    tmp = new PairIntArray();</span>
                 }
 
-<span class="pc bpc" id="L2206" title="1 of 2 branches missed.">                if (i != stop) {</span>
+<span class="fc bfc" id="L2206" title="All 2 branches covered.">                if (i != stop) {</span>
                     // find the next line segment
 <span class="fc" id="L2208">                    dx = 0;</span>
 <span class="fc" id="L2209">                    dy = 0;</span>
@@ -2232,7 +2232,7 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L2232" title="All 2 branches covered.">                        for (int j = (i - 1); j &gt;= tmpI; j--) {</span>
 <span class="fc" id="L2233">                            diffX = (curve.getX(j) - curve.getX(j - 1));</span>
 <span class="fc" id="L2234">                            diffY = (curve.getY(j) - curve.getY(j - 1));</span>
-<span class="pc bpc" id="L2235" title="1 of 4 branches missed.">                            if ((diffY != dy) || (diffX != dx)) {</span>
+<span class="fc bfc" id="L2235" title="All 4 branches covered.">                            if ((diffY != dy) || (diffX != dx)) {</span>
 <span class="fc" id="L2236">                                i = j;</span>
                             }
                         }
@@ -2248,7 +2248,7 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L2248" title="All 2 branches covered.">                if ((i &gt;= stop) || (</span>
 <span class="fc bfc" id="L2249" title="All 2 branches covered.">                    (tmp.getN() &gt; 0) &amp;&amp;</span>
                     !(
-<span class="pc bpc" id="L2251" title="1 of 6 branches missed.">                        (runIsAlongX.compareTo(tmpRunIsAlongX) == 0)</span>
+<span class="fc bfc" id="L2251" title="All 6 branches covered.">                        (runIsAlongX.compareTo(tmpRunIsAlongX) == 0)</span>
                         &amp;&amp; (dx == tmpDX) &amp;&amp; (tmpDY == dy)
 <span class="fc bfc" id="L2253" title="All 2 branches covered.">                        &amp;&amp; ((lineStart - (tmp.getY(tmpN - 1)) &lt; 3))</span>
                     )
@@ -2256,14 +2256,14 @@ import org.ejml.simple.*;
                     ) {
 
 <span class="fc bfc" id="L2258" title="All 4 branches covered.">                    if (tmp.getN() &gt; 1 || ((tmp.getN() &gt; 0)</span>
-<span class="pc bpc" id="L2259" title="1 of 2 branches missed.">                        &amp;&amp; (i == (curve.getN() - 1)))) {</span>
+<span class="fc bfc" id="L2259" title="All 2 branches covered.">                        &amp;&amp; (i == (curve.getN() - 1)))) {</span>
 
                         // need to avoid removing a partial corner
 
 <span class="fc" id="L2263">                        boolean keep = true;</span>
 
                         // check that the lines are not wrapping around a curve
-<span class="pc bpc" id="L2266" title="1 of 2 branches missed.">                        if (tmp.getN() &gt; 1) {</span>
+<span class="fc bfc" id="L2266" title="All 2 branches covered.">                        if (tmp.getN() &gt; 1) {</span>
 <span class="fc" id="L2267">                            int idx0f = tmp.getX(0);</span>
 <span class="fc" id="L2268">                            int idx0l = tmp.getY(0);</span>
 <span class="fc" id="L2269">                            double theta0 = calcTheta(curve, idx0f, idx0l);</span>
@@ -2275,15 +2275,15 @@ import org.ejml.simple.*;
 
                                 // don't add corners
 <span class="fc" id="L2277">                                double diff = Math.abs(theta0 - theta1);</span>
-<span class="pc bpc" id="L2278" title="1 of 2 branches missed.">                                if (diff &gt; Math.PI/4.) {</span>
-<span class="nc" id="L2279">                                    keep = false;</span>
-<span class="nc" id="L2280">                                    break;</span>
+<span class="fc bfc" id="L2278" title="All 2 branches covered.">                                if (diff &gt; Math.PI/4.) {</span>
+<span class="fc" id="L2279">                                    keep = false;</span>
+<span class="fc" id="L2280">                                    break;</span>
                                 }
 <span class="fc" id="L2282">                                theta0 = theta1;</span>
                             }
                         }
 
-<span class="pc bpc" id="L2286" title="1 of 2 branches missed.">                        if (keep) {</span>
+<span class="fc bfc" id="L2286" title="All 2 branches covered.">                        if (keep) {</span>
 <span class="fc" id="L2287">                            allLedges.add(tmp.getX(0), tmp.getY(tmp.getN() - 1));</span>
                         }
 
@@ -2421,52 +2421,52 @@ import org.ejml.simple.*;
 
     public PairInt[] findClosestPair(Set&lt;PairInt&gt; set0, Set&lt;PairInt&gt; set1) {
 
-<span class="nc bnc" id="L2424" title="All 2 branches missed.">        if (set0 == null) {</span>
+<span class="pc bpc" id="L2424" title="1 of 2 branches missed.">        if (set0 == null) {</span>
 <span class="nc" id="L2425">            throw new IllegalArgumentException(&quot;set0 cannot be null&quot;);</span>
         }
 
-<span class="nc bnc" id="L2428" title="All 2 branches missed.">        if (set1 == null) {</span>
+<span class="pc bpc" id="L2428" title="1 of 2 branches missed.">        if (set1 == null) {</span>
 <span class="nc" id="L2429">            throw new IllegalArgumentException(&quot;set1 cannot be null&quot;);</span>
         }
 
-<span class="nc bnc" id="L2432" title="All 2 branches missed.">        if (set0.isEmpty()) {</span>
+<span class="pc bpc" id="L2432" title="1 of 2 branches missed.">        if (set0.isEmpty()) {</span>
 <span class="nc" id="L2433">            throw new IllegalArgumentException(&quot;set0 cannot be empty&quot;);</span>
         }
 
-<span class="nc bnc" id="L2436" title="All 2 branches missed.">        if (set1.isEmpty()) {</span>
+<span class="pc bpc" id="L2436" title="1 of 2 branches missed.">        if (set1.isEmpty()) {</span>
 <span class="nc" id="L2437">            throw new IllegalArgumentException(&quot;set1 cannot be empty&quot;);</span>
         }
 
         //TODO: consider other algorithms besides brute force
 
-<span class="nc" id="L2442">        double minDistSq = Double.MAX_VALUE;</span>
-<span class="nc" id="L2443">        PairInt p0 = null;</span>
-<span class="nc" id="L2444">        PairInt p1 = null;</span>
+<span class="fc" id="L2442">        double minDistSq = Double.MAX_VALUE;</span>
+<span class="fc" id="L2443">        PairInt p0 = null;</span>
+<span class="fc" id="L2444">        PairInt p1 = null;</span>
 
-<span class="nc bnc" id="L2446" title="All 2 branches missed.">        for (PairInt s0 : set0) {</span>
+<span class="fc bfc" id="L2446" title="All 2 branches covered.">        for (PairInt s0 : set0) {</span>
 
-<span class="nc" id="L2448">            double x = s0.getX();</span>
-<span class="nc" id="L2449">            double y = s0.getY();</span>
+<span class="fc" id="L2448">            double x = s0.getX();</span>
+<span class="fc" id="L2449">            double y = s0.getY();</span>
 
-<span class="nc bnc" id="L2451" title="All 2 branches missed.">            for (PairInt s1 : set1) {</span>
+<span class="fc bfc" id="L2451" title="All 2 branches covered.">            for (PairInt s1 : set1) {</span>
 
-<span class="nc" id="L2453">                double x1 = s1.getX();</span>
-<span class="nc" id="L2454">                double y1 = s1.getY();</span>
+<span class="fc" id="L2453">                double x1 = s1.getX();</span>
+<span class="fc" id="L2454">                double y1 = s1.getY();</span>
 
-<span class="nc" id="L2456">                double diffX = x1 - x;</span>
-<span class="nc" id="L2457">                double diffY = y1 - y;</span>
+<span class="fc" id="L2456">                double diffX = x1 - x;</span>
+<span class="fc" id="L2457">                double diffY = y1 - y;</span>
 
-<span class="nc" id="L2459">                double distSq = (diffX * diffX) + (diffY * diffY);</span>
+<span class="fc" id="L2459">                double distSq = (diffX * diffX) + (diffY * diffY);</span>
 
-<span class="nc bnc" id="L2461" title="All 2 branches missed.">                if (distSq &lt; minDistSq) {</span>
-<span class="nc" id="L2462">                    minDistSq = distSq;</span>
-<span class="nc" id="L2463">                    p0 = s0;</span>
-<span class="nc" id="L2464">                    p1 = s1;</span>
+<span class="fc bfc" id="L2461" title="All 2 branches covered.">                if (distSq &lt; minDistSq) {</span>
+<span class="fc" id="L2462">                    minDistSq = distSq;</span>
+<span class="fc" id="L2463">                    p0 = s0;</span>
+<span class="fc" id="L2464">                    p1 = s1;</span>
                 }
-<span class="nc" id="L2466">            }</span>
-<span class="nc" id="L2467">        }</span>
+<span class="fc" id="L2466">            }</span>
+<span class="fc" id="L2467">        }</span>
 
-<span class="nc" id="L2469">        return new PairInt[]{p0, p1};</span>
+<span class="fc" id="L2469">        return new PairInt[]{p0, p1};</span>
     }
 
     public void populateGapsWithInterpolation(Set&lt;PairInt&gt; points) {
@@ -2474,73 +2474,73 @@ import org.ejml.simple.*;
         // probably many ways to do this... ordered point algorithm?
         // dfs to find connected groups, then connect the closest among those?
 
-<span class="nc" id="L2477">        int[] minMaxXY = MiscMath.findMinMaxXY(points);</span>
+<span class="fc" id="L2477">        int[] minMaxXY = MiscMath.findMinMaxXY(points);</span>
 
-<span class="nc" id="L2479">        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();</span>
-<span class="nc" id="L2480">        finder.setMinimumNumberInCluster(1);</span>
-<span class="nc" id="L2481">        finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);</span>
+<span class="fc" id="L2479">        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();</span>
+<span class="fc" id="L2480">        finder.setMinimumNumberInCluster(1);</span>
+<span class="fc" id="L2481">        finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);</span>
 
-<span class="nc" id="L2483">        int nIter = 0;</span>
-<span class="nc" id="L2484">        int nMaxIter = 10;</span>
+<span class="fc" id="L2483">        int nIter = 0;</span>
+<span class="fc" id="L2484">        int nMaxIter = 10;</span>
 
-<span class="nc" id="L2486">        int nGroups = finder.getNumberOfGroups();</span>
+<span class="fc" id="L2486">        int nGroups = finder.getNumberOfGroups();</span>
 
-<span class="nc bnc" id="L2488" title="All 4 branches missed.">        while ((nGroups &gt; 1) &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+<span class="pc bpc" id="L2488" title="1 of 4 branches missed.">        while ((nGroups &gt; 1) &amp;&amp; (nIter &lt; nMaxIter)) {</span>
 
             // find the closest pair of points between any 2 groups
 
-<span class="nc" id="L2492">            double minDistSq = Double.MAX_VALUE;</span>
-<span class="nc" id="L2493">            PairInt minDistPoint0 = null;</span>
-<span class="nc" id="L2494">            PairInt minDistPoint1 = null;</span>
-<span class="nc" id="L2495">            int minDistGroupId0 = -1;</span>
-<span class="nc" id="L2496">            int minDistGroupId1 = -1;</span>
+<span class="fc" id="L2492">            double minDistSq = Double.MAX_VALUE;</span>
+<span class="fc" id="L2493">            PairInt minDistPoint0 = null;</span>
+<span class="fc" id="L2494">            PairInt minDistPoint1 = null;</span>
+<span class="fc" id="L2495">            int minDistGroupId0 = -1;</span>
+<span class="fc" id="L2496">            int minDistGroupId1 = -1;</span>
 
-<span class="nc bnc" id="L2498" title="All 2 branches missed.">            for (int g0Idx = 0; g0Idx &lt; nGroups; g0Idx++) {</span>
+<span class="fc bfc" id="L2498" title="All 2 branches covered.">            for (int g0Idx = 0; g0Idx &lt; nGroups; g0Idx++) {</span>
 
-<span class="nc" id="L2500">                Set&lt;PairInt&gt; g0 = finder.getXY(g0Idx);</span>
+<span class="fc" id="L2500">                Set&lt;PairInt&gt; g0 = finder.getXY(g0Idx);</span>
 
-<span class="nc bnc" id="L2502" title="All 2 branches missed.">                for (int g1Idx = 0; g1Idx &lt; nGroups; g1Idx++) {</span>
+<span class="fc bfc" id="L2502" title="All 2 branches covered.">                for (int g1Idx = 0; g1Idx &lt; nGroups; g1Idx++) {</span>
 
-<span class="nc bnc" id="L2504" title="All 2 branches missed.">                    if (g0Idx == g1Idx) {</span>
-<span class="nc" id="L2505">                        continue;</span>
+<span class="fc bfc" id="L2504" title="All 2 branches covered.">                    if (g0Idx == g1Idx) {</span>
+<span class="fc" id="L2505">                        continue;</span>
                     }
 
-<span class="nc" id="L2508">                    Set&lt;PairInt&gt; g1 = finder.getXY(g1Idx);</span>
+<span class="fc" id="L2508">                    Set&lt;PairInt&gt; g1 = finder.getXY(g1Idx);</span>
 
-<span class="nc" id="L2510">                    PairInt[] closestPair = findClosestPair(g0, g1);</span>
+<span class="fc" id="L2510">                    PairInt[] closestPair = findClosestPair(g0, g1);</span>
 
-<span class="nc bnc" id="L2512" title="All 2 branches missed.">                    if (closestPair == null) {</span>
+<span class="pc bpc" id="L2512" title="1 of 2 branches missed.">                    if (closestPair == null) {</span>
 <span class="nc" id="L2513">                        continue;</span>
                     }
 
-<span class="nc" id="L2516">                    double x0 = closestPair[0].getX();</span>
-<span class="nc" id="L2517">                    double y0 = closestPair[0].getY();</span>
+<span class="fc" id="L2516">                    double x0 = closestPair[0].getX();</span>
+<span class="fc" id="L2517">                    double y0 = closestPair[0].getY();</span>
 
-<span class="nc" id="L2519">                    double x1 = closestPair[1].getX();</span>
-<span class="nc" id="L2520">                    double y1 = closestPair[1].getY();</span>
+<span class="fc" id="L2519">                    double x1 = closestPair[1].getX();</span>
+<span class="fc" id="L2520">                    double y1 = closestPair[1].getY();</span>
 
-<span class="nc" id="L2522">                    double diffX = x1 - x0;</span>
-<span class="nc" id="L2523">                    double diffY = y1 - y0;</span>
+<span class="fc" id="L2522">                    double diffX = x1 - x0;</span>
+<span class="fc" id="L2523">                    double diffY = y1 - y0;</span>
 
-<span class="nc" id="L2525">                    double distSq = (diffX * diffX) + (diffY * diffY);</span>
+<span class="fc" id="L2525">                    double distSq = (diffX * diffX) + (diffY * diffY);</span>
 
-<span class="nc bnc" id="L2527" title="All 2 branches missed.">                    if (distSq &lt; minDistSq) {</span>
-<span class="nc" id="L2528">                        minDistSq = distSq;</span>
-<span class="nc" id="L2529">                        minDistPoint0 = closestPair[0];</span>
-<span class="nc" id="L2530">                        minDistPoint1 = closestPair[1];</span>
-<span class="nc" id="L2531">                        minDistGroupId0 = g0Idx;</span>
-<span class="nc" id="L2532">                        minDistGroupId1 = g1Idx;</span>
+<span class="fc bfc" id="L2527" title="All 2 branches covered.">                    if (distSq &lt; minDistSq) {</span>
+<span class="fc" id="L2528">                        minDistSq = distSq;</span>
+<span class="fc" id="L2529">                        minDistPoint0 = closestPair[0];</span>
+<span class="fc" id="L2530">                        minDistPoint1 = closestPair[1];</span>
+<span class="fc" id="L2531">                        minDistGroupId0 = g0Idx;</span>
+<span class="fc" id="L2532">                        minDistGroupId1 = g1Idx;</span>
                     }
                 }
             }
 
-<span class="nc bnc" id="L2537" title="All 2 branches missed.">            if (minDistPoint0 != null) {</span>
+<span class="pc bpc" id="L2537" title="1 of 2 branches missed.">            if (minDistPoint0 != null) {</span>
 
-<span class="nc" id="L2539">                double x1 = minDistPoint1.getX();</span>
-<span class="nc" id="L2540">                double y1 = minDistPoint1.getY();</span>
+<span class="fc" id="L2539">                double x1 = minDistPoint1.getX();</span>
+<span class="fc" id="L2540">                double y1 = minDistPoint1.getY();</span>
 
-<span class="nc" id="L2542">                double dxDivDy = (minDistPoint0.getX() - x1)/</span>
-<span class="nc" id="L2543">                    (minDistPoint0.getY() - y1);</span>
+<span class="fc" id="L2542">                double dxDivDy = (minDistPoint0.getX() - x1)/</span>
+<span class="fc" id="L2543">                    (minDistPoint0.getY() - y1);</span>
 
                 /*
                 x0 - x1
@@ -2551,21 +2551,21 @@ import org.ejml.simple.*;
                 x0 = x1 + (y0 - y1) * dyDivDx;
                 */
                 int startY, stopY;
-<span class="nc bnc" id="L2554" title="All 2 branches missed.">                if (minDistPoint0.getY() &lt; minDistPoint1.getY()) {</span>
-<span class="nc" id="L2555">                    startY = minDistPoint0.getY();</span>
-<span class="nc" id="L2556">                    stopY = minDistPoint1.getY();</span>
+<span class="fc bfc" id="L2554" title="All 2 branches covered.">                if (minDistPoint0.getY() &lt; minDistPoint1.getY()) {</span>
+<span class="fc" id="L2555">                    startY = minDistPoint0.getY();</span>
+<span class="fc" id="L2556">                    stopY = minDistPoint1.getY();</span>
                 } else {
-<span class="nc" id="L2558">                    startY = minDistPoint1.getY();</span>
-<span class="nc" id="L2559">                    stopY = minDistPoint0.getY();</span>
+<span class="fc" id="L2558">                    startY = minDistPoint1.getY();</span>
+<span class="fc" id="L2559">                    stopY = minDistPoint0.getY();</span>
                 }
 
-<span class="nc bnc" id="L2562" title="All 2 branches missed.">                for (int y = startY; y &lt;= stopY; y++) {</span>
+<span class="fc bfc" id="L2562" title="All 2 branches covered.">                for (int y = startY; y &lt;= stopY; y++) {</span>
 
-<span class="nc" id="L2564">                    int x = (int)Math.round(x1 + (y - y1) * dxDivDy);</span>
+<span class="fc" id="L2564">                    int x = (int)Math.round(x1 + (y - y1) * dxDivDy);</span>
 
-<span class="nc" id="L2566">                    PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L2566">                    PairInt p = new PairInt(x, y);</span>
 
-<span class="nc" id="L2568">                    boolean added = points.add(p);</span>
+<span class="fc" id="L2568">                    boolean added = points.add(p);</span>
                 }
 
                 /*
@@ -2576,37 +2576,37 @@ import org.ejml.simple.*;
                 y0 - y1 = (x0 - x1) * dxDivDy;
                 y0 = y1 + (x0 - x1) * dxDivDy;
                 */
-<span class="nc" id="L2579">                double dyDivDx = (minDistPoint0.getY() - y1)/</span>
-<span class="nc" id="L2580">                    (minDistPoint0.getX() - x1);</span>
+<span class="fc" id="L2579">                double dyDivDx = (minDistPoint0.getY() - y1)/</span>
+<span class="fc" id="L2580">                    (minDistPoint0.getX() - x1);</span>
 
                 int startX, stopX;
-<span class="nc bnc" id="L2583" title="All 2 branches missed.">                if (minDistPoint0.getX() &lt; minDistPoint1.getX()) {</span>
-<span class="nc" id="L2584">                    startX = minDistPoint0.getX();</span>
-<span class="nc" id="L2585">                    stopX = minDistPoint1.getX();</span>
+<span class="fc bfc" id="L2583" title="All 2 branches covered.">                if (minDistPoint0.getX() &lt; minDistPoint1.getX()) {</span>
+<span class="fc" id="L2584">                    startX = minDistPoint0.getX();</span>
+<span class="fc" id="L2585">                    stopX = minDistPoint1.getX();</span>
                 } else {
-<span class="nc" id="L2587">                    startX = minDistPoint1.getX();</span>
-<span class="nc" id="L2588">                    stopX = minDistPoint0.getX();</span>
+<span class="fc" id="L2587">                    startX = minDistPoint1.getX();</span>
+<span class="fc" id="L2588">                    stopX = minDistPoint0.getX();</span>
                 }
 
-<span class="nc bnc" id="L2591" title="All 2 branches missed.">                for (int x = startX; x &lt;= stopX; x++) {</span>
+<span class="fc bfc" id="L2591" title="All 2 branches covered.">                for (int x = startX; x &lt;= stopX; x++) {</span>
 
-<span class="nc" id="L2593">                    int y = (int)Math.round(y1 + (x - x1) * dyDivDx);</span>
+<span class="fc" id="L2593">                    int y = (int)Math.round(y1 + (x - x1) * dyDivDx);</span>
 
-<span class="nc" id="L2595">                    PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L2595">                    PairInt p = new PairInt(x, y);</span>
 
-<span class="nc" id="L2597">                    boolean added = points.add(p);</span>
+<span class="fc" id="L2597">                    boolean added = points.add(p);</span>
                 }
             }
 
-<span class="nc" id="L2601">            finder = new DFSConnectedGroupsFinder();</span>
-<span class="nc" id="L2602">            finder.setMinimumNumberInCluster(1);</span>
-<span class="nc" id="L2603">            finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);</span>
+<span class="fc" id="L2601">            finder = new DFSConnectedGroupsFinder();</span>
+<span class="fc" id="L2602">            finder.setMinimumNumberInCluster(1);</span>
+<span class="fc" id="L2603">            finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);</span>
 
-<span class="nc" id="L2605">            nGroups = finder.getNumberOfGroups();</span>
+<span class="fc" id="L2605">            nGroups = finder.getNumberOfGroups();</span>
 
-<span class="nc" id="L2607">            nIter++;</span>
-<span class="nc" id="L2608">        }</span>
-<span class="nc" id="L2609">    }</span>
+<span class="fc" id="L2607">            nIter++;</span>
+<span class="fc" id="L2608">        }</span>
+<span class="fc" id="L2609">    }</span>
 
     public void pruneSpurs(List&lt;PairIntArray&gt; tmpEdges, int imageWidth,
         int imageHeight) {
@@ -2875,7 +2875,7 @@ import org.ejml.simple.*;
     public void straightenLines(Set&lt;PairInt&gt; points,
         GreyscaleImage edgeGuideImage) {
 
-<span class="nc bnc" id="L2878" title="All 2 branches missed.">        if (edgeGuideImage == null) {</span>
+<span class="pc bpc" id="L2878" title="1 of 2 branches missed.">        if (edgeGuideImage == null) {</span>
 <span class="nc" id="L2879">            return;</span>
         }
 
@@ -2912,94 +2912,94 @@ import org.ejml.simple.*;
                to the add list).
         */
 
-<span class="nc" id="L2915">        int imageWidth = edgeGuideImage.getWidth();</span>
+<span class="fc" id="L2915">        int imageWidth = edgeGuideImage.getWidth();</span>
 
-<span class="nc" id="L2917">        int imageHeight = edgeGuideImage.getHeight();</span>
+<span class="fc" id="L2917">        int imageHeight = edgeGuideImage.getHeight();</span>
 
-<span class="nc" id="L2919">        double onePixDist = Math.sqrt(2);</span>
+<span class="fc" id="L2919">        double onePixDist = Math.sqrt(2);</span>
 
-<span class="nc" id="L2921">        Set&lt;PairInt&gt; tmpPointsAdded = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L2922">        Set&lt;PairInt&gt; tmpPointsRemoved = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L2921">        Set&lt;PairInt&gt; tmpPointsAdded = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L2922">        Set&lt;PairInt&gt; tmpPointsRemoved = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L2924">        Set&lt;PairInt&gt; outputNeighbors = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L2924">        Set&lt;PairInt&gt; outputNeighbors = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc bnc" id="L2926" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L2926" title="All 2 branches covered.">        for (PairInt p : points) {</span>
 
-<span class="nc" id="L2928">            int x = p.getX();</span>
-<span class="nc" id="L2929">            int y = p.getY();</span>
+<span class="fc" id="L2928">            int x = p.getX();</span>
+<span class="fc" id="L2929">            int y = p.getY();</span>
 
-<span class="nc" id="L2931">            findNeighbors(x, y, outputNeighbors, points,</span>
+<span class="fc" id="L2931">            findNeighbors(x, y, outputNeighbors, points,</span>
                 tmpPointsAdded, tmpPointsRemoved, imageWidth, imageHeight);
 
-<span class="nc" id="L2934">            int nBrs = outputNeighbors.size();</span>
+<span class="fc" id="L2934">            int nBrs = outputNeighbors.size();</span>
 
-<span class="nc bnc" id="L2936" title="All 2 branches missed.">            if (nBrs == 0) {</span>
-<span class="nc" id="L2937">                continue;</span>
+<span class="fc bfc" id="L2936" title="All 2 branches covered.">            if (nBrs == 0) {</span>
+<span class="fc" id="L2937">                continue;</span>
             }
 
             // determine centroid
-<span class="nc" id="L2941">            double xc = p.getX();</span>
-<span class="nc" id="L2942">            double yc = p.getY();</span>
-<span class="nc bnc" id="L2943" title="All 2 branches missed.">            for (PairInt p2 : outputNeighbors) {</span>
-<span class="nc" id="L2944">                xc += p2.getX();</span>
-<span class="nc" id="L2945">                yc += p2.getY();</span>
-<span class="nc" id="L2946">            }</span>
-<span class="nc" id="L2947">            xc /= (double)(nBrs + 1);</span>
-<span class="nc" id="L2948">            yc /= (double)(nBrs + 1);</span>
+<span class="fc" id="L2941">            double xc = p.getX();</span>
+<span class="fc" id="L2942">            double yc = p.getY();</span>
+<span class="fc bfc" id="L2943" title="All 2 branches covered.">            for (PairInt p2 : outputNeighbors) {</span>
+<span class="fc" id="L2944">                xc += p2.getX();</span>
+<span class="fc" id="L2945">                yc += p2.getY();</span>
+<span class="fc" id="L2946">            }</span>
+<span class="fc" id="L2947">            xc /= (double)(nBrs + 1);</span>
+<span class="fc" id="L2948">            yc /= (double)(nBrs + 1);</span>
 
             // find highest intensity neighbor within 1 pix of centroid
-<span class="nc" id="L2951">            int maxIntensity = edgeGuideImage.getValue(x, y);</span>
-<span class="nc" id="L2952">            PairInt maxIntensityPoint = null;</span>
+<span class="fc" id="L2951">            int maxIntensity = edgeGuideImage.getValue(x, y);</span>
+<span class="fc" id="L2952">            PairInt maxIntensityPoint = null;</span>
 
-<span class="nc bnc" id="L2954" title="All 2 branches missed.">            for (int i = 0; i &lt; eightNeighborsX.length; ++i) {</span>
-<span class="nc" id="L2955">                int x2 = x + eightNeighborsX[i];</span>
-<span class="nc" id="L2956">                int y2 = y + eightNeighborsY[i];</span>
-<span class="nc bnc" id="L2957" title="All 8 branches missed.">                if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+<span class="fc bfc" id="L2954" title="All 2 branches covered.">            for (int i = 0; i &lt; eightNeighborsX.length; ++i) {</span>
+<span class="fc" id="L2955">                int x2 = x + eightNeighborsX[i];</span>
+<span class="fc" id="L2956">                int y2 = y + eightNeighborsY[i];</span>
+<span class="pc bpc" id="L2957" title="4 of 8 branches missed.">                if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
                     (y2 &gt; (imageHeight - 1))) {
 <span class="nc" id="L2959">                    continue;</span>
                 }
-<span class="nc" id="L2961">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L2961">                PairInt p2 = new PairInt(x2, y2);</span>
                 // discard if it's already a point
-<span class="nc bnc" id="L2963" title="All 4 branches missed.">                if (outputNeighbors.contains(p2) || tmpPointsAdded.contains(p2)</span>
-<span class="nc bnc" id="L2964" title="All 2 branches missed.">                    || points.contains(p2)) {</span>
-<span class="nc" id="L2965">                    continue;</span>
+<span class="pc bpc" id="L2963" title="1 of 4 branches missed.">                if (outputNeighbors.contains(p2) || tmpPointsAdded.contains(p2)</span>
+<span class="fc bfc" id="L2964" title="All 2 branches covered.">                    || points.contains(p2)) {</span>
+<span class="fc" id="L2965">                    continue;</span>
                 }
 
                 // this is a vacant pixel.
 
                 // check that it is within 1 pixel of (xc, yc)
-<span class="nc" id="L2971">                double diffX = x2 - xc;</span>
-<span class="nc" id="L2972">                double diffY = y2 - yc;</span>
-<span class="nc" id="L2973">                double dist = Math.sqrt((diffX * diffX) + (diffY * diffY));</span>
+<span class="fc" id="L2971">                double diffX = x2 - xc;</span>
+<span class="fc" id="L2972">                double diffY = y2 - yc;</span>
+<span class="fc" id="L2973">                double dist = Math.sqrt((diffX * diffX) + (diffY * diffY));</span>
 
-<span class="nc bnc" id="L2975" title="All 2 branches missed.">                if (dist &lt;= (onePixDist/2.)) {</span>
-<span class="nc" id="L2976">                    int v = edgeGuideImage.getValue(x2, y2);</span>
-<span class="nc bnc" id="L2977" title="All 2 branches missed.">                    if (v &gt; maxIntensity) {</span>
-<span class="nc" id="L2978">                        maxIntensity = v;</span>
-<span class="nc" id="L2979">                        maxIntensityPoint = p2;</span>
+<span class="fc bfc" id="L2975" title="All 2 branches covered.">                if (dist &lt;= (onePixDist/2.)) {</span>
+<span class="fc" id="L2976">                    int v = edgeGuideImage.getValue(x2, y2);</span>
+<span class="fc bfc" id="L2977" title="All 2 branches covered.">                    if (v &gt; maxIntensity) {</span>
+<span class="fc" id="L2978">                        maxIntensity = v;</span>
+<span class="fc" id="L2979">                        maxIntensityPoint = p2;</span>
                     }
                 }
             }
-<span class="nc bnc" id="L2983" title="All 2 branches missed.">            if (maxIntensityPoint != null) {</span>
+<span class="fc bfc" id="L2983" title="All 2 branches covered.">            if (maxIntensityPoint != null) {</span>
                 // &quot;change location&quot; of the point.
-<span class="nc" id="L2985">                tmpPointsRemoved.add(p);</span>
-<span class="nc" id="L2986">                tmpPointsRemoved.remove(maxIntensityPoint);</span>
-<span class="nc" id="L2987">                tmpPointsAdded.add(maxIntensityPoint);</span>
+<span class="fc" id="L2985">                tmpPointsRemoved.add(p);</span>
+<span class="fc" id="L2986">                tmpPointsRemoved.remove(maxIntensityPoint);</span>
+<span class="fc" id="L2987">                tmpPointsAdded.add(maxIntensityPoint);</span>
             }
-<span class="nc" id="L2989">        }</span>
+<span class="fc" id="L2989">        }</span>
 
-<span class="nc" id="L2991">        int nCorrections = tmpPointsRemoved.size() + tmpPointsAdded.size();</span>
+<span class="fc" id="L2991">        int nCorrections = tmpPointsRemoved.size() + tmpPointsAdded.size();</span>
 
-<span class="nc bnc" id="L2993" title="All 2 branches missed.">        for (PairInt p2 : tmpPointsRemoved) {</span>
-<span class="nc" id="L2994">            points.remove(p2);</span>
-<span class="nc" id="L2995">        }</span>
-<span class="nc bnc" id="L2996" title="All 2 branches missed.">        for (PairInt p2 : tmpPointsAdded) {</span>
-<span class="nc" id="L2997">            points.add(p2);</span>
-<span class="nc" id="L2998">        }</span>
+<span class="fc bfc" id="L2993" title="All 2 branches covered.">        for (PairInt p2 : tmpPointsRemoved) {</span>
+<span class="fc" id="L2994">            points.remove(p2);</span>
+<span class="fc" id="L2995">        }</span>
+<span class="fc bfc" id="L2996" title="All 2 branches covered.">        for (PairInt p2 : tmpPointsAdded) {</span>
+<span class="fc" id="L2997">            points.add(p2);</span>
+<span class="fc" id="L2998">        }</span>
 
-<span class="nc" id="L3000">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; +</span>
-<span class="nc" id="L3001">            Integer.toString(nCorrections));</span>
-<span class="nc" id="L3002">    }</span>
+<span class="fc" id="L3000">        log.fine(&quot;method &quot; + MiscDebug.getInvokingMethodName() + &quot; nc=&quot; +</span>
+<span class="fc" id="L3001">            Integer.toString(nCorrections));</span>
+<span class="fc" id="L3002">    }</span>
 
     protected void findNeighbors(int x, int y, Set&lt;PairInt&gt; outputNeighbors,
         Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; tmpAddedPoints,
@@ -3022,7 +3022,7 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L3022" title="All 2 branches covered.">            if (tmpRemovedPoints.contains(p2)) {</span>
 <span class="fc" id="L3023">                continue;</span>
             }
-<span class="pc bpc" id="L3025" title="1 of 4 branches missed.">            if (tmpAddedPoints.contains(p2) || points.contains(p2)) {</span>
+<span class="fc bfc" id="L3025" title="All 4 branches covered.">            if (tmpAddedPoints.contains(p2) || points.contains(p2)) {</span>
 <span class="fc" id="L3026">                outputNeighbors.add(p2);</span>
             }
         }
@@ -3086,25 +3086,25 @@ import org.ejml.simple.*;
     public boolean hasNumberOfPixelsOnImageBoundaries(int numberOfPixels,
         Set&lt;PairInt&gt; points, int imageWidth, int imageHeight) {
 
-<span class="nc" id="L3089">        int n = 0;</span>
+<span class="fc" id="L3089">        int n = 0;</span>
 
-<span class="nc bnc" id="L3091" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L3091" title="All 2 branches covered.">        for (PairInt p : points) {</span>
 
-<span class="nc" id="L3093">            int x = p.getX();</span>
-<span class="nc" id="L3094">            int y = p.getY();</span>
+<span class="fc" id="L3093">            int x = p.getX();</span>
+<span class="fc" id="L3094">            int y = p.getY();</span>
 
-<span class="nc bnc" id="L3096" title="All 8 branches missed.">            if ((x == 0) || (y == 0) || (x == (imageWidth - 1)) ||</span>
+<span class="fc bfc" id="L3096" title="All 8 branches covered.">            if ((x == 0) || (y == 0) || (x == (imageWidth - 1)) ||</span>
                 (y == (imageHeight - 1))) {
 
-<span class="nc" id="L3099">                n++;</span>
+<span class="fc" id="L3099">                n++;</span>
 
-<span class="nc bnc" id="L3101" title="All 2 branches missed.">                if (n == numberOfPixels) {</span>
-<span class="nc" id="L3102">                    return true;</span>
+<span class="fc bfc" id="L3101" title="All 2 branches covered.">                if (n == numberOfPixels) {</span>
+<span class="fc" id="L3102">                    return true;</span>
                 }
             }
-<span class="nc" id="L3105">        }</span>
+<span class="fc" id="L3105">        }</span>
 
-<span class="nc bnc" id="L3107" title="All 2 branches missed.">        return (n &gt;= numberOfPixels);</span>
+<span class="pc bpc" id="L3107" title="1 of 2 branches missed.">        return (n &gt;= numberOfPixels);</span>
     }
 
     public int countNeighbors(int x, int y, Set&lt;PairInt&gt; points, int imageWidth,
@@ -3117,9 +3117,9 @@ import org.ejml.simple.*;
 <span class="fc" id="L3117">            int x2 = x + eightNeighborsX[i];</span>
 <span class="fc" id="L3118">            int y2 = y + eightNeighborsY[i];</span>
 
-<span class="pc bpc" id="L3120" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+<span class="fc bfc" id="L3120" title="All 8 branches covered.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
                 (y2 &gt; (imageHeight - 1))) {
-<span class="nc" id="L3122">                continue;</span>
+<span class="fc" id="L3122">                continue;</span>
             }
 
 <span class="fc" id="L3125">            PairInt p2 = new PairInt(x2, y2);</span>
@@ -3224,11 +3224,11 @@ import org.ejml.simple.*;
 <span class="fc" id="L3224">        int diffX = Math.abs(x1 - x2);</span>
 <span class="fc" id="L3225">        int diffY = Math.abs(y1 - y2);</span>
 
-<span class="pc bpc" id="L3227" title="2 of 4 branches missed.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="fc bfc" id="L3227" title="All 4 branches covered.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
 <span class="fc" id="L3228">            return true;</span>
         }
 
-<span class="nc" id="L3231">        return false;</span>
+<span class="fc" id="L3231">        return false;</span>
     }
 
     /**
@@ -3277,16 +3277,16 @@ import org.ejml.simple.*;
 
 <span class="fc" id="L3278">        double perp = theta;</span>
 
-<span class="pc bpc" id="L3280" title="1 of 2 branches missed.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="fc bfc" id="L3280" title="All 2 branches covered.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
 <span class="fc" id="L3281">            perp += Math.PI/2.;</span>
         } else {
-<span class="nc" id="L3283">            perp -= Math.PI/2.;</span>
+<span class="fc" id="L3283">            perp -= Math.PI/2.;</span>
         }
 
 <span class="fc bfc" id="L3286" title="All 2 branches covered.">        if (perp &gt;= 2*Math.PI) {</span>
 <span class="fc" id="L3287">            perp = perp - 2*Math.PI;</span>
-<span class="pc bpc" id="L3288" title="1 of 2 branches missed.">        } else if (perp &lt; 0) {</span>
-<span class="nc" id="L3289">            perp += 2*Math.PI;</span>
+<span class="fc bfc" id="L3288" title="All 2 branches covered.">        } else if (perp &lt; 0) {</span>
+<span class="fc" id="L3289">            perp += 2*Math.PI;</span>
         }
 
 <span class="fc" id="L3292">        return perp;</span>
@@ -3327,31 +3327,31 @@ import org.ejml.simple.*;
         double yr = centroidY + ((-(x - centroidX) * sine(angle)))
         */
 
-<span class="nc" id="L3330">        int xmRot90 = xp + (ym - yp);</span>
-<span class="nc" id="L3331">        int ymRot90 = yp + (-(xm - xp));</span>
+<span class="fc" id="L3330">        int xmRot90 = xp + (ym - yp);</span>
+<span class="fc" id="L3331">        int ymRot90 = yp + (-(xm - xp));</span>
 
-<span class="nc" id="L3333">        int xmRotNegative90 = xp  - (ym - yp);</span>
-<span class="nc" id="L3334">        int ymRotNegative90 = yp + (xm - xp);</span>
+<span class="fc" id="L3333">        int xmRotNegative90 = xp  - (ym - yp);</span>
+<span class="fc" id="L3334">        int ymRotNegative90 = yp + (xm - xp);</span>
 
-<span class="nc" id="L3336">        boolean rot90IsInPoints = points.contains(</span>
-<span class="nc" id="L3337">            new PairInt(Math.round(xmRot90), Math.round(ymRot90)));</span>
+<span class="fc" id="L3336">        boolean rot90IsInPoints = points.contains(</span>
+<span class="fc" id="L3337">            new PairInt(Math.round(xmRot90), Math.round(ymRot90)));</span>
 
-<span class="nc" id="L3339">        boolean rotNegative90IsInPoints = points.contains(</span>
-<span class="nc" id="L3340">            new PairInt(Math.round(xmRotNegative90),</span>
-<span class="nc" id="L3341">            Math.round(ymRotNegative90)));</span>
+<span class="fc" id="L3339">        boolean rotNegative90IsInPoints = points.contains(</span>
+<span class="fc" id="L3340">            new PairInt(Math.round(xmRotNegative90),</span>
+<span class="fc" id="L3341">            Math.round(ymRotNegative90)));</span>
 
-<span class="nc" id="L3343">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
+<span class="fc" id="L3343">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
             + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);
 
-<span class="nc" id="L3346">        double distSqRotNegative90 =</span>
+<span class="fc" id="L3346">        double distSqRotNegative90 =</span>
             (xmRotNegative90 - centroidXY[0]) * (xmRotNegative90 - centroidXY[0])
             + (ymRotNegative90 - centroidXY[1]) * (ymRotNegative90 - centroidXY[1]);
 
-<span class="nc" id="L3350">        double perp = theta;</span>
+<span class="fc" id="L3350">        double perp = theta;</span>
 
-<span class="nc bnc" id="L3352" title="All 2 branches missed.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
-<span class="nc" id="L3353">            perp += Math.PI/2.;</span>
-<span class="nc bnc" id="L3354" title="All 2 branches missed.">        } else if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="fc bfc" id="L3352" title="All 2 branches covered.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="fc" id="L3353">            perp += Math.PI/2.;</span>
+<span class="pc bpc" id="L3354" title="1 of 2 branches missed.">        } else if (distSqRot90 &gt; distSqRotNegative90) {</span>
 <span class="nc bnc" id="L3355" title="All 4 branches missed.">            if (rot90IsInPoints &amp;&amp; !rotNegative90IsInPoints) {</span>
 <span class="nc" id="L3356">                perp -= Math.PI/2.;</span>
 <span class="nc bnc" id="L3357" title="All 4 branches missed.">            } else if (!rot90IsInPoints &amp;&amp; rotNegative90IsInPoints) {</span>
@@ -3362,16 +3362,16 @@ import org.ejml.simple.*;
                 &quot; one will always be in points set.&quot;);
             }
         } else {
-<span class="nc" id="L3365">            perp -= Math.PI/2.;</span>
+<span class="fc" id="L3365">            perp -= Math.PI/2.;</span>
         }
 
-<span class="nc bnc" id="L3368" title="All 2 branches missed.">        if (perp &gt;= 2*Math.PI) {</span>
-<span class="nc" id="L3369">            perp = perp - 2*Math.PI;</span>
-<span class="nc bnc" id="L3370" title="All 2 branches missed.">        } else if (perp &lt; 0) {</span>
-<span class="nc" id="L3371">            perp += 2*Math.PI;</span>
+<span class="fc bfc" id="L3368" title="All 2 branches covered.">        if (perp &gt;= 2*Math.PI) {</span>
+<span class="fc" id="L3369">            perp = perp - 2*Math.PI;</span>
+<span class="fc bfc" id="L3370" title="All 2 branches covered.">        } else if (perp &lt; 0) {</span>
+<span class="fc" id="L3371">            perp += 2*Math.PI;</span>
         }
 
-<span class="nc" id="L3374">        return perp;</span>
+<span class="fc" id="L3374">        return perp;</span>
     }
 
     public int adjustEdgesTowardsBrighterPixels(PairIntArray edge,

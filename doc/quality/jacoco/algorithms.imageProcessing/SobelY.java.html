@@ -5,10 +5,10 @@
  * 
  * @author nichole
  */
-<span class="nc" id="L8">public class SobelY implements IKernel {</span>
+<span class="fc" id="L8">public class SobelY implements IKernel {</span>
     
     public float getNormalizationFactor() {
-<span class="nc" id="L11">        return 1.0f;</span>
+<span class="fc" id="L11">        return 1.0f;</span>
     }
     
     public Kernel getKernel() {
@@ -20,16 +20,16 @@
         this is the n=2 binomial filter for a Gaussian first derivative,
            that is sigma = sqrt(2)/2 = 0.707
         */
-<span class="nc" id="L23">        Kernel kernel = new Kernel(3, 3);</span>
+<span class="fc" id="L23">        Kernel kernel = new Kernel(3, 3);</span>
        
-<span class="nc" id="L25">        kernel.setValue(0, 0, 1);</span>
-<span class="nc" id="L26">        kernel.setValue(1, 0, 2);</span>
-<span class="nc" id="L27">        kernel.setValue(2, 0, 1);</span>
-<span class="nc" id="L28">        kernel.setValue(0, 2, -1);</span>
-<span class="nc" id="L29">        kernel.setValue(1, 2, -2);</span>
-<span class="nc" id="L30">        kernel.setValue(2, 2, -1);</span>
+<span class="fc" id="L25">        kernel.setValue(0, 0, 1);</span>
+<span class="fc" id="L26">        kernel.setValue(1, 0, 2);</span>
+<span class="fc" id="L27">        kernel.setValue(2, 0, 1);</span>
+<span class="fc" id="L28">        kernel.setValue(0, 2, -1);</span>
+<span class="fc" id="L29">        kernel.setValue(1, 2, -2);</span>
+<span class="fc" id="L30">        kernel.setValue(2, 2, -1);</span>
         
-<span class="nc" id="L32">        return kernel;</span>
+<span class="fc" id="L32">        return kernel;</span>
     }
 
 }

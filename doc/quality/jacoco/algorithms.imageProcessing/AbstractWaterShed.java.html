@@ -59,7 +59,7 @@ import java.util.Stack;
 <span class="fc" id="L59">    protected Map&lt;PairInt, DisjointSet2Node&lt;PairInt&gt;&gt; componentLabelMap = null;</span>
 
     public Set&lt;PairInt&gt; getRegionalMinima() {
-<span class="nc" id="L62">        return regionalMinima;</span>
+<span class="fc" id="L62">        return regionalMinima;</span>
     }
 
     /**
@@ -432,32 +432,32 @@ import java.util.Stack;
         private final boolean isRecursionBase;
 
         public ResolveState(int level, PairInt p, int pI, ResolveState previous,
-<span class="nc" id="L435">            int previousI, boolean isRecursionBase) {</span>
-<span class="nc" id="L436">            this.p = p;</span>
-<span class="nc" id="L437">            this.i = pI;</span>
-<span class="nc" id="L438">            this.level = level;</span>
-<span class="nc" id="L439">            this.previous = previous;</span>
-<span class="nc" id="L440">            this.previousI = previousI;</span>
-<span class="nc" id="L441">            this.isRecursionBase = isRecursionBase;</span>
-<span class="nc" id="L442">        }</span>
+            int previousI, boolean isRecursionBase) {
+            this.p = p;
+            this.i = pI;
+            this.level = level;
+            this.previous = previous;
+            this.previousI = previousI;
+            this.isRecursionBase = isRecursionBase;
+        }
 
         public PairInt getP() {
-<span class="nc" id="L445">            return p;</span>
+            return p;
         }
         public int getI() {
-<span class="nc" id="L448">            return i;</span>
+            return i;
         }
         public int getLevel() {
-<span class="nc" id="L451">            return level;</span>
+            return level;
         }
         public ResolveState getPrevious() {
-<span class="nc" id="L454">            return previous;</span>
+            return previous;
         }
         public int getPreviousI() {
-<span class="nc" id="L457">            return previousI;</span>
+            return previousI;
         }
         public boolean isRecursionBase() {
-<span class="nc" id="L460">            return isRecursionBase;</span>
+            return isRecursionBase;
         }
     }
 

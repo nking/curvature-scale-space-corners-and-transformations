@@ -79,21 +79,21 @@ public class Image {
     
     public void setRGB(int col, int row, int rgb) {
         
-<span class="nc" id="L82">        int idx = getInternalIndex(col, row);</span>
+<span class="fc" id="L82">        int idx = getInternalIndex(col, row);</span>
         
-<span class="nc bnc" id="L84" title="All 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (r.length - 1))) {</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (r.length - 1))) {</span>
 <span class="nc" id="L85">            throw new IllegalArgumentException(</span>
                 &quot;col and/or are out of bounds&quot;);
         }
        
-<span class="nc" id="L89">        int rPix = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="nc" id="L90">        int gPix = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="nc" id="L91">        int bPix = rgb &amp; 0xFF;</span>
+<span class="fc" id="L89">        int rPix = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L90">        int gPix = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L91">        int bPix = rgb &amp; 0xFF;</span>
         
-<span class="nc" id="L93">        r[idx] = rPix;</span>
-<span class="nc" id="L94">        g[idx] = gPix;</span>
-<span class="nc" id="L95">        b[idx] = bPix;</span>
-<span class="nc" id="L96">    }</span>
+<span class="fc" id="L93">        r[idx] = rPix;</span>
+<span class="fc" id="L94">        g[idx] = gPix;</span>
+<span class="fc" id="L95">        b[idx] = bPix;</span>
+<span class="fc" id="L96">    }</span>
         
     public int getR(int col, int row) {
         
@@ -133,32 +133,32 @@ public class Image {
     
     public int getR(int internalIndex) {
         
-<span class="nc bnc" id="L136" title="All 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
 <span class="nc" id="L137">            throw new IllegalArgumentException(</span>
                 &quot;internalIndex is out of bounds:&quot;);
         }
         
-<span class="nc" id="L141">        return r[internalIndex];</span>
+<span class="fc" id="L141">        return r[internalIndex];</span>
     }
     
     public int getB(int internalIndex) {
         
-<span class="nc bnc" id="L146" title="All 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="pc bpc" id="L146" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
 <span class="nc" id="L147">            throw new IllegalArgumentException(</span>
                 &quot;internalIndex is out of bounds:&quot;);
         }
         
-<span class="nc" id="L151">        return b[internalIndex];</span>
+<span class="fc" id="L151">        return b[internalIndex];</span>
     }
     
     public int getG(int internalIndex) {
 
-<span class="nc bnc" id="L156" title="All 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
 <span class="nc" id="L157">            throw new IllegalArgumentException(</span>
                 &quot;internalIndex is out of bounds:&quot;);
         }
         
-<span class="nc" id="L161">        return g[internalIndex];</span>
+<span class="fc" id="L161">        return g[internalIndex];</span>
     }
     
     public int getRGB(int col, int row) {
@@ -178,13 +178,13 @@ public class Image {
     
     public Image copyImage() {
        
-<span class="nc" id="L181">        Image img2 = new Image(getWidth(), getHeight());</span>
+<span class="fc" id="L181">        Image img2 = new Image(getWidth(), getHeight());</span>
         
-<span class="nc" id="L183">        System.arraycopy(r, 0, img2.r, 0, nPixels);</span>
-<span class="nc" id="L184">        System.arraycopy(g, 0, img2.g, 0, nPixels);</span>
-<span class="nc" id="L185">        System.arraycopy(b, 0, img2.b, 0, nPixels);</span>
+<span class="fc" id="L183">        System.arraycopy(r, 0, img2.r, 0, nPixels);</span>
+<span class="fc" id="L184">        System.arraycopy(g, 0, img2.g, 0, nPixels);</span>
+<span class="fc" id="L185">        System.arraycopy(b, 0, img2.b, 0, nPixels);</span>
        
-<span class="nc" id="L187">        return img2;</span>
+<span class="fc" id="L187">        return img2;</span>
     }
     
     public GreyscaleImage copyToGreyscale() {
@@ -197,39 +197,39 @@ public class Image {
         BufferedImage.
         */
         
-<span class="nc" id="L200">        BufferedImage outputImage = new BufferedImage(width, height, </span>
+<span class="fc" id="L200">        BufferedImage outputImage = new BufferedImage(width, height, </span>
             BufferedImage.TYPE_BYTE_GRAY);
         
-<span class="nc bnc" id="L203" title="All 2 branches missed.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">            for (int j = 0; j &lt; height; j++) {</span>
-<span class="nc" id="L205">                int rgbValue = getRGB(i, j);</span>
-<span class="nc" id="L206">                outputImage.setRGB(i, j, rgbValue);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc" id="L205">                int rgbValue = getRGB(i, j);</span>
+<span class="fc" id="L206">                outputImage.setRGB(i, j, rgbValue);</span>
             }
         }
         
-<span class="nc" id="L210">        GreyscaleImage out = new GreyscaleImage(width, height);</span>
+<span class="fc" id="L210">        GreyscaleImage out = new GreyscaleImage(width, height);</span>
         
-<span class="nc bnc" id="L212" title="All 2 branches missed.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="nc bnc" id="L213" title="All 2 branches missed.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
                 
                 // presumably, this is already combined?
                 // or does it need separation into rgb and then averaged?
                 
-<span class="nc" id="L218">                int rgb = outputImage.getRGB(i, j);</span>
+<span class="fc" id="L218">                int rgb = outputImage.getRGB(i, j);</span>
                 
                 // prefer GREEN?
                 
-<span class="nc" id="L222">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="nc" id="L223">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="nc" id="L224">                int b = rgb &amp; 0xFF;  </span>
+<span class="fc" id="L222">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L223">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L224">                int b = rgb &amp; 0xFF;  </span>
                     
-<span class="nc" id="L226">                int v = Math.round((r + g + b)/3.f);</span>
+<span class="fc" id="L226">                int v = Math.round((r + g + b)/3.f);</span>
                 
-<span class="nc" id="L228">                out.setValue(i, j, v);</span>
+<span class="fc" id="L228">                out.setValue(i, j, v);</span>
             }
         }
         
-<span class="nc" id="L232">        return out;</span>
+<span class="fc" id="L232">        return out;</span>
     }
     
     public GreyscaleImage copyRedToImage() {
@@ -292,16 +292,16 @@ public class Image {
     
     public void resetTo(Image copyThis) {
         
-<span class="nc bnc" id="L295" title="All 2 branches missed.">        if (copyThis.getNPixels() != nPixels) {</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        if (copyThis.getNPixels() != nPixels) {</span>
 <span class="nc" id="L296">            throw new IllegalArgumentException(&quot;cannot convert this fixed &quot; </span>
                 + &quot;image size to the size of copyThis&quot;);
         }
         
-<span class="nc" id="L300">        System.arraycopy(copyThis.r, 0, r, 0, nPixels);</span>
-<span class="nc" id="L301">        System.arraycopy(copyThis.g, 0, g, 0, nPixels);</span>
-<span class="nc" id="L302">        System.arraycopy(copyThis.b, 0, b, 0, nPixels);</span>
+<span class="fc" id="L300">        System.arraycopy(copyThis.r, 0, r, 0, nPixels);</span>
+<span class="fc" id="L301">        System.arraycopy(copyThis.g, 0, g, 0, nPixels);</span>
+<span class="fc" id="L302">        System.arraycopy(copyThis.b, 0, b, 0, nPixels);</span>
         
-<span class="nc" id="L304">    }</span>
+<span class="fc" id="L304">    }</span>
 
     /**
      * @return the width

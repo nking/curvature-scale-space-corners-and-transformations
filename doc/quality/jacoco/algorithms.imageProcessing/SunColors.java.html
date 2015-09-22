@@ -8,17 +8,17 @@ import java.awt.Color;
  *
  * @author nichole
  */
-<span class="nc" id="L11">public class SunColors {</span>
+<span class="fc" id="L11">public class SunColors {</span>
 
-<span class="nc" id="L13">    private CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L13">    private CIEChromaticity cieC = new CIEChromaticity();</span>
         
-<span class="nc" id="L15">    private PointInPolygon pInPoly = new PointInPolygon();</span>
+<span class="fc" id="L15">    private PointInPolygon pInPoly = new PointInPolygon();</span>
         
-<span class="nc" id="L17">    private ArrayPair yellowBounds = cieC.getYellowPolynomial();</span>
+<span class="fc" id="L17">    private ArrayPair yellowBounds = cieC.getYellowPolynomial();</span>
         
-<span class="nc" id="L19">    private float totRGBLimit = 0.2f * 768.f;</span>
+<span class="fc" id="L19">    private float totRGBLimit = 0.2f * 768.f;</span>
     
-<span class="nc" id="L21">    private boolean useDarkSkiesLogic = false;</span>
+<span class="fc" id="L21">    private boolean useDarkSkiesLogic = false;</span>
    
     public boolean isSunCenterColor(int r, int g, int b) {
         
@@ -64,43 +64,43 @@ import java.awt.Color;
     
     public boolean isSunCenterColor(ImageExt colorImg, int pixelIndex) {
                 
-<span class="nc" id="L67">        float saturation = colorImg.getSaturation(pixelIndex);</span>
-<span class="nc" id="L68">        float brightness = colorImg.getBrightness(pixelIndex);</span>
+<span class="fc" id="L67">        float saturation = colorImg.getSaturation(pixelIndex);</span>
+<span class="fc" id="L68">        float brightness = colorImg.getBrightness(pixelIndex);</span>
         
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (useDarkSkiesLogic) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (useDarkSkiesLogic) {</span>
             
-<span class="nc bnc" id="L72" title="All 4 branches missed.">            if ((saturation &gt; 0.1f) &amp;&amp; (brightness &gt; 0.25)) {</span>
+<span class="fc bfc" id="L72" title="All 4 branches covered.">            if ((saturation &gt; 0.1f) &amp;&amp; (brightness &gt; 0.25)) {</span>
 
-<span class="nc" id="L74">                float cieX = colorImg.getCIEX(pixelIndex);</span>
-<span class="nc" id="L75">                float cieY = colorImg.getCIEY(pixelIndex);</span>
+<span class="fc" id="L74">                float cieX = colorImg.getCIEX(pixelIndex);</span>
+<span class="fc" id="L75">                float cieY = colorImg.getCIEY(pixelIndex);</span>
                 
-<span class="nc bnc" id="L77" title="All 2 branches missed.">                if (pInPoly.isInSimpleCurve(cieX, cieY, yellowBounds.getX(), </span>
-<span class="nc" id="L78">                    yellowBounds.getY(), yellowBounds.getX().length)) {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (pInPoly.isInSimpleCurve(cieX, cieY, yellowBounds.getX(), </span>
+<span class="fc" id="L78">                    yellowBounds.getY(), yellowBounds.getX().length)) {</span>
 
-<span class="nc" id="L80">                    return true;</span>
+<span class="fc" id="L80">                    return true;</span>
                 }
-<span class="nc" id="L82">            }</span>
+<span class="fc" id="L82">            }</span>
             
         } else {
             
-<span class="nc" id="L86">            float r = colorImg.getR(pixelIndex);</span>
-<span class="nc" id="L87">            float g = colorImg.getG(pixelIndex);</span>
-<span class="nc" id="L88">            float b = colorImg.getB(pixelIndex);</span>
+<span class="fc" id="L86">            float r = colorImg.getR(pixelIndex);</span>
+<span class="fc" id="L87">            float g = colorImg.getG(pixelIndex);</span>
+<span class="fc" id="L88">            float b = colorImg.getB(pixelIndex);</span>
             
-<span class="nc bnc" id="L90" title="All 8 branches missed.">            if ((r &gt;= 240) &amp;&amp; (brightness &gt;= 0.87) &amp;&amp; (saturation &lt; .30)</span>
+<span class="pc bpc" id="L90" title="2 of 8 branches missed.">            if ((r &gt;= 240) &amp;&amp; (brightness &gt;= 0.87) &amp;&amp; (saturation &lt; .30)</span>
                 &amp;&amp; ((r + g + b) &gt; totRGBLimit)) {
 
-<span class="nc" id="L93">                return true;</span>
+<span class="fc" id="L93">                return true;</span>
             }
         }
         
-<span class="nc" id="L97">        return false;</span>
+<span class="fc" id="L97">        return false;</span>
     }
      
     public void useDarkSkiesLogic() {
         
-<span class="nc" id="L102">        useDarkSkiesLogic = true;</span>
-<span class="nc" id="L103">    }</span>
+<span class="fc" id="L102">        useDarkSkiesLogic = true;</span>
+<span class="fc" id="L103">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

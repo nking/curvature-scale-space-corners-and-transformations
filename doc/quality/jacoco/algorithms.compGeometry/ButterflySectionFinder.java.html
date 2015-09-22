@@ -41,17 +41,17 @@ import java.util.Set;
 <span class="fc" id="L41">        List&lt;Set&lt;PairInt&gt;&gt; sectionsSmall = findButterflySectionsSmall(</span>
             closedCurve, points);
         
-<span class="pc bpc" id="L44" title="2 of 4 branches missed.">        if (sections == null &amp;&amp; sectionsSmall == null) {</span>
+<span class="pc bpc" id="L44" title="1 of 4 branches missed.">        if (sections == null &amp;&amp; sectionsSmall == null) {</span>
 <span class="nc" id="L45">            return null;</span>
-<span class="pc bpc" id="L46" title="2 of 4 branches missed.">        } else if (sections == null &amp;&amp; sectionsSmall != null) {</span>
+<span class="pc bpc" id="L46" title="1 of 4 branches missed.">        } else if (sections == null &amp;&amp; sectionsSmall != null) {</span>
 <span class="fc" id="L47">            return sectionsSmall;</span>
-<span class="nc bnc" id="L48" title="All 4 branches missed.">        } else if (sections != null &amp;&amp; sectionsSmall == null) {</span>
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">        } else if (sections != null &amp;&amp; sectionsSmall == null) {</span>
 <span class="nc" id="L49">            return sections;</span>
-<span class="nc bnc" id="L50" title="All 4 branches missed.">        } else if (sections != null &amp;&amp; sectionsSmall != null) {</span>
-<span class="nc" id="L51">            sections.addAll(sectionsSmall);</span>
+<span class="pc bpc" id="L50" title="2 of 4 branches missed.">        } else if (sections != null &amp;&amp; sectionsSmall != null) {</span>
+<span class="fc" id="L51">            sections.addAll(sectionsSmall);</span>
         }
         
-<span class="nc" id="L54">        return sections;</span>
+<span class="fc" id="L54">        return sections;</span>
     }
 
      /**
@@ -87,87 +87,87 @@ import java.util.Set;
 <span class="fc" id="L87">            Set&lt;PairInt&gt; neighbors = curveHelper.findNeighbors(x, y, points);</span>
 
             // scanning for segments
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">            if (neighbors.size() != 5) {</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">                if (currentList != null) {</span>
-<span class="nc" id="L92">                    candidateSections.add(currentList);</span>
-<span class="nc" id="L93">                    currentList = null;</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            if (neighbors.size() != 5) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                if (currentList != null) {</span>
+<span class="fc" id="L92">                    candidateSections.add(currentList);</span>
+<span class="fc" id="L93">                    currentList = null;</span>
                 }
                 continue;
             }
 
-<span class="nc" id="L98">            Segment segment = checkSegmentPatterns(x, y, neighbors);</span>
+<span class="fc" id="L98">            Segment segment = checkSegmentPatterns(x, y, neighbors);</span>
 
-<span class="nc bnc" id="L100" title="All 2 branches missed.">            if (segment == null) {</span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">                if (currentList != null) {</span>
-<span class="nc" id="L102">                    candidateSections.add(currentList);</span>
-<span class="nc" id="L103">                    currentList = null;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (segment == null) {</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">                if (currentList != null) {</span>
+<span class="fc" id="L102">                    candidateSections.add(currentList);</span>
+<span class="fc" id="L103">                    currentList = null;</span>
                 }
                 continue;
             }
 
-<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (currentList == null) {</span>
-<span class="nc" id="L109">                currentList = new LinkedList&lt;Segment&gt;();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (currentList == null) {</span>
+<span class="fc" id="L109">                currentList = new LinkedList&lt;Segment&gt;();</span>
             }
-<span class="nc" id="L111">            currentList.add(segment);</span>
+<span class="fc" id="L111">            currentList.add(segment);</span>
         }
 
 <span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (currentList != null) {</span>
 <span class="nc" id="L115">            candidateSections.add(currentList);</span>
         }
 
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (candidateSections.isEmpty()) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (candidateSections.isEmpty()) {</span>
 <span class="fc" id="L119">            return null;</span>
         }
 
-<span class="nc" id="L122">        Set&lt;PairInt&gt; exclude = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (LinkedList&lt;Segment&gt; section : candidateSections) {</span>
-<span class="nc bnc" id="L124" title="All 2 branches missed.">            for (Segment segment : section) {</span>
-<span class="nc" id="L125">                exclude.add(segment.p0);</span>
-<span class="nc" id="L126">                exclude.add(segment.p1);</span>
-<span class="nc" id="L127">                exclude.add(segment.p2);</span>
-<span class="nc" id="L128">                exclude.add(segment.p3);</span>
-<span class="nc" id="L129">            }</span>
-<span class="nc" id="L130">        }</span>
+<span class="fc" id="L122">        Set&lt;PairInt&gt; exclude = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        for (LinkedList&lt;Segment&gt; section : candidateSections) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            for (Segment segment : section) {</span>
+<span class="fc" id="L125">                exclude.add(segment.p0);</span>
+<span class="fc" id="L126">                exclude.add(segment.p1);</span>
+<span class="fc" id="L127">                exclude.add(segment.p2);</span>
+<span class="fc" id="L128">                exclude.add(segment.p3);</span>
+<span class="fc" id="L129">            }</span>
+<span class="fc" id="L130">        }</span>
 
-<span class="nc" id="L132">        List&lt;Set&lt;PairInt&gt;&gt; output = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L132">        List&lt;Set&lt;PairInt&gt;&gt; output = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
 
         // -- scan for endpoints --
-<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (LinkedList&lt;Segment&gt; section : candidateSections) {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (LinkedList&lt;Segment&gt; section : candidateSections) {</span>
 
-<span class="nc" id="L137">            boolean checkFirstSegment = true;</span>
+<span class="fc" id="L137">            boolean checkFirstSegment = true;</span>
             
-<span class="nc" id="L139">            Set&lt;PairInt&gt; endPoints = checkForAdjacentEndpoints(points, section,</span>
+<span class="fc" id="L139">            Set&lt;PairInt&gt; endPoints = checkForAdjacentEndpoints(points, section,</span>
                 exclude, checkFirstSegment);
 
-<span class="nc bnc" id="L142" title="All 4 branches missed.">            if (endPoints == null || endPoints.isEmpty()) {</span>
+<span class="pc bpc" id="L142" title="1 of 4 branches missed.">            if (endPoints == null || endPoints.isEmpty()) {</span>
 <span class="nc" id="L143">                continue;</span>
             }
 
-<span class="nc" id="L146">            Set&lt;PairInt&gt; exclude2 = new HashSet&lt;PairInt&gt;(exclude);</span>
-<span class="nc" id="L147">            exclude2.addAll(endPoints);</span>
+<span class="fc" id="L146">            Set&lt;PairInt&gt; exclude2 = new HashSet&lt;PairInt&gt;(exclude);</span>
+<span class="fc" id="L147">            exclude2.addAll(endPoints);</span>
 
-<span class="nc" id="L149">            Set&lt;PairInt&gt; endPoints2 = checkForAdjacentEndpoints(points,</span>
+<span class="fc" id="L149">            Set&lt;PairInt&gt; endPoints2 = checkForAdjacentEndpoints(points,</span>
                 section, exclude2, checkFirstSegment);
 
-<span class="nc bnc" id="L152" title="All 4 branches missed.">            if (endPoints2 == null || endPoints2.isEmpty()) {</span>
+<span class="pc bpc" id="L152" title="1 of 4 branches missed.">            if (endPoints2 == null || endPoints2.isEmpty()) {</span>
 <span class="nc" id="L153">                continue;</span>
             }
 
             // add all section and endpoints to a set to add to output
-<span class="nc" id="L157">            Set&lt;PairInt&gt; allPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L158">            allPoints.addAll(endPoints);</span>
-<span class="nc" id="L159">            allPoints.addAll(endPoints2);</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">            for (Segment segment : section) {</span>
-<span class="nc" id="L161">                allPoints.add(segment.p0);</span>
-<span class="nc" id="L162">                allPoints.add(segment.p1);</span>
-<span class="nc" id="L163">                allPoints.add(segment.p2);</span>
-<span class="nc" id="L164">                allPoints.add(segment.p3);</span>
-<span class="nc" id="L165">            }</span>
+<span class="fc" id="L157">            Set&lt;PairInt&gt; allPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L158">            allPoints.addAll(endPoints);</span>
+<span class="fc" id="L159">            allPoints.addAll(endPoints2);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            for (Segment segment : section) {</span>
+<span class="fc" id="L161">                allPoints.add(segment.p0);</span>
+<span class="fc" id="L162">                allPoints.add(segment.p1);</span>
+<span class="fc" id="L163">                allPoints.add(segment.p2);</span>
+<span class="fc" id="L164">                allPoints.add(segment.p3);</span>
+<span class="fc" id="L165">            }</span>
 
-<span class="nc" id="L167">            output.add(allPoints);</span>
-<span class="nc" id="L168">        }</span>
+<span class="fc" id="L167">            output.add(allPoints);</span>
+<span class="fc" id="L168">        }</span>
 
-<span class="nc" id="L170">        return output;</span>
+<span class="fc" id="L170">        return output;</span>
 
         /*
         endpoints for vert:
@@ -298,7 +298,7 @@ import java.util.Set;
                             
 <span class="fc" id="L299">            Segment segment = checkZigZagSegmentPattern(x, y, points);</span>
 
-<span class="pc bpc" id="L301" title="1 of 2 branches missed.">            if (segment == null) {</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">            if (segment == null) {</span>
 <span class="fc" id="L302">                continue;</span>
             }
 
@@ -308,21 +308,21 @@ import java.util.Set;
             cannot be adjacent to any of the other neighbors.
             */
           
-<span class="nc" id="L311">            Set&lt;PairInt&gt; endPoints = checkForZigZagEndPoints(points, segment);</span>
+<span class="fc" id="L311">            Set&lt;PairInt&gt; endPoints = checkForZigZagEndPoints(points, segment);</span>
                 
-<span class="nc bnc" id="L313" title="All 4 branches missed.">            if (endPoints == null || endPoints.isEmpty()) {</span>
+<span class="pc bpc" id="L313" title="1 of 4 branches missed.">            if (endPoints == null || endPoints.isEmpty()) {</span>
 <span class="nc" id="L314">                continue;</span>
             }
             
             // add all section and endpoints to a set to add to output
-<span class="nc" id="L318">            Set&lt;PairInt&gt; allPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L319">            allPoints.addAll(endPoints);</span>
-<span class="nc" id="L320">            allPoints.add(segment.p0);</span>
-<span class="nc" id="L321">            allPoints.add(segment.p1);</span>
-<span class="nc" id="L322">            allPoints.add(segment.p2);</span>
-<span class="nc" id="L323">            allPoints.add(segment.p3);</span>
+<span class="fc" id="L318">            Set&lt;PairInt&gt; allPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L319">            allPoints.addAll(endPoints);</span>
+<span class="fc" id="L320">            allPoints.add(segment.p0);</span>
+<span class="fc" id="L321">            allPoints.add(segment.p1);</span>
+<span class="fc" id="L322">            allPoints.add(segment.p2);</span>
+<span class="fc" id="L323">            allPoints.add(segment.p3);</span>
 
-<span class="nc" id="L325">            output.add(allPoints);</span>
+<span class="fc" id="L325">            output.add(allPoints);</span>
         }
 
 <span class="fc" id="L328">        return output;</span>
@@ -331,36 +331,36 @@ import java.util.Set;
     private Segment checkSegmentPatterns(final int x, final int y, 
         Set&lt;PairInt&gt; neighbors) {
 
-<span class="nc" id="L334">        Segment segment = checkVertSegmentPattern(x, y, neighbors);</span>
+<span class="fc" id="L334">        Segment segment = checkVertSegmentPattern(x, y, neighbors);</span>
         
-<span class="nc bnc" id="L336" title="All 2 branches missed.">        if (segment != null) {</span>
-<span class="nc" id="L337">            return segment;</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">        if (segment != null) {</span>
+<span class="fc" id="L337">            return segment;</span>
         }
         
-<span class="nc" id="L340">        segment = checkHorizSegmentPattern(x, y, neighbors);</span>
+<span class="fc" id="L340">        segment = checkHorizSegmentPattern(x, y, neighbors);</span>
         
-<span class="nc bnc" id="L342" title="All 2 branches missed.">        if (segment != null) {</span>
-<span class="nc" id="L343">            return segment;</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        if (segment != null) {</span>
+<span class="fc" id="L343">            return segment;</span>
         }
         
-<span class="nc" id="L346">        segment = checkDiagSegmentPattern(x, y, neighbors);</span>
+<span class="fc" id="L346">        segment = checkDiagSegmentPattern(x, y, neighbors);</span>
         
-<span class="nc bnc" id="L348" title="All 2 branches missed.">        if (segment != null) {</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">        if (segment != null) {</span>
 <span class="nc" id="L349">            return segment;</span>
         }
         
-<span class="nc" id="L352">        return null;</span>
+<span class="fc" id="L352">        return null;</span>
     }
 
     private void swapYDirection(Pattern pattern) {
         // ----- change the sign of y  -----
-<span class="nc bnc" id="L357" title="All 2 branches missed.">        for (PairInt p : pattern.zeroes) {</span>
-<span class="nc" id="L358">            p.setY(-1 * p.getY());</span>
-<span class="nc" id="L359">        }</span>
-<span class="nc bnc" id="L360" title="All 2 branches missed.">        for (PairInt p : pattern.ones) {</span>
-<span class="nc" id="L361">            p.setY(-1 * p.getY());</span>
-<span class="nc" id="L362">        }</span>
-<span class="nc" id="L363">    }</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">        for (PairInt p : pattern.zeroes) {</span>
+<span class="fc" id="L358">            p.setY(-1 * p.getY());</span>
+<span class="fc" id="L359">        }</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        for (PairInt p : pattern.ones) {</span>
+<span class="fc" id="L361">            p.setY(-1 * p.getY());</span>
+<span class="fc" id="L362">        }</span>
+<span class="fc" id="L363">    }</span>
     
     private void swapXDirection(Pattern pattern) {
         // ----- change the sign of x  -----
@@ -376,14 +376,14 @@ import java.util.Set;
         LinkedList&lt;Segment&gt; section, Set&lt;PairInt&gt; exclude, 
         boolean checkFirstSegment) {
         
-<span class="nc bnc" id="L379" title="All 2 branches missed.">        Segment segment = checkFirstSegment ? section.getFirst() : </span>
-<span class="nc" id="L380">            section.getLast();</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">        Segment segment = checkFirstSegment ? section.getFirst() : </span>
+<span class="pc" id="L380">            section.getLast();</span>
                         
-<span class="nc bnc" id="L382" title="All 2 branches missed.">        if (segment instanceof VertSegment) {</span>
-<span class="nc" id="L383">            return checkForAdjacentEndpointsForVertSegment(points, section, </span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">        if (segment instanceof VertSegment) {</span>
+<span class="fc" id="L383">            return checkForAdjacentEndpointsForVertSegment(points, section, </span>
                 exclude, checkFirstSegment);
-<span class="nc bnc" id="L385" title="All 2 branches missed.">        } else if (segment instanceof HorizSegment) {</span>
-<span class="nc" id="L386">            return checkForAdjacentEndpointsForHorizSegment(points, section, </span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        } else if (segment instanceof HorizSegment) {</span>
+<span class="fc" id="L386">            return checkForAdjacentEndpointsForHorizSegment(points, section, </span>
                 exclude, checkFirstSegment);
 <span class="nc bnc" id="L388" title="All 2 branches missed.">        } else if (segment instanceof UUDiagSegment) {</span>
 <span class="nc" id="L389">            return checkForAdjacentEndpointsForUUDiagSegment(points, section, </span>
@@ -417,8 +417,8 @@ import java.util.Set;
         Set&lt;PairInt&gt; points, LinkedList&lt;Segment&gt; section, Set&lt;PairInt&gt; exclude, 
         boolean checkFirstSegment) {
         
-<span class="nc bnc" id="L420" title="All 2 branches missed.">        VertSegment segment = checkFirstSegment ? (VertSegment)section.getFirst() :</span>
-<span class="nc" id="L421">            (VertSegment)section.getLast();</span>
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">        VertSegment segment = checkFirstSegment ? (VertSegment)section.getFirst() :</span>
+<span class="pc" id="L421">            (VertSegment)section.getLast();</span>
                 
         /*endpoints for vert:
                 -        - -       -
@@ -426,52 +426,52 @@ import java.util.Set;
               . .        . .       . .
         */
        
-<span class="nc" id="L429">        Set&lt;PairInt&gt; endPoints = findEndPointsVertPatterns(points, segment,</span>
+<span class="fc" id="L429">        Set&lt;PairInt&gt; endPoints = findEndPointsVertPatterns(points, segment,</span>
             exclude);
         
-<span class="nc" id="L432">        return endPoints;</span>
+<span class="fc" id="L432">        return endPoints;</span>
     }
 
     private Set&lt;PairInt&gt; findEndPointsVertPatterns(Set&lt;PairInt&gt; points, 
         VertSegment segment, Set&lt;PairInt&gt; exclude) {
         
-<span class="nc" id="L438">        int x0 = segment.p0.getX();</span>
-<span class="nc" id="L439">        int y0 = segment.p0.getY();</span>
+<span class="fc" id="L438">        int x0 = segment.p0.getX();</span>
+<span class="fc" id="L439">        int y0 = segment.p0.getY();</span>
         
-<span class="nc" id="L441">        Pattern[] patterns = new Pattern[] {</span>
-<span class="nc" id="L442">            getEndPointsVertPattern1(), getEndPointsVertPattern1Opp(),</span>
-<span class="nc" id="L443">            getEndPointsVertPattern2(), getEndPointsVertPattern2Opp(),</span>
-<span class="nc" id="L444">            getEndPointsVertPattern3(), getEndPointsVertPattern3Opp()</span>
+<span class="fc" id="L441">        Pattern[] patterns = new Pattern[] {</span>
+<span class="fc" id="L442">            getEndPointsVertPattern1(), getEndPointsVertPattern1Opp(),</span>
+<span class="fc" id="L443">            getEndPointsVertPattern2(), getEndPointsVertPattern2Opp(),</span>
+<span class="fc" id="L444">            getEndPointsVertPattern3(), getEndPointsVertPattern3Opp()</span>
         };
         
-<span class="nc bnc" id="L447" title="All 2 branches missed.">        for (Pattern pattern : patterns) {</span>
-<span class="nc" id="L448">            boolean found = true;</span>
-<span class="nc bnc" id="L449" title="All 2 branches missed.">            for (PairInt p : pattern.zeroes) {</span>
-<span class="nc" id="L450">                PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
-<span class="nc bnc" id="L451" title="All 4 branches missed.">                if (points.contains(p2) || exclude.contains(p2)) {</span>
-<span class="nc" id="L452">                    found = false;</span>
-<span class="nc" id="L453">                    break;</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">        for (Pattern pattern : patterns) {</span>
+<span class="fc" id="L448">            boolean found = true;</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">            for (PairInt p : pattern.zeroes) {</span>
+<span class="fc" id="L450">                PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
+<span class="pc bpc" id="L451" title="1 of 4 branches missed.">                if (points.contains(p2) || exclude.contains(p2)) {</span>
+<span class="fc" id="L452">                    found = false;</span>
+<span class="fc" id="L453">                    break;</span>
                 }
-<span class="nc" id="L455">            }</span>
-<span class="nc bnc" id="L456" title="All 2 branches missed.">            if (found) {</span>
-<span class="nc" id="L457">                Set&lt;PairInt&gt; endPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L458" title="All 2 branches missed.">                for (PairInt p : pattern.ones) {</span>
-<span class="nc" id="L459">                    PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
-<span class="nc bnc" id="L460" title="All 2 branches missed.">                    if (segment.contains(p2)) {</span>
-<span class="nc" id="L461">                        continue;</span>
+<span class="fc" id="L455">            }</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">            if (found) {</span>
+<span class="fc" id="L457">                Set&lt;PairInt&gt; endPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">                for (PairInt p : pattern.ones) {</span>
+<span class="fc" id="L459">                    PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">                    if (segment.contains(p2)) {</span>
+<span class="fc" id="L461">                        continue;</span>
                     }
-<span class="nc bnc" id="L463" title="All 4 branches missed.">                    if (exclude.contains(p2) || !points.contains(p2)) {</span>
-<span class="nc" id="L464">                        found = false;</span>
-<span class="nc" id="L465">                        break;</span>
+<span class="fc bfc" id="L463" title="All 4 branches covered.">                    if (exclude.contains(p2) || !points.contains(p2)) {</span>
+<span class="fc" id="L464">                        found = false;</span>
+<span class="fc" id="L465">                        break;</span>
                     }
-<span class="nc" id="L467">                    endPoints.add(p2);</span>
-<span class="nc" id="L468">                }</span>
-<span class="nc bnc" id="L469" title="All 2 branches missed.">                if (found) {</span>
-<span class="nc" id="L470">                    return endPoints;</span>
+<span class="fc" id="L467">                    endPoints.add(p2);</span>
+<span class="fc" id="L468">                }</span>
+<span class="fc bfc" id="L469" title="All 2 branches covered.">                if (found) {</span>
+<span class="fc" id="L470">                    return endPoints;</span>
                 }
             }
         }        
-<span class="nc" id="L474">        return null;</span>
+<span class="fc" id="L474">        return null;</span>
     }
     
     private Pattern getEndPointsVertPattern1() {
@@ -486,16 +486,16 @@ import java.util.Set;
                         
           -2 -1  0  1
         */
-<span class="nc" id="L489">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L490">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L491">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L489">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L490">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L491">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L493">        pattern.ones.add(new PairInt(0, -2)); pattern.ones.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L494">        pattern.ones.add(new PairInt(1, -3)); pattern.ones.add(new PairInt(-1, -3));</span>
+<span class="fc" id="L493">        pattern.ones.add(new PairInt(0, -2)); pattern.ones.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L494">        pattern.ones.add(new PairInt(1, -3)); pattern.ones.add(new PairInt(-1, -3));</span>
         
-<span class="nc" id="L496">        pattern.zeroes.add(new PairInt(-2, -2)); pattern.zeroes.add(new PairInt(1, -2));</span>
-<span class="nc" id="L497">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));</span>
-<span class="nc" id="L498">        return pattern;</span>
+<span class="fc" id="L496">        pattern.zeroes.add(new PairInt(-2, -2)); pattern.zeroes.add(new PairInt(1, -2));</span>
+<span class="fc" id="L497">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));</span>
+<span class="fc" id="L498">        return pattern;</span>
     }
     
     private Pattern getEndPointsVertPattern1Opp() {
@@ -509,18 +509,18 @@ import java.util.Set;
                  -      -3
           -2 -1  0  1
         */
-<span class="nc" id="L512">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L513">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L514">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L512">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L513">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L514">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L516">        pattern.ones.add(new PairInt(-1, -1)); pattern.ones.add(new PairInt(-1, -2)); </span>
-<span class="nc" id="L517">        pattern.ones.add(new PairInt(0, -1));</span>
-<span class="nc" id="L518">        pattern.ones.add(new PairInt(1, -2));</span>
+<span class="fc" id="L516">        pattern.ones.add(new PairInt(-1, -1)); pattern.ones.add(new PairInt(-1, -2)); </span>
+<span class="fc" id="L517">        pattern.ones.add(new PairInt(0, -1));</span>
+<span class="fc" id="L518">        pattern.ones.add(new PairInt(1, -2));</span>
         
-<span class="nc" id="L520">        pattern.zeroes.add(new PairInt(-2, -1)); </span>
-<span class="nc" id="L521">        pattern.zeroes.add(new PairInt(0, -2)); pattern.zeroes.add(new PairInt(0, -3));</span>
-<span class="nc" id="L522">        pattern.zeroes.add(new PairInt(1, -1));</span>
-<span class="nc" id="L523">        return pattern;</span>
+<span class="fc" id="L520">        pattern.zeroes.add(new PairInt(-2, -1)); </span>
+<span class="fc" id="L521">        pattern.zeroes.add(new PairInt(0, -2)); pattern.zeroes.add(new PairInt(0, -3));</span>
+<span class="fc" id="L522">        pattern.zeroes.add(new PairInt(1, -1));</span>
+<span class="fc" id="L523">        return pattern;</span>
     }
     
     private Pattern getEndPointsVertPattern2() {
@@ -537,18 +537,18 @@ import java.util.Set;
           -2 -1  0  1
         */
         
-<span class="nc" id="L540">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L541">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L542">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L540">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L541">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L542">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L544">        pattern.ones.add(new PairInt(-1, -2)); pattern.ones.add(new PairInt(0, -2));</span>
-<span class="nc" id="L545">        pattern.ones.add(new PairInt(-2, -3)); pattern.ones.add(new PairInt(1, -3));</span>
+<span class="fc" id="L544">        pattern.ones.add(new PairInt(-1, -2)); pattern.ones.add(new PairInt(0, -2));</span>
+<span class="fc" id="L545">        pattern.ones.add(new PairInt(-2, -3)); pattern.ones.add(new PairInt(1, -3));</span>
         
-<span class="nc" id="L547">        pattern.zeroes.add(new PairInt(-2, -2)); pattern.zeroes.add(new PairInt(1, -2));</span>
-<span class="nc" id="L548">        pattern.zeroes.add(new PairInt(-1, -3)); pattern.zeroes.add(new PairInt(-1, -4));</span>
-<span class="nc" id="L549">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));</span>
+<span class="fc" id="L547">        pattern.zeroes.add(new PairInt(-2, -2)); pattern.zeroes.add(new PairInt(1, -2));</span>
+<span class="fc" id="L548">        pattern.zeroes.add(new PairInt(-1, -3)); pattern.zeroes.add(new PairInt(-1, -4));</span>
+<span class="fc" id="L549">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));</span>
         
-<span class="nc" id="L551">        return pattern;</span>
+<span class="fc" id="L551">        return pattern;</span>
     }
     
     private Pattern getEndPointsVertPattern2Opp() {
@@ -564,20 +564,20 @@ import java.util.Set;
           -2 -1  0  1
         */
      
-<span class="nc" id="L567">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L568">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L569">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L567">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L568">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L569">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L571">        pattern.ones.add(new PairInt(-2, -2)); </span>
-<span class="nc" id="L572">        pattern.ones.add(new PairInt(-1, -1));</span>
-<span class="nc" id="L573">        pattern.ones.add(new PairInt(0, -1)); </span>
-<span class="nc" id="L574">        pattern.ones.add(new PairInt(1, -2));</span>
+<span class="fc" id="L571">        pattern.ones.add(new PairInt(-2, -2)); </span>
+<span class="fc" id="L572">        pattern.ones.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L573">        pattern.ones.add(new PairInt(0, -1)); </span>
+<span class="fc" id="L574">        pattern.ones.add(new PairInt(1, -2));</span>
         
-<span class="nc" id="L576">        pattern.zeroes.add(new PairInt(-2, -1)); </span>
-<span class="nc" id="L577">        pattern.zeroes.add(new PairInt(-1, -2)); pattern.zeroes.add(new PairInt(-1, -3));</span>
-<span class="nc" id="L578">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -2));</span>
+<span class="fc" id="L576">        pattern.zeroes.add(new PairInt(-2, -1)); </span>
+<span class="fc" id="L577">        pattern.zeroes.add(new PairInt(-1, -2)); pattern.zeroes.add(new PairInt(-1, -3));</span>
+<span class="fc" id="L578">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -2));</span>
         
-<span class="nc" id="L580">        return pattern;</span>
+<span class="fc" id="L580">        return pattern;</span>
     }
 
     private Pattern getEndPointsVertPattern3() {
@@ -595,19 +595,19 @@ import java.util.Set;
        
         */
         
-<span class="nc" id="L598">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L599">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L600">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L598">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L599">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L600">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L602">        pattern.ones.add(new PairInt(-1, -2)); pattern.ones.add(new PairInt(1, -3));</span>
-<span class="nc" id="L603">        pattern.ones.add(new PairInt(0, -2));</span>
-<span class="nc" id="L604">        pattern.ones.add(new PairInt(1, -3)); </span>
+<span class="fc" id="L602">        pattern.ones.add(new PairInt(-1, -2)); pattern.ones.add(new PairInt(1, -3));</span>
+<span class="fc" id="L603">        pattern.ones.add(new PairInt(0, -2));</span>
+<span class="fc" id="L604">        pattern.ones.add(new PairInt(1, -3)); </span>
         
-<span class="nc" id="L606">        pattern.zeroes.add(new PairInt(-2, -2)); </span>
-<span class="nc" id="L607">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));</span>
-<span class="nc" id="L608">        pattern.zeroes.add(new PairInt(1, -2)); </span>
+<span class="fc" id="L606">        pattern.zeroes.add(new PairInt(-2, -2)); </span>
+<span class="fc" id="L607">        pattern.zeroes.add(new PairInt(0, -3)); pattern.zeroes.add(new PairInt(0, -4));</span>
+<span class="fc" id="L608">        pattern.zeroes.add(new PairInt(1, -2)); </span>
         
-<span class="nc" id="L610">        return pattern;</span>
+<span class="fc" id="L610">        return pattern;</span>
     }
     
     private Pattern getEndPointsVertPattern3Opp() {
@@ -623,74 +623,74 @@ import java.util.Set;
           -2 -1  0  1
         */
         
-<span class="nc" id="L626">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L627">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L628">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L626">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L627">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L628">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L630">        pattern.ones.add(new PairInt(-1, -1)); pattern.ones.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L631">        pattern.ones.add(new PairInt(0, -1)); </span>
-<span class="nc" id="L632">        pattern.ones.add(new PairInt(1, -2));</span>
+<span class="fc" id="L630">        pattern.ones.add(new PairInt(-1, -1)); pattern.ones.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L631">        pattern.ones.add(new PairInt(0, -1)); </span>
+<span class="fc" id="L632">        pattern.ones.add(new PairInt(1, -2));</span>
         
-<span class="nc" id="L634">        pattern.zeroes.add(new PairInt(-2, -1)); </span>
-<span class="nc" id="L635">        pattern.zeroes.add(new PairInt(0, -2)); pattern.zeroes.add(new PairInt(0, -3));</span>
-<span class="nc" id="L636">        pattern.zeroes.add(new PairInt(1, -1));</span>
+<span class="fc" id="L634">        pattern.zeroes.add(new PairInt(-2, -1)); </span>
+<span class="fc" id="L635">        pattern.zeroes.add(new PairInt(0, -2)); pattern.zeroes.add(new PairInt(0, -3));</span>
+<span class="fc" id="L636">        pattern.zeroes.add(new PairInt(1, -1));</span>
         
-<span class="nc" id="L638">        return pattern;</span>
+<span class="fc" id="L638">        return pattern;</span>
     }
     
     private Set&lt;PairInt&gt; checkForAdjacentEndpointsForHorizSegment(
         Set&lt;PairInt&gt; points, LinkedList&lt;Segment&gt; section, Set&lt;PairInt&gt; exclude, 
         boolean checkFirstSegment) {
         
-<span class="nc bnc" id="L645" title="All 2 branches missed.">        HorizSegment segment = checkFirstSegment ? (HorizSegment)section.getFirst() :</span>
-<span class="nc" id="L646">            (HorizSegment)section.getLast();</span>
+<span class="pc bpc" id="L645" title="1 of 2 branches missed.">        HorizSegment segment = checkFirstSegment ? (HorizSegment)section.getFirst() :</span>
+<span class="pc" id="L646">            (HorizSegment)section.getLast();</span>
                 
-<span class="nc" id="L648">        Set&lt;PairInt&gt; endPoints = findEndPointsHorizPatterns(points, segment,</span>
+<span class="fc" id="L648">        Set&lt;PairInt&gt; endPoints = findEndPointsHorizPatterns(points, segment,</span>
             exclude);
         
-<span class="nc" id="L651">        return endPoints;</span>
+<span class="fc" id="L651">        return endPoints;</span>
     }
     
     private Set&lt;PairInt&gt; findEndPointsHorizPatterns(Set&lt;PairInt&gt; points, 
         HorizSegment segment, Set&lt;PairInt&gt; exclude) {
         
-<span class="nc" id="L657">        int x0 = segment.p0.getX();</span>
-<span class="nc" id="L658">        int y0 = segment.p0.getY();</span>
+<span class="fc" id="L657">        int x0 = segment.p0.getX();</span>
+<span class="fc" id="L658">        int y0 = segment.p0.getY();</span>
         
-<span class="nc" id="L660">        Pattern[] patterns = new Pattern[] {</span>
-<span class="nc" id="L661">            getEndPointsHorizPattern1(), getEndPointsHorizPattern1Opp(),</span>
-<span class="nc" id="L662">            getEndPointsHorizPattern2(), getEndPointsHorizPattern2Opp(),</span>
-<span class="nc" id="L663">            getEndPointsHorizPattern3(), getEndPointsHorizPattern3Opp()</span>
+<span class="fc" id="L660">        Pattern[] patterns = new Pattern[] {</span>
+<span class="fc" id="L661">            getEndPointsHorizPattern1(), getEndPointsHorizPattern1Opp(),</span>
+<span class="fc" id="L662">            getEndPointsHorizPattern2(), getEndPointsHorizPattern2Opp(),</span>
+<span class="fc" id="L663">            getEndPointsHorizPattern3(), getEndPointsHorizPattern3Opp()</span>
         };
         
-<span class="nc bnc" id="L666" title="All 2 branches missed.">        for (Pattern pattern : patterns) {</span>
-<span class="nc" id="L667">            boolean found = true;</span>
-<span class="nc bnc" id="L668" title="All 2 branches missed.">            for (PairInt p : pattern.zeroes) {</span>
-<span class="nc" id="L669">                PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
-<span class="nc bnc" id="L670" title="All 4 branches missed.">                if (points.contains(p2) || exclude.contains(p2)) {</span>
-<span class="nc" id="L671">                    found = false;</span>
-<span class="nc" id="L672">                    break;</span>
+<span class="fc bfc" id="L666" title="All 2 branches covered.">        for (Pattern pattern : patterns) {</span>
+<span class="fc" id="L667">            boolean found = true;</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">            for (PairInt p : pattern.zeroes) {</span>
+<span class="fc" id="L669">                PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
+<span class="pc bpc" id="L670" title="1 of 4 branches missed.">                if (points.contains(p2) || exclude.contains(p2)) {</span>
+<span class="fc" id="L671">                    found = false;</span>
+<span class="fc" id="L672">                    break;</span>
                 }
-<span class="nc" id="L674">            }</span>
-<span class="nc bnc" id="L675" title="All 2 branches missed.">            if (found) {</span>
-<span class="nc" id="L676">                Set&lt;PairInt&gt; endPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L677" title="All 2 branches missed.">                for (PairInt p : pattern.ones) {</span>
-<span class="nc" id="L678">                    PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
-<span class="nc bnc" id="L679" title="All 2 branches missed.">                    if (segment.contains(p2)) {</span>
-<span class="nc" id="L680">                        continue;</span>
+<span class="fc" id="L674">            }</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">            if (found) {</span>
+<span class="fc" id="L676">                Set&lt;PairInt&gt; endPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L677" title="All 2 branches covered.">                for (PairInt p : pattern.ones) {</span>
+<span class="fc" id="L678">                    PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());</span>
+<span class="fc bfc" id="L679" title="All 2 branches covered.">                    if (segment.contains(p2)) {</span>
+<span class="fc" id="L680">                        continue;</span>
                     }
-<span class="nc bnc" id="L682" title="All 4 branches missed.">                    if (exclude.contains(p2) || !points.contains(p2)) {</span>
-<span class="nc" id="L683">                        found = false;</span>
-<span class="nc" id="L684">                        break;</span>
+<span class="fc bfc" id="L682" title="All 4 branches covered.">                    if (exclude.contains(p2) || !points.contains(p2)) {</span>
+<span class="fc" id="L683">                        found = false;</span>
+<span class="fc" id="L684">                        break;</span>
                     }
-<span class="nc" id="L686">                    endPoints.add(p2);</span>
-<span class="nc" id="L687">                }</span>
-<span class="nc bnc" id="L688" title="All 2 branches missed.">                if (found) {</span>
-<span class="nc" id="L689">                    return endPoints;</span>
+<span class="fc" id="L686">                    endPoints.add(p2);</span>
+<span class="fc" id="L687">                }</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">                if (found) {</span>
+<span class="fc" id="L689">                    return endPoints;</span>
                 }
             }
         }        
-<span class="nc" id="L693">        return null;</span>
+<span class="fc" id="L693">        return null;</span>
     }
     
     private Pattern getEndPointsHorizPattern1() {
@@ -703,18 +703,18 @@ import java.util.Set;
                  -  -  -  #     1
              -2 -1  0  1  2  3
         */
-<span class="nc" id="L706">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L707">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L708">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L706">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L707">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L708">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
     
-<span class="nc" id="L710">        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));</span>
-<span class="nc" id="L711">        pattern.ones.add(new PairInt(2, 1)); pattern.ones.add(new PairInt(2, -1));</span>
+<span class="fc" id="L710">        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));</span>
+<span class="fc" id="L711">        pattern.ones.add(new PairInt(2, 1)); pattern.ones.add(new PairInt(2, -1));</span>
         
-<span class="nc" id="L713">        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));</span>
-<span class="nc" id="L714">        pattern.zeroes.add(new PairInt(2, 0)); </span>
-<span class="nc" id="L715">        pattern.zeroes.add(new PairInt(3, 0));</span>
+<span class="fc" id="L713">        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));</span>
+<span class="fc" id="L714">        pattern.zeroes.add(new PairInt(2, 0)); </span>
+<span class="fc" id="L715">        pattern.zeroes.add(new PairInt(3, 0));</span>
         
-<span class="nc" id="L717">        return pattern;</span>
+<span class="fc" id="L717">        return pattern;</span>
     }
     
     private Pattern getEndPointsHorizPattern1Opp() {
@@ -727,17 +727,17 @@ import java.util.Set;
                  -  -  -  #     1
               2  1  0 -1 -2 -3
         */
-<span class="nc" id="L730">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L731">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L732">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L730">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L731">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L732">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
      
-<span class="nc" id="L734">        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));</span>
-<span class="nc" id="L735">        pattern.ones.add(new PairInt(-2, 1)); pattern.ones.add(new PairInt(-2, -1));</span>
+<span class="fc" id="L734">        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L735">        pattern.ones.add(new PairInt(-2, 1)); pattern.ones.add(new PairInt(-2, -1));</span>
         
-<span class="nc" id="L737">        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L738">        pattern.zeroes.add(new PairInt(-2, 0)); pattern.zeroes.add(new PairInt(-3, 0));</span>
+<span class="fc" id="L737">        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L738">        pattern.zeroes.add(new PairInt(-2, 0)); pattern.zeroes.add(new PairInt(-3, 0));</span>
         
-<span class="nc" id="L740">        return pattern;</span>
+<span class="fc" id="L740">        return pattern;</span>
     }
    
     private Pattern getEndPointsHorizPattern2() {
@@ -750,18 +750,18 @@ import java.util.Set;
                  -  -  -  #     1
              -2 -1  0  1  2  3
         */
-<span class="nc" id="L753">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L754">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L755">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L753">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L754">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L755">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
      
-<span class="nc" id="L757">        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));</span>
-<span class="nc" id="L758">        pattern.ones.add(new PairInt(2, 1)); pattern.ones.add(new PairInt(2, -2));</span>
+<span class="fc" id="L757">        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));</span>
+<span class="fc" id="L758">        pattern.ones.add(new PairInt(2, 1)); pattern.ones.add(new PairInt(2, -2));</span>
         
-<span class="nc" id="L760">        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));</span>
-<span class="nc" id="L761">        pattern.zeroes.add(new PairInt(2, 0)); pattern.zeroes.add(new PairInt(2, -1));</span>
-<span class="nc" id="L762">        pattern.zeroes.add(new PairInt(3, 0));</span>
+<span class="fc" id="L760">        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));</span>
+<span class="fc" id="L761">        pattern.zeroes.add(new PairInt(2, 0)); pattern.zeroes.add(new PairInt(2, -1));</span>
+<span class="fc" id="L762">        pattern.zeroes.add(new PairInt(3, 0));</span>
         
-<span class="nc" id="L764">        return pattern;</span>
+<span class="fc" id="L764">        return pattern;</span>
     }
      
     private Pattern getEndPointsHorizPattern2Opp() {
@@ -774,18 +774,18 @@ import java.util.Set;
                  -  -  -  #     1
               2  1  0 -1 -2 -3
         */
-<span class="nc" id="L777">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L778">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L779">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L777">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L778">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L779">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
     
-<span class="nc" id="L781">        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));</span>
-<span class="nc" id="L782">        pattern.ones.add(new PairInt(-2, 1)); pattern.ones.add(new PairInt(-2, -2));</span>
+<span class="fc" id="L781">        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L782">        pattern.ones.add(new PairInt(-2, 1)); pattern.ones.add(new PairInt(-2, -2));</span>
         
-<span class="nc" id="L784">        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L785">        pattern.zeroes.add(new PairInt(-2, 0)); pattern.zeroes.add(new PairInt(-2, -1));</span>
-<span class="nc" id="L786">        pattern.zeroes.add(new PairInt(-3, 0));</span>
+<span class="fc" id="L784">        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L785">        pattern.zeroes.add(new PairInt(-2, 0)); pattern.zeroes.add(new PairInt(-2, -1));</span>
+<span class="fc" id="L786">        pattern.zeroes.add(new PairInt(-3, 0));</span>
         
-<span class="nc" id="L788">        return pattern;</span>
+<span class="fc" id="L788">        return pattern;</span>
     }
  
     private Pattern getEndPointsHorizPattern3() {
@@ -798,17 +798,17 @@ import java.util.Set;
                  -  -  -        1
              -2 -1  0  1  2  3
         */
-<span class="nc" id="L801">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L802">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L803">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L801">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L802">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L803">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
     
-<span class="nc" id="L805">        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));</span>
-<span class="nc" id="L806">        pattern.ones.add(new PairInt(2, 0)); pattern.ones.add(new PairInt(2, -2));</span>
+<span class="fc" id="L805">        pattern.ones.add(new PairInt(1, 0)); pattern.ones.add(new PairInt(1, -1));</span>
+<span class="fc" id="L806">        pattern.ones.add(new PairInt(2, 0)); pattern.ones.add(new PairInt(2, -2));</span>
         
-<span class="nc" id="L808">        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));</span>
-<span class="nc" id="L809">        pattern.zeroes.add(new PairInt(2, -1)); pattern.zeroes.add(new PairInt(3, -1));</span>
+<span class="fc" id="L808">        pattern.zeroes.add(new PairInt(1, 1)); pattern.zeroes.add(new PairInt(1, -2));</span>
+<span class="fc" id="L809">        pattern.zeroes.add(new PairInt(2, -1)); pattern.zeroes.add(new PairInt(3, -1));</span>
         
-<span class="nc" id="L811">        return pattern;</span>
+<span class="fc" id="L811">        return pattern;</span>
     }
     
     private Pattern getEndPointsHorizPattern3Opp() {
@@ -821,17 +821,17 @@ import java.util.Set;
                  -  -  -         1
               2  1  0 -1 -2 -3
         */
-<span class="nc" id="L824">        Pattern pattern = new Pattern();</span>
-<span class="nc" id="L825">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L826">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L824">        Pattern pattern = new Pattern();</span>
+<span class="fc" id="L825">        pattern.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L826">        pattern.zeroes = new HashSet&lt;PairInt&gt;();</span>
     
-<span class="nc" id="L828">        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));</span>
-<span class="nc" id="L829">        pattern.ones.add(new PairInt(-2, 0)); pattern.ones.add(new PairInt(-2, -2));</span>
+<span class="fc" id="L828">        pattern.ones.add(new PairInt(-1, 0)); pattern.ones.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L829">        pattern.ones.add(new PairInt(-2, 0)); pattern.ones.add(new PairInt(-2, -2));</span>
         
-<span class="nc" id="L831">        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L832">        pattern.zeroes.add(new PairInt(-2, -1)); pattern.zeroes.add(new PairInt(-3, -1));</span>
+<span class="fc" id="L831">        pattern.zeroes.add(new PairInt(-1, 1)); pattern.zeroes.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L832">        pattern.zeroes.add(new PairInt(-2, -1)); pattern.zeroes.add(new PairInt(-3, -1));</span>
         
-<span class="nc" id="L834">        return pattern;</span>
+<span class="fc" id="L834">        return pattern;</span>
     }
     
     private Set&lt;PairInt&gt; checkForAdjacentEndpointsForUUDiagSegment(
@@ -1048,55 +1048,55 @@ import java.util.Set;
         points in the zig zap and all of their neighbors cannot be adjacent
         to any of the other neighbors.*/
         
-<span class="nc" id="L1051">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L1051">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="nc" id="L1053">        List&lt;Set&lt;PairInt&gt;&gt; listOfNeighbors = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="nc" id="L1054">        Set&lt;PairInt&gt; segmentPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L1055">        segmentPoints.add(segment.p0);</span>
-<span class="nc" id="L1056">        segmentPoints.add(segment.p1);</span>
-<span class="nc" id="L1057">        segmentPoints.add(segment.p2);</span>
-<span class="nc" id="L1058">        segmentPoints.add(segment.p3);</span>
-<span class="nc bnc" id="L1059" title="All 2 branches missed.">        for (PairInt p : segmentPoints) {</span>
-<span class="nc" id="L1060">            Set&lt;PairInt&gt; neighbors = curveHelper.findNeighbors(p.getX(), </span>
-<span class="nc" id="L1061">                p.getY(), points);</span>
-<span class="nc" id="L1062">            neighbors.removeAll(segmentPoints);</span>
-<span class="nc bnc" id="L1063" title="All 2 branches missed.">            if (neighbors.size() != 1) {</span>
-<span class="nc" id="L1064">                return null;</span>
+<span class="fc" id="L1053">        List&lt;Set&lt;PairInt&gt;&gt; listOfNeighbors = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L1054">        Set&lt;PairInt&gt; segmentPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1055">        segmentPoints.add(segment.p0);</span>
+<span class="fc" id="L1056">        segmentPoints.add(segment.p1);</span>
+<span class="fc" id="L1057">        segmentPoints.add(segment.p2);</span>
+<span class="fc" id="L1058">        segmentPoints.add(segment.p3);</span>
+<span class="fc bfc" id="L1059" title="All 2 branches covered.">        for (PairInt p : segmentPoints) {</span>
+<span class="fc" id="L1060">            Set&lt;PairInt&gt; neighbors = curveHelper.findNeighbors(p.getX(), </span>
+<span class="fc" id="L1061">                p.getY(), points);</span>
+<span class="fc" id="L1062">            neighbors.removeAll(segmentPoints);</span>
+<span class="fc bfc" id="L1063" title="All 2 branches covered.">            if (neighbors.size() != 1) {</span>
+<span class="fc" id="L1064">                return null;</span>
             }
-<span class="nc" id="L1066">            listOfNeighbors.add(neighbors);</span>
-<span class="nc" id="L1067">        }</span>
+<span class="fc" id="L1066">            listOfNeighbors.add(neighbors);</span>
+<span class="fc" id="L1067">        }</span>
         // assert that each in list has no members adjacent to any other members
         // TODO: could use a data structure that uses spatial indexing to make 
         // this faster, but there are not very many points per 4 sets to compare...
-<span class="nc bnc" id="L1071" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfNeighbors.size(); ++i) {</span>
-<span class="nc" id="L1072">            Set&lt;PairInt&gt; setI = listOfNeighbors.get(i);</span>
-<span class="nc bnc" id="L1073" title="All 2 branches missed.">            for (PairInt pI : setI) {</span>
-<span class="nc bnc" id="L1074" title="All 2 branches missed.">                for (int j = (i + 1); j &lt; listOfNeighbors.size(); ++j) {</span>
-<span class="nc" id="L1075">                    Set&lt;PairInt&gt; setJ = listOfNeighbors.get(j);</span>
-<span class="nc bnc" id="L1076" title="All 2 branches missed.">                    for (PairInt pJ : setJ) {</span>
-<span class="nc bnc" id="L1077" title="All 2 branches missed.">                        if (areAdjacent(pI, pJ)) {</span>
-<span class="nc" id="L1078">                            return null;</span>
+<span class="fc bfc" id="L1071" title="All 2 branches covered.">        for (int i = 0; i &lt; listOfNeighbors.size(); ++i) {</span>
+<span class="fc" id="L1072">            Set&lt;PairInt&gt; setI = listOfNeighbors.get(i);</span>
+<span class="fc bfc" id="L1073" title="All 2 branches covered.">            for (PairInt pI : setI) {</span>
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">                for (int j = (i + 1); j &lt; listOfNeighbors.size(); ++j) {</span>
+<span class="fc" id="L1075">                    Set&lt;PairInt&gt; setJ = listOfNeighbors.get(j);</span>
+<span class="fc bfc" id="L1076" title="All 2 branches covered.">                    for (PairInt pJ : setJ) {</span>
+<span class="fc bfc" id="L1077" title="All 2 branches covered.">                        if (areAdjacent(pI, pJ)) {</span>
+<span class="fc" id="L1078">                            return null;</span>
                         }
-<span class="nc" id="L1080">                    }</span>
+<span class="fc" id="L1080">                    }</span>
                 }
-<span class="nc" id="L1082">            }</span>
+<span class="fc" id="L1082">            }</span>
         }
         // if arrive here, all neighbor sets have at least one point and none
         // are adjacent to points in a different set.
-<span class="nc" id="L1086">        Set&lt;PairInt&gt; output = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L1087" title="All 2 branches missed.">        for (Set&lt;PairInt&gt; set : listOfNeighbors) {</span>
-<span class="nc" id="L1088">            output.addAll(set);</span>
-<span class="nc" id="L1089">        }</span>
-<span class="nc" id="L1090">        return output;</span>
+<span class="fc" id="L1086">        Set&lt;PairInt&gt; output = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L1087" title="All 2 branches covered.">        for (Set&lt;PairInt&gt; set : listOfNeighbors) {</span>
+<span class="fc" id="L1088">            output.addAll(set);</span>
+<span class="fc" id="L1089">        }</span>
+<span class="fc" id="L1090">        return output;</span>
     }
     
     private boolean areAdjacent(PairInt p0, PairInt p1) {
-<span class="nc" id="L1094">        int diffX = Math.abs(p0.getX() - p1.getX());</span>
-<span class="nc" id="L1095">        int diffY = Math.abs(p0.getY() - p1.getY());</span>
-<span class="nc bnc" id="L1096" title="All 4 branches missed.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
-<span class="nc" id="L1097">            return true;</span>
+<span class="fc" id="L1094">        int diffX = Math.abs(p0.getX() - p1.getX());</span>
+<span class="fc" id="L1095">        int diffY = Math.abs(p0.getY() - p1.getY());</span>
+<span class="fc bfc" id="L1096" title="All 4 branches covered.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="fc" id="L1097">            return true;</span>
         }
-<span class="nc" id="L1099">        return false;</span>
+<span class="fc" id="L1099">        return false;</span>
     }
     
     /*
@@ -1104,27 +1104,27 @@ import java.util.Set;
     indexes of points that are the connections, that is the '.'s in sketches
     below.
     */
-<span class="nc" id="L1107">    public static class Segment {</span>
+    public static class Segment {
         // the 4 points matching the segment as 0, 1, 2, 3 in the subclasses
         PairInt p0;
         PairInt p1;
         PairInt p2;
         PairInt p3;
         boolean contains(PairInt p) {
-<span class="nc bnc" id="L1114" title="All 2 branches missed.">            if (p0.equals(p)) {</span>
-<span class="nc" id="L1115">                return true;</span>
-<span class="nc bnc" id="L1116" title="All 2 branches missed.">            } else if (p1.equals(p)) {</span>
-<span class="nc" id="L1117">                return true;</span>
-<span class="nc bnc" id="L1118" title="All 2 branches missed.">            } else if (p2.equals(p)) {</span>
-<span class="nc" id="L1119">                return true;</span>
-<span class="nc bnc" id="L1120" title="All 2 branches missed.">            } else if (p3.equals(p)) {</span>
-<span class="nc" id="L1121">                return true;</span>
+            if (p0.equals(p)) {
+                return true;
+            } else if (p1.equals(p)) {
+                return true;
+            } else if (p2.equals(p)) {
+                return true;
+            } else if (p3.equals(p)) {
+                return true;
             }
-<span class="nc" id="L1123">            return false;</span>
+            return false;
         }
     }
     
-<span class="nc" id="L1127">    public static class VertSegment extends Segment {</span>
+    public static class VertSegment extends Segment {
         /*    .  .      -2
            -  2  1  -   -1
            -  3  0  -    0
@@ -1132,7 +1132,7 @@ import java.util.Set;
           -2 -1  0  1
         */
     }
-<span class="nc" id="L1135">    public static class HorizSegment extends Segment {</span>
+    public static class HorizSegment extends Segment {
         /*    -  -      -2
            .  2  1  .   -1
            .  3  0  .    0
@@ -1140,7 +1140,7 @@ import java.util.Set;
           -2 -1  0  1
         */
     }
-<span class="nc" id="L1143">    public static class UUDiagSegment extends Segment {</span>
+    public static class UUDiagSegment extends Segment {
         /*      -  -      -2
           -  2  1  -  -   -1
           -  -  3  0  -    0
@@ -1148,7 +1148,7 @@ import java.util.Set;
          -3 -2 -1  0  1
         */
     }
-<span class="nc" id="L1151">    public static class ULDiagSegment extends Segment {</span>
+    public static class ULDiagSegment extends Segment {
         /*      -  -      -2
           -  2  1  -  -   -1
           -  -  3  0  -    0
@@ -1156,7 +1156,7 @@ import java.util.Set;
           3  2  1  0 -1
         */
     }
-<span class="nc" id="L1159">    public static class ZigZagSegment extends Segment {</span>
+    public static class ZigZagSegment extends Segment {
         /*
                    2  -      -2
                    -  1      -1
@@ -1180,17 +1180,17 @@ import java.util.Set;
               .  .       1
           -2 -1  0  1
         */
-<span class="nc" id="L1183">        Pattern pr = new Pattern();</span>
-<span class="nc" id="L1184">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L1185">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1183">        Pattern pr = new Pattern();</span>
+<span class="fc" id="L1184">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1185">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L1187">        pr.zeroes.add(new PairInt(-2, 0)); pr.zeroes.add(new PairInt(-2, -1));</span>
-<span class="nc" id="L1188">        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, -1));</span>
+<span class="fc" id="L1187">        pr.zeroes.add(new PairInt(-2, 0)); pr.zeroes.add(new PairInt(-2, -1));</span>
+<span class="fc" id="L1188">        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, -1));</span>
 
-<span class="nc" id="L1190">        pr.ones.add(new PairInt(-1, 0)); pr.ones.add(new PairInt(-1, -1));</span>
-<span class="nc" id="L1191">        pr.ones.add(new PairInt(0, -1));</span>
+<span class="fc" id="L1190">        pr.ones.add(new PairInt(-1, 0)); pr.ones.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L1191">        pr.ones.add(new PairInt(0, -1));</span>
 
-<span class="nc" id="L1193">        return pr;</span>
+<span class="fc" id="L1193">        return pr;</span>
     }
     
     protected Pattern getHorizSegmentPattern() {
@@ -1201,17 +1201,17 @@ import java.util.Set;
               -  -       1
           -2 -1  0  1
         */
-<span class="nc" id="L1204">        Pattern pr = new Pattern();</span>
-<span class="nc" id="L1205">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L1206">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1204">        Pattern pr = new Pattern();</span>
+<span class="fc" id="L1205">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1206">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L1208">        pr.zeroes.add(new PairInt(-1, 1)); pr.zeroes.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L1209">        pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, -2));</span>
+<span class="fc" id="L1208">        pr.zeroes.add(new PairInt(-1, 1)); pr.zeroes.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L1209">        pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, -2));</span>
 
-<span class="nc" id="L1211">        pr.ones.add(new PairInt(-1, 0)); pr.ones.add(new PairInt(-1, -1));</span>
-<span class="nc" id="L1212">        pr.ones.add(new PairInt(1, 0)); pr.ones.add(new PairInt(1, -1));</span>
+<span class="fc" id="L1211">        pr.ones.add(new PairInt(-1, 0)); pr.ones.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L1212">        pr.ones.add(new PairInt(1, 0)); pr.ones.add(new PairInt(1, -1));</span>
 
-<span class="nc" id="L1214">        return pr;</span>
+<span class="fc" id="L1214">        return pr;</span>
     }
     
     protected Pattern getUUDiagSegmentPattern() {
@@ -1222,20 +1222,20 @@ import java.util.Set;
              -  -          1
          -3 -2 -1  0  1
         */
-<span class="nc" id="L1225">        Pattern pr = new Pattern();</span>
-<span class="nc" id="L1226">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L1227">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1225">        Pattern pr = new Pattern();</span>
+<span class="fc" id="L1226">        pr.ones = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1227">        pr.zeroes = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc" id="L1229">        pr.zeroes.add(new PairInt(-3, 0)); pr.zeroes.add(new PairInt(-3, -1));</span>
-<span class="nc" id="L1230">        pr.zeroes.add(new PairInt(-2, 1)); pr.zeroes.add(new PairInt(-2, 0));</span>
-<span class="nc" id="L1231">        pr.zeroes.add(new PairInt(-1, 1)); pr.zeroes.add(new PairInt(-1, -2));</span>
-<span class="nc" id="L1232">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, -2));</span>
-<span class="nc" id="L1233">        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, -1));</span>
+<span class="fc" id="L1229">        pr.zeroes.add(new PairInt(-3, 0)); pr.zeroes.add(new PairInt(-3, -1));</span>
+<span class="fc" id="L1230">        pr.zeroes.add(new PairInt(-2, 1)); pr.zeroes.add(new PairInt(-2, 0));</span>
+<span class="fc" id="L1231">        pr.zeroes.add(new PairInt(-1, 1)); pr.zeroes.add(new PairInt(-1, -2));</span>
+<span class="fc" id="L1232">        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, -2));</span>
+<span class="fc" id="L1233">        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, -1));</span>
 
-<span class="nc" id="L1235">        pr.ones.add(new PairInt(-2, -1)); </span>
-<span class="nc" id="L1236">        pr.ones.add(new PairInt(-1, 0)); pr.ones.add(new PairInt(-1, -1));</span>
+<span class="fc" id="L1235">        pr.ones.add(new PairInt(-2, -1)); </span>
+<span class="fc" id="L1236">        pr.ones.add(new PairInt(-1, 0)); pr.ones.add(new PairInt(-1, -1));</span>
 
-<span class="nc" id="L1238">        return pr;</span>
+<span class="fc" id="L1238">        return pr;</span>
     }
 
     protected Pattern getZigZagSegmentPattern() {
@@ -1274,23 +1274,23 @@ import java.util.Set;
           -2 -1  0  1
         */
         
-<span class="nc" id="L1277">        Pattern pattern = getVertSegmentPattern();</span>
+<span class="fc" id="L1277">        Pattern pattern = getVertSegmentPattern();</span>
         
-<span class="nc" id="L1279">        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
+<span class="fc" id="L1279">        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
         
-<span class="nc bnc" id="L1281" title="All 2 branches missed.">        if (matchesPattern) {</span>
-<span class="nc" id="L1282">            VertSegment segment = new VertSegment();</span>
-<span class="nc" id="L1283">            segment.p0 = new PairInt(x, y);</span>
-<span class="nc" id="L1284">            segment.p1 = new PairInt(x, y - 1);</span>
-<span class="nc" id="L1285">            segment.p2 = new PairInt(x - 1, y - 1);</span>
-<span class="nc" id="L1286">            segment.p3 = new PairInt(x - 1, y);</span>
+<span class="fc bfc" id="L1281" title="All 2 branches covered.">        if (matchesPattern) {</span>
+<span class="fc" id="L1282">            VertSegment segment = new VertSegment();</span>
+<span class="fc" id="L1283">            segment.p0 = new PairInt(x, y);</span>
+<span class="fc" id="L1284">            segment.p1 = new PairInt(x, y - 1);</span>
+<span class="fc" id="L1285">            segment.p2 = new PairInt(x - 1, y - 1);</span>
+<span class="fc" id="L1286">            segment.p3 = new PairInt(x - 1, y);</span>
             
-<span class="nc" id="L1288">            return segment;</span>
+<span class="fc" id="L1288">            return segment;</span>
         }
         
-<span class="nc" id="L1291">        swapYDirection(pattern);</span>
+<span class="fc" id="L1291">        swapYDirection(pattern);</span>
         
-<span class="nc" id="L1293">        matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
+<span class="fc" id="L1293">        matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
         
         /*    .  .       2
            -  2  1  -    1
@@ -1298,16 +1298,16 @@ import java.util.Set;
               .  .      -1
           -2 -1  0  1
         */
-<span class="nc bnc" id="L1301" title="All 2 branches missed.">        if (matchesPattern) {</span>
-<span class="nc" id="L1302">            VertSegment segment = new VertSegment();</span>
-<span class="nc" id="L1303">            segment.p0 = new PairInt(x, y);</span>
-<span class="nc" id="L1304">            segment.p1 = new PairInt(x, y + 1);</span>
-<span class="nc" id="L1305">            segment.p2 = new PairInt(x - 1, y + 1);</span>
-<span class="nc" id="L1306">            segment.p3 = new PairInt(x - 1, y);</span>
-<span class="nc" id="L1307">            return segment;</span>
+<span class="fc bfc" id="L1301" title="All 2 branches covered.">        if (matchesPattern) {</span>
+<span class="fc" id="L1302">            VertSegment segment = new VertSegment();</span>
+<span class="fc" id="L1303">            segment.p0 = new PairInt(x, y);</span>
+<span class="fc" id="L1304">            segment.p1 = new PairInt(x, y + 1);</span>
+<span class="fc" id="L1305">            segment.p2 = new PairInt(x - 1, y + 1);</span>
+<span class="fc" id="L1306">            segment.p3 = new PairInt(x - 1, y);</span>
+<span class="fc" id="L1307">            return segment;</span>
         }
         
-<span class="nc" id="L1310">        return null;</span>
+<span class="fc" id="L1310">        return null;</span>
     }
     
     private Segment checkHorizSegmentPattern(int x, int y, Set&lt;PairInt&gt; neighbors) {
@@ -1319,23 +1319,23 @@ import java.util.Set;
           -2 -1  0  1
         */
         
-<span class="nc" id="L1322">        Pattern pattern = getHorizSegmentPattern();</span>
+<span class="fc" id="L1322">        Pattern pattern = getHorizSegmentPattern();</span>
         
-<span class="nc" id="L1324">        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
+<span class="fc" id="L1324">        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
         
-<span class="nc bnc" id="L1326" title="All 2 branches missed.">        if (matchesPattern) {</span>
-<span class="nc" id="L1327">            HorizSegment segment = new HorizSegment();</span>
-<span class="nc" id="L1328">            segment.p0 = new PairInt(x, y);</span>
-<span class="nc" id="L1329">            segment.p1 = new PairInt(x, y - 1);</span>
-<span class="nc" id="L1330">            segment.p2 = new PairInt(x - 1, y - 1);</span>
-<span class="nc" id="L1331">            segment.p3 = new PairInt(x - 1, y);</span>
+<span class="fc bfc" id="L1326" title="All 2 branches covered.">        if (matchesPattern) {</span>
+<span class="fc" id="L1327">            HorizSegment segment = new HorizSegment();</span>
+<span class="fc" id="L1328">            segment.p0 = new PairInt(x, y);</span>
+<span class="fc" id="L1329">            segment.p1 = new PairInt(x, y - 1);</span>
+<span class="fc" id="L1330">            segment.p2 = new PairInt(x - 1, y - 1);</span>
+<span class="fc" id="L1331">            segment.p3 = new PairInt(x - 1, y);</span>
             
-<span class="nc" id="L1333">            return segment;</span>
+<span class="fc" id="L1333">            return segment;</span>
         }
         
-<span class="nc" id="L1336">        swapXDirection(pattern);</span>
+<span class="fc" id="L1336">        swapXDirection(pattern);</span>
         
-<span class="nc" id="L1338">        matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
+<span class="fc" id="L1338">        matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
         
         /*    -  -      -2
            .  2  1  .   -1
@@ -1343,7 +1343,7 @@ import java.util.Set;
               -  -       1
            2  1  0 -1
         */
-<span class="nc bnc" id="L1346" title="All 2 branches missed.">        if (matchesPattern) {</span>
+<span class="pc bpc" id="L1346" title="1 of 2 branches missed.">        if (matchesPattern) {</span>
 <span class="nc" id="L1347">            HorizSegment segment = new HorizSegment();</span>
 <span class="nc" id="L1348">            segment.p0 = new PairInt(x, y);</span>
 <span class="nc" id="L1349">            segment.p1 = new PairInt(x, y - 1);</span>
@@ -1353,14 +1353,14 @@ import java.util.Set;
 <span class="nc" id="L1353">            return segment;</span>
         }
         
-<span class="nc" id="L1356">        return null;</span>
+<span class="fc" id="L1356">        return null;</span>
     }
     
     private Segment checkDiagSegmentPattern(int x, int y, Set&lt;PairInt&gt; neighbors) {
 
-<span class="nc" id="L1361">        Pattern pattern = getUUDiagSegmentPattern();</span>
+<span class="fc" id="L1361">        Pattern pattern = getUUDiagSegmentPattern();</span>
         
-<span class="nc" id="L1363">        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
+<span class="fc" id="L1363">        boolean matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
         
         /*      -  -      -2
           -  2  1  -  -   -1
@@ -1368,7 +1368,7 @@ import java.util.Set;
              -  -          1
          -3 -2 -1  0  1
         */
-<span class="nc bnc" id="L1371" title="All 2 branches missed.">        if (matchesPattern) {</span>
+<span class="pc bpc" id="L1371" title="1 of 2 branches missed.">        if (matchesPattern) {</span>
 <span class="nc" id="L1372">            UUDiagSegment segment = new UUDiagSegment();</span>
 <span class="nc" id="L1373">            segment.p0 = new PairInt(x, y);</span>
 <span class="nc" id="L1374">            segment.p1 = new PairInt(x - 1, y - 1);</span>
@@ -1378,9 +1378,9 @@ import java.util.Set;
 <span class="nc" id="L1378">            return segment;</span>
         }
         
-<span class="nc" id="L1381">        swapXDirection(pattern);</span>
+<span class="fc" id="L1381">        swapXDirection(pattern);</span>
         
-<span class="nc" id="L1383">        matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
+<span class="fc" id="L1383">        matchesPattern = matchesPattern(x, y, neighbors, pattern);</span>
         
         /*      -  -      -2
           -  2  1  -  -   -1
@@ -1388,7 +1388,7 @@ import java.util.Set;
              -  -          1
           3  2  1  0 -1
         */
-<span class="nc bnc" id="L1391" title="All 2 branches missed.">        if (matchesPattern) {</span>
+<span class="pc bpc" id="L1391" title="1 of 2 branches missed.">        if (matchesPattern) {</span>
 <span class="nc" id="L1392">            ULDiagSegment segment = new ULDiagSegment();</span>
 <span class="nc" id="L1393">            segment.p0 = new PairInt(x, y);</span>
 <span class="nc" id="L1394">            segment.p1 = new PairInt(x + 1, y - 1);</span>
@@ -1398,7 +1398,7 @@ import java.util.Set;
 <span class="nc" id="L1398">            return segment;</span>
         }
         
-<span class="nc" id="L1401">        return null;</span>
+<span class="fc" id="L1401">        return null;</span>
     }
     
     private Segment checkZigZagSegmentPattern(int x, int y, Set&lt;PairInt&gt; points) {
@@ -1415,14 +1415,14 @@ import java.util.Set;
                        
          -3 -2 -1  0  1
         */
-<span class="pc bpc" id="L1418" title="1 of 2 branches missed.">        if (matchesPattern) {</span>
-<span class="nc" id="L1419">            ZigZagSegment segment = new ZigZagSegment();</span>
-<span class="nc" id="L1420">            segment.p0 = new PairInt(x, y);</span>
-<span class="nc" id="L1421">            segment.p1 = new PairInt(x + 1, y - 1);</span>
-<span class="nc" id="L1422">            segment.p2 = new PairInt(x, y - 2);</span>
-<span class="nc" id="L1423">            segment.p3 = new PairInt(x + 1, y + 1);</span>
+<span class="fc bfc" id="L1418" title="All 2 branches covered.">        if (matchesPattern) {</span>
+<span class="fc" id="L1419">            ZigZagSegment segment = new ZigZagSegment();</span>
+<span class="fc" id="L1420">            segment.p0 = new PairInt(x, y);</span>
+<span class="fc" id="L1421">            segment.p1 = new PairInt(x + 1, y - 1);</span>
+<span class="fc" id="L1422">            segment.p2 = new PairInt(x, y - 2);</span>
+<span class="fc" id="L1423">            segment.p3 = new PairInt(x + 1, y + 1);</span>
             
-<span class="nc" id="L1425">            return segment;</span>
+<span class="fc" id="L1425">            return segment;</span>
         }
         
 <span class="fc" id="L1428">        swapXDirection(pattern);</span>
@@ -1437,14 +1437,14 @@ import java.util.Set;
                        
          -3 -2 -1  0  1
         */
-<span class="pc bpc" id="L1440" title="1 of 2 branches missed.">        if (matchesPattern) {</span>
-<span class="nc" id="L1441">            ZigZagSegment segment = new ZigZagSegment();</span>
-<span class="nc" id="L1442">            segment.p0 = new PairInt(x, y);</span>
-<span class="nc" id="L1443">            segment.p1 = new PairInt(x - 1, y - 1);</span>
-<span class="nc" id="L1444">            segment.p2 = new PairInt(x, y - 2);</span>
-<span class="nc" id="L1445">            segment.p3 = new PairInt(x - 1, y + 1);</span>
+<span class="fc bfc" id="L1440" title="All 2 branches covered.">        if (matchesPattern) {</span>
+<span class="fc" id="L1441">            ZigZagSegment segment = new ZigZagSegment();</span>
+<span class="fc" id="L1442">            segment.p0 = new PairInt(x, y);</span>
+<span class="fc" id="L1443">            segment.p1 = new PairInt(x - 1, y - 1);</span>
+<span class="fc" id="L1444">            segment.p2 = new PairInt(x, y - 2);</span>
+<span class="fc" id="L1445">            segment.p3 = new PairInt(x - 1, y + 1);</span>
             
-<span class="nc" id="L1447">            return segment;</span>
+<span class="fc" id="L1447">            return segment;</span>
         }
         
 <span class="fc" id="L1450">        return null;</span>
@@ -1453,19 +1453,19 @@ import java.util.Set;
     private boolean matchesPattern(final int x, final int y, Set&lt;PairInt&gt; neighbors, 
         Pattern pattern) {
                                                 
-<span class="pc bpc" id="L1456" title="1 of 2 branches missed.">        for (PairInt p : pattern.zeroes) {</span>
+<span class="fc bfc" id="L1456" title="All 2 branches covered.">        for (PairInt p : pattern.zeroes) {</span>
 <span class="fc" id="L1457">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
 <span class="fc bfc" id="L1458" title="All 2 branches covered.">            if (neighbors.contains(p2)) {</span>
 <span class="fc" id="L1459">                return false;</span>
             }
 <span class="fc" id="L1461">        }</span>
-<span class="nc bnc" id="L1462" title="All 2 branches missed.">        for (PairInt p : pattern.ones) {</span>
-<span class="nc" id="L1463">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
-<span class="nc bnc" id="L1464" title="All 2 branches missed.">            if (!neighbors.contains(p2)) {</span>
-<span class="nc" id="L1465">                return false;</span>
+<span class="fc bfc" id="L1462" title="All 2 branches covered.">        for (PairInt p : pattern.ones) {</span>
+<span class="fc" id="L1463">            PairInt p2 = new PairInt(x + p.getX(), y + p.getY());</span>
+<span class="fc bfc" id="L1464" title="All 2 branches covered.">            if (!neighbors.contains(p2)) {</span>
+<span class="fc" id="L1465">                return false;</span>
             }
-<span class="nc" id="L1467">        }</span>
-<span class="nc" id="L1468">        return true;</span>
+<span class="fc" id="L1467">        }</span>
+<span class="fc" id="L1468">        return true;</span>
     }
 
 }

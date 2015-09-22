@@ -23,7 +23,7 @@ import algorithms.util.PairInt;
      * @return the img1Point
      */
     public PairInt getImg1Point() {
-<span class="nc" id="L26">        return img1Point;</span>
+<span class="fc" id="L26">        return img1Point;</span>
     }
 
     /**
@@ -37,7 +37,7 @@ import algorithms.util.PairInt;
      * @return the img2Point
      */
     public PairInt getImg2Point() {
-<span class="nc" id="L40">        return img2Point;</span>
+<span class="fc" id="L40">        return img2Point;</span>
     }
 
     /**
@@ -65,15 +65,15 @@ import algorithms.util.PairInt;
      * @return the sum of the square of differences of intensity
      */
     public float getSumGradientSqDiff() {
-<span class="nc" id="L68">        return sumGradientSqDiff;</span>
+<span class="fc" id="L68">        return sumGradientSqDiff;</span>
     }
 
     /**
      * @param sumSqDiff the sum of the square of differences of intensity
      */
     public void setSumGradientSqDiff(float sumSqDiff) {
-<span class="nc" id="L75">        this.sumGradientSqDiff = sumSqDiff;</span>
-<span class="nc" id="L76">    }</span>
+<span class="fc" id="L75">        this.sumGradientSqDiff = sumSqDiff;</span>
+<span class="fc" id="L76">    }</span>
 
     /**
      * @return the img2PointIntensityErr
@@ -93,15 +93,15 @@ import algorithms.util.PairInt;
      * @return the img2PointGradientErr
      */
     public float getImg2PointGradientErr() {
-<span class="nc" id="L96">        return img2PointGradientErr;</span>
+<span class="fc" id="L96">        return img2PointGradientErr;</span>
     }
 
     /**
      * @param img2PointGradientErr the img2PointIntensityErr to set
      */
     public void setImg2PointGradientErr(float img2PointGradientErr) {
-<span class="nc" id="L103">        this.img2PointGradientErr = img2PointGradientErr;</span>
-<span class="nc" id="L104">    }</span>
+<span class="fc" id="L103">        this.img2PointGradientErr = img2PointGradientErr;</span>
+<span class="fc" id="L104">    }</span>
     
     /**
      * compare object other to this instance and return -1 if this instance
@@ -112,19 +112,19 @@ import algorithms.util.PairInt;
     @Override
     public int compareTo(FeatureComparisonStat other) {
     
-<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (other == null) {</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        if (other == null) {</span>
 <span class="nc" id="L116">            return -1;</span>
         }
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (Float.isInfinite(other.getSumIntensitySqDiff())) {</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (Float.isInfinite(other.getSumIntensitySqDiff())) {</span>
 <span class="nc" id="L119">            return -1;</span>
         }
         
-<span class="nc" id="L122">        boolean hasIntensity = Float.isFinite(sumIntensitySqDiff);</span>
-<span class="nc" id="L123">        boolean hasTheta = Float.isFinite(sumThetaSqDiff);</span>
-<span class="nc" id="L124">        boolean hasGradient = Float.isFinite(sumGradientSqDiff);</span>
+<span class="fc" id="L122">        boolean hasIntensity = Float.isFinite(sumIntensitySqDiff);</span>
+<span class="fc" id="L123">        boolean hasTheta = Float.isFinite(sumThetaSqDiff);</span>
+<span class="fc" id="L124">        boolean hasGradient = Float.isFinite(sumGradientSqDiff);</span>
         
-<span class="nc bnc" id="L126" title="All 6 branches missed.">        if (hasIntensity &amp;&amp; !hasTheta &amp;&amp; !hasGradient) {</span>
-<span class="nc" id="L127">            return compareToUsingIntensity(other);</span>
+<span class="pc bpc" id="L126" title="3 of 6 branches missed.">        if (hasIntensity &amp;&amp; !hasTheta &amp;&amp; !hasGradient) {</span>
+<span class="fc" id="L127">            return compareToUsingIntensity(other);</span>
         }
         
 <span class="nc" id="L130">        throw new UnsupportedOperationException(&quot;not yet implemented&quot;);</span>
@@ -135,10 +135,10 @@ import algorithms.util.PairInt;
         
         // prefer smaller intensities
         
-<span class="nc bnc" id="L138" title="All 2 branches missed.">        if (sumIntensitySqDiff &lt; other.sumIntensitySqDiff) {</span>
-<span class="nc" id="L139">            return -1;</span>
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        } else if (sumIntensitySqDiff &gt; other.sumIntensitySqDiff) {</span>
-<span class="nc" id="L141">            return 1;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (sumIntensitySqDiff &lt; other.sumIntensitySqDiff) {</span>
+<span class="fc" id="L139">            return -1;</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        } else if (sumIntensitySqDiff &gt; other.sumIntensitySqDiff) {</span>
+<span class="fc" id="L141">            return 1;</span>
         }
         
 <span class="nc" id="L144">        return 0;</span>
@@ -148,75 +148,75 @@ import algorithms.util.PairInt;
      * @return the img1PointRotInDegrees
      */
     public float getImg1PointRotInDegrees() {
-<span class="nc" id="L151">        return img1PointRotInDegrees;</span>
+<span class="fc" id="L151">        return img1PointRotInDegrees;</span>
     }
 
     /**
      * @param rotationInDegrees the orientation rotation for point 1 region
      */
     public void setImg1PointRotInDegrees(float rotationInDegrees) {
-<span class="nc" id="L158">        this.img1PointRotInDegrees = rotationInDegrees;</span>
-<span class="nc" id="L159">    }</span>
+<span class="fc" id="L158">        this.img1PointRotInDegrees = rotationInDegrees;</span>
+<span class="fc" id="L159">    }</span>
     
     /**
      * @return the img2PointRotInDegrees
      */
     public float getImg2PointRotInDegrees() {
-<span class="nc" id="L165">        return img2PointRotInDegrees;</span>
+<span class="fc" id="L165">        return img2PointRotInDegrees;</span>
     }
 
     /**
      * @param rotationInDegrees the orientation rotation for point 2 region
      */
     public void setImg2PointRotInDegrees(float rotationInDegrees) {
-<span class="nc" id="L172">        this.img2PointRotInDegrees = rotationInDegrees;</span>
-<span class="nc" id="L173">    }</span>
+<span class="fc" id="L172">        this.img2PointRotInDegrees = rotationInDegrees;</span>
+<span class="fc" id="L173">    }</span>
 
     /**
      * @return the sumThetaSqDiff
      */
     public float getSumThetaSqDiff() {
-<span class="nc" id="L179">        return sumThetaSqDiff;</span>
+<span class="fc" id="L179">        return sumThetaSqDiff;</span>
     }
 
     /**
      * @param sumSquareDiffs the sum of the square of the differences
      */
     public void setSumThetaSqDiff(float sumSquareDiffs) {
-<span class="nc" id="L186">        this.sumThetaSqDiff = sumSquareDiffs;</span>
-<span class="nc" id="L187">    }</span>
+<span class="fc" id="L186">        this.sumThetaSqDiff = sumSquareDiffs;</span>
+<span class="fc" id="L187">    }</span>
 
     /**
      * @return the img2PointThetaErr
      */
     public float getImg2PointThetaErr() {
-<span class="nc" id="L193">        return img2PointThetaErr;</span>
+<span class="fc" id="L193">        return img2PointThetaErr;</span>
     }
 
     /**
      * @param img2PointThetaErr the img2PointThetaErr to set
      */
     public void setImg2PointThetaErr(float img2PointThetaErr) {
-<span class="nc" id="L200">        this.img2PointThetaErr = img2PointThetaErr;</span>
-<span class="nc" id="L201">    }</span>
+<span class="fc" id="L200">        this.img2PointThetaErr = img2PointThetaErr;</span>
+<span class="fc" id="L201">    }</span>
 
     @Override
     public String toString() {
         
-<span class="nc" id="L206">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L207">        sb.append(&quot;p1=&quot;).append(img1Point.toString()).append(&quot; &quot;)</span>
-<span class="nc" id="L208">            .append(&quot;p2=&quot;).append(img2Point.toString())</span>
-<span class="nc" id="L209">            .append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff))</span>
-<span class="nc" id="L210">            .append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr))</span>
-<span class="nc" id="L211">            .append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff))</span>
-<span class="nc" id="L212">            .append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr))            </span>
-<span class="nc" id="L213">            .append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff))</span>
-<span class="nc" id="L214">            .append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr))</span>
-<span class="nc" id="L215">            .append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees))</span>
-<span class="nc" id="L216">            .append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees))</span>
+<span class="fc" id="L206">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L207">        sb.append(&quot;p1=&quot;).append(img1Point.toString()).append(&quot; &quot;)</span>
+<span class="fc" id="L208">            .append(&quot;p2=&quot;).append(img2Point.toString())</span>
+<span class="fc" id="L209">            .append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff))</span>
+<span class="fc" id="L210">            .append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr))</span>
+<span class="fc" id="L211">            .append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff))</span>
+<span class="fc" id="L212">            .append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr))            </span>
+<span class="fc" id="L213">            .append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff))</span>
+<span class="fc" id="L214">            .append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr))</span>
+<span class="fc" id="L215">            .append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees))</span>
+<span class="fc" id="L216">            .append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees))</span>
         ;
         
-<span class="nc" id="L219">        return sb.toString();</span>
+<span class="fc" id="L219">        return sb.toString();</span>
     }
 
 }

@@ -175,19 +175,19 @@ import java.util.logging.Logger;
 <span class="fc" id="L175">        int yMax = MiscMath.findMax(y);</span>
        
         try {
-<span class="nc" id="L178">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-<span class="nc" id="L179">            plotter.addPlot(</span>
+<span class="fc" id="L178">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="fc" id="L179">            plotter.addPlot(</span>
                 xMin, xMax, yMin, yMax,
                 x, y, 
                 tsbX, tsbY,
                 &quot;X vs Y and thiel sen beta linear regression line&quot;);
 
-<span class="nc" id="L185">            plotter.writeFile();</span>
+<span class="fc" id="L185">            plotter.writeFile();</span>
             
-<span class="fc" id="L187">        } catch(IOException e) {</span>
+<span class="nc" id="L187">        } catch(IOException e) {</span>
             
-<span class="fc" id="L189">            log.severe(&quot;ERROR while trying to write plot: &quot; + e.getMessage());</span>
-<span class="nc" id="L190">        }</span>
+<span class="nc" id="L189">            log.severe(&quot;ERROR while trying to write plot: &quot; + e.getMessage());</span>
+<span class="fc" id="L190">        }</span>
 <span class="fc" id="L191">    }</span>
     
     // ======================================================================
@@ -434,19 +434,19 @@ import java.util.logging.Logger;
 <span class="fc" id="L434">        int yMax = (int)Math.ceil(MiscMath.findMax(y));</span>
        
         try {
-<span class="nc" id="L437">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-<span class="nc" id="L438">            plotter.addPlot(</span>
+<span class="fc" id="L437">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="fc" id="L438">            plotter.addPlot(</span>
                 xMin, xMax, yMin, yMax,
                 x, y, 
                 tsbX, tsbY,
                 &quot;X vs Y and thiel sen beta linear regression line&quot;);
 
-<span class="nc" id="L444">            plotter.writeFile();</span>
+<span class="fc" id="L444">            plotter.writeFile();</span>
             
-<span class="fc" id="L446">        } catch(IOException e) {</span>
+<span class="nc" id="L446">        } catch(IOException e) {</span>
             
-<span class="fc" id="L448">            log.severe(&quot;ERROR while trying to write plot: &quot; + e.getMessage());</span>
-<span class="nc" id="L449">        }</span>
+<span class="nc" id="L448">            log.severe(&quot;ERROR while trying to write plot: &quot; + e.getMessage());</span>
+<span class="fc" id="L449">        }</span>
 <span class="fc" id="L450">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

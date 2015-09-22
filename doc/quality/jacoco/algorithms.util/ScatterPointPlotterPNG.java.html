@@ -36,15 +36,15 @@ import org.jfree.ui.TextAnchor;
  */
 public class ScatterPointPlotterPNG {
 
-<span class="nc" id="L39">    protected boolean dataMinMaxAreSet = false;</span>
+<span class="pc" id="L39">    protected boolean dataMinMaxAreSet = false;</span>
     
     protected float minX, maxX, minY, maxY;
 
-<span class="nc" id="L43">    protected int plotWidth = 4000;</span>
+<span class="pc" id="L43">    protected int plotWidth = 4000;</span>
     
-<span class="nc" id="L45">    protected int plotHeight = 4000;</span>
+<span class="pc" id="L45">    protected int plotHeight = 4000;</span>
     
-<span class="nc" id="L47">    BufferedImage imgToWrite = null;</span>
+<span class="pc" id="L47">    BufferedImage imgToWrite = null;</span>
     
     public ScatterPointPlotterPNG(float minX, float maxX, float minY, 
 <span class="nc" id="L50">        float maxY) throws FileNotFoundException, IOException {</span>
@@ -55,9 +55,9 @@ public class ScatterPointPlotterPNG {
 <span class="nc" id="L55">        this.maxY = maxY;</span>
 <span class="nc" id="L56">    }</span>
 
-<span class="nc" id="L58">    public ScatterPointPlotterPNG() throws FileNotFoundException, IOException {</span>
+<span class="fc" id="L58">    public ScatterPointPlotterPNG() throws FileNotFoundException, IOException {</span>
 
-<span class="nc" id="L60">    }</span>
+<span class="fc" id="L60">    }</span>
 
     public void plot(float minX, float maxX, float minY, float maxY,
         int[] xPoints, int[] yPoints, String plotLabel,
@@ -99,9 +99,9 @@ public class ScatterPointPlotterPNG {
         float[] xPoints, float[] yPoints, String plotLabel,
         String xAxisLabel, String yAxisLabel) {
 
-<span class="nc" id="L102">        plot(minX, maxX, minY, maxY, xPoints, yPoints, null, null, plotLabel,</span>
+<span class="fc" id="L102">        plot(minX, maxX, minY, maxY, xPoints, yPoints, null, null, plotLabel,</span>
             xAxisLabel, yAxisLabel);
-<span class="nc" id="L104">    }</span>
+<span class="fc" id="L104">    }</span>
 
     public void plot(int[] xPoints, float[] yPoints, String plotLabel,
         String xAxisLabel, String yAxisLabel) {
@@ -173,56 +173,56 @@ public class ScatterPointPlotterPNG {
         float[] xPoints, float[] yPoints, float[] xErrPoints, float[] yErrPoints,
         String plotLabel, String xAxisLabel, String yAxisLabel) {
 
-<span class="nc" id="L176">        XYSeriesCollection data = new XYSeriesCollection();</span>
+<span class="fc" id="L176">        XYSeriesCollection data = new XYSeriesCollection();</span>
         
         //  ===== add points data =====
-<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (xPoints != null) {</span>
-<span class="nc" id="L180">            XYSeries series1 = new XYSeries(&quot;&quot;);</span>
-<span class="nc bnc" id="L181" title="All 2 branches missed.">            for (int i = 0; i &lt; xPoints.length; i++) {</span>
-<span class="nc" id="L182">                series1.add(xPoints[i], yPoints[i]);</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">        if (xPoints != null) {</span>
+<span class="fc" id="L180">            XYSeries series1 = new XYSeries(&quot;&quot;);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            for (int i = 0; i &lt; xPoints.length; i++) {</span>
+<span class="fc" id="L182">                series1.add(xPoints[i], yPoints[i]);</span>
             }
-<span class="nc" id="L184">            data.addSeries(series1);</span>
+<span class="fc" id="L184">            data.addSeries(series1);</span>
         }
 
-<span class="nc" id="L187">        JFreeChart chart = ChartFactory.createScatterPlot(</span>
+<span class="fc" id="L187">        JFreeChart chart = ChartFactory.createScatterPlot(</span>
             null,
             plotLabel, null, 
             (XYDataset)data
         );
         
-<span class="nc" id="L193">        Paint bPaint = Color.WHITE;</span>
+<span class="fc" id="L193">        Paint bPaint = Color.WHITE;</span>
         
-<span class="nc" id="L195">        chart.setBackgroundPaint(bPaint);</span>
+<span class="fc" id="L195">        chart.setBackgroundPaint(bPaint);</span>
         
-<span class="nc" id="L197">        final XYPlot plot = chart.getXYPlot();</span>
+<span class="fc" id="L197">        final XYPlot plot = chart.getXYPlot();</span>
         
-<span class="nc" id="L199">        Range xRange = new Range(xmn, xmx);</span>
-<span class="nc" id="L200">        Range yRange = new Range(ymn, ymx);</span>
+<span class="fc" id="L199">        Range xRange = new Range(xmn, xmx);</span>
+<span class="fc" id="L200">        Range yRange = new Range(ymn, ymx);</span>
         
-<span class="nc" id="L202">        NumberAxis yAxis = new NumberAxis(yAxisLabel);</span>
-<span class="nc" id="L203">        NumberAxis xAxis = new NumberAxis(xAxisLabel);</span>
-<span class="nc" id="L204">        xAxis.setRange(xRange, true, false);</span>
-<span class="nc" id="L205">        yAxis.setRange(yRange, true, false);</span>
+<span class="fc" id="L202">        NumberAxis yAxis = new NumberAxis(yAxisLabel);</span>
+<span class="fc" id="L203">        NumberAxis xAxis = new NumberAxis(xAxisLabel);</span>
+<span class="fc" id="L204">        xAxis.setRange(xRange, true, false);</span>
+<span class="fc" id="L205">        yAxis.setRange(yRange, true, false);</span>
         //yAxis.setTickUnit(new NumberTickUnit(1));
         
-<span class="nc" id="L208">        plot.setDomainAxis(xAxis);</span>
-<span class="nc" id="L209">        plot.setRangeAxis(yAxis);</span>
+<span class="fc" id="L208">        plot.setDomainAxis(xAxis);</span>
+<span class="fc" id="L209">        plot.setRangeAxis(yAxis);</span>
         
-<span class="nc" id="L211">        plot.setBackgroundPaint(bPaint);</span>
-<span class="nc" id="L212">        plot.setDomainGridlinePaint(Color.BLACK);</span>
-<span class="nc" id="L213">        plot.setRangeGridlinePaint(Color.BLACK);</span>
+<span class="fc" id="L211">        plot.setBackgroundPaint(bPaint);</span>
+<span class="fc" id="L212">        plot.setDomainGridlinePaint(Color.BLACK);</span>
+<span class="fc" id="L213">        plot.setRangeGridlinePaint(Color.BLACK);</span>
         
-<span class="nc" id="L215">        ChartRenderingInfo chartInfo </span>
+<span class="fc" id="L215">        ChartRenderingInfo chartInfo </span>
             = new ChartRenderingInfo();
         //    = new ChartRenderingInfo(new StandardEntityCollection());
         
-<span class="nc" id="L219">        int imageType = BufferedImage.TYPE_INT_ARGB;</span>
+<span class="fc" id="L219">        int imageType = BufferedImage.TYPE_INT_ARGB;</span>
         
         // in the absence of an X11 environment, may need to set this:
-<span class="nc" id="L222">        System.setProperty(&quot;java.awt.headless&quot;, &quot;true&quot;);</span>
+<span class="fc" id="L222">        System.setProperty(&quot;java.awt.headless&quot;, &quot;true&quot;);</span>
         
-<span class="nc" id="L224">        imgToWrite = chart.createBufferedImage(500, 500, imageType, chartInfo);</span>
-<span class="nc" id="L225">    }</span>
+<span class="fc" id="L224">        imgToWrite = chart.createBufferedImage(500, 500, imageType, chartInfo);</span>
+<span class="fc" id="L225">    }</span>
     
     /**
      * 
@@ -312,56 +312,56 @@ public class ScatterPointPlotterPNG {
 <span class="nc" id="L312">        plot(xx, yy, null, null, plotLabel);</span>
 <span class="nc" id="L313">    }</span>
     
-<span class="nc" id="L315">    private static class LabelGenerator implements XYItemLabelGenerator {</span>
+    private static class LabelGenerator implements XYItemLabelGenerator {
         @Override
         public String generateLabel(XYDataset dataset, int series, int item) {
-<span class="nc" id="L318">            LabeledXYDataset labelSource = (LabeledXYDataset) dataset;</span>
-<span class="nc" id="L319">            return labelSource.getLabel(series, item);</span>
+            LabeledXYDataset labelSource = (LabeledXYDataset) dataset;
+            return labelSource.getLabel(series, item);
         }
     }
     
-<span class="nc" id="L323">    private static class LabeledXYDataset extends AbstractXYDataset {</span>
+    private static class LabeledXYDataset extends AbstractXYDataset {
 
         protected static final long serialVersionUID = 1111122222;
         
-<span class="nc" id="L327">        private List&lt;Number&gt; x = new ArrayList&lt;Number&gt;();</span>
-<span class="nc" id="L328">        private List&lt;Number&gt; y = new ArrayList&lt;Number&gt;();</span>
-<span class="nc" id="L329">        private List&lt;String&gt; label = new ArrayList&lt;String&gt;();</span>
+        private List&lt;Number&gt; x = new ArrayList&lt;Number&gt;();
+        private List&lt;Number&gt; y = new ArrayList&lt;Number&gt;();
+        private List&lt;String&gt; label = new ArrayList&lt;String&gt;();
 
         public void add(double x, double y, String label){
-<span class="nc" id="L332">            this.x.add(x);</span>
-<span class="nc" id="L333">            this.y.add(y);</span>
-<span class="nc" id="L334">            this.label.add(label);</span>
-<span class="nc" id="L335">        }</span>
+            this.x.add(x);
+            this.y.add(y);
+            this.label.add(label);
+        }
 
         public String getLabel(int series, int item) {
-<span class="nc" id="L338">            return label.get(item);</span>
+            return label.get(item);
         }
 
         @Override
         public int getSeriesCount() {
-<span class="nc" id="L343">            return 1;</span>
+            return 1;
         }
 
         @SuppressWarnings({&quot;rawtypes&quot;})
         @Override
         public Comparable getSeriesKey(int series) {
-<span class="nc" id="L349">            return &quot;labeled&quot;;</span>
+            return &quot;labeled&quot;;
         }
 
         @Override
         public int getItemCount(int series) {
-<span class="nc" id="L354">            return label.size();</span>
+            return label.size();
         }
 
         @Override
         public Number getX(int series, int item) {
-<span class="nc" id="L359">            return x.get(item);</span>
+            return x.get(item);
         }
 
         @Override
         public Number getY(int series, int item) {
-<span class="nc" id="L364">            return y.get(item);</span>
+            return y.get(item);
         }
     }
 
@@ -370,23 +370,23 @@ public class ScatterPointPlotterPNG {
     }
 
     public String writeFile(Integer num) throws IOException {
-<span class="nc" id="L373">        return writeToFile( </span>
-<span class="nc" id="L374">            &quot;points&quot; + num.toString() +&quot;.png&quot;);</span>
+<span class="fc" id="L373">        return writeToFile( </span>
+<span class="fc" id="L374">            &quot;points&quot; + num.toString() +&quot;.png&quot;);</span>
     }
 
     protected String writeToFile(String fileName) throws IOException {
 
-<span class="nc bnc" id="L379" title="All 2 branches missed.">        if (imgToWrite == null) {</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">        if (imgToWrite == null) {</span>
 <span class="nc" id="L380">            throw new IllegalStateException(&quot;must add plot data first&quot;);</span>
         }
         
-<span class="nc" id="L383">        String filePath = ResourceFinder.getAFilePathInCWD(fileName);</span>
+<span class="fc" id="L383">        String filePath = ResourceFinder.getAFilePathInCWD(fileName);</span>
         
-<span class="nc" id="L385">        File file = new File(filePath);</span>
+<span class="fc" id="L385">        File file = new File(filePath);</span>
         
-<span class="nc" id="L387">        ImageIO.write(imgToWrite, &quot;png&quot;, file);</span>
+<span class="fc" id="L387">        ImageIO.write(imgToWrite, &quot;png&quot;, file);</span>
         
-<span class="nc" id="L389">        return filePath;        </span>
+<span class="fc" id="L389">        return filePath;        </span>
     }
 
 }

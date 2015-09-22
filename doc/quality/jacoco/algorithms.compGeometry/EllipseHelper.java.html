@@ -107,21 +107,21 @@ import org.ejml.simple.*;
      */
     public double[] fitEllipseToPoints(Set&lt;PairInt&gt; xyPoints) {
         
-<span class="nc" id="L110">        int nPoints = xyPoints.size();</span>
+<span class="fc" id="L110">        int nPoints = xyPoints.size();</span>
         
         //x*x, x*y, y*y, x, y, 1
-<span class="nc" id="L113">        SimpleMatrix a = new SimpleMatrix(nPoints, 6);</span>
-<span class="nc" id="L114">        int row = 0;</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">        for (PairInt p : xyPoints) {</span>
-<span class="nc" id="L116">            float x = p.getX();</span>
-<span class="nc" id="L117">            float y = p.getY();</span>
-<span class="nc" id="L118">            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);</span>
-<span class="nc" id="L119">            row++;</span>
-<span class="nc" id="L120">        }</span>
+<span class="fc" id="L113">        SimpleMatrix a = new SimpleMatrix(nPoints, 6);</span>
+<span class="fc" id="L114">        int row = 0;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (PairInt p : xyPoints) {</span>
+<span class="fc" id="L116">            float x = p.getX();</span>
+<span class="fc" id="L117">            float y = p.getY();</span>
+<span class="fc" id="L118">            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);</span>
+<span class="fc" id="L119">            row++;</span>
+<span class="fc" id="L120">        }</span>
        
         try {
             
-<span class="nc" id="L124">            return fitEllipseToPointsWithAlgLSQ(a);</span>
+<span class="fc" id="L124">            return fitEllipseToPointsWithAlgLSQ(a);</span>
                         
 <span class="nc" id="L126">        } catch(RuntimeException t) {</span>
 <span class="nc" id="L127">            log.warning(t.getMessage());</span>
@@ -310,10 +310,10 @@ import org.ejml.simple.*;
                 }
             }
         }
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">        if (kmin == -1) {</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        if (kmin == -1) {</span>
             // not an ellipse, or my port to java is wrong
-<span class="nc" id="L315">            log.severe(&quot;not an ellipse, or error in my port to java?  need more tests for this&quot;);</span>
-<span class="nc" id="L316">            return null;</span>
+<span class="fc" id="L315">            log.severe(&quot;not an ellipse, or error in my port to java?  need more tests for this&quot;);</span>
+<span class="fc" id="L316">            return null;</span>
         }
         
 <span class="fc" id="L319">        SimpleMatrix y1 = vMatrix.extractVector(false, kmin);</span>

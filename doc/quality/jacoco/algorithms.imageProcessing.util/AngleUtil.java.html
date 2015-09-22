@@ -88,10 +88,10 @@ import algorithms.MultiArrayMergeSort;
         */
         
 <span class="fc bfc" id="L90" title="All 2 branches covered.">        if (x == 0) {</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">            if (y &gt;= 0) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (y &gt;= 0) {</span>
 <span class="fc" id="L92">                return Math.PI/2;</span>
             }
-<span class="nc" id="L94">            return (3./2.)*Math.PI;</span>
+<span class="fc" id="L94">            return (3./2.)*Math.PI;</span>
         }
 <span class="fc bfc" id="L96" title="All 2 branches covered.">        if (y == 0) {</span>
 <span class="fc bfc" id="L97" title="All 2 branches covered.">            if (x &gt; 0) {</span>
@@ -482,8 +482,8 @@ import algorithms.MultiArrayMergeSort;
         }
         
         double twoPI;
-<span class="pc bpc" id="L485" title="1 of 2 branches missed.">        if (useRadians) {</span>
-<span class="nc" id="L486">            twoPI = 2. * Math.PI;</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">        if (useRadians) {</span>
+<span class="fc" id="L486">            twoPI = 2. * Math.PI;</span>
         } else {
 <span class="fc" id="L488">            twoPI = 360.;</span>
         }
@@ -502,7 +502,7 @@ import algorithms.MultiArrayMergeSort;
 <span class="nc" id="L502">            angleSum += diff;</span>
 <span class="nc" id="L503">            outputQuadrantCorrected[0] += diff;</span>
         }
-<span class="pc bpc" id="L505" title="3 of 4 branches missed.">        if ((rot1 &gt; twoPI) &amp;&amp; (rot1 &lt; rot1Orig)) {</span>
+<span class="pc bpc" id="L505" title="1 of 4 branches missed.">        if ((rot1 &gt; twoPI) &amp;&amp; (rot1 &lt; rot1Orig)) {</span>
 <span class="nc" id="L506">            double diff = (rot1Orig - rot1);</span>
 <span class="nc" id="L507">            angleSum += diff;</span>
 <span class="nc" id="L508">            outputQuadrantCorrected[1] += diff;</span>
@@ -658,51 +658,51 @@ import algorithms.MultiArrayMergeSort;
         // use CountingSort here for better performance.
         // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
        
-<span class="nc" id="L661">        MultiArrayMergeSort.sortByDecr(angles, valuesToMakeIntoWeights, 0, lastIndex);</span>
+<span class="fc" id="L661">        MultiArrayMergeSort.sortByDecr(angles, valuesToMakeIntoWeights, 0, lastIndex);</span>
         
         // visit in order of large values to low to store quadrant corrections
         
-<span class="nc" id="L665">        double[] quadrantCorrected = new double[2];</span>
+<span class="fc" id="L665">        double[] quadrantCorrected = new double[2];</span>
         
-<span class="nc" id="L667">        double sumWeights = 0;</span>
-<span class="nc" id="L668">        double avg = 0;</span>
-<span class="nc bnc" id="L669" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="fc" id="L667">        double sumWeights = 0;</span>
+<span class="fc" id="L668">        double avg = 0;</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
             
-<span class="nc" id="L671">            int v = angles[i];</span>
+<span class="fc" id="L671">            int v = angles[i];</span>
             
-<span class="nc bnc" id="L673" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="fc bfc" id="L673" title="All 2 branches covered.">            if (i == 0) {</span>
                 
-<span class="nc" id="L675">                avg = v;</span>
+<span class="fc" id="L675">                avg = v;</span>
             
             } else {
                 
-<span class="nc" id="L679">                double r1 = avg;</span>
+<span class="fc" id="L679">                double r1 = avg;</span>
                 
-<span class="nc" id="L681">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
+<span class="fc" id="L681">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
                 
-<span class="nc bnc" id="L683" title="All 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
+<span class="fc bfc" id="L683" title="All 2 branches covered.">                if (quadrantCorrected[0] != r1) {</span>
                     // TODO: this branch might not occur...revisit logic
-<span class="nc" id="L685">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
+<span class="fc" id="L685">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
                 }
-<span class="nc bnc" id="L687" title="All 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
-<span class="nc" id="L688">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">                if (quadrantCorrected[1] != v) {</span>
+<span class="fc" id="L688">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
                 }
             }
             
-<span class="nc" id="L692">            sumWeights += valuesToMakeIntoWeights[i];</span>
+<span class="fc" id="L692">            sumWeights += valuesToMakeIntoWeights[i];</span>
         }
         
         // redo the mean using the quadrant corrected angles and the weights
-<span class="nc" id="L696">        double mean = 0;</span>
+<span class="fc" id="L696">        double mean = 0;</span>
 
-<span class="nc bnc" id="L698" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
 
-<span class="nc" id="L700">            double v = angles[i] * ((double)valuesToMakeIntoWeights[i]/sumWeights);</span>
+<span class="fc" id="L700">            double v = angles[i] * ((double)valuesToMakeIntoWeights[i]/sumWeights);</span>
 
-<span class="nc" id="L702">            mean += v;</span>
+<span class="fc" id="L702">            mean += v;</span>
         }
 
-<span class="nc" id="L705">        return (float)mean;</span>
+<span class="fc" id="L705">        return (float)mean;</span>
     }
     
     protected static int getClockwiseQuadrant(float rotationInDegrees) {

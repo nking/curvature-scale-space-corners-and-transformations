@@ -121,37 +121,37 @@ public class Features extends IntensityFeatures {
     public GradientDescriptor extractGradient(int xCenter, int yCenter,
         int rotation) {
 
-<span class="nc" id="L124">        checkBounds(xCenter, yCenter);</span>
+<span class="fc" id="L124">        checkBounds(xCenter, yCenter);</span>
 
-<span class="nc" id="L126">        PairInt p = new PairInt(xCenter, yCenter);</span>
+<span class="fc" id="L126">        PairInt p = new PairInt(xCenter, yCenter);</span>
 
-<span class="nc" id="L128">        Integer rotKey = Integer.valueOf(rotation);</span>
+<span class="fc" id="L128">        Integer rotKey = Integer.valueOf(rotation);</span>
 
-<span class="nc" id="L130">        Map&lt;Integer, GradientDescriptor&gt; descriptors = gradientBlocks.get(p);</span>
+<span class="fc" id="L130">        Map&lt;Integer, GradientDescriptor&gt; descriptors = gradientBlocks.get(p);</span>
 
-<span class="nc" id="L132">        GradientDescriptor descriptor = null;</span>
+<span class="fc" id="L132">        GradientDescriptor descriptor = null;</span>
 
-<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (descriptors != null) {</span>
-<span class="nc" id="L135">            descriptor = descriptors.get(rotKey);</span>
-<span class="nc bnc" id="L136" title="All 2 branches missed.">            if (descriptor != null) {</span>
-<span class="nc" id="L137">                return descriptor;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (descriptors != null) {</span>
+<span class="fc" id="L135">            descriptor = descriptors.get(rotKey);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            if (descriptor != null) {</span>
+<span class="fc" id="L137">                return descriptor;</span>
             }
         } else {
-<span class="nc" id="L140">            descriptors = new HashMap&lt;Integer, GradientDescriptor&gt;();</span>
-<span class="nc" id="L141">            gradientBlocks.put(p, descriptors);</span>
+<span class="fc" id="L140">            descriptors = new HashMap&lt;Integer, GradientDescriptor&gt;();</span>
+<span class="fc" id="L141">            gradientBlocks.put(p, descriptors);</span>
         }
 
         if (useBinnedCellGradients) {
-<span class="nc" id="L145">            descriptor = extractGsGradientForCells(xCenter, yCenter, rotation);</span>
+<span class="fc" id="L145">            descriptor = extractGsGradientForCells(xCenter, yCenter, rotation);</span>
         } else {
             descriptor = extractGsGradientForBlock(xCenter, yCenter, rotation);
         }
 
-<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (descriptor != null) {</span>
-<span class="nc" id="L151">            descriptors.put(rotKey, descriptor);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        if (descriptor != null) {</span>
+<span class="fc" id="L151">            descriptors.put(rotKey, descriptor);</span>
         }
 
-<span class="nc" id="L154">        return descriptor;</span>
+<span class="fc" id="L154">        return descriptor;</span>
     }
 
     /**
@@ -168,24 +168,24 @@ public class Features extends IntensityFeatures {
     public ThetaDescriptor extractTheta(final int xCenter, final int yCenter,
         final int rotation) {
 
-<span class="nc" id="L171">        checkBounds(xCenter, yCenter);</span>
+<span class="fc" id="L171">        checkBounds(xCenter, yCenter);</span>
 
-<span class="nc" id="L173">        PairInt p = new PairInt(xCenter, yCenter);</span>
+<span class="fc" id="L173">        PairInt p = new PairInt(xCenter, yCenter);</span>
 
-<span class="nc" id="L175">        Integer rotationKey = Integer.valueOf(rotation);</span>
+<span class="fc" id="L175">        Integer rotationKey = Integer.valueOf(rotation);</span>
 
-<span class="nc" id="L177">        Map&lt;Integer, ThetaDescriptor&gt; descriptors = thetaBlocks.get(p);</span>
+<span class="fc" id="L177">        Map&lt;Integer, ThetaDescriptor&gt; descriptors = thetaBlocks.get(p);</span>
 
-<span class="nc" id="L179">        ThetaDescriptor descriptor = null;</span>
+<span class="fc" id="L179">        ThetaDescriptor descriptor = null;</span>
 
-<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (descriptors != null) {</span>
-<span class="nc" id="L182">            descriptor = descriptors.get(rotationKey);</span>
-<span class="nc bnc" id="L183" title="All 2 branches missed.">            if (descriptor != null) {</span>
-<span class="nc" id="L184">                return descriptor;</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (descriptors != null) {</span>
+<span class="fc" id="L182">            descriptor = descriptors.get(rotationKey);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">            if (descriptor != null) {</span>
+<span class="fc" id="L184">                return descriptor;</span>
             }
         } else {
-<span class="nc" id="L187">            descriptors = new HashMap&lt;Integer, ThetaDescriptor&gt;();</span>
-<span class="nc" id="L188">            thetaBlocks.put(p, descriptors);</span>
+<span class="fc" id="L187">            descriptors = new HashMap&lt;Integer, ThetaDescriptor&gt;();</span>
+<span class="fc" id="L188">            thetaBlocks.put(p, descriptors);</span>
         }
 
         /*
@@ -193,13 +193,13 @@ public class Features extends IntensityFeatures {
         choice will be set in constructor
         */
 
-<span class="nc" id="L196">        descriptor = extractThetaForType(xCenter, yCenter, rotation);</span>
+<span class="fc" id="L196">        descriptor = extractThetaForType(xCenter, yCenter, rotation);</span>
 
-<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (descriptor != null) {</span>
-<span class="nc" id="L199">            descriptors.put(rotationKey, descriptor);</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">        if (descriptor != null) {</span>
+<span class="fc" id="L199">            descriptors.put(rotationKey, descriptor);</span>
         }
 
-<span class="nc" id="L202">        return descriptor;</span>
+<span class="fc" id="L202">        return descriptor;</span>
     }
 
     private GradientDescriptor extractGsGradientForBlock(int xCenter,
@@ -225,11 +225,11 @@ public class Features extends IntensityFeatures {
     private ThetaDescriptor extractThetaForType(int xCenter,
         int yCenter, int rotation) {
 
-<span class="nc" id="L228">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L228">        Transformer transformer = new Transformer();</span>
 
-<span class="nc" id="L230">        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);</span>
+<span class="fc" id="L230">        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);</span>
 
-<span class="nc" id="L232">        ThetaDescriptor descriptor = null;</span>
+<span class="fc" id="L232">        ThetaDescriptor descriptor = null;</span>
 
         if (thetaType == 1) {
             GradientDescriptor gradDesc = null;
@@ -244,13 +244,13 @@ public class Features extends IntensityFeatures {
             descriptor = extractThetaForBlock(gradDesc, xCenter, yCenter,
                 rotation, frameOffsets);
         } else if (thetaType == 2) {
-<span class="nc" id="L247">            descriptor = extractThetaForCells(xCenter, yCenter, rotation);</span>
+<span class="fc" id="L247">            descriptor = extractThetaForCells(xCenter, yCenter, rotation);</span>
         } else if (thetaType == 3) {
             throw new UnsupportedOperationException(&quot;not yet implemented&quot;);
             //descriptor = extractThetaHistograms(xCenter, yCenter, rotation);
         }
 
-<span class="nc" id="L253">        return descriptor;</span>
+<span class="fc" id="L253">        return descriptor;</span>
     }
 
     /**
@@ -428,71 +428,71 @@ public class Features extends IntensityFeatures {
             -4 -3 -2 -1  0  1  2  3
         */
 
-<span class="nc" id="L431">        int sentinel = GsGradientDescriptor.sentinel;</span>
+<span class="fc" id="L431">        int sentinel = GsGradientDescriptor.sentinel;</span>
 
-<span class="nc" id="L433">        int cellDim = 2;</span>
-<span class="nc" id="L434">        int nCellsAcross = 6;</span>
-<span class="nc" id="L435">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
+<span class="fc" id="L433">        int cellDim = 2;</span>
+<span class="fc" id="L434">        int nCellsAcross = 6;</span>
+<span class="fc" id="L435">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
 
-<span class="nc" id="L437">        int nColsHalf = (nCellsAcross/2);</span>
-<span class="nc" id="L438">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+<span class="fc" id="L437">        int nColsHalf = (nCellsAcross/2);</span>
+<span class="fc" id="L438">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
         
-<span class="nc" id="L440">        int[] output = new int[nCellsAcross * nCellsAcross];</span>
-<span class="nc" id="L441">        float[] xT = new float[cellDim * cellDim];</span>
-<span class="nc" id="L442">        float[] yT = new float[xT.length];</span>
+<span class="fc" id="L440">        int[] output = new int[nCellsAcross * nCellsAcross];</span>
+<span class="fc" id="L441">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="fc" id="L442">        float[] yT = new float[xT.length];</span>
 
-<span class="nc" id="L444">        int count = 0;</span>
-<span class="nc bnc" id="L445" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
-<span class="nc bnc" id="L446" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
+<span class="fc" id="L444">        int count = 0;</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
 
                 // --- calculate values for the cell ---
-<span class="nc" id="L449">                boolean withinBounds = transformCellCoordinates(</span>
+<span class="fc" id="L449">                boolean withinBounds = transformCellCoordinates(</span>
                     rotation, xCenter, yCenter, dx, dy, cellDim, 
-<span class="nc" id="L451">                    gradientImg.getWidth(), gradientImg.getHeight(),</span>
+<span class="fc" id="L451">                    gradientImg.getWidth(), gradientImg.getHeight(),</span>
                     xT, yT);
 
-<span class="nc bnc" id="L454" title="All 2 branches missed.">                if (!withinBounds) {</span>
-<span class="nc bnc" id="L455" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
-<span class="nc" id="L456">                        return null;</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">                if (!withinBounds) {</span>
+<span class="fc bfc" id="L455" title="All 2 branches covered.">                    if (count == centralPixelIndex) {</span>
+<span class="fc" id="L456">                        return null;</span>
                     }
-<span class="nc" id="L458">                    output[count] = sentinel;</span>
-<span class="nc" id="L459">                    count++;</span>
-<span class="nc" id="L460">                    continue;</span>
+<span class="fc" id="L458">                    output[count] = sentinel;</span>
+<span class="fc" id="L459">                    count++;</span>
+<span class="fc" id="L460">                    continue;</span>
                 }
 
-<span class="nc" id="L463">                int cCount = 0;</span>
-<span class="nc" id="L464">                int v = 0;</span>
-<span class="nc bnc" id="L465" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
-<span class="nc" id="L466">                    int x = Math.round(xT[i]);</span>
-<span class="nc" id="L467">                    int y = Math.round(yT[i]);</span>
-<span class="nc" id="L468">                    v += gradientImg.getValue(x, y);</span>
-<span class="nc" id="L469">                    cCount++;</span>
+<span class="fc" id="L463">                int cCount = 0;</span>
+<span class="fc" id="L464">                int v = 0;</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="fc" id="L466">                    int x = Math.round(xT[i]);</span>
+<span class="fc" id="L467">                    int y = Math.round(yT[i]);</span>
+<span class="fc" id="L468">                    v += gradientImg.getValue(x, y);</span>
+<span class="fc" id="L469">                    cCount++;</span>
                 }
 
-<span class="nc bnc" id="L472" title="All 2 branches missed.">                if (cCount == 0) {</span>
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">                if (cCount == 0) {</span>
 <span class="nc" id="L473">                    output[count] = sentinel;</span>
 <span class="nc" id="L474">                    count++;</span>
 <span class="nc" id="L475">                    continue;</span>
                 }
 
-<span class="nc" id="L478">                v /= (float)cCount;</span>
+<span class="fc" id="L478">                v /= (float)cCount;</span>
 
-<span class="nc bnc" id="L480" title="All 2 branches missed.">                if (v &gt; 359) {</span>
+<span class="pc bpc" id="L480" title="1 of 2 branches missed.">                if (v &gt; 359) {</span>
 <span class="nc" id="L481">                    v = v % 360;</span>
-<span class="nc bnc" id="L482" title="All 2 branches missed.">                } else if (v &lt; 0) {</span>
+<span class="pc bpc" id="L482" title="1 of 2 branches missed.">                } else if (v &lt; 0) {</span>
 <span class="nc" id="L483">                    v = v + 360;</span>
                 }
 
-<span class="nc" id="L486">                output[count] = v;</span>
+<span class="fc" id="L486">                output[count] = v;</span>
 
-<span class="nc" id="L488">                count++;</span>
+<span class="fc" id="L488">                count++;</span>
             }
         }
 
-<span class="nc" id="L492">        GradientDescriptor desc = new GsGradientDescriptor(output,</span>
+<span class="fc" id="L492">        GradientDescriptor desc = new GsGradientDescriptor(output,</span>
             centralPixelIndex);
 
-<span class="nc" id="L495">        return desc;</span>
+<span class="fc" id="L495">        return desc;</span>
     }
     
     /**
@@ -533,49 +533,49 @@ public class Features extends IntensityFeatures {
             -4 -3 -2 -1  0  1  2  3
         */
 
-<span class="nc" id="L536">        int sentinel = ThetaDescriptor.sentinel;</span>
+<span class="fc" id="L536">        int sentinel = ThetaDescriptor.sentinel;</span>
 
-<span class="nc" id="L538">        int cellDim = 2;</span>
-<span class="nc" id="L539">        int nCellsAcross = 6;</span>
-<span class="nc" id="L540">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
+<span class="fc" id="L538">        int cellDim = 2;</span>
+<span class="fc" id="L539">        int nCellsAcross = 6;</span>
+<span class="fc" id="L540">        int range0 = (int)(cellDim * ((float)nCellsAcross/2.f));</span>
 
-<span class="nc" id="L542">        int nColsHalf = (nCellsAcross/2);</span>
-<span class="nc" id="L543">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+<span class="fc" id="L542">        int nColsHalf = (nCellsAcross/2);</span>
+<span class="fc" id="L543">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
         
-<span class="nc" id="L545">        int[] output = new int[nCellsAcross * nCellsAcross];</span>
-<span class="nc" id="L546">        float[] xT = new float[cellDim * cellDim];</span>
-<span class="nc" id="L547">        float[] yT = new float[xT.length];</span>
+<span class="fc" id="L545">        int[] output = new int[nCellsAcross * nCellsAcross];</span>
+<span class="fc" id="L546">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="fc" id="L547">        float[] yT = new float[xT.length];</span>
 
-<span class="nc" id="L549">        int count = 0;</span>
-<span class="nc bnc" id="L550" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
-<span class="nc bnc" id="L551" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
+<span class="fc" id="L549">        int count = 0;</span>
+<span class="fc bfc" id="L550" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx+=cellDim) {</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy+=cellDim) {</span>
 
                 // --- calculate values for the cell ---
-<span class="nc" id="L554">                boolean withinBounds = transformCellCoordinates(</span>
+<span class="fc" id="L554">                boolean withinBounds = transformCellCoordinates(</span>
                     rotation, xCenter, yCenter, dx, dy, cellDim, 
-<span class="nc" id="L556">                    thetaImg.getWidth(), thetaImg.getHeight(),</span>
+<span class="fc" id="L556">                    thetaImg.getWidth(), thetaImg.getHeight(),</span>
                     xT, yT);
 
-<span class="nc bnc" id="L559" title="All 2 branches missed.">                if (!withinBounds) {</span>
-<span class="nc bnc" id="L560" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+<span class="fc bfc" id="L559" title="All 2 branches covered.">                if (!withinBounds) {</span>
+<span class="pc bpc" id="L560" title="1 of 2 branches missed.">                    if (count == centralPixelIndex) {</span>
 <span class="nc" id="L561">                        return null;</span>
                     }
-<span class="nc" id="L563">                    output[count] = sentinel;</span>
-<span class="nc" id="L564">                    count++;</span>
-<span class="nc" id="L565">                    continue;</span>
+<span class="fc" id="L563">                    output[count] = sentinel;</span>
+<span class="fc" id="L564">                    count++;</span>
+<span class="fc" id="L565">                    continue;</span>
                 }
 
-<span class="nc" id="L568">                int maxGrd = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L569" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
-<span class="nc" id="L570">                    int x = Math.round(xT[i]);</span>
-<span class="nc" id="L571">                    int y = Math.round(yT[i]);</span>
-<span class="nc" id="L572">                    int v = gradientImg.getValue(x, y);</span>
-<span class="nc bnc" id="L573" title="All 2 branches missed.">                    if (v &gt; maxGrd) {</span>
-<span class="nc" id="L574">                        maxGrd = v;</span>
+<span class="fc" id="L568">                int maxGrd = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L569" title="All 2 branches covered.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="fc" id="L570">                    int x = Math.round(xT[i]);</span>
+<span class="fc" id="L571">                    int y = Math.round(yT[i]);</span>
+<span class="fc" id="L572">                    int v = gradientImg.getValue(x, y);</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">                    if (v &gt; maxGrd) {</span>
+<span class="fc" id="L574">                        maxGrd = v;</span>
                     }
                 }
 
-<span class="nc" id="L578">                float lowLimit = 0.1f * maxGrd;</span>
+<span class="fc" id="L578">                float lowLimit = 0.1f * maxGrd;</span>
 
                 /*
                 store the image values above the critical limit then
@@ -583,23 +583,23 @@ public class Features extends IntensityFeatures {
                 for their quadrants.
                 */
 
-<span class="nc" id="L586">                int cCount = 0;</span>
+<span class="fc" id="L586">                int cCount = 0;</span>
 
-<span class="nc" id="L588">                int[] vs = new int[xT.length];</span>
-<span class="nc" id="L589">                int[] gradients = new int[xT.length];</span>
-<span class="nc bnc" id="L590" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
-<span class="nc" id="L591">                    int x = Math.round(xT[i]);</span>
-<span class="nc" id="L592">                    int y = Math.round(yT[i]);</span>
-<span class="nc" id="L593">                    int vGradient = gradientImg.getValue(x, y);</span>
-<span class="nc bnc" id="L594" title="All 2 branches missed.">                    if (vGradient &lt; lowLimit) {</span>
-<span class="nc" id="L595">                        continue;</span>
+<span class="fc" id="L588">                int[] vs = new int[xT.length];</span>
+<span class="fc" id="L589">                int[] gradients = new int[xT.length];</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="fc" id="L591">                    int x = Math.round(xT[i]);</span>
+<span class="fc" id="L592">                    int y = Math.round(yT[i]);</span>
+<span class="fc" id="L593">                    int vGradient = gradientImg.getValue(x, y);</span>
+<span class="fc bfc" id="L594" title="All 2 branches covered.">                    if (vGradient &lt; lowLimit) {</span>
+<span class="fc" id="L595">                        continue;</span>
                     }
-<span class="nc" id="L597">                    vs[cCount] = thetaImg.getValue(x, y);</span>
-<span class="nc" id="L598">                    gradients[cCount] = vGradient;</span>
-<span class="nc" id="L599">                    cCount++;</span>
+<span class="fc" id="L597">                    vs[cCount] = thetaImg.getValue(x, y);</span>
+<span class="fc" id="L598">                    gradients[cCount] = vGradient;</span>
+<span class="fc" id="L599">                    cCount++;</span>
                 }
 
-<span class="nc bnc" id="L602" title="All 2 branches missed.">                if (cCount == 0) {</span>
+<span class="pc bpc" id="L602" title="1 of 2 branches missed.">                if (cCount == 0) {</span>
 <span class="nc" id="L603">                    output[count] = sentinel;</span>
 <span class="nc" id="L604">                    count++;</span>
 <span class="nc" id="L605">                    continue;</span>
@@ -614,29 +614,29 @@ public class Features extends IntensityFeatures {
                 //float avg = AngleUtil.calculateAverageWithQuadrantCorrections(
                 //    vs, cCount - 1);
 
-<span class="nc" id="L617">                float avg =</span>
-<span class="nc" id="L618">                    AngleUtil.calculateWeightedAverageWithQuadrantCorrections(</span>
+<span class="fc" id="L617">                float avg =</span>
+<span class="fc" id="L618">                    AngleUtil.calculateWeightedAverageWithQuadrantCorrections(</span>
                         vs, gradients, cCount - 1);
 
                 // subtract the &quot;dominant orientation&quot;
-<span class="nc" id="L622">                avg -= rotation;</span>
+<span class="fc" id="L622">                avg -= rotation;</span>
 
-<span class="nc bnc" id="L624" title="All 2 branches missed.">                if (avg &gt; 359) {</span>
-<span class="nc" id="L625">                    avg = avg % 360;</span>
-<span class="nc bnc" id="L626" title="All 2 branches missed.">                } else if (avg &lt; 0) {</span>
-<span class="nc" id="L627">                    avg = avg + 360;</span>
+<span class="fc bfc" id="L624" title="All 2 branches covered.">                if (avg &gt; 359) {</span>
+<span class="fc" id="L625">                    avg = avg % 360;</span>
+<span class="fc bfc" id="L626" title="All 2 branches covered.">                } else if (avg &lt; 0) {</span>
+<span class="fc" id="L627">                    avg = avg + 360;</span>
                 }
 
-<span class="nc" id="L630">                output[count] = Math.round(avg);</span>
+<span class="fc" id="L630">                output[count] = Math.round(avg);</span>
 
-<span class="nc" id="L632">                count++;</span>
+<span class="fc" id="L632">                count++;</span>
             }
         }
 
-<span class="nc" id="L636">        ThetaDescriptor desc = new PixelThetaDescriptor(output,</span>
+<span class="fc" id="L636">        ThetaDescriptor desc = new PixelThetaDescriptor(output,</span>
             centralPixelIndex);
 
-<span class="nc" id="L639">        return desc;</span>
+<span class="fc" id="L639">        return desc;</span>
     }
 
     /**
@@ -907,24 +907,24 @@ public class Features extends IntensityFeatures {
         GradientDescriptor descGradient1, final int x1, final int y1,
         GradientDescriptor descGradient2, final int x2, final int y2) {
 
-<span class="nc bnc" id="L910" title="All 2 branches missed.">        if (descGradient1 == null) {</span>
+<span class="pc bpc" id="L910" title="1 of 2 branches missed.">        if (descGradient1 == null) {</span>
 <span class="nc" id="L911">            throw new IllegalArgumentException(&quot;descGradient1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L913" title="All 2 branches missed.">        if (descGradient2 == null) {</span>
+<span class="pc bpc" id="L913" title="1 of 2 branches missed.">        if (descGradient2 == null) {</span>
 <span class="nc" id="L914">            throw new IllegalArgumentException(&quot;descGradient2 cannot be null&quot;);</span>
         }
 
-<span class="nc" id="L917">        float err2SqGradient = descGradient2.sumSquaredError();</span>
+<span class="fc" id="L917">        float err2SqGradient = descGradient2.sumSquaredError();</span>
 
-<span class="nc" id="L919">        float ssdGradient = descGradient1.calculateSSD(descGradient2);</span>
+<span class="fc" id="L919">        float ssdGradient = descGradient1.calculateSSD(descGradient2);</span>
 
-<span class="nc" id="L921">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
-<span class="nc" id="L922">        stat.setImg1Point(new PairInt(x1, y1));</span>
-<span class="nc" id="L923">        stat.setImg2Point(new PairInt(x2, y2));</span>
-<span class="nc" id="L924">        stat.setSumGradientSqDiff(ssdGradient);</span>
-<span class="nc" id="L925">        stat.setImg2PointGradientErr(err2SqGradient);</span>
+<span class="fc" id="L921">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="fc" id="L922">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="fc" id="L923">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="fc" id="L924">        stat.setSumGradientSqDiff(ssdGradient);</span>
+<span class="fc" id="L925">        stat.setImg2PointGradientErr(err2SqGradient);</span>
 
-<span class="nc" id="L927">        return stat;</span>
+<span class="fc" id="L927">        return stat;</span>
     }
     
     /**
@@ -953,54 +953,54 @@ public class Features extends IntensityFeatures {
         ThetaDescriptor descTheta2,
         final int x2, final int y2) {
 
-<span class="nc bnc" id="L956" title="All 2 branches missed.">        if (descIntensity1 == null) {</span>
+<span class="pc bpc" id="L956" title="1 of 2 branches missed.">        if (descIntensity1 == null) {</span>
 <span class="nc" id="L957">            throw new IllegalArgumentException(&quot;descIntensity1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L959" title="All 2 branches missed.">        if (descGradient1 == null) {</span>
+<span class="pc bpc" id="L959" title="1 of 2 branches missed.">        if (descGradient1 == null) {</span>
 <span class="nc" id="L960">            throw new IllegalArgumentException(&quot;descGradient1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L962" title="All 2 branches missed.">        if (descIntensity2 == null) {</span>
+<span class="pc bpc" id="L962" title="1 of 2 branches missed.">        if (descIntensity2 == null) {</span>
 <span class="nc" id="L963">            throw new IllegalArgumentException(&quot;descIntensity2 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L965" title="All 2 branches missed.">        if (descGradient2 == null) {</span>
+<span class="pc bpc" id="L965" title="1 of 2 branches missed.">        if (descGradient2 == null) {</span>
 <span class="nc" id="L966">            throw new IllegalArgumentException(&quot;descGradient2 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L968" title="All 2 branches missed.">        if (descTheta1 == null) {</span>
+<span class="pc bpc" id="L968" title="1 of 2 branches missed.">        if (descTheta1 == null) {</span>
 <span class="nc" id="L969">            throw new IllegalArgumentException(&quot;descTheta1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L971" title="All 2 branches missed.">        if (descTheta2 == null) {</span>
+<span class="pc bpc" id="L971" title="1 of 2 branches missed.">        if (descTheta2 == null) {</span>
 <span class="nc" id="L972">            throw new IllegalArgumentException(&quot;descTheta2 cannot be null&quot;);</span>
         }
 
-<span class="nc" id="L975">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
+<span class="fc" id="L975">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
 
-<span class="nc" id="L977">        float err1SqIntensity = descIntensity1.sumSquaredError();</span>
+<span class="fc" id="L977">        float err1SqIntensity = descIntensity1.sumSquaredError();</span>
         
         //TODO: revisit this:
         //float errSqIntensity = (err2SqIntensity &gt; err1SqIntensity) ?
         //    err2SqIntensity : err1SqIntensity;
 
-<span class="nc" id="L983">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
+<span class="fc" id="L983">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
 
-<span class="nc" id="L985">        float err2SqGradient = descGradient2.sumSquaredError();</span>
+<span class="fc" id="L985">        float err2SqGradient = descGradient2.sumSquaredError();</span>
 
-<span class="nc" id="L987">        float ssdGradient = descGradient1.calculateSSD(descGradient2);</span>
+<span class="fc" id="L987">        float ssdGradient = descGradient1.calculateSSD(descGradient2);</span>
 
-<span class="nc" id="L989">        float err2Theta = descTheta2.calculateError();</span>
+<span class="fc" id="L989">        float err2Theta = descTheta2.calculateError();</span>
 
-<span class="nc" id="L991">        float compTheta = descTheta1.calculateDifference(descTheta2);</span>
+<span class="fc" id="L991">        float compTheta = descTheta1.calculateDifference(descTheta2);</span>
 
-<span class="nc" id="L993">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
-<span class="nc" id="L994">        stat.setImg1Point(new PairInt(x1, y1));</span>
-<span class="nc" id="L995">        stat.setImg2Point(new PairInt(x2, y2));</span>
-<span class="nc" id="L996">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
-<span class="nc" id="L997">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
-<span class="nc" id="L998">        stat.setSumGradientSqDiff(ssdGradient);</span>
-<span class="nc" id="L999">        stat.setImg2PointGradientErr(err2SqGradient);</span>
-<span class="nc" id="L1000">        stat.setSumThetaSqDiff(compTheta);</span>
-<span class="nc" id="L1001">        stat.setImg2PointThetaErr(err2Theta);</span>
+<span class="fc" id="L993">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="fc" id="L994">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="fc" id="L995">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="fc" id="L996">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
+<span class="fc" id="L997">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
+<span class="fc" id="L998">        stat.setSumGradientSqDiff(ssdGradient);</span>
+<span class="fc" id="L999">        stat.setImg2PointGradientErr(err2SqGradient);</span>
+<span class="fc" id="L1000">        stat.setSumThetaSqDiff(compTheta);</span>
+<span class="fc" id="L1001">        stat.setImg2PointThetaErr(err2Theta);</span>
 
-<span class="nc" id="L1003">        return stat;</span>
+<span class="fc" id="L1003">        return stat;</span>
     }
 
 }

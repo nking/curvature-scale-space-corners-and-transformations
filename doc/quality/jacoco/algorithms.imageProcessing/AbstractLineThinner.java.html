@@ -32,8 +32,8 @@ import java.util.Set;
      * @param gradientXY 
      */
     public void setEdgeGuideImage(final GreyscaleImage gradientXY) {
-<span class="nc" id="L35">        this.edgeGuideImage = gradientXY;</span>
-<span class="nc" id="L36">    }</span>
+<span class="fc" id="L35">        this.edgeGuideImage = gradientXY;</span>
+<span class="fc" id="L36">    }</span>
     
     /**
      * for images which are already line drawings, that is images such as
@@ -980,38 +980,38 @@ import java.util.Set;
 <span class="fc" id="L980">        boolean t16 = isPresent[1][0];</span>
 <span class="fc" id="L981">        boolean t17 = isPresent[2][0];</span>
         
-<span class="pc bpc" id="L983" title="7 of 12 branches missed.">        if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
-<span class="nc" id="L984">            return true;</span>
-<span class="pc bpc" id="L985" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L986">            return true;</span>
-<span class="pc bpc" id="L987" title="5 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
+<span class="fc bfc" id="L983" title="All 12 branches covered.">        if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
+<span class="fc" id="L984">            return true;</span>
+<span class="fc bfc" id="L985" title="All 10 branches covered.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="fc" id="L986">            return true;</span>
+<span class="pc bpc" id="L987" title="1 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
 <span class="fc" id="L988">            return true;</span>
-<span class="pc bpc" id="L989" title="5 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
-<span class="nc" id="L990">            return true;</span>
-<span class="pc bpc" id="L991" title="9 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
-<span class="nc" id="L992">            return true;</span>
-<span class="pc bpc" id="L993" title="3 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L994">            return true;</span>
-<span class="pc bpc" id="L995" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L996">            return true;</span>
-<span class="pc bpc" id="L997" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
+<span class="fc bfc" id="L989" title="All 8 branches covered.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
+<span class="fc" id="L990">            return true;</span>
+<span class="fc bfc" id="L991" title="All 12 branches covered.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
+<span class="fc" id="L992">            return true;</span>
+<span class="fc bfc" id="L993" title="All 10 branches covered.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="fc" id="L994">            return true;</span>
+<span class="fc bfc" id="L995" title="All 10 branches covered.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="fc" id="L996">            return true;</span>
+<span class="fc bfc" id="L997" title="All 8 branches covered.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
 <span class="fc" id="L998">            return true;</span>
-<span class="pc bpc" id="L999" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L1000">            return true;</span>
-<span class="pc bpc" id="L1001" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
-<span class="nc" id="L1002">            return true;</span>
-<span class="pc bpc" id="L1003" title="3 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
-<span class="nc" id="L1004">            return true;</span>
-<span class="pc bpc" id="L1005" title="4 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
-<span class="nc" id="L1006">            return true;</span>
-<span class="pc bpc" id="L1007" title="5 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
-<span class="nc" id="L1008">            return true;</span>
-<span class="pc bpc" id="L1009" title="7 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
-<span class="nc" id="L1010">            return true;</span>
-<span class="pc bpc" id="L1011" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
-<span class="nc" id="L1012">            return true;</span>
-<span class="pc bpc" id="L1013" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
-<span class="nc" id="L1014">            return true;</span>
+<span class="fc bfc" id="L999" title="All 10 branches covered.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="fc" id="L1000">            return true;</span>
+<span class="pc bpc" id="L1001" title="1 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
+<span class="fc" id="L1002">            return true;</span>
+<span class="fc bfc" id="L1003" title="All 8 branches covered.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
+<span class="fc" id="L1004">            return true;</span>
+<span class="fc bfc" id="L1005" title="All 12 branches covered.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
+<span class="fc" id="L1006">            return true;</span>
+<span class="fc bfc" id="L1007" title="All 8 branches covered.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
+<span class="fc" id="L1008">            return true;</span>
+<span class="pc bpc" id="L1009" title="1 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
+<span class="fc" id="L1010">            return true;</span>
+<span class="pc bpc" id="L1011" title="1 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
+<span class="fc" id="L1012">            return true;</span>
+<span class="pc bpc" id="L1013" title="2 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
+<span class="fc" id="L1014">            return true;</span>
         }
         
 <span class="fc" id="L1017">        return false;</span>
@@ -1035,20 +1035,20 @@ import java.util.Set;
         }
         
 <span class="fc bfc" id="L1037" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastCol; i++) {</span>
-<span class="pc bpc" id="L1038" title="1 of 2 branches missed.">            if (input.getValue(i, lastRow) != 0) {</span>
-<span class="nc" id="L1039">                return true;</span>
+<span class="fc bfc" id="L1038" title="All 2 branches covered.">            if (input.getValue(i, lastRow) != 0) {</span>
+<span class="fc" id="L1039">                return true;</span>
             }
         }
         
 <span class="fc bfc" id="L1043" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastRow; i++) {</span>
-<span class="pc bpc" id="L1044" title="1 of 2 branches missed.">            if (input.getValue(0, i) != 0) {</span>
-<span class="nc" id="L1045">                return true;</span>
+<span class="fc bfc" id="L1044" title="All 2 branches covered.">            if (input.getValue(0, i) != 0) {</span>
+<span class="fc" id="L1045">                return true;</span>
             }
         }
         
 <span class="fc bfc" id="L1049" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastRow; i++) {</span>
-<span class="pc bpc" id="L1050" title="1 of 2 branches missed.">            if (input.getValue(lastCol, i) != 0) {</span>
-<span class="nc" id="L1051">                return true;</span>
+<span class="fc bfc" id="L1050" title="All 2 branches covered.">            if (input.getValue(lastCol, i) != 0) {</span>
+<span class="fc" id="L1051">                return true;</span>
             }
         }
         

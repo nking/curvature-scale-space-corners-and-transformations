@@ -28,32 +28,32 @@ public final class CurvatureScaleSpaceInflectionMapper extends
     protected final int image2OriginalWidth;
     protected final int image2OriginalHeight;
 
-<span class="nc" id="L31">    public CurvatureScaleSpaceInflectionMapper(ImageExt image1, ImageExt image2) {</span>
+<span class="fc" id="L31">    public CurvatureScaleSpaceInflectionMapper(ImageExt image1, ImageExt image2) {</span>
 
-<span class="nc" id="L33">        this.image1 = image1;</span>
-<span class="nc" id="L34">        this.image2 = image2;</span>
+<span class="fc" id="L33">        this.image1 = image1;</span>
+<span class="fc" id="L34">        this.image2 = image2;</span>
 
-<span class="nc" id="L36">        originalImage1 = (ImageExt)image1.copyImage();</span>
-<span class="nc" id="L37">        originalImage2 = (ImageExt)image2.copyImage();</span>
+<span class="fc" id="L36">        originalImage1 = (ImageExt)image1.copyImage();</span>
+<span class="fc" id="L37">        originalImage2 = (ImageExt)image2.copyImage();</span>
 
-<span class="nc" id="L39">        image1OriginalWidth = image1.getWidth();</span>
-<span class="nc" id="L40">        image1OriginalHeight = image1.getHeight();</span>
-<span class="nc" id="L41">        image2OriginalWidth = image2.getWidth();</span>
-<span class="nc" id="L42">        image2OriginalHeight = image2.getHeight();</span>
+<span class="fc" id="L39">        image1OriginalWidth = image1.getWidth();</span>
+<span class="fc" id="L40">        image1OriginalHeight = image1.getHeight();</span>
+<span class="fc" id="L41">        image2OriginalWidth = image2.getWidth();</span>
+<span class="fc" id="L42">        image2OriginalHeight = image2.getHeight();</span>
 
-<span class="nc" id="L44">    }</span>
+<span class="fc" id="L44">    }</span>
 
     public TransformationParameters createEuclideanTransformationImpl() {
 
-<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (bestFittingParameters == null) {</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (bestFittingParameters == null) {</span>
 <span class="nc" id="L49">            return null;</span>
         }
 
-<span class="nc" id="L52">        MatchedPointsTransformationCalculator tc = new</span>
+<span class="fc" id="L52">        MatchedPointsTransformationCalculator tc = new</span>
             MatchedPointsTransformationCalculator();
 
-<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L56">            tc.useDebugMode();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (debug) {</span>
+<span class="fc" id="L56">            tc.useDebugMode();</span>
         }
 
         //TODO: temporarily disabling the refinement while fixing PointMatcher
@@ -83,14 +83,14 @@ public final class CurvatureScaleSpaceInflectionMapper extends
             }
         }
 
-<span class="nc" id="L86">        return bestFittingParameters;</span>
+<span class="fc" id="L86">        return bestFittingParameters;</span>
     }
 
 
     @Override
     protected List&lt;PairIntArray&gt; getEdges(CurvatureScaleSpaceImageMaker imgMaker) {
 
-<span class="nc" id="L93">        return imgMaker.getClosedCurves();</span>
+<span class="fc" id="L93">        return imgMaker.getClosedCurves();</span>
     }
 
     protected Image getImage1() {
@@ -126,38 +126,38 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         // Tests so far show that testing the contour peak points
         // (left and right) for clockwise order gives the right answer
         // and is less work computationally
-<span class="nc" id="L129">        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image1);</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (useLineDrawingMode) {</span>
-<span class="nc" id="L131">            imgMaker.useLineDrawingMode();</span>
+<span class="fc" id="L129">        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image1);</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L131">            imgMaker.useLineDrawingMode();</span>
         }
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
 <span class="nc" id="L134">            imgMaker.useOutdoorMode();</span>
         }
-<span class="nc" id="L136">        imgMaker.initialize();</span>
+<span class="fc" id="L136">        imgMaker.initialize();</span>
 
-<span class="nc" id="L138">        edges1 = getEdges(imgMaker);</span>
-<span class="nc" id="L139">        offsetImageX1 = imgMaker.getTrimmedXOffset();</span>
-<span class="nc" id="L140">        offsetImageY1 = imgMaker.getTrimmedYOffset();</span>
+<span class="fc" id="L138">        edges1 = getEdges(imgMaker);</span>
+<span class="fc" id="L139">        offsetImageX1 = imgMaker.getTrimmedXOffset();</span>
+<span class="fc" id="L140">        offsetImageY1 = imgMaker.getTrimmedYOffset();</span>
 
-<span class="nc" id="L142">    }</span>
+<span class="fc" id="L142">    }</span>
 
     @Override
     protected void createEdges2() {
 
-<span class="nc" id="L147">        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image2);</span>
-<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (useLineDrawingMode) {</span>
-<span class="nc" id="L149">            imgMaker.useLineDrawingMode();</span>
+<span class="fc" id="L147">        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image2);</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L149">            imgMaker.useLineDrawingMode();</span>
         }
-<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
 <span class="nc" id="L152">            imgMaker.useOutdoorMode();</span>
         }
-<span class="nc" id="L154">        imgMaker.initialize();</span>
+<span class="fc" id="L154">        imgMaker.initialize();</span>
 
-<span class="nc" id="L156">        edges2 = getEdges(imgMaker);</span>
-<span class="nc" id="L157">        offsetImageX2 = imgMaker.getTrimmedXOffset();</span>
-<span class="nc" id="L158">        offsetImageY2 = imgMaker.getTrimmedYOffset();</span>
+<span class="fc" id="L156">        edges2 = getEdges(imgMaker);</span>
+<span class="fc" id="L157">        offsetImageX2 = imgMaker.getTrimmedXOffset();</span>
+<span class="fc" id="L158">        offsetImageY2 = imgMaker.getTrimmedYOffset();</span>
 
-<span class="nc" id="L160">    }</span>
+<span class="fc" id="L160">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

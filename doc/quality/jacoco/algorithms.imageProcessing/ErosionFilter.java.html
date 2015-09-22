@@ -237,20 +237,20 @@ import java.util.logging.Logger;
            @ C @
              @
         */        
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        for (int nIdx = 0; nIdx &lt; fourNeighborsX.length; nIdx++) {</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        for (int nIdx = 0; nIdx &lt; fourNeighborsX.length; nIdx++) {</span>
 <span class="fc" id="L241">            int x = p.getX() + fourNeighborsX[nIdx];</span>
 <span class="fc" id="L242">            int y = p.getY() + fourNeighborsY[nIdx];</span>
 <span class="fc" id="L243">            PairInt p2 = new PairInt(x, y);</span>
             
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">            if (overridePointsRemoved.contains(p2)) {</span>
-<span class="nc" id="L246">                return false;</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            if (overridePointsRemoved.contains(p2)) {</span>
+<span class="fc" id="L246">                return false;</span>
             }
 <span class="fc bfc" id="L248" title="All 4 branches covered.">            if (!overridePointsAdded.contains(p2) &amp;&amp; !points.contains(p2)) {</span>
 <span class="fc" id="L249">                return false;</span>
             }
         }
         
-<span class="nc" id="L253">        return true;</span>
+<span class="fc" id="L253">        return true;</span>
     }
 
     /**
@@ -994,17 +994,17 @@ import java.util.logging.Logger;
         int imageWidth, int imageHeight) {
                 
         // if point does not exist already in point set, return false
-<span class="pc bpc" id="L997" title="1 of 2 branches missed.">        if (overridePointsRemoved.contains(p)) {</span>
-<span class="nc" id="L998">            return false;</span>
-<span class="pc bpc" id="L999" title="1 of 4 branches missed.">        } else if (!points.contains(p) &amp;&amp; !overridePointsAdded.contains(p)) {</span>
+<span class="fc bfc" id="L997" title="All 2 branches covered.">        if (overridePointsRemoved.contains(p)) {</span>
+<span class="fc" id="L998">            return false;</span>
+<span class="fc bfc" id="L999" title="All 4 branches covered.">        } else if (!points.contains(p) &amp;&amp; !overridePointsAdded.contains(p)) {</span>
 <span class="fc" id="L1000">            return false;</span>
         }
         
 <span class="pc bpc" id="L1003" title="1 of 2 branches missed.">        if (!isASmallerSearchRegion(p.getX(), p.getY(), imageWidth, imageHeight)</span>
-<span class="pc bpc" id="L1004" title="1 of 2 branches missed.">            &amp;&amp; hasImmediateFourNeighbors(p, points, overridePointsAdded, </span>
+<span class="fc bfc" id="L1004" title="All 2 branches covered.">            &amp;&amp; hasImmediateFourNeighbors(p, points, overridePointsAdded, </span>
             overridePointsRemoved)) {
 
-<span class="nc" id="L1007">            return false;</span>
+<span class="fc" id="L1007">            return false;</span>
         }
 
         // choosing input here helps to thin a line from one direction
@@ -1040,8 +1040,8 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L1041">            PairInt p2 = new PairInt(x, y);</span>
             
-<span class="pc bpc" id="L1043" title="1 of 2 branches missed.">            if (overridePointsRemoved.contains(p2)) {</span>
-<span class="nc" id="L1044">                return true;</span>
+<span class="fc bfc" id="L1043" title="All 2 branches covered.">            if (overridePointsRemoved.contains(p2)) {</span>
+<span class="fc" id="L1044">                return true;</span>
             }
 <span class="fc bfc" id="L1046" title="All 4 branches covered.">            if (!overridePointsAdded.contains(p2) &amp;&amp; !points.contains(p2)) {</span>
 <span class="fc" id="L1047">                return true;</span>

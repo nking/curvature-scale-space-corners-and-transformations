@@ -27,11 +27,11 @@ import java.util.Map;
     public double evaluate(ColorData data, float[] coefficients,
         Map&lt;Integer, Float&gt; customCoefficients) {
         
-<span class="nc" id="L30">        double diffCIEX = data.getParameter(PARAM.DIFF_CIEX);</span>
+<span class="fc" id="L30">        double diffCIEX = data.getParameter(PARAM.DIFF_CIEX);</span>
         
-<span class="nc" id="L32">        float coeff = customCoefficients.get(Integer.valueOf(3));</span>
+<span class="fc" id="L32">        float coeff = customCoefficients.get(Integer.valueOf(3));</span>
        
-<span class="nc" id="L34">        return coeff * diffCIEX;</span>
+<span class="fc" id="L34">        return coeff * diffCIEX;</span>
     }
     
 }

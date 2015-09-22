@@ -82,10 +82,10 @@ import java.util.Set;
 <span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int x = 0; x &lt; width; ++x) {</span>
             
             // scan 1
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">            if (blob.contains(new PairInt(x, 0))) {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (blob.contains(new PairInt(x, 0))) {</span>
 <span class="fc" id="L86">                g[x][0] = 0;</span>
             } else {
-<span class="nc" id="L88">                g[x][0] = inf;</span>
+<span class="fc" id="L88">                g[x][0] = inf;</span>
             }
         
 <span class="fc bfc" id="L91" title="All 2 branches covered.">            for (int y = 1; y &lt; height; ++y) {</span>
@@ -132,15 +132,15 @@ import java.util.Set;
                 
                 // g(i) = G(i, y)
                 
-<span class="pc bpc" id="L135" title="1 of 4 branches missed.">                while ((q &gt;= 0) &amp;&amp; (f(t[q], s[q], g[s[q]][y]) &gt; f(t[q], u, g[u][y]))) {</span>
+<span class="fc bfc" id="L135" title="All 4 branches covered.">                while ((q &gt;= 0) &amp;&amp; (f(t[q], s[q], g[s[q]][y]) &gt; f(t[q], u, g[u][y]))) {</span>
 <span class="fc" id="L136">                    q--;</span>
                 }
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">                if (q &lt; 0) {</span>
-<span class="nc" id="L139">                    q = 0;</span>
-<span class="nc" id="L140">                    s[0] = u;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                if (q &lt; 0) {</span>
+<span class="fc" id="L139">                    q = 0;</span>
+<span class="fc" id="L140">                    s[0] = u;</span>
                 } else {
 <span class="fc" id="L142">                    int w = 1 + sep(s[q], u, g[s[q]][y], g[u][y]);</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                    if (w &lt; width) {</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">                    if (w &lt; width) {</span>
 <span class="fc" id="L144">                        q++;</span>
 <span class="fc" id="L145">                        s[q] = u;</span>
 <span class="fc" id="L146">                        t[q] = w;</span>

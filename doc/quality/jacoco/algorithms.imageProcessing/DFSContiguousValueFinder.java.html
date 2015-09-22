@@ -62,16 +62,16 @@ public class DFSContiguousValueFinder {
 <span class="fc" id="L62">    }</span>
         
     public void setMinimumNumberInCluster(int n) {
-<span class="nc" id="L65">        this.minimumNumberInCluster = n;</span>
-<span class="nc" id="L66">    }</span>
+<span class="fc" id="L65">        this.minimumNumberInCluster = n;</span>
+<span class="fc" id="L66">    }</span>
     
     public void setDebug(boolean setDebugToTrue) {
 <span class="nc" id="L69">        this.debug = setDebugToTrue;</span>
 <span class="nc" id="L70">    }</span>
     
     public void setToUse8Neighbors() {
-<span class="nc" id="L73">        use4Neighbors = false;</span>
-<span class="nc" id="L74">    }</span>
+<span class="fc" id="L73">        use4Neighbors = false;</span>
+<span class="fc" id="L74">    }</span>
        
     /**
      * NOTE: to keep the performance reasonable, bin the image so that
@@ -127,12 +127,12 @@ public class DFSContiguousValueFinder {
         
         int[] dxs;
         int[] dys;
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (use4Neighbors) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (use4Neighbors) {</span>
 <span class="fc" id="L131">            dxs = Misc.dx4;</span>
 <span class="fc" id="L132">            dys = Misc.dy4;</span>
         } else {
-<span class="nc" id="L134">            dxs = Misc.dx8;</span>
-<span class="nc" id="L135">            dys = Misc.dy8;</span>
+<span class="fc" id="L134">            dxs = Misc.dx8;</span>
+<span class="fc" id="L135">            dys = Misc.dy8;</span>
         }
         
 <span class="fc" id="L138">        java.util.Stack&lt;Integer&gt; stack = new java.util.Stack&lt;Integer&gt;();</span>
@@ -170,8 +170,8 @@ public class DFSContiguousValueFinder {
 <span class="fc" id="L170">                int vX = uX + dxs[i];</span>
 <span class="fc" id="L171">                int vY = uY + dys[i];</span>
             
-<span class="pc bpc" id="L173" title="1 of 8 branches missed.">                if ((vX &lt; 0) || (vX &gt; (width - 1)) || (vY &lt; 0) || (vY &gt; (height - 1))) {</span>
-<span class="nc" id="L174">                    continue;</span>
+<span class="fc bfc" id="L173" title="All 8 branches covered.">                if ((vX &lt; 0) || (vX &gt; (width - 1)) || (vY &lt; 0) || (vY &gt; (height - 1))) {</span>
+<span class="fc" id="L174">                    continue;</span>
                 }
 
 <span class="fc" id="L177">                int vIndex = (vY * width) + vX;</span>
@@ -206,13 +206,13 @@ public class DFSContiguousValueFinder {
                 
 <span class="fc" id="L207">        Integer groupId = pointToGroupMap.get(uIdx);</span>
         
-<span class="pc bpc" id="L209" title="1 of 4 branches missed.">        if ((groupId != null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
+<span class="fc bfc" id="L209" title="All 4 branches covered.">        if ((groupId != null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
                     
 <span class="fc" id="L211">            groupMembership.get(groupId).add(vIdx);</span>
             
 <span class="fc" id="L213">            pointToGroupMap.put(vIdx, groupId);</span>
                         
-<span class="pc bpc" id="L215" title="2 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) != null)) {</span>
+<span class="pc bpc" id="L215" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) != null)) {</span>
 
 <span class="nc" id="L217">            groupId = pointToGroupMap.get(vIdx);</span>
 
@@ -220,7 +220,7 @@ public class DFSContiguousValueFinder {
             
 <span class="nc" id="L221">            pointToGroupMap.put(uIdx, groupId);</span>
             
-<span class="pc bpc" id="L223" title="2 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
+<span class="pc bpc" id="L223" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vIdx) == null)) {</span>
                         
 <span class="fc" id="L225">            groupId = Integer.valueOf(groupMembership.size());</span>
             
@@ -307,7 +307,7 @@ public class DFSContiguousValueFinder {
             
 <span class="fc" id="L308">            int count = group.size();</span>
             
-<span class="pc bpc" id="L310" title="1 of 2 branches missed.">            log.finest(&quot;  group &quot; + i + &quot; has &quot; + count </span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">            log.finest(&quot;  group &quot; + i + &quot; has &quot; + count </span>
                 + &quot; members before prune (min=&quot; + minimumNumberInCluster + &quot;)&quot; 
                 + &quot;.  doPrune=&quot; +
 <span class="pc bpc" id="L313" title="1 of 2 branches missed.">                ((count &lt; minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue())</span>
@@ -315,22 +315,22 @@ public class DFSContiguousValueFinder {
 <span class="fc" id="L315">                + &quot; isUnbound=&quot; + groupIsUnbound.get(i).booleanValue()</span>
             );
             
-<span class="pc bpc" id="L318" title="2 of 4 branches missed.">            if ((count &lt; minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue()) {</span>
+<span class="pc bpc" id="L318" title="1 of 4 branches missed.">            if ((count &lt; minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue()) {</span>
                              
                 // remove this group and move up all groups w/ index &gt; i by one index
-<span class="nc bnc" id="L321" title="All 2 branches missed.">                for (int j = (i + 1); j &lt; groupMembership.size(); j++) {</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">                for (int j = (i + 1); j &lt; groupMembership.size(); j++) {</span>
                     
-<span class="nc" id="L323">                    int newGroupId = j - 1;</span>
+<span class="fc" id="L323">                    int newGroupId = j - 1;</span>
                                         
                     // update members in pointToGroupIndex
-<span class="nc" id="L326">                    Set&lt;Integer&gt; latest = groupMembership.get(j);</span>
+<span class="fc" id="L326">                    Set&lt;Integer&gt; latest = groupMembership.get(j);</span>
                     //
-<span class="nc bnc" id="L328" title="All 2 branches missed.">                    for (Integer p : latest) {</span>
-<span class="nc" id="L329">                        pointToGroupMap.put(p, Integer.valueOf(newGroupId));</span>
-<span class="nc" id="L330">                    }</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                    for (Integer p : latest) {</span>
+<span class="fc" id="L329">                        pointToGroupMap.put(p, Integer.valueOf(newGroupId));</span>
+<span class="fc" id="L330">                    }</span>
                 } 
                
-<span class="nc" id="L333">                Set&lt;Integer&gt; removed = groupMembership.remove(i);</span>
+<span class="fc" id="L333">                Set&lt;Integer&gt; removed = groupMembership.remove(i);</span>
                 
             }
         }
@@ -340,15 +340,15 @@ public class DFSContiguousValueFinder {
 
     public int getNumberofGroupMembers(int groupId) {
         
-<span class="nc bnc" id="L343" title="All 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
 <span class="nc" id="L344">            return 0;</span>
         }
-<span class="nc bnc" id="L346" title="All 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="pc bpc" id="L346" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
 <span class="nc" id="L347">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
 <span class="nc" id="L348">            + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
         }
                 
-<span class="nc" id="L351">        return groupMembership.get(groupId).size();</span>
+<span class="fc" id="L351">        return groupMembership.get(groupId).size();</span>
     }
     
     public PairIntArray getXY(int groupId) {

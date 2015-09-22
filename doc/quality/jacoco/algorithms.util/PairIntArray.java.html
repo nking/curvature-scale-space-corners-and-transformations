@@ -184,8 +184,8 @@ public class PairIntArray {
             
 <span class="fc" id="L185">            int n2 = x.length + 10;</span>
             
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            if (nTotal &gt; n2) {</span>
-<span class="nc" id="L188">                n2 = nTotal;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            if (nTotal &gt; n2) {</span>
+<span class="fc" id="L188">                n2 = nTotal;</span>
             }
             
 <span class="fc" id="L191">            x = Arrays.copyOf(x, n2);</span>
@@ -337,11 +337,11 @@ public class PairIntArray {
     }
     
     public String toString() {
-<span class="nc" id="L340">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L341" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L342">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
+<span class="fc" id="L340">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L342">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
         }
-<span class="nc" id="L344">        return sb.toString();</span>
+<span class="fc" id="L344">        return sb.toString();</span>
     }
 
 }

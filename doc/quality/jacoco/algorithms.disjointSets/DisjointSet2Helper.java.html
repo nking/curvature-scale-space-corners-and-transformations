@@ -87,15 +87,15 @@ import java.util.List;
         }
         
         DisjointSet2Node&lt;T&gt; parent;
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (x.getRank() &gt;= y.getRank()) {</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (x.getRank() &gt;= y.getRank()) {</span>
 <span class="fc" id="L91">            parent = x;</span>
 <span class="fc" id="L92">            y.setParent(parent);</span>
 <span class="fc bfc" id="L93" title="All 2 branches covered.">            if (x.getRank() == y.getRank()) {</span>
 <span class="fc" id="L94">                parent.setRank(parent.getRank() + 1);</span>
             }
         } else {
-<span class="nc" id="L97">            parent = y;</span>
-<span class="nc" id="L98">            x.setParent(parent);</span>
+<span class="fc" id="L97">            parent = y;</span>
+<span class="fc" id="L98">            x.setParent(parent);</span>
         }
 <span class="fc" id="L100">        return parent;</span>
     }

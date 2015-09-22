@@ -1387,53 +1387,53 @@ import org.ejml.simple.*;
          * 3 dimensional matrix, with column 0 being x, column 1 being y,
          * and the last column is place holder 1's
          */
-<span class="fc" id="L1390">        private SimpleMatrix xy = null;</span>
+        private SimpleMatrix xy = null;
         
-<span class="fc" id="L1392">        private double[] centroidXY = null;</span>
+        private double[] centroidXY = null;
         
-<span class="fc" id="L1394">        private SimpleMatrix normalizationMatrix = null;</span>
+        private SimpleMatrix normalizationMatrix = null;
 
         /**
          * @return the centroidXY
          */
         public double[] getCentroidXY() {
-<span class="nc" id="L1400">            return centroidXY;</span>
+            return centroidXY;
         }
 
         /**
          * @param centroidXY the centroidXY to set
          */
         public void setCentroidXY(double[] centroidXY) {
-<span class="fc" id="L1407">            this.centroidXY = centroidXY;</span>
-<span class="fc" id="L1408">        }</span>
+            this.centroidXY = centroidXY;
+        }
 
         /**
          * @return the factor
          */
         public SimpleMatrix getNormalizationMatrix() {
-<span class="fc" id="L1414">            return normalizationMatrix;</span>
+            return normalizationMatrix;
         }
 
         /**
          * @param normMatrix holding the scale and offsets to apply to x, y
          */
         public void setNormMatrix(SimpleMatrix normMatrix) {
-<span class="fc" id="L1421">            this.normalizationMatrix = normMatrix;</span>
-<span class="fc" id="L1422">        }</span>
+            this.normalizationMatrix = normMatrix;
+        }
 
         /**
          * @return the xy
          */
         public SimpleMatrix getXy() {
-<span class="fc" id="L1428">            return xy;</span>
+            return xy;
         }
 
         /**
          * @param xy the xy to set
          */
         public void setXy(SimpleMatrix xy) {
-<span class="fc" id="L1435">            this.xy = xy;</span>
-<span class="fc" id="L1436">        }</span>
+            this.xy = xy;
+        }
     }
     
     public double[] getLeftEpipole() {
@@ -1466,31 +1466,31 @@ import org.ejml.simple.*;
     PairIntArray getEpipolarLine(SimpleMatrix epipolarLines, int imgWidth, 
         int imgHeight, int pointNumber) {
         
-<span class="nc" id="L1469">        int n = imgWidth/10;</span>
+<span class="fc" id="L1469">        int n = imgWidth/10;</span>
         
-<span class="nc" id="L1471">        PairIntArray line = new PairIntArray(n);</span>
+<span class="fc" id="L1471">        PairIntArray line = new PairIntArray(n);</span>
         
-<span class="nc" id="L1473">        double a = epipolarLines.get(0, pointNumber);</span>
-<span class="nc" id="L1474">        double b = epipolarLines.get(1, pointNumber);</span>
-<span class="nc" id="L1475">        double c = epipolarLines.get(2, pointNumber);</span>
-<span class="nc bnc" id="L1476" title="All 2 branches missed.">        boolean isHoriz = (Math.abs(a/b) &lt;= 1.0);</span>
-<span class="nc bnc" id="L1477" title="All 2 branches missed.">        if (isHoriz) {</span>
-<span class="nc bnc" id="L1478" title="All 2 branches missed.">            for (int x = 0; x &lt; imgWidth; x++) {</span>
+<span class="fc" id="L1473">        double a = epipolarLines.get(0, pointNumber);</span>
+<span class="fc" id="L1474">        double b = epipolarLines.get(1, pointNumber);</span>
+<span class="fc" id="L1475">        double c = epipolarLines.get(2, pointNumber);</span>
+<span class="fc bfc" id="L1476" title="All 2 branches covered.">        boolean isHoriz = (Math.abs(a/b) &lt;= 1.0);</span>
+<span class="fc bfc" id="L1477" title="All 2 branches covered.">        if (isHoriz) {</span>
+<span class="fc bfc" id="L1478" title="All 2 branches covered.">            for (int x = 0; x &lt; imgWidth; x++) {</span>
                 //y = - (a/b) * x - (c/b)
-<span class="nc" id="L1480">                double y = (c + (a * (double)x)) / (-b);</span>
-<span class="nc" id="L1481">                line.add(x, (int) Math.round(y));</span>
+<span class="fc" id="L1480">                double y = (c + (a * (double)x)) / (-b);</span>
+<span class="fc" id="L1481">                line.add(x, (int) Math.round(y));</span>
             }
         } else {
-<span class="nc bnc" id="L1484" title="All 2 branches missed.">            for (int y = 0; y &lt; imgHeight; y++) {</span>
+<span class="fc bfc" id="L1484" title="All 2 branches covered.">            for (int y = 0; y &lt; imgHeight; y++) {</span>
                 //y = - (a/b) * x - (c/b)
                 //y+(c/b) = - (a/b) * x 
                 // ==&gt; x = (-b/a) * (y+(c/b)) = y*(-b/a) - (c/a)
-<span class="nc" id="L1488">                double x = -(c + (b * (double)y))/a;</span>
-<span class="nc" id="L1489">                line.add((int) Math.round(x), y);</span>
+<span class="fc" id="L1488">                double x = -(c + (b * (double)y))/a;</span>
+<span class="fc" id="L1489">                line.add((int) Math.round(x), y);</span>
             }
         }
   
-<span class="nc" id="L1493">        return line;</span>
+<span class="fc" id="L1493">        return line;</span>
     }
     
     SimpleMatrix calculateEpipolarRightLines(SimpleMatrix points) {

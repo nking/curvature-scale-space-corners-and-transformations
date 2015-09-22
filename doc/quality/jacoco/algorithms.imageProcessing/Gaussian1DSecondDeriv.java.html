@@ -42,9 +42,9 @@ import algorithms.misc.MiscMath;
   
     public static float[] getKernel(SIGMA sigma, float mu, int nPoints) {
         
-<span class="nc" id="L45">        float s = SIGMA.getValue(sigma);</span>
+<span class="fc" id="L45">        float s = SIGMA.getValue(sigma);</span>
         
-<span class="nc" id="L47">        return getKernel(s, mu, nPoints);</span>
+<span class="fc" id="L47">        return getKernel(s, mu, nPoints);</span>
     }
     
     /**
@@ -229,34 +229,34 @@ import algorithms.misc.MiscMath;
 <span class="fc" id="L229">            return getBinomialKernelSigmaTwoSQRT2();</span>
 <span class="fc bfc" id="L230" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
 <span class="fc" id="L231">            return getBinomialKernelSigmaThree();</span>
-<span class="pc bpc" id="L232" title="1 of 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
 <span class="fc" id="L233">            return getKernel(SIGMA.getValue(sigma));</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.FOURSQRT2.ordinal()) {</span>
-<span class="nc" id="L235">            return getKernel(SIGMA.getValue(sigma));</span>
-<span class="nc bnc" id="L236" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
-<span class="nc" id="L237">            return getKernel(SIGMA.getValue(sigma));</span>
-<span class="nc bnc" id="L238" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOURSQRT2.ordinal()) {</span>
+<span class="fc" id="L235">            return getKernel(SIGMA.getValue(sigma));</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
+<span class="fc" id="L237">            return getKernel(SIGMA.getValue(sigma));</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
 <span class="nc" id="L239">            return getKernel(SIGMA.getValue(sigma));</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.EIGHTSQRT2.ordinal()) {</span>
-<span class="nc" id="L241">            return getKernel(sigma, 0, 87);</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.SIXTEEN.ordinal()) {</span>
-<span class="nc" id="L243">            return getKernel(sigma, 0, 121);</span>
-<span class="nc bnc" id="L244" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.SIXTEENSQRT2.ordinal()) {</span>
-<span class="nc" id="L245">            return getKernel(sigma, 0, 171);</span>
-<span class="nc bnc" id="L246" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWO.ordinal()) {</span>
-<span class="nc" id="L247">            return getKernel(sigma, 0, 239);</span>
-<span class="nc bnc" id="L248" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWOSQRT2.ordinal()) {</span>
-<span class="nc" id="L249">            return getKernel(sigma, 0, 339);</span>
-<span class="nc bnc" id="L250" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOUR.ordinal()) {</span>
-<span class="nc" id="L251">            return getKernel(sigma, 0, 477);</span>
-<span class="nc bnc" id="L252" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOURSQRT2.ordinal()) {</span>
-<span class="nc" id="L253">            return getKernel(sigma, 0, 675);</span>
-<span class="nc bnc" id="L254" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONEHUNDREDANDTWENTYEIGHT.ordinal()) {</span>
-<span class="nc" id="L255">            return getKernel(sigma, 0, 953);</span>
-<span class="nc bnc" id="L256" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONEHUNDREDANDTWENTYEIGHTSQRT2.ordinal()) {</span>
-<span class="nc" id="L257">            return getKernel(sigma, 0, 1347);</span>
-<span class="nc bnc" id="L258" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWOHUNDREDANDFIFTYSIX.ordinal()) {</span>
-<span class="nc" id="L259">            return getKernel(sigma, 0, 1905);</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHTSQRT2.ordinal()) {</span>
+<span class="fc" id="L241">            return getKernel(sigma, 0, 87);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEEN.ordinal()) {</span>
+<span class="fc" id="L243">            return getKernel(sigma, 0, 121);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEENSQRT2.ordinal()) {</span>
+<span class="fc" id="L245">            return getKernel(sigma, 0, 171);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWO.ordinal()) {</span>
+<span class="fc" id="L247">            return getKernel(sigma, 0, 239);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L249">            return getKernel(sigma, 0, 339);</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOUR.ordinal()) {</span>
+<span class="fc" id="L251">            return getKernel(sigma, 0, 477);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOURSQRT2.ordinal()) {</span>
+<span class="fc" id="L253">            return getKernel(sigma, 0, 675);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEHUNDREDANDTWENTYEIGHT.ordinal()) {</span>
+<span class="fc" id="L255">            return getKernel(sigma, 0, 953);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEHUNDREDANDTWENTYEIGHTSQRT2.ordinal()) {</span>
+<span class="fc" id="L257">            return getKernel(sigma, 0, 1347);</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWOHUNDREDANDFIFTYSIX.ordinal()) {</span>
+<span class="fc" id="L259">            return getKernel(sigma, 0, 1905);</span>
 <span class="nc bnc" id="L260" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWOHUNDREDANDFIFTYSIX.ordinal()) {</span>
 <span class="nc" id="L261">            return getKernel(SIGMA.getValue(sigma));</span>
         }
@@ -267,28 +267,28 @@ import algorithms.misc.MiscMath;
     
     protected static float[] getBinomialKernel(SIGMA sigma) {
         
-<span class="nc bnc" id="L270" title="All 2 branches missed.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
-<span class="nc" id="L271">            return getBinomialKernelSigmaZeroPointFive();</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
-<span class="nc" id="L273">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
-<span class="nc bnc" id="L274" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
-<span class="nc" id="L275">            return getBinomialKernelSigmaOne();</span>
-<span class="nc bnc" id="L276" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
-<span class="nc" id="L277">            return getBinomialKernelSigmaOneSQRT2();</span>
-<span class="nc bnc" id="L278" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
-<span class="nc" id="L279">            return getBinomialKernelSigmaOnePointFive();</span>
-<span class="nc bnc" id="L280" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
-<span class="nc" id="L281">            return getBinomialKernelSigmaTwo();</span>
-<span class="nc bnc" id="L282" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
-<span class="nc" id="L283">            return getBinomialKernelSigmaOnePointFiveSQRT2();</span>
-<span class="nc bnc" id="L284" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
-<span class="nc" id="L285">            return getBinomialKernelSigmaTwoSQRT2();</span>
-<span class="nc bnc" id="L286" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
-<span class="nc" id="L287">            return getBinomialKernelSigmaThree();</span>
-<span class="nc bnc" id="L288" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
-<span class="nc" id="L289">            return getBinomialKernelSigmaFour();</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L271">            return getBinomialKernelSigmaZeroPointFive();</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
+<span class="fc" id="L273">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
+<span class="fc" id="L275">            return getBinomialKernelSigmaOne();</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
+<span class="fc" id="L277">            return getBinomialKernelSigmaOneSQRT2();</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L279">            return getBinomialKernelSigmaOnePointFive();</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
+<span class="fc" id="L281">            return getBinomialKernelSigmaTwo();</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
+<span class="fc" id="L283">            return getBinomialKernelSigmaOnePointFiveSQRT2();</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L285">            return getBinomialKernelSigmaTwoSQRT2();</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
+<span class="fc" id="L287">            return getBinomialKernelSigmaThree();</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
+<span class="fc" id="L289">            return getBinomialKernelSigmaFour();</span>
         } else {
-<span class="nc" id="L291">            return null;</span>
+<span class="fc" id="L291">            return null;</span>
         }
         
     }
@@ -431,8 +431,8 @@ import algorithms.misc.MiscMath;
     protected static float[] getBinomialKernelSigmaFour() {
         //sigma=4    n=64
         //1./300000000000
-<span class="nc" id="L434">        float a = 1.f/315.f;</span>
-<span class="nc" id="L435">        return new float[]{</span>
+<span class="fc" id="L434">        float a = 1.f/315.f;</span>
+<span class="fc" id="L435">        return new float[]{</span>
              (float)(0.0013496157933984045)*a, (float)(0.003812253148120798)*a,
              (float)(0.00985466410118652)*a, (float)(0.023354250937084688)*a,
              (float)(0.050793931240985246)*a, (float)(0.10141062660346886)*a,

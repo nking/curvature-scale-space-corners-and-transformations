@@ -96,7 +96,7 @@ public class DFSConnectedGroupsFinder {
                 }
                 
 <span class="fc bfc" id="L98" title="All 2 branches covered.">                for (int vY = (uY - 1); vY &lt;= (uY + 1); vY++) {</span>
-<span class="pc bpc" id="L99" title="1 of 4 branches missed.">                    if ((vY &lt; 0) || (vY &gt; (imageHeight - 1))) {</span>
+<span class="fc bfc" id="L99" title="All 4 branches covered.">                    if ((vY &lt; 0) || (vY &gt; (imageHeight - 1))) {</span>
 <span class="fc" id="L100">                        continue;</span>
                     }
                     
@@ -246,15 +246,15 @@ public class DFSConnectedGroupsFinder {
   
     public int getNumberofGroupMembers(int groupId) {
         
-<span class="nc bnc" id="L249" title="All 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
 <span class="nc" id="L250">            return 0;</span>
         }
-<span class="nc bnc" id="L252" title="All 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="pc bpc" id="L252" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
 <span class="nc" id="L253">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId </span>
 <span class="nc" id="L254">            + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
         }
                 
-<span class="nc" id="L257">        return groupMembership.get(groupId).size();</span>
+<span class="fc" id="L257">        return groupMembership.get(groupId).size();</span>
     }
     
     public Set&lt;PairInt&gt; getXY(int groupId) {
