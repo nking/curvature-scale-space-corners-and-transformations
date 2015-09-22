@@ -1,9 +1,3 @@
--- look at the times for running the code using binned and not binned on the BINARY track.
-   -- for cases such as venturi which will fail through the
-      first type of segmentation (and maybe 2nd, need to review them),
-      it should be faster to see that no blobs or contours were produced
-      in the binned and exclude that segmentation completely.
-
 -- need better segmentation for Brown&Lowe
    -- current method is still the best, but the kmeans plus plus uses random
       and that sometimes results in slightly different cluster centers hence
@@ -13,6 +7,7 @@
             see the mean shift and also, 
             or altering my clustering code to be faster and create an input writer
             to extract what it needs from an image for the algorithm.
+-- need better segmentation for the books test image (which is large and needs mean adaptive thresholding)
 
 -- make a wrapper for running many iterations of the scale calculator for blobs 
    on many different images (diff rotation and translation and scale)

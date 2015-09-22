@@ -136,60 +136,38 @@ public class BlobScaleFinderWrapper {
         A different algorithm for the clustering may be needed.
         */
 
-        SegmentationType[] orderOfSeg1;
-        boolean[] orderOfBinning1;
-        int[] numExtraTriesAllowed1;
-        int[] numTries1;
-        SegmentationType[] orderOfSeg2;
-        boolean[] orderOfBinning2;
-        int[] numExtraTriesAllowed2;
-        int[] numTries2;
-        
-        orderOfSeg1 = new SegmentationType[]{
-            SegmentationType.BINARY, SegmentationType.COLOR_POLARCIEXY_ADAPT};
-        orderOfBinning1 = new boolean[] {false, false};
-        numExtraTriesAllowed1 = new int[]{1, 1};
-        numTries1 = new int[]{0, 0};
-        
-        orderOfSeg2 = new SegmentationType[]{
-            SegmentationType.BINARY, SegmentationType.COLOR_POLARCIEXY_ADAPT};
-        orderOfBinning2 = new boolean[] {false, false};
-        numExtraTriesAllowed2 = new int[]{1, 1};
-        numTries2 = new int[]{0, 0};
-      
         /*
-        orderOfSeg1 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
-        orderOfBinning1 = new boolean[] {false};
-        numExtraTriesAllowed1 = new int[]{2};
-        numTries1 = new int[]{0};
-        orderOfSeg2 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
-        orderOfBinning2 = new boolean[] {false};
-        numExtraTriesAllowed2 = new int[]{2};
-        numTries2 = new int[]{0};
+        SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
+            int numExtraUnbinnedAllowed)
         */
         
-        assert(orderOfSeg1.length == orderOfBinning1.length);
-        assert(orderOfSeg1.length == numTries1.length);
-        assert(orderOfSeg1.length == numExtraTriesAllowed1.length);
-        assert(orderOfSeg2.length == orderOfBinning2.length);
-        assert(orderOfSeg2.length == numTries2.length);
-        assert(orderOfSeg2.length == numExtraTriesAllowed2.length);
-        
+        SegmentationOrder[] seg1 = new SegmentationOrder[]{
+            new SegmentationOrder(SegmentationType.BINARY, 1, 1),
+            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY_ADAPT, 0, 1)
+        };
+        SegmentationOrder[] seg2 = new SegmentationOrder[]{
+            new SegmentationOrder(SegmentationType.BINARY, 1, 1),
+            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY_ADAPT, 0, 1)
+        };
+                
         int ordered1Idx = 0;
         int ordered2Idx = 0;
 
-        while ((ordered1Idx < orderOfSeg1.length) && (ordered2Idx < orderOfSeg2.length)) {
+        while ((ordered1Idx < seg1.length) && (ordered2Idx < seg2.length)) {
 
-            boolean useBinned1 = orderOfBinning1[ordered1Idx];
+            boolean useBinned1 = seg1[ordered1Idx].currentIsBinned();
 
-            boolean useBinned2 = orderOfBinning2[ordered2Idx];
+            boolean useBinned2 = seg2[ordered2Idx].currentIsBinned();
 
-            SegmentationType segmentationType1 = orderOfSeg1[ordered1Idx];
+            SegmentationType segmentationType1 = seg1[ordered1Idx].geSegmentationType();
 
-            SegmentationType segmentationType2 = orderOfSeg2[ordered2Idx];
+            SegmentationType segmentationType2 = seg2[ordered2Idx].geSegmentationType();
             
-            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1);
-            log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2);
+            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1 
+                + " useSameSegmentation=" + useSameSegmentation 
+                + " ordered1Idx=" + ordered1Idx);
+            log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2
+                + " ordered2Idx=" + ordered2Idx);
 
             if (useBinned1) {
                 img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
@@ -240,45 +218,67 @@ public class BlobScaleFinderWrapper {
 
             int nContours2 = sumContours(img2Helper, segmentationType2, useBinned2);
             
-            // new logic to repeat if process uses random and the num tries allowed is high enough:
-            if (((numTries1[ordered1Idx] < numExtraTriesAllowed1[ordered1Idx])
-                && (nContours1 > 3)) ||
-                ((numTries2[ordered2Idx] < numExtraTriesAllowed2[ordered2Idx])
-                && (nContours2 > 3))
-                ) {
-                                
-                numTries1[ordered1Idx]++;
-                numTries2[ordered2Idx]++;
-                continue;
-            }
+            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1 
+                + " nContours1=" + nContours1);
+            log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2
+                + " nContours2=" + nContours2);
             
             if (useSameSegmentation) {
-                // change both indexes similarly
-                ordered1Idx++;
-                ordered2Idx++;
+                if (
+                    ((useBinned1 && (nContours1 < 3)) && (useBinned2 && (nContours2 < 10))) ||
+                    ((useBinned1 && (nContours1 < 10)) && (useBinned2 && (nContours2 < 3)))
+                    ) {
+                    // if this is the last segmentation to try, do not skip...
+                    // TODO: improve segmentation types
+                    if (ordered1Idx < (seg1.length - 1)) {
+                        seg1[ordered1Idx].setToSkip();
+                        seg2[ordered2Idx].setToSkip();
+                        ordered1Idx++;
+                        ordered2Idx++;
+                        continue;
+                    }
+                }
+                boolean incr1 = !seg1[ordered1Idx].incrementAndHasNext();
+                boolean incr2 = !seg2[ordered2Idx].incrementAndHasNext();
+                if (incr1 || incr2) {
+                    ordered1Idx++;
+                    ordered2Idx++;
+                }
                 continue;
             }
-            
+                        
             if (nContours1 > 10) {
                 if (nContours2 > 10) {
                     if (nContours1 > nContours2) {
-                        ordered2Idx++;
+                        if (!seg2[ordered2Idx].incrementAndHasNext()) {
+                            ordered2Idx++;
+                        }
                     } else {
-                        ordered1Idx++;
+                        if (!seg1[ordered1Idx].incrementAndHasNext()) {
+                            ordered1Idx++;
+                        }
                     }
                 } else {
-                    ordered1Idx++;
+                    if (!seg1[ordered1Idx].incrementAndHasNext()) {
+                        ordered1Idx++;
+                    }
                 }
                 continue;
             }
             
             if (nContours2 > 10) {
-                ordered1Idx++;
+                if (!seg1[ordered1Idx].incrementAndHasNext()) {
+                    ordered1Idx++;
+                }
                 continue;
             }
 
-            ordered1Idx++;
-            ordered2Idx++;
+            if (!seg1[ordered1Idx].incrementAndHasNext()) {
+                ordered1Idx++;
+            }
+            if (!seg2[ordered2Idx].incrementAndHasNext()) {
+                ordered2Idx++;
+            }
         }
         
         return null;
@@ -436,4 +436,51 @@ public class BlobScaleFinderWrapper {
         return n;
     }
 
+    private class SegmentationOrder {
+        private final SegmentationType type;
+        private int numBinnedAttempts = 0;
+        private int numUnbinnedAttempts = 0;
+        private final int numExtraBinnedAllowed;
+        private final int numExtraUnbinnedAllowed;
+        private boolean currentIsBinned = true;
+        
+        /** flag to use when a quick binned attempt shows that this segmentation
+        is not the best choice for image and the full segmentation should be skipped*/
+        private boolean skip = false;
+        
+        public SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
+            int numExtraUnbinnedAllowed) {
+            this.type = sType;
+            this.numExtraBinnedAllowed = numExtraBinnedAllowed;
+            this.numExtraUnbinnedAllowed = numExtraUnbinnedAllowed;
+        }
+        
+        public boolean incrementAndHasNext() {
+            if (skip) {
+                return false;
+            }
+            if (currentIsBinned && (numBinnedAttempts < numExtraBinnedAllowed)) {
+                numBinnedAttempts++;
+                return true;
+            } else if (numUnbinnedAttempts < numExtraUnbinnedAllowed) {
+                numUnbinnedAttempts++;
+                currentIsBinned = false;
+                return true;
+            }
+            return false;
+        }
+        
+        public void setToSkip() {
+            skip = true;
+        }
+        
+        public boolean currentIsBinned() {
+            return currentIsBinned;
+        }
+        
+        public SegmentationType geSegmentationType() {
+            return type;
+        }
+    }
+    
 }
