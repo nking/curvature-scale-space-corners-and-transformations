@@ -96,39 +96,50 @@ public class BlobScaleFinderWrapper {
         /*
         depending on image statistics, different combinations of segmentation
         and binning are tried.
+        
+        If a segmentation type involves using random, the method might be
+        tried again if specified.  
+        A different algorithm for the clustering may be needed.
         */
 
         SegmentationType[] orderOfSeg1;
         boolean[] orderOfBinning1;
+        int[] numTriesAllowed1;
+        int[] numTries1;
         SegmentationType[] orderOfSeg2;
         boolean[] orderOfBinning2;
-        if (stats1.getHistAreas()[1] >= 0.75) {
-            orderOfSeg1 = new SegmentationType[]{
-                SegmentationType.BINARY, SegmentationType.BINARY,
-                SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
-            orderOfBinning1 = new boolean[] {true, false, true, false};
-        } else {
-            orderOfSeg1 = new SegmentationType[]{
-                SegmentationType.GREYSCALE_KMPP, SegmentationType.GREYSCALE_KMPP,
-                SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
-            orderOfBinning1 = new boolean[] {true, false, true, false};
-            boolean didApplyHistEq =
-                img1Helper.applyEqualizationIfNeededByComparison(img2Helper);
-            log.info("didApplyHistEq=" + didApplyHistEq);
-        }
-        if (stats2.getHistAreas()[1] >= 0.75) {
-            // for BINARY should only use binning
-            orderOfSeg2 = new SegmentationType[]{
-                SegmentationType.BINARY, SegmentationType.BINARY,
-                SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
-            orderOfBinning2 = new boolean[] {true, false, true, false};
-        } else {
-            // for COLOR_POLARCIEXY_ADAPT: looks like should not use binning
-            orderOfSeg2 = new SegmentationType[]{
-                SegmentationType.GREYSCALE_KMPP, SegmentationType.GREYSCALE_KMPP,
-                SegmentationType.COLOR_POLARCIEXY_ADAPT, SegmentationType.COLOR_POLARCIEXY_ADAPT};
-            orderOfBinning2 = new boolean[] {true, false, true, false};
-        }
+        int[] numTriesAllowed2;
+        int[] numTries2;
+        
+        orderOfSeg1 = new SegmentationType[]{
+            SegmentationType.BINARY, SegmentationType.COLOR_POLARCIEXY_ADAPT};
+        orderOfBinning1 = new boolean[] {false, false};
+        numTriesAllowed1 = new int[]{2, 2};
+        numTries1 = new int[]{0, 0};
+        
+        orderOfSeg2 = new SegmentationType[]{
+            SegmentationType.BINARY, SegmentationType.COLOR_POLARCIEXY_ADAPT};
+        orderOfBinning2 = new boolean[] {false, false};
+        numTriesAllowed2 = new int[]{2, 2};
+        numTries2 = new int[]{0, 0};
+        
+        /*
+        orderOfSeg1 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
+        orderOfBinning1 = new boolean[] {false};
+        numTriesAllowed1 = new int[]{2};
+        numTries1 = new int[]{0};
+        orderOfSeg2 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
+        orderOfBinning2 = new boolean[] {false};
+        numTriesAllowed2 = new int[]{2};
+        numTries2 = new int[]{0};
+        */
+        
+        assert(orderOfSeg1.length == orderOfBinning1.length);
+        assert(orderOfSeg1.length == numTries1.length);
+        assert(orderOfSeg1.length == numTriesAllowed1.length);
+        assert(orderOfSeg2.length == orderOfBinning2.length);
+        assert(orderOfSeg2.length == numTries2.length);
+        assert(orderOfSeg2.length == numTriesAllowed2.length);
         
         int ordered1Idx = 0;
         int ordered2Idx = 0;
@@ -142,6 +153,9 @@ public class BlobScaleFinderWrapper {
             SegmentationType segmentationType1 = orderOfSeg1[ordered1Idx];
 
             SegmentationType segmentationType2 = orderOfSeg2[ordered2Idx];
+            
+            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1);
+            log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2);
 
             if (useBinned1) {
                 img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
@@ -193,6 +207,18 @@ public class BlobScaleFinderWrapper {
             int nContours1 = sumContours(img1Helper, segmentationType1, useBinned1);
 
             int nContours2 = sumContours(img2Helper, segmentationType2, useBinned2);
+            
+            // new logic to repeat if process uses random and the num tries allowed is high enough:
+            if (((numTries1[ordered1Idx] < numTriesAllowed1[ordered1Idx])
+                && (nContours1 > 3)) ||
+                ((numTries2[ordered2Idx] < numTriesAllowed2[ordered2Idx])
+                && (nContours2 > 3))
+                ) {
+                                
+                numTries1[ordered1Idx]++;
+                numTries2[ordered2Idx]++;
+                continue;
+            }
             
             if (nContours1 > 10) {
                 if (nContours2 > 10) {

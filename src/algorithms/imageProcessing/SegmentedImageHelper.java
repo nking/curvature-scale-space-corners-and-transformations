@@ -208,7 +208,7 @@ public class SegmentedImageHelper {
         
         if (segImg != null) {
             log.warning("segmentation was already applied.  error?");
-            return;
+        //    return;
         }
         
         if (type.equals(SegmentationType.BINARY)) {
@@ -244,7 +244,7 @@ public class SegmentedImageHelper {
         
         if (segImg != null) {
             log.warning("segmentation was already applied.  error?");
-            return;
+            //return;
         }
         
         if (type.equals(SegmentationType.BINARY)) {
@@ -285,7 +285,7 @@ public class SegmentedImageHelper {
         
         if (segImg != null) {
             log.warning("segmentation was already applied.  error?");
-            return;
+            //return;
         }
         
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -366,7 +366,7 @@ public class SegmentedImageHelper {
         
         if (segImg != null) {
             log.warning("segmentation was already applied.  error?");
-            return;
+            //return;
         }
 
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -378,9 +378,7 @@ public class SegmentedImageHelper {
             int scl = 20;
                         
             segImg = imgGrey.copyImage();
-                        
-            //imageProcessor.blur(segImg, SIGMA.ZEROPOINTFIVE);
-                        
+         
             imageProcessor.applyImageSegmentation(segImg, 2);
                         
             imageProcessor.blur(segImg, SIGMA.ZEROPOINTSEVENONE);
