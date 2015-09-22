@@ -76,7 +76,6 @@
         <echo message="runTestsWithAspects:        run tests with aspects"/>
         <echo message="runTestWithAspects:         run test with aspects, use -Dtest=fqn"/>
         <echo message="debugTestWithAspects:       debug a test with aspects"/>
-        <echo message="runCoverage                 run code coverage for non-third party classes"/>
         <echo message="runThresh                   run code to create thresholded image to help make skyline test comparison images"/>
         <echo message="package                     create a standalone executable in dist/scalespace.jar"/>
     </target>
@@ -207,12 +206,6 @@
                 </classpath>                
             </junit>
         </jacoco:coverage>
-    </target>
-
-    <target name="merge">
-        <jacoco:merge destfile="${classes.dir}/merged.exec">
-            <fileset dir="${tests.out.dir}" includes="*.exec"/>
-        </jacoco:merge>
     </target>
 
     <target name="report">
