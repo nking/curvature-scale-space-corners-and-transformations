@@ -24,7 +24,7 @@
     bin                        compiled classes, code coverage results, and static analysis results
 
  ====================================================================== -->
-<project name="curvature-scale-space-corners-and-transformations" default="listTargets" basedir=".">
+<project xmlns:jacoco="antlib:org.jacoco.ant" name="curvature-scale-space-corners-and-transformations" default="listTargets" basedir=".">
 
     <!-- ================= set env properties ================= -->
     <property environment="env"/>
@@ -76,10 +76,18 @@
         <echo message="runTestsWithAspects:        run tests with aspects"/>
         <echo message="runTestWithAspects:         run test with aspects, use -Dtest=fqn"/>
         <echo message="debugTestWithAspects:       debug a test with aspects"/>
-        <echo message="runEmma                     run code coverage for non-third party classes"/>
+        <echo message="runCoverage                 run code coverage for non-third party classes"/>
         <echo message="runThresh                   run code to create thresholded image to help make skyline test comparison images"/>
         <echo message="package                     create a standalone executable in dist/scalespace.jar"/>
     </target>
+
+    <property name="jacoco.exec.dir" location="bin/jacoco"/>
+
+    <property environment="env"/>
+
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+        <classpath path="${env.JACOCO_HOME}/lib/jacocoant.jar"/>
+    </taskdef>
 
     <!-- set compile classpath  -->
     <path id="compile.classpath">
@@ -177,6 +185,58 @@
     	</javac>
             	
     </target>
+
+    <target name="coverage">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <echo message="coverage"/>
+        <jacoco:coverage enabled="true" classdumpdir="bin/instr-classes"
+            destfile="${classes.dir}/merged.exec">
+            <junit fork="true" forkmode="once" printsummary="yes" haltonerror="true" haltonfailure="true">
+                <formatter type="plain" usefile="true"/>
+                <sysproperty key="java.util.logging.config.file"
+                    value="${src.out.dir}/logging.properties"/>
+                <batchtest todir="${tests.out.dir}">
+                    <fileset dir="${tests.out.dir}">
+                        <exclude name="**/*$*.class" />
+                        <include name="**/*Test.class" />
+                    </fileset>
+                </batchtest>
+                <classpath>
+                    <pathelement location="${tests.out.dir}"/>
+                    <path refid="compile.classpath"/>
+                </classpath>                
+            </junit>
+        </jacoco:coverage>
+    </target>
+
+    <target name="merge">
+        <jacoco:merge destfile="${classes.dir}/merged.exec">
+            <fileset dir="${tests.out.dir}" includes="*.exec"/>
+        </jacoco:merge>
+    </target>
+
+    <target name="report">
+        <jacoco:report>
+            <executiondata>
+                <file file="${classes.dir}/merged.exec"/>
+            </executiondata>
+            <structure name="Jacoco Report">
+                <classfiles>
+                    <fileset dir="${src.out.dir}">
+                        <include name="**/*.class" />
+                        <exclude name="**/*$*.class" />
+                    </fileset>                    
+                </classfiles>
+                <sourcefiles encoding="UTF-8">
+                    <fileset dir="${src.dir}"/>
+                </sourcefiles>
+            </structure>
+            <html destdir="${classes.dir}/jacoco"/>
+        </jacoco:report>
+        <echo message="wrote reports to ${classes.dir}/jacoco" />
+    </target> 
+
+    <target name="runCoverage" depends="clean,debug,compile,compileTests,coverage,report"/>
 
     <target name="runTestsWithAspects" depends="clean,debug,compile,compileTests"
         description="run image processing tests with debugging output" >
@@ -440,8 +500,6 @@
             <jvmarg value="-XX:-UseSplitVerifier" />
 
             <jvmarg value="-enableassertions" />
-
-            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
