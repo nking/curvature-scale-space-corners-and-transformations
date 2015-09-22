@@ -52,9 +52,11 @@ public class BlobScaleFinderTest extends TestCase {
 
             TransformationParameters params = scaleFinder.calculateScale();
 
-            //assertNotNull(params);
+            assertNotNull(params);
+            
+            log.info("FINAL PARAMS for " + fileName1 + " " + params.toString());
 
-            //assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+            assertTrue(Math.abs(params.getScale() - 1) < 0.1);
         }
     }
     

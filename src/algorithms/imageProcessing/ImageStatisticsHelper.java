@@ -257,6 +257,58 @@ public class ImageStatisticsHelper {
     }
     
     /**
+     * examine the statistics of pixels in a border of width borderWidth
+     * around the borders of the image and return the statistics.
+     * 
+     * @param pixValues
+     * @param useSturges
+     * @return 
+     */
+    public static ImageStatistics examine(int[] pixValues, boolean useSturges) {
+        
+        ImageStatistics stats = new ImageStatistics();
+          
+        stats.setMedian(getMedian(pixValues));
+        
+        stats.setMean(getMean(pixValues));
+        
+        stats.setMin(MiscMath.findMin(pixValues));
+        
+        float xMax = MiscMath.findMax(pixValues);
+        
+        stats.setMax(xMax);
+        
+        float[] pixValuesF = new float[pixValues.length];
+        for (int i = 0; i < pixValuesF.length; ++i) {
+            pixValuesF[i] = pixValues[i];
+        }
+        
+        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValuesF);
+
+        HistogramHolder hist = useSturges ?
+            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValuesF, 
+                simulatedErrors)
+            : Histogram.createSimpleHistogram(0.0f, 256.0f,
+                10, pixValuesF, simulatedErrors);
+        
+        // think we probably want to remove the highest intensity bin, so
+        // can think         
+        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+        float mode = hist.getXHist()[yMaxIdx];
+        
+        stats.setMode(mode);
+        
+        stats.setHistogram(hist);
+        
+        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValuesF));
+        
+        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));
+        
+        return stats;
+    }
+    
+    /**
      * examine a width and height of pixels around the border of the image in
      * order to look for a low level intensity of the image, that is an effective
      * bias level due to the ambient lighting that can be subtracted from 

@@ -83,16 +83,50 @@ public class BlobScaleFinderWrapper {
     public TransformationParameters calculateScale() throws IOException,
         NoSuchAlgorithmException {
 
+        /*
         ImageStatistics stats1 = ImageStatisticsHelper.examineImage(
             img1Helper.getGreyscaleImage(), true);
         ImageStatistics stats2 = ImageStatisticsHelper.examineImage(
             img2Helper.getGreyscaleImage(), true);
-        
         if (debug) {
             log.info(stats1.toString());
             log.info(stats2.toString());
         }
-
+        */
+        
+        ImageStatistics statsR1 = ImageStatisticsHelper.examine(
+            img1Helper.img.r, true);
+        ImageStatistics statsB1 = ImageStatisticsHelper.examine(
+            img1Helper.img.b, true);
+        ImageStatistics statsG1 = ImageStatisticsHelper.examine(
+            img1Helper.img.g, true);
+        
+        ImageStatistics statsR2 = ImageStatisticsHelper.examine(
+            img2Helper.img.r, true);
+        ImageStatistics statsB2 = ImageStatisticsHelper.examine(
+            img2Helper.img.b, true);
+        ImageStatistics statsG2 = ImageStatisticsHelper.examine(
+            img2Helper.img.g, true);
+        
+        log.info("stats R1=" + statsR1.toString());
+        log.info("stats G1=" + statsG1.toString());
+        log.info("stats B1=" + statsB1.toString());
+        
+        log.info("stats R2=" + statsR2.toString());
+        log.info("stats G2=" + statsG2.toString());
+        log.info("stats B2=" + statsB2.toString());
+        
+        int limit = 20;
+        boolean useSameSegmentation = false;
+        if ((Math.abs(statsR1.getMode() - statsR2.getMode()) < limit) &&
+            (Math.abs(statsG1.getMode() - statsG2.getMode()) < limit) &&
+            (Math.abs(statsB1.getMode() - statsB2.getMode()) < limit) &&
+            (Math.abs(statsR1.getMedian() - statsR2.getMedian()) < limit) &&
+            (Math.abs(statsG1.getMedian() - statsG2.getMedian()) < limit) &&
+            (Math.abs(statsB1.getMedian() - statsB2.getMedian()) < limit)) {
+            useSameSegmentation = true;
+        }
+        
         /*
         depending on image statistics, different combinations of segmentation
         and binning are tried.
@@ -122,15 +156,7 @@ public class BlobScaleFinderWrapper {
         orderOfBinning2 = new boolean[] {false, false};
         numExtraTriesAllowed2 = new int[]{1, 1};
         numTries2 = new int[]{0, 0};
-        
-        /*
-        retries need to be revised:
-        sometimes a pair from same camera have different segmentation due to
-           rules regarding number of contours from a previous attempt leading
-           to them having different order idx numbers.
-        also, can have faster fails by testing w/ binned first and if there
-        are no contours produced from the binned, skip the full image segmentation.
-        */
+      
         /*
         orderOfSeg1 = new SegmentationType[]{SegmentationType.COLOR_POLARCIEXY_ADAPT};
         orderOfBinning1 = new boolean[] {false};
@@ -202,15 +228,13 @@ public class BlobScaleFinderWrapper {
                     outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
 
                 //TODO: review this limit
-                if (
-                    ((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)
-                    ) {
+                if (((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)) {
                     return params;
                 }
             }
 
-            // if arrive here, have to decide to keep current segmentation and binning or increment.
-            // at least one index has to change
+            // if arrive here, have to decide to keep current segmentation and
+            // binning or increment.  at least one index has to change
             
             int nContours1 = sumContours(img1Helper, segmentationType1, useBinned1);
 
@@ -225,6 +249,13 @@ public class BlobScaleFinderWrapper {
                                 
                 numTries1[ordered1Idx]++;
                 numTries2[ordered2Idx]++;
+                continue;
+            }
+            
+            if (useSameSegmentation) {
+                // change both indexes similarly
+                ordered1Idx++;
+                ordered2Idx++;
                 continue;
             }
             
