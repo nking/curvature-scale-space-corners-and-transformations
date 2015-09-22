@@ -184,7 +184,7 @@ public class SegmentedImageHelper {
      * @throws IOException
      * @throws NoSuchAlgorithmException 
      */
-    public void applySegmentationToBinned(SegmentationType type, boolean applyToBinnedImage) 
+    public void applySegmentation(SegmentationType type, boolean applyToBinnedImage) 
         throws IOException, NoSuchAlgorithmException {
         
         if (applyToBinnedImage) {
@@ -204,12 +204,8 @@ public class SegmentedImageHelper {
     private void applySegmentationToBinned(SegmentationType type) 
         throws IOException, NoSuchAlgorithmException {
         
-        GreyscaleImage segImg = getBinnedSegmentationImage(type);
-        
-        if (segImg != null) {
-            log.warning("segmentation was already applied.  error?");
-        //    return;
-        }
+        imgBinnedSegmentedMap.clear();
+        imgBinnedBlobsAndContoursMap.clear();
         
         if (type.equals(SegmentationType.BINARY)) {
             
@@ -240,12 +236,8 @@ public class SegmentedImageHelper {
     private void applySegmentation(SegmentationType type) 
         throws IOException, NoSuchAlgorithmException {
         
-        GreyscaleImage segImg = getSegmentationImage(type);
-        
-        if (segImg != null) {
-            log.warning("segmentation was already applied.  error?");
-            //return;
-        }
+        imgSegmentedMap.clear();
+        imgBlobsAndContoursMap.clear();
         
         if (type.equals(SegmentationType.BINARY)) {
             

@@ -165,9 +165,9 @@ public class BlobScaleFinderWrapper {
                 img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
             }
 
-            img1Helper.applySegmentationToBinned(segmentationType1, useBinned1);
+            img1Helper.applySegmentation(segmentationType1, useBinned1);
             
-            img2Helper.applySegmentationToBinned(segmentationType2, useBinned2);
+            img2Helper.applySegmentation(segmentationType2, useBinned2);
 
             img1Helper.extractBlobsAndContours(segmentationType1, useBinned1);
 
@@ -315,9 +315,9 @@ public class BlobScaleFinderWrapper {
                 img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
             }
 
-            img1Helper.applySegmentationToBinned(segmentationType1, useBinned1);
+            img1Helper.applySegmentation(segmentationType1, useBinned1);
 
-            img2Helper.applySegmentationToBinned(segmentationType2, useBinned2);
+            img2Helper.applySegmentation(segmentationType2, useBinned2);
 
             img1Helper.extractBlobsAndContours(segmentationType1, useBinned1);
 
