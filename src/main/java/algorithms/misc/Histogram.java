@@ -1,6 +1,8 @@
 package algorithms.misc;
 
+import algorithms.util.Errors;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -146,6 +148,100 @@ public class Histogram {
         return histogram;
     }
 
+     public static HistogramHolder createSimpleHistogram(float binWidth,
+        float[] values, float[] valueErrors) {
+
+        if (values == null || valueErrors == null ||
+            values.length != valueErrors.length) {
+
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
+        }
+
+        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
+
+        int nBins = (int)Math.ceil(((minMax[1] - minMax[0]))/binWidth);
+        if (nBins < 0) {
+            nBins *= -1;
+        }
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+
+        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], xHist,
+            yHist, binWidth);
+
+        float[] yHistFloat = new float[yHist.length];
+        for (int i = 0; i < yHist.length; i++) {
+            yHistFloat[i] = (float) yHist[i];
+        }
+
+        float[] yErrors = new float[xHist.length];
+        float[] xErrors = new float[xHist.length];
+
+        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);
+
+        HistogramHolder histogram = new HistogramHolder();
+        histogram.setXHist(xHist);
+        histogram.setYHist(yHist);
+        histogram.setYHistFloat(yHistFloat);
+        histogram.setYErrors(yErrors);
+        histogram.setXErrors(xErrors);
+
+        return histogram;
+    }
+    
+     public static HistogramHolder createSimpleHistogram(int binWidth,
+        List<Integer> theValues) {
+
+        if (theValues == null || theValues.isEmpty()) {
+
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
+        }
+
+        float[] values = new float[theValues.size()];
+        for (int i = 0; i < theValues.size(); ++i) {
+            int v = theValues.get(i).intValue();
+            values[i] = v;
+        }
+
+        float[] valueErrors = Errors.populateYErrorsBySqrt(values);
+
+        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
+
+        int nBins = (int)Math.ceil(((minMax[1] - minMax[0]))/binWidth);
+        if (nBins < 0) {
+            nBins *= -1;
+        }
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+
+        Histogram.createHistogram(values, nBins, minMax[0], minMax[1],
+            xHist, yHist, binWidth);
+
+        float[] yHistFloat = new float[yHist.length];
+        for (int i = 0; i < yHist.length; i++) {
+            yHistFloat[i] = (float) yHist[i];
+        }
+
+        float[] yErrors = new float[xHist.length];
+        float[] xErrors = new float[xHist.length];
+
+        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors,
+            yErrors);
+
+        HistogramHolder histogram = new HistogramHolder();
+        histogram.setXHist(xHist);
+        histogram.setYHist(yHist);
+        histogram.setYHistFloat(yHistFloat);
+        histogram.setYErrors(yErrors);
+        histogram.setXErrors(xErrors);
+
+        return histogram;
+    }
+     
     public static HistogramHolder createSimpleHistogram(
         final float xMin, final float xMax, int nBins, 
         float[] values, float[] valueErrors) {

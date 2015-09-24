@@ -1,6 +1,13 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.imageProcessing.DistanceTransform;
+import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
+import algorithms.util.PairInt;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -71,12 +78,20 @@ public class FindClusters6Test extends TestCase {
         
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter();
         
-        for (int i = 0; i < fileNames.length; i++) {
+        for (int i = 8; i < 9/*fileNames.length*/; i++) {
 
             String fileName = fileNames[i];
             
+            //NOTE:  for i=8, distance transform needs alot of memory for array size, so have divided numbers there by 10
             AxisIndexer indexer = CreateClusterDataTest.getUEFClusteringDataset(
                 fileName);
+            
+            Set<PairInt> points = new HashSet<PairInt>();
+            for (int k = 0; k < indexer.getNXY(); ++k) {
+                PairInt p = new PairInt(Math.round(indexer.getX()[k]),
+                    Math.round(indexer.getY()[k]));
+                points.add(p);
+            }
 
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
             
@@ -191,6 +206,30 @@ public class FindClusters6Test extends TestCase {
             */
             
             log.info(twoPtC.indexer.nXY + " points ... ");
+            
+             // ----- a look at the distance transform ----
+            int[] minMaxXY = MiscMath.findMinMaxXY(points);
+            int w = minMaxXY[1] + 1;
+            int h = minMaxXY[3] + 1;
+            DistanceTransform dtr = new DistanceTransform();
+            int[][] dt = dtr.applyMeijsterEtAl(points, w, h);
+            float[] values = new float[dt.length*dt[0].length];
+            int count2 = 0;
+            for (int i0 = 0; i0 < dt.length; ++i0) {
+                for (int j0 = 0; j0 < dt[0].length; ++j0) {
+                    int v = dt[i0][j0];
+                    values[count2] = (float)(1./Math.sqrt(v));
+                    count2++;
+                }
+            }
+            float xl = 1.1f;
+            if (i==8) {
+                xl = 0.05f;
+            }
+            float[] vErrors = Errors.populateYErrorsBySqrt(values);
+            HistogramHolder hist = Histogram.createSimpleHistogram(
+                0, xl, 40, values, vErrors);
+            hist.plotHistogram("clstr", "_cluster_" + i);
         }
 
         log.info("  END ");

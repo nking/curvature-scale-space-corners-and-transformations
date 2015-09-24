@@ -1,7 +1,9 @@
 package algorithms.misc;
 
 import algorithms.util.ArrayPair;
+import algorithms.util.PairInt;
 import java.security.SecureRandom;
+import java.util.Set;
 
 /**
  *
@@ -97,6 +99,38 @@ public class MiscMath {
         return min;
     }
 
+    /**
+     * find the minima and maxima of x and y and return them as
+     * int[]{xMin, xMax, yMin, yMax}
+     * @param points
+     * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
+     */
+    public static int[] findMinMaxXY(Set<PairInt> points) {
+
+        int xMin = Integer.MAX_VALUE;
+        int xMax = Integer.MIN_VALUE;
+        int yMin = Integer.MAX_VALUE;
+        int yMax = Integer.MIN_VALUE;
+
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            if (x < xMin) {
+                xMin = x;
+            }
+            if (y < yMin) {
+                yMin = y;
+            }
+            if (x > xMax) {
+                xMax = x;
+            }
+            if (y > yMax) {
+                yMax = y;
+            }
+        }
+        return new int[]{xMin, xMax, yMin, yMax};
+    }
+    
     /**
      * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
      * @param a

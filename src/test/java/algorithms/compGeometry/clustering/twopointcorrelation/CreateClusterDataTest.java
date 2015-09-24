@@ -529,6 +529,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 try {
                 x[i] = Float.valueOf(items[0]).floatValue();
                 y[i] = Float.valueOf(items[1]).floatValue();
+                
+                if (fileName.equals("a1.txt")) {
+                    x[i] /= 10.f;
+                    y[i] /= 10.f;
+                }
 } catch(Throwable t) {
     System.out.println("line=" + line + " items[0]=" + items[0] + "  items[1]=" + items[1]);
 }

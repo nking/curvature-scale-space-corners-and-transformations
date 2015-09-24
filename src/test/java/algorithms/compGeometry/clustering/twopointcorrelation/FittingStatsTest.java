@@ -1,7 +1,15 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.imageProcessing.DistanceTransform;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
+import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import java.security.SecureRandom;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -79,13 +87,13 @@ public class FittingStatsTest extends BaseTwoPointTest {
                     generator.xErrors, generator.yErrors, generator.x.length);
 
                 log.info(" " + count + "(" + indexer.nXY + " points) ... ");
-
+                
                 TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
                 stats.setDebug(false);
                 stats.calc();
 
                 stats.plotFit(plotter2);
-
+                
                 count++;
             }
         }

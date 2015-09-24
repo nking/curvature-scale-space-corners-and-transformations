@@ -4,6 +4,7 @@ import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
+import static junit.framework.Assert.assertTrue;
 
 /**
  * class to test the TwoPointCorrelation class on larger datasets with and without clusters.

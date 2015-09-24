@@ -316,6 +316,21 @@ public class PolygonAndPointPlotter {
         return writeToFile(this.plotContent.toString(), "points_and_polygon3.html");
     }
 
+    public String writeFile(Integer num) throws IOException {
+        return writeToFile(this.plotContent.toString(), 
+            "points_and_polygon" + num.toString() +".html");
+    }
+    
+    public String writeFile(String fileSuffix) throws IOException {
+        return writeToFile(this.plotContent.toString(), 
+            "points_and_polygon_" + fileSuffix + ".html");
+    }
+    
+    public String writeFile(long num) throws IOException {
+        return writeToFile(this.plotContent.toString(), 
+            "points_and_polygon" + Long.toString(num) +".html");
+    }
+
     protected String writeToFile(String fileContent, String fileName) throws IOException {
 
         String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);
