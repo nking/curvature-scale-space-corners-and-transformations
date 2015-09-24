@@ -69,7 +69,8 @@ public class DFSGroupFinderTest extends TestCase {
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(
             xmin, xmax, ymin, ymax
         );
-        plotter.addPlot(indexer.getX(), indexer.getY(), null, null, "");
+        float[] ph = null;
+        plotter.addPlot(indexer.getX(), indexer.getY(), ph, ph, "");
         String filePath = plotter.writeFile();
         log.info("filePath=" + filePath);
         

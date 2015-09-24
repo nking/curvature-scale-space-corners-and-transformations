@@ -52,7 +52,7 @@ public class FindClusters3Test extends TestCase {
 
         // 390 points
 
-        //twoPtC.setBackground(0.2725f, 0.001f);
+        //twoPtC.setBackground(0.195f, 0.001f);
         //twoPtC.findClusters();
 
         //twoPtC.useFindMethodForDataWithoutBackgroundPoints();

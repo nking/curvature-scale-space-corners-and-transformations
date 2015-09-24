@@ -78,7 +78,7 @@ public class FindClusters6Test extends TestCase {
         
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter();
         
-        for (int i = 8; i < 9/*fileNames.length*/; i++) {
+        for (int i = 0; i < fileNames.length; i++) {
 
             String fileName = fileNames[i];
             
@@ -112,8 +112,7 @@ public class FindClusters6Test extends TestCase {
             // birch2.txt is 0.001
             // birch3.txt is 0.0007, but not clearly delineated as clusters...
             
-            //twoPtC.setBackground(0.0007f, 0.0001f);
-            //twoPtC.findClusters();
+            //twoPtC.setBackground(0.01f, 0.0001f);
 
             //twoPtC.setAllowRefinement();
 
@@ -122,6 +121,7 @@ public class FindClusters6Test extends TestCase {
             }
 
             twoPtC.calculateBackground();
+            
             twoPtC.findClusters();
 
             TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
@@ -222,13 +222,14 @@ public class FindClusters6Test extends TestCase {
                     count2++;
                 }
             }
-            float xl = 1.1f;
+            float xl = 2.0f;
+            int nb = 20;
             if (i==8) {
-                xl = 0.05f;
+                xl = 0.01f;
             }
             float[] vErrors = Errors.populateYErrorsBySqrt(values);
             HistogramHolder hist = Histogram.createSimpleHistogram(
-                0, xl, 40, values, vErrors);
+                0, xl, nb, values, vErrors);
             hist.plotHistogram("clstr", "_cluster_" + i);
         }
 

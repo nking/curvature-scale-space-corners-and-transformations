@@ -196,7 +196,8 @@ public class MiscMathTest extends TestCase {
         
         HistogramHolder hist = Histogram.createSimpleHistogram(nBins, values, valueErrors);
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), null, null, "");
+        float[] ph = null;
+        plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), ph, ph, "");
         plotter.writeFile();
     }
     

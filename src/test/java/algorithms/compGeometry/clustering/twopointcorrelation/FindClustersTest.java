@@ -46,7 +46,7 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         //seed = 1387775326745l;
 
-        sr.setSeed(-2384802679227907254l);
+        //sr.setSeed(-2384802679227907254l);
         log.info("SEED=" + seed);
 
         // a long running test to calculate and print the stats of fits
@@ -136,11 +136,12 @@ public class FindClustersTest extends BaseTwoPointTest {
                     if (i == 4) {
                         //twoPtC.setAllowRefinement();
                     }
-
-                    twoPtC.logPerformanceMetrics();
+             
+                    //twoPtC.logPerformanceMetrics();
                     //twoPtC.useFindMethodForDataWithoutBackgroundPoints();
                     twoPtC.calculateBackground();
-                    //twoPtC.setBackground(0.2f, 0.1f);
+                    //twoPtC.setBackground(0.03f, 0.01f);
+                    
                     twoPtC.findClusters();
 
                     long t1 = (System.currentTimeMillis() - t0)/1000;
@@ -191,9 +192,14 @@ public class FindClustersTest extends BaseTwoPointTest {
                             count2++;
                         }
                     }
+                    float xl = 1.5f;
+                    if (i == 0) {
+                        xl = 0.05f;
+                    }
+                    int nb = 20;
                     float[] vErrors = Errors.populateYErrorsBySqrt(values);
                     HistogramHolder hist = Histogram.createSimpleHistogram(
-                        0, 1.1f, 40, values, vErrors);
+                        0, xl, nb, values, vErrors);
                     hist.plotHistogram("clstr", "_cluster_" + i + "_" + ii);
 
                 } catch(Throwable e) {

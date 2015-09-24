@@ -56,8 +56,9 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             display: inline;
         }
         text {
+            text-anchor: middle;
             dominant-baseline: central;
-            font-size: 10pt;
+            font-size: 8pt;
         }
         .box .center {
             stroke-dasharray: 3,3;
@@ -91,17 +92,17 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             /* Sizing and scales. */
             var w = 500,
                 h = 500,
-                padding = 55,
+                padding = 50,
                 x = d3.scale.linear().domain([xm0, xm1]).range([padding, w - padding]),
                 y = d3.scale.linear().domain([ym0, ym1]).range([h - padding, padding]);
 
             var svg = d3.select("#" + plotId).append("svg").attr("width", w).attr("height", h);
 
             /* axes with ticks */
-            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickPadding(10);
+            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10);
             svg.append("g").attr("class", "y axis").attr("transform", "translate(" + (1*padding) + ",0)").call(yAxis);
 
-            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10).tickPadding(10);
+            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10);
             svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + (h - 1*padding) + ")").call(xAxis);
 
             /* grid for axes */
@@ -136,59 +137,63 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 .text("X");
 
             /* polygons */
-            for (var i = 0; i < polygons.length; i++) {
-                var pointGroup2 = svg.append("svg:g").attr("class","points");
-                pointGroup2.selectAll("circle.points").data(polygons[i])
-                    .enter().append("svg:circle")
+            if (polygons != undefined) {
+                for (var i = 0; i < polygons.length; i++) {
+                    var pointGroup2 = svg.append("svg:g").attr("class","points");
+                    pointGroup2.selectAll("circle.points").data(polygons[i])
+                        .enter().append("svg:circle")
+                        .attr("class", "point")
+                        .attr("cx",function(d) { return x(d.x); })
+                        .attr("cy",function(d) { return y(d.y); })
+                        .attr("r", 3)
+                        .attr("stroke", "#dddddd")
+                        .attr("fill", "black")
+                        .attr("fill-opacity", 1.0);
+                }
+
+                var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
+                for (i = 0; i < polygons.length; i++) {
+                    svg.append("svg:path")
+                        .attr("d", line(polygons[i]))
+                        .style("stroke-width", 1)
+                        .style("stroke", "steelblue")
+                        .style("fill", "none");
+                }
+            }
+
+            /* dots */
+            if (points != undefined) {
+                var pointGroup = svg.append("svg:g").attr("class","points");
+                var pointGroupDetails = pointGroup.selectAll("circle.points").data(points).enter();
+                pointGroupDetails.append("svg:circle")
                     .attr("class", "point")
                     .attr("cx",function(d) { return x(d.x); })
                     .attr("cy",function(d) { return y(d.y); })
                     .attr("r", 3)
-                    .attr("stroke", "#dddddd")
-                    .attr("fill", "black")
-                    .attr("fill-opacity", 1.0);
-            }
-
-            var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
-            for (i = 0; i < polygons.length; i++) {
-                svg.append("svg:path")
-                    .attr("d", line(polygons[i]))
-                    .style("stroke-width", 1)
-                    .style("stroke", "steelblue")
-                    .style("fill", "none");
-            }
-
-            /* dots */
-            var pointGroup = svg.append("svg:g").attr("class","points");
-            var pointGroupDetails = pointGroup.selectAll("circle.points").data(points).enter();
-            pointGroupDetails.append("svg:circle")
-                .attr("class", "point")
-                .attr("cx",function(d) { return x(d.x); })
-                .attr("cy",function(d) { return y(d.y); })
-                .attr("r", 3)
-                .attr("stroke", "#9a9d32")
-                .attr("stroke-width", 2)
-                .attr("fill", "orange")
-                .attr("fill-opacity", .30);
-
-            /* are the errors in the points data structure?*/
-            if (points[0].dy != undefined) {
-                var pointErrors = pointGroup.selectAll("circle.points").data(points).enter();
-                pointErrors.append("line", "rect")
-                    .attr("class", "center")
-                    .attr("x1", function(d) { return x(d.x); })
-                    .attr("y1", function(d) { return y(d.y + d.dy); })
-                    .attr("x2", function(d) { return x(d.x); })
-                    .attr("y2", function(d) { return y(d.y - d.dy); })
-                    .style("stroke-dasharray", "3 3")
+                    .attr("stroke", "#9a9d32")
                     .attr("stroke-width", 2)
-                    .attr("stroke", "black");
+                    .attr("fill", "orange")
+                    .attr("fill-opacity", .30);
+
+                /* are the errors in the points data structure?*/
+                if (points[0].dy != undefined) {
+                    var pointErrors = pointGroup.selectAll("circle.points").data(points).enter();
+                    pointErrors.append("line", "rect")
+                        .attr("class", "center")
+                        .attr("x1", function(d) { return x(d.x); })
+                        .attr("y1", function(d) { return y(d.y + d.dy); })
+                        .attr("x2", function(d) { return x(d.x); })
+                        .attr("y2", function(d) { return y(d.y - d.dy); })
+                        .style("stroke-dasharray", "3 3")
+                        .attr("stroke-width", 2)
+                        .attr("stroke", "black");
+                }
             }
 
             svg.append("svg:g").attr("class", "text")
                 .append("svg:text").attr("class", "label").attr("text-anchor", "start")
-                .attr("x", 1.0*padding)
-                .attr("y", 0.65*padding)
+                .attr("x", w/2)
+                .attr("y", h/10)
                 .attr("stroke", "red")
                 .text(plotLabel);
         }

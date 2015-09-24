@@ -409,7 +409,7 @@ public class TwoPointCorrelation {
             PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
 
             try {
-                plotter.addPlot(voidStats.statsHistogram.getXHist(), voidStats.statsHistogram.getYHist(), 
+                plotter.addPlot(voidStats.statsHistogram.getXHist(), voidStats.statsHistogram.getYHistFloat(), 
                     voidStats.bestFit.getOriginalScaleX(), voidStats.bestFit.getOriginalScaleYFit(), "");
                 plotter.writeFile2();
             } catch (Exception e) {

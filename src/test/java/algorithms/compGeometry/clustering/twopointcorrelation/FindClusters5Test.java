@@ -72,8 +72,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
-        //seed = 1387695377745l;
-        seed = 1443059507225L;
+        //seed = 1443059507225L;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -92,7 +91,6 @@ public class FindClusters5Test extends BaseTwoPointTest {
             createRandomPointsInRectangle(sr, numberOfBackgroundPoints[ii],
                 xmin, xmax, ymin, ymax, xb, yb, xyStartOffset);
                     
-            
             float[] xbe = new float[numberOfBackgroundPoints[ii]];
             float[] ybe = new float[numberOfBackgroundPoints[ii]];
             for (int i = 0; i < numberOfBackgroundPoints[ii]; i++) {
@@ -124,7 +122,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
               
             //twoPtC.logPerformanceMetrics();
             
-            //twoPtC.setBackground(0.25f, 0.015f);
+            //twoPtC.setBackground(0.5f, 0.003f);
             twoPtC.calculateBackground();
                 
             twoPtC.findClusters();
@@ -168,7 +166,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
                     count2++;
                 }
             }
-            float xl = 1.1f;
+            float xl = 0.1f;
             /*if (i==8) {
                 xl = 0.05f;
             }*/
