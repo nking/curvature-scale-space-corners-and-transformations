@@ -1,3 +1,6 @@
+-- note, may need copies of condensed version of classes in new package so that the have unique qualified names
+   and don't conflict when imported into other projects.
+
    -- separate classes for the distance transform version and an executable jar using just them.
    -- a jar for just the distance transform version to use in other projects
    -- possibly, helper classes to reduce sets larger than 5000 x 5000 in pixels

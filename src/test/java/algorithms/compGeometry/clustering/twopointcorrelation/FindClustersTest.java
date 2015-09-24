@@ -2,7 +2,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
-import algorithms.imageProcessing.DistanceTransform;
+import algorithms.compGeometry.clustering.distanceTransform.DistanceTransform;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;

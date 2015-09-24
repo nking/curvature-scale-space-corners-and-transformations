@@ -1,6 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.imageProcessing.DistanceTransform;
+import algorithms.compGeometry.clustering.distanceTransform.DistanceTransform;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;

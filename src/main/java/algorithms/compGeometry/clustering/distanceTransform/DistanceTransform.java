@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.compGeometry.clustering.distanceTransform;
 
 import algorithms.util.PairInt;
 import java.util.Set;

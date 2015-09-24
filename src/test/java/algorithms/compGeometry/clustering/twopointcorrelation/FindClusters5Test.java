@@ -1,7 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.compGeometry.clustering.distanceTransform.DistanceTransform;
 import algorithms.curves.GEVYFit;
-import algorithms.imageProcessing.DistanceTransform;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
