@@ -17,16 +17,16 @@
    be handled differently since they aren't the value for unique voids between points...
    the distances data between every pair is now from 1 to square(pair distance) -1,
    so the distribution is no longer a GEV though the maxima alone would be...
-   need to think about how to acurately find the background density from it...
+   need to think about how to accurately find the background density from it...
 
    -- separate classes for the distance transform version and an executable jar using just them.
    -- a jar for just the distance transform version to use in other projects
    -- possibly, helper classes to reduce sets larger than 5000 x 5000 in pixels
    -- possibly, helper classes to help with numerical resolution to scale floats to integers
       with an integer difference representing the desired numerical resolution
-   -- add documentation adn advice on how to treat the data before use here in order
+   -- add documentation and advice on how to treat the data before use here in order
       to get comparable similarity or affinity results.
-      for example, for data with desired expontial similarity functions,
+      for example, for data with desired exponential similarity functions,
       would want to apply the exponential operations to the data before use here and
       scale the data for numerical resolution such that an integer holds the 
       significant difference between points.
@@ -38,7 +38,7 @@
       int n = clusterFinder.getNumberOfClusters();
       Set<PairInt> group = clusterFinder.getGroup(i); 
       
-      class diagrams:
+      class diagrams:, using symbol '~' for protected or package protected acl
 
       =============================================================================
       DTClusterFinder
@@ -47,26 +47,27 @@
       Set<PairInt> points
       -----------------------------------------------------------------------------
       DTClusterFinder(Set<PairInt> points, int width, int height) : DTClusterFinder
-      calculateBackground() : void 
-      setBackground(float critDensity) : void
-      findClusters() : void
-      getNumberOfClusters() : int
-      getGroup(int idx) : Set<PairInt>
+      +calculateCriticalDensity() : void 
+      +setCriticalDensity(float critDensity) : void
+      +findClusters() : void
+      +getNumberOfClusters() : int
+      +getGroup(int idx) : Set<PairInt>
+      +getCriticalDensity() : float
       =============================================================================
 
       ===================================================================================
       DistanceTransform
       -----------------------------------------------------------------------------------
-      applyMeijsterEtAl(Set<PairInt> points, final int width, final int height) : int[][]
+      ~applyMeijsterEtAl(Set<PairInt> points, final int width, final int height) : int[][]
       ===================================================================================
 
       ===================================================================================
       DTGroupFinder 
       -----------------------------------------------------------------------------------
       DTGroupFinder() : DTGroupFinder
-      calculateGroups(float criticalDensity, Set<PairInt> points) : void
-      getNumberOfGroups() : int n
-      getGroup(int idx) : Set<PairInt>
+      ~calculateGroups(float criticalDensity, Set<PairInt> points) : void
+      ~getNumberOfGroups() : int n
+      ~getGroup(int idx) : Set<PairInt>
       ===================================================================================
    
       ===================================================================================
