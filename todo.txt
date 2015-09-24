@@ -18,3 +18,39 @@
    the distances data between every pair is now from 1 to square(pair distance) -1,
    so the distribution is no longer a GEV though the maxima alone would be...
    need to think about how to acurately find the background density from it...
+
+   -- separate classes for the distance transform version and an executable jar using just them.
+   -- a jar for just the distance transform version to use in other projects
+   -- possibly, helper classes to reduce sets larger than 5000 x 5000 in pixels
+   -- possibly, helper classes to help with numerical resolution to scale floats to integers
+      with an integer difference representing the desired numerical resolution
+   -- add to documentation, suggestions of how to treat the data in order to derive
+      clusters using different distance methods.
+      for example, the distance transform is currently using euclidean distance.
+      to use an exponential distance for affinity, the input data would need 
+      the exponential operation to be applied, that is exp(a - b), 
+      which is exp(a)/exp(b)
+
+      DTClusterFinder clusterFinder = new DTClusterFinder(int[]x, int[]y);
+      clusterFinder.calculateBackground();
+      clusterFinder.findClusters(); 
+      int n = clusterFinder.getNumberOfClusters();
+      Set<PairInt> group = clusterFinder.getGroup(i); 
+      
+      class diagrams:
+      =======================================
+      DTClusterFinder
+      ---------------
+      =======================================
+
+      =======================================
+      DistanceTransform
+      ---------------
+      =======================================
+
+      =======================================
+      DTGroupFinder 
+      ---------------
+      =======================================
+
+   
