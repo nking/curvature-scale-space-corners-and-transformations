@@ -207,7 +207,7 @@ public class FindClusters6Test extends TestCase {
             
             log.info(twoPtC.indexer.nXY + " points ... ");
             
-             // ----- a look at the distance transform ----
+            // ----- a look at the distance transform ----
             int[] minMaxXY = MiscMath.findMinMaxXY(points);
             int w = minMaxXY[1] + 1;
             int h = minMaxXY[3] + 1;
