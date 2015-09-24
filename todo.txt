@@ -109,6 +109,10 @@
             - int[][] dt = dTrans.applyMeijsterEtAl(Set<PairInt> points, final int width, final int height)
             - CriticalDensitySolver cds = new CriticalDensitySolver();
             - float cDens = cds.findCriticalDensity(int[][] dt)
+               - HistogramHolder hist0 = Histogram.createSimpleHistogram(...)
+               - HistogramHolder hist1 = Histogram.createSimpleHistogram(...)
+               - HistogramHolder hist = cds.chooseHistogram(hist0, hist1, ...)
+               - float peak = cds.fitFirstPeak(hist)
          - cFinder.findClusters() 
             - DTGroupFinder gFinder = new DTGroupFinder()
             - gFinder.calculateGroups(float cDens, Set<PairInt> points)
