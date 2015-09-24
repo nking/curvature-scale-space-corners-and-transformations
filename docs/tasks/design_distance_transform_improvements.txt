@@ -1,0 +1,101 @@
+   -- separate classes for the distance transform version and an executable jar using just them.
+   -- a jar for just the distance transform version to use in other projects
+   -- possibly, helper classes to reduce sets larger than 5000 x 5000 in pixels
+   -- possibly, helper classes to help with numerical resolution to scale floats to integers
+      with an integer difference representing the desired numerical resolution
+   -- add documentation and advice on how to treat the data before use here in order
+      to get comparable similarity or affinity results.
+      for example, for data with desired exponential similarity functions,
+      would want to apply the exponential operations to the data before use here and
+      scale the data for numerical resolution such that an integer holds the 
+      significant difference between points.
+          exp(a - b) is exp(a)/exp(b)
+
+      DTClusterFinder clusterFinder = new DTClusterFinder(Set<PairInt> points, int width, int height);
+      clusterFinder.calculateBackground();
+      clusterFinder.findClusters(); 
+      int n = clusterFinder.getNumberOfClusters();
+      Set<PairInt> cluster = clusterFinder.getCluster(i); 
+      
+      class diagrams:, using symbol '~' for protected or package protected acl
+
+      =============================================================================
+      DTClusterFinder
+      -----------------------------------------------------------------------------
+      int[][] xy
+      Set<PairInt> points
+      -----------------------------------------------------------------------------
+      DTClusterFinder(Set<PairInt> points, int width, int height) : DTClusterFinder
+      +calculateCriticalDensity() : void 
+      +setCriticalDensity(float critDensity) : void
+      +findClusters() : void
+      +getNumberOfClusters() : int
+      +getCluster(int idx) : Set<PairInt>
+      +getCriticalDensity() : float
+      =============================================================================
+
+      ===================================================================================
+      DistanceTransform
+      -----------------------------------------------------------------------------------
+      ~applyMeijsterEtAl(Set<PairInt> points, final int width, final int height) : int[][]
+      ===================================================================================
+
+      ===================================================================================
+      DTGroupFinder 
+      -----------------------------------------------------------------------------------
+      DTGroupFinder() : DTGroupFinder
+      ~calculateGroups(float criticalDensity, Set<PairInt> points) : void
+      ~getNumberOfGroups() : int n
+      ~getGroup(int idx) : Set<PairInt>
+      ===================================================================================
+
+      ===================================================================================
+      CriticalDensitySolver 
+      -----------------------------------------------------------------------------------
+      CriticalDensitySolver() : CriticalDensitySolver
+      ~findCriticalDensity(int[][] dt, int nPoints, int width, int height) : float
+       // uses Histogram.java
+      ===================================================================================
+   
+      ===================================================================================
+      DTNumericalResolutionHelper
+      -----------------------------------------------------------------------------------
+      ===================================================================================
+
+      tests:
+          same as FindClustersTestm FindClusters3Test, FindClusters5Test, and FindClusters6Test
+             for public class
+          detailed tests for associated classes
+      
+      rough runtime complexity estimate:
+          quasi-linear for distance transform, that is ~O(N) where N is width x height of dimensions
+          plus O(|V|*|E|) for the DFS pattern group finder which is quasi-linear in the
+          number of points.
+          total ~ O(N_pixels) + ~O(N_points) 
+
+      rough space complexity estimate:
+          creates arrays to hold data and the limiting value is roughly word size * width * height,
+          that is platform word size * N_pixels.  
+          for a width of 5000 and height of 5000, code must be run with java arguments to
+          increase the stack size or the data must be reduced in size... like knapsack,
+          the code is using dynamic programmining using arrays that are as long as needed 
+          for capacity.
+
+      steps of a sequence diagram:
+         - DTClusterFinder cFinder = new DTClusterFinder(Set<PairInt> points, int width, int height) 
+         - cFinder.calculateCriticalDensity()
+            - DistanceTransform dTrans = new DistanceTransform()
+            - int[][] dt = dTrans.applyMeijsterEtAl(Set<PairInt> points, final int width, final int height)
+            - CriticalDensitySolver cds = new CriticalDensitySolver();
+            - float cDens = cds.findCriticalDensity(int[][] dt)
+               - HistogramHolder hist0 = Histogram.createSimpleHistogram(...)
+               - HistogramHolder hist1 = Histogram.createSimpleHistogram(...)
+               - HistogramHolder hist = cds.chooseHistogram(hist0, hist1, ...)
+               - float peak = cds.fitFirstPeak(hist)
+         - cFinder.findClusters() 
+            - DTGroupFinder gFinder = new DTGroupFinder()
+            - gFinder.calculateGroups(float cDens, Set<PairInt> points)
+         - cFinder.getNumberOfClusters()
+         - cFinder.getCluster(int idx)
+            - gFinder.getGroup(int idx)
+      -----------------------------------------------------------------------------------
