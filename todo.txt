@@ -74,3 +74,22 @@
       DTNumericalResolutionHelper
       -----------------------------------------------------------------------------------
       ===================================================================================
+
+      tests:
+          same as FindClustersTestm FindClusters3Test, FindClusters5Test, and FindClusters6Test
+             for public class
+          detailed tests for associated classes
+      
+      rough runtime complexity estimate:
+          quasi-linear for distance transform, that is ~O(N) where N is width x height of dimensions
+          plus O(|V|*|E|) for the DFS pattern group finder which is quasi-linear in the
+          number of points.
+          total ~ O(N_pixels) + ~O(N_points) 
+
+      rough space complexity estimate:
+          creates arrays to hold data and the limiting value is roughly word size * width * height,
+          that is platform word size * N_pixels.  
+          for a wisth of 5000 and height of 5000, code must be run with java arguments to
+          increase the stack size or the data must be reduced in size... like knapsack,
+          the code is using dynamic programmining using arrays that are as long as needed 
+          for capacity.
