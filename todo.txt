@@ -36,7 +36,7 @@
       clusterFinder.calculateBackground();
       clusterFinder.findClusters(); 
       int n = clusterFinder.getNumberOfClusters();
-      Set<PairInt> group = clusterFinder.getGroup(i); 
+      Set<PairInt> cluster = clusterFinder.getCluster(i); 
       
       class diagrams:, using symbol '~' for protected or package protected acl
 
@@ -51,7 +51,7 @@
       +setCriticalDensity(float critDensity) : void
       +findClusters() : void
       +getNumberOfClusters() : int
-      +getGroup(int idx) : Set<PairInt>
+      +getCluster(int idx) : Set<PairInt>
       +getCriticalDensity() : float
       =============================================================================
 
@@ -68,6 +68,14 @@
       ~calculateGroups(float criticalDensity, Set<PairInt> points) : void
       ~getNumberOfGroups() : int n
       ~getGroup(int idx) : Set<PairInt>
+      ===================================================================================
+
+      ===================================================================================
+      CriticalDensitySolver 
+      -----------------------------------------------------------------------------------
+      CriticalDensitySolver() : CriticalDensitySolver
+      ~findCriticalDensity(int[][] dt, int nPoints, int width, int height) : float
+       // uses Histogram.java
       ===================================================================================
    
       ===================================================================================
@@ -89,7 +97,22 @@
       rough space complexity estimate:
           creates arrays to hold data and the limiting value is roughly word size * width * height,
           that is platform word size * N_pixels.  
-          for a wisth of 5000 and height of 5000, code must be run with java arguments to
+          for a width of 5000 and height of 5000, code must be run with java arguments to
           increase the stack size or the data must be reduced in size... like knapsack,
           the code is using dynamic programmining using arrays that are as long as needed 
           for capacity.
+
+      steps of a sequence diagram:
+         - DTClusterFinder cFinder = new DTClusterFinder(Set<PairInt> points, int width, int height) 
+         - cFinder.calculateCriticalDensity()
+            - DistanceTransform dTrans = new DistanceTransform()
+            - int[][] dt = dTrans.applyMeijsterEtAl(Set<PairInt> points, final int width, final int height)
+            - CriticalDensitySolver cds = new CriticalDensitySolver();
+            - float cDens = cds.findCriticalDensity(int[][] dt)
+         - cFinder.findClusters() 
+            - DTGroupFinder gFinder = new DTGroupFinder()
+            - gFinder.calculateGroups(float cDens, Set<PairInt> points)
+         - cFinder.getNumberOfClusters()
+         - cFinder.getCluster(int idx)
+            - gFinder.getGroup(int idx)
+      -----------------------------------------------------------------------------------
