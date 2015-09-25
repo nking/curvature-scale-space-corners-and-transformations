@@ -364,7 +364,7 @@ public class FindClusters4Test extends BaseTwoPointTest {
                 plotter.addPlot(twoPtC, plotLabel);
                 //plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
-                
+            
                 if (i == 2) {  
                     assertTrue(twoPtC.getNumberOfGroups() == 1);
                     /*

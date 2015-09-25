@@ -1,5 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.compGeometry.clustering.distanceTransform.DTClusterFinderTest;
 import algorithms.compGeometry.clustering.distanceTransform.DistanceTransform;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.Histogram;
@@ -150,31 +151,6 @@ public class FindClusters5Test extends BaseTwoPointTest {
             plotter.addPlot(twoPtC, plotLabel);
             //plotter.addPlotWithoutHull(twoPtC, plotLabel);
             plotter.writeFile();
-            
-            // ----- a look at the distance transform ----
-            int[] minMaxXY = MiscMath.findMinMaxXY(points);
-            int w = minMaxXY[1] + 1;
-            int h = minMaxXY[3] + 1;
-            DistanceTransform dtr = new DistanceTransform();
-            int[][] dt = dtr.applyMeijsterEtAl(points, w, h);
-            float[] values = new float[dt.length*dt[0].length];
-            int count2 = 0;
-            for (int i0 = 0; i0 < dt.length; ++i0) {
-                for (int j0 = 0; j0 < dt[0].length; ++j0) {
-                    int v = dt[i0][j0];
-                    values[count2] = (float)(1./Math.sqrt(v));
-                    count2++;
-                }
-            }
-            float xl = 0.1f;
-            /*if (i==8) {
-                xl = 0.05f;
-            }*/
-            float[] vErrors = Errors.populateYErrorsBySqrt(values);
-            HistogramHolder hist = Histogram.createSimpleHistogram(
-                0, xl, 40, values, vErrors);
-            hist.plotHistogram("clstr", "_cluster_" + ii);
-            
             
             nGroupsFound[ii] = twoPtC.getNumberOfGroups();
             expectedLinearDensities[ii] = (float)expectedDensity;

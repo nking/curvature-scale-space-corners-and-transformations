@@ -31,7 +31,7 @@ public class DTClusterFinderTest extends TestCase {
         
     }
     
-    protected static String writeDataset(float[] values, String fileName) throws 
+    public static String writeDataset(float[] values, String fileName) throws 
         IOException {
         
         if (values == null) {
