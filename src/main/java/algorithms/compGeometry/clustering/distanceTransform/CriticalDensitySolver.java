@@ -80,6 +80,8 @@ public class CriticalDensitySolver {
         
         int maxHC = 5;
         
+        boolean breakOnNext = false;
+        
         while (hc < maxHC) {
             
             HistogramHolder hist = Histogram.createSimpleHistogram(
@@ -100,12 +102,16 @@ public class CriticalDensitySolver {
             
             histList.add(hist);
             
+            if (breakOnNext) {
+                break;
+            }
+            
             int len = hist.getXHist().length;
             
             double areaH0 = MiscMath.calculateArea(hist, 0, (len/2) - 1);
             double areaH1 = MiscMath.calculateArea(hist, (len/2), len - 1);
             
-            if ((areaH1/areaH0) > 1.5) {
+            if ((areaH1/areaH0) > 0.75) {
                 // decrease the number of bins
                 if (nb <= 10) {
                     break;
@@ -137,10 +143,22 @@ public class CriticalDensitySolver {
                         break;
                     }
                 }
-                nb = 20;
+                if (nb == 40) {
+                    nb = 20;
+                }
                 float half =  0.5f*(hist.getXHist()[1] -  hist.getXHist()[0]);
                 if (yLimitIdx > -1) {
-                    xl = hist.getXHist()[yLimitIdx] - half;
+                    // a work around to next getting stuck at same size:
+                    if ((len - yLimitIdx) < 5) {
+                        yLimitIdx = len - 5;
+                    }
+                    float tmp = hist.getXHist()[yLimitIdx] - half;
+                    if (tmp < half) {
+                        xl = half;
+                        breakOnNext = true;
+                    } else if (tmp < xl) {
+                        xl = tmp;
+                    }
                 } else {
                     xl = hist.getYHist()[1] - half;
                 }
@@ -197,6 +215,15 @@ public class CriticalDensitySolver {
         for (int i = firstNonZeroIdx; i < firstZeroAfterPeakIdx; ++i) {
             float w = hist.getYHistFloat()[i]/yPeakSum;
             weightedX += (w * hist.getXHist()[i]);
+        }
+        
+        //TODO: revise this.  wanting an answer that is actually a little higher 
+        // than the weghted center but still within the bounds of the peak.
+        float frac8 = (0.8f * hist.getXHist()[firstZeroAfterPeakIdx] )
+            + (0.2f * hist.getXHist()[firstNonZeroIdx]);
+        
+        if (weightedX < frac8) {
+            weightedX = 0.5f * (weightedX + frac8);
         }
         
         return weightedX;
