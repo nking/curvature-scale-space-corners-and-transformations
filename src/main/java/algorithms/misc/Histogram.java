@@ -39,7 +39,7 @@ public class Histogram {
         float xInterval = (maxValue - minValue)/(float)nBins;
 
         // expand interval if necessary to make sure the last point is in the last bin
-        if ((int) ((maxValue - minValue)/(float)xInterval) != (nBins - 1)) {
+        if ((int) ((maxValue - minValue)/xInterval) != (nBins - 1)) {
             float t = (maxValue + minValue)/2.0f;
             int powDelta = MiscMath.findPowerOf10(t);
             float pow10 = (float)Math.pow(10, powDelta);

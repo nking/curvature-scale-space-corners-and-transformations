@@ -198,7 +198,7 @@
     </target>
 
     <!-- compile tests  -->
-    <target name="compileTests" depends="debug,compile" description="Compile Java tests" >
+    <target name="compileTests" depends="clean,debug,compile" description="Compile Java tests" >
         <record name="${logfile}" append="yes" loglevel="info"/>
 
     	<javac srcdir="${tests.dir}"

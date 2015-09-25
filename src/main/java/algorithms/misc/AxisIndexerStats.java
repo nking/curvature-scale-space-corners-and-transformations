@@ -267,7 +267,7 @@ public class AxisIndexerStats {
         
         int anXIndex = (int)(sr.nextFloat()*(nXY - xDivIndexesSz));
                         
-        int xCell = (int) (anXIndex/xDivIndexesSz);
+        int xCell = (anXIndex/xDivIndexesSz);
         
         int xIndexLo = xCell*xDivIndexesSz;
   
@@ -323,9 +323,9 @@ public class AxisIndexerStats {
         
         int anYIndex = (int)(sr.nextFloat()*(nXY - yDivIndexesSz));
                 
-        int xCell = (int) (anXIndex/xDivIndexesSz);
+        int xCell = (anXIndex/xDivIndexesSz);
 
-        int yCell = (int) (anYIndex/yDivIndexesSz);
+        int yCell = (anYIndex/yDivIndexesSz);
         
         int xIndexLo = xCell*xDivIndexesSz;
   
