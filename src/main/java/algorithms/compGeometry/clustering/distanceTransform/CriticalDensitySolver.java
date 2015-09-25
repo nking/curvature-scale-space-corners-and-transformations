@@ -69,7 +69,7 @@ public class CriticalDensitySolver {
 
         List<HistogramHolder> histList = new ArrayList<HistogramHolder>();
 
-        float xl = MiscMath.findMax(values);//4.0f;
+        float xl = MiscMath.findMax(values);
         int nb = 40;
         
         /*
@@ -78,7 +78,7 @@ public class CriticalDensitySolver {
         
         int hc = 0;
         
-        int maxHC = 10;
+        int maxHC = 5;
         
         while (hc < maxHC) {
             
@@ -102,12 +102,29 @@ public class CriticalDensitySolver {
             
             int len = hist.getXHist().length;
             
+            double areaH0 = MiscMath.calculateArea(hist, 0, (len/2) - 1);
+            double areaH1 = MiscMath.calculateArea(hist, (len/2), len - 1);
+            
+            if ((areaH1/areaH0) > 1.5) {
+                // decrease the number of bins
+                if (nb <= 10) {
+                    break;
+                }
+                nb /= 2;
+                hc++;
+                continue;
+            } 
+                        
             int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
             
             int yMax = hist.getYHist()[yMaxIdx];
             int yLast = hist.getYHist()[len - 1];
             
             int yLimit = yMax/10;
+            
+            if (hc > 0) {
+                yLimit = yMax/15;
+            }
             
             int yLimitIdx = -1;
             
@@ -117,12 +134,15 @@ public class CriticalDensitySolver {
                     int y = hist.getYHist()[i];
                     if (y >= yLimit) {
                         yLimitIdx = i;
+                        break;
                     }
                 }
+                nb = 20;
+                float half =  0.5f*(hist.getXHist()[1] -  hist.getXHist()[0]);
                 if (yLimitIdx > -1) {
-                    xl = hist.getXHist()[yLimitIdx];
+                    xl = hist.getXHist()[yLimitIdx] - half;
                 } else {
-                    xl = hist.getYHist()[1];
+                    xl = hist.getYHist()[1] - half;
                 }
             } else {
                 break;
@@ -137,14 +157,14 @@ public class CriticalDensitySolver {
             return 0;
         }
         
+        HistogramHolder hist = histList.get(histList.size() - 1);
+        int len = hist.getXHist().length;
+        
         // find area of first peak, start search after first bin which
         // sometimes has a delta function.
         //TODO: this may need to be revised
         int firstNonZeroIdx = -1;
-        int firstZeroAfterPeakIdx = -1;
-        
-        HistogramHolder hist = histList.get(histList.size() - 1);
-        int len = hist.getXHist().length;
+        int firstZeroAfterPeakIdx = len - 1;
         
         for (int i = 1; i < len; ++i) {
             
@@ -161,6 +181,10 @@ public class CriticalDensitySolver {
                     break;
                 }
             }
+        }
+        
+        if (firstNonZeroIdx == -1) {
+            return 0;
         }
         
         // find weighted x from firstNonZeroIdx to firstZeroAfterPeakIdx

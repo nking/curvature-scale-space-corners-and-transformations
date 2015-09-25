@@ -1,5 +1,8 @@
 package algorithms.compGeometry.clustering.distanceTransform.util;
 
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+
 /**
  *
  * @author nichole
@@ -49,5 +52,32 @@ public class MiscMath {
             }
         }
         return index;
+    }
+    
+    public static double calculateArea(HistogramHolder hist, int idxStart, int idxStopIncl) {
+        
+        if (hist == null) {
+            throw new IllegalArgumentException("hist cannot be null");
+        }
+        if (idxStart < 0 || (idxStart > (hist.getXHist().length - 1))) {
+            throw new IllegalArgumentException("idxStart is out of bounds of hist");
+        }
+        if (idxStopIncl < 0 || (idxStopIncl > (hist.getXHist().length - 1))) {
+            throw new IllegalArgumentException("idxStopIncl is out of bounds of hist");
+        }
+        
+        double area = 0;
+        
+        for (int idx = idxStart; idx < idxStopIncl; ++idx) {
+            float yTerm = hist.getYHistFloat()[idx + 1] + hist.getYHistFloat()[idx];
+            float xLen = hist.getXHist()[idx + 1] - hist.getXHist()[idx];
+            if (xLen < 0) {
+                xLen *= -1;
+            }
+                        
+            area += (yTerm * xLen)*0.5;
+        }
+        
+        return area;
     }
 }

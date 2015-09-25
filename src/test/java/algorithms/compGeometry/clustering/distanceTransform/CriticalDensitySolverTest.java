@@ -30,19 +30,19 @@ public class CriticalDensitySolverTest extends TestCase {
         //TODO: may need to revise these... used a different seed in random to generate:
         float[] r0s = new float[]{
             0.01f, 0.18f, 0.4f,
-            0.01f, 0.18f, 0.35f,
-            0.03f, 0.18f, 0.35f
+            0.01f, 0.18f, 0.4f,
+            0.02f, 0.18f, 0.4f
         };
         float[] r1s = new float[]{
             0.05f, 0.22f, 0.5f,
-            0.05f, 0.22f, 0.45f,
-            0.04f, 0.22f, 0.45f
+            0.05f, 0.22f, 0.48f,
+            0.04f, 0.22f, 0.48f
         };
         
         CriticalDensitySolver dSolver = new CriticalDensitySolver();
         dSolver.setToDebug();
         
-        for (int i = 0; i < 1/*fileNames.length*/; ++i) {
+        for (int i = 0; i < fileNames.length; ++i) {
             
             String fileName = fileNames[i];
             
@@ -52,7 +52,7 @@ public class CriticalDensitySolverTest extends TestCase {
             
             float r0 = r0s[i];
             float r1 = r1s[i];
-            
+
             assertTrue(critDens >= r0 && critDens <= r1);
         }
     }
