@@ -106,7 +106,7 @@ public class FindClusters6Test extends TestCase {
             // birch2.txt is 0.001
             // birch3.txt is 0.0007, but not clearly delineated as clusters...
             
-            //twoPtC.setBackground(0.01f, 0.0001f);
+            //twoPtC.setBackground(0.32f, 0.0001f);
 
             //twoPtC.setAllowRefinement();
 
@@ -190,6 +190,8 @@ public class FindClusters6Test extends TestCase {
             plotter.writeFile();
             
             int nExpected = expectedNGroups[i];
+            
+            int nGroups = twoPtC.getNumberOfGroups();
 
             /*assertTrue(twoPtC.getNumberOfGroups() == nExpected);
 

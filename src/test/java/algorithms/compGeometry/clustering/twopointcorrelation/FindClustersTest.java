@@ -1,8 +1,11 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.compGeometry.clustering.distanceTransform.DTClusterFinderTest;
+import algorithms.compGeometry.clustering.distanceTransform.DistanceTransform;
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
@@ -36,9 +39,11 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 
-        //seed = 1387775326745l;
+        seed = 1387775326745l;
 
         log.info("SEED=" + seed);
+        
+        //sr.setSeed(seed);
 
         // a long running test to calculate and print the stats of fits
         //  for sparse, moderate, and densely populated backgrounds,
@@ -112,14 +117,6 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                     long t0 = System.currentTimeMillis();
 
-
-                    Set<PairInt> points = new HashSet<PairInt>();
-                    for (int k = 0; k < indexer.getNXY(); ++k) {
-                        PairInt p = new PairInt(Math.round(indexer.getX()[k]), 
-                            Math.round(indexer.getY()[k]));
-                        points.add(p);
-                    }
-
                     TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
                     //twoPtC.setDebug(true);
@@ -131,7 +128,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     //twoPtC.logPerformanceMetrics();
                     //twoPtC.useFindMethodForDataWithoutBackgroundPoints();
                     twoPtC.calculateBackground();
-                    //twoPtC.setBackground(0.03f, 0.01f);
+                    //twoPtC.setBackground(0.285f, 0.01f);
                     
                     twoPtC.findClusters();
 

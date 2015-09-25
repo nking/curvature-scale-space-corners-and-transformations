@@ -153,7 +153,12 @@ public class CriticalDensitySolver {
                         yLimitIdx = len - 5;
                     }
                     float tmp = hist.getXHist()[yLimitIdx] - half;
-                    if (tmp < half) {
+                    if ((xl/tmp) > 15) {
+                        // extreme zoom-in of high peak near idx=0
+                        xl = tmp;
+                        breakOnNext = true;
+                    } else if (tmp < half) {
+                        // extreme zoom-in of high peak near idx=0
                         xl = half;
                         breakOnNext = true;
                     } else if (tmp < xl) {
@@ -217,13 +222,17 @@ public class CriticalDensitySolver {
             weightedX += (w * hist.getXHist()[i]);
         }
         
-        //TODO: revise this.  wanting an answer that is actually a little higher 
+        //wanting an answer that is a little higher 
         // than the weghted center but still within the bounds of the peak.
-        float frac8 = (0.8f * hist.getXHist()[firstZeroAfterPeakIdx] )
-            + (0.2f * hist.getXHist()[firstNonZeroIdx]);
+        /*int nh = (firstZeroAfterPeakIdx - firstNonZeroIdx)/2;
+        double areaH0 = MiscMath.calculateArea(hist, firstNonZeroIdx, nh);
+        double areaH1 = MiscMath.calculateArea(hist, nh + 1, firstZeroAfterPeakIdx);
+        */
+        float frac9 = (0.9f * hist.getXHist()[firstZeroAfterPeakIdx] )
+            + (0.1f * hist.getXHist()[firstNonZeroIdx]);
         
-        if (weightedX < frac8) {
-            weightedX = 0.5f * (weightedX + frac8);
+        if (weightedX < frac9) {
+            weightedX = 0.5f * (weightedX + frac9);
         }
         
         return weightedX;

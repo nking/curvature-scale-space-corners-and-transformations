@@ -73,9 +73,9 @@ public class FindClusters5Test extends BaseTwoPointTest {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
-        //seed = 1443059507225L;
+        seed = 1443059507225L;
 
-        sr.setSeed(seed);
+        //sr.setSeed(seed);
         log.info("SEED=" + seed);
 
         AxisIndexer indexer = null;
@@ -106,13 +106,6 @@ public class FindClusters5Test extends BaseTwoPointTest {
                         
             log.info(" " + ii + " (" + indexer.nXY + " points) ... ");
 
-            Set<PairInt> points = new HashSet<PairInt>();
-            for (int k = 0; k < indexer.getNXY(); ++k) {
-                PairInt p = new PairInt(Math.round(indexer.getX()[k]),
-                    Math.round(indexer.getY()[k]));
-                points.add(p);
-            }
-            
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
             //twoPtC.setDebug(true);
@@ -123,7 +116,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
               
             //twoPtC.logPerformanceMetrics();
             
-            //twoPtC.setBackground(0.5f, 0.003f);
+            //twoPtC.setBackground(0.0146f, 0.003f);
             twoPtC.calculateBackground();
                 
             twoPtC.findClusters();
@@ -151,7 +144,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
             plotter.addPlot(twoPtC, plotLabel);
             //plotter.addPlotWithoutHull(twoPtC, plotLabel);
             plotter.writeFile();
-            
+                        
             nGroupsFound[ii] = twoPtC.getNumberOfGroups();
             expectedLinearDensities[ii] = (float)expectedDensity;
             calcLinearDensities[ii] = twoPtC.getBackgroundDensity();

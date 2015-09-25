@@ -34,7 +34,7 @@ public class CriticalDensitySolverTest extends TestCase {
             0.02f, 0.18f, 0.4f
         };
         float[] r1s = new float[]{
-            0.05f, 0.28f, 0.5f,
+            0.05f, 0.285f, 0.5f,
             0.05f, 0.28f, 0.5f,
             0.04f, 0.28f, 0.5f
         };
@@ -100,6 +100,46 @@ public class CriticalDensitySolverTest extends TestCase {
             if (i != 6) {
                 assertTrue(critDens >= r0 && critDens <= r1);
             }
+        }
+    }
+    
+    public void testFindCriticalDensity_no_clusters() throws Exception {
+
+        String[] fileNames = new String[]{
+            "dt_no_clusters_0.dat", "dt_no_clusters_1.dat", "dt_no_clusters_2.dat", 
+            "dt_no_clusters_3.dat", "dt_no_clusters_4.dat", "dt_no_clusters_5.dat", 
+            "dt_no_clusters_6.dat", "dt_no_clusters_7.dat", "dt_no_clusters_8.dat", 
+        };
+        
+        // TODO: these may need to be revised a I used a different seed during generation
+        float[] r0s = new float[]{
+            0.018f, 0.045f, 0.07f, 
+            0.15f, 0.18f, 0.22f,
+            0.22f, 0.25f, 0.25f
+        };
+        float[] r1s = new float[]{
+            Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
+            Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
+            Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY
+        };
+        
+        CriticalDensitySolver dSolver = new CriticalDensitySolver();
+        dSolver.setToDebug();
+        
+        for (int i = 0; i < fileNames.length; ++i) {
+            
+            String fileName = fileNames[i];
+            
+            float[] values = readDataset(fileName);
+            
+            float critDens = dSolver.findCriticalDensity(values);
+            
+            float r0 = r0s[i];
+            float r1 = r1s[i];
+                        
+            System.out.println("i=" + i + " ro-" + r0 + " r1=" + r1 + " critDens=" + critDens);
+
+            assertTrue(critDens >= r0 && critDens <= r1);
         }
     }
     
