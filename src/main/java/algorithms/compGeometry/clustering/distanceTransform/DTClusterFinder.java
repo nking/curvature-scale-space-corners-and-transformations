@@ -44,7 +44,7 @@ public class DTClusterFinder {
         
         groupFinder = new DTGroupFinder();
         
-        groupFinder.calculateGroups(critDens, points, width, height);
+        groupFinder.calculateGroups(critDens, points);
         
     }
     
