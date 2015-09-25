@@ -20,3 +20,7 @@
    need to think about how to accurately find the background density from it...
 
    -- see docs/tasks/design_distance_transform_improvements.txt
+
+-- add documentation to the distance transform jar for advice to extend PairInt
+   to carry additional information when needed such as a pixel index.
+

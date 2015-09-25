@@ -15,8 +15,11 @@ import java.util.logging.Logger;
  */
 public class DTGroupFinder {
     /**
-     * an array to hold each group as an item.  each item contains a key which 
-     * is an index to arrays indexer.x, indexer.y and this.pointToGroupIndex
+     * an array to hold each group as an item. Note that the original point
+     * given in points is preserved so any specialization information available
+     * to the copy() method is present in the grouped points too.
+     * One use case is the point being scaled CIE XY colors and a specialization 
+     * of PairInt that has a field holding the pixel index
      */
     protected List<Set<PairInt> > groupMembership = new ArrayList<Set<PairInt> >();
     

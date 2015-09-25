@@ -52,7 +52,7 @@ public class DTClusterFinderTest extends TestCase {
             fs = new FileOutputStream(file);
             os = new ObjectOutputStream(fs);
             
-            os.write(values.length);
+            os.writeInt(values.length);
 
             int count = 0;
 
