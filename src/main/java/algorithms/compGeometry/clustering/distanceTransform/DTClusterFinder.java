@@ -4,31 +4,36 @@ import algorithms.util.PairInt;
 import java.util.Set;
 
 /**
- * main class to cluster finder based upon distance transform.
+ * main class to cluster finder whose logic is based upon distance transform,
+ * density threshold, and a signal to noise argument of ~ 3 as a factor.
  * 
  * @author nichole
  */
 public class DTClusterFinder {
     
-    private final int[][] xy;
     private final Set<PairInt> points;
     private final int width;
     private final int height;
     
     private float critDens = Float.POSITIVE_INFINITY;
     
+    private DTGroupFinder groupFinder = null;
+    
     public DTClusterFinder(Set<PairInt> points, int width, int height) {
-        this.xy = new int[width][];
-        for (int i = 0; i < width; ++i) {
-            xy[i] = new int[height];
-        }
+        
         this.points = points;
         this.width = width;
         this.height = height;
     }
     
     void calculateCriticalDensity() {
-        throw new UnsupportedOperationException("not yet implemented");
+        
+        DistanceTransform dtr = new DistanceTransform();
+        int[][] dt = dtr.applyMeijsterEtAl(points, width, height);
+        
+        CriticalDensitySolver densSolver = new CriticalDensitySolver();
+        
+        this.critDens = densSolver.findCriticalDensity(dt, points.size(), width, height);               
     }
     
     void setCriticalDensity(float dens) {
@@ -36,15 +41,34 @@ public class DTClusterFinder {
     }
     
     void findClusters() {
-        throw new UnsupportedOperationException("not yet implemented");
+        
+        groupFinder = new DTGroupFinder();
+        
+        groupFinder.calculateGroups(critDens, points, width, height);
+        
     }
     
     int getNumberOfClusters() {
-        throw new UnsupportedOperationException("not yet implemented");
+        
+        if (groupFinder == null) {
+            return 0;
+        }
+        
+        return groupFinder.getNumberOfGroups();
     }
     
     Set<PairInt> getCluster(int idx) {
-        throw new UnsupportedOperationException("not yet implemented");
+        
+        if (groupFinder == null) {
+            throw new IllegalArgumentException(
+                "findClusters was not successfully invoked");
+        }
+        
+        if ((idx < 0) || (idx > (groupFinder.getNumberOfGroups() - 1))) {
+            throw new IllegalArgumentException("idx is out of bounds");
+        }
+        
+        return groupFinder.getGroup(idx);
     }
     
     float getCriticalDensity() {

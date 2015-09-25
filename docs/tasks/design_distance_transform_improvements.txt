@@ -25,8 +25,9 @@
       =============================================================================
       DTClusterFinder
       -----------------------------------------------------------------------------
-      int[][] xy
-      Set<PairInt> points
+      points : Set<PairInt>
+      width : int
+      height : int
       -----------------------------------------------------------------------------
       DTClusterFinder(Set<PairInt> points, int width, int height) : DTClusterFinder
       +calculateCriticalDensity() : void 
@@ -50,6 +51,7 @@
       ~calculateGroups(float criticalDensity, Set<PairInt> points) : void
       ~getNumberOfGroups() : int n
       ~getGroup(int idx) : Set<PairInt>
+      ~setThreshholdFactor(float tF) : void
       ===================================================================================
 
       ===================================================================================
@@ -72,9 +74,9 @@
       
       rough runtime complexity estimate:
           quasi-linear for distance transform, that is ~O(N) where N is width x height of dimensions
-          plus O(|V|*|E|) for the DFS pattern group finder which is quasi-linear in the
+          plus O(N*lg2(N)) + O(|V|*|E|) for the DFS pattern group finder which is quasi-linear in the
           number of points.
-          total ~ O(N_pixels) + ~O(N_points) 
+          total ~ O(N_pixels) + ~O(N_points * lg2(N_points)) 
 
       rough space complexity estimate:
           creates arrays to hold data and the limiting value is roughly word size * width * height,
