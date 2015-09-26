@@ -2,6 +2,7 @@ package algorithms.compGeometry.clustering.distanceTransform;
 
 import algorithms.compGeometry.clustering.twopointcorrelation.AxisIndexer;
 import algorithms.compGeometry.clustering.twopointcorrelation.BaseTwoPointTest;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
@@ -27,7 +28,7 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void testFindRanGenClusters() throws NoSuchAlgorithmException {
+    public void testFindRanGenClusters() throws Exception {
         
         float xmin = 0;
         float xmax = 300;
@@ -54,64 +55,60 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
 
         for (int ii = 0; ii < nIterPerBackground; ii++) {
             for (int i = 0; i < nSwitches; i++) {
-                try {
-                    switch(i) {
-                        case 0:
-                            //~100
-                            indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                                //10, 100, 110, 100.0f);
-                                3, 33, 33, 0.1f);
-                            break;
-                        case 1:
-                            //~1000
-                            indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                                3, 33, 33, 10f);
-                            break;
-                        default: {
-                            // 100*100
-                            indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                                3, 30, 60, 100.0f);
-                            break;
-                        }
+                switch(i) {
+                    case 0:
+                        //~100
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            //10, 100, 110, 100.0f);
+                            3, 33, 33, 0.1f);
+                        break;
+                    case 1:
+                        //~1000
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            3, 33, 33, 10f);
+                        break;
+                    default: {
+                        // 100*100
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            3, 30, 60, 100.0f);
+                        break;
                     }
-
-                    log.info(" " + count + " (" + indexer.getNXY() + " points) ... ");
-
-                    Set<PairInt> points = new HashSet<PairInt>();
-                    for (int k = 0; k < indexer.getNXY(); ++k) {
-                        PairInt p = new PairInt(Math.round(indexer.getX()[k]),
-                            Math.round(indexer.getY()[k]));
-                        points.add(p);
-                    }
-
-                    int width = (int)Math.ceil(xmax);
-                    int height = (int)Math.ceil(ymax);
-                    
-                    DTClusterFinder clusterFinder = new DTClusterFinder(points,
-                        width, height);
-                    
-                    clusterFinder.calculateCriticalDensity();
-                    clusterFinder.findClusters();
-                    //clusterFinder.setCriticalDensity(dens);
-                    
-                    int nGroups = clusterFinder.getNumberOfClusters();
-                    
-                    List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
-                    for (int k = 0; k < nGroups; ++k) {
-                        Set<PairInt> set = clusterFinder.getCluster(k);
-                        groupList.add(set);
-                    }
-                   
-                    BufferedImage img = createImage(points, width, height);
-                    
-                    addAlternatingColorPointSets(img, groupList, 0);
-                    
-                    writeImage(img, "dt_ran_" + ii + "_" + i + ".png");
-                    
-                } catch(Throwable e) {
-                    log.severe(e.getMessage());
                 }
 
+                log.info(" " + count + " (" + indexer.getNXY() + " points) ... ");
+
+                Set<PairInt> points = new HashSet<PairInt>();
+                for (int k = 0; k < indexer.getNXY(); ++k) {
+                    PairInt p = new PairInt(Math.round(indexer.getX()[k]),
+                        Math.round(indexer.getY()[k]));
+                    points.add(p);
+                }
+
+                int[] minMaxXY = MiscMath.findMinMaxXY(points);
+                int width = minMaxXY[1] + 1;
+                int height = minMaxXY[3] + 1;
+                    
+                DTClusterFinder clusterFinder = new DTClusterFinder(points,
+                    width, height);
+
+                clusterFinder.calculateCriticalDensity();
+                clusterFinder.findClusters();
+                //clusterFinder.setCriticalDensity(dens);
+
+                int nGroups = clusterFinder.getNumberOfClusters();
+
+                List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+                for (int k = 0; k < nGroups; ++k) {
+                    Set<PairInt> set = clusterFinder.getCluster(k);
+                    groupList.add(set);
+                }
+                   
+                BufferedImage img = createImage(points, width, height);
+
+                addAlternatingColorPointSets(img, groupList, 1);
+
+                writeImage(img, "dt_ran_" + ii + "_" + i + ".png");
+             
                 count++;
             }
         }
@@ -199,13 +196,14 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         int width = img.getWidth();
         int height = img.getHeight();
         
+        int clrCount = -1;
         int clr = -1;
         
         for (int i = 0; i < groups.size(); ++i) {
-                        
-            Set<PairInt> group = groups.get(i);
+                                    
+            clr = getNextColorRGB(clrCount);
             
-            clr = getNextColorRGB(clr);
+            Set<PairInt> group = groups.get(i);
             
             for (PairInt p : group) {
                 
@@ -224,19 +222,21 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                     }
                 }
                 img.setRGB(p.getX(), p.getY(), clr);
+                clrCount++;
             }
         }
     }
     
-    public int getNextColorRGB(int clr) {
+    public int getNextColorRGB(int clrCount) {
         
-        if (clr > 5) {
-            clr = 0;
-        } else if (clr == -1) {
-            clr = 0;
+        if (clrCount == -1) {
+            clrCount = 0;
         }
+        
+        clrCount = clrCount % 6;
+        
         int c = Color.BLUE.getRGB();
-        switch (clr) {
+        switch (clrCount) {
             case 0:
                 c = Color.BLUE.getRGB();
                 break;
