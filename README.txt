@@ -52,6 +52,11 @@ To run all tests:
 To run a specific test:
   ant runTest -Dtest=package.TestName
 
+Note, if you want to make code coverage reports, the runCorverage
+target requires you to have downloaded Jacoco, and placed it at a
+location referred to by environment variable JACOCO_HOME.
+http://eclemma.org/download.html
+
 -------------------------
 Performance Metrics
 -------------------------
