@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>GEV version details</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">previous version of two-point-correlation</h1>
+      <h2 class="project-tagline">Unsupervised Clustering Based Upon Voids in Two-Point Correlation</h2>
+    </section>
+
+    <section class="main-content">
+      <p><img src="images/snapshot.001.png" width="250" height="250"> <img src="images/snapshot.002.png" width="250" height="250"> <img src="images/snapshot.004.png" width="250" height="250"></p>
+
+<p>This is the web page for the older, density based algorithm in the project which is based upon distances between voids and fits to a Generalized Extreme Value function.  Its runtime complexity is between O(N<sub>points</sub><sup>2</sup>) and O(N<sub>points</sub><sup>3</sup>) while the <a href="index.html">newer code</a> presented on the main page has a runtime complexity of O(N<sub>pixels</sub> X log<sub>2</sub>(N<sub>pixels</sub>)).</p>
+
+<p>The code is a <b>density based clustering algorithm</b>. The algorithm does not require prior knowledge of the number of clusters, nor does it require a separation distance for association of points, and the algorithm finds non-convex cluster shapes in a statistically based manner that is reproducable. The algorithm learns the association separation distance of points by the statistics of the data itself and applies that in a critical threshold for membership of points within a cluster.</p>
+
+<p>The algorithm, in an unsupervised manner, constructs histograms of rectangular voids in the data and fits Generalized Extreme Value curves to the histograms to learn the background density. Clusters in the data are found as points that are within a separation distance smaller than the critical density for membership.</p>
+
+<p>The results are available as data and visualized through generated html plots. (Improvements to packaging and documentation are in progress.)</p>
+
+<p>More about the density distribution:</p>
+
+<p>The location of the 'background' points in two dimensional space are likely Poisson, that is their locations in a fixed interval of space are independent of one another and occur randomly. The 2-point void densities are formed into a histogram that is well fit by Generalized Extreme Value (GEV) curves. Extreme value distributions are used to describe the maximum or minimum of values drawn from a sample distribution that is essentially exponential.</p>
+
+<p>There are 2 methods for determining clusters in this code:</p>
+
+<ul>
+<li><p>(1) For datasets in which there are background points:
+The peak of the GEV fit should represent the background density.  The clusters are then
+defined statistically as being 2 to 3 times 'above the background', that is having
+separations 2 to 3 times more dense than the background density. The code by default 
+uses a factor of 2.5, but methods are supplied to allow the user to set the background 
+to 2 or 3 instead, and there's also a method to set the background manually.<br>
+The later manual setting is useful for a case where perhaps one determined the
+background density in one dataset and need to apply that to a 2nd dataset which 
+has the same background, but is 'saturated' with foreground points.</p></li>
+<li><p>(2) For datasets in which there are no background points:
+Datasets which are only points which should be in groups, and essentially have no
+background points are referred to as sparse background datasets.
+For these datasets, the background density is zero, so we define the level above
+the background by the edges of the densities of the group.  This edge density
+is already  much larger than the background so it is the threshold density for
+membership already.  This threshold density is the first x bin in a well formed
+histogram of 2-point densities.</p></li>
+</ul>
+
+<p>The code automatically determines which of method (1) and (2) to use.</p>
+
+<p>If the user has better knowledge of which should be applied, can set that with:</p>
+
+<blockquote>
+<pre><code>useFindMethodForDataWithoutBackgroundPoints() 
+or useFindMethodForDataWithBackgroundPoints()
+</code></pre>
+</blockquote>
+
+<p>The GEV curve contains 3 independent fitting parameters and the curve is an exponential combined with a polynomial, so it's resulting fitted parameters are not unique, but the curve is useful for characterizing the background point distribution by then integrating under the curve.</p>
+
+<p>The points within a cluster are may have interesting distributions that can be better modeled after they've
+been found by these means.</p>
+
+<p>Usage as an API:</p>
+
+<blockquote>
+<p>To use the code with default settings:</p>
+
+<pre><code>  TwoPointCorrelation clusterFinder 
+       = new TwoPointCorrelation(x, y, xErrors, yErrors, totalNumberOfPoints);
+
+  clusterFinder.calculateBackground();
+
+  clusterFinder.findClusters();
+</code></pre>
+
+<p>The results are available as group points or as convex hulls surrounding the groups:</p>
+
+<pre><code> int n = clusterFinder.getNumberOfGroups()
+
+ int groupNumber = 0;
+
+ To get the hull for groupId 0:
+     ArrayPair hull0 = clusterFinder.getGroupHull(groupNumber);
+
+ To get the points in groupId 0:
+     ArrayPair group0 = clusterFinder.getGroup(groupNumber)
+
+ To plot the results:
+     String plotFilePath = clusterFinder.plotClusters();
+</code></pre>
+
+<p>If debugging is turned on, plots are generated and those file paths are printed to standard out, and statements are printed to standard out.</p>
+
+<p>To set the background density manually:</p>
+
+<pre><code> TwoPointCorrelation clusterFinder 
+     = new TwoPointCorrelation(x, y, xErrors, yErrors, &gt;getTotalNumberOfPoints());
+ clusterFinder.setBackground(0.03f, 0.003f);
+ clusterFinder.findClusters();
+ String plotFilePath = clusterFinder.plotClusters();
+</code></pre>
+</blockquote>
+
+<p>If the centers of the cluster hulls are needed for something else, seeds for a Voronoi diagram, for instance,
+one can use:</p>
+
+<blockquote>
+<p>ArrayPair seeds = clusterFinder.getHullCentroids();</p>
+</blockquote>
+
+<p>The scatter plots and histograms below use <a href="http://d3js.org">d3 js</a></p>
+
+<p><em><em>Note that improvements in the histogram code is *in progress</em>.  Currently datasets with a small number of points may have less than ideal solutions.*</em></p>
+
+<p>Note also that the code has the ability to refine a solution:  that is to determine groups and then subtract them from the data and then re-determine the background density from the remaining points.  The ability is not enabled by default, but can be with the method setAllowRefinement().
+More information is <a href="https://github.com/nking/two-point-correlation/raw/master/docs/clustering_and_refinement.pdf">here</a>.</p>
+
+<hr>
+
+<blockquote>
+<p>The citation for use of this code in a publication is:</p>
+
+<p><code>http://code.google.com/p/two-point-correlation/</code>, Nichole King,  "Unsupervised Clustering Based Upon Voids in Two-Point Correlation". March 15, 2013. </p>
+</blockquote>
+
+<p>Note that I wrote the core algorithm in this work (without the automated density calculation) several years ago and the results were part of a publication.
+What got published was the results from this algorithm used as input for another algorithm that requires 
+knowledge of association radius in order to work.   The algorithm that used my algorithm's input required a parameter that was not derivable from it's use alone.
+Similarly, "k-means clustering" requires knowledge of the number of clusters before use.  "k-means++" is an algorithm that suggests one can adjust the number of clusters k, but a statistical method of doing so would still require a density based analysis, and hence, it would need to do the same work as the algorithm here, but presumably less efficiently.  Delaunay Triangulation is useful if there are no background points within a dataset, that is all points will be members of a group, and if groups do not have non-convex shapes.  KDTrees are useful as a nearest neighbor algorithm, but its use in determining clusters would still require as input, an association radius.
+Fun stuff, but the core of the algorithm here is was what I needed to create awhile back for work applied to surveys.  The addition published here is automation of the background determination and large improvements of the
+overall algorithm. </p>
+
+<hr>
+
+<h2>
+<a id="sparsely-populated-background" class="anchor" href="#sparsely-populated-background" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sparsely Populated Background</h2>
+
+<p><img src="images/sparse.001.png"></p>
+
+<hr>
+
+<h2>
+<a id="moderately-populated-background" class="anchor" href="#moderately-populated-background" aria-hidden="true"><span class="octicon octicon-link"></span></a>Moderately Populated Background</h2>
+
+<p><img src="images/moderate.002.png"></p>
+
+<hr>
+
+<h2>
+<a id="more-densely-populated-background" class="anchor" href="#more-densely-populated-background" aria-hidden="true"><span class="octicon octicon-link"></span></a>More Densely Populated Background</h2>
+
+<p><img src="images/dense.001.png"></p>
+
+<hr>
+
+<h2>
+<a id="all-background-no-clusters" class="anchor" href="#all-background-no-clusters" aria-hidden="true"><span class="octicon octicon-link"></span></a>All Background, No Clusters</h2>
+
+<p><img src="images/nobackground.001.png"></p>
+
+<hr>
+
+<h2>
+<a id="non-convex-morphology-clusters" class="anchor" href="#non-convex-morphology-clusters" aria-hidden="true"><span class="octicon octicon-link"></span></a>Non-Convex Morphology Clusters</h2>
+
+<p><img src="images/wikipedia_dbscan.png"></p>
+
+<p>The cluster "shape" datasets collected at <a href="http://cs.joensuu.fi/sipu/datasets/">http://cs.joensuu.fi/sipu/datasets/</a> are fit here with explanations of code settings used and comments about the data.</p>
+
+<p>These clusters were found with the default algorithm settings.  No additional settings were needed for the background:
+<img src="images/snapshot_shapes_01.png">
+<img src="images/snapshot_shapes_02.png">
+<img src="images/snapshot_shapes_03.png">
+<img src="images/snapshot_shapes_04.png">
+<img src="images/snapshot_shapes_05.png">
+<img src="images/snapshot_shapes_06.png">
+<img src="images/snapshot_shapes_07.png"></p>
+
+<p>These clusters were found with the default algorithm settings plus using
+the method useFindMethodForDataWithoutBackgroundPoints();</p>
+
+<p><img src="images/snapshot_shapes_08.png"></p>
+
+<p>These clusters were found with the default algorithm settings plus using the method useFindMethodForDataWithoutBackgroundPoints();
+Note that these next 3 datasets have the uncommon property of being composed of isolated pairs of points, that is, there are never 3 or more points within the pair point separation of one another.  If one wanted to apply a slightly agglomerative approach to finding clusters in those datasets, one could use the found cluster centers in a new histogram and determine the critical density from those.  That isn't done in this algorithm in order to keep a uniform way of determining clusters in a statistically reproducable manner.</p>
+
+<p><img src="images/snapshot_shapes_09.png">
+<img src="images/snapshot_shapes_10.png">
+<img src="images/snapshot_shapes_11.png"></p>
+
+<hr>
+
+<h2>
+<a id="performance-metrics" class="anchor" href="#performance-metrics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Performance Metrics</h2>
+
+<blockquote>
+<p>Roughly determined by estimation and measured with a very small number of iterations on a computer with characteristics:
+  64-bit Intel Core 2 Duo processor w/ speed 2 GHz w/ 4 MB L2 Cache
+  3GB RAM and a bus speed of 800 MHz</p>
+
+<p>JVM characteristics:
+   J2SE 1.6, 64-bit HotSpot server w/ initial heap size 512 MB and max heap size 1024 MB.</p>
+
+<p>Measurements are from the June 29, 2014 code (e35ea01990b54cc8e88b76e9ce30220a35cdb79d).</p>
+</blockquote>
+
+<p>Runtime (RT) complexity for findVoids() is less than O(N^2) but it invokes functions that vary from O(1) to O(N-1) as 
+it compares the range between points, so best is less than O(N^2) and worse is less than O(N^3).
+RT complexity for findGroups() is a little worse than O(N^2).
+The RT complexity for findGroups is a DFS search over sorted x so is &lt; O(N^2) due to being
+able to truncate the search over potential neighbors.  </p>
+
+<p>(NOTE that improvements in findGroups is in progress.  The total RT should be smaller
+afterwards by using memoization w/ Fibonacci Heaps in the findVoids stage to limit the neighbor search in findGroups's DFS.)</p>
+
+<p>Empirically derived runtimes follow.</p>
+
+<blockquote>
+<pre><code>  N          findVoids        findGroups     Sys load  Total RT
+points      RT      mem       RT      mem     at start
+         in sec   in MB     in sec  in MB               in sec
+
+   99      0       0.2        0      0.2      0.7        0     
+
+ 1089      1       20         0      20       0.7        1 
+
+ 10605     4                  1                          5 
+
+101400    29       14        226     21       1          255
+</code></pre>
+</blockquote>
+
+<p><em>Note that for the datasets with number of points &gt; 15000, the void density is determined through partial sampling rather than complete sampling, so there may be a need occasionally to  override the automatic decision for sampling in the code.  Methods are provided to override defaults.</em></p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/nking/two-point-correlation">two-point-correlation</a> is maintained by <a href="https://github.com/nking">nking</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
