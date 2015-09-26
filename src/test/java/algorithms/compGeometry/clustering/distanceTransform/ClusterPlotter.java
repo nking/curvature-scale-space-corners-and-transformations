@@ -79,7 +79,7 @@ public class ClusterPlotter {
         dataSB.append("\n\n").append("var data_group_centroids_")
             .append(plotNumber).append(" = [\n");
         
-        for (i = 0; i < clusterSets.size(); i++) {
+        /*for (i = 0; i < clusterSets.size(); i++) {
             Set<PairInt> set = clusterSets.get(i);
             double[] xyCen = algorithms.compGeometry.clustering.distanceTransform.util.MiscMath.calculateXYCentroids(set);
             if (i > 0) {
@@ -88,7 +88,7 @@ public class ClusterPlotter {
             dataSB.append("    {x:").append(xyCen[0])
                 .append(", y:").append(xyCen[1]).append(", name: ")
                 .append(i).append("}");
-        }
+        }*/
         dataSB.append("\n];\n");
 
 

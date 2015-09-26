@@ -214,6 +214,7 @@
             <src path="${src.dir}"/>
             <compilerarg value="-Xlint"/>
     	</javac>
+        <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
     </target>
     <target name="compileLargeTests" depends="clean, debug, compile" description="Compile Java tests" >
         <record name="${logfile}" append="yes" loglevel="info"/>
@@ -313,6 +314,7 @@
                 Example:
                     export JAVA_OPTS=-Xms1024m
         </fail>
+        <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <classpath>
                 <pathelement location="${tests.out.dir}"/>

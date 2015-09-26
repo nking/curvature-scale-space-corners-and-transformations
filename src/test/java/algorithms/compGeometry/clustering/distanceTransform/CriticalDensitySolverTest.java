@@ -27,7 +27,6 @@ public class CriticalDensitySolverTest extends TestCase {
             "dt_ran_2_0.dat", "dt_ran_2_1.dat", "dt_ran_2_2.dat", 
         };
         
-        //TODO: may need to revise these... used a different seed in random to generate:
         float[] r0s = new float[]{
             0.01f, 0.18f, 0.4f,
             0.01f, 0.18f, 0.4f,

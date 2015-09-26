@@ -25,6 +25,8 @@ public class DTClusterFinder {
     
     private STATE state = null;
     
+    private boolean debug = false;
+    
     public DTClusterFinder(Set<PairInt> points, int width, int height) {
         
         this.points = points;
@@ -32,6 +34,10 @@ public class DTClusterFinder {
         this.height = height;
         
         state = STATE.INIT;
+    }
+    
+    public void setToDebug() {
+        debug = true;
     }
     
     public void calculateCriticalDensity() {
@@ -44,6 +50,10 @@ public class DTClusterFinder {
         int[][] dt = dtr.applyMeijsterEtAl(points, width, height);
         
         CriticalDensitySolver densSolver = new CriticalDensitySolver();
+        
+        if (debug) {
+            densSolver.setToDebug();
+        }
         
         this.critDens = densSolver.findCriticalDensity(dt, points.size(), width, height);               
     }

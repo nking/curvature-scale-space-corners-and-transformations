@@ -52,7 +52,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
                   N=(29000)  calcLinDens=(0.1544)  expectedLinDens=(0.1703)  nGroups=(2980)
                SEED=1386750505246
                
-            Can see that after N=1000, begin to see groups for from randomly close points.
+            Can see that after N=1000, begin to see groups form from randomly close points.
                 roughly nGroups is less than or equal to (0.2*N)
          */
         

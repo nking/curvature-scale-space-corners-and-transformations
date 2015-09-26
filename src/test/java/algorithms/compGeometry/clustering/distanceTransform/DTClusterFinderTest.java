@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,7 +28,7 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void estFindRanGenClusters() throws Exception {
+    public void testFindRanGenClusters() throws Exception {
         
         float xmin = 0;
         float xmax = 300;
@@ -40,11 +39,11 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 
-        seed = 1387775326745l;
+        //seed = 1387775326745l;
 
         log.info("SEED=" + seed);
         
-        //sr.setSeed(seed);
+        sr.setSeed(seed);
 
         int nSwitches = 3;
 
@@ -54,8 +53,22 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
 
         int count = 0;
         
+        // these were generated w/ a specifc seed so may need more tolerance
+        float[] r0s = new float[]{
+            0.01f, 0.18f, 0.4f,
+            0.01f, 0.18f, 0.4f,
+            0.02f, 0.18f, 0.4f
+        };
+        float[] r1s = new float[]{
+            0.05f, 0.285f, 0.5f,
+            0.05f, 0.28f, 0.5f,
+            0.04f, 0.28f, 0.5f
+        };
+        
         ClusterPlotter plotter = new ClusterPlotter();
 
+        //TODO: improve these simulated clusters and assert the numbers
+        
         for (int ii = 0; ii < nIterPerBackground; ii++) {
             for (int i = 0; i < nSwitches; i++) {
                 switch(i) {
@@ -71,13 +84,13 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                             3, 33, 33, 10f);
                         break;
                     default: {
-                        // 100*100
-                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                         // 100*100
+                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 100.0f);
-                        break;
+                         break;
                     }
                 }
-
+                
                 log.info(" " + count + " (" + indexer.getNXY() + " points) ... ");
 
                 Set<PairInt> points = new HashSet<PairInt>();
@@ -93,6 +106,8 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                     
                 DTClusterFinder clusterFinder = new DTClusterFinder(points,
                     width, height);
+                
+                clusterFinder.setToDebug();
 
                 clusterFinder.calculateCriticalDensity();
                 clusterFinder.findClusters();
@@ -121,6 +136,17 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
 
                 writeImage(img, "dt_ran_" + ii + "_" + i + ".png");
                 */
+                
+                plotter.writeFile();
+                
+                float r0 = r0s[count];
+                float r1 = r1s[count];
+                
+                float critDens = clusterFinder.getCriticalDensity();
+            
+                log.info("i=" + i + " ro-" + r0 + " r1=" + r1 + " critDens=" + critDens);
+            
+                assertTrue(critDens >= r0 && (critDens <= (r1 + 0.1f*r1)));
                 
                 count++;
             }
@@ -198,8 +224,131 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         plotter.writeFile2();
     }
     
-    public void testNoClusters() {
+    public void testNoClusters() throws Exception {
         
+        /* Goal of this test is to examine the substructure created by increasing numbers of randomly 
+           placed points.
+           
+           1000 x 1000 unit^2 space to place
+           
+               N=100,450,900,4500,9000,14500,19000,24500,29000
+               random points                
+               
+           And track, N, linear density, and the number of groups found.
+           
+                  N=(100)  calcLinDens=(0.1236)  expectedLinDens=(0.0100)  nGroups=(0)
+                  N=(450)  calcLinDens=(0.1489)  expectedLinDens=(0.0212)  nGroups=(0)
+                  N=(900)  calcLinDens=(0.1564)  expectedLinDens=(0.0300)  nGroups=(0)
+                  N=(4500)  calcLinDens=(0.1580)  expectedLinDens=(0.0671)  nGroups=(125)
+                  N=(9000)  calcLinDens=(0.1536)  expectedLinDens=(0.0949)  nGroups=(665)
+                  N=(14500)  calcLinDens=(0.1716)  expectedLinDens=(0.1204)  nGroups=(1391)
+                  N=(19000)  calcLinDens=(0.1747)  expectedLinDens=(0.1378)  nGroups=(2160)
+                  N=(24500)  calcLinDens=(0.1553)  expectedLinDens=(0.1565)  nGroups=(2922)
+                  N=(29000)  calcLinDens=(0.1544)  expectedLinDens=(0.1703)  nGroups=(2980)
+               SEED=1386750505246
+               
+            Can see that after N=1000, begin to see groups form from randomly close points.
+                roughly nGroups is less than or equal to (0.2*N)
+         */
+        
+        int[] numberOfBackgroundPoints = new int[]{100,450,900,4500,9000,14500,19000,24500,29000};
+        
+        int[] nGroupsFound = new int[numberOfBackgroundPoints.length];
+        float[] expectedLinearDensities = new float[nGroupsFound.length];
+        float[] calcLinearDensities = new float[nGroupsFound.length];
+        
+        float xmin = 0;
+        float xmax = 300;
+        float ymin = 0;
+        float ymax = 300;
+
+        long seed = System.currentTimeMillis();
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+
+        //seed = 1387775326745l;
+
+        log.info("SEED=" + seed);
+        
+        sr.setSeed(seed);
+
+        AxisIndexer indexer = null;
+
+        int count = 0;
+        
+        ClusterPlotter plotter = new ClusterPlotter();
+        
+        for (int ii = 0; ii < numberOfBackgroundPoints.length; ii++) { 
+            
+            int xyStartOffset = 0;
+            
+            float[] xb = new float[numberOfBackgroundPoints[ii]];
+            float[] yb = new float[numberOfBackgroundPoints[ii]];
+            
+            double expectedDensity = Math.sqrt(numberOfBackgroundPoints[ii])/(xmax-xmin);
+
+            createRandomPointsInRectangle(sr, numberOfBackgroundPoints[ii],
+                xmin, xmax, ymin, ymax, xb, yb, xyStartOffset);
+                    
+            float[] xbe = new float[numberOfBackgroundPoints[ii]];
+            float[] ybe = new float[numberOfBackgroundPoints[ii]];
+            for (int i = 0; i < numberOfBackgroundPoints[ii]; i++) {
+                // simulate x error as a percent error of 0.03 for each bin
+                xbe[i] = xb[i] * 0.03f;
+                ybe[i] = (float) (Math.sqrt(yb[i]));
+            }
+            
+            indexer = new AxisIndexer();
+            
+            indexer.sortAndIndexX(xb, yb, xbe, ybe, xbe.length);
+                        
+            log.info(" " + ii + " (" + indexer.getNumberOfPoints() + " points) ... ");
+
+            Set<PairInt> points = new HashSet<PairInt>();
+            for (int k = 0; k < indexer.getNXY(); ++k) {
+                PairInt p = new PairInt(Math.round(indexer.getX()[k]),
+                    Math.round(indexer.getY()[k]));
+                points.add(p);
+            }
+
+            int[] minMaxXY = MiscMath.findMinMaxXY(points);
+            int width = minMaxXY[1] + 1;
+            int height = minMaxXY[3] + 1;
+
+            DTClusterFinder clusterFinder = new DTClusterFinder(points,
+                width, height);
+
+            clusterFinder.calculateCriticalDensity();
+            clusterFinder.findClusters();
+            //clusterFinder.setCriticalDensity(dens);
+
+            int nGroups = clusterFinder.getNumberOfClusters();
+            
+            float critDensity = clusterFinder.getCriticalDensity();
+
+            List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+            for (int k = 0; k < nGroups; ++k) {
+                Set<PairInt> set = clusterFinder.getCluster(k);
+                groupList.add(set);
+            }
+            
+            plotter.addPlotWithoutHull(
+                (int)Math.floor(minMaxXY[0] - 1), 
+                (int)Math.ceil(minMaxXY[1] + 1), 
+                (int)Math.floor(minMaxXY[2] - 1), 
+                (int)Math.ceil(minMaxXY[3] + 1), 
+                points, groupList, critDensity, "no_clusters_" + ii);
+                        
+            float frac = ((float)nGroups/(float)points.size());
+            log.info("nPoints=" + points.size() + " nGroups=" + nGroups
+                + " frac=" + frac);
+            
+            assertTrue(frac < 0.2);
+        }
+        
+        plotter.writeFile3();
+        
+        log.info("SEED=" + seed);
     }
     
     public static String writeDataset(float[] values, String fileName) throws 
