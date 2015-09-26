@@ -4,5 +4,8 @@
 -- make the downhill simplex improvements (already present in the curvature project)
    http://nking.github.io/curvature-scale-space-corners-and-transformations/
 
+-- where are the tests for some of the clusters on the main page.
+   add dt tests for those
+
 -- update web page with new stats
 
