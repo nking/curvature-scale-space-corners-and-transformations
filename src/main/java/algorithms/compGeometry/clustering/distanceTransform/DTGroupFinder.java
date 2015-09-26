@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
@@ -31,6 +32,13 @@ public class DTGroupFinder {
      */
     protected Map<PairInt, Integer> pointToGroupMap = new
         HashMap<PairInt, Integer >();
+    
+    /**
+     * map with key= groupdId that needs to be moved up to value groupId before
+     * prune
+     */
+    protected TreeMap<Integer, Integer> mergeGroupsBeforePrune = new
+        TreeMap<Integer, Integer >();
     
     protected int minimumNumberInCluster = 3;
     
@@ -70,6 +78,8 @@ public class DTGroupFinder {
         float thrsh = criticalDensity * threshholdFactor;
         
         findGroups(thrsh, points);
+        
+        merge();
         
         prune(); 
     }
@@ -111,23 +121,14 @@ public class DTGroupFinder {
             count++;
         }
         PISort.mergeSortByXThenY(sorted);
-        
-        Set<PairInt> visited = new HashSet<PairInt>();
-        
+                
         for (int i = 0; i < sorted.length; ++i) {
             
             PairInt uPoint = sorted[i];
             
-            visited.add(uPoint);
-            
             // process the pair when their point density is higher than thrsh:
             //  
             //   2/sep_u_v  > thrsh  where thrsh is 2.5*the background linear density
-            //
-            //   if want to stop the search along x axis when have surpassed an association distance,
-            //      we can see  2/thrsh > sep_u_v
-            //                  (2/thrsh) > u - v 
-            //                  (2/thrsh) + v > u
             
             // association of 2 points for separation <= critSeparation
             
@@ -159,10 +160,6 @@ public class DTGroupFinder {
                     break;
                 }
                 
-                if (visited.contains(vPoint)) {
-                    continue;
-                }
-                
                 if (vX == minXAssoc) {
                     if (vPoint.getY() < minYAssoc) {
                         break;
@@ -183,9 +180,7 @@ public class DTGroupFinder {
                 
                 // if arrive here, vX is within an assoc radius and so is vY
                 processPair(uPoint, vPoint);
-                
-                visited.add(vPoint);
-                
+                                
                 assocFound = true;
             }
             
@@ -200,10 +195,6 @@ public class DTGroupFinder {
                     break;
                 }
                 
-                if (visited.contains(vPoint)) {
-                    continue;
-                }
-                
                 if (vX == maxXAssoc) {
                     if (vPoint.getY() > maxYAssoc) {
                         break;
@@ -211,6 +202,7 @@ public class DTGroupFinder {
                 }
                 // for given x, if y > maxYAssoc can skip, but not break
                 if (vPoint.getY() > maxYAssoc) {
+                    //TODO: if knew where next x was in sorted, could increment j to that
                     continue;
                 }
                 
@@ -224,9 +216,7 @@ public class DTGroupFinder {
                 
                 // if arrive here, vX is within an assoc radius and so is vY
                 processPair(uPoint, vPoint);
-                
-                visited.add(vPoint);
-                
+                                
                 assocFound = true;
             }
             
@@ -278,21 +268,23 @@ public class DTGroupFinder {
         
         Integer groupId = pointToGroupMap.get(uPoint);
         
-        if ((groupId != null) && (pointToGroupMap.get(vPoint) == null)) {
+        Integer vGroupId = pointToGroupMap.get(vPoint);
+        
+        if ((groupId != null) && (vGroupId == null)) {
                     
             groupMembership.get(groupId).add(vPoint);
             
             pointToGroupMap.put(vPoint, groupId);
                         
-        } else if ((groupId == null) && (pointToGroupMap.get(vPoint) != null)) {
+        } else if ((groupId == null) && (vGroupId != null)) {
 
-            groupId = pointToGroupMap.get(vPoint);
+            groupId = vGroupId;
 
             groupMembership.get(groupId).add(uPoint);
             
             pointToGroupMap.put(uPoint, groupId);
             
-        } else if ((groupId == null) && (pointToGroupMap.get(vPoint) == null)) {
+        } else if ((groupId == null) && (vGroupId == null)) {
             
             groupId = Integer.valueOf(groupMembership.size());
             
@@ -306,7 +298,19 @@ public class DTGroupFinder {
             
             groupMembership.add(set);
                       
-        } 
+        } else if ((groupId != null) && (vGroupId != null)) {
+            
+            if (groupId.intValue() != vGroupId.intValue()) {
+                if (groupId.intValue() > vGroupId.intValue()) {
+                    Integer swap = groupId;
+                    groupId = vGroupId;
+                    vGroupId = swap;
+                }
+
+                // store smaller as value, larger is key that needs to be moved up to value
+                mergeGroupsBeforePrune.put(vGroupId, groupId);
+            }
+        }
     }
     
     protected void process(PairInt uPoint) {
@@ -366,8 +370,29 @@ public class DTGroupFinder {
                 Set<PairInt> removed = groupMembership.remove(i);
             }
         }
-   
+        
         log.finest("number of groups after prune=" + groupMembership.size());
     }
 
+    private void merge() {
+        
+        log.finest("merge " + mergeGroupsBeforePrune.size() + " groups");
+        
+        for (Integer moveGroupId : mergeGroupsBeforePrune.descendingKeySet()) {
+            
+            Integer moveToGroupId = mergeGroupsBeforePrune.get(moveGroupId);
+            
+            Set<PairInt> moveGroup = groupMembership.get(moveGroupId.intValue());
+            
+            for (PairInt p : moveGroup) {
+                pointToGroupMap.put(p, moveToGroupId);
+            }
+            
+            groupMembership.get(moveToGroupId.intValue()).addAll(moveGroup);
+            
+            groupMembership.get(moveGroupId.intValue()).clear();
+        }
+        
+        mergeGroupsBeforePrune.clear();
+    }
 }
