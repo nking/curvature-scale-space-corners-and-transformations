@@ -1,7 +1,5 @@
 package com.climbwithyourfeet.clustering;
 
-import algorithms.misc.MiscMath;
-import algorithms.util.ArrayPair;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.util.PairInt;
 import java.io.BufferedReader;
@@ -14,7 +12,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.List;
 import java.util.Set;
-
 
 /**
 Convenience class to create a plot to visualize results of the
@@ -81,7 +78,7 @@ public class ClusterPlotter {
         
         /*for (i = 0; i < clusterSets.size(); i++) {
             Set<PairInt> set = clusterSets.get(i);
-            double[] xyCen = algorithms.compGeometry.clustering.distanceTransform.util.MiscMath.calculateXYCentroids(set);
+            double[] xyCen = com.climbwithyourfeet.clustering.util.MiscMath.calculateXYCentroids(set);
             if (i > 0) {
                 dataSB.append(",\n");
             }

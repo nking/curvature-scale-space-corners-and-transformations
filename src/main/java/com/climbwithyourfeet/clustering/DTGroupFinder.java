@@ -2,12 +2,16 @@ package com.climbwithyourfeet.clustering;
 
 import com.climbwithyourfeet.clustering.util.PairInt;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
@@ -34,11 +38,11 @@ public class DTGroupFinder {
         HashMap<PairInt, Integer >();
     
     /**
-     * map with key= groupdId that needs to be moved up to value groupId before
-     * prune
+      key = group receiving merges, value = set of integers to merge into this
+      key.  note that values are all greater than key
      */
-    protected TreeMap<Integer, Integer> mergeGroupsBeforePrune = new
-        TreeMap<Integer, Integer >();
+    protected TreeMap<Integer, Set<Integer>> mergeGroupsBeforePrune = new
+        TreeMap<Integer, Set<Integer>>();
     
     protected int minimumNumberInCluster = 3;
     
@@ -47,6 +51,8 @@ public class DTGroupFinder {
     protected boolean debug = false;
     
     protected float threshholdFactor = 2.5f;
+    
+    protected float critDensity = 0;
             
     public DTGroupFinder() {                
         this.log = Logger.getLogger(this.getClass().getName());
@@ -74,6 +80,8 @@ public class DTGroupFinder {
      * @param height 
      */
     void calculateGroups(float criticalDensity, Set<PairInt> points) {
+        
+        this.critDensity = criticalDensity;
         
         float thrsh = criticalDensity * threshholdFactor;
         
@@ -300,15 +308,30 @@ public class DTGroupFinder {
                       
         } else if ((groupId != null) && (vGroupId != null)) {
             
-            if (groupId.intValue() != vGroupId.intValue()) {
-                if (groupId.intValue() > vGroupId.intValue()) {
-                    Integer swap = groupId;
-                    groupId = vGroupId;
-                    vGroupId = swap;
+            Integer uIdx = groupId;
+            
+            Integer vIdx = vGroupId;
+            
+            if (uIdx != vIdx) {
+                if (uIdx > vIdx) {
+                    Integer swap = uIdx;
+                    uIdx = vIdx;
+                    vIdx = swap;
                 }
-
-                // store smaller as value, larger is key that needs to be moved up to value
-                mergeGroupsBeforePrune.put(vGroupId, groupId);
+                
+                // now uIdx is < vIdx
+                
+                /*
+                key = group receiving merges, value = set of integers to merge into this
+                key.  note that values are all greater than key
+                */
+                
+                Set<Integer> group = mergeGroupsBeforePrune.get(uIdx);
+                if (group == null) {
+                    group = new HashSet<Integer>();
+                    mergeGroupsBeforePrune.put(uIdx, group);
+                }
+                group.add(vIdx);
             }
         }
     }
@@ -377,22 +400,51 @@ public class DTGroupFinder {
     private void merge() {
         
         log.finest("merge " + mergeGroupsBeforePrune.size() + " groups");
+    
+        /*
+        merge values in tree first:
+          9->10           is move 10 into group 9
+          7->{8, 10}      is move 10 which is now 9) into group 7
+        */
+        Map<Integer, Set<Integer>> merged = new HashMap<Integer, Set<Integer>>();
         
-        for (Integer moveGroupId : mergeGroupsBeforePrune.descendingKeySet()) {
+        for (Integer moveToGroupIndex : mergeGroupsBeforePrune.descendingKeySet()) {
             
-            Integer moveToGroupId = mergeGroupsBeforePrune.get(moveGroupId);
+            Set<Integer> moveIndexes = mergeGroupsBeforePrune.get(moveToGroupIndex);
             
-            Set<PairInt> moveGroup = groupMembership.get(moveGroupId.intValue());
-            
-            for (PairInt p : moveGroup) {
-                pointToGroupMap.put(p, moveToGroupId);
+            // if any value in moveIndexes is a key in merged, add its values
+            // to moveIndexes
+            Set<Integer> add = new HashSet<Integer>();
+            for (Integer moveGroupIndex : moveIndexes) {
+                Set<Integer> set2 = merged.get(moveGroupIndex);
+                if (set2 != null) {
+                    add.addAll(set2);
+                }
             }
+            moveIndexes.addAll(add);
             
-            groupMembership.get(moveToGroupId.intValue()).addAll(moveGroup);
+            for (Integer moveGroupIndex : moveIndexes) {
+                        
+                Set<PairInt> moveGroup = groupMembership.get(moveGroupIndex);
             
-            groupMembership.get(moveGroupId.intValue()).clear();
+                for (PairInt p : moveGroup) {
+                    pointToGroupMap.put(p, moveToGroupIndex);
+                }
+
+                groupMembership.get(moveToGroupIndex).addAll(moveGroup);
+
+                groupMembership.get(moveGroupIndex).clear();
+                
+                Set<Integer> set2 = merged.get(moveGroupIndex);
+                if (set2 == null) {
+                    set2 = new HashSet<Integer>();
+                    merged.put(moveGroupIndex, set2);
+                }
+                set2.add(moveToGroupIndex);
+            }
         }
         
         mergeGroupsBeforePrune.clear();
     }
+
 }
