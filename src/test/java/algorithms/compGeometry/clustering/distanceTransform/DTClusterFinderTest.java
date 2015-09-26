@@ -2,6 +2,7 @@ package algorithms.compGeometry.clustering.distanceTransform;
 
 import algorithms.compGeometry.clustering.twopointcorrelation.AxisIndexer;
 import algorithms.compGeometry.clustering.twopointcorrelation.BaseTwoPointTest;
+import algorithms.compGeometry.clustering.twopointcorrelation.CreateClusterDataTest;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
@@ -28,7 +29,7 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void testFindRanGenClusters() throws Exception {
+    public void estFindRanGenClusters() throws Exception {
         
         float xmin = 0;
         float xmax = 300;
@@ -118,11 +119,60 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         log.info("SEED=" + seed);
     }
     
-    public void testNoClusters() {
+    public void testFindClustersOtherData() throws Exception {
         
+        String[] fileNames = {
+            "Aggregation.txt", "Compound.txt", "Pathbased.txt" , "Spiral.txt",
+            "D31.txt", "R15.txt" , "Jain.txt", "Flame.txt",
+            //"a1.txt", "a2.txt", "a3.txt"
+            /*,
+            "s1.txt", "s2.txt", "s3.txt", "s4.txt",
+            "birch1.txt", "birch2.txt", "birch3.txt" */
+        };
+        
+        for (int i = 0; i < fileNames.length; i++) {
+
+            String fileName = fileNames[i];
+            
+            //NOTE:  for i=8, distance transform needs alot of memory for array size, so have divided numbers there by 10
+            AxisIndexer indexer = CreateClusterDataTest.getUEFClusteringDataset(
+                fileName);
+            
+            Set<PairInt> points = new HashSet<PairInt>();
+            for (int k = 0; k < indexer.getNXY(); ++k) {
+                PairInt p = new PairInt(Math.round(indexer.getX()[k]),
+                    Math.round(indexer.getY()[k]));
+                points.add(p);
+            }
+
+            int[] minMaxXY = MiscMath.findMinMaxXY(points);
+            int width = minMaxXY[1] + 1;
+            int height = minMaxXY[3] + 1;
+
+            DTClusterFinder clusterFinder = new DTClusterFinder(points,
+                width, height);
+
+            clusterFinder.calculateCriticalDensity();
+            clusterFinder.findClusters();
+            //clusterFinder.setCriticalDensity(dens);
+
+            int nGroups = clusterFinder.getNumberOfClusters();
+
+            List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+            for (int k = 0; k < nGroups; ++k) {
+                Set<PairInt> set = clusterFinder.getCluster(k);
+                groupList.add(set);
+            }
+
+            BufferedImage img = createImage(points, width, height);
+
+            addAlternatingColorPointSets(img, groupList, 0);
+
+            writeImage(img, "dt_other_" + i + ".png");
+        }
     }
     
-    public void testFindClustersOtherData() {
+    public void testNoClusters() {
         
     }
     

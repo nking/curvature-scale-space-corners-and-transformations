@@ -38,7 +38,7 @@ public class DTGroupFinder {
     
     protected boolean debug = false;
     
-    protected float threshholdFactor = 3.0f;
+    protected float threshholdFactor = 1.5f;
             
     public DTGroupFinder() {                
         this.log = Logger.getLogger(this.getClass().getName());

@@ -11,7 +11,7 @@ import java.util.Set;
  * Euclidean square distance transforms are computed for every zero pixel relative to a non-zero point.
  *
  * The implementations are euclidean distance by default unless stated otherwise.
- * Chessboard implementations may be added.  All adjacent pixels, including 
+ * Chessboard implementations may be added in the future.  All adjacent pixels, including 
  * diagonal have a distance of '1' for chessboard implementation.
  * 
  * Useful papers in current implementations and tests were:

@@ -1,14 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.compGeometry.clustering.distanceTransform.DTClusterFinderTest;
-import algorithms.compGeometry.clustering.distanceTransform.DistanceTransform;
-import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscMath;
-import algorithms.util.Errors;
-import algorithms.util.PairInt;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
