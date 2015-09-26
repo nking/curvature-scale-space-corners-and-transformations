@@ -22,7 +22,7 @@ public class RandomClusterAndBackgroundGenerator {
 
     Logger log = Logger.getLogger(this.getClass().getName());
 
-    static enum CLUSTER_SEPARATION {
+    public static enum CLUSTER_SEPARATION {
         SMALL, MODERATE, LARGE
     }
 
