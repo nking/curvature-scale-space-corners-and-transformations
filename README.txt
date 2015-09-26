@@ -17,7 +17,7 @@ Usage as an API:
 
     clusterFinder.calculateCriticalDensity();
 
-    // alternatively, if the density is known, set instead of calculate:
+    // or, set density instead of calculate (for use in pca or lda, for example):
     //clusterFinder.setCriticalDensity(dens);
 
     clusterFinder.findClusters();
@@ -84,3 +84,20 @@ To keep track of which point in Set<PairInt> points belongs to which
 pixel, one can extend PairInt and add a field for the pixel index.  The 
 final groups will have the same points given to the code so will retain 
 the specialization.
+
+----------------------
+Citation and Licensing
+----------------------
+The citation for use of this code in a publication is:
+
+For use before Sep, 2015 
+    http://code.google.com/p/two-point-correlation/, 
+    Nichole King,  "Unsupervised Clustering Based Upon Voids in Two-Point Correlation". March 15, 2013.
+
+else
+    https://github.com/nking/two-point-correlation
+    Nichole King,  "Unsupervised Density Based Clustering Using Distance Transforms". September 25, 2015.
+
+The code is licensed under the MIT license, usable for commercial and non-commercial purposes:
+    http://opensource.org/licenses/mit-license.php
+    see LICENSE.txt in this project
