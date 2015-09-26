@@ -1,11 +1,2 @@
--- make an executable jar for the two-point correlation code and a link to
-   it from the wiki
-
--- make the downhill simplex improvements (already present in the curvature project)
-   http://nking.github.io/curvature-scale-space-corners-and-transformations/
-
--- where are the tests for some of the clusters on the main page.
-   add dt tests for those
-
--- update web page with new stats
-
+-- update the coee coverage target in the project and
+   run coverage reports and javadocs and commit the results
