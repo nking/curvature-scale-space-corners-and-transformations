@@ -1,1 +1,2 @@
--- update the javadocs
+-- fix errors in javadocs
+-- improve the histogram critical density solver and its tests
