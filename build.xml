@@ -29,9 +29,6 @@
     <!-- ================= set env properties ================= -->
     <property environment="env"/>
 
-    <!-- path to mysql driver is in this -->
-    <property file="env.properties"/>
-
     <!-- assignment name to be used in archive -->
     <property name="app.name"            value="${ant.project.name}"/>
 
@@ -81,8 +78,6 @@
 
     <property name="jacoco.exec.dir" location="bin/jacoco"/>
 
-    <property environment="env"/>
-
     <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
         <classpath path="${env.JACOCO_HOME}/lib/jacocoant.jar"/>
     </taskdef>
@@ -111,11 +106,6 @@
         <delete dir="${doc.dir}/api"/>
         <delete>
             <fileset dir="${classes.dir}" />
-            <!--
-            <fileset dir="${classes.dir}"
-                includes="**/*.class"
-                excludes="*.jar" />
-            -->
             <fileset dir="${aspects.dir}"
                 includes="**/*.class"
                 excludes="*.jar" />
@@ -494,10 +484,6 @@
         </junit>
     </target>
     
-    <target name="runEmma" >
-        <echo message="define ${JACOCO_HOME} and use ./run_jacoco_reports.sh"/>
-    </target>
-
     <target name="runTest" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
 
         <record name="${logfile}" append="yes" loglevel="debug"/>
@@ -585,9 +571,12 @@
         </tstamp>
         
         <mkdir dir="${classes.dir}/tmp" />
+        <unjar src="${lib.dir}/com.climbwithyourfeet.clustering.jar" dest="${classes.dir}/tmp"/>
+        <move file="${classes.dir}/tmp/LICENSE.txt" tofile="${classes.dir}/tmp/Clustering_LICENSE.txt"/>
         <unjar src="${lib.dir}/ejml-0.25.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jfreechart-1.0.19.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jcommon-1.0.23.jar" dest="${classes.dir}/tmp"/>
+        
         <!-- jfree needs the servlet jar -->
         <unjar src="${lib.dir}/servlet-api-2.5.jar" dest="${classes.dir}/tmp"/>
 

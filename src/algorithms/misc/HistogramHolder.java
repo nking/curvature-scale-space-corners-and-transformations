@@ -107,6 +107,9 @@ public class HistogramHolder {
         
         float yMin = MiscMath.findMin(yh);
         int yMaxIdx = MiscMath.findYMaxIndex(yh);
+        if (yMaxIdx == -1) {
+            return null;
+        }
         float yMax = yh[yMaxIdx];
         
         float xMin = MiscMath.findMin(xh);
