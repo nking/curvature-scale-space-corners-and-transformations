@@ -72,7 +72,6 @@
         <echo message="debugLargeTest:             debug test with -Dtest= fqn of test and jdwp"/>
         <echo message="javadoc:                    create javadocs"/>
         <echo message="runCoverage                 create code coverage reports"/>
-        <echo message="runCoverage2                create code coverage reports only for the com.climbwithyourfeet package"/>
         <echo message="package                     build jar"/>
         <echo message="package2                    build jar with clustering based on distance transform"/>
     </target>
