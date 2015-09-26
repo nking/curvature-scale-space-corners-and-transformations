@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TwoPointHashMap.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">TwoPointHashMap.java</span></div><h1>TwoPointHashMap.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import java.util.Arrays;
+import java.util.logging.Logger;
+
+/**
+ * &lt;pre&gt;
+ * A holder for two-point identities, where the identities are the indexes
+ * of the indexer internal arrays.  N is the size of the dataset, that is
+ * the indexer.nXY.
+ *
+ * TwoPointHashMap can only be used if
+ *     (N^2) &lt; Integer.MAX_VALUE
+ *     ==&gt; N &lt; 46340
+ *
+ * For datasets with N larger than 46340, the binary search tree impl should be
+ * used instead.
+ * This is because this object uses perfect hashing and smallest space
+ * complexity for fastest store and search options.
+ *
+ * Note that if the total available memory is less than that needed
+ * by the backing arrays, one should run this program to use a larger minimum
+ * amount of memory (-Xms4046m for example.  Make sure this is available to your program.).
+ * 
+ * The TwoPointIdentityFactory will check available memory before returning
+ * an instance of this class.
+ * 
+ * TODO:  if memory does not need to be conserved, could consider making many
+ *    instances of TwoPointHashMap (each with n = Math.ceiling(N/46340.))
+ *    to divide N into ranges kept within each TwoPointHashMap instance.
+ *
+ * This data structure is optimized for inserts and comparisons.
+ *
+ * Runtime complexity:
+ *    inserts are O(1), just the cost of the hash function, so asymptotically constant for large N.
+ *    comparisons are also O(1)
+ *
+ * Space complexity:
+ *    O(N)
+ *&lt;/pre&gt;
+ * @author nichole
+ */
+class TwoPointHashMap implements ITwoPointIdentity {
+
+    protected int[] a0;
+    protected int[] a1;
+<span class="fc" id="L47">    protected int n = 0;</span>
+
+    protected final int nDimen;
+
+    public static final int nMax = 46340;
+
+<span class="fc" id="L53">    protected static int emptyVal = -1;</span>
+
+<span class="fc" id="L55">    protected transient Logger log = null;</span>
+
+    /**
+     * constructor with data size as argument.  Note that indexerNXY has to be
+     * smaller than 46340.
+     *
+     * @param indexerNXY number of points in the original dataset
+     */
+<span class="fc" id="L63">    TwoPointHashMap(int indexerNXY) {</span>
+
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (indexerNXY &gt; 46340) {</span>
+<span class="fc" id="L66">            throw new IllegalArgumentException(&quot;please choose another impl of ITwoPointIdentity.&quot;</span>
+                + &quot; this one can store values if the dataset size is &lt;= 46340&quot;);
+        }
+
+<span class="fc" id="L70">        log = Logger.getLogger(this.getClass().getName());</span>
+
+<span class="fc" id="L72">        int nt = indexerNXY*indexerNXY;</span>
+
+<span class="fc" id="L74">        a0 = new int[nt];</span>
+<span class="fc" id="L75">        a1 = new int[nt];</span>
+
+<span class="fc" id="L77">        this.nDimen = indexerNXY;</span>
+
+<span class="fc" id="L79">        Arrays.fill(a0, emptyVal);</span>
+<span class="fc" id="L80">        Arrays.fill(a1, emptyVal);</span>
+<span class="fc" id="L81">    }</span>
+
+    @Override
+    public long approximateMemoryUsed() {
+
+<span class="fc" id="L86">        return checkRequiredMemory((long)Math.sqrt(a0.length));</span>
+    }
+
+    public static long checkRequiredMemory(long indexerNXY) {
+        
+<span class="fc" id="L91">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        long nbits = (is32Bit) ? 32 : 64;</span>
+
+<span class="fc" id="L97">        long arrayRefBits = 32;</span>
+
+<span class="fc" id="L99">        long overheadBytes = 16;</span>
+
+        // 4 ints and 2 int arrays
+<span class="fc" id="L102">        long sumBits = 4*nbits + 2*(arrayRefBits + indexerNXY*indexerNXY*nbits);</span>
+
+<span class="fc" id="L104">        long sumBytes = (sumBits/8) + overheadBytes;</span>
+
+<span class="fc" id="L106">        long padding = (sumBytes % 8);</span>
+
+<span class="fc" id="L108">        sumBytes += padding;</span>
+
+<span class="fc" id="L110">        return sumBytes;</span>
+    }
+
+
+    /**
+     * check if combination is already stored, if not add it and return true, else
+     * return false
+     *
+     * @param index0
+     * @param index1
+     * @return
+     */
+    @Override
+    public boolean storeIfDoesNotContain(int index0, int index1) {
+
+        // order the indexes to avoid double counting.
+        int i0, i1;
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (index0 &lt; index1) {</span>
+<span class="fc" id="L128">            i0 = index0;</span>
+<span class="fc" id="L129">            i1 = index1;</span>
+        } else {
+<span class="fc" id="L131">            i0 = index1;</span>
+<span class="fc" id="L132">            i1 = index0;</span>
+        }
+
+<span class="fc" id="L135">        int hash = hash(i0, i1);</span>
+
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (a0[hash] != emptyVal) {</span>
+<span class="fc" id="L138">            return false;</span>
+        }
+
+<span class="fc" id="L141">        a0[hash] = index0;</span>
+<span class="fc" id="L142">        a1[hash] = index1;</span>
+<span class="fc" id="L143">        n++;</span>
+
+<span class="fc" id="L145">        return true;</span>
+    }
+
+    int hash(int i0, int i1) {
+
+<span class="fc" id="L150">        int i = (nDimen*i0) + i1;</span>
+
+<span class="fc" id="L152">        return i;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

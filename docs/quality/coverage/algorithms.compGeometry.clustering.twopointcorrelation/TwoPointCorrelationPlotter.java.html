@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TwoPointCorrelationPlotter.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">TwoPointCorrelationPlotter.java</span></div><h1>TwoPointCorrelationPlotter.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import algorithms.misc.MiscMath;
+import algorithms.util.ArrayPair;
+import algorithms.util.ResourceFinder;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+
+
+/**
+&lt;pre&gt;
+Convenience class to create a plot to visualize results of the
+Two-Point correlation code.
+
+It edits a template made with d3.js and creates an output file that
+can be loaded into the browser and viewed without a network connection
+(the d3.js script is embedded).
+The path to the output file is printed to standard out.
+
+   Usage:
+      TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xMin, xMax, yMin, yMax);
+      plotter.addPlot(instanceOfTwoPointCorrelation);
+      plotter.writeFile();
+
+   Note that multiple uses of addPlot will append to existing html file for this instance.
+&lt;/pre&gt;
+@author nichole
+*/
+public class TwoPointCorrelationPlotter {
+
+    protected final StringBuffer plotContent;
+
+<span class="pc" id="L39">    protected int plotNumber = 0;</span>
+    
+<span class="pc" id="L41">    protected Float x0 = null;</span>
+<span class="pc" id="L42">    protected Float x1 = null;</span>
+<span class="pc" id="L43">    protected Float y0 = null;</span>
+<span class="pc" id="L44">    protected Float y1 = null;</span>
+
+<span class="fc" id="L46">    public TwoPointCorrelationPlotter(float minX, float maxX, float minY, float maxY) throws FileNotFoundException, IOException {</span>
+
+<span class="fc" id="L48">        plotContent = getTemplateHtmlPlot();</span>
+
+<span class="fc" id="L50">        setDataMinMax(plotContent, minX, maxX, minY, maxY);</span>
+<span class="fc" id="L51">    }</span>
+    
+<span class="fc" id="L53">    public TwoPointCorrelationPlotter() throws FileNotFoundException, IOException {</span>
+
+<span class="fc" id="L55">        plotContent = getTemplateHtmlPlot();</span>
+<span class="fc" id="L56">    }</span>
+
+<span class="nc" id="L58">    public TwoPointCorrelationPlotter(float minX, float maxX, float minY, float maxY, String relDirectory) throws FileNotFoundException, IOException {</span>
+
+<span class="nc" id="L60">        plotContent = getTemplateHtmlPlotWRTDir(relDirectory);</span>
+
+<span class="nc" id="L62">        setDataMinMax(plotContent, minX, maxX, minY, maxY);</span>
+<span class="nc" id="L63">    }</span>
+
+    protected void setDataMinMax(StringBuffer plotContent, float minX, 
+        float maxX, float minY, float maxY) {
+
+<span class="fc" id="L68">        StringBuffer dataSB = new StringBuffer();</span>
+
+<span class="fc" id="L70">        x0 = minX;</span>
+<span class="fc" id="L71">        x1 = maxX;</span>
+<span class="fc" id="L72">        y0 = minY;</span>
+<span class="fc" id="L73">        y1 = maxY;</span>
+        
+<span class="fc" id="L75">        dataSB.append(&quot;\nvar xmin = &quot;).append(minX).append(&quot;;\n&quot;);</span>
+<span class="fc" id="L76">        dataSB.append(&quot;var xmax = &quot;).append(maxX).append(&quot;;\n&quot;);</span>
+<span class="fc" id="L77">        dataSB.append(&quot;var ymin = &quot;).append(minY).append(&quot;;\n&quot;);</span>
+<span class="fc" id="L78">        dataSB.append(&quot;var ymax = &quot;).append(maxY).append(&quot;;\n&quot;);</span>
+
+<span class="fc" id="L80">        String srchFor = &quot;/* === DO NOT REMOVE THIS == START DATA */&quot;;</span>
+<span class="fc" id="L81">        int insertOffset = plotContent.indexOf(srchFor);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (insertOffset == -1) {</span>
+<span class="nc" id="L83">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
+        }
+<span class="fc" id="L85">        insertOffset += srchFor.length();</span>
+<span class="fc" id="L86">        plotContent.insert(insertOffset, dataSB.toString());</span>
+<span class="fc" id="L87">    }</span>
+
+    public void addPlot(TwoPointCorrelation twoPtCorr) {
+<span class="nc" id="L90">        addPlot(twoPtCorr, null);</span>
+<span class="nc" id="L91">    }</span>
+
+    public void addPlot(TwoPointCorrelation twoPtCorr, String plotLabel2) {
+
+<span class="fc" id="L95">        StringBuffer dataSB = new StringBuffer();</span>
+
+<span class="fc" id="L97">        float[] xPoints = twoPtCorr.getX();</span>
+<span class="fc" id="L98">        float[] yPoints = twoPtCorr.getY();</span>
+
+        //  ===== add points data =====
+<span class="fc" id="L101">        dataSB.append(&quot;\n\n&quot;).append(&quot;var data_points = [\n&quot;);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        for (int i = 0; i &lt; xPoints.length; i++) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (i &gt; 0) {</span>
+<span class="fc" id="L104">                dataSB.append(&quot;,\n&quot;);</span>
+            }
+<span class="fc" id="L106">            dataSB.append(&quot;    {x:&quot;).append(xPoints[i]).append(&quot;, y:&quot;).append(yPoints[i]);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (twoPtCorr.getXErrors() != null) {</span>
+<span class="fc" id="L108">                dataSB.append(&quot;, dx:&quot;).append(twoPtCorr.getXErrors()[i]).append(&quot;, dy:&quot;).append(twoPtCorr.getYErrors()[i]);</span>
+            }
+<span class="fc" id="L110">            dataSB.append(&quot;}&quot;);</span>
+        }
+<span class="fc" id="L112">        dataSB.append(&quot;\n];\n&quot;);</span>
+
+
+          //  ===== add group centroids =====
+<span class="fc" id="L116">        dataSB.append(&quot;\n\n&quot;).append(&quot;var data_group_centroids = [\n&quot;);</span>
+<span class="fc" id="L117">        ArrayPair centroids = twoPtCorr.getHullCentroids();</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        for (int i = 0; i &lt; twoPtCorr.getNumberOfGroups(); i++) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            if (i &gt; 0) {</span>
+<span class="fc" id="L120">                dataSB.append(&quot;,\n&quot;);</span>
+            }
+<span class="fc" id="L122">            dataSB.append(&quot;    {x:&quot;).append(centroids.getX()[i])</span>
+<span class="fc" id="L123">                .append(&quot;, y:&quot;).append(centroids.getY()[i]).append(&quot;, name: &quot;).append(i).append(&quot;}&quot;);</span>
+        }
+<span class="fc" id="L125">        dataSB.append(&quot;\n];\n&quot;);</span>
+
+
+<span class="fc" id="L128">        dataSB.append(&quot;\n&quot;).append(&quot;var data_polygons = [\n&quot;);</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (int i = 0; i &lt; twoPtCorr.getNumberOfGroups(); i++) {</span>
+<span class="fc" id="L130">            ArrayPair hull = twoPtCorr.getGroupHull(i);</span>
+<span class="fc" id="L131">            dataSB.append(&quot;    [&quot;);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            for (int ii = 0; ii &lt; hull.getX().length; ii++) {</span>
+<span class="fc" id="L133">                String xStr = String.format(&quot;%.1f&quot;, hull.getX()[ii]);</span>
+<span class="fc" id="L134">                String yStr = String.format(&quot;%.1f&quot;, hull.getY()[ii]);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if (ii &gt; 0) {</span>
+<span class="fc" id="L136">                    dataSB.append(&quot;, &quot;);</span>
+                }
+<span class="fc" id="L138">                dataSB.append(&quot;    {x:&quot;).append(xStr).append(&quot;, y:&quot;).append(yStr).append(&quot;}&quot;);</span>
+            }
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (i == (twoPtCorr.getNumberOfGroups() - 1)) {</span>
+<span class="fc" id="L141">                dataSB.append(&quot;]\n&quot;);</span>
+            } else {
+<span class="fc" id="L143">                dataSB.append(&quot;],\n &quot;);</span>
+            }
+        }
+<span class="fc" id="L146">        dataSB.append(&quot;];\n&quot;);</span>
+
+<span class="fc" id="L148">        String sdStr = String.format(&quot;'%.6f'&quot;, twoPtCorr.getBackgroundDensity());</span>
+<span class="fc" id="L149">        dataSB.append(&quot;\n&quot;).append(&quot;var plot_label_&quot;).append(plotNumber).append(&quot;=&quot;).append(sdStr).append(&quot;\n;&quot;);</span>
+
+        // ======= add RENDER statement ==========
+<span class="fc" id="L152">        dataSB.append(&quot;renderPlot('plot&quot;).append(plotNumber)</span>
+<span class="fc" id="L153">            .append(&quot;', data_group_centroids, data_points, data_polygons, plot_label_&quot;).append(plotNumber)</span>
+<span class="fc" id="L154">            .append(&quot;);\n&quot;);</span>
+
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">        if ((twoPtCorr.backgroundStats != null) &amp;&amp; (twoPtCorr.backgroundStats instanceof TwoPointVoidStats) ) {</span>
+
+<span class="fc" id="L158">            TwoPointVoidStats stats = (TwoPointVoidStats)twoPtCorr.backgroundStats;</span>
+
+<span class="fc" id="L160">            float[] xh = stats.statsHistogram.getXHist();</span>
+<span class="fc" id="L161">            float[] yh = stats.statsHistogram.getYHistFloat();</span>
+<span class="fc" id="L162">            float[] xg = stats.bestFit.getOriginalScaleX();</span>
+<span class="fc" id="L163">            float[] yg = stats.bestFit.getOriginalScaleYFit();</span>
+
+<span class="fc" id="L165">            float[] xhe = stats.statsHistogram.getXErrors();</span>
+<span class="fc" id="L166">            float[] yhe = stats.statsHistogram.getYErrors();</span>
+
+<span class="fc" id="L168">            float maxx = xh[xh.length - 1] + ((xh[1] - xh[0])/2.f);</span>
+<span class="fc" id="L169">            float minx = xh[0] - ((xh[1] - xh[0])/2.f);</span>
+<span class="fc" id="L170">            float miny = 0.f;</span>
+<span class="fc" id="L171">            float maxy = MiscMath.findMax(yh);</span>
+
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">            if (plotLabel2 == null) {</span>
+
+<span class="nc" id="L175">                plotLabel2 = String.format(&quot;chisq=%.1f errsq=%.1f chistat=%.1e chisq/err=%.1e  chistat/err=%.1e&quot;,</span>
+<span class="nc" id="L176">                stats.bestFit.getChiSqSum(), stats.bestFit.getYDataErrSq(),</span>
+<span class="nc" id="L177">                stats.bestFit.getChiSqStatistic(),</span>
+<span class="nc" id="L178">                (stats.bestFit.getChiSqSum()/stats.bestFit.getYDataErrSq()),</span>
+<span class="nc" id="L179">                (stats.bestFit.getChiSqStatistic()/stats.bestFit.getYDataErrSq())</span>
+                );
+            }
+
+<span class="fc" id="L183">            dataSB.append(&quot;\n\n&quot;).append(&quot;var data_plot_gev_label = '&quot;).append(plotLabel2).append(&quot;';\n&quot;);</span>
+
+            //  ===== add points data =====
+<span class="fc" id="L186">            dataSB.append(&quot;\n\n&quot;).append(&quot;var data_gev_points = [\n&quot;);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            for (int i = 0; i &lt; xh.length; i++) {</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                if (i &gt; 0) {</span>
+<span class="fc" id="L189">                    dataSB.append(&quot;,\n&quot;);</span>
+                }
+<span class="fc" id="L191">                dataSB.append(&quot;    {x:&quot;).append(xh[i]).append(&quot;, y:&quot;).append(yh[i]);</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">                if (xhe != null) {</span>
+<span class="fc" id="L193">                    String dxStr = String.format(&quot;%.7f&quot;, xhe[i]);</span>
+<span class="fc" id="L194">                    String dyStr = String.format(&quot;%.7f&quot;, yhe[i]);</span>
+<span class="fc" id="L195">                    dataSB.append(&quot;, dx:&quot;).append(dxStr).append(&quot;, dy:&quot;).append(dyStr);</span>
+                }
+<span class="fc" id="L197">                dataSB.append(&quot;}&quot;);</span>
+            }
+<span class="fc" id="L199">            dataSB.append(&quot;\n];\n&quot;);</span>
+
+              //  ===== add polygon =====
+<span class="fc" id="L202">            dataSB.append(&quot;\n&quot;).append(&quot;var data_gev_polygon = [\n&quot;);</span>
+<span class="fc" id="L203">            dataSB.append(&quot;    [&quot;);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            for (int ii = 0; ii &lt; xg.length; ii++) {</span>
+<span class="fc" id="L205">                String xStr = String.format(&quot;%.7f&quot;, xg[ii]);</span>
+<span class="fc" id="L206">                String yStr = String.format(&quot;%.7f&quot;, yg[ii]);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">                if (ii &gt; 0) {</span>
+<span class="fc" id="L208">                    dataSB.append(&quot;, &quot;);</span>
+                }
+<span class="fc" id="L210">                dataSB.append(&quot;    {x:&quot;).append(xStr).append(&quot;, y:&quot;).append(yStr);</span>
+<span class="fc" id="L211">                dataSB.append(&quot;}&quot;);</span>
+            }
+<span class="fc" id="L213">            dataSB.append(&quot;],\n &quot;);</span>
+<span class="fc" id="L214">            dataSB.append(&quot;];\n&quot;);</span>
+
+            // ======= add RENDER statement ==========
+<span class="fc" id="L217">            dataSB.append(&quot;renderGEVPlot('plot_gev&quot;).append(plotNumber)</span>
+<span class="fc" id="L218">                .append(&quot;', data_gev_points, data_gev_polygon, data_plot_gev_label, &quot;)</span>
+<span class="fc" id="L219">                .append(minx).append(&quot;,&quot;).append(maxx).append(&quot;,&quot;).append(miny).append(&quot;,&quot;).append(maxy).append(&quot;);\n&quot;);</span>
+
+        }
+
+<span class="fc" id="L223">        String srchFor = &quot;/* === DO NOT REMOVE THIS == END DATA */&quot;;</span>
+<span class="fc" id="L224">        int insertOffset = plotContent.indexOf(srchFor);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">        if (insertOffset == -1) {</span>
+<span class="nc" id="L226">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
+        }
+<span class="fc" id="L228">        plotContent.insert(insertOffset, dataSB.toString());</span>
+<span class="fc" id="L229">        dataSB = null;</span>
+
+
+        // ========== add the PLOT DIVS ==============
+<span class="fc" id="L233">        StringBuffer plotDivs = new StringBuffer();</span>
+<span class="fc" id="L234">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        if (twoPtCorr.backgroundStats != null) {</span>
+<span class="fc" id="L236">            plotDivs.append(&quot;&lt;div id='plot_gev&quot;).append(plotNumber).append(&quot;' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+        }
+
+
+<span class="fc" id="L240">        srchFor = &quot;&lt;!-- === DO NOT REMOVE THIS == END PLOT DIVS --&gt;&quot;;</span>
+<span class="fc" id="L241">        insertOffset = plotContent.indexOf(srchFor);</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        if (insertOffset == -1) {</span>
+<span class="nc" id="L243">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
+        }
+<span class="fc" id="L245">        plotContent.insert(insertOffset, plotDivs.toString());</span>
+<span class="fc" id="L246">        plotDivs = null;</span>
+
+<span class="fc" id="L248">        plotNumber++;</span>
+<span class="fc" id="L249">    }</span>
+
+    public void addPlotWithoutHull(TwoPointCorrelation twoPtCorr, String plotLabel2) {
+        
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (x0 == null) {</span>
+<span class="nc" id="L254">            throw new IllegalStateException(&quot;x0 cannot be null.&quot; </span>
+                + &quot; use constructor with range arguments or &quot;
+                + &quot; addPlotWithoutHull with range arguments&quot;
+            );
+        }
+        
+<span class="fc" id="L260">        addPlotWithoutHull(twoPtCorr, plotLabel2, x0, x1, y0, y1);</span>
+<span class="fc" id="L261">    }</span>
+    
+    public void addPlotWithoutHull(TwoPointCorrelation twoPtCorr, 
+        String plotLabel2, Float xMin, Float xMax, Float yMin, Float yMax) {
+
+<span class="fc" id="L266">        StringBuffer dataSB = new StringBuffer();</span>
+
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        if (xMin != null) {</span>
+<span class="fc" id="L269">            String str = String.format(&quot;%.7f&quot;, xMin.floatValue());</span>
+<span class="fc" id="L270">            dataSB.append(&quot;var x_min_&quot;).append(plotNumber).append(&quot; = &quot;)</span>
+<span class="fc" id="L271">                .append(str).append(&quot;;\n&quot;);</span>
+<span class="fc" id="L272">            str = String.format(&quot;%.7f&quot;, xMax.floatValue());</span>
+<span class="fc" id="L273">            dataSB.append(&quot;var x_max_&quot;).append(plotNumber).append(&quot; = &quot;)</span>
+<span class="fc" id="L274">                .append(str).append(&quot;;\n&quot;);</span>
+            
+<span class="fc" id="L276">            str = String.format(&quot;%.7f&quot;, yMin.floatValue());</span>
+<span class="fc" id="L277">            dataSB.append(&quot;var y_min_&quot;).append(plotNumber).append(&quot; = &quot;)</span>
+<span class="fc" id="L278">                .append(str).append(&quot;;\n&quot;);</span>
+<span class="fc" id="L279">            str = String.format(&quot;%.7f&quot;, yMax.floatValue());</span>
+<span class="fc" id="L280">            dataSB.append(&quot;var y_max_&quot;).append(plotNumber).append(&quot; = &quot;)</span>
+<span class="fc" id="L281">                .append(str).append(&quot;;\n&quot;);</span>
+        }
+        
+<span class="fc" id="L284">        float[] xPoints = twoPtCorr.getX();</span>
+<span class="fc" id="L285">        float[] yPoints = twoPtCorr.getY();</span>
+
+        //  ===== add points data =====
+<span class="fc" id="L288">        dataSB.append(&quot;\n\n&quot;).append(&quot;var data_points_&quot;).append(plotNumber)</span>
+<span class="fc" id="L289">            .append(&quot; = [\n&quot;);</span>
+        
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        for (int i = 0; i &lt; xPoints.length; i++) {</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">            if (i &gt; 0) {</span>
+<span class="fc" id="L293">                dataSB.append(&quot;,\n&quot;);</span>
+            }
+<span class="fc" id="L295">            dataSB.append(&quot;    {x:&quot;).append(xPoints[i]).append(&quot;, y:&quot;).append(yPoints[i]);</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">            if (twoPtCorr.getXErrors() != null) {</span>
+<span class="fc" id="L297">                dataSB.append(&quot;, dx:&quot;).append(twoPtCorr.getXErrors()[i]).append(&quot;, dy:&quot;).append(twoPtCorr.getYErrors()[i]);</span>
+            }
+<span class="fc" id="L299">            dataSB.append(&quot;}&quot;);</span>
+        }
+<span class="fc" id="L301">        dataSB.append(&quot;\n];\n&quot;);</span>
+
+
+          //  ===== add group centroids =====
+<span class="fc" id="L305">        dataSB.append(&quot;\n\n&quot;).append(&quot;var data_group_centroids_&quot;)</span>
+<span class="fc" id="L306">            .append(plotNumber).append(&quot; = [\n&quot;);</span>
+        
+<span class="fc" id="L308">        ArrayPair centroids = twoPtCorr.getHullCentroids();</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        for (int i = 0; i &lt; twoPtCorr.getNumberOfGroups(); i++) {</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">            if (i &gt; 0) {</span>
+<span class="fc" id="L311">                dataSB.append(&quot;,\n&quot;);</span>
+            }
+<span class="fc" id="L313">            dataSB.append(&quot;    {x:&quot;).append(centroids.getX()[i])</span>
+<span class="fc" id="L314">                .append(&quot;, y:&quot;).append(centroids.getY()[i]).append(&quot;, name: &quot;)</span>
+<span class="fc" id="L315">                .append(i).append(&quot;}&quot;);</span>
+        }
+<span class="fc" id="L317">        dataSB.append(&quot;\n];\n&quot;);</span>
+
+
+<span class="fc" id="L320">        dataSB.append(&quot;\n&quot;).append(&quot;var data_groups_&quot;)</span>
+<span class="fc" id="L321">            .append(plotNumber).append(&quot; = [\n&quot;);</span>
+        
+<span class="fc bfc" id="L323" title="All 2 branches covered.">        for (int i = 0; i &lt; twoPtCorr.getNumberOfGroups(); i++) {</span>
+<span class="fc" id="L324">            ArrayPair group = twoPtCorr.getGroup(i);</span>
+        
+<span class="fc" id="L326">            int nPolygonPoints = group.getX().length;</span>
+
+<span class="fc" id="L328">            dataSB.append(&quot;    [&quot;);</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">            for (int ii = 0; ii &lt; nPolygonPoints; ii++) {</span>
+<span class="fc" id="L330">                String xStr = String.format(&quot;%.1f&quot;, group.getX()[ii]);</span>
+<span class="fc" id="L331">                String yStr = String.format(&quot;%.1f&quot;, group.getY()[ii]);</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">                if (ii &gt; 0) {</span>
+<span class="fc" id="L333">                    dataSB.append(&quot;,\n&quot;);</span>
+                }
+<span class="fc" id="L335">                dataSB.append(&quot;    {x:&quot;).append(xStr).append(&quot;, y:&quot;).append(yStr).append(&quot;}&quot;);</span>
+            }
+<span class="fc bfc" id="L337" title="All 2 branches covered.">            if (i == (twoPtCorr.getNumberOfGroups() - 1)) {</span>
+<span class="fc" id="L338">                dataSB.append(&quot;]\n&quot;);</span>
+            } else {
+<span class="fc" id="L340">                dataSB.append(&quot;],\n &quot;);</span>
+            }
+        }
+<span class="fc" id="L343">        dataSB.append(&quot;];\n&quot;);</span>
+
+<span class="fc" id="L345">        String sdStr = String.format(&quot;'%.6f'&quot;, twoPtCorr.getBackgroundDensity());</span>
+<span class="fc" id="L346">        dataSB.append(&quot;\n&quot;).append(&quot;var plot_label_&quot;).append(plotNumber)</span>
+<span class="fc" id="L347">            .append(&quot;=&quot;).append(sdStr).append(&quot;;\n&quot;);</span>
+
+        // ======= add RENDER statement ==========
+<span class="fc" id="L350">        dataSB.append(&quot;\nrenderPlotWithoutHull('plot&quot;).append(plotNumber)</span>
+<span class="fc" id="L351">            .append(&quot;', data_group_centroids_&quot;).append(plotNumber)</span>
+<span class="fc" id="L352">            .append(&quot;, data_points_&quot;).append(plotNumber)</span>
+<span class="fc" id="L353">            .append(&quot;, data_groups_&quot;).append(plotNumber)</span>
+<span class="fc" id="L354">            .append(&quot;, plot_label_&quot;).append(plotNumber)</span>
+<span class="fc" id="L355">            .append(&quot;, x_min_&quot;).append(plotNumber)</span>
+<span class="fc" id="L356">            .append(&quot;, x_max_&quot;).append(plotNumber)</span>
+<span class="fc" id="L357">            .append(&quot;, y_min_&quot;).append(plotNumber)</span>
+<span class="fc" id="L358">            .append(&quot;, y_max_&quot;).append(plotNumber)</span>
+<span class="fc" id="L359">            .append(&quot;);\n&quot;);</span>
+
+<span class="pc bpc" id="L361" title="2 of 4 branches missed.">        if ((twoPtCorr.backgroundStats != null) &amp;&amp; </span>
+            (twoPtCorr.backgroundStats instanceof TwoPointVoidStats) ) {
+
+<span class="fc" id="L364">            TwoPointVoidStats stats = (TwoPointVoidStats)twoPtCorr.backgroundStats;</span>
+
+<span class="fc" id="L366">            float[] xh = stats.statsHistogram.getXHist();</span>
+<span class="fc" id="L367">            float[] yh = stats.statsHistogram.getYHistFloat();</span>
+            
+<span class="fc" id="L369">            float[] xg = stats.bestFit.getOriginalScaleX();</span>
+<span class="fc" id="L370">            float[] yg = stats.bestFit.getOriginalScaleYFit();</span>
+
+<span class="fc" id="L372">            float[] xhe = stats.statsHistogram.getXErrors();</span>
+<span class="fc" id="L373">            float[] yhe = stats.statsHistogram.getYErrors();</span>
+
+<span class="fc" id="L375">            float maxx = xh[xh.length - 1] + ((xh[1] - xh[0])/2.f);</span>
+<span class="fc" id="L376">            float minx = xh[0] - ((xh[1] - xh[0])/2.f);</span>
+<span class="fc" id="L377">            float miny = 0.f;</span>
+<span class="fc" id="L378">            float maxy = MiscMath.findMax(yh);</span>
+
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">            if (plotLabel2 == null) {</span>
+
+<span class="nc" id="L382">                plotLabel2 = String.format(&quot;chisq=%.1f errsq=%.1f chistat=%.1e chisq/err=%.1e  chistat/err=%.1e&quot;,</span>
+<span class="nc" id="L383">                stats.bestFit.getChiSqSum(), stats.bestFit.getYDataErrSq(),</span>
+<span class="nc" id="L384">                stats.bestFit.getChiSqStatistic(),</span>
+<span class="nc" id="L385">                (stats.bestFit.getChiSqSum()/stats.bestFit.getYDataErrSq()),</span>
+<span class="nc" id="L386">                (stats.bestFit.getChiSqStatistic()/stats.bestFit.getYDataErrSq())</span>
+                );
+            }
+
+<span class="fc" id="L390">            dataSB.append(&quot;\n\n&quot;).append(&quot;var data_plot_gev_label_&quot;)</span>
+<span class="fc" id="L391">                .append(plotNumber)</span>
+<span class="fc" id="L392">                .append(&quot; = '&quot;).append(plotLabel2).append(&quot;';\n&quot;);</span>
+
+            //  ===== add points data =====
+<span class="fc" id="L395">            dataSB.append(&quot;\n\n&quot;).append(&quot;var data_gev_points_&quot;)</span>
+<span class="fc" id="L396">                .append(plotNumber).append(&quot; = [\n&quot;);</span>
+            
+<span class="fc bfc" id="L398" title="All 2 branches covered.">            for (int i = 0; i &lt; xh.length; i++) {</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">                if (i &gt; 0) {</span>
+<span class="fc" id="L400">                    dataSB.append(&quot;,\n&quot;);</span>
+                }
+<span class="fc" id="L402">                dataSB.append(&quot;    {x:&quot;).append(xh[i]).append(&quot;, y:&quot;).append(yh[i]);</span>
+<span class="pc bpc" id="L403" title="1 of 2 branches missed.">                if (xhe != null) {</span>
+<span class="fc" id="L404">                    String dxStr = String.format(&quot;%.7f&quot;, xhe[i]);</span>
+<span class="fc" id="L405">                    String dyStr = String.format(&quot;%.7f&quot;, yhe[i]);</span>
+<span class="fc" id="L406">                    dataSB.append(&quot;, dx:&quot;).append(dxStr).append(&quot;, dy:&quot;).append(dyStr);</span>
+                }
+<span class="fc" id="L408">                dataSB.append(&quot;}&quot;);</span>
+            }
+<span class="fc" id="L410">            dataSB.append(&quot;\n];\n&quot;);</span>
+
+              //  ===== add polygon =====
+<span class="fc" id="L413">            dataSB.append(&quot;\n&quot;).append(&quot;var data_gev_polygon_&quot;)</span>
+<span class="fc" id="L414">                .append(plotNumber).append(&quot; = [\n&quot;);</span>
+            
+<span class="fc" id="L416">            dataSB.append(&quot;    [&quot;);</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">            for (int ii = 0; ii &lt; xg.length; ii++) {</span>
+<span class="fc" id="L418">                String xStr = String.format(&quot;%.7f&quot;, xg[ii]);</span>
+<span class="fc" id="L419">                String yStr = String.format(&quot;%.7f&quot;, yg[ii]);</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">                if (ii &gt; 0) {</span>
+<span class="fc" id="L421">                    dataSB.append(&quot;, &quot;);</span>
+                }
+<span class="fc" id="L423">                dataSB.append(&quot;    {x:&quot;).append(xStr).append(&quot;, y:&quot;).append(yStr);</span>
+<span class="fc" id="L424">                dataSB.append(&quot;}&quot;);</span>
+            }
+<span class="fc" id="L426">            dataSB.append(&quot;],\n &quot;);</span>
+<span class="fc" id="L427">            dataSB.append(&quot;];\n&quot;);</span>
+
+            // ======= add RENDER statement ==========
+<span class="fc" id="L430">            dataSB.append(&quot;renderGEVPlot('plot_gev&quot;).append(plotNumber)</span>
+<span class="fc" id="L431">                .append(&quot;', data_gev_points_&quot;).append(plotNumber)</span>
+<span class="fc" id="L432">                .append(&quot;, data_gev_polygon_&quot;).append(plotNumber)</span>
+<span class="fc" id="L433">                .append(&quot;, data_plot_gev_label_&quot;).append(plotNumber)</span>
+<span class="fc" id="L434">                .append(&quot;, &quot;)                </span>
+                
+<span class="fc" id="L436">                .append(minx).append(&quot;,&quot;).append(maxx).append(&quot;,&quot;).append(miny)</span>
+<span class="fc" id="L437">                .append(&quot;,&quot;).append(maxy).append(&quot;);\n&quot;);</span>
+        }
+
+<span class="fc" id="L440">        String srchFor = &quot;/* === DO NOT REMOVE THIS == END DATA */&quot;;</span>
+<span class="fc" id="L441">        int insertOffset = plotContent.indexOf(srchFor);</span>
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if (insertOffset == -1) {</span>
+<span class="nc" id="L443">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
+        }
+<span class="fc" id="L445">        plotContent.insert(insertOffset, dataSB.toString());</span>
+<span class="fc" id="L446">        dataSB = null;</span>
+
+
+        // ========== add the PLOT DIVS ==============
+<span class="fc" id="L450">        StringBuffer plotDivs = new StringBuffer();</span>
+<span class="fc" id="L451">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">        if (twoPtCorr.backgroundStats != null) {</span>
+<span class="fc" id="L453">            plotDivs.append(&quot;&lt;div id='plot_gev&quot;).append(plotNumber).append(&quot;' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+        }
+
+
+<span class="fc" id="L457">        srchFor = &quot;&lt;!-- === DO NOT REMOVE THIS == END PLOT DIVS --&gt;&quot;;</span>
+<span class="fc" id="L458">        insertOffset = plotContent.indexOf(srchFor);</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (insertOffset == -1) {</span>
+<span class="nc" id="L460">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
+        }
+<span class="fc" id="L462">        plotContent.insert(insertOffset, plotDivs.toString());</span>
+<span class="fc" id="L463">        plotDivs = null;</span>
+
+<span class="fc" id="L465">        plotNumber++;</span>
+<span class="fc" id="L466">    }</span>
+
+    protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, 
+        IOException {
+<span class="fc" id="L470">        return getTemplateHtmlPlot(&quot;plot_twoptcorrelation.html&quot;);</span>
+    }
+
+    protected StringBuffer getTemplateHtmlPlotWRTDir(String relDir) throws 
+        FileNotFoundException, IOException {
+<span class="nc" id="L475">        return getTemplateHtmlPlot(relDir, &quot;plot_twoptcorrelation.html&quot;);</span>
+    }
+
+    protected StringBuffer getTemplateHtmlPlot(String subDir, String fileName) 
+        throws FileNotFoundException, IOException {
+
+<span class="nc" id="L481">        String path = ResourceFinder.findFileInResources(subDir, fileName);</span>
+
+<span class="nc" id="L483">        StringBuffer sb = new StringBuffer();</span>
+
+<span class="nc" id="L485">        Reader reader = null;</span>
+<span class="nc" id="L486">        BufferedReader in = null;</span>
+
+        try {
+<span class="nc" id="L489">            reader = new FileReader(new File(path));</span>
+<span class="nc" id="L490">            in = new BufferedReader(reader);</span>
+
+<span class="nc" id="L492">            String line = in.readLine();</span>
+
+<span class="nc bnc" id="L494" title="All 2 branches missed.">            while (line != null) {</span>
+<span class="nc" id="L495">                sb.append(line).append(&quot;\n&quot;);</span>
+<span class="nc" id="L496">                line = in.readLine();</span>
+            }
+
+        } finally {
+<span class="nc bnc" id="L500" title="All 4 branches missed.">            if (in != null) {</span>
+<span class="nc" id="L501">                in.close();</span>
+            }
+<span class="nc bnc" id="L503" title="All 4 branches missed.">            if (reader != null) {</span>
+<span class="nc" id="L504">                reader.close();</span>
+            }
+        }
+
+<span class="nc" id="L508">        return sb;</span>
+    }
+
+    protected StringBuffer getTemplateHtmlPlot(String fileName) throws 
+        FileNotFoundException, IOException {
+
+<span class="fc" id="L514">        StringBuffer sb = new StringBuffer();</span>
+
+<span class="fc" id="L516">        Reader reader = null;</span>
+<span class="fc" id="L517">        BufferedReader in = null;</span>
+
+        try {
+<span class="fc" id="L520">            String path = ResourceFinder.findFileInResources(fileName);</span>
+
+<span class="fc" id="L522">            reader = new FileReader(new File(path));</span>
+<span class="fc" id="L523">            in = new BufferedReader(reader);</span>
+
+<span class="fc" id="L525">            String line = in.readLine();</span>
+
+<span class="fc bfc" id="L527" title="All 2 branches covered.">            while (line != null) {</span>
+<span class="fc" id="L528">                sb.append(line).append(&quot;\n&quot;);</span>
+<span class="fc" id="L529">                line = in.readLine();</span>
+            }
+
+<span class="nc" id="L532">        } catch(IOException e) {</span>
+
+<span class="nc" id="L534">            ClassLoader cls = ResourceFinder.class.getClassLoader();</span>
+
+<span class="nc" id="L536">            InputStream input = cls.getResourceAsStream(fileName);</span>
+
+<span class="nc bnc" id="L538" title="All 2 branches missed.">            if (input == null) {</span>
+<span class="nc" id="L539">                throw new IOException(&quot;could not find file &quot; + fileName);</span>
+            }
+
+<span class="nc" id="L542">            reader = new InputStreamReader(input);</span>
+<span class="nc" id="L543">            in = new BufferedReader(reader);</span>
+
+<span class="nc" id="L545">            String line = in.readLine();</span>
+
+<span class="nc bnc" id="L547" title="All 2 branches missed.">            while (line != null) {</span>
+<span class="nc" id="L548">                sb.append(line).append(&quot;\n&quot;);</span>
+<span class="nc" id="L549">                line = in.readLine();</span>
+            }
+
+        } finally {
+<span class="pc bpc" id="L553" title="5 of 6 branches missed.">            if (in != null) {</span>
+<span class="pc" id="L554">                in.close();</span>
+            }
+<span class="pc bpc" id="L556" title="5 of 6 branches missed.">            if (reader != null) {</span>
+<span class="pc" id="L557">                reader.close();</span>
+            }
+        }
+
+<span class="fc" id="L561">        return sb;</span>
+    }
+
+    public String writeFile() throws IOException {
+<span class="fc" id="L565">        return writeToFile(this.plotContent.toString(), &quot;twoptcorrelation.html&quot;);</span>
+    }
+    public String writeFile3() throws IOException {
+<span class="fc" id="L568">        return writeToFile(this.plotContent.toString(), &quot;twoptcorrelation3.html&quot;);</span>
+    }
+
+    protected String writeToFile(String fileContent, String fileName) throws IOException {
+
+<span class="fc" id="L573">        String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);</span>
+<span class="fc" id="L574">        return copyFilePath;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

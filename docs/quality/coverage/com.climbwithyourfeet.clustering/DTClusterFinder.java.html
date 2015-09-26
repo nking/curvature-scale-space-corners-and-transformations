@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DTClusterFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">com.climbwithyourfeet.clustering</a> &gt; <span class="el_source">DTClusterFinder.java</span></div><h1>DTClusterFinder.java</h1><pre class="source lang-java linenums">package com.climbwithyourfeet.clustering;
+
+import com.climbwithyourfeet.clustering.util.PairInt;
+import java.util.Set;
+
+/**
+ * main class to cluster finder whose logic is based upon distance transform,
+ * density threshold, and a signal to noise argument of ~ 3 as a factor.
+ * 
+ * runtime complexity ~ O(N_pixels) + ~O(N_points * lg2(N_points))
+ * 
+ * @author nichole
+ */
+public class DTClusterFinder {
+    
+    private final Set&lt;PairInt&gt; points;
+    private final int width;
+    private final int height;
+    
+<span class="fc" id="L20">    private float critDens = Float.POSITIVE_INFINITY;</span>
+    
+<span class="fc" id="L22">    private DTGroupFinder groupFinder = null;</span>
+    
+    private enum STATE {
+        INIT, HAVE_CLUSTER_DENSITY, HAVE_GROUPS
+    }
+    
+<span class="fc" id="L28">    private STATE state = null;</span>
+    
+<span class="fc" id="L30">    private boolean debug = false;</span>
+    
+<span class="fc" id="L32">    public DTClusterFinder(Set&lt;PairInt&gt; points, int width, int height) {</span>
+        
+<span class="fc" id="L34">        this.points = points;</span>
+<span class="fc" id="L35">        this.width = width;</span>
+<span class="fc" id="L36">        this.height = height;</span>
+        
+<span class="fc" id="L38">        state = STATE.INIT;</span>
+<span class="fc" id="L39">    }</span>
+    
+    public void setToDebug() {
+<span class="fc" id="L42">        debug = true;</span>
+<span class="fc" id="L43">    }</span>
+    
+    public void calculateCriticalDensity() {
+        
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
+<span class="nc" id="L48">            return;</span>
+        }
+        
+<span class="fc" id="L51">        DistanceTransform dtr = new DistanceTransform();</span>
+<span class="fc" id="L52">        int[][] dt = dtr.applyMeijsterEtAl(points, width, height);</span>
+        
+<span class="fc" id="L54">        CriticalDensitySolver densSolver = new CriticalDensitySolver();</span>
+        
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (debug) {</span>
+<span class="fc" id="L57">            densSolver.setToDebug();</span>
+        }
+        
+<span class="fc" id="L60">        this.critDens = densSolver.findCriticalDensity(dt, points.size(), width, height);               </span>
+<span class="fc" id="L61">    }</span>
+    
+    public void setCriticalDensity(float dens) {
+        
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
+<span class="nc" id="L66">            throw new IllegalStateException(&quot;cluster density is already set&quot;);</span>
+        }
+        
+<span class="nc" id="L69">        this.critDens = dens;</span>
+<span class="nc" id="L70">    }</span>
+    
+    public void findClusters() {
+        
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_GROUPS) &lt; 1) {</span>
+<span class="fc" id="L75">            calculateCriticalDensity();</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        } else if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
+<span class="nc" id="L77">            return;</span>
+        }
+        
+<span class="fc" id="L80">        groupFinder = new DTGroupFinder();</span>
+        
+<span class="fc" id="L82">        groupFinder.calculateGroups(critDens, points);</span>
+        
+<span class="fc" id="L84">    }</span>
+    
+    public int getNumberOfClusters() {
+        
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L89">            return 0;</span>
+        }
+        
+<span class="fc" id="L92">        return groupFinder.getNumberOfGroups();</span>
+    }
+    
+    public Set&lt;PairInt&gt; getCluster(int idx) {
+        
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L98">            throw new IllegalArgumentException(</span>
+                &quot;findClusters was not successfully invoked&quot;);
+        }
+        
+<span class="pc bpc" id="L102" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (groupFinder.getNumberOfGroups() - 1))) {</span>
+<span class="nc" id="L103">            throw new IllegalArgumentException(&quot;idx is out of bounds&quot;);</span>
+        }
+        
+<span class="fc" id="L106">        return groupFinder.getGroup(idx);</span>
+    }
+    
+    public float getCriticalDensity() {
+<span class="fc" id="L110">        return critDens;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

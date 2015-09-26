@@ -1,5 +1,0 @@
-EMMA is distributed under the terms of Common Public License v1.0 and is thus free for both 
-open-source and commercial development. A copy of this license is included with EMMA 
-distribution. 
-http://www.eclipse.org/legal/cpl-v10.html
-You can view IBM's CPL FAQ at http://www-106.ibm.com/developerworks/library/os-cplfaq.html

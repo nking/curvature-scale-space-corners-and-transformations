@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ResourceFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">ResourceFinder.java</span></div><h1>ResourceFinder.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URL;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L15">public class ResourceFinder {</span>
+
+<span class="fc" id="L17">    protected final static String sep = System.getProperty(&quot;file.separator&quot;);</span>
+
+<span class="fc" id="L19">    protected final static Logger log = Logger.getLogger(ResourceFinder.class.getName());</span>
+
+    public static String findFileInResources(String fileName) throws IOException {
+
+<span class="fc" id="L23">        String dirPath = findResourcesDirectory();</span>
+
+<span class="fc" id="L25">        String filePath = dirPath + sep + fileName;</span>
+
+<span class="fc" id="L27">        File f = new File(filePath);</span>
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (!f.exists()) {</span>
+<span class="nc" id="L29">            throw new IOException(&quot;could not find file at &quot; + filePath);</span>
+        }
+<span class="fc" id="L31">        return filePath;</span>
+    }
+
+    public static String findFileInResources(String subDir, String fileName) throws IOException {
+
+<span class="fc" id="L36">        String dirPath = findResourcesDirectory(subDir);</span>
+
+<span class="fc" id="L38">        String filePath = dirPath + sep + fileName;</span>
+
+<span class="fc" id="L40">        File f = new File(filePath);</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (!f.exists()) {</span>
+<span class="nc" id="L42">            throw new IOException(&quot;could not find file at &quot; + filePath);</span>
+        }
+<span class="fc" id="L44">        return filePath;</span>
+    }
+
+    public static String findResourcesDirectory(String subDir) throws IOException {
+
+<span class="fc" id="L49">        String dirPath = findResourcesDirectory();</span>
+        
+<span class="fc" id="L51">        String filePath = dirPath + sep + subDir;</span>
+        
+<span class="fc" id="L53">        File f = new File(filePath);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (!f.exists()) {</span>
+<span class="nc" id="L55">            throw new IOException(&quot;could not find resources sub-directory named &quot; + subDir);</span>
+        }
+        
+<span class="fc" id="L58">        return filePath;</span>
+    }
+
+    public static String findResourcesDirectory() throws IOException {
+
+<span class="fc" id="L63">        String srcPath = findDirectory(&quot;src&quot;);</span>
+
+<span class="fc" id="L65">        String path = srcPath + sep + &quot;main&quot; + sep + &quot;resources&quot;;</span>
+
+<span class="fc" id="L67">        File f = new File(path);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (!f.exists()) {</span>
+<span class="nc" id="L69">            throw new IOException(&quot;could not find directory named src/main/resources&quot;);</span>
+        }
+<span class="fc" id="L71">        return path;</span>
+    }
+
+    public static String findDirectory(String dirName) throws IOException {
+
+<span class="fc" id="L76">        ClassLoader cls = ResourceFinder.class.getClassLoader();</span>
+
+<span class="fc" id="L78">        URL url = cls.getResource(&quot;.&quot;);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L80">            throw new IOException(&quot;base path not found for &quot; + dirName);</span>
+        }
+
+<span class="fc" id="L83">        String filePath = url.getPath() + &quot;..&quot; + sep + dirName;</span>
+
+<span class="fc" id="L85">        File f = new File(filePath);</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (!f.exists()) {</span>
+<span class="fc" id="L87">            filePath = url.getPath() + &quot;..&quot; + sep + &quot;..&quot; + sep + dirName;</span>
+<span class="fc" id="L88">            f = new File(filePath);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (!f.exists()) {</span>
+<span class="fc" id="L90">                filePath = url.getPath() + dirName;</span>
+<span class="fc" id="L91">                f = new File(filePath);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                if (!f.exists()) {</span>
+                    // try test/resources
+<span class="fc" id="L94">                    filePath = url.getPath() + &quot;..&quot; + sep + &quot;..&quot; + sep + &quot;src&quot;</span>
+                        + sep + &quot;test&quot; + sep + &quot;resources&quot; + sep + dirName;
+<span class="fc" id="L96">                    f = new File(filePath);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">                    if (!f.exists()) {</span>
+<span class="nc" id="L98">                        throw new IOException(&quot;could not find directory named &quot; + dirName);</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L103">        return filePath;</span>
+    }
+
+    public static String findTestDirectory() throws IOException {
+
+<span class="fc" id="L108">        String srcPath = findDirectory(&quot;src&quot;);</span>
+
+<span class="fc" id="L110">        String filePath = srcPath + sep + &quot;test&quot;;</span>
+
+<span class="fc" id="L112">        File f = new File(filePath);</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (!f.exists()) {</span>
+<span class="nc" id="L114">            throw new IOException(&quot;could not find directory named src/test&quot;);</span>
+        }
+<span class="fc" id="L116">        return filePath;</span>
+    }
+
+    public static String getAFilePathInTestResources(String fileName) throws IOException {
+
+<span class="fc" id="L121">        String dirPath = findTestDirectory();</span>
+<span class="fc" id="L122">        String filePath = dirPath + sep + &quot;resources&quot; + sep + fileName;</span>
+
+<span class="fc" id="L124">        return filePath;</span>
+    }
+
+    public static String findFileInTestResources(String fileName) throws IOException {
+
+<span class="fc" id="L129">        String filePath = getAFilePathInTestResources(fileName);</span>
+
+<span class="fc" id="L131">        File f = new File(filePath);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (!f.exists()) {</span>
+<span class="nc" id="L133">            throw new IOException(&quot;could not find file at &quot; + filePath);</span>
+        }
+<span class="fc" id="L135">        return filePath;</span>
+    }
+    
+    public static File[] findFilesInTestResources(String fileNamePrefix) throws IOException {
+        
+<span class="fc" id="L140">        String dirPath = findTestDirectory() + sep + &quot;resources&quot;;</span>
+        
+<span class="fc" id="L142">        File resDir = new File(dirPath);</span>
+
+<span class="fc" id="L144">        File[] files = resDir.listFiles(new PrefixFileFilter(fileNamePrefix));</span>
+        
+<span class="fc" id="L146">        return files;</span>
+    }
+    
+<span class="fc" id="L149">    protected static class PrefixFileFilter implements FileFilter {</span>
+        protected final String prefix;
+        public PrefixFileFilter(String prefixForFileName) {
+            this.prefix = prefixForFileName;
+        }
+        @Override
+        public boolean accept(File pathname) {
+            if (pathname.getName().startsWith(prefix)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public static String getAFilePathInCWD(String fileName) throws IOException {
+
+<span class="fc" id="L165">        ClassLoader cls = ResourceFinder.class.getClassLoader();</span>
+
+<span class="fc" id="L167">        URL basedir = cls.getResource(&quot;.&quot;);</span>
+
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (basedir != null) {</span>
+<span class="fc" id="L170">            return basedir.getPath() + sep + fileName;</span>
+        }
+
+<span class="nc" id="L173">        String cwd = System.getProperty(&quot;user.dir&quot;);</span>
+
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if (cwd == null) {</span>
+<span class="nc" id="L176">            throw new IOException(&quot;base path not found for &quot; + fileName);</span>
+        }
+
+<span class="nc" id="L179">        String filePath = cwd + sep + fileName;</span>
+
+<span class="nc" id="L181">        return filePath;</span>
+    }
+
+    public static String writeToTestResources(String fileContent, String fileName) throws IOException {
+
+<span class="fc" id="L186">        String filePath = getAFilePathInTestResources(fileName);</span>
+
+<span class="fc" id="L188">        return writeDataToDirectory(fileContent, filePath);</span>
+    }
+
+    public static String writeToCWD(String fileContent, String fileName) throws IOException {
+
+<span class="fc" id="L193">        String filePath = getAFilePathInCWD(fileName);</span>
+
+<span class="fc" id="L195">        return writeDataToDirectory(fileContent, filePath);</span>
+    }
+
+    public static String writeToTmpData(String fileContent, String fileName) throws IOException {
+
+<span class="fc" id="L200">        String filePath = getAFilePathInTmpData(fileName);</span>
+
+<span class="fc" id="L202">        return writeDataToDirectory(fileContent, filePath);</span>
+    }
+
+    protected static String writeDataToDirectory(String fileContent, String filePath) throws IOException {
+
+<span class="fc" id="L207">        FileWriter fw = null;</span>
+<span class="fc" id="L208">        BufferedWriter writer = null;</span>
+        try {
+<span class="fc" id="L210">            File file = new File(filePath);</span>
+<span class="fc" id="L211">            file.delete();</span>
+<span class="fc" id="L212">            file.createNewFile();</span>
+
+<span class="fc" id="L214">            fw = new FileWriter(file);</span>
+<span class="fc" id="L215">            writer = new BufferedWriter(fw);</span>
+<span class="fc" id="L216">            writer.write(fileContent);</span>
+
+<span class="fc" id="L218">            writer.flush();</span>
+
+        } finally {
+
+<span class="pc bpc" id="L222" title="3 of 4 branches missed.">            if (writer != null) {</span>
+<span class="pc" id="L223">                writer.close();</span>
+            }
+<span class="pc bpc" id="L225" title="3 of 4 branches missed.">            if (fw != null) {</span>
+<span class="pc" id="L226">                fw.close();</span>
+            }
+<span class="pc" id="L228">            log.info( &quot;wrote to file: &quot; + filePath );</span>
+<span class="fc" id="L229">        }</span>
+<span class="fc" id="L230">        return filePath;</span>
+    }
+
+    public static String findTmpDataDirectory() throws IOException {
+
+<span class="fc" id="L235">        return findDirectory(&quot;tmpdata&quot;);</span>
+    }
+
+    public static File findFileInTmpData(String fileName) throws IOException {
+
+<span class="fc" id="L240">        String filePath = getAFilePathInTmpData(fileName);</span>
+
+<span class="fc" id="L242">        File fl = new File(filePath);</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (!fl.exists()) {</span>
+<span class="nc" id="L244">            throw new IOException(&quot;could not find file at &quot; + filePath);</span>
+        }
+<span class="fc" id="L246">        return fl;</span>
+    }
+
+    public static String getAFilePathInTmpData(String fileName) throws IOException {
+
+<span class="fc" id="L251">        String baseDir = findTmpDataDirectory();</span>
+
+<span class="fc" id="L253">        String filePath = baseDir + sep + fileName;</span>
+
+<span class="fc" id="L255">        return filePath;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

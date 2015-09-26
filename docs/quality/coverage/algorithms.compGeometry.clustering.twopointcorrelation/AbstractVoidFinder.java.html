@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AbstractVoidFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">AbstractVoidFinder.java</span></div><h1>AbstractVoidFinder.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import java.util.Arrays;
+import java.util.logging.Logger;
+
+import algorithms.compGeometry.LinesAndAngles;
+
+public abstract class AbstractVoidFinder implements IVoidFinder {
+
+<span class="fc" id="L10">    protected float[] allTwoPointSurfaceDensities = null;</span>
+
+<span class="fc" id="L12">    protected float[] allTwoPointSurfaceDensitiesErrors = null;</span>
+
+<span class="fc" id="L14">    protected int nTwoPointSurfaceDensities = 0;</span>
+
+<span class="fc" id="L16">    protected int[] point1 = null;</span>
+
+<span class="fc" id="L18">    protected int[] point2 = null;</span>
+
+<span class="fc" id="L20">    protected ITwoPointIdentity twoPointIdentities = null;</span>
+
+<span class="fc" id="L22">    protected VoidSampling sampling = null;</span>
+
+<span class="fc" id="L24">    protected Logger log = null;</span>
+
+<span class="fc" id="L26">    protected boolean debug = false;</span>
+
+<span class="fc" id="L28">    protected AxisIndexer indexer = null;</span>
+
+<span class="fc" id="L30">    public AbstractVoidFinder() {</span>
+<span class="fc" id="L31">    }</span>
+
+    @Override
+    public float[] getTwoPointDensities() {
+<span class="fc" id="L35">        return allTwoPointSurfaceDensities;</span>
+    }
+
+    @Override
+    public float[] getTwoPointDensityErrors() {
+<span class="fc" id="L40">        return allTwoPointSurfaceDensitiesErrors;</span>
+    }
+
+    @Override
+    public int getNumberOfTwoPointDensities() {
+<span class="fc" id="L45">        return nTwoPointSurfaceDensities;</span>
+    }
+
+    public int[] getPoint1() {
+<span class="fc" id="L49">        return point1;</span>
+    }
+
+    public int[] getPoint2() {
+<span class="fc" id="L53">        return point2;</span>
+    }
+
+    public void setSampling(VoidSampling sampling) {
+<span class="fc" id="L57">        this.sampling = sampling;</span>
+<span class="fc" id="L58">    }</span>
+    public VoidSampling getSampling() {
+<span class="fc" id="L60">        return this.sampling;</span>
+    }
+
+    public void setDebug(boolean setDebugToTrue) {
+<span class="fc" id="L64">        this.debug = setDebugToTrue;</span>
+<span class="fc" id="L65">    }</span>
+
+    protected void initializeVariables() {
+
+<span class="fc" id="L69">        allTwoPointSurfaceDensities = new float[100];</span>
+<span class="fc" id="L70">        point1 = new int[100];</span>
+<span class="fc" id="L71">        point2 = new int[100];</span>
+<span class="fc" id="L72">        twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());</span>
+<span class="fc" id="L73">    }</span>
+
+    protected abstract void findVoidsImpl();
+
+    public abstract void constructLogger();
+
+    public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException {
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (indexer == null) {</span>
+<span class="fc" id="L82">            throw new IllegalArgumentException(&quot;indexer cannot be null&quot;);</span>
+        }
+
+<span class="fc" id="L85">        this.indexer = indexer;</span>
+
+<span class="fc" id="L87">        constructLogger();</span>
+
+<span class="fc" id="L89">        initializeVariables();</span>
+
+<span class="fc" id="L91">        findVoidsImpl();</span>
+
+<span class="fc" id="L93">        condenseArrays();</span>
+<span class="fc" id="L94">    }</span>
+
+    /**
+     * process the region bounded by the pair if the region is found to be a void
+     * bounded only by the 2 given points referenced by the indexes, that is,
+     * contains no other points within their bounds.
+     *
+     * @param xSortedIndex0 index within indexer.sortedXIndexes which is an index to reference a point in indexer's x and y
+     * @param xSortedIndex1 index within indexer.sortedXIndexes which is an index to reference a point in indexer's x and y
+     */
+    public void processIndexedRegion(int xSortedIndex0, int xSortedIndex1) {
+
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (xSortedIndex0 &gt; xSortedIndex1) {</span>
+<span class="nc" id="L107">            int tmp = xSortedIndex0;</span>
+<span class="nc" id="L108">            xSortedIndex0 = xSortedIndex1;</span>
+<span class="nc" id="L109">            xSortedIndex1 = tmp;</span>
+        }
+
+<span class="fc" id="L112">        int[] sortedXIndexes = indexer.getSortedXIndexes();</span>
+
+<span class="fc" id="L114">        float[] y = indexer.getY();</span>
+
+<span class="fc" id="L116">        int idx1 = sortedXIndexes[xSortedIndex0];</span>
+<span class="fc" id="L117">        int idx2 = sortedXIndexes[xSortedIndex1];</span>
+
+        // x0, x1, y0, and y1 are vertical and horizontal boundaries of a rectangle
+        
+        // x's are already ordered by increasing x
+<span class="fc" id="L122">        float y0 = y[idx1];</span>
+<span class="fc" id="L123">        float y1 = y[idx2];</span>
+
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (y0 &gt; y1) {</span>
+<span class="fc" id="L126">            float tmp = y0;</span>
+<span class="fc" id="L127">            y0 = y1;</span>
+<span class="fc" id="L128">            y1 = tmp;</span>
+        }
+
+<span class="fc" id="L131">        float x0 = indexer.getX()[idx1];</span>
+<span class="fc" id="L132">        float x1 = indexer.getX()[idx2];</span>
+
+<span class="fc" id="L134">        boolean doProcess = true;</span>
+
+        // O(1) to O(N-2) at worse
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (int i = (xSortedIndex0 + 1); i &lt; xSortedIndex1; i++) {</span>
+
+<span class="fc" id="L139">            int idx = sortedXIndexes[i];</span>
+
+<span class="fc" id="L141">            float xt = indexer.getX()[idx];</span>
+
+<span class="fc" id="L143">            float yt = y[idx];</span>
+
+            // quickly let points outside of boundaries pass
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            if (xt &lt; x0) {</span>
+<span class="nc" id="L147">                continue;</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">            } else if (xt &gt; x1) {</span>
+<span class="nc" id="L149">                continue;</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            } else if (yt &lt; y0) {</span>
+<span class="fc" id="L151">                continue;</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            } else if (yt &gt; y1) {</span>
+<span class="fc" id="L153">                continue;</span>
+            }
+
+<span class="fc bfc" id="L156" title="All 8 branches covered.">            if ( ((xt &gt; x0) &amp;&amp; (xt &lt; x1)) || ((yt &gt; y0) &amp;&amp; (yt &lt; y1)) ) {</span>
+
+                // else we're in bounds of a rectangle or line whose corners are the 2 points x0,y0  x1,y1
+<span class="fc" id="L159">                doProcess = false;</span>
+
+<span class="fc" id="L161">                break;</span>
+            }
+
+<span class="fc" id="L164">            log.finest(&quot;(&quot; + x0 + &quot;,&quot; + y0 +&quot;) (&quot; + x1 + &quot;,&quot; + y1 + &quot;)  test &quot; + xt + &quot;,&quot; + yt + &quot;  passed&quot;);</span>
+        }
+
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (doProcess) {</span>
+
+            // if it has passed, we still need to look for the same x values
+            //   for sortedXIndexes just before xSortedIndex0 and just after xSortedIndex1
+
+<span class="fc" id="L172">            int t2Idx = xSortedIndex0 - 1;</span>
+
+<span class="fc bfc" id="L174" title="All 4 branches covered.">            while (t2Idx &gt; -1 &amp;&amp; ( indexer.getX()[sortedXIndexes[t2Idx]] == x0 )) {</span>
+                // check whether it's within boundaries
+<span class="fc" id="L176">                float y2t = y[t2Idx];</span>
+<span class="fc bfc" id="L177" title="All 4 branches covered.">                if ((y2t &gt; y0) &amp;&amp; (y2t &lt; y1)) {</span>
+<span class="fc" id="L178">                    doProcess = false;</span>
+<span class="fc" id="L179">                    break;</span>
+                }
+<span class="fc" id="L181">                t2Idx--;</span>
+<span class="fc" id="L182">            }</span>
+
+<span class="fc bfc" id="L184" title="All 2 branches covered.">            if (doProcess) {</span>
+
+<span class="fc" id="L186">                t2Idx = xSortedIndex1 + 1;</span>
+
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                while ((t2Idx &lt; (indexer.getNumberOfPoints() - 1)) &amp;&amp; (</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                    indexer.getX()[sortedXIndexes[t2Idx]] == x1 )) {</span>
+                    
+<span class="fc" id="L191">                    float y2t = y[t2Idx];</span>
+<span class="fc bfc" id="L192" title="All 4 branches covered.">                    if ((y2t &gt; y0) &amp;&amp; (y2t &lt; y1)) {</span>
+<span class="fc" id="L193">                        doProcess = false;</span>
+<span class="fc" id="L194">                        break;</span>
+                    }
+<span class="fc" id="L196">                    t2Idx++;</span>
+<span class="fc" id="L197">                }</span>
+
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                if (doProcess) {</span>
+<span class="fc" id="L200">                    processIndexedPair(idx1, idx2);</span>
+                }
+            }
+        }
+<span class="fc" id="L204">    }</span>
+
+    /**
+     * process the pair of points by calculating the linear density and storing it
+     * in the instance arrays if not already stored.
+     *
+     * @param idx0 index w.r.t. indexer.x and indexer.y
+     * @param idx1 index w.r.t. indexer.x and indexer.y
+     */
+    public void processIndexedPair(int idx0, int idx1) {
+
+        // Note: using 1-D instead of 2-D rectangles seems to be a better choice because it is not
+        // dependent on rotation of the reference frame
+
+<span class="fc" id="L218">        float d = (float) Math.sqrt(LinesAndAngles.distSquared(</span>
+<span class="fc" id="L219">            indexer.getX()[idx0], indexer.getY()[idx0],</span>
+<span class="fc" id="L220">            indexer.getX()[idx1], indexer.getY()[idx1]));</span>
+
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (d == 0) {</span>
+<span class="fc" id="L223">            return;</span>
+        }
+
+<span class="fc" id="L226">        float linearDensity = (float) (2.f / Math.sqrt(d));</span>
+
+<span class="fc" id="L228">        log.finest(&quot;(&quot; + indexer.getX()[idx0] + &quot;,&quot; + indexer.getY()[idx0] </span>
+<span class="fc" id="L229">            + &quot;) (&quot; + indexer.getX()[idx1] + &quot;,&quot; + indexer.getY()[idx1] </span>
+            + &quot;)  ld=&quot; + linearDensity);
+
+        // expand arrays by 100 if needed
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        if ((nTwoPointSurfaceDensities + 2) &gt; allTwoPointSurfaceDensities.length) {</span>
+<span class="fc" id="L234">            allTwoPointSurfaceDensities = Arrays.copyOf(</span>
+                allTwoPointSurfaceDensities, nTwoPointSurfaceDensities + 100);
+<span class="fc" id="L236">            point1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities + 100);</span>
+<span class="fc" id="L237">            point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities + 100);</span>
+        }
+
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        if (twoPointIdentities.storeIfDoesNotContain(idx0, idx1)) {</span>
+<span class="fc" id="L241">            allTwoPointSurfaceDensities[nTwoPointSurfaceDensities] = linearDensity;</span>
+<span class="fc" id="L242">            point1[nTwoPointSurfaceDensities] = idx0;</span>
+<span class="fc" id="L243">            point2[nTwoPointSurfaceDensities] = idx1;</span>
+<span class="fc" id="L244">            nTwoPointSurfaceDensities++;</span>
+        }
+<span class="fc" id="L246">    }</span>
+
+    protected void condenseArrays() throws TwoPointVoidStatsException {
+
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">        if (nTwoPointSurfaceDensities == 0) {</span>
+            //throw new TwoPointVoidStatsException(&quot;No pairs were found isolated within an area&quot;);
+        }
+
+        // condense arrays
+<span class="fc" id="L255">        allTwoPointSurfaceDensities = Arrays.copyOf(allTwoPointSurfaceDensities, </span>
+            nTwoPointSurfaceDensities);
+<span class="fc" id="L257">        point1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities);</span>
+<span class="fc" id="L258">        point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities);</span>
+
+<span class="fc" id="L260">        allTwoPointSurfaceDensitiesErrors =</span>
+<span class="fc" id="L261">            calulateTwoPointDensityErrors(allTwoPointSurfaceDensities, point1, </span>
+<span class="fc" id="L262">                point2, indexer.getX(), indexer.getY(), indexer.getXErrors(), </span>
+<span class="fc" id="L263">                indexer.getYErrors());</span>
+
+        // release twoPointIdentities to free up memory
+        /*twoPointIdentities = null;
+        MemoryMXBean mb = ManagementFactory.getMemoryMXBean();
+        mb.gc();*/
+
+<span class="fc" id="L270">    }</span>
+
+    /**
+     * Calculate the 2 point density errors following the chain rule
+     *
+     *                                | df |^2               | df |^2         df   df
+     *      (sigma_f)^2 =  (sigma_x)^2|----|   +  (sigma_y)^2|----|    +  2 * -- * -- * cov_ab
+     *                                | dx |                 | dy |           dx   dy
+     *
+     *      For uncorrelated variables the covariance terms are zero.
+     *
+     * For two-point density:
+     *                 N             dF      -N
+     *      F(x,y) = ------   ==&gt;   ---- =  -----
+     *                 X             dx      X^2
+     *
+     *                                  |   -N   |^2
+     *     (sigma_f)^2 =  (sigma_x)^2 * |--------|
+     *                                  |   X^2  |
+     *
+     * @param densities - the two point densities
+     * @param point1Indexes indexes to xp, yp of one of the 2 points in the two-point densities
+     * @param point2Indexes indexes to xp, yp of the other of the 2 points in the two-point densities
+     * @param xp x array of points
+     * @param yp y array of points
+     * @param xpe errors in x
+     * @param ype errors in y
+     * @return errors for densities
+     */
+    public float[] calulateTwoPointDensityErrors(float[] densities, int[] point1Indexes, int[] point2Indexes,
+        float[] xp, float[] yp, float[] xpe, float[] ype) {
+
+<span class="fc bfc" id="L302" title="All 2 branches covered.">        if (densities == null) {</span>
+<span class="fc" id="L303">            throw new IllegalArgumentException(&quot;densities cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L305" title="All 4 branches covered.">        if (point1Indexes == null || point2Indexes == null) {</span>
+<span class="fc" id="L306">            throw new IllegalArgumentException(&quot;pointIndexes cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L308" title="All 4 branches covered.">        if (xp == null || yp == null) {</span>
+<span class="fc" id="L309">            throw new IllegalArgumentException(&quot;xp and yp cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L311" title="All 4 branches covered.">        if (xpe == null || ype == null) {</span>
+<span class="fc" id="L312">            throw new IllegalArgumentException(&quot;errors are required&quot;);</span>
+        }
+
+<span class="fc" id="L315">        float[] densityErrors = new float[densities.length];</span>
+
+<span class="fc bfc" id="L317" title="All 2 branches covered.">        for (int i = 0; i &lt; densities.length; i++) {</span>
+
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">            if (Float.isInfinite(densities[i])) {</span>
+<span class="nc" id="L320">                continue;</span>
+            }
+
+<span class="fc" id="L323">            int pt1 = point1[i];</span>
+<span class="fc" id="L324">            int pt2 = point2[i];</span>
+
+<span class="fc" id="L326">            double xe1 = xpe[pt1] ; // xp[pt1];</span>
+<span class="fc" id="L327">            double xe2 = xpe[pt2] ; // xp[pt2];</span>
+<span class="fc" id="L328">            double ye1 = ype[pt1] ; // yp[pt1];</span>
+<span class="fc" id="L329">            double ye2 = ype[pt2] ; // yp[pt2];</span>
+
+<span class="fc" id="L331">            double xsigmasq = ( xe1 * xe1 ) + ( xe2 * xe2 );</span>
+<span class="fc" id="L332">            double ysigmasq = ( ye1 * ye1 ) + ( ye2 * ye2 );</span>
+<span class="fc" id="L333">            double xysigmasq = xsigmasq + ysigmasq;</span>
+
+<span class="fc" id="L335">            double linearDensity = allTwoPointSurfaceDensities[i];</span>
+<span class="fc" id="L336">            double linearDensitySq = Math.pow(linearDensity, 2);</span>
+
+<span class="fc" id="L338">            double err = Math.sqrt(xysigmasq * linearDensitySq);</span>
+
+<span class="fc" id="L340">            densityErrors[i] = (float)err;</span>
+        }
+<span class="fc" id="L342">        return densityErrors;</span>
+    }
+
+
+    /*
+     (non-Javadoc)
+     * @see algorithms.compGeometry.clustering.twopointcorrelation.IVoidFinder#approximateMemoryUsed()
+     */
+    @Override
+    public long approximateMemoryUsed() {
+
+<span class="fc" id="L353">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+
+<span class="pc bpc" id="L355" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+
+<span class="fc" id="L359">        int overheadBytes = 16;</span>
+
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
+<span class="fc" id="L362">        int arrayBytes = 32/8;</span>
+<span class="fc" id="L363">        int refBytes = nbits/8;</span>
+
+<span class="fc" id="L365">        long sumBytes = 0;</span>
+
+        // 4 array references
+<span class="fc" id="L368">        sumBytes += (4*arrayBytes);</span>
+
+        // 2 word size primitives
+<span class="fc" id="L371">        sumBytes += (2*intBytes);</span>
+
+        // 1 object reference
+<span class="fc" id="L374">        sumBytes += refBytes;</span>
+
+
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">        int n = (allTwoPointSurfaceDensities == null) ? 0 : allTwoPointSurfaceDensities.length;</span>
+
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">        if (twoPointIdentities != null) {</span>
+<span class="fc" id="L380">            sumBytes += twoPointIdentities.approximateMemoryUsed();</span>
+        }
+
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">        if (allTwoPointSurfaceDensities != null) {</span>
+<span class="fc" id="L384">            sumBytes +=  (allTwoPointSurfaceDensities.length*intBytes);</span>
+        }
+
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (allTwoPointSurfaceDensitiesErrors != null) {</span>
+<span class="fc" id="L388">            sumBytes += (allTwoPointSurfaceDensities.length*intBytes);</span>
+        }
+
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (point1 != null) {</span>
+<span class="fc" id="L392">            sumBytes += (point1.length*intBytes);</span>
+        }
+
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">        if (point2 != null) {</span>
+<span class="fc" id="L396">            sumBytes += (point2.length*intBytes);</span>
+        }
+
+<span class="fc" id="L399">        sumBytes += overheadBytes;</span>
+
+        // amount of padding needed to make it a round 8 bytes
+<span class="fc" id="L402">        long padding = (sumBytes % 8);</span>
+
+<span class="fc" id="L404">        sumBytes += padding;</span>
+
+<span class="fc" id="L406">        return sumBytes;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GEVYFit.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.curves</a> &gt; <span class="el_source">GEVYFit.java</span></div><h1>GEVYFit.java</h1><pre class="source lang-java linenums">package algorithms.curves;
+
+import algorithms.misc.MiscMath;
+
+<span class="fc" id="L5">public class GEVYFit implements IYFit {</span>
+
+    protected float[] yfit;
+    protected float[] x;
+<span class="fc" id="L9">    protected float xScale = 1;</span>
+<span class="fc" id="L10">    protected float yScale = 1;</span>
+<span class="fc" id="L11">    protected int xPeakIndex = -1;</span>
+    protected float k;
+    protected float sigma;
+    protected float mu;
+<span class="fc" id="L15">    protected float chiSqSum = Float.MAX_VALUE;</span>
+<span class="fc" id="L16">    protected float chiSqStatistic = Float.MAX_VALUE;</span>
+    float kSolutionResolution;
+    float sigmaSolutionResolution;
+    float muSolutionResolution;
+    protected float yDataErrSq;
+
+<span class="fc" id="L22">    protected String[] parameterNames = new String[]{</span>
+        &quot;k&quot;, &quot;sigma&quot;, &quot;mu&quot;
+    };
+
+    public long approximateMemoryUsed() {
+
+<span class="fc" id="L28">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+
+<span class="pc bpc" id="L30" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+
+<span class="fc" id="L34">        int overheadBytes = 16;</span>
+
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
+<span class="fc" id="L37">        int arrayBytes = 32/8;</span>
+
+<span class="fc" id="L39">        long sumBytes = 0;</span>
+
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (yfit != null) {</span>
+<span class="fc" id="L42">            sumBytes += (arrayBytes + (yfit.length*arrayBytes));</span>
+        }
+
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        if (x != null) {</span>
+<span class="fc" id="L46">            sumBytes += (arrayBytes + (x.length*arrayBytes));</span>
+        }
+
+        // 17 variables on the stack, each of size stack word size
+<span class="fc" id="L50">        sumBytes += (17 * intBytes);</span>
+
+        // String size on the heap = reference size + content size?
+        // parameterNames
+<span class="fc" id="L54">        sumBytes += (arrayBytes + (3*(nbits/8) + (intBytes*1 + intBytes*5 + intBytes*2)));</span>
+
+<span class="fc" id="L56">        sumBytes += overheadBytes;</span>
+
+        // amount of padding needed to make it a round 8 bytes
+<span class="fc" id="L59">        long padding = (sumBytes % 8);</span>
+
+<span class="fc" id="L61">        sumBytes += padding;</span>
+
+<span class="fc" id="L63">        return sumBytes;</span>
+    }
+
+    public String[] getParameterNames() {
+<span class="nc" id="L67">        return parameterNames;</span>
+    }
+
+    public float[] getParameters() {
+<span class="nc" id="L71">        return new float[]{k, sigma, mu};</span>
+    }
+
+    public String toString() {
+
+<span class="fc" id="L76">        StringBuffer sb = new StringBuffer();</span>
+<span class="fc" id="L77">        sb.append(yfit.length).append(&quot; points, k=&quot;).append(k).append(&quot; sigma=&quot;).append(sigma)</span>
+<span class="fc" id="L78">            .append(&quot; mu=&quot;).append(mu).append(&quot; chiSqSum=&quot;).append(chiSqSum)</span>
+<span class="fc" id="L79">            .append(&quot; chiSqStatistic=&quot;).append(chiSqStatistic);</span>
+
+<span class="fc" id="L81">        return sb.toString();</span>
+    }
+
+    public float getXPeak() {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (xPeakIndex == -1) {</span>
+<span class="fc" id="L86">            xPeakIndex = MiscMath.findYMaxIndex(yfit);</span>
+        }
+<span class="fc" id="L88">        return xScale*x[xPeakIndex];</span>
+    }
+    
+    public int getXPeakIndex() {
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (xPeakIndex == -1) {</span>
+<span class="fc" id="L93">            xPeakIndex = MiscMath.findYMaxIndex(yfit);</span>
+        }
+<span class="fc" id="L95">        return xPeakIndex;</span>
+    }
+    
+    public float[] getYFit() {
+<span class="fc" id="L99">        return yfit;</span>
+    }
+
+    public float getK() {
+<span class="fc" id="L103">        return k;</span>
+    }
+
+    public float getSigma() {
+<span class="fc" id="L107">        return sigma;</span>
+    }
+
+    public float getMu() {
+<span class="fc" id="L111">        return mu;</span>
+    }
+
+    public float getKResolution() {
+<span class="nc" id="L115">        return kSolutionResolution;</span>
+    }
+
+    public float getSigmaResolution() {
+<span class="nc" id="L119">        return sigmaSolutionResolution;</span>
+    }
+    
+    public float getMuSolutionResolution() {
+<span class="nc" id="L123">        return muSolutionResolution;</span>
+    }
+
+    public float getChiSqSum() {
+<span class="fc" id="L127">        return chiSqSum;</span>
+    }
+
+    public float getYDataErrSq() {
+<span class="fc" id="L131">        return yDataErrSq;</span>
+    }
+
+    public float getChiSqStatistic() {
+        // minus one if mean was computed from the data
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (yfit == null) {</span>
+<span class="nc" id="L137">            return chiSqStatistic;</span>
+        }
+<span class="fc" id="L139">        return chiSqSum / (yfit.length - 3 - 1);</span>
+    }
+
+    protected float calculateArea(int index, boolean isStepFunction) {
+
+<span class="fc" id="L144">        return CurveMisc.calculateArea(x, yfit, index, isStepFunction, xScale, yScale);</span>
+    }
+
+    public float getX(int index) {
+<span class="fc" id="L148">        return xScale*x[index];</span>
+    }
+
+    /**
+     * @param yfit the yfit to set
+     */
+    public void setYFit(float[] yfit) {
+<span class="fc" id="L155">        this.yfit = yfit;</span>
+<span class="fc" id="L156">    }</span>
+
+    public void setYScale(float scale) {
+<span class="fc" id="L159">        this.yScale = scale;</span>
+<span class="fc" id="L160">    }</span>
+
+    /**
+     * @return the x array of the fit
+     */
+    public float[] getX() {
+<span class="fc" id="L166">        return x;</span>
+    }
+
+    /**
+     * @param x array of the fit
+     */
+    public void setX(float[] x) {
+<span class="fc" id="L173">        this.x = x;</span>
+<span class="fc" id="L174">    }</span>
+
+    public void setXScale(float scale) {
+<span class="fc" id="L177">        this.xScale = scale;</span>
+<span class="fc" id="L178">    }</span>
+
+    /**
+     * @param k the k to set
+     */
+    public void setK(float k) {
+<span class="fc" id="L184">        this.k = k;</span>
+<span class="fc" id="L185">    }</span>
+
+    /**
+     * @param sigma the sigma to set
+     */
+    public void setSigma(float sigma) {
+<span class="fc" id="L191">        this.sigma = sigma;</span>
+<span class="fc" id="L192">    }</span>
+
+    /**
+     * @param mu the mu to set
+     */
+    public void setMu(float mu) {
+<span class="fc" id="L198">        this.mu = mu;</span>
+<span class="fc" id="L199">    }</span>
+
+    /**
+     * @param chiSq the chiSqSum to set
+     */
+    public void setChiSqSum(float chiSq) {
+<span class="fc" id="L205">        this.chiSqSum = chiSq;</span>
+<span class="fc" id="L206">    }</span>
+
+    /**
+     * @param chiSqStat the chiSqStatistic to set
+     */
+    public void setChiSqStatistic(float chiSqStat) {
+<span class="fc" id="L212">        this.chiSqStatistic = chiSqStat;</span>
+<span class="fc" id="L213">    }</span>
+
+    /**
+     * @param yErrSq the yDataErrSq to set
+     */
+    public void setYDataErrSq(float yErrSq) {
+<span class="fc" id="L219">        this.yDataErrSq = yErrSq;</span>
+<span class="fc" id="L220">    }</span>
+
+    public float[] getOriginalScaleX() {
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L224">            return null;</span>
+        }
+<span class="fc" id="L226">        float[] xsc = new float[x.length];</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        for (int i = 0; i &lt; xsc.length; i++) {</span>
+<span class="fc" id="L228">            xsc[i] = x[i] * xScale;</span>
+        }
+<span class="fc" id="L230">        return xsc;</span>
+    }
+
+    public float[] getOriginalScaleYFit() {
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        if (yfit == null) {</span>
+<span class="nc" id="L235">            return null;</span>
+        }
+<span class="fc" id="L237">        float[] ysc = new float[yfit.length];</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        for (int i = 0; i &lt; ysc.length; i++) {</span>
+<span class="fc" id="L239">            ysc[i] = yfit[i] * yScale;</span>
+        }
+<span class="fc" id="L241">        return ysc;</span>
+    }
+
+    public float getXScale() {
+<span class="fc" id="L245">        return xScale;</span>
+    }
+
+    public float getYScale() {
+<span class="fc" id="L249">        return yScale;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TwoPointHash.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">TwoPointHash.java</span></div><h1>TwoPointHash.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+/**
+ &lt;pre&gt;
+  A holder for two-point identities, where the identities are the indexes
+  of the indexer internal arrays.  N is the size of the dataset, that is
+  the indexer.nXY.
+  
+  Runtime complexity:
+     inserts is  O(1)
+     search  is O(1)
+ 
+  Space complexity:
+     O(N)
+ 
+ &lt;/pre&gt;
+ 
+ * @author nichole
+ */
+class TwoPointHash implements ITwoPointIdentity {
+
+<span class="fc" id="L22">    protected int n = 0;</span>
+    
+<span class="fc" id="L24">    protected int capacity = 1000;</span>
+    
+    protected final Node[] nodes;
+    
+<span class="fc" id="L28">    public TwoPointHash(int indexerNXY) {</span>
+        
+        //TODO: refine a capacity based upon indexerNXY
+        
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (indexerNXY &gt; 100000) {</span>
+<span class="fc" id="L33">            capacity = 10000;</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        } else if (indexerNXY &gt; 1000) {</span>
+<span class="fc" id="L35">            capacity = indexerNXY;</span>
+        }
+        
+<span class="fc" id="L38">        nodes = new Node[capacity];</span>
+<span class="fc" id="L39">    }    </span>
+
+    @Override
+    public long approximateMemoryUsed() {
+
+<span class="fc" id="L44">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+
+<span class="pc bpc" id="L46" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+
+<span class="fc" id="L50">        int arrayRefBits = 32;</span>
+
+<span class="fc" id="L52">        int overheadBytes = 16;</span>
+
+        // each Node:  overhead + int + int + 3 references
+<span class="fc" id="L55">        int oneNodeInBits = 2*nbits * arrayRefBits;</span>
+<span class="fc" id="L56">        int oneNodeInBytes = (oneNodeInBits/8) + overheadBytes;</span>
+<span class="fc" id="L57">        oneNodeInBytes += (oneNodeInBytes % 8);</span>
+
+<span class="fc" id="L59">        int nNodesInBytes = n * oneNodeInBytes;</span>
+
+        //                              nodes ref        nodes            2 ints
+<span class="fc" id="L62">        long sumBytes = overheadBytes + arrayRefBits + nNodesInBytes  + (2*nbits/8);</span>
+
+<span class="fc" id="L64">        long padding = (sumBytes % 8);</span>
+
+<span class="fc" id="L66">        sumBytes += padding;</span>
+
+<span class="fc" id="L68">        return sumBytes;</span>
+    }
+
+    /**
+     * check if combination is already stored, if not add it and return true, else
+     * return false
+     *
+     * @param index0
+     * @param index1
+     * @return
+     */
+    @Override
+    public boolean storeIfDoesNotContain(int index0, int index1) {
+
+        // order the indexes to avoid double counting.
+        int i0, i1;
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (index0 &lt; index1) {</span>
+<span class="fc" id="L85">            i0 = index0;</span>
+<span class="fc" id="L86">            i1 = index1;</span>
+        } else {
+<span class="fc" id="L88">            i0 = index1;</span>
+<span class="fc" id="L89">            i1 = index0;</span>
+        }
+
+<span class="fc" id="L92">        Node node = search(i0, i1);</span>
+
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (node != null) {</span>
+<span class="fc" id="L95">            return false;</span>
+        }
+
+<span class="fc" id="L98">        insert(i0, i1);</span>
+
+<span class="fc" id="L100">        return true;</span>
+    }
+
+    /**
+     * search is O(1). (unless there are many collisions)
+     * @param i0
+     * @param i1
+     * @return 
+     */
+    public Node search(int index0, int index1) {
+        
+        int i0, i1;
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (index0 &lt; index1) {</span>
+<span class="fc" id="L113">            i0 = index0;</span>
+<span class="fc" id="L114">            i1 = index1;</span>
+        } else {
+<span class="fc" id="L116">            i0 = index1;</span>
+<span class="fc" id="L117">            i1 = index0;</span>
+        }
+        
+<span class="fc" id="L120">        int h = hash(i0, i1);</span>
+        
+<span class="fc" id="L122">        Node p = nodes[h];</span>
+        
+<span class="fc bfc" id="L124" title="All 4 branches covered.">        while ((p != null) &amp;&amp; (p.compare(i0, i1) != 0)) {</span>
+<span class="fc" id="L125">            p = p.getNext();</span>
+        }
+        
+<span class="fc" id="L128">        return p;</span>
+    }
+
+    /**
+     * insert is O(1). (unless there are many collisions)
+     * @param i0
+     * @param i1 
+     */
+    protected void insert(int i0, int i1) {
+        
+<span class="fc" id="L138">        int h = hash(i0, i1);</span>
+        
+<span class="fc" id="L140">        Node p = nodes[h];</span>
+        
+<span class="fc" id="L142">        n++;</span>
+        
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (p == null) {</span>
+<span class="fc" id="L145">            nodes[h] = new Node(i0, i1);</span>
+<span class="fc" id="L146">            return;</span>
+        }
+        
+<span class="pc bpc" id="L149" title="1 of 4 branches missed.">        while ((p != null) &amp;&amp; (p.getNext() != null)) {</span>
+<span class="fc" id="L150">            p = p.getNext();</span>
+        }
+        
+<span class="fc" id="L153">        p.next = new Node(i0, i1);        </span>
+<span class="fc" id="L154">    }</span>
+
+    protected class Node {
+        protected final int a0;
+        protected final int a1;
+        protected Node next;
+        public Node(int i0, int i1) {
+            this.a0 = i0;
+            this.a1 = i1;
+        }
+        public int compare(Node other) {
+            return compare(other.a0, other.a1);
+        }
+        public int compare(int other0, int other1) {
+            // for now, using n0.a0 &lt; n1.a0 then n0.a1 &lt; n1.a1
+            if (a0 &lt; other0) {
+                return -1;
+            } else if (a0 &gt; other0) {
+                return 1;
+            }
+            if (a1 &lt; other1) {
+                return -1;
+            } else if (a1 &gt; other1) {
+                return 1;
+            }
+            return 0;
+        }
+        public Node getNext() {
+            return next;
+        }
+        public void setNext(Node node) {
+            next = node;
+        }
+    }
+    
+    protected int hash(int i0, int i1) {
+        
+<span class="fc" id="L191">        int fnv = fnvHashCode(i0, i1);</span>
+        
+<span class="fc" id="L193">        int h = fnv % (capacity - 1);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (fnv &lt; 0) {</span>
+<span class="fc" id="L195">            h += (capacity - 1);</span>
+        }
+        
+<span class="fc" id="L198">        return h;</span>
+    }
+
+<span class="fc" id="L201">    protected static int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L202">    protected static int fnv32Prime = 0x01000193;</span>
+
+    protected int fnvHashCode(int i0, int i1) {
+
+        /*
+         * hash = offset_basis
+         * for each octet_of_data to be hashed
+         *     hash = hash xor octet_of_data
+         *     hash = hash * FNV_prime
+         * return hash
+         *
+         * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+         */
+
+<span class="fc" id="L216">        int hash = 0;</span>
+
+<span class="fc" id="L218">        int sum = fnv321aInit;</span>
+
+        // xor the bottom with the current octet.
+<span class="fc" id="L221">        sum ^= i0;</span>
+
+        // multiply by the 32 bit FNV magic prime mod 2^32
+<span class="fc" id="L224">        sum *= fnv32Prime;</span>
+        
+<span class="fc" id="L226">        sum ^= i1;</span>
+        
+<span class="fc" id="L228">        sum *= fnv32Prime;</span>
+        
+<span class="fc" id="L230">        hash = sum;</span>
+
+<span class="fc" id="L232">        return hash;</span>
+    }
+
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

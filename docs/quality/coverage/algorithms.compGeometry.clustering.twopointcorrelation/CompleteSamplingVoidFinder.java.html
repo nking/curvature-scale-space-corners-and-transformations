@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CompleteSamplingVoidFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">CompleteSamplingVoidFinder.java</span></div><h1>CompleteSamplingVoidFinder.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import java.util.logging.Logger;
+
+/**
+ * &lt;pre&gt;
+ * an implementation of VoidFinder that uses complete sampling to determine 
+ * the background (void) point density.
+ * 
+ * RT complexity for findVoids()
+ *
+ * findVoids() is N^2/2 - N/2 which is &lt; O(N^2),
+ * but it invokes processIndexedRegion which can be O(1) to O(N-1).
+ *
+ * total RT complexity:
+ *     best time:  is N^2 - N   which is &lt; O(N^2)
+ *     worse time: is N^3 - N^2 which is &lt; O(N^3)
+ *&lt;/pre&gt;
+ * @author nichole
+ */
+<span class="fc" id="L21">public class CompleteSamplingVoidFinder extends AbstractVoidFinder {</span>
+
+    public void constructLogger() {
+<span class="fc" id="L24">        this.log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L25">    }</span>
+
+    @Override
+    protected void findVoidsImpl() {
+
+<span class="fc" id="L30">        findVoidsByPairBounds();</span>
+<span class="fc" id="L31">    }</span>
+
+    /**
+     * find voids by looking for other points within bounds of pairs
+     *
+     */
+    protected void findVoidsByPairBounds() {
+
+        // look at every pair of points and keep only if their bounds do not include other points
+        //          * (ii,jj)
+        //
+        //    *(i,j)
+
+        // this is &lt; O(N^2), but processIndexedRegion can be O(1) to O(N-1)
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int uSortedXIndex = 0; uSortedXIndex &lt; indexer.getNumberOfPoints(); </span>
+<span class="fc" id="L46">            uSortedXIndex++) {</span>
+
+<span class="fc" id="L48">            for (int vSortedXIndex = (uSortedXIndex + 1); </span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">                vSortedXIndex &lt; indexer.getNumberOfPoints(); vSortedXIndex++) {</span>
+
+<span class="fc" id="L51">                processIndexedRegion(uSortedXIndex, vSortedXIndex);</span>
+            }
+        }
+<span class="fc" id="L54">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

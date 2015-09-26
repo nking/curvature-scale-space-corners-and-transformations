@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AxisIndexer.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">AxisIndexer.java</span></div><h1>AxisIndexer.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import algorithms.sorting.MultiArrayMergeSort;
+import java.util.Arrays;
+
+/**
+ * &lt;pre&gt;
+  Class to hold x and y array of points whose values have been
+  indexed by increasing x and y. 
+  The error arrays are also stored as member variables to keep them
+  ordered parallel to the x and y arrays.
+
+   Usage:
+      AxisIndexer indexer = new AxisIndexer();
+
+      // else sort and index using method with errors
+      indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);      
+&lt;/pre&gt;
+
+ * @author nichole
+ */
+public class AxisIndexer {
+
+    /**
+     * a copy of the original xPoints array given to the code before sorting.
+     * it is used to find values using indexes given by sortedXIndexes
+     */
+<span class="fc" id="L28">    protected float[] x = null;</span>
+
+    /**
+     * a copy of the original yPoints array given to the code before sorting.
+     * it is used to find values using indexes given by sortedYIndexes
+     */
+<span class="fc" id="L34">    protected float[] y = null;</span>
+
+    /**
+     * a copy of the original xPointErrors array given to the code.  these are
+     * parallel to the array xPoints
+     */
+<span class="fc" id="L40">    private float[] xErrors = null;</span>
+
+    /**
+     * a copy of the original yPointErrors array given to the code.  these are
+     * parallel to the array yPoints
+     */
+<span class="fc" id="L46">    private float[] yErrors = null;</span>
+
+    /**
+     * array whose values hold indexes of x.  the order of items in sortedXIndexes
+     * is order of increasing value of x, in other words minimum x is in sortedXIndexes[0]
+     * and maximum x is in sortedXIndexes[x.length - 1].  
+     * the values in sortedXIndexes can be used as indexes in 
+     */
+<span class="fc" id="L54">    protected int[] sortedXIndexes = null;</span>
+
+    /**
+     * number of points in arrays x or y
+     */
+    protected int nXY;
+
+<span class="fc" id="L61">    protected float xmin = Float.MAX_VALUE;</span>
+    
+<span class="fc" id="L63">    protected float ymin = xmin;</span>
+    
+<span class="fc" id="L65">    protected float xmax = Float.MIN_VALUE;</span>
+    
+<span class="fc" id="L67">    protected float ymax = xmax;</span>
+    
+<span class="fc" id="L69">    public AxisIndexer() {</span>
+<span class="fc" id="L70">    }</span>
+
+    public int getNXY() {
+<span class="fc" id="L73">        return nXY;</span>
+    }
+
+    public long approximateMemoryUsed() {
+
+        /*
+        stack word size is 32 or 64 bits.
+        Stack holds:  local variables
+
+        Heap holds:  object references (32 bits) and arrays (32 bits x nItems X itemSize)
+
+        float[] x
+        float[] y
+        float[] xErrors
+        float[] yErrors
+        int[] sortedXIndexes
+        int nXY;
+                                                     32-bit platform          64-bit platform
+                                                Field   Size on          Field   Size on
+           Java types                           size    stack            size    stack
+           boolean                              32       32              32      64
+           byte                                 32       32              32      64
+           char                                 32       32              32      64
+           short                                32       32              32      64
+           int                                  32       32              32      64
+           ﬂoat                                 32       32              32      64
+           reference                            32       32              64      64
+           array reference                      32       32              32      32
+           returnAddress                        32       32              64      64
+           long                                 64       64              64      128
+           double                               64       64              64      128
+           from Table II of http://users.elis.ugent.be/~leeckhou/papers/SPE06.pdf
+
+        */
+
+<span class="fc" id="L108">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+
+<span class="pc bpc" id="L110" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        int n = (x == null) ? 0 : x.length;</span>
+
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+
+<span class="fc" id="L116">        int arrayRefBits = 32;</span>
+
+<span class="fc" id="L118">        int overheadBytes = 16;</span>
+
+        // 4 float and 1 int arrays on the heap
+<span class="fc" id="L121">        long sumBits = 5*(arrayRefBits + (n*nbits));</span>
+
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (xErrors != null) {</span>
+            // 2 float arrays on the heap
+<span class="fc" id="L125">            sumBits += (2*(arrayRefBits + (xErrors.length * nbits)));</span>
+        }
+
+        // 5 primitives
+<span class="fc" id="L129">        sumBits += 5*nbits;</span>
+
+<span class="fc" id="L131">        long sumBytes = (sumBits/8) + overheadBytes;</span>
+
+        // amount of padding needed to make it a round 8 bytes
+<span class="fc" id="L134">        long padding = (sumBytes % 8);</span>
+
+<span class="fc" id="L136">        sumBytes += padding;</span>
+
+<span class="fc" id="L138">        return sumBytes;</span>
+    }
+
+    /**
+     * sort the pair (xPoints, yPoints) by x and index them then sort by y and
+     * index them for both sorts.
+     *
+     * The original unsorted arrays are available as copies to use the indexes
+     * with as this.x and this.y, but xPoints and yPoints are altered by this method.
+     *
+     * This method is usually called once after construction of the indexer and
+     * thereafter the member variables are used.
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPointErrors
+     * @param yPointErrors
+     * @param nPoints
+     */
+    public void sortAndIndexX(float[] xPoints, float[] yPoints, 
+        float[] xPointErrors, float[] yPointErrors, int nPoints) {
+
+<span class="fc" id="L160">        this.x = Arrays.copyOf(xPoints, nPoints);</span>
+<span class="fc" id="L161">        this.y = Arrays.copyOf(yPoints, nPoints);</span>
+<span class="fc" id="L162">        this.xErrors = Arrays.copyOf(xPointErrors, nPoints);</span>
+<span class="fc" id="L163">        this.yErrors = Arrays.copyOf(yPointErrors, nPoints);</span>
+
+<span class="fc" id="L165">        this.nXY = nPoints;</span>
+
+<span class="fc" id="L167">        this.sortedXIndexes = new int[nXY];</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
+<span class="fc" id="L169">            sortedXIndexes[i] = i;</span>
+        }
+
+<span class="fc" id="L172">        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);</span>
+        
+<span class="fc" id="L174">        xmin = xPoints[0];</span>
+        
+<span class="fc" id="L176">        xmax = xPoints[xPoints.length - 1];</span>
+        
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (float yp : yPoints) {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (yp &gt; ymax) {</span>
+<span class="fc" id="L180">                ymax = yp;</span>
+            }
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (yp &lt; ymin) {</span>
+<span class="fc" id="L183">                ymin = yp;</span>
+            }
+        }
+<span class="fc" id="L186">    }</span>
+
+    /**
+     * sort the pair (xPoints, yPoints) by x and index them then sort by y and
+     * index them for both sorts.
+     *
+     * The original unsorted arrays are available as copies to use the indexes
+     * with as this.x and this.y, but xPoints and yPoints are altered by this method.
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param nPoints
+     */
+    public void sortAndIndexX(float[] xPoints, float[] yPoints, int nPoints) {
+
+<span class="fc" id="L201">        this.x = Arrays.copyOf(xPoints, nPoints);</span>
+<span class="fc" id="L202">        this.y = Arrays.copyOf(yPoints, nPoints);</span>
+<span class="fc" id="L203">        this.xErrors = null;</span>
+<span class="fc" id="L204">        this.yErrors = null;</span>
+
+<span class="fc" id="L206">        this.nXY = nPoints;</span>
+
+<span class="fc" id="L208">        this.sortedXIndexes = new int[nXY];</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
+<span class="fc" id="L210">            sortedXIndexes[i] = i;</span>
+        }
+
+<span class="fc" id="L213">        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);</span>
+
+<span class="fc" id="L215">        xmin = xPoints[0];</span>
+        
+<span class="fc" id="L217">        xmax = xPoints[xPoints.length - 1];</span>
+        
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        for (float yp : yPoints) {</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (yp &gt; ymax) {</span>
+<span class="fc" id="L221">                ymax = yp;</span>
+            }
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (yp &lt; ymin) {</span>
+<span class="fc" id="L224">                ymin = yp;</span>
+            }
+        }
+<span class="fc" id="L227">    }</span>
+    
+    public float[] findXYMinMax() {
+
+<span class="fc" id="L231">        return new float[]{xmin, xmax, ymin, ymax};</span>
+    }
+ 
+    /**
+     * @return the sortedXIndexes
+     */
+    public int[] getSortedXIndexes() {
+<span class="fc" id="L238">        return sortedXIndexes;</span>
+    }
+
+    /**
+     * return the unsorted x array that the indexes refer to
+     *
+     * @return the x
+     */
+    public float[] getX() {
+<span class="fc" id="L247">        return x;</span>
+    }
+
+    /**
+     * return the unsorted y array that the indexes refer to
+     *
+     * @return the y
+     */
+    public float[] getY() {
+<span class="fc" id="L256">        return y;</span>
+    }
+
+    /**
+     * get the errors in x.  this array is parallel to that returned by getX()
+     * @return the xErrors
+     */
+    public float[] getXErrors() {
+<span class="fc" id="L264">        return xErrors;</span>
+    }
+
+    /**
+     * get the errors in y.  this array is parallel to that returned by getY()
+     *
+     * @return the yErrors
+     */
+    public float[] getYErrors() {
+<span class="fc" id="L273">        return yErrors;</span>
+    }
+
+    public int getNumberOfPoints() {
+<span class="fc" id="L277">        return nXY;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

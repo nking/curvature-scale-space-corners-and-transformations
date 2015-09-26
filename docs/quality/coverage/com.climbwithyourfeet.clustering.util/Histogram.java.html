@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Histogram.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">com.climbwithyourfeet.clustering.util</a> &gt; <span class="el_source">Histogram.java</span></div><h1>Histogram.java</h1><pre class="source lang-java linenums">package com.climbwithyourfeet.clustering.util;
+
+import java.util.Arrays;
+
+/**
+ * smaller version of Histogram class to be packaged in a library jar
+ * @author nichole
+ */
+<span class="nc" id="L9">public class Histogram {</span>
+    
+    public static HistogramHolder createSimpleHistogram(
+        final float xMin, final float xMax, int nBins, 
+        float[] values, float[] valueErrors) {
+
+<span class="pc bpc" id="L15" title="3 of 6 branches missed.">        if (values == null || valueErrors == null || </span>
+            values.length != valueErrors.length) {
+            
+<span class="nc" id="L18">            throw new IllegalArgumentException(</span>
+                &quot;values and valueErrors cannot be null and must be the same length&quot;);
+        }
+                
+<span class="fc" id="L22">        float binWidth = calculateBinWidth(xMin, xMax, nBins);</span>
+
+<span class="fc" id="L24">        float[] xHist = new float[nBins];</span>
+<span class="fc" id="L25">        int[] yHist = new int[nBins];</span>
+        
+<span class="fc" id="L27">        Histogram.createHistogram(values, nBins, xMin, xMax,</span>
+            xHist, yHist, binWidth);
+
+<span class="fc" id="L30">        float[] yHistFloat = new float[yHist.length];</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+<span class="fc" id="L32">            yHistFloat[i] = (float) yHist[i];</span>
+        }
+
+<span class="fc" id="L35">        float[] yErrors = new float[xHist.length];</span>
+<span class="fc" id="L36">        float[] xErrors = new float[xHist.length];</span>
+
+<span class="fc" id="L38">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);</span>
+
+<span class="fc" id="L40">        HistogramHolder histogram = new HistogramHolder();</span>
+<span class="fc" id="L41">        histogram.setXHist(xHist);</span>
+<span class="fc" id="L42">        histogram.setYHist(yHist);</span>
+<span class="fc" id="L43">        histogram.setYHistFloat(yHistFloat);</span>
+<span class="fc" id="L44">        histogram.setYErrors(yErrors);</span>
+<span class="fc" id="L45">        histogram.setXErrors(xErrors);</span>
+        
+<span class="fc" id="L47">        return histogram;</span>
+    }
+    
+    protected static float calculateBinWidth(float minValue, float maxValue, int nBins) {
+
+<span class="fc" id="L52">        float xInterval = (maxValue - minValue)/(float)nBins;</span>
+
+        // expand interval if necessary to make sure the last point is in the last bin
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if ((int) ((maxValue - minValue)/xInterval) != (nBins - 1)) {</span>
+<span class="fc" id="L56">            float t = (maxValue + minValue)/2.0f;</span>
+<span class="fc" id="L57">            int powDelta = MiscMath.findPowerOf10(t);</span>
+<span class="fc" id="L58">            float pow10 = (float)Math.pow(10, powDelta);</span>
+<span class="fc" id="L59">            xInterval = (maxValue - minValue + pow10)/(float)nBins;</span>
+        }
+
+<span class="fc" id="L62">        return xInterval;</span>
+    }
+    
+    public static void createHistogram(float[] a, int nBins,
+        float aMin, float aMax, float[] xHist, int[] yHist, float binWidth) {
+
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L69">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if (xHist == null || xHist.length != nBins) {</span>
+<span class="nc" id="L72">            throw new IllegalArgumentException(&quot;xHist has to be of size nBins and initialized&quot;);</span>
+        }
+<span class="pc bpc" id="L74" title="2 of 4 branches missed.">        if (yHist == null || yHist.length != nBins) {</span>
+<span class="nc" id="L75">            throw new IllegalArgumentException(&quot;yHist has to be of size nBins and initialized&quot;);</span>
+        }
+
+<span class="fc" id="L78">        Arrays.fill(yHist, 0);</span>
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; i++) {</span>
+<span class="fc" id="L81">            xHist[i] = aMin + (float)i*binWidth + (binWidth/2.f);</span>
+        }
+
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L85">            int bin = (int) ((a[i] - aMin)/binWidth);</span>
+<span class="pc bpc" id="L86" title="1 of 4 branches missed.">            if ((bin &gt; -1) &amp;&amp; (bin &lt; nBins)) {</span>
+<span class="fc" id="L87">                yHist[bin]++;</span>
+            }
+        }
+<span class="fc" id="L90">    }</span>
+
+    /**
+     * Populate the arrays xHistErrorsOutput and yHistErrorsOutput with errors
+     * for the x and y bins calculated from valueErrors.
+     *
+     *
+     * Trying to adjust errors to use the fact that a bin with a value of zero is
+     * actually determined from all bins, so the error in a bin with a value of
+     * zero is a positive number less than infinity and is due to all errors of
+     * points that go into making the histogram.
+     *
+     * For each bin:
+     *   (sigma)^2 = (ave sigma_from_all)^2 + (sigma from all points in bin, in function that reduces it by the number of points)
+     *
+     * The total of all bins should be equal to the sigma_from_all;
+     *
+     * N = 3 bins:
+     *    [0] (sigma_bin0)^2 = (sigma_from_all/nBins)^2 + (sigma_bin0 * Fnc(bin0))^2
+     *    [1] (sigma_bin1)^2 = (sigma_from_all/nBins)^2 + (sigma_bin1 * Fnc(bin1))^2
+     *    [2] (sigma_bin2)^2 = (sigma_from_all/nBins)^2 + (sigma_bin2 * Fnc(bin2))^2
+     * Where (sigma_bin0)^2 is the sum of all points that went into bin0 added in quadrature.
+     *
+     * The total of all 3 should equal the total from all points added in quadrature and no more.
+     *
+     *    (sigma_from_all_points)^2 = nBins*(sigma_from_all/nBins)^2 + (sigma_bin0 * Fnc(bin0))^2
+     *                                + (sigma_bin1 * Fnc(bin1))^2 + (sigma_bin2 * Fnc(bin2))^2
+     *
+     *    (sigma_from_all_points)^2 * (1 - (1/nBins)) = (sigma_bin0 * Fnc(bin0))^2 + (sigma_bin1 * Fnc(bin1))^2 + (sigma_bin2 * Fnc(bin2))^2
+     *
+     * Not easy to see how to solve, so returning to first principles:
+     *     Each bin should have a contribution from all points and then a contribution from its own.
+     *     In order for the total to not exceed the sum in quadrature of all points, a bin's sigma squared should
+     *     be the ave from all + it's own times (1-1/N) roughly, which is what the equation above suggests.
+     *
+     * @param xHist
+     * @param yHist
+     * @param values
+     * @param valueErrors errors that are on the same scale as the values, that is, these are
+     *   NOT percent errors
+     * @param xHistErrorsOutput
+     * @param yHistErrorsOutput
+     */
+    public static void calulateHistogramBinErrors(float[] xHist, int[] yHist,
+        float[] values, float[] valueErrors, float[] xHistErrorsOutput, 
+        float[] yHistErrorsOutput) {
+
+<span class="fc" id="L137">        float xInterval = xHist[1] - xHist[0];</span>
+<span class="fc" id="L138">        float xmin = xHist[0] - (xInterval/2.0f);</span>
+
+<span class="fc" id="L140">        float[] sumErrorPerBin = new float[xHist.length];</span>
+
+<span class="fc" id="L142">        float sumErrorAllPoints = 0;</span>
+        //float sumPercentErrorAllPoints = 0;
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int i = 0; i &lt; valueErrors.length; i++) {</span>
+
+<span class="fc" id="L147">            int bin = (int) ((values[i] - xmin)/xInterval);</span>
+
+            // in units of y
+<span class="fc" id="L150">            float a = valueErrors[i];</span>
+<span class="fc" id="L151">            a *= a;</span>
+
+<span class="pc bpc" id="L153" title="1 of 4 branches missed.">            if ((bin &gt; -1) &amp;&amp; (bin &lt; xHist.length)) {</span>
+
+<span class="fc" id="L155">                sumErrorPerBin[bin] += a;</span>
+
+<span class="fc" id="L157">                sumErrorAllPoints += a;</span>
+
+                //float b = valueErrors[i]/values[i];
+                //sumPercentErrorAllPoints += (b*b);
+            }
+        }
+
+        // the x value was determined from all points, so the error should be taken
+        //   as the average error of all points
+<span class="fc" id="L166">        float aveErrorOfAllPoints = (float)Math.sqrt(sumErrorAllPoints)/yHist.length;</span>
+
+        // the percent errors, divided over all bins, which is what was done to learn the binwdith
+        //float avePercentErrorOfAllPoints = (float)Math.sqrt(sumPercentErrorAllPoints)/yHist.length;
+
+<span class="fc" id="L171">        float sumAlt = 0;</span>
+<span class="fc" id="L172">        float sumOrigSquared = 0;</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+
+<span class="fc" id="L175">            float sumErrorBinSquared = sumErrorPerBin[i];</span>
+
+            // compare to aveErrorOfAllPoints... should be similar
+            //float be = (float) Math.sqrt(sumErrorBinSquared);
+
+<span class="fc" id="L180">            float c = aveErrorOfAllPoints;</span>
+
+            // estimating it as binWidth/2. any point has x value = bin center +- binWidth/2
+<span class="fc" id="L183">            xHistErrorsOutput[i] = xInterval/2.0f; //c;</span>
+
+            //float a = (float)Math.sqrt(sumErrorBinSquared * (1.0f - (1.0f/yHist.length));
+<span class="fc" id="L186">            float ai = sumErrorBinSquared;</span>
+<span class="fc" id="L187">            float af = sumErrorBinSquared/yHist.length;</span>
+<span class="fc" id="L188">            float a = (float)Math.sqrt(ai - af);</span>
+
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            float yBinError = (yHist[i] == 0) ? 0 : a/yHist[i];</span>
+
+<span class="fc" id="L192">            yHistErrorsOutput[i] = yBinError;</span>
+
+<span class="fc" id="L194">            sumAlt += yBinError;</span>
+
+
+<span class="fc bfc" id="L197" title="All 2 branches covered.">            float yBinErrorOrig = (yHist[i] == 0) ? 0 : (float)Math.sqrt(sumErrorPerBin[i])/yHist[i];</span>
+
+<span class="fc" id="L199">            sumOrigSquared += yBinErrorOrig;</span>
+        }
+
+<span class="fc" id="L202">        float contribFromAllToEachBin = (sumOrigSquared - sumAlt)/yHist.length;</span>
+
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+
+<span class="fc" id="L206">            yHistErrorsOutput[i] += contribFromAllToEachBin;</span>
+        }
+<span class="fc" id="L208">    }</span>
+    
+     /**
+     * make assumption that errors are dominated by shot noise and so the noise is sqrt(y[i]).
+     *
+     * @param y
+     * @return
+     */
+    public static float[] populateYErrorsBySqrt(float[] y) {
+
+<span class="fc" id="L218">        float[] dy = new float[y.length];</span>
+
+<span class="fc" id="L220">        float maxError = 0.f;</span>
+
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        for (int i = 0; i &lt; dy.length; i++) {</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (y[i] &gt; 0) {</span>
+<span class="fc" id="L224">                dy[i] =(float)(Math.sqrt(y[i]));</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">                if (dy[i] &gt; maxError) {</span>
+<span class="fc" id="L226">                    maxError = dy[i];</span>
+                }
+            }
+        }
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        for (int i = 0; i &lt; dy.length; i++) {</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">            if (y[i] == 0) {</span>
+<span class="nc" id="L232">                dy[i] = maxError;</span>
+            }
+        }
+
+<span class="fc" id="L236">        return dy;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

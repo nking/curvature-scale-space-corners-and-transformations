@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MiscMath.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">MiscMath.java</span></div><h1>MiscMath.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+
+import algorithms.util.ArrayPair;
+import com.climbwithyourfeet.clustering.util.PairInt;
+import java.security.SecureRandom;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L12">public class MiscMath {</span>
+
+    public static int findPowerOf10_2(float a) {
+
+<span class="pc bpc" id="L16" title="1 of 2 branches missed.">        if (a == 0) {</span>
+<span class="nc" id="L17">            return 0;</span>
+        }
+
+<span class="fc" id="L20">        int power = 0;</span>
+
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (a &lt;= 1.0f) {</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">            while (a &lt; 1.0) {</span>
+<span class="fc" id="L24">                a *=  10.0;</span>
+<span class="fc" id="L25">                power--;</span>
+            }
+        } else {
+            // precision errors in multiplication here are trouble for non base2 numbers such as powers of 10
+<span class="nc bnc" id="L29" title="All 2 branches missed.">            while (a &gt;= 1.0) {</span>
+<span class="nc" id="L30">                a /= 10.0;</span>
+<span class="nc" id="L31">                power++;</span>
+            }
+<span class="nc" id="L33">            power--;</span>
+        }
+
+<span class="fc" id="L36">        return power;</span>
+    }
+
+    public static int findPowerOf10(float a) {
+
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (a == 0) {</span>
+<span class="fc" id="L42">            return 0;</span>
+        }
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (a &lt; 0.f) {</span>
+<span class="fc" id="L45">            a *= -1.0f;</span>
+        }
+<span class="fc" id="L47">        double b = Math.log10(a);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (b &gt; 0) {</span>
+<span class="fc" id="L49">            return (int)b;</span>
+        } else {
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">            if (b &gt;= 1) {</span>
+<span class="nc" id="L52">                return (int)Math.round(b);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            } else if (b &gt; -1) {</span>
+                // fractions between -1 and +1
+<span class="fc" id="L55">                 return findPowerOf10_2(a);</span>
+            } else {
+<span class="fc" id="L57">                return (int)Math.round(b);</span>
+            }
+        }
+    }
+
+    /**
+     * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
+     * @param a
+     * @return
+     */
+    public static float findMax(float[] a) {
+<span class="fc" id="L68">        float max = Float.MIN_VALUE;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="pc bpc" id="L70" title="3 of 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) &amp;&amp; (a[i] &lt; Float.MAX_VALUE)) {</span>
+<span class="fc" id="L71">                max = a[i];</span>
+            }
+        }
+<span class="fc" id="L74">        return max;</span>
+    }
+
+    /**
+     * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
+     * @param a
+     * @return
+     */
+    public static int findMax(int[] a) {
+<span class="fc" id="L83">        int max = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="pc bpc" id="L85" title="3 of 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) &amp;&amp; (a[i] &lt; Float.MAX_VALUE)) {</span>
+<span class="fc" id="L86">                max = a[i];</span>
+            }
+        }
+<span class="fc" id="L89">        return max;</span>
+    }
+
+    public static float findMin(float[] a) {
+<span class="fc" id="L93">        float min = Float.MAX_VALUE;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="pc bpc" id="L95" title="1 of 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
+<span class="fc" id="L96">                min = a[i];</span>
+            }
+        }
+<span class="fc" id="L99">        return min;</span>
+    }
+
+    /**
+     * find the minima and maxima of x and y and return them as
+     * int[]{xMin, xMax, yMin, yMax}
+     * @param points
+     * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
+     */
+    public static int[] findMinMaxXY(Set&lt;PairInt&gt; points) {
+
+<span class="fc" id="L110">        int xMin = Integer.MAX_VALUE;</span>
+<span class="fc" id="L111">        int xMax = Integer.MIN_VALUE;</span>
+<span class="fc" id="L112">        int yMin = Integer.MAX_VALUE;</span>
+<span class="fc" id="L113">        int yMax = Integer.MIN_VALUE;</span>
+
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L116">            int x = p.getX();</span>
+<span class="fc" id="L117">            int y = p.getY();</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (x &lt; xMin) {</span>
+<span class="fc" id="L119">                xMin = x;</span>
+            }
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (y &lt; yMin) {</span>
+<span class="fc" id="L122">                yMin = y;</span>
+            }
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (x &gt; xMax) {</span>
+<span class="fc" id="L125">                xMax = x;</span>
+            }
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            if (y &gt; yMax) {</span>
+<span class="fc" id="L128">                yMax = y;</span>
+            }
+<span class="fc" id="L130">        }</span>
+<span class="fc" id="L131">        return new int[]{xMin, xMax, yMin, yMax};</span>
+    }
+    
+    /**
+     * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
+     * @param a
+     * @return
+     */
+    public static int findYMaxIndex(float[] a) {
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L141">            return -1;</span>
+        }
+<span class="fc" id="L143">        float max = Float.MIN_VALUE;</span>
+<span class="fc" id="L144">        int index = 0;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="pc bpc" id="L146" title="3 of 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) &amp;&amp; (a[i] &lt; Float.MAX_VALUE)) {</span>
+<span class="fc" id="L147">                max = a[i];</span>
+<span class="fc" id="L148">                index = i;</span>
+            }
+        }
+<span class="fc" id="L151">        return index;</span>
+    }
+
+    public static int findYMaxIndex(int[] a) {
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L156">            return -1;</span>
+        }
+<span class="fc" id="L158">        int max = Integer.MIN_VALUE;</span>
+<span class="fc" id="L159">        int index = 0;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="pc bpc" id="L161" title="1 of 4 branches missed.">            if ((a[i] &gt; max) &amp;&amp; (a[i] &lt; Integer.MAX_VALUE)) {</span>
+<span class="fc" id="L162">                max = a[i];</span>
+<span class="fc" id="L163">                index = i;</span>
+            }
+        }
+<span class="fc" id="L166">        return index;</span>
+    }
+
+    public static float[] calculateOuterRoundedMinAndMax(float[] a) {
+
+        // find the powers of 10 for the data min and max
+<span class="fc" id="L172">        float xmin = Float.MAX_VALUE;</span>
+<span class="fc" id="L173">        float xmax = Float.MIN_VALUE;</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (a[i] &gt; xmax) {</span>
+<span class="fc" id="L176">                xmax = a[i];</span>
+            }
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (a[i] &lt; xmin) {</span>
+<span class="fc" id="L179">                xmin = a[i];</span>
+            }
+        }
+
+<span class="fc" id="L183">        xmax = MiscMath.roundUpByLargestPower(xmax);</span>
+
+<span class="fc" id="L185">        xmin = MiscMath.roundDownByLargestPower(xmin);</span>
+
+        // xmax &gt; 1 and xmin is between 0 and 1, round xmin down
+<span class="pc bpc" id="L188" title="1 of 6 branches missed.">        if ((xmax &gt; 1) &amp;&amp; (xmin &gt; 0) &amp;&amp; (xmin &lt; 1.0)) {</span>
+<span class="nc" id="L189">            xmin = 0;</span>
+        }
+
+<span class="fc" id="L192">        return new float[]{xmin, xmax};</span>
+    }
+
+    /**
+     * Round number down to in the largest power.
+     * For example,
+     *     roundDownByLargestPower(3.1) returns 3.0
+     *     roundDownByLargestPower(-3.1) returns -4.0
+     *     roundDownByLargestPower(31.1) returns 30.0
+     *
+     * @param f
+     * @return
+     */
+    public static float roundDownByLargestPower(float f) {
+
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (f == 0) {</span>
+<span class="fc" id="L208">            return 0;</span>
+        }
+
+<span class="fc" id="L211">        int pow = findPowerOf10(f);</span>
+<span class="fc" id="L212">        double pow10 = Math.pow(10, pow);</span>
+
+        double r;
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (f &gt; 0) {</span>
+<span class="fc" id="L216">            double m = f % pow10;</span>
+<span class="fc" id="L217">            r = f - m;</span>
+<span class="fc" id="L218">        } else {</span>
+<span class="fc" id="L219">            int m = (int)(f/pow10);</span>
+<span class="fc" id="L220">            r = pow10 * (m - 1);</span>
+        }
+
+<span class="fc" id="L223">        return (float)r;</span>
+    }
+
+    /**
+     Round number up to the next digit in the largest power.
+
+        MiscMath.roundUpByLargestPower(31.1f) == 40.0f;
+
+        MiscMath.roundUpByLargestPower(0.11f) == 1.0f;
+
+        MiscMath.roundUpByLargestPower(-0.011f) == -0.02f;
+
+        MiscMath.roundUpByLargestPower(310.1f) == 400.0f;
+
+        MiscMath.roundUpByLargestPower(-3.1) == -4.0f;
+
+        MiscMath.roundUpByLargestPower(3.1) == 4.0f;
+
+    @param f
+    @return
+    */
+    public static float roundUpByLargestPower(float f) {
+
+<span class="fc" id="L246">        int pow = findPowerOf10(f);</span>
+
+<span class="fc" id="L248">        double pow10 = Math.pow(10, pow);</span>
+
+<span class="fc" id="L250">        int d = (int)(f/pow10);</span>
+        int m;
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (f == pow10) {</span>
+<span class="fc" id="L253">            m = d;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        } else if (f &gt; 0) {</span>
+            // residual ?
+<span class="fc bfc" id="L256" title="All 2 branches covered.">            if (f &gt; (d*pow10)) {</span>
+<span class="fc" id="L257">                m = d + 1;</span>
+            } else {
+<span class="fc" id="L259">                m = d;</span>
+            }
+        } else {
+            // decimals
+<span class="fc" id="L263">            m = d - 1;</span>
+        }
+
+<span class="fc" id="L266">        float r = (float) (m * pow10);</span>
+
+<span class="fc" id="L268">        return r;</span>
+    }
+    
+    /*
+     http://en.wikipedia.org/wiki/Poisson_distribution
+         algorithm poisson random number (Knuth):
+     
+     @param sr an instance of secure random which is a strong random number generator
+     @param lambda a value less than 4 roughly looks like the tested dataset histograms
+     */
+    public static int poissonRandom(SecureRandom sr, int lambda) {
+
+<span class="fc" id="L280">        double L = Math.exp(-lambda);</span>
+
+<span class="fc" id="L282">        int k = 0;</span>
+
+<span class="fc" id="L284">        double p = 1;</span>
+
+        do {
+<span class="fc" id="L287">            k = k + 1;</span>
+
+<span class="fc" id="L289">            double u = sr.nextDouble();</span>
+
+<span class="fc" id="L291">            p = p * u;</span>
+
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        } while (p &gt; L);</span>
+
+<span class="fc" id="L295">        return k - 1;</span>
+    }
+  
+    /**
+     * use the taylor series to approximate the natural log of a number.
+     * Note that internally, the variable x which is number - 1.
+     * 
+     * ln(1 + x) is computed, so number = 1 + x and therefore x = number - 1;
+     * 
+     * ln(1+x) = x - (x^2)/2 + (x^3)/3 - ...
+     * 
+     * @param number
+     * @param n
+     * @return
+     */
+    protected static double taylor(double number, int n) {
+<span class="fc" id="L311">        double x = number - 1.0;</span>
+        
+<span class="fc" id="L313">        double sum = 0;</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">        for (int i = 1; i &lt;= n; i++) {</span>
+<span class="fc" id="L315">            double f = Math.pow(x, i)/(float)i;</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">            if (i % 2 == 0) {</span>
+<span class="fc" id="L317">                sum -= f;</span>
+<span class="fc" id="L318">                System.out.print(&quot;     MINUS i=&quot; + i);</span>
+            } else {
+<span class="fc" id="L320">                sum += f;</span>
+<span class="fc" id="L321">                System.out.print(&quot;     PLUS i=&quot; + i);</span>
+            }            
+        }
+        
+<span class="fc" id="L325">        return sum;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

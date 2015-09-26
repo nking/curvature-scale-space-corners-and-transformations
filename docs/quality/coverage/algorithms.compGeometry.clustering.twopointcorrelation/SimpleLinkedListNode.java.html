@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SimpleLinkedListNode.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">SimpleLinkedListNode.java</span></div><h1>SimpleLinkedListNode.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import java.util.Arrays;
+
+/**
+ * a node holding only a integer key and the next reference.  the key must be 
+ * larger than -1.
+ *
+ * @author nichole
+ */
+public class SimpleLinkedListNode {
+
+<span class="fc" id="L13">    protected int key = -1;</span>
+
+<span class="fc" id="L15">    protected SimpleLinkedListNode next = null;</span>
+
+<span class="fc" id="L17">    public SimpleLinkedListNode() {}</span>
+    
+<span class="fc" id="L19">    public SimpleLinkedListNode(int insertKey) {</span>
+<span class="fc" id="L20">        this.key = insertKey;</span>
+<span class="fc" id="L21">    }</span>
+    
+    public int getKey() {
+<span class="fc" id="L24">        return key;</span>
+    }
+    
+    public SimpleLinkedListNode getNext() {
+<span class="fc" id="L28">        return next;</span>
+    }
+
+    /**
+     * set next to nextNode.  note that if this.next is not null, it is lost.
+     * @param nextNode
+     */
+    public void setNext(SimpleLinkedListNode nextNode) {
+<span class="nc" id="L36">        this.next = nextNode;</span>
+<span class="nc" id="L37">    }</span>
+    
+    public SimpleLinkedListNode insert(int insertKey) {
+        
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (insertKey == -1) {</span>
+<span class="fc" id="L42">            throw new IllegalArgumentException(</span>
+            &quot;insertKey must be larger than -1&quot;);
+        }
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (this.key == -1) {</span>
+<span class="fc" id="L46">            key = insertKey;</span>
+<span class="fc" id="L47">            return this;</span>
+        }
+        
+<span class="fc" id="L50">        SimpleLinkedListNode node = new SimpleLinkedListNode(key);</span>
+        
+<span class="fc" id="L52">        key = insertKey;</span>
+
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (next == null) {</span>
+<span class="fc" id="L55">            next = node;</span>
+<span class="fc" id="L56">            return this;</span>
+        }
+        
+<span class="fc" id="L59">        node.next = next;</span>
+        
+<span class="fc" id="L61">        next = node;</span>
+
+<span class="fc" id="L63">        return node;</span>
+    }
+
+    /**
+     * insert into list if a node with the same key does not already exist
+     * in this instance or any of the next in the linked nodes.
+     * 
+     * @param insertKey
+     * @return 
+     */
+    public SimpleLinkedListNode insertIfDoesNotAlreadyExist(int insertKey) {
+        
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (insertKey == -1) {</span>
+<span class="fc" id="L76">            throw new IllegalArgumentException(</span>
+            &quot;insertKey must be larger than -1&quot;);
+        }
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (insertKey == this.key) {</span>
+<span class="fc" id="L80">            return null;</span>
+        }
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        if (this.key == -1) {</span>
+<span class="fc" id="L83">            key = insertKey;</span>
+<span class="fc" id="L84">            return this;</span>
+        }
+        
+<span class="fc" id="L87">        SimpleLinkedListNode node = search(insertKey);</span>
+        
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (node != null) {</span>
+<span class="fc" id="L90">            return null;</span>
+        }
+        
+<span class="fc" id="L93">        return insert(insertKey);</span>
+    }
+
+    public void delete(SimpleLinkedListNode node) {
+
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (key == -1) {</span>
+<span class="fc" id="L99">            return;</span>
+        }
+        
+        // if its the first node, we have to transfer data
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (this.equals(node)) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if (this.next == null) {</span>
+<span class="fc" id="L105">                this.key = -1;</span>
+            } else {
+<span class="fc" id="L107">                this.key = next.key;</span>
+<span class="fc" id="L108">                this.next = next.next;</span>
+            }
+<span class="fc" id="L110">            return;</span>
+        }
+
+        // start w/ 2nd node because we've already searched the first
+<span class="fc" id="L114">        SimpleLinkedListNode last = this;</span>
+<span class="fc" id="L115">        SimpleLinkedListNode current = this.next;</span>
+
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        while (current != null) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (current.equals(node)) {</span>
+<span class="fc" id="L119">                last.next = current.next;               </span>
+<span class="fc" id="L120">                break;</span>
+            }
+<span class="fc" id="L122">            last = current;</span>
+<span class="fc" id="L123">            current = current.next;</span>
+        }
+<span class="fc" id="L125">    }</span>
+
+    public void delete(int deleteKey) {
+
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (deleteKey == -1) {</span>
+<span class="fc" id="L130">            return;</span>
+        }
+        
+        // if its the first node, we have to transfer data
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (this.key == deleteKey) {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (this.next == null) {</span>
+<span class="fc" id="L136">                this.key = -1;</span>
+            } else {
+<span class="fc" id="L138">                this.key = next.key;</span>
+<span class="fc" id="L139">                this.next = next.next;</span>
+            }
+<span class="fc" id="L141">            return;</span>
+        }
+        
+        // start w/ 2nd node because we've already searched the first
+<span class="fc" id="L145">        SimpleLinkedListNode last = this;</span>
+<span class="fc" id="L146">        SimpleLinkedListNode current = this.next;</span>
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        while (current != null) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">            if (current.key == deleteKey) {</span>
+<span class="fc" id="L150">                last.next = current.next;               </span>
+<span class="fc" id="L151">                break;</span>
+            }
+<span class="fc" id="L153">            last = current;</span>
+<span class="fc" id="L154">            current = current.next;</span>
+        }
+<span class="fc" id="L156">    }</span>
+
+    public SimpleLinkedListNode search(int searchKey) {
+
+<span class="fc" id="L160">        SimpleLinkedListNode latest = this;</span>
+
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        while (latest != null) {</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            if (latest.key == searchKey) {</span>
+<span class="fc" id="L164">                return latest;</span>
+            }
+<span class="fc" id="L166">            latest = latest.next;</span>
+        }
+<span class="fc" id="L168">        return null;</span>
+    }
+
+    public boolean contains(int searchKey) {
+<span class="fc" id="L172">        SimpleLinkedListNode node = search(searchKey);</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        return (node != null);</span>
+    }
+
+    public int[] getKeys() {
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        if (key == -1) {</span>
+<span class="fc" id="L178">            return new int[0];</span>
+        }
+<span class="fc" id="L180">        int n = 10;</span>
+<span class="fc" id="L181">        int[] nodeKeys = new int[n];</span>
+<span class="fc" id="L182">        int count = 0;</span>
+
+<span class="fc" id="L184">        SimpleLinkedListNode latest = this;</span>
+<span class="pc bpc" id="L185" title="1 of 4 branches missed.">        while (latest != null &amp;&amp; latest.key != -1) {</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            if ((count + 1) &gt; n) {</span>
+<span class="fc" id="L187">                n = 2*n;</span>
+<span class="fc" id="L188">                nodeKeys = Arrays.copyOf(nodeKeys, n);</span>
+            }
+<span class="fc" id="L190">            nodeKeys[count] = latest.key;</span>
+<span class="fc" id="L191">            count++;</span>
+<span class="fc" id="L192">            latest = latest.next;</span>
+        }
+<span class="fc" id="L194">        return Arrays.copyOf(nodeKeys, count);</span>
+    }
+
+    public int getNumberOfKeys() {
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        if (key == -1) {</span>
+<span class="fc" id="L199">            return 0;</span>
+        }
+<span class="fc" id="L201">        int count = 0;</span>
+
+<span class="fc" id="L203">        SimpleLinkedListNode latest = this;</span>
+<span class="pc bpc" id="L204" title="1 of 4 branches missed.">        while (latest != null &amp;&amp; latest.key != -1) {</span>
+<span class="fc" id="L205">            count++;</span>
+<span class="fc" id="L206">            latest = latest.next;</span>
+        }
+<span class="fc" id="L208">        return count;</span>
+    }
+    
+    public static long approximateMemoryUsed() {
+            
+<span class="fc" id="L213">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+    
+<span class="pc bpc" id="L215" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+    
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+    
+<span class="fc" id="L219">        int overheadBytes = 16;</span>
+    
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
+        
+<span class="fc" id="L223">        int refBytes = nbits/8;</span>
+
+<span class="fc" id="L225">        long sumBytes = intBytes + refBytes;</span>
+       
+<span class="fc" id="L227">        sumBytes += overheadBytes;</span>
+        
+<span class="fc" id="L229">        long padding = (sumBytes % 8);</span>
+        
+<span class="fc" id="L231">        sumBytes += padding;</span>
+        
+<span class="fc" id="L233">        return sumBytes;</span>
+    }
+    
+    @Override
+    public boolean equals(Object arg0) {
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (!(arg0 instanceof SimpleLinkedListNode)) {</span>
+<span class="fc" id="L239">            return false;</span>
+        }
+<span class="fc" id="L241">        SimpleLinkedListNode other = (SimpleLinkedListNode)arg0;</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        return (other.key == this.key);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

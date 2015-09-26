@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MultiArrayMergeSort.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.sorting</a> &gt; <span class="el_source">MultiArrayMergeSort.java</span></div><h1>MultiArrayMergeSort.java</h1><pre class="source lang-java linenums">package algorithms.sorting;
+
+import java.util.Arrays;
+
+/**
+ * &lt;pre&gt;
+ * merge sort worse case runtime is O(N * log_2(N))
+ *
+ * The method to sort 2 arrays below uses divide and conquer paradigm and sorts one additional array
+ * (with no additional logic) along with the original array which is sorted.
+ * the result is a constant factor added to an internal constant for the O(n) for merge of single
+ * sort.
+ *
+ * constructed from pseudo-code in Cormen et al.
+ * &quot;Introduction to Algorithms&quot;
+ * &lt;pre&gt;
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L20">public class MultiArrayMergeSort {</span>
+    
+    /**
+     * sort by increasing value a1 and apply same changes to a2.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     */
+    public static void sortBy1stArg(float[] a1, float[] a2) {
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (a1 == null) {</span>
+<span class="fc" id="L31">        	throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (a2 == null) {</span>
+<span class="fc" id="L34">        	throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (a1.length != a2.length) {</span>
+<span class="fc" id="L37">        	throw new IllegalArgumentException(&quot;number of items in a1 must be the same as in a2&quot;);</span>
+        }
+<span class="fc" id="L39">        sortBy1stArg(a1, a2, 0, a1.length - 1);</span>
+<span class="fc" id="L40">    }</span>
+
+    /**
+     * sort by increasing value a1 and apply same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param a3 array of points to apply a1 sorting to also
+     * @param nLength the number of points to sort in a1 starting with item 0
+     */
+    public static void sortBy1stArg(float[] a1, float[] a2, int[] a3, int nLength) {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (a1 == null) {</span>
+<span class="fc" id="L53">        	throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (a2 == null) {</span>
+<span class="fc" id="L56">        	throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (a3 == null) {</span>
+<span class="fc" id="L59">            throw new IllegalArgumentException(&quot;a3 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L61" title="2 of 6 branches missed.">        if ((a1.length != nLength) || (a2.length != nLength) || (a3.length != nLength)) {</span>
+<span class="fc" id="L62">            throw new IllegalArgumentException(&quot;number of items in a1 and a2 and a3 must be equal to nLength&quot;);</span>
+        }
+<span class="fc" id="L64">        sortBy1stArg(a1, a2, a3, 0, nLength - 1);</span>
+<span class="fc" id="L65">    }</span>
+
+    /**
+     * sort by increasing value a1 and apply same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param idxLo starting index of sorting of a1, inclusive
+     * @param idxHi stopping index of sorting of a1, inclusive
+     */
+    public static void sortBy1stArg(float[] a1, float[] a2, int idxLo, int idxHi) {
+
+<span class="fc" id="L78">        int idxMid = -1;</span>
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L82">            idxMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+
+<span class="fc" id="L84">            sortBy1stArg(a1, a2, idxLo, idxMid);</span>
+<span class="fc" id="L85">            sortBy1stArg(a1, a2, idxMid + 1, idxHi);</span>
+<span class="fc" id="L86">            merge(a1, a2, idxLo, idxMid, idxHi);</span>
+        }
+<span class="fc" id="L88">    }</span>
+
+    /**
+     * sort by increasing value a1 and apply same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param a3 array of points to apply a1 sorting to also
+     * @param idxLo starting index of sorting of a1, inclusive
+     * @param idxHi stopping index of sorting of a1, inclusive
+     */
+    public static void sortBy1stArg(float[] a1, float[] a2, int[] a3, int idxLo, int idxHi) {
+
+<span class="fc" id="L102">        int idxMid = -1;</span>
+
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L106">            idxMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+
+<span class="fc" id="L108">            sortBy1stArg(a1, a2, a3, idxLo, idxMid);</span>
+<span class="fc" id="L109">            sortBy1stArg(a1, a2, a3, idxMid + 1, idxHi);</span>
+<span class="fc" id="L110">            merge(a1, a2, a3, idxLo, idxMid, idxHi);</span>
+        }
+<span class="fc" id="L112">    }</span>
+
+    /**
+     * sort by increasing value a1 and apply same changes to a2.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     */
+    public static void sortBy1stArgThen2nd(float[] a1, float[] a2) {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (a1 == null) {</span>
+<span class="fc" id="L123">        	throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (a2 == null) {</span>
+<span class="fc" id="L126">        	throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (a1.length != a2.length) {</span>
+<span class="fc" id="L129">        	throw new IllegalArgumentException(&quot;number of items in a1 must be the same as in a2&quot;);</span>
+        }
+<span class="fc" id="L131">        sortBy1stArgThen2nd(a1, a2, 0, a1.length - 1);</span>
+<span class="fc" id="L132">    }</span>
+
+    /**
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param a3 array of points to apply a1 sorting to also
+     * @param idxLo starting index of sorting of a1, inclusive
+     * @param idxHi stopping index of sorting of a1, inclusive
+     * @param incrA2 a2 should be sorted by increasing value also
+     */
+    private static void sortBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, int idxHi) {
+
+<span class="fc" id="L144">        int indexMid = -1;</span>
+
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L148">            indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+
+<span class="fc" id="L150">            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);</span>
+<span class="fc" id="L151">            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);</span>
+<span class="fc" id="L152">            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi);</span>
+        }
+<span class="fc" id="L154">    }</span>
+
+    /**
+     * merge array
+     *
+     * @param a1 array of points to be sorted and merged
+     * @param a2 array of points to apply a1 changes to also
+     * @param idxLo starting index of merging of a1, inclusive
+     * @param idxMid mid point index of merging of a1, inclusive
+     * @param idxHi stopping index of merging of a1, inclusive
+     */
+    private static void merge(float[] a1, float[] a2, int idxLo, int idxMid, int idxHi) {
+
+<span class="fc" id="L167">        int nLeft = idxMid - idxLo + 1;</span>
+<span class="fc" id="L168">        int nRight = idxHi - idxMid;</span>
+
+<span class="fc" id="L170">        float[] a2Left = new float[nLeft + 1];</span>
+<span class="fc" id="L171">        float[] a1Left = new float[nLeft + 1];</span>
+
+<span class="fc" id="L173">        float[] a2Right = new float[nRight + 1];</span>
+<span class="fc" id="L174">        float[] a1Right = new float[nRight + 1];</span>
+
+        int i, j, index;
+
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (i = 0; i &lt; nLeft; i++) {</span>
+<span class="fc" id="L179">            index = idxLo + i;</span>
+<span class="fc" id="L180">            a2Left[i] = a2[index];</span>
+<span class="fc" id="L181">            a1Left[i] = a1[index];</span>
+        }
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        for (j = 0; j &lt; nRight; j++) {</span>
+<span class="fc" id="L184">            index = idxMid + j + 1;</span>
+<span class="fc" id="L185">            a2Right[j] = a2[index];</span>
+<span class="fc" id="L186">            a1Right[j] = a1[index];</span>
+        }
+
+<span class="fc" id="L189">        a2Left[nLeft] = Float.MAX_VALUE;</span>
+<span class="fc" id="L190">        a1Left[nLeft] = Float.MAX_VALUE;</span>
+<span class="fc" id="L191">        a2Right[nRight] = Float.MAX_VALUE;</span>
+<span class="fc" id="L192">        a1Right[nRight] = Float.MAX_VALUE;</span>
+
+<span class="fc" id="L194">        i = 0;</span>
+<span class="fc" id="L195">        j = 0;</span>
+
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (a1Left[i] &lt;= a1Right[j]) {</span>
+<span class="fc" id="L199">                a2[k] = a2Left[i];</span>
+<span class="fc" id="L200">                a1[k] = a1Left[i];</span>
+<span class="fc" id="L201">                i += 1;</span>
+            } else {
+<span class="fc" id="L203">                a2[k] = a2Right[j];</span>
+<span class="fc" id="L204">                a1[k] = a1Right[j];</span>
+<span class="fc" id="L205">                j += 1;</span>
+            }
+        }
+<span class="fc" id="L208">    }</span>
+
+    /**
+     * merge array
+     *
+     * @param a1 array of points to be sorted and merged
+     * @param a2 array of points to apply a1 changes to also
+     * @param a3 array of points to apply a1 changes to also
+     * @param idxLo starting index of merging of a1, inclusive
+     * @param idxMid mid point index of merging of a1, inclusive
+     * @param idxHi stopping index of merging of a1, inclusive
+     */
+    private static void merge(float[] a1, float[] a2, int[] a3, int idxLo, int idxMid, int idxHi) {
+
+<span class="fc" id="L222">        int nLeft = idxMid - idxLo + 1;</span>
+<span class="fc" id="L223">        int nRight = idxHi - idxMid;</span>
+
+<span class="fc" id="L225">        float[] a2Left = new float[nLeft + 1];</span>
+<span class="fc" id="L226">        float[] a1Left = new float[nLeft + 1];</span>
+<span class="fc" id="L227">        int[] a3Left = new int[nLeft + 1];</span>
+
+<span class="fc" id="L229">        float[] a2Right = new float[nRight + 1];</span>
+<span class="fc" id="L230">        float[] a1Right = new float[nRight + 1];</span>
+<span class="fc" id="L231">        int[] a3Right = new int[nRight + 1];</span>
+
+        int i, j, index;
+
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        for (i = 0; i &lt; nLeft; i++) {</span>
+<span class="fc" id="L236">            index = idxLo + i;</span>
+<span class="fc" id="L237">            a2Left[i] = a2[index];</span>
+<span class="fc" id="L238">            a1Left[i] = a1[index];</span>
+<span class="fc" id="L239">            a3Left[i] = a3[index];</span>
+        }
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        for (j = 0; j &lt; nRight; j++) {</span>
+<span class="fc" id="L242">            index = idxMid + j + 1;</span>
+<span class="fc" id="L243">            a2Right[j] = a2[index];</span>
+<span class="fc" id="L244">            a1Right[j] = a1[index];</span>
+<span class="fc" id="L245">            a3Right[j] = a3[index];</span>
+        }
+
+<span class="fc" id="L248">        a2Left[nLeft] = Float.MAX_VALUE;</span>
+<span class="fc" id="L249">        a1Left[nLeft] = Float.MAX_VALUE;</span>
+<span class="fc" id="L250">        a3Left[nLeft] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L251">        a2Right[nRight] = Float.MAX_VALUE;</span>
+<span class="fc" id="L252">        a1Right[nRight] = Float.MAX_VALUE;</span>
+<span class="fc" id="L253">        a3Right[nRight] = Integer.MAX_VALUE;</span>
+
+<span class="fc" id="L255">        i = 0;</span>
+<span class="fc" id="L256">        j = 0;</span>
+
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">            if (a1Left[i] &lt;= a1Right[j]) {</span>
+<span class="fc" id="L260">                a2[k] = a2Left[i];</span>
+<span class="fc" id="L261">                a1[k] = a1Left[i];</span>
+<span class="fc" id="L262">                a3[k] = a3Left[i];</span>
+<span class="fc" id="L263">                i += 1;</span>
+            } else {
+<span class="fc" id="L265">                a2[k] = a2Right[j];</span>
+<span class="fc" id="L266">                a1[k] = a1Right[j];</span>
+<span class="fc" id="L267">                a3[k] = a3Right[j];</span>
+<span class="fc" id="L268">                j += 1;</span>
+            }
+        }
+<span class="fc" id="L271">    }</span>
+
+    /**
+     * @param a1 array of points to be sorted and merged
+     * @param a2 array of points to apply a1 changes to also
+     * @param idxLo first index of first subarray for sorting
+     * @param idxMid first index of second subarray for sorting
+     * @param idxHi last index of second subarray for sorting
+     */
+    private static void mergeBy1stArgThen2nd( float[] a1, float[] a2, int idxLo, int idxMid, int idxHi) {
+
+                                                            // cost  times          where n'=(indexHi - indexLo)
+                                                            // c01   1
+                                                            // c02   1
+
+                                                            // c03   4 * n'/2       for assignment to the subsequent 4 arrays
+
+<span class="fc" id="L288">        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L289">        float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
+        
+<span class="fc" id="L291">        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L292">        float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
+        
+<span class="fc" id="L294">        a1Left[a1Left.length - 1] = Float.MAX_VALUE;</span>
+<span class="fc" id="L295">        a2Left[a2Left.length - 1] = Float.MAX_VALUE;</span>
+<span class="fc" id="L296">        a1Right[a1Right.length - 1] = Float.MAX_VALUE;</span>
+<span class="fc" id="L297">        a2Right[a2Right.length - 1] = Float.MAX_VALUE;</span>
+
+<span class="fc" id="L299">        int leftPos = 0;</span>
+<span class="fc" id="L300">        int rightPos = 0;</span>
+
+                                                                                     // where M' + P' &lt;= N'; P' is when L==R; M'&lt;N'; P'&lt;N'
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {                                       // c04   n'</span>
+<span class="fc" id="L304">            float l = a1Left[leftPos];                                               // c04   n' * 1</span>
+<span class="fc" id="L305">            float r = a1Right[rightPos];                                             // c04   n' * 1</span>
+
+<span class="fc bfc" id="L307" title="All 2 branches covered.">            if (l == r) {                                                            // c04   n' * 1</span>
+                // compare the a2 values.  lowest a2 value should be moved to the left
+<span class="fc" id="L309">                float lx = a2Left[leftPos];                                                // c04   p'</span>
+<span class="fc" id="L310">                float rx = a2Right[rightPos];                                               // c04   p'</span>
+
+<span class="fc bfc" id="L312" title="All 2 branches covered.">                if (lx &lt;= rx) {                                                      // 4*c04   p' for total of either block</span>
+<span class="fc" id="L313">                    a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L314">                    a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L315">                    leftPos++;</span>
+                } else {
+<span class="fc" id="L317">                    a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L318">                    a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L319">                    rightPos++;</span>
+                }
+            
+<span class="fc bfc" id="L322" title="All 2 branches covered.">            } else if (l &lt; r) {                                                      // 4*c04   m'-n' for total of either block</span>
+<span class="fc" id="L323">                a2[k] = a2Left[leftPos];</span>
+<span class="fc" id="L324">                a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L325">                leftPos++;</span>
+            } else {
+<span class="fc" id="L327">                a2[k] = a2Right[rightPos];</span>
+<span class="fc" id="L328">                a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L329">                rightPos++;</span>
+            }
+        }
+<span class="fc" id="L332">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

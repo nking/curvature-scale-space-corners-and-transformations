@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DivideAndConquerVoidFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">DivideAndConquerVoidFinder.java</span></div><h1>DivideAndConquerVoidFinder.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import java.util.logging.Logger;
+
+/**
+ * an implementation of IVoidFinder that uses a divide and conquer approach to sampling the
+ * data.
+ * 
+ * @author nichole
+ *
+ */
+<span class="fc" id="L12">public class DivideAndConquerVoidFinder extends AbstractVoidFinder {</span>
+
+    @Override
+    public void constructLogger() {
+<span class="fc" id="L16">        this.log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L17">    }</span>
+
+    @Override
+    protected void findVoidsImpl() {
+        
+<span class="fc" id="L22">        findVoids(0, indexer.nXY - 1);</span>
+<span class="fc" id="L23">    }</span>
+    
+
+    /**
+     * &lt;pre&gt;
+     * A divide and conquer approach to finding the rectangular areas
+     * containing only two points.  
+     *
+     * runtime complexity:
+     *     processIndexedRegion is a little worse than linear
+     *     T(processIndexedRegion) = O(N)
+     *
+     *     then O(findVoids) = (c000 + c001) + (c005)*( O(N) ) + c003*T(findVoids) + c004*T(findVoids)
+     *                       = 2T(N/2) + N
+     *                       ==&gt; this has a solution that is O(N lg2 N)
+     * 
+     * Note: It does not completely sample every pair of points.
+     *&lt;/pre&gt;
+     * @param xIndexLo
+     * @param xIndexHi
+     */
+    protected void findVoids(int xIndexLo, int xIndexHi) {
+                
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (xIndexLo &lt; xIndexHi) {    </span>
+
+<span class="fc" id="L48">            int xIndexMid = (xIndexLo + xIndexHi) &gt;&gt; 1;         </span>
+
+<span class="fc" id="L50">            findVoids(xIndexLo, xIndexMid);      </span>
+
+<span class="fc" id="L52">            findVoids(xIndexMid + 1, xIndexHi);     </span>
+
+<span class="fc" id="L54">            processIndexedRegion(xIndexLo, xIndexHi); </span>
+        }
+<span class="fc" id="L56">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

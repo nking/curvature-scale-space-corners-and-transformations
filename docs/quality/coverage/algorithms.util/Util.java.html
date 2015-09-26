@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Util.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">Util.java</span></div><h1>Util.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
+import java.io.IOException;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.ManagementFactory;
+
+<span class="fc" id="L9">public class Util {</span>
+    
+    public static String plotHistogram(HistogramHolder hist,
+        String label, String outputFileSuffix) throws IOException {
+                
+<span class="fc" id="L14">        float[] xh = hist.getXHist();</span>
+<span class="fc" id="L15">        float[] yh = hist.getYHistFloat();</span>
+        
+<span class="fc" id="L17">        float yMin = MiscMath.findMin(yh);</span>
+<span class="fc" id="L18">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
+<span class="pc bpc" id="L19" title="1 of 2 branches missed.">        if (yMaxIdx == -1) {</span>
+<span class="nc" id="L20">            return null;</span>
+        }
+<span class="fc" id="L22">        float yMax = yh[yMaxIdx];</span>
+        
+<span class="fc" id="L24">        float xMin = MiscMath.findMin(xh);</span>
+<span class="fc" id="L25">        float xMax = MiscMath.findMax(xh);        </span>
+                
+<span class="fc" id="L27">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+
+<span class="fc" id="L29">        plotter.addPlot(</span>
+            xMin, xMax, yMin, yMax,
+            xh, yh, xh, yh, label);
+
+<span class="fc" id="L33">        return plotter.writeFile(outputFileSuffix);</span>
+    }
+    
+    public String plotLogHistogram(HistogramHolder hist,
+        String label, String outputFileSuffix) throws IOException {
+                
+<span class="nc" id="L39">        float[] xh = hist.getXHist();</span>
+<span class="nc" id="L40">        float[] yh = hist.getYHistFloat();</span>
+        
+<span class="nc" id="L42">        float[] yLogH = new float[yh.length];</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (int i = 0; i &lt; yh.length; ++i) {</span>
+<span class="nc" id="L44">            yLogH[i] = (float)Math.log(yh[i]/Math.log(10));</span>
+        }
+        
+<span class="nc" id="L47">        float yMin = MiscMath.findMin(yLogH);</span>
+<span class="nc" id="L48">        int yMaxIdx = MiscMath.findYMaxIndex(yLogH);</span>
+<span class="nc" id="L49">        float yMax = yLogH[yMaxIdx];</span>
+        
+<span class="nc" id="L51">        float xMin = MiscMath.findMin(xh);</span>
+<span class="nc" id="L52">        float xMax = MiscMath.findMax(xh);</span>
+                        
+<span class="nc" id="L54">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+
+<span class="nc" id="L56">        plotter.addPlot(</span>
+            xMin, xMax, yMin, yMax,
+            xh, yLogH, xh, yLogH, label);
+
+<span class="nc" id="L60">        return plotter.writeFile(outputFileSuffix);</span>
+    }
+     
+    /**
+    get the memory available to the heap as the total memory available to the JVM
+    minus the amount of heap used.  
+    Note that it does not know if the amount
+    of memory available to the program from the OS is less than the JVM expects
+    from command line flags
+    */
+    public static long getAvailableHeapMemory() {
+
+<span class="fc" id="L72">        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();</span>
+<span class="fc" id="L73">        long heapUsage = mbean.getHeapMemoryUsage().getUsed();</span>
+<span class="fc" id="L74">        long totMemory = Runtime.getRuntime().totalMemory();</span>
+
+<span class="fc" id="L76">        long totAvail = totMemory - heapUsage;</span>
+
+<span class="fc" id="L78">        return totAvail;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

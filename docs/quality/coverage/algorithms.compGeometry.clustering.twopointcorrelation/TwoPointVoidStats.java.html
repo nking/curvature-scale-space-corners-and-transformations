@@ -1,0 +1,947 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TwoPointVoidStats.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.clustering.twopointcorrelation</a> &gt; <span class="el_source">TwoPointVoidStats.java</span></div><h1>TwoPointVoidStats.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.clustering.twopointcorrelation;
+
+import algorithms.compGeometry.LinesAndAngles;
+import algorithms.curves.FailedToConvergeException;
+import algorithms.curves.GEVChiSquareMinimization;
+import algorithms.curves.GEVYFit;
+import algorithms.curves.GeneralizedExtremeValue;
+import algorithms.curves.ICurveFitter;
+import algorithms.curves.NonQuadraticConjugateGradientSolver;
+import algorithms.misc.AxisIndexerStats;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
+import algorithms.misc.Statistic;
+import algorithms.util.ArrayPair;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
+import java.util.Arrays;
+import java.util.logging.Logger;
+
+/**
+  &lt;pre&gt;
+  Class to estimate a background density for a set of points in which
+  the background density will be used by the calling program to find
+  clusters, that is groups of points associated by proximity, in the data.
+ 
+  It calculates the two-point density function of rectangular voids, creates a
+  histogram from the distribution, fits a Generalized Extreme Value
+  distribution to the histogram and interprets that based upon information
+  about the number density of points in both dimensions.
+ 
+  One must learn before sampling and analysis, whether the majority of points
+   are in groups and have background points outside of the groups or whether
+   there are no background points outside of groups.
+   The easiest way to approximate that ahead of time is by rough cell counts 
+   (in 2-dimensions) before making the 1-dimensional histogram of counts.
+   -- (1) If a significant number of cells are empty, this seen as needing 
+      SPARSE_BACKGROUND interpretation (interpretForSparseBackground=true).
+      The background density is then estimated as lowest density bin's x value 
+      in a GEV fit to a well formed histogram.
+   -- (2) Else the background density is the peak of the histogram or 
+      the GEV fit to a well formed histogram.
+   
+   The code automatically determines which of method (1) and (2) to use.
+  
+  If the user has better knowledge of which should be applied, they can set 
+  that with:
+     setInterpretForSparseBackgroundToTrue() or setInterpretForSparseBackgroundToFalse()
+     
+  More details on the statistics of true background points:
+  -- The location of the 'background' points in two dimensional space are likely
+     Poisson, that is their locations in a fixed interval of space are
+     independent of one another and occurred randomly.
+  -- The areas between voids in such a distribution are well fit by
+     Generalized Extreme Value distributions. Extreme value distributions are 
+     used to describe the maximum or minimum of values drawn from a sample 
+     distribution that is essentially exponential.
+     The fits improve as N, the number of data points, increase.
+  -- The GEV curve contains 3 independent fitting parameters and the curve is
+     an exponential combined with a polynomial, so it's resulting fitted
+     parameters are not unique, but the curve is useful for characterizing the
+     background point distribution and analyzing the distribution for the most
+     frequently occurring densities (the peak) and the smallest densities for
+     sparse background data sets. 
+ 
+  Usage:
+     TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
+     stats.calc();
+ 
+  For a more detailed fit to the background at expense of runtime, one can 
+  use:
+      TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
+      stats.setUseCompleteSampling(true);
+      stats.calc();
+ 
+  If debugging is turned on, intermediate plots are generated and those file 
+  paths are printed to standard out.  Debugging statements are also printed 
+  to standard out.
+ &lt;/pre&gt;
+ 
+ * @author nichole
+ */
+public class TwoPointVoidStats extends AbstractPointBackgroundStats {
+
+    public enum State {
+        POINTS_LOADED, DENSITIES_CALCULATED, HISTOGRAM_CREATED, 
+        HISTOGRAM_FITTED, STATS_FINALIZED
+    }
+
+    // null is signficant, so don't set a default unless change the code where check for null
+<span class="fc" id="L96">    protected VoidSampling sampling = null;</span>
+
+    // null is signficant, so don't set a default unless change the code where check for null
+<span class="fc" id="L99">    protected Boolean interpretForSparseBackground = null;</span>
+    
+<span class="fc" id="L101">    boolean automateTheFindMethodChoice = false;</span>
+
+<span class="fc" id="L103">    protected State state = null;</span>
+
+<span class="fc" id="L105">    protected IVoidFinder voidFinder = null;</span>
+
+<span class="fc" id="L107">    protected int defaultNBins = 40;</span>
+
+    //for debugging, hold on to intermediate data:  histogram and bestFit
+<span class="fc" id="L110">    protected HistogramHolder statsHistogram = null;</span>
+<span class="fc" id="L111">    protected GEVYFit bestFit = null;</span>
+
+<span class="fc" id="L113">    protected boolean doLogPerformanceMetrics = false;</span>
+
+<span class="fc" id="L115">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    // uses conjugate gradient method for non quadratic functions if = true, else downhill simplex.
+<span class="fc" id="L118">    protected boolean useDefaultFitting = true;</span>
+
+    /**
+     * the factor to use when comparing a density to backgroundDensity*sigmaFactor
+     * or when comparing cell counts to average += standardDeviation*sigmaFactor.
+     * It should be the same as TwoPointCorrelation.sigmaFactor.
+     * It's value is usually between 2 and 3.
+     */
+<span class="fc" id="L126">    protected float sigmaFactor = 2.5f;</span>
+
+    //
+    public HistogramHolder getStatsHistogram() {
+<span class="fc" id="L130">        return statsHistogram;</span>
+    }
+    public GEVYFit getBestFit() {
+<span class="fc" id="L133">        return bestFit;</span>
+    }
+
+<span class="fc" id="L136">    protected float[] gevRangeFittingParameters = null;</span>
+
+    /**
+     * constructor for class
+     *
+     * @param indexedSortedPoints indexed points sorted by Y
+     */
+    public TwoPointVoidStats(AxisIndexer indexedSortedPoints) {
+
+<span class="fc" id="L145">        super(indexedSortedPoints);</span>
+
+<span class="fc" id="L147">        state = State.POINTS_LOADED;</span>
+<span class="fc" id="L148">    }</span>
+
+    public TwoPointVoidStats(String persistedIndexerFilePath) throws IOException {
+
+<span class="fc" id="L152">        super(persistedIndexerFilePath);</span>
+
+<span class="fc" id="L154">        state = State.POINTS_LOADED;</span>
+<span class="fc" id="L155">    }</span>
+
+    public void setUseDownhillSimplexHistogramFitting() {
+<span class="fc" id="L158">        this.useDefaultFitting = false;</span>
+<span class="fc" id="L159">    }</span>
+
+    /**
+     * set the type of sampling to be used on the dataset to calculate the 2-point
+     * densities to VoidSampling.COMPLETE.  
+     * Note that this is usually expected to be invoked only from
+     * TwoPointCorrelation.
+     */
+    protected void setUseCompleteSampling() {
+<span class="fc" id="L168">        this.sampling = VoidSampling.COMPLETE;</span>
+<span class="fc" id="L169">    }</span>
+
+    public VoidSampling getSampling() {
+<span class="fc" id="L172">        return sampling;</span>
+    }
+
+    public Boolean getInterpretForSparseBackground() {
+<span class="fc" id="L176">        return interpretForSparseBackground;</span>
+    }
+    /**
+     * set the interpretation of the density histogram to the method
+     * used for sparse backgrounds.  Note that this is expected to
+     * usually only be called from TwoPointCorrelation.
+     */
+    protected void setInterpretForSparseBackgroundToTrue() {
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (automateTheFindMethodChoice) {</span>
+<span class="nc" id="L185">            throw new IllegalStateException(</span>
+            &quot;cannot have both 'automate' and 'set to sparse interpretation'&quot;);
+        }
+<span class="fc" id="L188">        this.interpretForSparseBackground = Boolean.TRUE;</span>
+<span class="fc" id="L189">    }</span>
+    protected void setInterpretForSparseBackgroundToFalse() {
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (automateTheFindMethodChoice) {</span>
+<span class="nc" id="L192">            throw new IllegalStateException(</span>
+            &quot;cannot have both 'automate' and 'unset to sparse interpretation'&quot;);
+        }
+<span class="fc" id="L195">        this.interpretForSparseBackground = Boolean.FALSE;</span>
+<span class="fc" id="L196">    }</span>
+
+    protected void automateTheFindMethodChoice() {
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">        if (interpretForSparseBackground != null) {</span>
+<span class="nc" id="L200">            throw new IllegalStateException(</span>
+            &quot;cannot have both 'automate' and 'set or unset sparse interpretation'&quot;);
+        }
+<span class="fc" id="L203">        this.automateTheFindMethodChoice = true;</span>
+<span class="fc" id="L204">    }</span>
+    /**
+     * set the value of the variable 'sigmaFactor'.
+     * @param stDevFactor
+     */
+    protected void setStandardDeviationFactor(float stDevFactor) {
+<span class="fc" id="L210">        this.sigmaFactor = stDevFactor;</span>
+<span class="fc" id="L211">    }</span>
+
+    protected void logPerformanceMetrics() {
+<span class="fc" id="L214">        this.doLogPerformanceMetrics = true;</span>
+<span class="fc" id="L215">    }</span>
+
+    protected void printPerformanceMetrics(long startTimeMillis, 
+        long stopTimeMillis, String methodName, String bigOh) {
+
+<span class="fc" id="L220">        long diffSec = (stopTimeMillis - startTimeMillis)/1000;</span>
+
+<span class="fc" id="L222">        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();</span>
+<span class="fc" id="L223">        MemoryUsage heapUsage = mbean.getHeapMemoryUsage();</span>
+<span class="fc" id="L224">        MemoryUsage nonHeapUsage = mbean.getNonHeapMemoryUsage();</span>
+
+<span class="fc" id="L226">        String str = String.format(</span>
+            &quot;%35s:  N=%9d  %s  RT(sec)=%8d  instance estimates(bytes)=%9d   heapUsed(bytes)=%9d   memoryPoolsSum(bytes)=%9d&quot;,
+<span class="fc" id="L228">            methodName, indexer.getNXY(), bigOh, diffSec, </span>
+<span class="fc" id="L229">            approximateMemoryUsed(), heapUsage.getUsed(), </span>
+<span class="fc" id="L230">            nonHeapUsage.getUsed() );</span>
+
+<span class="fc" id="L232">        Logger.getLogger(this.getClass().getSimpleName()).info(str);</span>
+<span class="fc" id="L233">    }</span>
+
+    // TODO:  replace with estimation using reflection one day
+    public long approximateMemoryUsed() {
+
+<span class="fc" id="L238">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+
+<span class="pc bpc" id="L240" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+
+<span class="fc" id="L244">        int overheadBytes = 16;</span>
+
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
+<span class="fc" id="L247">        int arrayBytes = 32/8;</span>
+
+        /*
+         * enums:  one has 7 items
+         *         one has 5 items
+         */
+<span class="fc" id="L253">        long sumBits = 7*nbits;</span>
+<span class="fc" id="L254">        long tmpSumBytes = (sumBits/8) + overheadBytes;</span>
+<span class="fc" id="L255">        long padding = (tmpSumBytes % 8);</span>
+<span class="fc" id="L256">        long sumBytes = tmpSumBytes + padding;</span>
+<span class="fc" id="L257">        sumBits = 5*nbits;</span>
+<span class="fc" id="L258">        tmpSumBytes = (sumBits/8) + overheadBytes;</span>
+<span class="fc" id="L259">        padding = (tmpSumBytes % 8);</span>
+<span class="fc" id="L260">        sumBytes += (tmpSumBytes + padding);</span>
+
+        // a reference to each of the enums
+<span class="fc" id="L263">        sumBytes += (2*intBytes);</span>
+
+        // 4 references
+<span class="fc" id="L266">        sumBytes += (4*intBytes);</span>
+
+        // 4 variables at stack word size each
+<span class="fc" id="L269">        sumBytes += (4*intBytes);</span>
+
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        if (statsHistogram != null) {</span>
+<span class="fc" id="L272">            sumBytes += statsHistogram.approximateMemoryUsed();</span>
+        }
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (bestFit != null) {</span>
+<span class="fc" id="L275">            sumBytes += bestFit.approximateMemoryUsed();</span>
+        }
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (voidFinder != null) {</span>
+<span class="fc" id="L278">            sumBytes += voidFinder.approximateMemoryUsed();</span>
+        }
+
+<span class="fc" id="L281">        sumBytes += overheadBytes;</span>
+
+        // amount of padding needed to make it a round 8 bytes
+<span class="fc" id="L284">        padding = (sumBytes % 8);</span>
+
+<span class="fc" id="L286">        sumBytes += padding;</span>
+
+<span class="fc" id="L288">        return sumBytes;</span>
+    }
+
+    public void setGEVRangeParameters(float kMin, float kMax, 
+        float sigmaMin, float sigmaMax, float muMin, float muMax) {
+        
+<span class="nc" id="L294">        this.gevRangeFittingParameters = new float[]{kMin, kMax, </span>
+            sigmaMin, sigmaMax, muMin, muMax};
+<span class="nc" id="L296">    }</span>
+
+    /**
+     * calculate the 2-point void densities and then calculate the
+     * statistics of those points to estimate the background density and an
+     * error on that.
+     *
+     * @throws TwoPointVoidStatsException
+     */
+    public void calc() throws TwoPointVoidStatsException {
+
+<span class="fc" id="L307">        calculateTwoPointVoidDensities();</span>
+
+<span class="fc" id="L309">        calculateStats();</span>
+<span class="fc" id="L310">    }</span>
+
+    @Override
+    protected void calculateStats() throws TwoPointVoidStatsException {
+
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">        if (state.ordinal() &lt; State.DENSITIES_CALCULATED.ordinal()) {</span>
+<span class="nc" id="L316">            calculateTwoPointVoidDensities();</span>
+        }
+
+<span class="fc" id="L319">        long startTimeMillis = System.currentTimeMillis();</span>
+
+        // may need to release more memory.  if so, release point1 and point2
+        //long memAvail = Util.getAvailableHeapMemory();
+        //log.fine(&quot;memory available = &quot; + memAvail);
+
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">        if (voidFinder != null) {</span>
+<span class="fc" id="L326">            log.fine(&quot;nXY=&quot; + indexer.getNXY() + &quot; nD=&quot; + </span>
+<span class="fc" id="L327">                voidFinder.getNumberOfTwoPointDensities());</span>
+        }
+
+<span class="fc" id="L330">        statsHistogram = createHistogram();</span>
+        
+<span class="fc" id="L332">        state = State.HISTOGRAM_CREATED;</span>
+
+        //int yMaxBin = Histogram.findMax(histogram.getYHist());
+
+<span class="fc" id="L336">        int yMaxBin = -1;</span>
+<span class="fc" id="L337">        float ymax = Float.MIN_VALUE;</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        for (int i = 0; i &lt; (statsHistogram.getYHist().length &gt;&gt; 1); i++) {</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">            if (statsHistogram.getYHist()[i] &gt; ymax) {</span>
+<span class="fc" id="L340">                ymax = statsHistogram.getYHist()[i];</span>
+<span class="fc" id="L341">                yMaxBin = i;</span>
+            }
+        }
+
+<span class="fc" id="L345">        calculateStatsForBackground(statsHistogram, yMaxBin);</span>
+
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        if (doLogPerformanceMetrics) {</span>
+
+<span class="fc" id="L349">            long stopTimeMillis = System.currentTimeMillis();</span>
+
+<span class="fc" id="L351">            printPerformanceMetrics(startTimeMillis, stopTimeMillis,</span>
+<span class="fc" id="L352">                &quot;calculateStats&quot;, Integer.toString(statsHistogram.getXHist().length) );</span>
+        }
+<span class="fc" id="L354">    }</span>
+
+    /**
+     * Sample the two-point voids to create surface densities which represent
+     * part or all of the dataset in an attempted un-biased manner.
+     *
+     * More specifically:
+     * @see #findVoids()
+     *
+     * @throws TwoPointVoidStatsException
+     */
+    protected void calculateTwoPointVoidDensities() throws 
+        TwoPointVoidStatsException {
+
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">        if (state.ordinal() &gt;= State.DENSITIES_CALCULATED.ordinal()) {</span>
+<span class="nc" id="L369">            return;</span>
+        }
+
+<span class="fc" id="L372">        findVoids();</span>
+
+<span class="fc" id="L374">        state = State.DENSITIES_CALCULATED;</span>
+
+<span class="fc" id="L376">    }</span>
+
+    /**
+     * calculate the space between points in the dataset as linear densities
+     * using automated methods by default or a pre-selected sampling choice.
+     * 
+     * @see algorithms.compGeometry.clustering.twopointcorrelation.CompleteSamplingVoidFinder#findVoids()
+     * @see algorithms.compGeometry.clustering.twopointcorrelation.DivideAndConquerVoidFinder#findVoids()
+     * @see algorithms.compGeometry.clustering.twopointcorrelation.SubsetSamplingVoidFinder#findVoids()
+     */
+    protected void findVoids() throws TwoPointVoidStatsException {
+
+<span class="fc" id="L388">        long startTimeMillis = System.currentTimeMillis();</span>
+
+<span class="fc" id="L390">        int nXY = indexer.getNXY();</span>
+
+        // for reduced sampling of large sets, need these in scope:
+<span class="fc" id="L393">        int nCellsPerDimension = (int)Math.sqrt(indexer.nXY/1000);</span>
+
+<span class="fc" id="L395">        AxisIndexerStats stats = new AxisIndexerStats();</span>
+
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        if (automateTheFindMethodChoice) {</span>
+            
+<span class="fc" id="L399">            int nCellsPerDimensionForStats = (int)Math.sqrt(indexer.nXY/300.);</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            if (nCellsPerDimensionForStats &lt; 9) {</span>
+<span class="fc" id="L401">                nCellsPerDimensionForStats = 9;</span>
+            }
+<span class="fc" id="L403">            Statistic statistic = stats.calculateCellDensities(nCellsPerDimensionForStats, indexer);</span>
+
+<span class="fc" id="L405">            float fractionEmpty = stats.fractionOfCellsWithoutPoints(statistic);</span>
+
+<span class="fc bfc" id="L407" title="All 2 branches covered.">            if (fractionEmpty &gt; 0.3f) {</span>
+
+<span class="fc" id="L409">                interpretForSparseBackground = Boolean.TRUE;</span>
+                
+<span class="fc" id="L411">                sampling = VoidSampling.COMPLETE;</span>
+                
+<span class="fc bfc" id="L413" title="All 2 branches covered.">            } else if (nXY &gt; 10000) {</span>
+                
+<span class="fc" id="L415">                sampling = VoidSampling.COMPLETE_ON_SUBSET;</span>
+                
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">                if (nXY &gt;= 100000) {</span>
+                    
+<span class="nc" id="L419">                    nCellsPerDimension = 20;</span>
+                    
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">                } else if (nXY &gt; 50000) {</span>
+                    
+<span class="nc" id="L423">                    nCellsPerDimension = 10;</span>
+                    
+<span class="fc bfc" id="L425" title="All 2 branches covered.">                } else if (nXY &gt; 20000) {</span>
+                    
+<span class="fc" id="L427">                    nCellsPerDimension = 3;</span>
+                    
+                } else {
+                    
+<span class="fc" id="L431">                    nCellsPerDimension = 2;</span>
+                }
+                
+            } else {
+                
+<span class="fc" id="L436">                sampling = VoidSampling.COMPLETE;</span>
+                
+            }
+                                        
+<span class="fc" id="L440">            log.fine(&quot;nCellsPerDim=&quot; + nCellsPerDimensionForStats + &quot; fractionEmpty=&quot; + fractionEmpty </span>
+<span class="fc" id="L441">                + &quot; indexer.nXY=&quot; + indexer.getNumberOfPoints() + &quot;  avg of cells=&quot; + statistic.getAverage()</span>
+<span class="fc" id="L442">                + &quot;  cellXSize=&quot; + statistic.getXSz() + &quot; cell counts=&quot; + Arrays.toString(statistic.getItems()));</span>
+<span class="fc" id="L443">            log.fine(&quot;fractionNotAvg=&quot; + stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor));</span>
+        }
+        
+//sampling = VoidSampling.COMPLETE_ON_SUBSET;
+
+<span class="fc bfc" id="L448" title="All 2 branches covered.">        if (sampling == null) {</span>
+
+<span class="fc" id="L450">            sampling = VoidSampling.COMPLETE;</span>
+        }
+        
+<span class="fc bfc" id="L453" title="All 2 branches covered.">        if (interpretForSparseBackground == null) {</span>
+            
+<span class="fc" id="L455">            interpretForSparseBackground = Boolean.FALSE;</span>
+        }
+
+
+<span class="fc" id="L459">        int nSampled = -1;</span>
+
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L462">            log.info(&quot;findVoid sampling=&quot; + sampling.name() + &quot; for &quot; + nXY + &quot; points&quot;);</span>
+        }
+
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">        if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {</span>
+
+<span class="nc" id="L467">            voidFinder = new DivideAndConquerVoidFinder();</span>
+
+<span class="fc bfc" id="L469" title="All 2 branches covered.">        } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {</span>
+
+<span class="fc" id="L471">            voidFinder = new CompleteSamplingVoidFinder();</span>
+
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">        } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_SUBSET.ordinal()) {</span>
+
+            // indexLo, int indexHi 
+            // this chooses along the diagonal to keep x and y range the same to avoid needing to search along y more
+<span class="fc" id="L477">            int[] xyMinMaxCell = stats.chooseARandomDiagonalCell(nCellsPerDimension, indexer);</span>
+
+<span class="fc" id="L479">            voidFinder = new SubsetSamplingVoidFinder();</span>
+
+<span class="fc" id="L481">            ((SubsetSamplingVoidFinder) voidFinder).setSortedIdxLo(xyMinMaxCell[0]);</span>
+<span class="fc" id="L482">            ((SubsetSamplingVoidFinder) voidFinder).setSortedIdxHi(xyMinMaxCell[1]);</span>
+
+<span class="fc" id="L484">            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0]) * (xyMinMaxCell[1] - xyMinMaxCell[0]);</span>
+
+<span class="fc" id="L486">        } else {</span>
+
+<span class="nc" id="L488">            throw new IllegalStateException(&quot;Did not configure a finder for &quot; + sampling.toString() + &quot;?&quot;);</span>
+        }
+
+<span class="fc" id="L491">        voidFinder.setSampling(sampling);</span>
+
+<span class="fc" id="L493">        voidFinder.findVoids(indexer);</span>
+
+
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (doLogPerformanceMetrics) {</span>
+
+<span class="fc" id="L498">            long stopTimeMillis = System.currentTimeMillis();</span>
+
+<span class="fc" id="L500">            String str = &quot;&quot;;</span>
+<span class="pc bpc" id="L501" title="1 of 2 branches missed.">            if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {</span>
+<span class="nc" id="L502">                str = &quot;O(n lg(n)) with n=&quot;;</span>
+<span class="pc bpc" id="L503" title="1 of 2 branches missed.">            } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {</span>
+<span class="fc" id="L504">                str = &quot;O(n^2) with n=&quot;;</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">            } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_SUBSET.ordinal()) {</span>
+<span class="nc" id="L506">                str = &quot;O(n1*n2) = O(&quot; + nSampled + &quot;)&quot;;</span>
+            }
+
+<span class="fc" id="L509">            printPerformanceMetrics(startTimeMillis, stopTimeMillis, </span>
+                &quot;calculateBackgroundVia2PtVoidFit--&gt;calculateTwoPointVoidDensities&quot;, 
+                str);
+        }
+<span class="fc" id="L513">    }</span>
+
+    protected HistogramHolder createHistogram() throws TwoPointVoidStatsException {
+
+<span class="pc bpc" id="L517" title="1 of 2 branches missed.">        if (state.ordinal() &lt; State.DENSITIES_CALCULATED.ordinal()) {</span>
+<span class="nc" id="L518">            calculateTwoPointVoidDensities();</span>
+        }
+
+<span class="fc" id="L521">        HistogramHolder histogram = Histogram.defaultHistogramCreator(</span>
+<span class="fc" id="L522">            voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors());</span>
+
+<span class="fc" id="L524">        plotPairSeparations();</span>
+
+<span class="fc" id="L526">        return histogram;</span>
+    }
+
+    /**
+     * internal method to calculate the statistics from the histogram using a
+     * fit to the background distribution and a rough integration under the fit
+     * to approximate a usable limit of the background density
+     * distribution.
+     *
+     * @param histogram
+     * @param yMaxBin
+     * @throws TwoPointVoidStatsException
+     */
+    protected void calculateStatsForBackground(HistogramHolder histogram, 
+        int yMaxBin) throws TwoPointVoidStatsException {
+
+<span class="fc" id="L542">        GEVYFit yfit = fitBackgroundHistogram(histogram, yMaxBin);</span>
+
+<span class="fc" id="L544">        state = State.HISTOGRAM_FITTED;</span>
+
+<span class="fc" id="L546">        finalizeStats(histogram, yfit);</span>
+<span class="fc" id="L547">    }</span>
+
+    protected GEVYFit fitBackgroundHistogram(HistogramHolder histogram, 
+        int yMaxBin) throws TwoPointVoidStatsException {
+
+        // if the histogram has enough points, prefer to fit only the
+        // smallest x values half of the histogram
+        // This could be improved with a mixture model for GEV distributions 
+        //   or fitting only the first peak
+<span class="fc" id="L556">        histogram = Histogram.reduceHistogramToFirstPeak(histogram,</span>
+<span class="fc" id="L557">            voidFinder.getTwoPointDensities(), </span>
+<span class="fc" id="L558">            voidFinder.getTwoPointDensityErrors());</span>
+        
+        try {
+
+<span class="fc" id="L562">            GEVYFit yfit = null;</span>
+
+<span class="fc" id="L564">            ICurveFitter chiSqMin = null;</span>
+
+<span class="fc bfc" id="L566" title="All 2 branches covered.">            if (useDefaultFitting) {</span>
+
+<span class="fc" id="L568">                chiSqMin = new NonQuadraticConjugateGradientSolver(</span>
+<span class="fc" id="L569">                    histogram.getXHist(), histogram.getYHistFloat(), </span>
+<span class="fc" id="L570">                    histogram.getXErrors(), histogram.getYErrors());</span>
+                
+            } else {
+
+<span class="fc" id="L574">                chiSqMin = new GEVChiSquareMinimization(</span>
+<span class="fc" id="L575">                    histogram.getXHist(), histogram.getYHistFloat(), </span>
+<span class="fc" id="L576">                    histogram.getXErrors(), histogram.getYErrors());</span>
+            }
+
+<span class="fc" id="L579">            chiSqMin.setDebug(debug);</span>
+
+<span class="pc bpc" id="L581" title="1 of 2 branches missed.">            if (gevRangeFittingParameters != null) {</span>
+
+<span class="nc bnc" id="L583" title="All 2 branches missed.">                if (useDefaultFitting) {</span>
+
+<span class="nc" id="L585">                    yfit = ((NonQuadraticConjugateGradientSolver)chiSqMin)</span>
+<span class="nc" id="L586">                        .fitCurveParametersAllAtOnce(</span>
+                            gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                            gevRangeFittingParameters[2], gevRangeFittingParameters[3], 
+                            gevRangeFittingParameters[4], gevRangeFittingParameters[5]);
+                    
+                } else {
+
+<span class="nc" id="L593">                    yfit =</span>
+<span class="nc" id="L594">                        ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZeroAndMu(</span>
+                            GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
+                        gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                        gevRangeFittingParameters[2], gevRangeFittingParameters[3],
+                        gevRangeFittingParameters[4], gevRangeFittingParameters[5]
+                    );
+                }
+
+            } else {
+
+<span class="fc bfc" id="L604" title="All 2 branches covered.">                if (useDefaultFitting) {</span>
+
+<span class="fc" id="L606">                    yfit = chiSqMin.fitCurveKGreaterThanZero(</span>
+                        GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+
+                } else {
+
+<span class="fc" id="L611">                    yfit = ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZero(</span>
+                        GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+                }
+            }
+
+<span class="pc bpc" id="L616" title="1 of 2 branches missed.">            if (yfit == null) {</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L618">                    plotPairSeparations();</span>
+                }
+<span class="nc" id="L620">                throw new TwoPointVoidStatsException(&quot;histogram of linear densities was not fittable&quot;);</span>
+            } else {
+<span class="pc bpc" id="L622" title="1 of 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L623">                    log.info(yfit.toString());</span>
+                }
+            }
+
+<span class="pc bpc" id="L627" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L628">                plotPairSeparations();</span>
+            }
+
+<span class="fc" id="L631">            return yfit;</span>
+
+<span class="nc" id="L633">        } catch (FailedToConvergeException e) {</span>
+<span class="nc" id="L634">            throw new TwoPointVoidStatsException(e);</span>
+<span class="nc" id="L635">        } catch (IOException e2) {</span>
+<span class="nc" id="L636">            throw new TwoPointVoidStatsException(e2);</span>
+        }
+    }
+
+    protected void finalizeStats(HistogramHolder histogram, GEVYFit yfit) 
+        throws TwoPointVoidStatsException {
+
+<span class="pc bpc" id="L643" title="1 of 2 branches missed.">        if (yfit == null) {</span>
+            // this should never happen from calculateStatsForBackground
+<span class="nc" id="L645">            throw new TwoPointVoidStatsException(&quot;yfit cannot be null&quot;);</span>
+        }
+<span class="fc" id="L647">        this.statsHistogram = histogram;</span>
+
+<span class="fc" id="L649">        this.bestFit = yfit;</span>
+
+        try {
+
+<span class="pc bpc" id="L653" title="1 of 2 branches missed.">            if (debug) {</span>
+                
+<span class="nc" id="L655">                log.info(bestFit.toString());</span>
+
+<span class="nc" id="L657">                float xHalfInterval = (histogram.getXHist()[1] - histogram.getXHist()[0]) / 2.0f;</span>
+<span class="nc" id="L658">                float xmin = 0;</span>
+<span class="nc" id="L659">                float xmax = histogram.getXHist()[histogram.getXHist().length - 1] + xHalfInterval;</span>
+<span class="nc" id="L660">                float ymin = 0;</span>
+<span class="nc" id="L661">                float ymax = MiscMath.findMax(histogram.getYHistFloat());</span>
+
+<span class="nc" id="L663">                float[] xf = bestFit.getOriginalScaleX();</span>
+<span class="nc" id="L664">                float[] yf = bestFit.getOriginalScaleYFit();</span>
+                
+<span class="nc" id="L666">                PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(</span>
+                    xmin, xmax, ymin, ymax);
+                
+<span class="nc" id="L669">                plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),</span>
+<span class="nc" id="L670">                    histogram.getXErrors(), histogram.getYErrors(), xf, yf, &quot;&quot;);</span>
+<span class="nc" id="L671">                plotter.writeFile3();</span>
+            }
+
+            /* for interpretForSparseBackground:
+                   background density is the lowest bin's x value in a well formed histogram.
+               for all other sampling:
+                   background density is the peak in a well formed histogram.
+            */
+
+            float limit, limitError;
+
+<span class="fc bfc" id="L682" title="All 2 branches covered.">            if (interpretForSparseBackground == null) {</span>
+<span class="fc" id="L683">                interpretForSparseBackground = Boolean.FALSE;</span>
+            }
+
+<span class="fc bfc" id="L686" title="All 2 branches covered.">            if (interpretForSparseBackground) {</span>
+
+<span class="fc" id="L688">                int yPeakIndex = MiscMath.findYMaxIndex(histogram.getYHist());</span>
+
+<span class="fc" id="L690">                limit = histogram.getXHist()[0];</span>
+
+<span class="fc" id="L692">                int limitIndex = bestFit.getXPeakIndex();</span>
+                
+<span class="fc" id="L694">                limitError = histogram.getXErrors()[limitIndex];</span>
+                
+<span class="fc" id="L696">                log.info(&quot;interpreting the density for a sparse background&quot;);</span>
+                
+<span class="fc" id="L698">            } else {</span>
+
+                //limitStr = &quot;top centroid&quot;;
+
+                // centroid of area defined by the top portion of the fit or histogram where y &gt;= ypeak/2
+<span class="fc" id="L703">                float[] areaAndXYTopCentroid = calculateCentroidOfTop(</span>
+<span class="fc" id="L704">                    bestFit.getOriginalScaleX(), bestFit.getOriginalScaleYFit(), </span>
+                    0.5f);
+
+<span class="fc" id="L707">                float[] areaAndXYTopCentroid2 = calculateCentroidOfTop(</span>
+<span class="fc" id="L708">                    histogram.getXHist(), histogram.getYHistFloat(), 0.5f);</span>
+                
+<span class="fc bfc" id="L710" title="All 2 branches covered.">                float xpeak = (areaAndXYTopCentroid[0] &gt; 0) ? </span>
+                    areaAndXYTopCentroid[1] : areaAndXYTopCentroid2[1];
+                
+<span class="fc" id="L713">                log.info(&quot;GEV top centroid=&quot; + areaAndXYTopCentroid[1] + </span>
+                    &quot; data top centroid=&quot; + areaAndXYTopCentroid2[1] + 
+                    &quot; using xpeak=&quot; + xpeak);
+
+<span class="fc" id="L717">                log.info(&quot;interpreting the density for a non-sparse background&quot;);</span>
+                
+<span class="pc bpc" id="L719" title="1 of 2 branches missed.">                if (xpeak &gt; 0) {</span>
+                    
+<span class="fc" id="L721">                    limit = xpeak;</span>
+                    
+<span class="fc" id="L723">                    float areaAndXYTopCentroidError = </span>
+<span class="fc" id="L724">                        (float)GeneralizedExtremeValue.calculateWidthFittingError(</span>
+                        bestFit, 0.5f);
+                    
+<span class="fc" id="L727">                    limitError = areaAndXYTopCentroidError;</span>
+                    
+<span class="fc" id="L729">                } else {</span>
+                    
+<span class="nc" id="L731">                    limit = bestFit.getXPeak();</span>
+                    
+<span class="nc" id="L733">                    float areaAndXYTopCentroid2Error = </span>
+<span class="nc" id="L734">                        Histogram.calculateHistogramWidthYLimitError(</span>
+<span class="nc" id="L735">                        histogram.getXHist(), histogram.getYHistFloat(), </span>
+<span class="nc" id="L736">                        histogram.getXErrors(), histogram.getYErrors(), 0.5f);</span>
+                    
+<span class="nc" id="L738">                    limitError = areaAndXYTopCentroid2Error;</span>
+                }                                
+            }
+
+<span class="fc" id="L742">            this.backgroundDensity = limit;</span>
+
+<span class="pc bpc" id="L744" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L745">                log.info(bestFit.toString());</span>
+            }            
+
+<span class="fc" id="L748">            this.backgroundDensityError = limitError;</span>
+            
+<span class="pc bpc" id="L750" title="1 of 2 branches missed.">            if (debug) {</span>
+
+                // as comparison, log that roughly derived from chi square sum
+<span class="nc" id="L753">                float gevTotalMeanFittingEmpiricalError = (float)Math.sqrt(</span>
+<span class="nc" id="L754">                    GeneralizedExtremeValue.calculateChiSq(bestFit.getX(), </span>
+<span class="nc" id="L755">                    bestFit.getYFit()));</span>
+
+                // empirical error for one bin:
+<span class="nc" id="L758">                float empiricalErrorInFitting = </span>
+                    gevTotalMeanFittingEmpiricalError / 
+<span class="nc" id="L760">                    histogram.getYHist().length;</span>
+                
+<span class="nc bnc" id="L762" title="All 2 branches missed.">                String interp = (interpretForSparseBackground) ? &quot; sparse &quot; </span>
+                    : &quot; complete &quot;;
+<span class="nc" id="L764">                log.info(&quot;\nestimating background from sampling = &quot; </span>
+<span class="nc" id="L765">                    + sampling.toString() + &quot; and interpretation=&quot; + interp </span>
+                    + &quot;\ndens=&quot; + this.backgroundDensity
+                    + &quot;\nw/ centroid error in area/y =&quot; + backgroundDensityError
+                    + &quot;\ngev empirically estimated fitting error for one histogram bin =&quot; 
+                    + empiricalErrorInFitting
+                );
+            }
+
+<span class="pc bpc" id="L773" title="3 of 4 branches missed.">            if (debug &amp;&amp; (bestFit.getChiSqSum() &gt; bestFit.getYDataErrSq())) {</span>
+<span class="nc" id="L774">                log.info(&quot;WARNING:  chisq is larger than errors: &quot;</span>
+<span class="nc" id="L775">                    + bestFit.getChiSqSum() + &quot; (errsqsum=&quot; </span>
+<span class="nc" id="L776">                    + bestFit.getYDataErrSq() + &quot;)&quot;);</span>
+            }
+
+<span class="fc" id="L779">            state = State.STATS_FINALIZED;</span>
+
+<span class="nc" id="L781">        } catch (IOException e) {</span>
+<span class="nc" id="L782">            throw new TwoPointVoidStatsException(e);</span>
+<span class="fc" id="L783">        }</span>
+<span class="fc" id="L784">    }</span>
+
+    static float[] calculateCentroidOfTop(float[] xfit, float[] yfit, 
+        float frac) {
+
+<span class="fc" id="L789">        ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(xfit, </span>
+            yfit, null, null, frac);
+
+<span class="fc" id="L792">        return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xy.getX(), </span>
+<span class="fc" id="L793">            xy.getY());</span>
+    }
+
+    public int getNumberOfDensityPoints() {
+<span class="nc bnc" id="L797" title="All 2 branches missed.">        return (voidFinder != null) ? voidFinder.getNumberOfTwoPointDensities() </span>
+            : 0;
+    }
+
+    public String persistTwoPointBackground() throws IOException {
+<span class="fc" id="L802">        return serializeTwoPointDensities();</span>
+    }
+
+    protected void serializeTwoPointBackground(ObjectOutputStream oos) 
+        throws IOException {
+
+<span class="pc bpc" id="L808" title="1 of 2 branches missed.">        if (voidFinder == null) {</span>
+<span class="nc" id="L809">            throw new IllegalStateException(&quot;no voidFinder to persist&quot;);</span>
+        }
+
+<span class="fc" id="L812">        oos.writeInt(voidFinder.getNumberOfTwoPointDensities());</span>
+
+<span class="fc bfc" id="L814" title="All 2 branches covered.">        for (int i = 0; i &lt; voidFinder.getNumberOfTwoPointDensities(); i++) {</span>
+<span class="fc" id="L815">            oos.writeFloat(voidFinder.getTwoPointDensities()[i]);</span>
+        }
+<span class="fc bfc" id="L817" title="All 2 branches covered.">        for (int i = 0; i &lt; voidFinder.getNumberOfTwoPointDensities(); i++) {</span>
+<span class="fc" id="L818">            oos.writeInt(voidFinder.getPoint1()[i]);</span>
+<span class="fc" id="L819">            oos.writeInt(voidFinder.getPoint2()[i]);</span>
+        }
+<span class="fc bfc" id="L821" title="All 2 branches covered.">        for (int i = 0; i &lt; voidFinder.getNumberOfTwoPointDensities(); i++) {</span>
+<span class="fc" id="L822">            oos.writeFloat(voidFinder.getTwoPointDensityErrors()[i]);</span>
+        }
+<span class="pc bpc" id="L824" title="1 of 2 branches missed.">        if (sampling != null) {</span>
+<span class="fc" id="L825">            oos.writeUTF(sampling.name());</span>
+        }
+
+<span class="fc" id="L828">        oos.flush();</span>
+<span class="fc" id="L829">    }</span>
+
+    protected String serializeTwoPointDensities() throws IOException {
+
+<span class="fc" id="L833">        return serializeTwoPointBackground(&quot;stats_2pt_voids_&quot;);</span>
+    }
+
+    public boolean readTwoPointBackground(String persistedFileName) throws 
+        IOException {
+
+<span class="fc" id="L839">        boolean didDeserialize = deserializeTwoPointBackground(persistedFileName);</span>
+
+<span class="pc bpc" id="L841" title="1 of 2 branches missed.">        if (voidFinder.getNumberOfTwoPointDensities() == 0) {</span>
+<span class="nc" id="L842">            throw new IOException(&quot;No pairs were found isolated within an area&quot;);</span>
+        } else {
+<span class="pc bpc" id="L844" title="1 of 2 branches missed.">            if (didDeserialize) {</span>
+<span class="fc" id="L845">                state = State.DENSITIES_CALCULATED;</span>
+            }
+        }
+        
+<span class="fc" id="L849">        return didDeserialize;</span>
+    }
+
+    protected void deserializeTwoPointBackground(ObjectInputStream ois) throws 
+        IOException {
+
+<span class="fc" id="L855">        voidFinder = new VoidReader(ois);</span>
+
+<span class="fc" id="L857">        this.sampling = ((VoidReader)voidFinder).getSampling();</span>
+<span class="fc" id="L858">    }</span>
+
+    void plotFit(PolygonAndPointPlotter plotter) {
+
+<span class="pc bpc" id="L862" title="1 of 2 branches missed.">        if (statsHistogram == null) {</span>
+<span class="nc" id="L863">            return;</span>
+        }
+<span class="pc bpc" id="L865" title="1 of 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L866">            return;</span>
+        }
+        try {
+
+<span class="fc" id="L870">            float[] xf = bestFit.getOriginalScaleX();</span>
+<span class="fc" id="L871">            float[] yf = bestFit.getOriginalScaleYFit();</span>
+
+<span class="fc" id="L873">            plotter.addPlot(statsHistogram.getXHist(), </span>
+<span class="fc" id="L874">                statsHistogram.getYHistFloat(), statsHistogram.getXErrors(), </span>
+<span class="fc" id="L875">                statsHistogram.getYErrors(), xf, yf, &quot;&quot;);</span>
+            
+<span class="fc" id="L877">            plotter.writeFile();</span>
+<span class="fc" id="L878">int z = 1;</span>
+<span class="nc" id="L879">        } catch (IOException e) {</span>
+<span class="fc" id="L880">        }</span>
+
+<span class="fc" id="L882">    }</span>
+    
+    protected void plotPairSeparations() {
+
+        try {
+
+<span class="fc" id="L888">            TwoPointVoidStatsPlotter plotter = new TwoPointVoidStatsPlotter();</span>
+
+<span class="fc" id="L890">            float[] mm = indexer.findXYMinMax();</span>
+
+<span class="fc" id="L892">            float xmin = MiscMath.roundDownByLargestPower(mm[0]);</span>
+<span class="fc" id="L893">            float xmax = MiscMath.roundUpByLargestPower(mm[1]);</span>
+<span class="fc" id="L894">            float ymin = MiscMath.roundDownByLargestPower(mm[2]);</span>
+<span class="fc" id="L895">            float ymax = MiscMath.roundUpByLargestPower(mm[3]);</span>
+
+<span class="fc" id="L897">            plotPairSeparations(plotter, xmin, xmax, ymin, ymax);</span>
+
+<span class="fc" id="L899">            plotter.writeFile();</span>
+
+<span class="nc" id="L901">        } catch (IOException e) {</span>
+<span class="nc" id="L902">            Logger.getLogger(SerializerUtil.class.getName())</span>
+<span class="nc" id="L903">                .severe(e.getMessage());</span>
+<span class="fc" id="L904">        }</span>
+<span class="fc" id="L905">    }</span>
+
+    protected void plotPairSeparations(TwoPointVoidStatsPlotter plotter, 
+        float xmin, float xmax, float ymin, float ymax) {
+
+<span class="pc bpc" id="L910" title="1 of 2 branches missed.">        if (voidFinder == null) {</span>
+<span class="nc" id="L911">            return;</span>
+        }
+
+<span class="pc bpc" id="L914" title="1 of 2 branches missed.">        if (voidFinder.getPoint1() != null) {</span>
+            
+<span class="fc" id="L916">            int[] t1 = Arrays.copyOf(voidFinder.getPoint1(), </span>
+<span class="fc" id="L917">                voidFinder.getNumberOfTwoPointDensities());</span>
+<span class="fc" id="L918">            int[] t2 = Arrays.copyOf(voidFinder.getPoint2(), </span>
+<span class="fc" id="L919">                voidFinder.getNumberOfTwoPointDensities());</span>
+
+<span class="fc" id="L921">            plotter.addTwoPointPlot(indexer.getX(), indexer.getY(), t1, t2,</span>
+                xmin, xmax, ymin, ymax);
+        }
+
+<span class="pc bpc" id="L925" title="3 of 4 branches missed.">        if (this.statsHistogram != null &amp;&amp; (voidFinder.getNumberOfTwoPointDensities() &gt; 0)) {</span>
+
+<span class="nc" id="L927">            float min = statsHistogram.getXHist()[0];</span>
+<span class="nc" id="L928">            float max = statsHistogram.getXHist()[statsHistogram.getXHist().length - 1] +</span>
+<span class="nc" id="L929">                (  (statsHistogram.getXHist()[1] - statsHistogram.getXHist()[0])/2.f);</span>
+
+<span class="nc" id="L931">            float[] tmp = new float[voidFinder.getNumberOfTwoPointDensities()];</span>
+<span class="nc" id="L932">            int count = 0;</span>
+<span class="nc bnc" id="L933" title="All 2 branches missed.">            for (int i = 0; i &lt; tmp.length; i++) {</span>
+                
+<span class="nc bnc" id="L935" title="All 2 branches missed.">                if ((voidFinder.getTwoPointDensities()[i] &gt;= min) &amp;&amp; </span>
+<span class="nc bnc" id="L936" title="All 2 branches missed.">                (voidFinder.getTwoPointDensities()[i] &lt;= max)) {</span>
+                    
+<span class="nc" id="L938">                    tmp[count] = voidFinder.getTwoPointDensities()[i];</span>
+<span class="nc" id="L939">                    count++;</span>
+                }
+            }
+<span class="nc" id="L942">            tmp = Arrays.copyOf(tmp, count);</span>
+<span class="nc" id="L943">            plotter.addHistogram(tmp, max, statsHistogram.getXHist().length);</span>
+        }
+<span class="fc" id="L945">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

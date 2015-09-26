@@ -23,7 +23,7 @@
 
     bin      compiled classes, code coverage results, and static analysis results
  ====================================================================== -->
-<project name="twoPointCorrelation" default="listTargets" basedir=".">
+<project xmlns:jacoco="antlib:org.jacoco.ant" name="twoPointCorrelation" default="listTargets" basedir=".">
 
     <!-- ================= set env properties ================= -->
     <property environment="env"/>
@@ -34,9 +34,6 @@
     <!-- =========== the application file directories ========-->
     <property name="src.dir"             value="${basedir}/src/main/java"/>
     <property name="lib.dir"             value="${basedir}/lib"/>
-    <property name="emma.lib.dir"        value="${lib.dir}/emma"/>
-    <property name="findbugs.home.dir"   value="${lib.dir}/findbugs"/>
-    <property name="findbugs.lib.dir"    value="${findbugs.home.dir}/lib"/>
     <property name="classes.dir"         value="${basedir}/bin"/>
     <property name="resources.dir"       value="${basedir}/src/main/resources"/>
     <property name="src.out.dir"         value="${classes.dir}/classes"/>
@@ -45,7 +42,6 @@
     <property name="aspects.dir"         value="${basedir}/src/test/aspects"/>
     <property name="tests.out.dir"       value="${classes.dir}/test-classes"/>
     <property name="instr.out.dir"       value="${classes.dir}/instr-classes" />
-    <property name="coverage.dir"        value="${classes.dir}/coverage" />
     <property name="log.dir"             value="${basedir}/log"/>
     <property name="logfile"             value="${log.dir}/build.log"/>
     <property name="tests.large.dir"     value="${basedir}/src/test-large/java"/>
@@ -75,12 +71,17 @@
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
         <echo message="debugLargeTest:             debug test with -Dtest= fqn of test and jdwp"/>
         <echo message="javadoc:                    create javadocs"/>
-        <echo message="runEmma                     run code coverage for non-third party classes"/>
-        <echo message="runFindbugs                 static analysis for non-third party classes"/>
-        <echo message="runPerformanceMetrics       run performance metrics"/>
+        <echo message="runCoverage                 create code coverage reports"/>
+        <echo message="runCoverage2                create code coverage reports only for the com.climbwithyourfeet package"/>
         <echo message="package                     build jar"/>
         <echo message="package2                    build jar with clustering based on distance transform"/>
     </target>
+    
+    <property name="jacoco.exec.dir" location="bin/jacoco"/>
+
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+        <classpath path="${env.JACOCO_HOME}/lib/jacocoant.jar"/>
+    </taskdef>
 
     <condition property="extra.src.dir" value="${extra.src}" else="${basedir}/src/placeholder">
         <isset property="extra.src" />
@@ -104,7 +105,6 @@
 
     <!-- set test classpath  -->
     <path id="test.classpath">
-        <pathelement location="${src.out.dir}"/>
         <pathelement location="${tests.dir}" />
         <path refid="compile.classpath"/>
     </path>
@@ -118,31 +118,6 @@
         <pathelement location="${aspects.dir}/META-INF/"/>
     </path>
 
-    <!-- emma code coverage paths and targets -->
-    <path id="emma.lib" >
-        <fileset dir="${emma.lib.dir}">
-            <include name="*.jar"/>
-        </fileset>
-    </path>
-    <taskdef resource="emma_ant.properties" classpathref="emma.lib" />
-
-    <path id="findbugs.lib" >
-        <fileset dir="${findbugs.lib.dir}">
-            <include name="**.jar"/>
-        </fileset>
-    </path>
-    <path id="findbugs.classpath" >
-        <path refid="findbugs.lib"/>
-        <path refid="compile.classpath"/>
-    </path>
-    <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpathref="findbugs.classpath"/>
-
-    <target name="emma" description="turns on EMMA instrumentation/reporting" >
-        <property name="compile.debug" value="true" />
-        <property name="emma.enabled" value="true" />
-        <mkdir dir="${instr.out.dir}" />
-    </target>
-
     <target name="debug" description="sets compile.debug to true" >
         <property name="compile.debug" value="true" />
     </target>
@@ -152,6 +127,7 @@
         description="Delete dirs: build, doc/api, and src tree classes">
         <delete failonerror="false">
             <fileset dir="${classes.dir}" />
+            <fileset dir="${aspects.dir}" includes="**/*.class" excludes="*.jar" />
         </delete>
         <delete failonerror="false">
             <fileset dir="${log.dir}" includes="*" />
@@ -165,7 +141,6 @@
         <mkdir  dir="${tests.out.dir}"/>
         <mkdir  dir="${tests.large.out.dir}"/>
         <mkdir  dir="${instr.out.dir}"/>
-        <mkdir  dir="${coverage.dir}"/>
         <mkdir  dir="${log.dir}"/>
         <mkdir  dir="${basedir}/tmpdata"/>
         <mkdir  dir="${basedir}/src/placeholder"/>
@@ -186,8 +161,7 @@
             debug="${compile.debug}"
             deprecation="${compile.deprecation}"
             includeAntRuntime="false"
-            optimize="${compile.optimize}"
-            >
+            optimize="${compile.optimize}">
             <src path="${src.dir}"/>
             <src path="${extra.src.dir}"/>
             <classpath refid="compile.classpath"/>
@@ -209,7 +183,7 @@
     	<javac srcdir="${tests.dir}"
     	    destdir="${tests.out.dir}"
     	    source="${compile.target}"
-            debug="on"
+            debug="true"
             includes="**/*Test.java"
             includeAntRuntime="false"
     	    deprecation="${compile.deprecation}"
@@ -219,7 +193,6 @@
             <src path="${src.dir}"/>
             <compilerarg value="-Xlint"/>
     	</javac>
-        <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
     </target>
     <target name="compileLargeTests" depends="clean, debug, compile" description="Compile Java tests" >
         <record name="${logfile}" append="yes" loglevel="info"/>
@@ -249,19 +222,24 @@
             sourcepath="${src.dir}"
             destdir="${doc.dir}/api"
             package="true"
-            packagenames="algorithms.*" >
+            packagenames="algorithms.*,com.climbwithyourfeet.*" >
             <classpath refid="compile.classpath"/>
         </javadoc>
     </target>
 
+    <!-- prepare,clean,debug,compile,JUnit,compileTests -->
     <target name="runTests" if="junit.present" depends="clean,debug,compileTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests.  also see tests_large target in runLargeTests" />
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
-                <pathelement location="${src.out.dir}"/>
             </classpath>
             <formatter type="plain" usefile="true"/>
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
@@ -309,6 +287,7 @@
 
     </target>
 
+    <!-- prepare,clean,debug,compile,JUnit,compileTests -->
     <target name="runTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <fail unless="test">
@@ -324,10 +303,10 @@
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
-                <pathelement location="${src.out.dir}"/>
             </classpath>
             <formatter type="plain" usefile="true"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
+            <jvmarg value="-enableassertions" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <test name="${test}" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
@@ -389,53 +368,6 @@
         </junit>
     </target>
 
-    <target name="runEmma" depends="emma,compileTests" description="runs emma" >
-        <emma enabled="${emma.enabled}" >
-            <instr instrpathref="compile.classpath"
-                destdir="${instr.out.dir}"
-                metadatafile="${coverage.dir}/metadata.emma"
-                merge="true">
-                <filter includes="algorithms.*" />
-                <filter includes="algorithms.*" excludes="algorithms.*.*Plotter*, algorithms.*.*Exception, algorithms.*.*Test*, algorithms.compGeometry.clustering.twopointcorrelation.PerformanceMetricsRunner" />
-            </instr>
-        </emma>
-        <record name="${logfile}" append="yes" loglevel="debug"/>
-        <echo message="running tests w/ emma, output is in ${tests.out.dir}" />
-        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes"
-               haltonerror="true" haltonfailure="true">
-            <classpath>
-                <pathelement location="${instr.out.dir}" />
-                <path refid="emma.lib" />
-                <pathelement location="${tests.out.dir}" />
-                <fileset dir="${lib.dir}">
-                    <include name="**.jar"/>
-                </fileset>
-                <pathelement location="${src.out.dir}" />
-            </classpath>
-            <formatter type="plain" usefile="true"/>
-            <jvmarg value="-XX:-UseSplitVerifier" />
-            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
-            <batchtest fork="yes" todir="${tests.out.dir}">
-                <fileset dir="${tests.out.dir}">
-                    <include name="**/*Test*.class"/>
-                	<exclude name= "**/*$*.class"/>
-                </fileset>
-            </batchtest>
-            <jvmarg value="-Demma.coverage.out.file=${coverage.dir}/coverage.emma" />
-            <jvmarg value="-Demma.coverage.out.merge=true" />
-        </junit>
-
-        <emma enabled="${emma.enabled}" >
-            <report sourcepath="${src.dir}" >
-                <fileset dir="${coverage.dir}" >
-                    <include name="*.emma" />
-                </fileset>
-                <txt outfile="${coverage.dir}/coverage.txt" />
-                <html outfile="${coverage.dir}/coverage.html" />
-            </report>
-        </emma>
-    </target>
-
     <target name="runLargeTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileLargeTests">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <fail unless="test">
@@ -455,19 +387,6 @@
                 <formatter type="plain" usefile="false"/>
             </test>
         </junit>
-    </target>
-
-    <target name="runPerformanceMetrics" depends="compile">
-        <record name="${logfile}" append="yes" loglevel="debug"/>
-        <java classname="algorithms.compGeometry.clustering.twopointcorrelation.PerformanceMetricsRunner"
-            fork="true" failonerror="true">
-            <jvmarg value="-Xms512m"/>
-            <jvmarg value="-Xmx1024m"/>
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
-            <classpath>
-                <path refid="compile.classpath"/>
-            </classpath>
-        </java>
     </target>
 
     <target name="debugTests" if="junit.present" depends="clean,debug,compileTests,JUnit">
@@ -498,12 +417,19 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <junit fork="yes" showoutput="true" filtertrace="off">
-            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            
+            <!--<jvmarg value="-ea"/>-->
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+
+            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
-                <pathelement location="${src.out.dir}"/>
             </classpath>
             <test name="${test}" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
@@ -517,12 +443,19 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <junit fork="yes" showoutput="true" filtertrace="off">
-            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            
+            <!--<jvmarg value="-ea"/>-->
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+
+            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            
             <classpath>
                 <pathelement location="${tests.large.out.dir}"/>
                 <path refid="test.large.classpath"/>
-                <pathelement location="${src.out.dir}"/>
             </classpath>
             <test name="${test}" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
@@ -535,24 +468,6 @@
         <available property="junit.present" classname="junit.framework.TestCase" >
             <classpath refid="test.classpath"/>
         </available>
-    </target>
-
-    <target name="runFindbugs" depends="compile" >
-        <!-- output="html" outputFile="${src.out.dir}/findbugs.html" -->
-        <findbugs home="${findbugs.home.dir}/"
-            output="xml:withMessages" outputFile="${src.out.dir}/findbugs.xml"
-            reportLevel="high">
-            <!-- reportLevel can be high, medium, low -->
-            <sourcePath path="${src.dir}" />
-            <sourcePath>
-                <fileset dir="${src.dir}">
-                    <include name="**/*.java" />
-                </fileset>
-            </sourcePath>
-            <class location="${src.out.dir}" />
-        </findbugs>
-        <xslt in="${src.out.dir}/findbugs.xml" out="${src.out.dir}/findbugs.html"
-            style="${findbugs.lib.dir}/fancy.xsl" />
     </target>
 
     <target name="package" depends="compile">
@@ -586,5 +501,51 @@
         <copy file="${classes.dir}/com.climbwithyourfeet.clustering_${TS}.jar" 
               tofile="dist/com.climbwithyourfeet.clustering.jar" />
     </target>
+    
+    <target name="coverage">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <echo message="coverage"/>
+        <jacoco:coverage enabled="true" classdumpdir="bin/instr-classes"
+            destfile="${classes.dir}/merged.exec">
+            <junit fork="true" forkmode="once" printsummary="yes" haltonerror="true" haltonfailure="true">
+                <formatter type="plain" usefile="true"/>
+                <sysproperty key="java.util.logging.config.file"
+                    value="${src.out.dir}/logging.properties"/>
+                <batchtest todir="${tests.out.dir}">
+                    <fileset dir="${tests.out.dir}">
+                        <exclude name="**/*$*.class" />
+                        <include name="**/*Test.class" />
+                    </fileset>
+                </batchtest>
+                <classpath>
+                    <pathelement location="${tests.out.dir}"/>
+                    <path refid="compile.classpath"/>
+                </classpath>
+            </junit>
+        </jacoco:coverage>
+    </target>
+    
+    <target name="report">
+        <jacoco:report>
+            <executiondata>
+                <file file="${classes.dir}/merged.exec"/>
+            </executiondata>
+            <structure name="Jacoco Report">
+                <classfiles>
+                    <fileset dir="${src.out.dir}">
+                        <include name="**/*.class" />
+                        <exclude name="**/*$*.class" />
+                    </fileset>
+                </classfiles>
+                <sourcefiles encoding="UTF-8">
+                    <fileset dir="${src.dir}"/>
+                </sourcefiles>
+            </structure>
+            <html destdir="${classes.dir}/jacoco"/>
+        </jacoco:report>
+        <echo message="wrote reports to ${classes.dir}/jacoco" />
+    </target>
+
+    <target name="runCoverage" depends="clean,debug,compile,compileTests,coverage,report"/>
     
 </project>

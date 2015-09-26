@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Stack.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">Stack.java</span></div><h1>Stack.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+import algorithms.compGeometry.clustering.twopointcorrelation.SimpleLinkedListNode;
+
+/**
+ * &lt;pre&gt;
+ * a Last In First Out structure with
+ * 
+ *   insert: O(1)
+ *   
+ *   pop: O(1)
+ *   
+ *   isEmpty: O(1)
+ * &lt;/pre&gt;  
+ * @author nichole
+ *
+ */
+<span class="fc" id="L18">public class Stack extends SimpleLinkedListNode {</span>
+
+    public SimpleLinkedListNode pop() {
+        
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        if (this.key == -1) {</span>
+            
+<span class="fc" id="L24">            return null;</span>
+        }
+        
+<span class="fc" id="L27">        SimpleLinkedListNode node = new SimpleLinkedListNode(key);</span>
+        
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (next == null) {</span>
+            
+<span class="fc" id="L31">            this.key = -1;</span>
+            
+        } else {
+            
+<span class="fc" id="L35">            this.key = next.getKey();</span>
+            
+<span class="fc" id="L37">            this.next = next.getNext();</span>
+        }
+        
+<span class="fc" id="L40">        return node;        </span>
+    }
+    
+    public int peek() {
+<span class="fc" id="L44">        return this.key;</span>
+    }
+    
+    public boolean isEmpty() {
+        
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        return (this.key == -1);</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

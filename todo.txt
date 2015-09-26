@@ -1,2 +1,1 @@
--- update the coee coverage target in the project and
-   run coverage reports and javadocs and commit the results
+-- update the javadocs

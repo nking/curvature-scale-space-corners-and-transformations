@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HistogramHolder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">com.climbwithyourfeet.clustering.util</a> &gt; <span class="el_source">HistogramHolder.java</span></div><h1>HistogramHolder.java</h1><pre class="source lang-java linenums">package com.climbwithyourfeet.clustering.util;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L7">public class HistogramHolder {</span>
+    
+    private static final long serialVersionUID = -7105371701539621066L;
+
+<span class="fc" id="L11">    protected float[] xHist = null;</span>
+<span class="fc" id="L12">    protected int[] yHist = null;</span>
+<span class="fc" id="L13">    protected float[] yHistFloat = null;</span>
+<span class="fc" id="L14">    protected float[] yErrors = null;</span>
+<span class="fc" id="L15">    protected float[] xErrors = null;</span>
+
+    /**
+     * @return the xHist
+     */
+    public float[] getXHist() {
+<span class="fc" id="L21">        return xHist;</span>
+    }
+
+    /**
+     * @return the yHist
+     */
+    public int[] getYHist() {
+<span class="fc" id="L28">        return yHist;</span>
+    }
+
+    /**
+     * @return the yHistFloat
+     */
+    public float[] getYHistFloat() {
+<span class="fc" id="L35">        return yHistFloat;</span>
+    }
+
+    /**
+     * @return the yErrors
+     */
+    public float[] getYErrors() {
+<span class="nc" id="L42">        return yErrors;</span>
+    }
+
+    /**
+     * @return the xErrors
+     */
+    public float[] getXErrors() {
+<span class="nc" id="L49">        return xErrors;</span>
+    }
+
+    /**
+     * @param xHist the xHist to set
+     */
+    public void setXHist(float[] xHist) {
+<span class="fc" id="L56">        this.xHist = xHist;</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * @param yHist the yHist to set
+     */
+    public void setYHist(int[] yHist) {
+<span class="fc" id="L63">        this.yHist = yHist;</span>
+<span class="fc" id="L64">    }</span>
+
+    /**
+     * @param yHistFloat the yHistFloat to set
+     */
+    public void setYHistFloat(float[] yHistFloat) {
+<span class="fc" id="L70">        this.yHistFloat = yHistFloat;</span>
+<span class="fc" id="L71">    }</span>
+
+    /**
+     * @param yErrors the yErrors to set
+     */
+    public void setYErrors(float[] yErrors) {
+<span class="fc" id="L77">        this.yErrors = yErrors;</span>
+<span class="fc" id="L78">    }</span>
+
+    /**
+     * @param xErrors the xErrors to set
+     */
+    public void setXErrors(float[] xErrors) {
+<span class="fc" id="L84">        this.xErrors = xErrors;</span>
+<span class="fc" id="L85">    }</span>
+    
+    public String toString() {
+        
+<span class="nc" id="L89">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="nc" id="L91">        sb.append(&quot;histogram=[&quot;);</span>
+        
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
+            
+<span class="nc" id="L95">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
+            
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (yHist != null) {</span>
+<span class="nc" id="L98">                sb.append(yHist[i]);</span>
+            } else {
+<span class="nc" id="L100">                sb.append(yHistFloat[i]);</span>
+            }
+<span class="nc" id="L102">            sb.append(&quot;) &quot;);</span>
+            
+        }
+        
+<span class="nc" id="L106">        sb.append(&quot;]\n&quot;);</span>
+        
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (xErrors != null) {</span>
+            
+<span class="nc" id="L110">            sb.append(&quot;histogram errors=[&quot;);</span>
+            
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
+
+<span class="nc" id="L114">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
+
+<span class="nc" id="L116">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
+            }
+            
+<span class="nc" id="L119">            sb.append(&quot;]\n&quot;);</span>
+        }      
+        
+<span class="nc" id="L122">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

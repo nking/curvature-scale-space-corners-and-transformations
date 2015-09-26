@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AxisIndexerStats.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">AxisIndexerStats.java</span></div><h1>AxisIndexerStats.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Random;
+import java.util.logging.Logger;
+
+import algorithms.compGeometry.clustering.twopointcorrelation.AxisIndexer;
+
+<span class="fc" id="L10">public class AxisIndexerStats {</span>
+
+<span class="fc" id="L12">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    protected float calculateBinSize(int numberOfBins, float minValue, float maxValue) {
+
+<span class="fc" id="L16">        float divSz = (1.00001f*maxValue - minValue)/numberOfBins;</span>
+        
+<span class="fc" id="L18">        return divSz;</span>
+    }
+    
+    /**
+     * count the number of points within each cell and do basic statistics on those counts.
+     * 
+     * @param numberOfCellsInOneDimension number of cells across one dimension to divide the
+     *  data into to count the number of points within each cell
+     * @param indexer
+     * @return statistic the basic statistics of the point counts within the cells
+     */
+    public Statistic calculateCellDensities(int numberOfCellsInOneDimension, AxisIndexer indexer) {
+        
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (numberOfCellsInOneDimension == 0) {</span>
+<span class="nc" id="L32">            throw new IllegalArgumentException(&quot;numberOfCellsInOneDimension must be larger than 0&quot;);</span>
+        }
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (indexer == null) {</span>
+<span class="nc" id="L35">            throw new IllegalArgumentException(&quot;indexer cannot be null&quot;);</span>
+        }
+        
+        //xmin, xmax, ymin, ymax 
+<span class="fc" id="L39">        float[] xyMinMax = indexer.findXYMinMax();</span>
+
+<span class="fc" id="L41">        float xDivSz = calculateBinSize(numberOfCellsInOneDimension, xyMinMax[0], xyMinMax[1]);</span>
+                
+<span class="fc" id="L43">        float yDivSz = calculateBinSize(numberOfCellsInOneDimension, xyMinMax[2], xyMinMax[3]);</span>
+        
+<span class="fc" id="L45">        int[] items = new int[numberOfCellsInOneDimension*numberOfCellsInOneDimension];</span>
+        
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; indexer.getX().length; i++) {</span>
+            
+<span class="fc" id="L49">            float x = indexer.getX()[i];</span>
+            
+<span class="fc" id="L51">            float y = indexer.getY()[i];</span>
+            
+<span class="fc" id="L53">            int xCell = (int) ((x - xyMinMax[0])/xDivSz); </span>
+            
+<span class="fc" id="L55">            int yCell = (int) ((y - xyMinMax[2])/yDivSz);</span>
+            
+<span class="fc" id="L57">            int itemN = yCell*numberOfCellsInOneDimension + xCell; // (0,0) (1,0)</span>
+            
+<span class="fc" id="L59">            items[itemN] =  items[itemN] + 1;   </span>
+        }
+        
+        // calculate the start x and y values of the cells in items[].
+        
+<span class="fc" id="L64">        float[] xCells = new float[items.length];</span>
+        
+<span class="fc" id="L66">        float[] yCells = new float[items.length];</span>
+        
+<span class="fc" id="L68">        int count = 0;</span>
+        
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfCellsInOneDimension; i++) {</span>
+            
+<span class="fc" id="L72">            float yStart = xyMinMax[2] + i*yDivSz;</span>
+            
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">            if (yStart &gt; xyMinMax[3]) {</span>
+<span class="nc" id="L75">                yStart = xyMinMax[3];</span>
+            }
+            
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            for (int j = 0; j &lt; numberOfCellsInOneDimension; j++) {</span>
+                
+<span class="fc" id="L80">                float xStart = xyMinMax[0] + j*xDivSz;</span>
+                
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                if (xStart &gt; xyMinMax[1]) {</span>
+<span class="nc" id="L83">                    xStart = xyMinMax[1];</span>
+                }
+                
+<span class="fc" id="L86">                xCells[count] = xStart;</span>
+                
+<span class="fc" id="L88">                yCells[count] = yStart;</span>
+                
+<span class="fc" id="L90">                count++;</span>
+            }
+        }
+
+<span class="fc" id="L94">        Statistic statistic = new Statistic(items, xCells, yCells, xDivSz, yDivSz);</span>
+        
+<span class="fc" id="L96">        return statistic;</span>
+    }
+    
+    /**
+     * return the fraction of cells whose counts are outside of average +- standardDeviation*factorStDev
+     * 
+     * @param numberOfCellsInOneDimension number of cells across one dimension to divide the
+     *  data into to count the number of points within each cell
+     * @param indexer
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
+     * @return whether all of the counts within cells are similar within one standard deviation
+     */
+    public float fractionOfCellsOutSideOfAvgTolerance(int numberOfCellsInOneDimension, AxisIndexer indexer, float factorStDev) {
+        
+<span class="fc" id="L111">        Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);</span>
+        
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (statistic == null) {</span>
+<span class="nc" id="L114">            throw new IllegalArgumentException(&quot;could not calculate statistics from given indexer&quot;);</span>
+        }
+                
+<span class="fc" id="L117">        return fractionOfCellsOutSideOfAvgTolerance(statistic, factorStDev);</span>
+    }
+    
+    /**
+     * return the fraction of cells whose counts are outside of average +- standardDeviation*factorStDev
+     * 
+     * @param statistic
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
+     * @return whether all of the counts within cells are similar within one standard deviation
+     */
+    public float fractionOfCellsOutSideOfAvgTolerance(Statistic statistic, float factorStDev) {
+                
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (statistic == null) {</span>
+<span class="nc" id="L131">            throw new IllegalArgumentException(&quot;statistic cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L134">        int nAboveAvgPlusStDev = 0;</span>
+                
+<span class="fc" id="L136">        float stDev = statistic.getStandardDeviation();</span>
+        
+<span class="fc" id="L138">        float avg = statistic.getAverage();</span>
+        
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (int item : statistic.getItems()) {</span>
+            
+<span class="fc" id="L142">            float diff = Math.abs(item - avg);</span>
+            
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (diff &gt; (factorStDev * stDev)) {</span>
+            
+<span class="fc" id="L146">                nAboveAvgPlusStDev++;</span>
+            }
+        }
+        
+<span class="fc" id="L150">        return (float)nAboveAvgPlusStDev/(float)statistic.getNumberOfItems();</span>
+    }
+    
+    /**
+     * determine whether counts in each cell suggest that there are gaps in the data, that
+     * is whether some cells have significantly fewer counts than others.
+     * 
+     * @param numberOfCellsInOneDimension
+     * @param indexer
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
+     * @return whether there are not cells with significantly fewer points in them than average
+     */
+    public boolean doesNotHaveLargeGaps(int numberOfCellsInOneDimension, AxisIndexer indexer, float factorStDev) {
+        
+<span class="fc" id="L165">        Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);</span>
+        
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (statistic == null) {</span>
+<span class="nc" id="L168">            throw new IllegalArgumentException(&quot;could not calculate statistics from given indexer&quot;);</span>
+        }
+                
+<span class="fc" id="L171">        return doesNotHaveLargeGaps(statistic, factorStDev);</span>
+    }
+
+    /**
+     * determine whether counts in each cell suggest that there are gaps in the data, that
+     * is whether some cells have significantly fewer counts than others.
+     * 
+     * @param statistic
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
+     * @return whether there are not cells with significantly fewer points in them than average
+     */
+    public boolean doesNotHaveLargeGaps(Statistic statistic, float factorStDev) {
+                
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        if (statistic == null) {</span>
+<span class="nc" id="L186">            throw new IllegalArgumentException(&quot;statistic cannot be null&quot;);</span>
+        }
+                
+<span class="fc" id="L189">        float stDev = statistic.getStandardDeviation();</span>
+        
+<span class="fc" id="L191">        float avg = statistic.getAverage();</span>
+        
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        for (int item : statistic.getItems()) {</span>
+        
+<span class="pc bpc" id="L195" title="3 of 4 branches missed.">            if ((item == 0) || (item &lt; (avg - stDev*factorStDev)) ) {</span>
+            
+<span class="fc" id="L197">                return false;</span>
+            }
+        }
+        
+<span class="nc" id="L201">        return true;</span>
+    }
+    
+    /**
+     * determine whether counts in each cell suggest that there are gaps in the data, that
+     * is whether some cells have significantly fewer counts than others.
+     * 
+     * @param statistic
+     * @return whether there are not cells with significantly fewer points in them than average
+     */
+    public float fractionOfCellsWithoutPoints(Statistic statistic) {
+        
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">        if (statistic == null) {</span>
+<span class="nc" id="L214">            throw new IllegalArgumentException(&quot;could not calculate statistics from given indexer&quot;);</span>
+        }
+                
+<span class="fc" id="L217">        int count = 0;</span>
+        
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        for (int item : statistic.getItems()) {</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (item == 0) {</span>
+<span class="fc" id="L221">                count++;</span>
+            }
+        }
+        
+<span class="fc" id="L225">        return (float)count/statistic.getNumberOfItems();</span>
+    }
+
+    /**
+     * choose randomly a diagonal cell from a grid of size (Math.sqrt(indexer.nXY)/numberOfCellsInOneDimension)^2.
+     * the indexes are diagonal, but the location of the points is not (unless the data are in a grid, that is)
+     * 
+     * @param numberOfCellsInOneDimension
+     * @param indexer
+     * @return start and end indexes w.r.t. indexer.sortedXIndexes
+     */
+    public int[] chooseARandomDiagonalCell(int numberOfCellsInOneDimension, AxisIndexer indexer) {
+        
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">        if (numberOfCellsInOneDimension &lt; 1) {</span>
+<span class="nc" id="L239">            throw new IllegalArgumentException(&quot;numberOfCellsInOneDimension must be larger than 0&quot;);</span>
+        }
+        
+<span class="fc" id="L242">        Random sr = null;</span>
+        
+        try {
+         
+<span class="fc" id="L246">            sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+            
+<span class="nc" id="L248">        } catch (NoSuchAlgorithmException e) {</span>
+            
+<span class="nc" id="L250">            log.severe(e.getMessage());</span>
+            
+<span class="nc" id="L252">            sr = new Random();</span>
+<span class="fc" id="L253">        }</span>
+        
+<span class="fc" id="L255">        long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L256">        seed = 1386620575944l;</span>
+<span class="fc" id="L257">        sr.setSeed(seed);</span>
+        
+<span class="fc" id="L259">        int nXY = indexer.getNXY();</span>
+                                
+<span class="fc" id="L261">        int xDivIndexesSz = nXY/numberOfCellsInOneDimension;</span>
+        
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">        if (xDivIndexesSz == 0) {</span>
+            // somehow, the dataset size is &lt; 4...
+<span class="nc" id="L265">            xDivIndexesSz = 1;</span>
+        }
+        
+<span class="fc" id="L268">        int anXIndex = (int)(sr.nextFloat()*(nXY - xDivIndexesSz));</span>
+                        
+<span class="fc" id="L270">        int xCell = (anXIndex/xDivIndexesSz);</span>
+        
+<span class="fc" id="L272">        int xIndexLo = xCell*xDivIndexesSz;</span>
+  
+<span class="fc" id="L274">        int xIndexHi = xIndexLo + xDivIndexesSz;</span>
+                        
+<span class="fc" id="L276">        return new int[]{xIndexLo, xIndexHi};</span>
+    }
+    
+    /**
+     * choose a random cell within the data were a cell is a division of the data by
+     * numberOfCellsInOneDimension for each dimension.  it returns the cell boundaries
+     * in x and then y as indexes that are indexes relative to 
+     * {indexer.getSortedXIndexes(), indexer.getSortedXIndexes(), indexer.getSortedYIndexes(),
+     * indexer.getSortedYIndexes()}
+     * 
+     * @param numberOfCellsInOneDimension
+     * @param indexer
+     * @return an array holding the index boundaries of the cell 
+     * as new int[]{xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi} where the indexes should be treated
+     * with respect to arrays {indexer.getSortedXIndexes(), indexer.getSortedXIndexes(), indexer.getSortedYIndexes(),
+     * indexer.getSortedYIndexes()}
+     */
+    public int[] chooseARandomCell(int numberOfCellsInOneDimension, AxisIndexer indexer) {
+        
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        if (numberOfCellsInOneDimension &lt; 1) {</span>
+<span class="nc" id="L296">            throw new IllegalArgumentException(&quot;numberOfCellsInOneDimension must be larger than 0&quot;);</span>
+        }
+        
+<span class="fc" id="L299">        Random sr = null;</span>
+        
+        try {
+         
+<span class="fc" id="L303">            sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+            
+<span class="nc" id="L305">        } catch (NoSuchAlgorithmException e) {</span>
+            
+<span class="nc" id="L307">            log.severe(e.getMessage());</span>
+            
+<span class="nc" id="L309">            sr = new Random();</span>
+<span class="fc" id="L310">        }</span>
+        
+<span class="fc" id="L312">        long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L313">        seed = 1386620575944l;</span>
+<span class="fc" id="L314">        sr.setSeed(seed);</span>
+        
+<span class="fc" id="L316">        int nXY = indexer.getNXY();</span>
+                                
+<span class="fc" id="L318">        int xDivIndexesSz = nXY/numberOfCellsInOneDimension;</span>
+
+<span class="fc" id="L320">        int yDivIndexesSz = xDivIndexesSz;</span>
+        
+<span class="fc" id="L322">        int anXIndex = (int)(sr.nextFloat()*(nXY - xDivIndexesSz));</span>
+        
+<span class="fc" id="L324">        int anYIndex = (int)(sr.nextFloat()*(nXY - yDivIndexesSz));</span>
+                
+<span class="fc" id="L326">        int xCell = (anXIndex/xDivIndexesSz);</span>
+
+<span class="fc" id="L328">        int yCell = (anYIndex/yDivIndexesSz);</span>
+        
+<span class="fc" id="L330">        int xIndexLo = xCell*xDivIndexesSz;</span>
+  
+<span class="fc" id="L332">        int xIndexHi = xIndexLo + xDivIndexesSz;</span>
+        
+<span class="fc" id="L334">        int yIndexLo = yCell*yDivIndexesSz;</span>
+        
+<span class="fc" id="L336">        int yIndexHi = yIndexLo + yDivIndexesSz;</span>
+        
+<span class="fc" id="L338">        return new int[]{xIndexLo, xIndexHi, yIndexLo, yIndexHi};</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

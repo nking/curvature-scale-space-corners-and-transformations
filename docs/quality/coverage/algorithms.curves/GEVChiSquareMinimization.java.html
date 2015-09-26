@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GEVChiSquareMinimization.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.curves</a> &gt; <span class="el_source">GEVChiSquareMinimization.java</span></div><h1>GEVChiSquareMinimization.java</h1><pre class="source lang-java linenums">package algorithms.curves;
+
+import algorithms.misc.MiscMath;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+  &lt;pre&gt;
+  A chi square minimization routine for the Generalized Extreme Value function.
+  It has been tailored for use with the two-point correlation algorithm,
+  that is for k &gt; 0.
+ 
+  If one knows the range of parameter space for k and sigma, it is better to
+  use methods which calculate the fit with that better knowledge.
+ 
+  mu is  the location parameter
+  sigma is the scale parameter and is &gt; 0
+  k is the shape parameter
+ 
+                           (   (      ( x-mu))-(1/k))
+                           (-1*(1 + k*(-----))      )
+                  1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
+  y = y_const * ----- * exp                           * (1 + k*(-----))
+                sigma                                   (      (sigma))
+ &lt;/pre&gt; 
+ 
+ * @author nichole
+ */
+public class GEVChiSquareMinimization extends AbstractCurveFitter {
+
+    public static final int downhillSimplexStartDivisionsDefault = 1000;
+<span class="fc" id="L39">    protected int downhillSimplexStartDivisions = downhillSimplexStartDivisionsDefault;</span>
+
+<span class="fc" id="L41">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    public enum WEIGHTS_DURING_CHISQSUM {
+        ERRORS, INVERSE_Y, MODEL_Y
+    }
+
+    public GEVChiSquareMinimization(float[] xPoints, float[] yPoints,
+        float[] dXPoints, float[] dYPoints) {
+
+<span class="fc" id="L50">        super(xPoints, yPoints, dXPoints, dYPoints);</span>
+<span class="fc" id="L51">    }</span>
+
+    /**
+      &lt;pre&gt;
+      Fit the GEV curve iterating over a set of k, sigma, and mu parameters
+      and fitting each set using a downhill simplex algorithm.
+      The best fit is returned.   
+     &lt;/pre&gt;
+     
+     * @param weightMethod the method for determining the tolerance of fit to a 
+     * point.  the errors weight is the best choice if errors are available.
+     * @return yFit the best fitting curve
+     * @throws FailedToConvergeException
+     * @throws IOException
+     */
+    @Override
+    public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) 
+        throws FailedToConvergeException, IOException {
+        
+<span class="fc" id="L70">        String filePath = ResourceFinder.findFileInTestResources(&quot;sim_curve_params_01.txt&quot;);</span>
+        
+<span class="fc" id="L72">        File f = new File(filePath);</span>
+        
+<span class="fc" id="L74">        BufferedReader reader = null;</span>
+<span class="fc" id="L75">        FileReader fr = null;</span>
+        
+<span class="fc" id="L77">        List&lt;Float&gt; kParams = new ArrayList&lt;Float&gt;();</span>
+<span class="fc" id="L78">        List&lt;Float&gt; sParams = new ArrayList&lt;Float&gt;();</span>
+<span class="fc" id="L79">        List&lt;Float&gt; mParams = new ArrayList&lt;Float&gt;();</span>
+        
+        try {
+<span class="fc" id="L82">            fr = new FileReader(f);</span>
+<span class="fc" id="L83">            reader = new BufferedReader(fr);</span>
+<span class="fc" id="L84">            String line = reader.readLine();</span>
+<span class="fc" id="L85">            line = reader.readLine();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            while (line != null) {</span>
+                
+<span class="fc" id="L88">                String[] params = line.split(&quot;\\s+&quot;);</span>
+                
+<span class="fc" id="L90">                kParams.add(Float.valueOf(params[0]));</span>
+<span class="fc" id="L91">                sParams.add(Float.valueOf(params[1]));</span>
+<span class="fc" id="L92">                mParams.add(Float.valueOf(params[2]));</span>
+                                
+<span class="fc" id="L94">                line = reader.readLine();</span>
+<span class="fc" id="L95">            }</span>
+            
+        } finally {
+<span class="pc bpc" id="L98" title="3 of 4 branches missed.">            if (fr != null) {</span>
+<span class="pc" id="L99">                fr.close();</span>
+            }
+<span class="pc bpc" id="L101" title="3 of 4 branches missed.">            if (reader != null) {</span>
+<span class="pc" id="L102">                reader.close();</span>
+            }
+        }
+        
+<span class="fc" id="L106">        int n = kParams.size();</span>
+<span class="fc" id="L107">        int bestFitIndex = -1;</span>
+<span class="fc" id="L108">        GEVYFit bestFit = null;</span>
+                
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int i = 0; i &lt; n - 1; i++) {</span>
+            
+<span class="fc" id="L112">            float kMin = kParams.get(i).floatValue();</span>
+<span class="fc" id="L113">            float kMax = kParams.get(i + 1).floatValue();</span>
+<span class="fc" id="L114">            float sMin = sParams.get(i).floatValue();</span>
+<span class="fc" id="L115">            float sMax = sParams.get(i + 1).floatValue();</span>
+<span class="fc" id="L116">            float mMin = mParams.get(i).floatValue();</span>
+<span class="fc" id="L117">            float mMax = mParams.get(i + 1).floatValue();</span>
+            
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            if (sMax &lt; sMin) {</span>
+<span class="fc" id="L120">                sMax = sMin;</span>
+            }
+<span class="fc bfc" id="L122" title="All 2 branches covered.">            if (mMax &lt; mMin) {</span>
+<span class="fc" id="L123">                mMax = mMin;</span>
+            }
+                        
+<span class="fc" id="L126">            GEVYFit yFit = fitCurveKGreaterThanZeroAndMu(weightMethod,</span>
+                kMin, kMax, sMin, sMax, mMin, mMax);
+            
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            if (yFit != null) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                if (bestFit == null) {</span>
+<span class="fc" id="L131">                    bestFit = yFit;</span>
+<span class="fc" id="L132">                    bestFitIndex = i;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                } else if (yFit.chiSqStatistic &lt; bestFit.chiSqStatistic) {</span>
+<span class="fc" id="L134">                    bestFit = yFit;</span>
+<span class="fc" id="L135">                    bestFitIndex = i;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L140">        return bestFit;</span>
+    }
+
+    /**
+     &lt;pre&gt;
+     Fit curve within range of given parameters.  Internally, uses the Neder-Meade downhill
+     simplex method and no additional iterations combined with range reduction such as
+      is used by the fitCurveKGreaterThanZero method without min and max arguments.
+     
+      The mu parameter is fit for x[0] through x[yConstIndex] only.
+     &lt;/pre&gt;
+     
+     * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
+     *    the best choice if errors are available.
+     * @param kMin
+     * @param kMax
+     * @param sigmaMin
+     * @param sigmaMax
+     * @param muMin
+     * @param muMax
+     * @return yfit the best fitting curve
+     * @throws FailedToConvergeException
+     * @throws IOException
+     */
+    public GEVYFit fitCurveKGreaterThanZeroAndMu(
+        WEIGHTS_DURING_CHISQSUM weightMethod, float kMin, float kMax, 
+        float sigmaMin, float sigmaMax, float muMin, float muMax) 
+        throws FailedToConvergeException, IOException {
+
+        // using mu range useful for EV Type I and II for the two-point correlation functions
+
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L172">            String str = String.format(</span>
+                &quot;*kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f muMin=%.7f muMax=%.7f&quot;, 
+<span class="nc" id="L174">                kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);</span>
+<span class="nc" id="L175">            log.fine(str);</span>
+        }
+
+<span class="fc" id="L178">        float yErrSquareSum = calcYErrSquareSum();</span>
+
+<span class="fc" id="L180">        GEVYFit bestFit = null;</span>
+
+<span class="fc" id="L182">        int yMaxIndex = MiscMath.findYMaxIndex(y);</span>
+
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (yMaxIndex == -1) {</span>
+            // all y's were zero in y
+<span class="nc" id="L186">            return null;</span>
+        }
+<span class="fc" id="L188">        float mu = x[yMaxIndex];</span>
+<span class="fc" id="L189">        float yPeak = y[yMaxIndex];</span>
+
+<span class="fc" id="L191">        int end = (yMaxIndex + 5);</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (end &gt; (y.length - 1)) {</span>
+<span class="nc" id="L193">            end = y.length - 1;</span>
+        }
+
+<span class="fc" id="L196">        GEVYFit yfit = fitCurveForKGreaterThanZeroWithDownhillSimplex(kMin, </span>
+            kMax, sigmaMin, sigmaMax, muMin, muMax, yErrSquareSum, 
+            weightMethod, yPeak);
+        
+<span class="pc bpc" id="L200" title="3 of 4 branches missed.">        if (debug &amp;&amp; (yfit != null)) {</span>
+<span class="nc" id="L201">            String label = String.format(&quot;k=%.1e s=%.1e m=%.1e chisq=%.1f yerrsq=%.1f&quot;,</span>
+<span class="nc" id="L202">                yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum);</span>
+<span class="nc" id="L203">            log.fine(label);</span>
+        }
+
+<span class="pc bpc" id="L206" title="3 of 4 branches missed.">        if ((bestFit == null) || (yfit.getChiSqSum() &lt; bestFit.getChiSqSum())) {</span>
+<span class="fc" id="L207">            bestFit = yfit;</span>
+        }
+
+<span class="fc" id="L210">        return bestFit;</span>
+    }
+
+    protected void plotFit(GEVYFit yfit, String label) throws IOException {
+        
+<span class="nc" id="L215">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(</span>
+            xmin, xmax, ymin, ymax);
+
+        try {
+<span class="nc" id="L219">            plotter.addPlot(x, y, xe, ye, yfit.getX(), yfit.getYFit(), label);</span>
+<span class="nc" id="L220">            plotter.writeFile2();</span>
+<span class="nc" id="L221">        } catch (Exception e) {</span>
+<span class="nc" id="L222">            Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());</span>
+<span class="nc" id="L223">        }</span>
+<span class="nc" id="L224">    }</span>
+
+    public GEVYFit calculateChiSqSumAndCurve(float k, float sigma, float mu, 
+        WEIGHTS_DURING_CHISQSUM wdc, float yNorm) {
+
+<span class="fc" id="L229">        float[] yGEV = gev.generateNormalizedCurve(k, sigma, mu, yNorm);</span>
+
+<span class="fc" id="L231">        float chisqsum = calculateChiSquareSum(yGEV, wdc);</span>
+
+<span class="fc" id="L233">        GEVYFit yfit = new GEVYFit();</span>
+<span class="fc" id="L234">        yfit.setChiSqSum(chisqsum);</span>
+<span class="fc" id="L235">        yfit.setK(k);</span>
+<span class="fc" id="L236">        yfit.setSigma(sigma);</span>
+<span class="fc" id="L237">        yfit.setMu(mu);</span>
+<span class="fc" id="L238">        yfit.setYFit(yGEV);</span>
+<span class="fc" id="L239">        yfit.setX(x);</span>
+<span class="fc" id="L240">        yfit.setXScale(xScale);</span>
+<span class="fc" id="L241">        yfit.setYScale(yScale);</span>
+<span class="fc" id="L242">        yfit.setYDataErrSq( calcYErrSquareSum() );</span>
+
+<span class="fc" id="L244">        return yfit;</span>
+    }
+
+    /**
+     * use downhill simplex method to find the best fitting parameters for the curve.
+     *
+     * At this point, the termination of the fit is by number of iterations, but
+     * the code could be altered to use a termination test.
+     *
+     * Note that we don't fit for mu because the GEV curves in the two-point correlation
+     * tend to be Extreme Value Type I of Type II so the peak is usually mu.
+     * That is fit with fewer attempts in the wrapper to this method.
+     *
+     * @param kMin
+     * @param kMax
+     * @param sigmaMin
+     * @param sigmaMax
+     * @param mu
+     * @param yErrSquareSum
+     * @param weightMethod
+     * @return
+     */
+    private GEVYFit fitCurveForKGreaterThanZeroWithDownhillSimplex(float kMin, 
+        float kMax, float sigmaMin, float sigmaMax, float muMin, float muMax, 
+        float yErrSquareSum, WEIGHTS_DURING_CHISQSUM weightMethod, 
+        float yNorm) {
+
+<span class="fc" id="L271">        int nK = this.downhillSimplexStartDivisions;</span>
+<span class="fc" id="L272">        float deltaK = (kMax - kMin)/(float)nK;</span>
+
+<span class="fc" id="L274">        int nSigma = this.downhillSimplexStartDivisions;</span>
+<span class="fc" id="L275">        float deltaSigma = (sigmaMax - sigmaMin)/(float)nSigma;</span>
+        
+<span class="fc" id="L277">        int nMu = this.downhillSimplexStartDivisions;</span>
+<span class="fc" id="L278">        float deltaMu = (muMax - muMin)/(float)nMu;</span>
+
+<span class="fc" id="L280">        float k = kMin;</span>
+<span class="fc" id="L281">        float sigma = sigmaMin;</span>
+<span class="fc" id="L282">        float mu = muMin;</span>
+
+        // start with simplex for 3 points (fitting 2 parameters)
+<span class="fc" id="L285">        GEVYFit[] yfits = new GEVYFit[3];</span>
+<span class="fc" id="L286">        yfits[0] = calculateChiSqSumAndCurve(k, sigma, mu, weightMethod, yNorm);</span>
+
+<span class="fc" id="L288">        yfits[1] = calculateChiSqSumAndCurve(k + deltaK, sigma + deltaSigma, </span>
+            mu + deltaMu, weightMethod, yNorm);
+
+<span class="fc" id="L291">        yfits[2] = calculateChiSqSumAndCurve(k + 2*deltaK, sigma + 2*deltaSigma, </span>
+            mu + 2*deltaMu, weightMethod, yNorm);
+
+        /*  random choice starts do not work as well for GEV type I and type II
+        SecureRandom sr = new SecureRandom();
+        sr.setSeed(System.currentTimeMillis());
+        yfits[0] = calculateChiSqSumAndCurve(sr.nextFloat()*(kMax - kMin)/2.f, sr.nextFloat()*(sigmaMax - sigmaMin)/2.f, mu, weightMethod);
+        yfits[0].yDataErrSq = yErrSquareSum;
+
+        yfits[1] = calculateChiSqSumAndCurve(sr.nextFloat()*(kMax - kMin)/2.f, sr.nextFloat()*(sigmaMax - sigmaMin)/2.f, mu, weightMethod);
+        yfits[1].yDataErrSq = yErrSquareSum;
+
+        yfits[2] = calculateChiSqSumAndCurve(sr.nextFloat()*(kMax - kMin)/2.f, sr.nextFloat()*(sigmaMax - sigmaMin)/2.f, mu, weightMethod);
+        yfits[2].yDataErrSq = yErrSquareSum;
+        */
+
+<span class="fc" id="L307">        float alpha = 1;   // &gt; 0</span>
+<span class="fc" id="L308">        float gamma = 2;   // &gt; 1</span>
+<span class="fc" id="L309">        float beta = 0.9f; // 0 &lt; beta &lt; 1</span>
+
+<span class="fc" id="L311">        boolean go = true;</span>
+
+<span class="fc" id="L313">        int nMaxIter = 100;</span>
+<span class="fc" id="L314">        int nIter = 0;</span>
+
+<span class="pc bpc" id="L316" title="1 of 4 branches missed.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+
+<span class="fc" id="L318">            sortFromMinToMax(yfits, 0, 2);</span>
+
+<span class="fc" id="L320">            int minSimplexIndex = 0;</span>
+<span class="fc" id="L321">            int maxSimplexIndex = 2;</span>
+<span class="fc" id="L322">            int midSimplexIndex = 1;</span>
+
+            // determine center for all points excepting the worse fit
+<span class="fc" id="L325">            float ksum = 0.0f;</span>
+<span class="fc" id="L326">            float ssum = 0.0f;</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">            for (int i = 0; i &lt; yfits.length - 1; i++) {</span>
+<span class="fc" id="L328">                ksum += yfits[i].getK();</span>
+<span class="fc" id="L329">                ssum += yfits[i].getSigma();</span>
+            }
+<span class="fc" id="L331">            k = ksum / (yfits.length - 1);</span>
+<span class="fc" id="L332">            sigma = ssum / (yfits.length - 1);</span>
+
+            // &quot;Reflection&quot;
+<span class="fc" id="L335">            float kReflect     = k     - (alpha * (yfits[maxSimplexIndex].getK()     - k));</span>
+<span class="fc" id="L336">            float sigmaReflect = sigma - (alpha * (yfits[maxSimplexIndex].getSigma() - sigma));</span>
+<span class="fc" id="L337">            float muReflect = mu - (alpha * (yfits[maxSimplexIndex].getMu() - mu));</span>
+<span class="fc" id="L338">            GEVYFit yfitReflected = calculateChiSqSumAndCurve(kReflect, </span>
+                sigmaReflect, muReflect, weightMethod, yNorm);
+<span class="fc" id="L340">            yfitReflected.setYDataErrSq(yErrSquareSum);</span>
+
+<span class="pc bpc" id="L342" title="1 of 14 branches missed.">            if ((yfitReflected.getChiSqSum() &lt; yfits[minSimplexIndex].getChiSqSum())</span>
+                &amp;&amp; 
+                ((kReflect &gt;= kMin) &amp;&amp; (kReflect &lt;= kMax) 
+                &amp;&amp; (sigmaReflect &gt;= sigmaMin) &amp;&amp; (sigmaReflect &lt;= sigmaMax)
+                &amp;&amp; (muReflect &gt;= muMin) &amp;&amp; (muReflect &lt;= muMax))
+            ) {
+
+                // &quot;Expansion&quot;
+<span class="fc" id="L350">                float kExpansion =     kReflect     - (gamma * (k     - kReflect));</span>
+<span class="fc" id="L351">                float sigmaExpansion = sigmaReflect - (gamma * (sigma - sigmaReflect));</span>
+<span class="fc" id="L352">                float muExpansion = muReflect - (gamma * (mu - muReflect));</span>
+<span class="fc" id="L353">                GEVYFit yfitExpansion = calculateChiSqSumAndCurve(kExpansion, </span>
+                    sigmaExpansion, muExpansion, weightMethod, yNorm);
+<span class="fc" id="L355">                yfitExpansion.setYDataErrSq(yErrSquareSum);</span>
+
+<span class="pc bpc" id="L357" title="4 of 14 branches missed.">                if ((yfitExpansion.getChiSqSum() &lt; yfits[minSimplexIndex].getChiSqSum())</span>
+                    &amp;&amp; (
+                    (kExpansion &gt;= kMin) &amp;&amp; (kExpansion &lt;= kMax) 
+                    &amp;&amp; (sigmaExpansion &gt;= sigmaMin) &amp;&amp; (sigmaExpansion &lt;= sigmaMax)
+                    &amp;&amp; (muExpansion &gt;= muMin) &amp;&amp; (muExpansion &lt;= muMax)
+                    )
+                ) {
+
+<span class="fc" id="L365">                    yfits[maxSimplexIndex] = yfitExpansion;</span>
+
+                } else {
+
+<span class="fc" id="L369">                    yfits[maxSimplexIndex] = yfitReflected;</span>
+                }
+
+<span class="pc bpc" id="L372" title="2 of 14 branches missed.">            } else if ((yfitReflected.getChiSqSum() &gt; yfits[midSimplexIndex].getChiSqSum())</span>
+                &amp;&amp; (
+                (kReflect &gt;= kMin) &amp;&amp; (kReflect &lt;= kMax) 
+                &amp;&amp; (sigmaReflect &gt;= sigmaMin) &amp;&amp; (sigmaReflect &lt;= sigmaMax)
+                &amp;&amp; (muReflect &gt;= muMin) &amp;&amp; (muReflect &lt;= muMax)
+                )
+            ) {
+
+<span class="pc bpc" id="L380" title="6 of 14 branches missed.">                if ((yfitReflected.getChiSqSum() &lt;= yfits[maxSimplexIndex].getChiSqSum())</span>
+                    &amp;&amp; (
+                    (kReflect &gt;= kMin) &amp;&amp; (kReflect &lt;= kMax) 
+                    &amp;&amp; (sigmaReflect &gt;= sigmaMin) &amp;&amp; (sigmaReflect &lt;= sigmaMax)
+                    &amp;&amp; (muReflect &gt;= muMin) &amp;&amp; (muReflect &lt;= muMax)
+                    )
+                ) {
+
+<span class="fc" id="L388">                    yfits[maxSimplexIndex] = yfitReflected;</span>
+                }
+
+                // &quot;Contraction&quot;
+<span class="fc" id="L392">                float kContraction =     (beta * yfits[maxSimplexIndex].getK())     + (1 - beta)*k;</span>
+<span class="fc" id="L393">                float sigmaContraction = (beta * yfits[maxSimplexIndex].getSigma()) + (1 - beta)*sigma;</span>
+<span class="fc" id="L394">                float muContraction = (beta * yfits[maxSimplexIndex].getMu()) + (1 - beta)*mu;</span>
+<span class="fc" id="L395">                GEVYFit yfitContraction = calculateChiSqSumAndCurve(</span>
+                    kContraction, sigmaContraction, muContraction, weightMethod, yNorm);
+<span class="fc" id="L397">                yfitContraction.setYDataErrSq(yErrSquareSum);</span>
+
+<span class="pc bpc" id="L399" title="6 of 14 branches missed.">                if (yfitContraction.getChiSqSum() &gt; yfits[maxSimplexIndex].getChiSqSum()</span>
+                    &amp;&amp; (
+                    (kContraction &gt;= kMin) &amp;&amp; (kContraction &lt;= kMax) 
+                    &amp;&amp; (sigmaContraction &gt;= sigmaMin) &amp;&amp; (sigmaContraction &lt;= sigmaMax)
+                    &amp;&amp; (muContraction &gt;= muMin) &amp;&amp; (muContraction &lt;= muMax)
+                    )
+                ) {
+
+<span class="fc" id="L407">                    float ktmp = (yfits[midSimplexIndex].getK() + yfits[minSimplexIndex].getK())/2;</span>
+<span class="fc" id="L408">                    float stmp = (yfits[midSimplexIndex].getSigma() + yfits[minSimplexIndex].getSigma())/2;</span>
+<span class="fc" id="L409">                    float mtmp = (yfits[midSimplexIndex].getMu() </span>
+<span class="fc" id="L410">                        + yfits[minSimplexIndex].getMu())/2;</span>
+
+<span class="fc" id="L412">                    yfits[midSimplexIndex] = calculateChiSqSumAndCurve(</span>
+                        ktmp, stmp, mtmp, weightMethod, yNorm);
+<span class="fc" id="L414">                    yfits[midSimplexIndex].setYDataErrSq(yErrSquareSum);</span>
+
+<span class="fc" id="L416">                } else {</span>
+
+<span class="fc" id="L418">                    yfits[maxSimplexIndex] = yfitContraction;</span>
+                }
+
+<span class="pc bpc" id="L421" title="1 of 12 branches missed.">            } else if (</span>
+                (kReflect &gt;= kMin) &amp;&amp; (kReflect &lt;= kMax) 
+                &amp;&amp; (sigmaReflect &gt;= sigmaMin) &amp;&amp; (sigmaReflect &lt;= sigmaMax)
+                &amp;&amp; (muReflect &gt;= muMin) &amp;&amp; (muReflect &lt;= muMax)
+                )
+            {
+
+<span class="fc" id="L428">                yfits[maxSimplexIndex] = yfitReflected;</span>
+            }
+
+<span class="fc" id="L431">            nIter++;</span>
+
+            //if (yfits[minSimplexIndex].getChiSqSum() &lt; yErrSquareSum) {
+            //    go = false;
+            //}
+
+<span class="pc bpc" id="L437" title="2 of 4 branches missed.">            if ((k &gt; kMax) || (sigma &gt; sigmaMax)) {</span>
+<span class="nc" id="L438">                go = false;</span>
+            }
+<span class="fc" id="L440">        }</span>
+
+<span class="fc" id="L442">        yfits[0].kSolutionResolution = yfits[0].getK() - yfits[1].getK();</span>
+<span class="fc" id="L443">        yfits[0].sigmaSolutionResolution = yfits[0].getSigma() - yfits[1].getSigma();</span>
+<span class="fc" id="L444">        yfits[0].muSolutionResolution = yfits[0].getMu() - yfits[1].getMu();</span>
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">        if (yfits[0].getYFit() != null) {</span>
+<span class="fc" id="L446">            yfits[0].setChiSqStatistic(</span>
+<span class="fc" id="L447">                calculateChiSquareStatistic(yfits[0].getYFit(), weightMethod));</span>
+        }
+
+<span class="fc" id="L450">        return yfits[0];</span>
+    }
+    
+    /**
+     * sort the array yfits by ascending chisquare sum using
+     * the quick sort algorithm.
+     *
+     * @param yfits
+     * @param p first index of the array yfits to be sorted
+     * @param r the last index of the array yfits to be sorted, inclusive
+     */
+    void sortFromMinToMax(GEVYFit[] yfits, int p, int r) {
+
+<span class="fc bfc" id="L463" title="All 2 branches covered.">        if (p &lt; r) {</span>
+
+<span class="fc" id="L465">            int q = partition(yfits, p, r);</span>
+
+<span class="fc" id="L467">            sortFromMinToMax(yfits, p, q - 1);</span>
+
+<span class="fc" id="L469">            sortFromMinToMax(yfits, q + 1, r);</span>
+        }
+<span class="fc" id="L471">    }</span>
+    /**
+     * the partition function of the GEVYFit quick sort method.
+     *
+     * @param yfits
+     * @param p
+     * @param r
+     * @return
+     */
+    int partition(GEVYFit[] yfits, int p, int r) {
+
+<span class="fc" id="L482">        float xxp = yfits[r].getChiSqSum();</span>
+
+<span class="fc" id="L484">        int i = p - 1;</span>
+
+<span class="fc bfc" id="L486" title="All 2 branches covered.">        for (int j = p; j &lt; r ; j++ ) {</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">            if (yfits[j].getChiSqSum() &lt;= xxp) {</span>
+
+<span class="fc" id="L489">                i++;</span>
+
+<span class="fc" id="L491">                GEVYFit swap = yfits[i];</span>
+<span class="fc" id="L492">                yfits[i] = yfits[j];</span>
+<span class="fc" id="L493">                yfits[j] = swap;</span>
+            }
+        }
+
+<span class="fc" id="L497">        GEVYFit swap = yfits[i + 1];</span>
+<span class="fc" id="L498">        yfits[i + 1] = yfits[r];</span>
+<span class="fc" id="L499">        yfits[r] = swap;</span>
+
+<span class="fc" id="L501">        return i + 1;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
