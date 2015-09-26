@@ -25,9 +25,8 @@
 
 <p>The algorithm, in an unsupervised manner, constructs a distance transform for every non-point relative to the nearest point in the dataset.  Histograms are formed from the inverse square root of the distance transform and the first peaks in the histogram are fit to derive the critical density.  The critical separation between 2 points is then calculated from the critical density and a factor above background.  Any points closer to one another than the critical separation are within clustering distance of one another.</p>
 
-<p>The results are available as data and visualized through generated html plots. (Improvements to packaging and documentation are in progress.)</p>
-
-<p>More about the density distribution:</p>
+<p>The results are available as data and visualized through generated html plots. 
+The scatter plots and histograms below use <a href="http://d3js.org">d3 js</a></p>
 
 <p>Usage as an API:</p>
 
@@ -37,25 +36,21 @@
     DTClusterFinder clusterFinder = new DTClusterFinder(points,
         imageWidth, imageHeight);
 
-    clusterFinder.setToDebug();
-
     clusterFinder.calculateCriticalDensity();
 
-    // alternatively, if the density is known, set instead of calculate:
+    // or, set density instead of calculate (for use in pca or lda, for example):
     //clusterFinder.setCriticalDensity(dens);
 
     clusterFinder.findClusters();
 
     int nGroups = clusterFinder.getNumberOfClusters();
 
-    List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+    List&lt;Set&lt;PairInt&gt;&gt; groupList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();
     for (int k = 0; k < nGroups; ++k) {
-        Set<PairInt> set = clusterFinder.getCluster(k);
+        Set&lt;PairInt&gt; set = clusterFinder.getCluster(k);
         groupList.add(set);
     }
 </pre>
-
-<p>The scatter plots and histograms below use <a href="http://d3js.org">d3 js</a></p>
 
 <hr>
 
@@ -76,11 +71,11 @@ else
 <p>The previous version of this code is presented in the <a href="gev.html">previous web page</a>.
 
 <p>Note that I wrote the core algorithm in this work (without the automated density calculation) several years ago and the results were part of a publication.
-What got published was the results from this algorithm used as input for another algorithm that requires 
-knowledge of association radius in order to work.   The algorithm that used my algorithm's input required a parameter that was not derivable from it's use alone.
-Similarly, "k-means clustering" requires knowledge of the number of clusters before use.  "k-means++" is an algorithm that suggests one can adjust the number of clusters k, but a statistical method of doing so would still require a density based analysis, and hence, it would need to do the same work as the algorithm here, but presumably less efficiently.  Delaunay Triangulation is useful if there are no background points within a dataset, that is all points will be members of a group, and if groups do not have non-convex shapes.  KDTrees are useful as a nearest neighbor algorithm, but its use in determining clusters would still require as input, an association radius.
-Fun stuff, but the core of the algorithm here is was what I needed to create awhile back for work applied to galaxy surveys.  The addition published here is automation of the background determination and large improvements of the
-overall algorithm. </p>
+What was published were the results from this algorithm used as input for another algorithm that requires 
+knowledge of association radius in order to work.   The algorithm that used my algorithm's output required a parameter that was not derivable from the other algorithm's use alone.
+Similarly, "k-means clustering" requires knowledge of the number of clusters before use.  Delaunay Triangulation is useful if there are no background points within a dataset, that is all points will be members of a group, and if groups do not have non-convex shapes.  KDTrees are useful as a nearest neighbor algorithm, but its use in determining clusters would still require as input, an association radius.
+The core of the algorithm here is was what I needed to create awhile back for work applied to galaxy surveys.  The addition published here is automation of the background determination and large improvements of the
+overall algorithm.  I'm using it in a computer vision project for segmentation.</p>
 
 <h2>
 <a id="performance-metrics" class="anchor" href="#performance-metrics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Performance Metrics</h2>
