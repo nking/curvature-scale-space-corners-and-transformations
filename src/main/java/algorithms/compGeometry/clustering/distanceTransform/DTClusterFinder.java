@@ -19,14 +19,26 @@ public class DTClusterFinder {
     
     private DTGroupFinder groupFinder = null;
     
+    private enum STATE {
+        INIT, HAVE_CLUSTER_DENSITY, HAVE_GROUPS
+    }
+    
+    private STATE state = null;
+    
     public DTClusterFinder(Set<PairInt> points, int width, int height) {
         
         this.points = points;
         this.width = width;
         this.height = height;
+        
+        state = STATE.INIT;
     }
     
-    void calculateCriticalDensity() {
+    public void calculateCriticalDensity() {
+        
+        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) > -1) {
+            return;
+        }
         
         DistanceTransform dtr = new DistanceTransform();
         int[][] dt = dtr.applyMeijsterEtAl(points, width, height);
@@ -36,11 +48,22 @@ public class DTClusterFinder {
         this.critDens = densSolver.findCriticalDensity(dt, points.size(), width, height);               
     }
     
-    void setCriticalDensity(float dens) {
+    public void setCriticalDensity(float dens) {
+        
+        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) > -1) {
+            throw new IllegalStateException("cluster density is already set");
+        }
+        
         this.critDens = dens;
     }
     
-    void findClusters() {
+    public void findClusters() {
+        
+        if (state.compareTo(STATE.HAVE_GROUPS) < 1) {
+            calculateCriticalDensity();
+        } else if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) > -1) {
+            return;
+        }
         
         groupFinder = new DTGroupFinder();
         
@@ -48,7 +71,7 @@ public class DTClusterFinder {
         
     }
     
-    int getNumberOfClusters() {
+    public int getNumberOfClusters() {
         
         if (groupFinder == null) {
             return 0;
@@ -57,7 +80,7 @@ public class DTClusterFinder {
         return groupFinder.getNumberOfGroups();
     }
     
-    Set<PairInt> getCluster(int idx) {
+    public Set<PairInt> getCluster(int idx) {
         
         if (groupFinder == null) {
             throw new IllegalArgumentException(
@@ -71,7 +94,7 @@ public class DTClusterFinder {
         return groupFinder.getGroup(idx);
     }
     
-    float getCriticalDensity() {
+    public float getCriticalDensity() {
         return critDens;
     }
     
