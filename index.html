@@ -82,6 +82,24 @@ Similarly, "k-means clustering" requires knowledge of the number of clusters bef
 Fun stuff, but the core of the algorithm here is was what I needed to create awhile back for work applied to galaxy surveys.  The addition published here is automation of the background determination and large improvements of the
 overall algorithm. </p>
 
+<h2>
+<a id="performance-metrics" class="anchor" href="#performance-metrics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Performance Metrics</h2>
+
+<blockquote>
+<p>The runtime complexity is roughly O(N<sub>pixels</sub> X log<sub>2</sub>(N<sub>pixels</sub>)) where N<sub>pixels</sub> is the width times height of the image.
+The space complexity is roughly platform word size X width X height, so for a width of 5000 and height of 5000, the code must be run with java arguments to increase the stack size or the data must be reduced in size... like knapsack, the code is using dynamic programmining using arrays that are as long as needed for capacity.</p>
+
+<hr>
+<h2>
+<a id="sparsely-populated-background" class="anchor" href="#sparsely-populated-background" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sparse Clusters and no Background</h2>
+
+<p><img src="images/snapshot_sparse_01_dt.png" width="300"></p>
+<hr>
+
+<h2>
+<a id="moderately-populated-background" class="anchor" href="#moderately-populated-background" aria-hidden="true"><span class="octicon octicon-link"></span></a>Moderately Dense Clusters and a non-clustered Background</h2>
+
+<p><img src="images/snapshot_clusters_with_background_01_dt.png" width="300"></p>
 <hr>
 
 <h2>
@@ -104,13 +122,16 @@ overall algorithm. </p>
 <img src="images/snapshot_shapes_08_dt.png" width="300">
 
 <hr>
-
 <h2>
-<a id="performance-metrics" class="anchor" href="#performance-metrics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Performance Metrics</h2>
-
-<blockquote>
-<p>The runtime complexity is roughly O(N<sub>pixels</sub> X log<sub>2</sub>(N<sub>pixels</sub>)) where N<sub>pixels</sub> is the width times height of the image.
-The space complexity is roughly platform word size X width X height, so for a width of 5000 and height of 5000, the code must be run with java arguments to increase the stack size or the data must be reduced in size... like knapsack, the code is using dynamic programmining using arrays that are as long as needed for capacity.</p>
+<a id="no-clusters" class="anchor" href="#no-clusters" aria-hidden="true"><span class="octicon octicon-link"></span></a>No Clusters</h2>
+<p>No clusters are found where there are none.  The higher density point images begin to generate a small percentage of clusters due to crowding from random noise.
+<img src="images/snapshot_no_clusters_01_dt.png" width="300">
+<img src="images/snapshot_no_clusters_02_dt.png" width="300">
+<img src="images/snapshot_no_clusters_03_dt.png" width="300">
+<img src="images/snapshot_no_clusters_04_dt.png" width="300">
+<img src="images/snapshot_no_clusters_05_dt.png" width="300">
+<img src="images/snapshot_no_clusters_06_dt.png" width="300">
+<hr>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/nking/two-point-correlation">two-point-correlation</a> is maintained by <a href="https://github.com/nking">nking</a>.</span>
