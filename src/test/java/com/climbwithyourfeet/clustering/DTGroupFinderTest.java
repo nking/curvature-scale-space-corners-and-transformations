@@ -1,6 +1,6 @@
-package algorithms.compGeometry.clustering.distanceTransform;
+package com.climbwithyourfeet.clustering;
 
-import algorithms.util.PairInt;
+import com.climbwithyourfeet.clustering.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;

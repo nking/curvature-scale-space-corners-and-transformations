@@ -79,6 +79,7 @@
         <echo message="runFindbugs                 static analysis for non-third party classes"/>
         <echo message="runPerformanceMetrics       run performance metrics"/>
         <echo message="package                     build jar"/>
+        <echo message="package2                    build jar with clustering based on distance transform"/>
     </target>
 
     <condition property="extra.src.dir" value="${extra.src}" else="${basedir}/src/placeholder">
@@ -87,6 +88,10 @@
 
     <condition property="jar.mf" value="${package.mf}" else="${resources.dir}/two-point-correlation.mf">
         <isset property="package.mf" />
+    </condition>
+    
+    <condition property="jar2.mf" value="${package2.mf}" else="${resources.dir}/clustering_dist_trans.mf">
+        <isset property="package2.mf" />
     </condition>
 
     <!-- set compile classpath  -->
@@ -565,4 +570,21 @@
         <mkdir dir="dist" />
         <copy file="${classes.dir}/two-point-correlation_${TS}.jar" tofile="dist/two-point-correlation.jar" />
     </target>
+    
+    <target name="package2" depends="compile">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="making jar file of class files, output is in ${classes.dir}/com.climbwithyourfeet.clustering.jar" />
+        <tstamp>
+            <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>
+        </tstamp>
+        <jar destfile="${classes.dir}/com.climbwithyourfeet.clustering_${TS}.jar" manifest="${jar2.mf}">
+            <fileset dir="${src.out.dir}" includes="com/climbwithyourfeet/clustering/**"/>
+            <fileset dir="${basedir}" includes="LICENSE.txt"/>
+            <fileset dir="${basedir}" includes="README2.txt"/>
+        </jar>
+        <mkdir dir="dist" />
+        <copy file="${classes.dir}/com.climbwithyourfeet.clustering_${TS}.jar" 
+              tofile="dist/com.climbwithyourfeet.clustering.jar" />
+    </target>
+    
 </project>

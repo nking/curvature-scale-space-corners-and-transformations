@@ -1,6 +1,5 @@
 package algorithms.misc;
 
-import algorithms.util.PolygonAndPointPlotter;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -132,80 +131,6 @@ public class HistogramHolder implements Externalizable {
         this.xErrors = xErrors;
     }
     
-    public String plotHistogram(String label, 
-        long outputFileNumber) throws IOException {
-                
-        float[] xh = xHist;
-        float[] yh = yHistFloat;
-        
-        float yMin = MiscMath.findMin(yh);
-        int yMaxIdx = MiscMath.findYMaxIndex(yh);
-        float yMax = yh[yMaxIdx];
-        
-        float xMin = MiscMath.findMin(xh);
-        float xMax = MiscMath.findMax(xh);        
-                
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-
-        plotter.addPlot(
-            xMin, xMax, yMin, yMax,
-            xh, yh, xh, yh, label);
-
-        return plotter.writeFile(outputFileNumber);
-    }
-
-    public String plotHistogram(String label, 
-        String outputFileSuffix) throws IOException {
-                
-        float[] xh = xHist;
-        float[] yh = yHistFloat;
-        
-        float yMin = MiscMath.findMin(yh);
-        int yMaxIdx = MiscMath.findYMaxIndex(yh);
-        if (yMaxIdx == -1) {
-            return null;
-        }
-        float yMax = yh[yMaxIdx];
-        
-        float xMin = MiscMath.findMin(xh);
-        float xMax = MiscMath.findMax(xh);        
-                
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-
-        plotter.addPlot(
-            xMin, xMax, yMin, yMax,
-            xh, yh, xh, yh, label);
-
-        return plotter.writeFile(outputFileSuffix);
-    }
-    
-    public String plotLogHistogram(String label, 
-        String outputFileSuffix) throws IOException {
-                
-        float[] xh = xHist;
-        float[] yh = yHistFloat;
-        
-        float[] yLogH = new float[yh.length];
-        for (int i = 0; i < yh.length; ++i) {
-            yLogH[i] = (float)Math.log(yh[i]/Math.log(10));
-        }
-        
-        float yMin = MiscMath.findMin(yLogH);
-        int yMaxIdx = MiscMath.findYMaxIndex(yLogH);
-        float yMax = yLogH[yMaxIdx];
-        
-        float xMin = MiscMath.findMin(xh);
-        float xMax = MiscMath.findMax(xh);
-                        
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-
-        plotter.addPlot(
-            xMin, xMax, yMin, yMax,
-            xh, yLogH, xh, yLogH, label);
-
-        return plotter.writeFile(outputFileSuffix);
-    }
-     
     public String toString() {
         
         StringBuilder sb = new StringBuilder();

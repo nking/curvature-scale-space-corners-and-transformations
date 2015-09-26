@@ -1,14 +1,10 @@
-package algorithms.compGeometry.clustering.distanceTransform;
+package com.climbwithyourfeet.clustering;
 
-import algorithms.compGeometry.clustering.distanceTransform.util.MiscMath;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
-import algorithms.util.Errors;
-import java.io.IOException;
+import com.climbwithyourfeet.clustering.util.Histogram;
+import com.climbwithyourfeet.clustering.util.HistogramHolder;
+import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -65,7 +61,7 @@ public class CriticalDensitySolver {
      */
     protected float findCriticalDensity(float[] values) {
          
-        float[] vErrors = Errors.populateYErrorsBySqrt(values);
+        float[] vErrors = Histogram.populateYErrorsBySqrt(values);
 
         List<HistogramHolder> histList = new ArrayList<HistogramHolder>();
 
@@ -87,14 +83,16 @@ public class CriticalDensitySolver {
             HistogramHolder hist = Histogram.createSimpleHistogram(
                 0, xl, nb, values, vErrors);
         
+            /*  not including in packaged jar
             if (debug) {
                 try {
-                    hist.plotHistogram("clstr", "_cluster_" + hc);
+                    algorithms.util.Util.plotHistogram(hist, "clstr", "_cluster_" + hc);
                 } catch (IOException ex) {
                     Logger.getLogger(CriticalDensitySolver.class.getName()).
                         log(Level.SEVERE, null, ex);
                 }
             }
+            */
             
             if (hist == null || hist.getXHist() == null || hist.getXHist().length == 0) {
                 break;

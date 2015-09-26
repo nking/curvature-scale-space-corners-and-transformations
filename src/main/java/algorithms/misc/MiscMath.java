@@ -1,7 +1,7 @@
 package algorithms.misc;
 
 import algorithms.util.ArrayPair;
-import algorithms.util.PairInt;
+import com.climbwithyourfeet.clustering.util.PairInt;
 import java.security.SecureRandom;
 import java.util.Set;
 

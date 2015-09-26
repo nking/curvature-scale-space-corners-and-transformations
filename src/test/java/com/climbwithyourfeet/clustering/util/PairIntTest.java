@@ -1,4 +1,4 @@
-package algorithms.util;
+package com.climbwithyourfeet.clustering.util;
 
 import junit.framework.TestCase;
 

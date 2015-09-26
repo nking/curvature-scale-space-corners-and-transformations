@@ -1,11 +1,12 @@
-package algorithms.compGeometry.clustering.distanceTransform;
+package com.climbwithyourfeet.clustering;
 
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.Util;
+import com.climbwithyourfeet.clustering.util.PairInt;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
@@ -204,12 +205,12 @@ public class DistanceTransformTest extends TestCase {
         float[] vSqrtInvErrors = Errors.populateYErrorsBySqrt(valuesSqrtInv);
         
         HistogramHolder hist = Histogram.createSimpleHistogram(1.0f, values, vErrors);
-        hist.plotHistogram("clstr", "_cluster_");
+        Util.plotHistogram(hist, "clstr", "_cluster_");
        
         HistogramHolder histSqrtInv = Histogram.createSimpleHistogram(
             0, 1.1f, 40,
             valuesSqrtInv, vSqrtInvErrors);
-        histSqrtInv.plotHistogram("clstr", "_cluster_inv");
+        Util.plotHistogram(histSqrtInv, "clstr", "_cluster_inv");
                       
     }
     

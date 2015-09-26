@@ -1,16 +1,10 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.compGeometry.clustering.distanceTransform.DTClusterFinderTest;
-import algorithms.compGeometry.clustering.distanceTransform.DistanceTransform;
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscMath;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**

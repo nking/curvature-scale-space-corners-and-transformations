@@ -1,4 +1,4 @@
-package algorithms.util;
+package com.climbwithyourfeet.clustering.util;
 
 /**
  adapted from 

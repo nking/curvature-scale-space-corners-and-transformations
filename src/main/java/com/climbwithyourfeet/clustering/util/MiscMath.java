@@ -1,7 +1,5 @@
-package algorithms.compGeometry.clustering.distanceTransform.util;
+package com.climbwithyourfeet.clustering.util;
 
-import algorithms.misc.HistogramHolder;
-import algorithms.util.PairInt;
 import java.util.Set;
 
 /**
@@ -95,5 +93,53 @@ public class MiscMath {
         yc /= (double)points.size();
 
         return new double[]{xc, yc};
+    }
+
+    public static int findPowerOf10(float a) {
+        
+        if (a == 0) {
+            return 0;
+        }
+        if (a < 0.f) {
+            a *= -1.0f;
+        }
+        double b = Math.log10(a);
+        if (b > 0) {
+            return (int)b;
+        } else {
+            if (b >= 1) {
+                return (int)Math.round(b);
+            } else if (b > -1) {
+                // fractions between -1 and +1
+                 return findPowerOf10_2(a);
+            } else {
+                return (int)Math.round(b);
+            }
+        }
+    }
+    
+    public static int findPowerOf10_2(float a) {
+
+        if (a == 0) {
+            return 0;
+        }
+
+        int power = 0;
+
+        if (a <= 1.0f) {
+            while (a < 1.0) {
+                a *=  10.0;
+                power--;
+            }
+        } else {
+            // precision errors in multiplication here are trouble for non base2 numbers such as powers of 10
+            while (a >= 1.0) {
+                a /= 10.0;
+                power++;
+            }
+            power--;
+        }
+
+        return power;
     }
 }

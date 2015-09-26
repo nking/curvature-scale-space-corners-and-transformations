@@ -1,9 +1,9 @@
-package algorithms.compGeometry.clustering.distanceTransform;
+package com.climbwithyourfeet.clustering;
 
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import com.climbwithyourfeet.clustering.util.PairInt;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;

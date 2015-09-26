@@ -1,4 +1,4 @@
-package algorithms.compGeometry.clustering.distanceTransform;
+package com.climbwithyourfeet.clustering;
 
 import algorithms.util.ResourceFinder;
 import java.io.EOFException;

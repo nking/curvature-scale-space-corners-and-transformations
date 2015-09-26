@@ -1,11 +1,13 @@
-package algorithms.compGeometry.clustering.distanceTransform;
+package com.climbwithyourfeet.clustering;
 
-import algorithms.util.PairInt;
+import com.climbwithyourfeet.clustering.util.PairInt;
 import java.util.Set;
 
 /**
  * main class to cluster finder whose logic is based upon distance transform,
  * density threshold, and a signal to noise argument of ~ 3 as a factor.
+ * 
+ * runtime complexity ~ O(N_pixels) + ~O(N_points * lg2(N_points))
  * 
  * @author nichole
  */

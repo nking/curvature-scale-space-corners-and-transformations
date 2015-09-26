@@ -1,6 +1,4 @@
-Implementation-Title: Two-Point-Correlation
+Implementation-Title: Density_Clustering
 Implementation-Version: 1.0
 Implementation-Vendor: NicholeKing
 Implementation-URL: http://nking.github.io/two-point-correlation/
-Main-Class: 
- algorithms.compGeometry.clustering.twopointcorrelation.Main
