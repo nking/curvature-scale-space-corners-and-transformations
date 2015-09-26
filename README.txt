@@ -85,6 +85,12 @@ pixel, one can extend PairInt and add a field for the pixel index.  The
 final groups will have the same points given to the code so will retain 
 the specialization.
 
+Note that if you extend PairInt and have deep members that Arrays.copyOf(...)
+will not handle correctly, change the code in DTGroupFinder.java to
+use quick sort.  It's using merge sort currently.
+Specifically, 
+change PISort.mergeSortByXThenY(sorted) to PISort.quickSortByXThenY(sorted)
+
 ----------------------
 Citation and Licensing
 ----------------------
