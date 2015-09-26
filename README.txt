@@ -60,26 +60,27 @@ The runtime complexity is roughly O(Npixels X log2(Npixels)) where
 Npixels is the width times height of the image. 
 The space complexity is roughly platform word size X width X height, 
 so for a width of 5000 and height of 5000, the code must be run with 
-java arguments to increase the stack size or the data must be 
-reduced in size... like knapsack, the code is using dynamic programmining 
+java arguments to increase the stack size or the data must be reduced 
+in size... like knapsack, the code is using dynamic programmining 
 using arrays that are as long as needed for capacity.
 
 ----------------------
 Numerical Resolution
 ----------------------
 
-floating point data can be converted to integers and scaled to keep the desired numerical
-resolution before using this code.
+floating point data can be converted to integers and scaled to keep the
+desired numerical resolution before using this code.
 
-For example, for data where one has an interest in exponential similarity functions,
-one would want to apply the exponential operations to the data before use here and
-scale the data for numerical resolution such that an integer holds the
-significant difference between points
+For example, for data where one has an interest in exponential 
+similarity functions, one would want to apply the exponential operations 
+to the data before use here and scale the data for numerical resolution 
+such that an integer holds the significant difference between points
     exp(a - b) is exp(a)/exp(b) 
 
 ---------------------
 Miscellaneous Advice
 ---------------------
-To keep track of which point in Set<PairInt> points belongs to which pixel, one can extend
-PairInt and add a field for the pixel index.  The final groups will have the same points
-given to the code so will retain the specialization.
+To keep track of which point in Set<PairInt> points belongs to which 
+pixel, one can extend PairInt and add a field for the pixel index.  The 
+final groups will have the same points given to the code so will retain 
+the specialization.
