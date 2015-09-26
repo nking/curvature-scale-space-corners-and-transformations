@@ -1,7 +1,8 @@
 package algorithms.compGeometry.clustering.distanceTransform.util;
 
-import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.util.PairInt;
+import java.util.Set;
 
 /**
  *
@@ -79,5 +80,20 @@ public class MiscMath {
         }
         
         return area;
+    }
+    
+    public static double[] calculateXYCentroids(Set<PairInt> points) {
+        
+        double xc = 0;
+        double yc = 0;
+
+        for (PairInt p : points) {
+            xc += p.getX();
+            yc += p.getY();
+        }
+        xc /= (double)points.size();
+        yc /= (double)points.size();
+
+        return new double[]{xc, yc};
     }
 }

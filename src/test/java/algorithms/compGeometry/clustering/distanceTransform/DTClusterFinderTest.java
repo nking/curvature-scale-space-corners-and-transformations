@@ -53,6 +53,8 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         AxisIndexer indexer = null;
 
         int count = 0;
+        
+        ClusterPlotter plotter = new ClusterPlotter();
 
         for (int ii = 0; ii < nIterPerBackground; ii++) {
             for (int i = 0; i < nSwitches; i++) {
@@ -103,18 +105,28 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                     Set<PairInt> set = clusterFinder.getCluster(k);
                     groupList.add(set);
                 }
+                
+                plotter.addPlotWithoutHull(
+                    (int)Math.floor(minMaxXY[0] - 1), 
+                    (int)Math.ceil(minMaxXY[1] + 1), 
+                    (int)Math.floor(minMaxXY[2] - 1), 
+                    (int)Math.ceil(minMaxXY[3] + 1), 
+                    points, groupList, clusterFinder.getCriticalDensity(), 
+                    "ran" + ii + "_" + i);
                    
+                /*
                 BufferedImage img = createImage(points, width, height);
 
                 addAlternatingColorPointSets(img, groupList, 1);
 
                 writeImage(img, "dt_ran_" + ii + "_" + i + ".png");
-             
+                */
+                
                 count++;
             }
         }
-
-        count = 0;
+        
+        plotter.writeFile();
 
         log.info("SEED=" + seed);
     }
@@ -129,6 +141,8 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
             "s1.txt", "s2.txt", "s3.txt", "s4.txt",
             "birch1.txt", "birch2.txt", "birch3.txt" */
         };
+        
+        ClusterPlotter plotter = new ClusterPlotter();
         
         for (int i = 0; i < fileNames.length; i++) {
 
@@ -163,13 +177,25 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                 Set<PairInt> set = clusterFinder.getCluster(k);
                 groupList.add(set);
             }
+            
+            plotter.addPlotWithoutHull(
+                (int)Math.floor(minMaxXY[0] - 1), 
+                (int)Math.ceil(minMaxXY[1] + 1), 
+                (int)Math.floor(minMaxXY[2] - 1), 
+                (int)Math.ceil(minMaxXY[3] + 1), 
+                points, groupList, clusterFinder.getCriticalDensity(), 
+                "other_" + i);
 
+            /*
             BufferedImage img = createImage(points, width, height);
 
             addAlternatingColorPointSets(img, groupList, 0);
 
             writeImage(img, "dt_other_" + i + ".png");
+            */
         }
+        
+        plotter.writeFile2();
     }
     
     public void testNoClusters() {
