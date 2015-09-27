@@ -78,7 +78,7 @@ public class DistanceTransform {
         return dt;
     }
 
-    private void applyPhase1(Set<PairInt> blob, int[][] g, final int width, 
+    private void applyPhase1(Set<PairInt> points, int[][] g, final int width, 
         final int height) {
        
         int inf = 1 << 22;
@@ -86,17 +86,17 @@ public class DistanceTransform {
         for (int x = 0; x < width; ++x) {
             
             // scan 1
-            if (blob.contains(new PairInt(x, 0))) {
+            if (points.contains(new PairInt(x, 0))) {
                 g[x][0] = 0;
             } else {
                 g[x][0] = inf;
             }
         
             for (int y = 1; y < height; ++y) {
-                if (blob.contains(new PairInt(x, y))) {
+                if (points.contains(new PairInt(x, y))) {
                     g[x][y] = 0;
                 } else {
-                    g[x][y] = g[x][y - 1] + 1;
+                    g[x][y] = (g[x][y - 1] == inf) ? inf : g[x][y - 1] + 1;
                 }
             }
             
