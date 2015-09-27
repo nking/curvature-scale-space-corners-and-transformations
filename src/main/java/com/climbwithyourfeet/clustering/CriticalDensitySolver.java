@@ -100,7 +100,33 @@ public class CriticalDensitySolver {
              they are sometimes the centers of the cluster they surround).
              Then the final critical density would be 1./maxValueSepDistance.
              */
-            
+            Set<PairInt> maxValuePoints = new HashSet<PairInt>();
+            for (int i = 0; i < w; ++i) {
+                for (int j = 0; j < h; ++j) {
+                    int v = distTrans[i][j];
+                    if (v == maxValue) {
+                        maxValuePoints.add(new PairInt(i, j));
+                    }
+                }
+            }
+            DTGroupFinder fndr = new DTGroupFinder();
+            float tmpCritDensity = (float)(1./Math.sqrt(maxValue));
+            fndr.calculateGroups(tmpCritDensity, maxValuePoints);
+            int nGroups = fndr.getNumberOfGroups();
+            List<Set<PairInt>> groups = new ArrayList<Set<PairInt>>();
+            List<Double> centroidsX = new ArrayList<Double>();
+            List<Double> centroidsY = new ArrayList<Double>();
+            for (int i = 0; i < nGroups; ++i) {
+                Set<PairInt> group = fndr.getGroup(i);
+                groups.add(group);
+                double[] xyCen = MiscMath.calculateXYCentroids(group);
+                centroidsX.add(Double.valueOf(xyCen[0]));
+                centroidsY.add(Double.valueOf(xyCen[1]));
+            }
+            /*
+            can use closest pair algorithm on centroidsX, centroidsY
+            and then critDensity = 1./closestDistance
+            */
         }
         
         float[] values = new float[w*h];
