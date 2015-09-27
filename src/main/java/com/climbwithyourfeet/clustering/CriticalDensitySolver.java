@@ -3,8 +3,11 @@ package com.climbwithyourfeet.clustering;
 import com.climbwithyourfeet.clustering.util.Histogram;
 import com.climbwithyourfeet.clustering.util.HistogramHolder;
 import com.climbwithyourfeet.clustering.util.MiscMath;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -83,16 +86,10 @@ public class CriticalDensitySolver {
             HistogramHolder hist = Histogram.createSimpleHistogram(
                 0, xl, nb, values, vErrors);
         
-            /*  not including in packaged jar
             if (debug) {
-                try {
-                    algorithms.util.Util.plotHistogram(hist, "clstr", "_cluster_" + hc);
-                } catch (IOException ex) {
-                    Logger.getLogger(CriticalDensitySolver.class.getName()).
-                        log(Level.SEVERE, null, ex);
-                }
+                String outFileSuffix = "_cluster_" + hc;
+                hist.plotHistogram("clstr", outFileSuffix);
             }
-            */
             
             if (hist == null || hist.getXHist() == null || hist.getXHist().length == 0) {
                 break;

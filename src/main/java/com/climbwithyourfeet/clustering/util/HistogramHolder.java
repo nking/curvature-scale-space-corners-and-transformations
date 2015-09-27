@@ -1,5 +1,12 @@
 package com.climbwithyourfeet.clustering.util;
 
+import com.climbwithyourfeet.clustering.CriticalDensitySolver;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author nichole
@@ -122,4 +129,73 @@ public class HistogramHolder {
         return sb.toString();
     }
 
+    /**
+     * if a specific class exists in the classpath, this will plot the
+     * histogram to an html file.
+     * @param label
+     * @param outputFileSuffix
+     * @return
+     */
+    public String plotHistogram(String label, String outputFileSuffix) {
+                
+        try {
+            // only using a class if it exists already in classpath. 
+            // class not imported to avoid a dependency in the packaged jar
+            ClassLoader cls = this.getClass().getClassLoader();
+            Class<?> plotClass = cls.loadClass("algorithms.util.PolygonAndPointPlotter");
+         
+            Class<?>[] argTypes0 = new Class<?>[]{float.class, float.class, 
+                float.class, float.class, float[].class, float[].class, 
+                float[].class, float[].class, String.class};
+            
+            Method method0 = plotClass.getMethod("addPlot", argTypes0);
+            
+            Constructor constructor = null;
+            for (Constructor c : plotClass.getConstructors()) {
+                if (c.getParameterCount() == 0) {
+                    constructor = c;
+                    break;
+                }
+            }
+            if (constructor == null) {
+                return null;
+            }
+            
+            Object plotterObj = constructor.newInstance();
+
+            float[] xh = xHist;
+            float[] yh = yHistFloat;
+
+            float yMin = MiscMath.findMin(yh);
+            int yMaxIdx = MiscMath.findYMaxIndex(yh);
+            if (yMaxIdx == -1) {
+                return null;
+            }
+            float yMax = yh[yMaxIdx];
+
+            float xMin = MiscMath.findMin(xh);
+            float xMax = MiscMath.findMax(xh);
+            
+            Object[] args0 = new Object[]{xMin, xMax, yMin, yMax, xh, yh, xh, yh, label};
+
+            method0.invoke(plotterObj, args0);
+            
+            Class<?>[] argTypes1 = new Class<?>[]{String.class};
+            
+            Method method1 = plotClass.getMethod("writeFile", argTypes1);
+            
+            Object[] args1 = new Object[]{outputFileSuffix};
+            
+            String filePath = (String) method1.invoke(plotterObj, args1);
+        
+            return filePath;
+            
+        } catch (Exception ex) {
+            Logger.getLogger(CriticalDensitySolver.class.getName()).
+                log(Level.SEVERE, null, ex);
+        }
+        
+        return null;
+    }
+    
 }

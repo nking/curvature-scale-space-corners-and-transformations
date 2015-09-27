@@ -18,6 +18,16 @@ public class MiscMath {
         return max;
     }
     
+    public static float findMin(float[] a) {
+        float min = Float.MAX_VALUE;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] < min) {
+                min = a[i];
+            }
+        }
+        return min;
+    }
+    
     /**
      * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
      * @param a
