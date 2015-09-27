@@ -2,16 +2,12 @@ package com.climbwithyourfeet.clustering;
 
 import com.climbwithyourfeet.clustering.util.PairInt;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
@@ -83,7 +79,19 @@ public class DTGroupFinder {
         
         this.critDensity = criticalDensity;
         
+        /*
+        TODO: revisit the scale
+        if critDensity == 1, clustered points are adjcent to one another,
+        and the final crit sep needs to be '1',
+        so a correction to thrsh is made here for that.
+        */
+        
         float thrsh = criticalDensity * threshholdFactor;
+        
+        if (critDensity == 1) {
+            // fudge to result in critical separation of 1
+            thrsh = 2.f;
+        }
         
         findGroups(thrsh, points);
         

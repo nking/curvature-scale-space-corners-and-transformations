@@ -71,7 +71,9 @@ public class DTClusterFinder {
             }
         }
         
-        this.critDens = densSolver.findCriticalDensity(dt, points.size(), width, height);               
+        this.critDens = densSolver.findCriticalDensity(dt, points.size(), width, height);  
+        
+        this.state = STATE.HAVE_CLUSTER_DENSITY;
     }
     
     public void setCriticalDensity(float dens) {
@@ -81,6 +83,8 @@ public class DTClusterFinder {
         }
         
         this.critDens = dens;
+        
+        this.state = STATE.HAVE_CLUSTER_DENSITY;
     }
     
     public void findClusters() {

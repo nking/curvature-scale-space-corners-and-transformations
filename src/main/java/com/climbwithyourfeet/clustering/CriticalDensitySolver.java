@@ -3,9 +3,14 @@ package com.climbwithyourfeet.clustering;
 import com.climbwithyourfeet.clustering.util.Histogram;
 import com.climbwithyourfeet.clustering.util.HistogramHolder;
 import com.climbwithyourfeet.clustering.util.MiscMath;
+import com.climbwithyourfeet.clustering.util.PairInt;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,6 +46,63 @@ public class CriticalDensitySolver {
         int w = distTrans.length;
         int h = distTrans[0].length;
         
+        TreeMap<Integer, Integer> freqMap = new TreeMap<Integer, Integer>();
+        int minValue = Integer.MAX_VALUE;
+        int maxValue = Integer.MIN_VALUE;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = distTrans[i][j];
+                if (v < minValue) {
+                    minValue = v;
+                }
+                if (v > maxValue) {
+                    maxValue = v;
+                }
+                Integer key = Integer.valueOf(v);
+                Integer c = freqMap.get(key);
+                if (c == null) {
+                    freqMap.put(key, Integer.valueOf(1));
+                } else {
+                    freqMap.put(key, Integer.valueOf(c.intValue() + 1));
+                }
+            }
+        }
+        Logger log = Logger.getLogger(DTClusterFinder.class.getName());
+        log.info("dt minValue=" + minValue + " maxValue=" + maxValue);
+
+        if (freqMap.size() == 1) {
+            float dens = (float)(1./Math.sqrt(maxValue));
+            return dens;
+        }
+        
+        /*
+        TODO: need more data (tests) to decide hen to use freqMap instead of 
+        histograms.
+        */
+        
+        if (debug) {
+            for (Entry<Integer, Integer> entry : freqMap.entrySet()) {
+                log.info("value=" + entry.getKey() + " count=" + entry.getValue());
+            }
+            /*
+            TODO:
+             For datasets in which the clusters are much further away from one 
+             another than the largest value in the frequency map,
+             those furthest value points should be collected.
+             We want the representative distances between those furthest value
+             points (they uniquely span the distances between the clusters, or
+             at least the closest among them as groups does).
+             Need to group those furthest value points by the assoc radius 
+             derived so far:
+                 clustered within the distance 2./(2.5/math.sqrt(maxValue)).
+             Then the distances between those largest value point groups should 
+             be calculated (their coords are the centroids of the groups. so
+             they are sometimes the centers of the cluster they surround).
+             Then the final critical density would be 1./maxValueSepDistance.
+             */
+            
+        }
+        
         float[] values = new float[w*h];
         int count2 = 0;
         for (int i0 = 0; i0 < w; ++i0) {
@@ -57,7 +119,35 @@ public class CriticalDensitySolver {
     }
     
     /**
-     * using histograms, find the center of the first peak and return it, else
+     * using distance transform to find the critical density for clustering
+     * return 0;
+     * @return 
+     */
+     protected float findCriticalDensity(TreeMap<Integer, Integer> freqMap) {
+         
+         /*
+         TODO:
+             For datasets in which the clusters are much further away from one 
+             another than the largest value in the frequency map,
+             those furthest value points should be collected.
+             We want the representative distances between those furthest value
+             points (they uniquely span the distances between the clusters, or
+             at least the closest among them as groups does).
+             Need to group those furthest value points by the assoc radius 
+             derived so far:
+                 clustered within the distance 2./(2.5/math.sqrt(maxValue)).
+             Then the distances between those largest value point groups should 
+             be calculated (their coords are the centroids of the groups. so
+             they are sometimes the centers of the cluster they surround).
+             Then the final critical density would be 1./maxValueSepDistance.
+         */
+         
+         throw new UnsupportedOperationException("not yet implemented");
+     }
+    
+    /**
+     * using histograms of 1/sqrt(distanceTransform[i][j]), find the center of 
+     * the first peak and return it, else
      * return 0;
      * @param values
      * @return 

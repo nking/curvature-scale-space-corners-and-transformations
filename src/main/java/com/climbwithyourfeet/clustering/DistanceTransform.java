@@ -81,7 +81,7 @@ public class DistanceTransform {
     private void applyPhase1(Set<PairInt> points, int[][] g, final int width, 
         final int height) {
        
-        int inf = 1 << 22;
+        int inf = Integer.MAX_VALUE;
         
         for (int x = 0; x < width; ++x) {
             
