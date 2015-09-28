@@ -90,9 +90,9 @@ public class DTClusterFinder {
     
     public void findClusters() {
         
-        if (state.compareTo(STATE.HAVE_GROUPS) < 1) {
+        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) < 0) {
             calculateCriticalDensity();
-        } else if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) > -1) {
+        } else if (state.compareTo(STATE.HAVE_GROUPS) >= 0) {
             return;
         }
         
