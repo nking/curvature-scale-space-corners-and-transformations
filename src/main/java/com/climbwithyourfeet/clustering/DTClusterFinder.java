@@ -66,7 +66,7 @@ public class DTClusterFinder<T extends PairInt> {
             return;
         }
         
-        DistanceTransform<T> dtr = new DistanceTransform();
+        DistanceTransform<T> dtr = new DistanceTransform<T>();
         int[][] dt = dtr.applyMeijsterEtAl(points, width, height);
         
         CriticalDensitySolver densSolver = new CriticalDensitySolver();
@@ -88,9 +88,7 @@ public class DTClusterFinder<T extends PairInt> {
                 Logger.getLogger(DTClusterFinder.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        
-        densSolver.setThreshholdFactor(threshholdFactor);
-        
+                
         this.critDens = densSolver.findCriticalDensity(dt, points.size(), 
             width, height);  
         
@@ -116,7 +114,7 @@ public class DTClusterFinder<T extends PairInt> {
             return;
         }
         
-        groupFinder = new DTGroupFinder();
+        groupFinder = new DTGroupFinder<T>();
         
         groupFinder.setThreshholdFactor(threshholdFactor);
         

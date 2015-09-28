@@ -57,7 +57,7 @@ public class DistanceTransformTest extends TestCase {
             }
         }
 
-        DistanceTransform<PairInt> dtr = new DistanceTransform();
+        DistanceTransform<PairInt> dtr = new DistanceTransform<PairInt>();
         int[][] dt = dtr.applyMeijsterEtAl(points, w, h);
 
         int[][] dtInv = dtr.applyMeijsterEtAl(pointsInv, w, h);
@@ -93,7 +93,7 @@ public class DistanceTransformTest extends TestCase {
             }
         }
         
-        DistanceTransform<PairInt> dtr = new DistanceTransform();
+        DistanceTransform<PairInt> dtr = new DistanceTransform<PairInt>();
         int[][] dt = dtr.applyMeijsterEtAl(points, w, h);
 
         int[][] dtInv = dtr.applyMeijsterEtAl(pointsInv, w, h);
@@ -150,7 +150,7 @@ public class DistanceTransformTest extends TestCase {
         pointsM.add(new PairInt(7, 7));
         data[7][7] = 1;
             
-        DistanceTransform<PairInt> dtr = new DistanceTransform();
+        DistanceTransform<PairInt> dtr = new DistanceTransform<PairInt>();
         
         // ----- inverse binary of that  ----------
         Set<PairInt> pointsInv = new HashSet<PairInt>();
@@ -193,7 +193,7 @@ public class DistanceTransformTest extends TestCase {
         int w = minMaxXY[1] + 1;
         int h = minMaxXY[3] + 1;
         
-        DistanceTransform<PairInt> dtr = new DistanceTransform();
+        DistanceTransform<PairInt> dtr = new DistanceTransform<PairInt>();
         int[][] dt = dtr.applyMeijsterEtAl(points, w, h);
         
         writeDebugImage(dt, Long.toString(System.currentTimeMillis()));

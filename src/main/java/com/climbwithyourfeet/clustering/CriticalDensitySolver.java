@@ -3,12 +3,8 @@ package com.climbwithyourfeet.clustering;
 import com.climbwithyourfeet.clustering.util.Histogram;
 import com.climbwithyourfeet.clustering.util.HistogramHolder;
 import com.climbwithyourfeet.clustering.util.MiscMath;
-import com.climbwithyourfeet.clustering.util.PairInt;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
@@ -16,20 +12,16 @@ import java.util.logging.Logger;
  * @author nichole
  */
 public class CriticalDensitySolver {
-    
-    private float threshholdFactor = 2.5f;
-    
+        
     private boolean debug = false;
+    
+    protected Logger log = Logger.getLogger(this.getClass().getName());
     
     public CriticalDensitySolver() {
     }
     
     public void setToDebug() {
         debug = true;
-    }
-    
-    public void setThreshholdFactor(float factor) {
-        this.threshholdFactor = factor;
     }
     
     /**
@@ -79,7 +71,7 @@ public class CriticalDensitySolver {
         boolean breakOnNext = false;
         
         while (hc < maxHC) {
-            
+                        
             HistogramHolder hist = Histogram.createSimpleHistogram(
                 0, xl, nb, values, vErrors);
         
@@ -102,7 +94,7 @@ public class CriticalDensitySolver {
             
             double areaH0 = MiscMath.calculateArea(hist, 0, (len/2) - 1);
             double areaH1 = MiscMath.calculateArea(hist, (len/2), len - 1);
-            
+                        
             if ((areaH1/areaH0) > 0.75) {
                 // decrease the number of bins
                 if (nb <= 10) {
@@ -111,21 +103,21 @@ public class CriticalDensitySolver {
                 nb /= 2;
                 hc++;
                 continue;
-            } 
-                        
-            int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+            }
             
+            int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+                        
             int yMax = hist.getYHist()[yMaxIdx];
             int yLast = hist.getYHist()[len - 1];
             
             int yLimit = yMax/10;
-            
+                        
             if (hc > 0) {
                 yLimit = yMax/15;
             }
             
             int yLimitIdx = -1;
-            
+                        
             if (yLast < yLimit) {
                 // shorten xmax and try again
                 for (int i = (len - 1); i > -1; --i) {
@@ -138,26 +130,30 @@ public class CriticalDensitySolver {
                 if (nb == 40) {
                     nb = 20;
                 }
-                float half =  0.5f*(hist.getXHist()[1] -  hist.getXHist()[0]);
+                float halfBin =  0.5f*(hist.getXHist()[1] -  hist.getXHist()[0]);
                 if (yLimitIdx > -1) {
                     // a work around to next getting stuck at same size:
                     if ((len - yLimitIdx) < 5) {
                         yLimitIdx = len - 5;
                     }
-                    float tmp = hist.getXHist()[yLimitIdx] - half;
+                    float tmp = hist.getXHist()[yLimitIdx] - halfBin;
                     if ((xl/tmp) > 15) {
                         // extreme zoom-in of high peak near idx=0
-                        xl = tmp;
+                        if (yLimitIdx == 0) {
+                            xl = hist.getXHist()[1] - halfBin;
+                        } else {
+                            xl = tmp;
+                        }
                         breakOnNext = true;
-                    } else if (tmp < half) {
+                    } else if (tmp < halfBin) {
                         // extreme zoom-in of high peak near idx=0
-                        xl = half;
+                        xl = halfBin;
                         breakOnNext = true;
                     } else if (tmp < xl) {
                         xl = tmp;
                     }
                 } else {
-                    xl = hist.getYHist()[1] - half;
+                    xl = hist.getXHist()[1] - halfBin;
                 }
             } else {
                 break;
@@ -197,7 +193,7 @@ public class CriticalDensitySolver {
                 }
             }
         }
-        
+                
         if (firstNonZeroIdx == -1) {
             return 0;
         }
@@ -213,7 +209,7 @@ public class CriticalDensitySolver {
             float w = hist.getYHistFloat()[i]/yPeakSum;
             weightedX += (w * hist.getXHist()[i]);
         }
-        
+                
         //wanting an answer that is a little higher 
         // than the weghted center but still within the bounds of the peak.
         /*int nh = (firstZeroAfterPeakIdx - firstNonZeroIdx)/2;

@@ -14,9 +14,7 @@ public class PairIntTest extends TestCase {
     public void testGetSetX() {
         int xPoint = 3;
         int yPoint = 100;
-        PairInt instance = new PairInt();
-        instance.setX(xPoint);
-        instance.setY(yPoint);
+        PairInt instance = new PairInt(xPoint, yPoint);
         
         assertTrue(instance.getX() == xPoint);
         assertTrue(instance.getY() == yPoint);

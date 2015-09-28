@@ -16,9 +16,7 @@ public class PairFloatTest extends TestCase {
         float xPoint = 3;
         float yPoint = 100;
         
-        PairFloat instance = new PairFloat();
-        instance.setX(xPoint);
-        instance.setY(yPoint);
+        PairFloat instance = new PairFloat(xPoint, yPoint);
         
         assertTrue(instance.getX() == xPoint);
         assertTrue(instance.getY() == yPoint);

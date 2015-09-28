@@ -22,7 +22,7 @@ public class DTGroupFinder<T extends PairInt> {
      * One use case is the point being scaled CIE XY colors and a specialization 
      * of PairInt that has a field holding the pixel index
      */
-    protected List<Set<T> > groupMembership = new ArrayList();
+    protected List<Set<T> > groupMembership = new ArrayList<Set<T>>();
     
     protected Logger log = null;
         
@@ -30,7 +30,7 @@ public class DTGroupFinder<T extends PairInt> {
      * map w/ key holding indexes for a point to the group it belongs to.
      * note that the point index is relative to indexer.x and indexer.y
      */
-    protected Map<T, Integer> pointToGroupMap = new HashMap();
+    protected Map<T, Integer> pointToGroupMap = new HashMap<T, Integer>();
     
     /**
       key = group receiving merges, value = set of integers to merge into this
@@ -141,6 +141,7 @@ public class DTGroupFinder<T extends PairInt> {
                 
         for (int i = 0; i < sorted.length; ++i) {
             
+            @SuppressWarnings("unchecked")
             T uPoint = (T)sorted[i];
             
             // process the pair when their point density is higher than thrsh:
@@ -169,6 +170,7 @@ public class DTGroupFinder<T extends PairInt> {
             // search backward within radius critSep
             for (int j = (i - 1); j > -1; --j) {
                 
+                @SuppressWarnings("unchecked")
                 T vPoint = (T)sorted[j];
                 
                 float vX = vPoint.getX();
@@ -205,6 +207,7 @@ public class DTGroupFinder<T extends PairInt> {
             // search forward within radius critSep
             for (int j = (i + 1); j < sorted.length; ++j) {
                 
+                @SuppressWarnings("unchecked")
                 T vPoint = (T)sorted[j];
                 
                 float vX = vPoint.getX();
@@ -274,7 +277,7 @@ public class DTGroupFinder<T extends PairInt> {
             
             pointToGroupMap.put(p, Integer.valueOf(sz));
             
-            Set<T> set = new HashSet();
+            Set<T> set = new HashSet<T>();
             
             set.add(p);
             

@@ -1,7 +1,6 @@
 package com.climbwithyourfeet.clustering.util;
 
 import com.climbwithyourfeet.clustering.CriticalDensitySolver;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.logging.Level;
@@ -136,6 +135,7 @@ public class HistogramHolder {
      * @param outputFileSuffix
      * @return
      */
+    @SuppressWarnings("rawtypes")
     public String plotHistogram(String label, String outputFileSuffix) {
                 
         try {

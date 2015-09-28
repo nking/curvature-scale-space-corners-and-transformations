@@ -108,8 +108,8 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                 int width = minMaxXY[1] + 1;
                 int height = minMaxXY[3] + 1;
                     
-                DTClusterFinder<PairInt> clusterFinder = new DTClusterFinder(points,
-                    width, height);
+                DTClusterFinder<PairInt> clusterFinder = 
+                    new DTClusterFinder<PairInt>(points, width, height);
                 
                 clusterFinder.setToDebug();
 
@@ -200,8 +200,8 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
             int width = minMaxXY[1] + 1;
             int height = minMaxXY[3] + 1;
 
-            DTClusterFinder<PairInt> clusterFinder = new DTClusterFinder(points,
-                width, height);
+            DTClusterFinder<PairInt> clusterFinder = 
+                new DTClusterFinder<PairInt>(points, width, height);
 
             clusterFinder.calculateCriticalDensity();
             clusterFinder.findClusters();
@@ -326,8 +326,8 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
             int width = minMaxXY[1] + 1;
             int height = minMaxXY[3] + 1;
 
-            DTClusterFinder<PairInt> clusterFinder = new DTClusterFinder(points,
-                width, height);
+            DTClusterFinder<PairInt> clusterFinder 
+                = new DTClusterFinder<PairInt>(points, width, height);
 
             clusterFinder.calculateCriticalDensity();
             clusterFinder.findClusters();
