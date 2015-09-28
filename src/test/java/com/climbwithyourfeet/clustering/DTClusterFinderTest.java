@@ -40,7 +40,7 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 
-        //seed = 1443385026217l;
+        //seed = 1443413022277L;
 
         log.info("SEED=" + seed);
         
