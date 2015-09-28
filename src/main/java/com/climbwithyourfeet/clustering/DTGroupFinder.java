@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public class DTGroupFinder {
+public class DTGroupFinder<T extends PairInt> {
     /**
      * an array to hold each group as an item. Note that the original point
      * given in points is preserved so any specialization information available
@@ -22,7 +22,7 @@ public class DTGroupFinder {
      * One use case is the point being scaled CIE XY colors and a specialization 
      * of PairInt that has a field holding the pixel index
      */
-    protected List<Set<PairInt> > groupMembership = new ArrayList<Set<PairInt> >();
+    protected List<Set<T> > groupMembership = new ArrayList();
     
     protected Logger log = null;
         
@@ -30,8 +30,7 @@ public class DTGroupFinder {
      * map w/ key holding indexes for a point to the group it belongs to.
      * note that the point index is relative to indexer.x and indexer.y
      */
-    protected Map<PairInt, Integer> pointToGroupMap = new
-        HashMap<PairInt, Integer >();
+    protected Map<T, Integer> pointToGroupMap = new HashMap();
     
     /**
       key = group receiving merges, value = set of integers to merge into this
@@ -75,7 +74,7 @@ public class DTGroupFinder {
      * @param width
      * @param height 
      */
-    void calculateGroups(float criticalDensity, Set<PairInt> points) {
+    void calculateGroups(float criticalDensity, Set<T> points) {
         
         this.critDensity = criticalDensity;
         
@@ -100,7 +99,7 @@ public class DTGroupFinder {
         prune(); 
     }
     
-    private void findGroups(float thrsh, Set<PairInt> points) {
+    private void findGroups(float thrsh, Set<T> points) {
         
         if (points.isEmpty()) {
             return;
@@ -142,7 +141,7 @@ public class DTGroupFinder {
                 
         for (int i = 0; i < sorted.length; ++i) {
             
-            PairInt uPoint = sorted[i];
+            T uPoint = (T)sorted[i];
             
             // process the pair when their point density is higher than thrsh:
             //  
@@ -170,7 +169,7 @@ public class DTGroupFinder {
             // search backward within radius critSep
             for (int j = (i - 1); j > -1; --j) {
                 
-                PairInt vPoint = sorted[j];
+                T vPoint = (T)sorted[j];
                 
                 float vX = vPoint.getX();
                 
@@ -206,7 +205,7 @@ public class DTGroupFinder {
             // search forward within radius critSep
             for (int j = (i + 1); j < sorted.length; ++j) {
                 
-                PairInt vPoint = sorted[j];
+                T vPoint = (T)sorted[j];
                 
                 float vX = vPoint.getX();
                 
@@ -252,30 +251,30 @@ public class DTGroupFinder {
         return groupMembership.size();
     }
     
-    Set<PairInt> getGroup(int groupIdx) {
+    Set<T> getGroup(int groupIdx) {
         
         if (groupMembership.isEmpty()) {
-            return new HashSet<PairInt>();
+            return new HashSet<T>();
         }
         if (groupIdx > (groupMembership.size() - 1) || (groupIdx < 0)) {
             throw new IllegalArgumentException("groupIdx=" + groupIdx 
             + " is outside of range of nGroups=" + groupMembership.size());
         }
         
-        Set<PairInt> set = groupMembership.get(groupIdx);
+        Set<T> set = groupMembership.get(groupIdx);
        
         return set;
     }
 
-    private void setEachPointAsAGroup(Set<PairInt> points) {
+    private void setEachPointAsAGroup(Set<T> points) {
         
-        for (PairInt p : points) {
+        for (T p : points) {
             
             int sz = groupMembership.size();
             
             pointToGroupMap.put(p, Integer.valueOf(sz));
             
-            Set<PairInt> set = new HashSet<PairInt>();
+            Set<T> set = new HashSet();
             
             set.add(p);
             
@@ -283,7 +282,7 @@ public class DTGroupFinder {
         }
     }
 
-    private void processPair(PairInt uPoint, PairInt vPoint) {
+    private void processPair(T uPoint, T vPoint) {
         
         Integer groupId = pointToGroupMap.get(uPoint);
         
@@ -311,7 +310,7 @@ public class DTGroupFinder {
             
             pointToGroupMap.put(vPoint, groupId);
             
-            Set<PairInt> set = new HashSet<PairInt>();
+            Set<T> set = new HashSet<T>();
             set.add(uPoint);
             set.add(vPoint);
             
@@ -347,7 +346,7 @@ public class DTGroupFinder {
         }
     }
     
-    protected void process(PairInt uPoint) {
+    protected void process(T uPoint) {
                 
         Integer groupId = pointToGroupMap.get(uPoint);
         
@@ -357,7 +356,7 @@ public class DTGroupFinder {
             
             pointToGroupMap.put(uPoint, groupId);
             
-            Set<PairInt> set = new HashSet<PairInt>();
+            Set<T> set = new HashSet<T>();
             set.add(uPoint);
             
             groupMembership.add(set);
@@ -380,7 +379,7 @@ public class DTGroupFinder {
         // iterate backwards so can move items up without conflict with iterator
         for (int i = (groupMembership.size() - 1); i > -1; i--) {
             
-            Set<PairInt> group = groupMembership.get(i);
+            Set<T> group = groupMembership.get(i);
             
             int count = group.size();
             
@@ -394,14 +393,14 @@ public class DTGroupFinder {
                     int newGroupId = j - 1;
                                         
                     // update members in pointToGroupIndex
-                    Set<PairInt> latest = groupMembership.get(j);
+                    Set<T> latest = groupMembership.get(j);
                     
-                    for (PairInt p : latest) {
+                    for (T p : latest) {
                         pointToGroupMap.put(p, Integer.valueOf(newGroupId));
                     }
                 }
                 
-                Set<PairInt> removed = groupMembership.remove(i);
+                Set<T> removed = groupMembership.remove(i);
             }
         }
         
@@ -436,9 +435,9 @@ public class DTGroupFinder {
             
             for (Integer moveGroupIndex : moveIndexes) {
                         
-                Set<PairInt> moveGroup = groupMembership.get(moveGroupIndex);
+                Set<T> moveGroup = groupMembership.get(moveGroupIndex);
             
-                for (PairInt p : moveGroup) {
+                for (T p : moveGroup) {
                     pointToGroupMap.put(p, moveToGroupIndex);
                 }
 

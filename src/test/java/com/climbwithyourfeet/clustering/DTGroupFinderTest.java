@@ -19,7 +19,7 @@ public class DTGroupFinderTest extends TestCase {
         
         Set<PairInt> points = getData0();
             
-        DTGroupFinder finder = new DTGroupFinder();
+        DTGroupFinder<PairInt> finder = new DTGroupFinder();
         
         finder.setThreshholdFactor(1.0f);
         

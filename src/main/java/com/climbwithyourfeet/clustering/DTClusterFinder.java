@@ -21,15 +21,15 @@ import javax.imageio.ImageIO;
  * 
  * @author nichole
  */
-public class DTClusterFinder {
+public class DTClusterFinder<T extends PairInt> {
     
-    private final Set<PairInt> points;
+    private final Set<T> points;
     private final int width;
     private final int height;
     
     private float critDens = Float.POSITIVE_INFINITY;
     
-    private DTGroupFinder groupFinder = null;
+    private DTGroupFinder<T> groupFinder = null;
 
     private enum STATE {
         INIT, HAVE_CLUSTER_DENSITY, HAVE_GROUPS
@@ -43,7 +43,7 @@ public class DTClusterFinder {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public DTClusterFinder(Set<PairInt> thePoints, int width, int height) {
+    public DTClusterFinder(Set<T> thePoints, int width, int height) {
         
         this.points = thePoints;
         this.width = width;
@@ -66,7 +66,7 @@ public class DTClusterFinder {
             return;
         }
         
-        DistanceTransform dtr = new DistanceTransform();
+        DistanceTransform<T> dtr = new DistanceTransform();
         int[][] dt = dtr.applyMeijsterEtAl(points, width, height);
         
         CriticalDensitySolver densSolver = new CriticalDensitySolver();
@@ -133,7 +133,7 @@ public class DTClusterFinder {
         return groupFinder.getNumberOfGroups();
     }
     
-    public Set<PairInt> getCluster(int idx) {
+    public Set<T> getCluster(int idx) {
         
         if (groupFinder == null) {
             throw new IllegalArgumentException(

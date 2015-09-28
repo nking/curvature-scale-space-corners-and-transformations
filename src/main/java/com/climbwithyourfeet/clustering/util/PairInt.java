@@ -9,19 +9,11 @@ package com.climbwithyourfeet.clustering.util;
  */
 public class PairInt {
     
-    private int x = Integer.MIN_VALUE;
-    private int y = Integer.MIN_VALUE;
+    protected final int x;
+    protected final int y;
     
-    public PairInt() {
-    }
     public PairInt(int xPoint, int yPoint) {
         x = xPoint;
-        y = yPoint;
-    }
-    public void setX(int xPoint) {
-        x = xPoint;
-    }
-    public void setY(int yPoint) {
         y = yPoint;
     }
     public int getX() {
@@ -83,6 +75,10 @@ public class PairInt {
         hash = sum;
 
         return hash;
+    }
+    
+    public PairInt copy() {
+        return new PairInt(x, y);
     }
 
     @Override

@@ -128,7 +128,7 @@ public class CriticalDensitySolver {
             nIter++;
         }
        
-        DTGroupFinder fndr = new DTGroupFinder();
+        DTGroupFinder<PairInt> fndr = new DTGroupFinder();
         float tmpCritDensity = (float) (1. / Math.sqrt(maxValue));
         fndr.calculateGroups(tmpCritDensity, maxValuePoints);
         

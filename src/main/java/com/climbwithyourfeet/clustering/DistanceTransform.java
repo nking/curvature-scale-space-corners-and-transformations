@@ -22,7 +22,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-public class DistanceTransform {
+public class DistanceTransform<T extends PairInt> {
     
     private static int inf = Integer.MAX_VALUE;
     
@@ -66,7 +66,7 @@ public class DistanceTransform {
      * @param height
      * @return 
      */
-    public int[][] applyMeijsterEtAl(Set<PairInt> points, final int width, final int height) {
+    public int[][] applyMeijsterEtAl(Set<T> points, final int width, final int height) {
         
         int[][] g = new int[width][height];
         for (int i = 0; i < width; ++i) {
@@ -80,9 +80,9 @@ public class DistanceTransform {
         return dt;
     }
 
-    private void applyPhase1(Set<PairInt> points, int[][] g, final int width, 
+    private void applyPhase1(Set<T> points, int[][] g, final int width, 
         final int height) {
-               
+                       
         for (int x = 0; x < width; ++x) {
             
             // scan 1
@@ -93,6 +93,7 @@ public class DistanceTransform {
             }
         
             for (int y = 1; y < height; ++y) {
+                
                 if (points.contains(new PairInt(x, y))) {
                     g[x][y] = 0;
                 } else {
