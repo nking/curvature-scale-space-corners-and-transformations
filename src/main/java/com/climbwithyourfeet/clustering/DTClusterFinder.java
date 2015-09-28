@@ -34,6 +34,8 @@ public class DTClusterFinder {
     
     private STATE state = null;
     
+    private float threshholdFactor = 2.5f;
+    
     private boolean debug = false;
     
     public DTClusterFinder(Set<PairInt> points, int width, int height) {
@@ -47,6 +49,10 @@ public class DTClusterFinder {
     
     public void setToDebug() {
         debug = true;
+    }
+    
+    public void setThreshholdFactor(float factor) {
+        this.threshholdFactor = factor;
     }
     
     public void calculateCriticalDensity() {
@@ -70,6 +76,8 @@ public class DTClusterFinder {
                 Logger.getLogger(DTClusterFinder.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        
+        densSolver.setThreshholdFactor(threshholdFactor);
         
         this.critDens = densSolver.findCriticalDensity(dt, points.size(), 
             width, height);  
@@ -97,6 +105,8 @@ public class DTClusterFinder {
         }
         
         groupFinder = new DTGroupFinder();
+        
+        groupFinder.setThreshholdFactor(threshholdFactor);
         
         groupFinder.calculateGroups(critDens, points);
         
@@ -158,8 +168,8 @@ public class DTClusterFinder {
         File t = new File(baseDir + "/bin");
         if (t.exists()) {
             baseDir = t.getPath();
-        } else if ((new File(baseDir + "/test")).exists()) {
-            baseDir = baseDir + "/test";
+        } else if ((new File(baseDir + "/target")).exists()) {
+            baseDir = baseDir + "/target";
         }
         
         // no longer need to use file.separator

@@ -7,7 +7,6 @@ import com.climbwithyourfeet.clustering.util.PairInt;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -18,6 +17,8 @@ import java.util.logging.Logger;
  */
 public class CriticalDensitySolver {
     
+    private float threshholdFactor = 2.5f;
+    
     private boolean debug = false;
     
     public CriticalDensitySolver() {
@@ -25,6 +26,10 @@ public class CriticalDensitySolver {
     
     public void setToDebug() {
         debug = true;
+    }
+    
+    public void setThreshholdFactor(float factor) {
+        this.threshholdFactor = factor;
     }
     
     /**
@@ -41,6 +46,20 @@ public class CriticalDensitySolver {
     float findCriticalDensity(int[][] distTrans, int nPoints, int width, 
         int height) {
         
+        float critDens = findCriticalDensity(distTrans);
+
+        return critDens;
+        
+    }
+    
+    /**
+     * using distance transform to find the critical density for clustering
+     * return 0;
+     *
+     * @return 
+     */
+     protected float findCriticalDensityUsingFreqMap(int[][] distTrans) {
+         
         int w = distTrans.length;
         int h = distTrans[0].length;
         
@@ -67,88 +86,30 @@ public class CriticalDensitySolver {
         }
         Logger log = Logger.getLogger(DTClusterFinder.class.getName());
         log.info("dt minValue=" + minValue + " maxValue=" + maxValue);
-
+        
         if (freqMap.size() == 1) {
             float dens = (float)(1./Math.sqrt(maxValue));
             return dens;
         }
         
+        List<Integer> freqMapPeaks = MiscMath.findPeaksInFreqMap(freqMap);
+        
         /*
-        wanting to use freq map when the distance between clusters is large
-        resulting in missing the separations of the largest voids.
-        
-        This may need to be revised, but it looks like histograms should be
-        used when the freq map increases from last bin to first,
-        else the freq map should be used, specifically the last bin of the
-        frequency map.
-        
+        if the critical density implied by the largest bin in the freqMap
+        (== maxValue) results in more than one group being formed,
+        choose that number of groups offset from the end of the 
+        freqMapPeaks to re-do the critical density
         */
-        
-        boolean increasing = true;
-        int lastCount = 0;
-        for (Entry<Integer, Integer> entry : freqMap.entrySet()) {
-            int count = entry.getValue().intValue();
-            if (count < lastCount) {
-                increasing = false;
-                break;
-            }
-            lastCount = count;
-            log.info("value=" + entry.getKey() + " count=" + entry.getValue());
-        }
-        
-        //TODO: need to decide the comparison value
-        int lastBinCount = freqMap.lastEntry().getValue().intValue();
-        float lastBinFrac = (float)lastBinCount/(float)nPoints;
-        
-        log.info("lastBinFrac=" + lastBinFrac);
-        
-        if (increasing || (lastBinCount < 5) || (lastBinFrac < 0.5)) {
-            
-            float critDens = findCriticalDensity(distTrans);
-
-            return critDens;
-        }
-        
-        float critDens = findCriticalDensity(distTrans, freqMap);
-        
-        return critDens;
-    }
-    
-    /**
-     * using distance transform to find the critical density for clustering
-     * return 0;
-     * @return 
-     */
-     protected float findCriticalDensity(int[][] distTrans, 
-         TreeMap<Integer, Integer> freqMap) {
-         
-         /*
-         TODO:
-             For datasets in which the clusters are much further away from one 
-             another than the largest value in the frequency map,
-             those furthest value points should be collected.
-             We want the representative distances between those furthest value
-             points (they uniquely span the distances between the clusters, or
-             at least the closest among them as groups does).
-             Need to group those furthest value points by the assoc radius 
-             derived so far:
-                 clustered within the distance 2./(2.5/math.sqrt(maxValue)).
-             Then the distances between those largest value point groups should 
-             be calculated (their coords are the centroids of the groups. so
-             they are sometimes the centers of the cluster they surround).
-             Then the final critical density would be 1./maxValueSepDistance.
-         */
-        int w = distTrans.length;
-        int h = distTrans[0].length;
 
         Integer key = freqMap.lastKey();
-        int maxValue = key.intValue();        
         
         // --- iterating until have more than 1 x coordinate to span a void ---
+        Set<PairInt> maxValuePoints0 = new HashSet<PairInt>();
         Set<PairInt> maxValuePoints = new HashSet<PairInt>();
         Set<Integer> xs = new HashSet<Integer>();
         int nIter = 0;
-        int nMax = freqMap.size();
+        int nMax = freqMap.size()/2;
+        
         while (((nIter == 0) || (xs.size() == 1)) && (nIter < nMax)) {
             
             for (int i = 0; i < w; ++i) {
@@ -161,9 +122,12 @@ public class CriticalDensitySolver {
                 }
             }
             key = freqMap.lowerKey(key);
+            if (nIter == 0) {
+                maxValuePoints0.addAll(maxValuePoints);
+            }
             nIter++;
         }
-        
+       
         DTGroupFinder fndr = new DTGroupFinder();
         float tmpCritDensity = (float) (1. / Math.sqrt(maxValue));
         fndr.calculateGroups(tmpCritDensity, maxValuePoints);
@@ -185,22 +149,56 @@ public class CriticalDensitySolver {
          can use closest pair algorithm on centroidsX, centroidsY
          and then critDensity = 1./closestDistance
          */
-        ClosestPair closestPair = new ClosestPair();
-        ClosestPair.ClosestPairFloat result = closestPair.findClosestPair(
+        ClosestPair closestPairFinder = new ClosestPair();
+        ClosestPair.ClosestPairFloat closestPair = closestPairFinder.findClosestPair(
             centroidsX, centroidsY);
         
-        if (result.point0 == null) {
+        if (closestPair.point0 == null) {
             return findCriticalDensity(distTrans);
         }
-        
-        float critDens = 1.f / result.separation;
-        
-        // density is due to 2 points:
-        critDens /= 2.f;
+                
+        float critDens = 1.f/closestPair.separation;
+        critDens /= (threshholdFactor + 1);
+        critDens *= 2;
         
         Logger.getLogger(this.getClass().getName()).info(
             "freqMap critDens=" + critDens);
 
+        if (nIter > 2) {
+            // compare last bin only answer
+            fndr = new DTGroupFinder();
+            fndr.calculateGroups(tmpCritDensity, maxValuePoints);
+        
+            int nGroups0 = fndr.getNumberOfGroups();
+        
+            List<Set<PairInt>> groups0 = new ArrayList<Set<PairInt>>();
+            List<Float> centroidsX0 = new ArrayList<Float>();
+            List<Float> centroidsY0 = new ArrayList<Float>();
+            for (int i = 0; i < nGroups0; ++i) {
+                Set<PairInt> group = fndr.getGroup(i);
+                groups0.add(group);
+                double[] xyCen = MiscMath.calculateXYCentroids(group);
+                centroidsX0.add(Float.valueOf((float) xyCen[0]));
+                centroidsY0.add(Float.valueOf((float) xyCen[1]));
+            }
+        
+            closestPairFinder = new ClosestPair();
+            closestPair = closestPairFinder.findClosestPair(centroidsX0, centroidsY0);
+
+            if (closestPair.point0 != null) {
+                float critDens0 = 1.f/(closestPair.separation + 1);
+                critDens0 /= threshholdFactor;
+                critDens0 *= 2;
+                
+                //TODO: this still needs revision...
+                int r = maxValue - freqMap.higherKey(key).intValue();
+                if (critDens == critDens0) {
+                    // not expected 
+                }
+                critDens = critDens0;
+            }
+        }
+        
         return critDens;
     }
 
@@ -399,4 +397,5 @@ public class CriticalDensitySolver {
 
         return findCriticalDensity(values);
     }
+
 }

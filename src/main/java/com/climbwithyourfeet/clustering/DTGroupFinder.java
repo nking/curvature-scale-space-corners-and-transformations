@@ -117,6 +117,8 @@ public class DTGroupFinder {
             return;
         }
         
+        log.info("critSep=" + critSep);
+        
         //TODO: consider data structures with point location as part of their
         // structure... spatial indexing, RTrees...
         /*
