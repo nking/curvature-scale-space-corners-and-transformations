@@ -40,7 +40,7 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 
-        //seed = 1387775326745l;
+        //seed = 1443385026217l;
 
         log.info("SEED=" + seed);
         
@@ -114,8 +114,9 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                 clusterFinder.setToDebug();
 
                 clusterFinder.calculateCriticalDensity();
+                //clusterFinder.setCriticalDensity(0.139f);
+                
                 clusterFinder.findClusters();
-                //clusterFinder.setCriticalDensity(dens);
 
                 int nGroups = clusterFinder.getNumberOfClusters();
 
