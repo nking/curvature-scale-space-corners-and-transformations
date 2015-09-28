@@ -90,6 +90,9 @@ To keep track of which point in Set<PairInt> points belongs to which
 pixel, one can extend PairInt and add a field for the pixel index.  The 
 final groups will have the same points given to the code so will retain 
 the specialization.
+(Note that extending PairInt requires the specialization object to use
+the same hashcode and equals method because of 2 comparisons in 
+DistanceTransform).
 
 Note that if you extend PairInt and have deep members that Arrays.copyOf(...)
 will not handle correctly, change the code in DTGroupFinder.java to
