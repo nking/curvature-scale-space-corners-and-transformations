@@ -24,6 +24,8 @@ import java.util.Set;
  */
 public class DistanceTransform {
     
+    private static int inf = Integer.MAX_VALUE;
+    
     /**
      * The square of Euclidean distances are computed for every zero pixel 
      * relative to the nearest non-zero pixels for two-dimensional input.
@@ -80,9 +82,7 @@ public class DistanceTransform {
 
     private void applyPhase1(Set<PairInt> points, int[][] g, final int width, 
         final int height) {
-       
-        int inf = Integer.MAX_VALUE;
-        
+               
         for (int x = 0; x < width; ++x) {
             
             // scan 1
@@ -143,11 +143,14 @@ public class DistanceTransform {
                     q = 0;
                     s[0] = u;
                 } else {
-                    int w = 1 + sep(s[q], u, g[s[q]][y], g[u][y]);
-                    if (w < width) {
-                        q++;
-                        s[q] = u;
-                        t[q] = w;
+                    int sep = sep(s[q], u, g[s[q]][y], g[u][y]);
+                    if (sep < inf) {
+                        int w = 1 + sep;
+                        if (w < width) {
+                            q++;
+                            s[q] = u;
+                            t[q] = w;
+                        }
                     }
                 }
             }
@@ -166,12 +169,20 @@ public class DistanceTransform {
                 
         int xi = x - i;
         
+        if (gi == inf || x == inf) {
+            return inf;
+        }
+        
         int f = (xi * xi) + (gi * gi);
         
         return f;
     }
 
     private int sep(int i, int u, int gi, int gu) {
+ 
+        if (gu == inf || u == inf) {
+            return inf;
+        }
         
         int sep = ((u * u) - (i * i) + (gu * gu) - (gi * gi))/(2 * (u - i));
         
