@@ -1,10 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
@@ -1021,4 +1021,58 @@ public class ImageProcessorTest extends TestCase {
         String bin = ResourceFinder.findDirectory("bin");
         ImageIOHelper.writeOutputImage(bin + "/books_thresh.png", img0);
     }
+    
+    public void testApplyColorSegmentation() throws Exception {
+        
+        // two_circles_color2.png
+        // two_circles_color.png
+        // cloudy_san_jose
+        // middlebury_cones_im2.png
+        
+        String fileName = "two_circles_color2.png";
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        List<Set<PairInt>> clusterSets = imageProcessor.calculateColorSegmentation(
+            img, true);
+
+        int nExtraForDot = 0;
+        int rClr = 127;
+        int gClr = 0;
+        int bClr = 0;
+        Image img2 = new Image(img.getWidth(), img.getHeight());
+        for (int i = 0; i < clusterSets.size(); ++i) {
+            Set<PairInt> set = clusterSets.get(i);
+            ImageIOHelper.addToImage(set, 0, 0, img2, nExtraForDot, 
+                rClr, gClr, bClr);
+            if (i % 3 == 0) {
+                rClr += 127;
+                if (rClr > 255) {
+                    rClr = rClr - 255;
+                }
+            } else if (i % 3 == 1) {
+                gClr += 127;
+                if (gClr > 255) {
+                    gClr = gClr - 255;
+                }
+            } else if (i % 3 == 2) {
+                bClr += 127;
+                if (bClr > 255) {
+                    bClr = bClr - 127;
+                }
+            }
+            if (rClr < 127 && bClr < 127 && gClr < 127) {
+                rClr = 127;
+                bClr = 127;
+                gClr = 127;
+            }
+        }
+        String bin = ResourceFinder.findDirectory("bin");
+        ImageIOHelper.writeOutputImage(bin + "/cluster.png", img2);
+        int z = 1;
+    }
+    
 }

@@ -228,9 +228,11 @@ public class CIEChromaticity {
         
         float[] capXYZ = rgbToCIEXYZ(r, g, b);
         
-        float x = capXYZ[0]/(capXYZ[0] + capXYZ[1] + capXYZ[2]);
+        float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];
         
-        float y = capXYZ[1]/(capXYZ[0] + capXYZ[1] + capXYZ[2]);
+        float x = capXYZ[0]/zz;
+        
+        float y = capXYZ[1]/zz;
         
         return new float[]{x, y};
     }

@@ -13,6 +13,8 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
 import algorithms.util.Errors;
+import algorithms.util.ResourceFinder;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -2987,6 +2989,258 @@ public class ImageProcessor {
         return output;
     }
 
+    /**
+     * NOT READY FOR USE.  STILL EXPERIMENTING.
+     * create an image segmented by CIE XY Lab Color space using qualities of
+     * the data.  
+     * Note that black is not a color in CIE XY color space and white
+     * is a large general area in the center of the color space.
+     * @param input
+     * @param useBlur
+     * @return
+     */
+    public List<Set<PairInt>> calculateColorSegmentation(ImageExt input, 
+        boolean useBlur) {
+        // method name may change to apply.  might average the cluster color and apply it to points
+        
+        if (useBlur) {
+            blur(input, 1.0f);
+        }
+        
+        //NOTE: the method needs to have gaps in the data given to it
+        //    that is a lack of points for some region between the
+        //    min and max of x and y data in integer space
+        
+        // a quick look at all cieX and cieY values separately to look at 
+        // numerical resolution needed and learn whether partitions are needed
+        // to be combined after separate use
+        float[] cieX = new float[input.getNPixels()];
+        float[] cieY = new float[cieX.length];
+        for (int i = 0; i < input.getWidth(); ++i) {
+            for (int j = 0; j < input.getHeight(); ++j) {
+                int idx = input.getInternalIndex(i, j);                
+                cieX[idx] = input.getCIEX(idx);
+                cieY[idx] = input.getCIEY(idx);
+            }
+        }
+        
+        try {
+            HistogramHolder histCIEX = Histogram.createSimpleHistogram(cieX, 
+                Errors.populateYErrorsBySqrt(cieX));
+            HistogramHolder histCIEY = Histogram.createSimpleHistogram(cieY, 
+                Errors.populateYErrorsBySqrt(cieY));
+            histCIEX.plotHistogram("CIE X", "_ciex");
+            histCIEY.plotHistogram("CIE Y", "_ciey");
+        } catch(Exception e) {
+        }
+                
+        float factor = 1000;// learn this from numerical resolution
+        
+        // then subtract the minima in both cieX and cieY
+        
+        int minCIEX = Integer.MAX_VALUE;
+        int minCIEY = Integer.MAX_VALUE;
+        int maxCIEX = Integer.MIN_VALUE;
+        int maxCIEY = Integer.MIN_VALUE;
+        
+        Set<PairIntWithIndex> points0 = 
+            new HashSet<PairIntWithIndex>();
+        
+        Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 = 
+            new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
+        
+        for (int i = 0; i < input.getWidth(); ++i) {
+            
+            for (int j = 0; j < input.getHeight(); ++j) {
+                
+                int idx = input.getInternalIndex(i, j);
+                                
+                int cieXInt = Math.round(factor * input.getCIEX(idx));
+                int cieYInt = Math.round(factor * input.getCIEY(idx));
+                
+                // note that only one point with same color is present
+                PairIntWithIndex p = new PairIntWithIndex(cieXInt, cieYInt, idx);
+                points0.add(p);
+                
+                List<PairIntWithIndex> list = pointsMap0.get(p);
+                if (list == null) {
+                    list = new ArrayList<PairIntWithIndex>();
+                    pointsMap0.put(p, list);
+                }
+                list.add(p);
+                
+                if (cieXInt < minCIEX) {
+                    minCIEX = cieXInt;
+                }
+                if (cieYInt < minCIEY) {
+                    minCIEY = cieYInt;
+                }
+                if (cieXInt > maxCIEX) {
+                    maxCIEX = cieXInt;
+                }
+                if (cieYInt > maxCIEY) {
+                    maxCIEY = cieYInt;
+                }
+            }
+        }
+        
+        Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap = 
+            new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
+        
+        // subtract minima from the points
+        for (PairIntWithIndex p : points0) {
+            
+            int x = p.getX() - minCIEX;
+            int y = p.getY() - minCIEY;
+            
+            PairIntWithIndex p2 = new PairIntWithIndex(x, y, p.pixIdx);
+            List<PairIntWithIndex> list2 = pointsMap.get(p2);
+            if (list2 == null) {
+                list2 = new ArrayList<PairIntWithIndex>();
+                pointsMap.put(p2, list2);
+            }
+            list2.add(p2);
+            
+            List<PairIntWithIndex> list0 = pointsMap0.get(p);
+            assert(list0 != null);
+            for (PairIntWithIndex p0 : list0) {
+                PairIntWithIndex p3 = new PairIntWithIndex(
+                    p0.getX() - minCIEX, p0.getY() - minCIEY, p0.pixIdx);
+                list2.add(p3);
+            }
+        }
+        maxCIEX -= minCIEX;
+        maxCIEY -= minCIEY;
+        
+        // frequency of colors:
+        Map<PairIntWithIndex, Integer> freqMap = new 
+            HashMap<PairIntWithIndex, Integer>();
+        for (Entry<PairIntWithIndex, List<PairIntWithIndex>> entry :
+            pointsMap.entrySet()) {
+            int c = entry.getValue().size();
+            freqMap.put(entry.getKey(), Integer.valueOf(c));
+        }
+        
+        // plot the points as an image to see the data first
+        GreyscaleImage img = new GreyscaleImage(maxCIEX + 1, maxCIEY + 1);
+        for (com.climbwithyourfeet.clustering.util.PairInt p : pointsMap.keySet()) {
+            img.setValue(p.getX(), p.getY(), 255);
+        }
+        
+        com.climbwithyourfeet.clustering.DistanceTransform dTrans2 = 
+            new com.climbwithyourfeet.clustering.DistanceTransform();
+        int[][] dt2 = dTrans2.applyMeijsterEtAl(pointsMap.keySet(), maxCIEX + 1, 
+            maxCIEY + 1);
+        try {
+            
+            ImageIOHelper.writeOutputImage(
+                ResourceFinder.findDirectory("bin") + "/dt_input.png", img);
+            
+            int[] minMax2 = com.climbwithyourfeet.clustering.util.MiscMath.findMinMaxValues(dt2);
+            log.info("min and max dt values =" + Arrays.toString(minMax2)
+             + " width=" + maxCIEX + 1 + " height=" + maxCIEY + 1);
+                        
+            MiscDebug.writeImage(dt2, "dt2_output.png");
+            
+        } catch (IOException ex) {
+            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE, 
+                null, ex);
+        }
+        
+        DTClusterFinder clusterFinder = new DTClusterFinder(pointsMap.keySet(), 
+            maxCIEX + 1, maxCIEY + 1);
+        
+        clusterFinder.setToDebug();
+
+        clusterFinder.calculateCriticalDensity();
+
+        clusterFinder.findClusters();
+
+        int nGroups = clusterFinder.getNumberOfClusters();
+
+        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+        
+        for (int k = 0; k < nGroups; ++k) {
+            
+            Set<com.climbwithyourfeet.clustering.util.PairInt> group 
+                = clusterFinder.getCluster(k);
+            
+            Set<PairInt> coordPoints = new HashSet<PairInt>();
+            
+            for (com.climbwithyourfeet.clustering.util.PairInt p : group) {
+                
+                PairIntWithIndex p2 = (PairIntWithIndex)p;
+                int idx = p2.pixIdx;
+                int xCoord = input.getCol(idx);
+                int yCoord = input.getRow(idx);                
+                                
+                PairInt pCoord = new PairInt(xCoord, yCoord);
+                coordPoints.add(pCoord);
+                
+                // include the other points of/ same color
+                List<PairIntWithIndex> list = pointsMap.get(p2);
+                assert(list != null);
+                for (PairIntWithIndex p3 : list) {
+                    int idx3 = p3.pixIdx;
+                    int xCoord3 = input.getCol(idx3);
+                    int yCoord3 = input.getRow(idx3);
+                    pCoord = new PairInt(xCoord3, yCoord3);
+                    coordPoints.add(pCoord);
+                }
+            }
+            
+            groupList.add(coordPoints);            
+        }
+
+        return groupList;
+    }
+    
+    public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
+
+        int pixIdx;
+
+        public PairIntWithIndex(int xPoint, int yPoint, int thePixIndex) {
+            super(xPoint, yPoint);
+            pixIdx = thePixIndex;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            
+            if (!(obj instanceof com.climbwithyourfeet.clustering.util.PairInt)) {
+                return false;
+            }
+
+            com.climbwithyourfeet.clustering.util.PairInt other 
+                = (com.climbwithyourfeet.clustering.util.PairInt) obj;
+
+            return (x == other.getX()) && (y == other.getY());
+        }
+        
+        @Override
+        public int hashCode() {
+
+            int hash = fnvHashCode(this.x, this.y);
+
+            return hash;
+        }
+
+        @Override
+        public com.climbwithyourfeet.clustering.util.PairInt copy() {
+             return new PairIntWithIndex(x, y, pixIdx);
+        }
+
+        @Override
+        public String toString() {
+
+            StringBuilder sb = new StringBuilder(super.toString());
+            sb.append(" pixIdx=").append(Integer.toString(pixIdx));
+
+            return sb.toString();
+        }
+                
+    }
+    
     /**
      * read the image and store the non-zero pixels in a set.  note that negative
      * values will also be stored in the output set.
