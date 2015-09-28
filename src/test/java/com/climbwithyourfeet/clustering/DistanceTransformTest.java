@@ -10,10 +10,13 @@ import com.climbwithyourfeet.clustering.util.PairInt;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import junit.framework.TestCase;
 
@@ -59,6 +62,8 @@ public class DistanceTransformTest extends TestCase {
 
         int[][] dtInv = dtr.applyMeijsterEtAl(pointsInv, w, h);
                
+        writeDebugImage(dt, Long.toString(System.currentTimeMillis()));
+        writeDebugImage(dtInv, Long.toString(System.currentTimeMillis()));
     }
 
     public void testApplyTransforms3() throws Exception {
@@ -92,6 +97,9 @@ public class DistanceTransformTest extends TestCase {
         int[][] dt = dtr.applyMeijsterEtAl(points, w, h);
 
         int[][] dtInv = dtr.applyMeijsterEtAl(pointsInv, w, h);
+        
+        writeDebugImage(dt, Long.toString(System.currentTimeMillis()));
+        writeDebugImage(dtInv, Long.toString(System.currentTimeMillis()));
     }
     
     public void testApplyTransforms4() throws Exception {
@@ -187,6 +195,8 @@ public class DistanceTransformTest extends TestCase {
         
         DistanceTransform dtr = new DistanceTransform();
         int[][] dt = dtr.applyMeijsterEtAl(points, w, h);
+        
+        writeDebugImage(dt, Long.toString(System.currentTimeMillis()));
                 
         float[] values = new float[dt.length*dt[0].length];
         float[] valuesSqrtInv = new float[dt.length*dt[0].length];
@@ -387,4 +397,48 @@ public class DistanceTransformTest extends TestCase {
         return null;
     }
 
+    private void writeDebugImage(int[][] dt, String fileSuffix) throws IOException {
+        
+        int width = dt.length;
+        int height = dt[0].length;
+        
+        BufferedImage outputImage = new BufferedImage(width, height, 
+            BufferedImage.TYPE_BYTE_GRAY);
+
+        WritableRaster raster = outputImage.getRaster();
+        
+        for (int i = 0; i < dt.length; ++i) {
+            for (int j = 0; j < dt[0].length; ++j) {
+                int v = dt[i][j];
+                raster.setSample(i, j, 0, v);
+            }
+        }
+        
+        // write to an output directory.  we have user.dir from system properties
+        // but no other knowledge of users's directory structure
+        URL baseDirURL = this.getClass().getClassLoader().getResource(".");
+        String baseDir = null;
+        if (baseDirURL != null) {
+            baseDir = baseDirURL.getPath();
+        } else {
+            baseDir = System.getProperty("user.dir");
+        }
+        if (baseDir == null) {
+            return;
+        }
+        File t = new File(baseDir + "/bin");
+        if (t.exists()) {
+            baseDir = t.getPath();
+        } else if ((new File(baseDir + "/target")).exists()) {
+            baseDir = baseDir + "/target";
+        }
+        
+        // no longer need to use file.separator
+        String outFilePath = baseDir + "/distance_transform_" + fileSuffix + ".png";
+        
+        ImageIO.write(outputImage, "PNG", new File(outFilePath));
+        
+        Logger.getLogger(this.getClass().getName()).info("wrote " + outFilePath);
+    }
+    
 }

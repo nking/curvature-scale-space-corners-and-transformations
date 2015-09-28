@@ -1,10 +1,13 @@
 package com.climbwithyourfeet.clustering;
 
+import com.climbwithyourfeet.clustering.util.MiscMath;
 import com.climbwithyourfeet.clustering.util.PairInt;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,10 +40,12 @@ public class DTClusterFinder {
     private float threshholdFactor = 2.5f;
     
     private boolean debug = false;
+
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public DTClusterFinder(Set<PairInt> points, int width, int height) {
+    public DTClusterFinder(Set<PairInt> thePoints, int width, int height) {
         
-        this.points = points;
+        this.points = thePoints;
         this.width = width;
         this.height = height;
         
@@ -69,6 +74,13 @@ public class DTClusterFinder {
         if (debug) {
             
             densSolver.setToDebug();
+
+            log.info("print dist trans for " + points.size() + " points " +
+                "within width=" + width + " height=" + height);
+            
+            int[] minMax = MiscMath.findMinMaxValues(dt);
+            
+            log.info("min and max =" + Arrays.toString(minMax));
             
             try {
                 writeDebugImage(dt, Long.toString(System.currentTimeMillis()));
@@ -142,14 +154,14 @@ public class DTClusterFinder {
     private void writeDebugImage(int[][] dt, String fileSuffix) throws IOException {
         
         BufferedImage outputImage = new BufferedImage(width, height, 
-            BufferedImage.TYPE_INT_RGB);
+            BufferedImage.TYPE_BYTE_GRAY);
+
+        WritableRaster raster = outputImage.getRaster();
         
         for (int i = 0; i < dt.length; ++i) {
             for (int j = 0; j < dt[0].length; ++j) {
                 int v = dt[i][j];
-                int rgb = (int)(((v & 0x0ff) << 16)
-                    | ((v & 0x0ff) << 8) | (v & 0x0ff));
-                outputImage.setRGB(i, j, rgb);
+                raster.setSample(i, j, 0, v);
             }
         }
         

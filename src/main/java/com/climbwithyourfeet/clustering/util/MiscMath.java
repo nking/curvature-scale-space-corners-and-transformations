@@ -195,4 +195,24 @@ public class MiscMath {
         
         return keys;
     }
+    
+    public static int[] findMinMaxValues(int[][] a) {
+        
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                int v = a[i][j];
+                if (v < min) {
+                    min = v;
+                }
+                if (v > max) {
+                    max = v;
+                }
+            }
+        }
+        
+        return new int[]{min, max};
+    }
 }

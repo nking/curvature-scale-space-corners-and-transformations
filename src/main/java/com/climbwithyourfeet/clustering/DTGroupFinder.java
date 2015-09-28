@@ -192,6 +192,7 @@ public class DTGroupFinder {
                 double sep = Math.sqrt((vX - uX)*(vX - uX) + 
                     (vPoint.getY() - uY)*(vPoint.getY() - uY));
                   
+                // TODO: consider using the chessboard distance (diag dist treated as '1')
                 if (sep > critSep) {
                     continue;
                 }
