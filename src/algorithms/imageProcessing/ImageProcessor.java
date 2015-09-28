@@ -3007,6 +3007,14 @@ public class ImageProcessor {
             blur(input, 1.0f);
         }
         
+        //TODO: consider making a segmentation method using CIEXY theta
+        // for x and the frequency for y, both scaled to numerically
+        // resolvable range < max of 5000.
+        // this would be good to compare to the method here which
+        // uses CIE XY Theta followed by histograms or KMeans++.
+        // No need to specify the number of bins before use for suggested
+        // version.
+        
         //NOTE: the method needs to have gaps in the data given to it
         //    that is a lack of points for some region between the
         //    min and max of x and y data in integer space
