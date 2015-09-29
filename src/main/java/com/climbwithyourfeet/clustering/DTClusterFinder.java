@@ -39,6 +39,8 @@ public class DTClusterFinder<T extends PairInt> {
     
     private float threshholdFactor = 2.5f;
     
+    private int minimumNumberInCluster = 3;
+    
     private boolean debug = false;
 
     private Logger log = Logger.getLogger(this.getClass().getName());
@@ -58,6 +60,10 @@ public class DTClusterFinder<T extends PairInt> {
     
     public void setThreshholdFactor(float factor) {
         this.threshholdFactor = factor;
+    }
+    
+    public void setMinimumNumberInCluster(int n) {
+        this.minimumNumberInCluster = n;
     }
     
     public void calculateCriticalDensity() {
@@ -117,6 +123,8 @@ public class DTClusterFinder<T extends PairInt> {
         groupFinder = new DTGroupFinder<T>();
         
         groupFinder.setThreshholdFactor(threshholdFactor);
+        
+        groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);
         
         groupFinder.calculateGroups(critDens, points);
         
