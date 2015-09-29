@@ -3019,29 +3019,9 @@ public class ImageProcessor {
         //    that is a lack of points for some region between the
         //    min and max of x and y data in integer space
         
-        // a quick look at all cieX and cieY values separately to look at 
-        // numerical resolution needed and learn whether partitions are needed
-        // to be combined after separate use
-        float[] cieX = new float[input.getNPixels()];
-        float[] cieY = new float[cieX.length];
-        for (int i = 0; i < input.getWidth(); ++i) {
-            for (int j = 0; j < input.getHeight(); ++j) {
-                int idx = input.getInternalIndex(i, j);                
-                cieX[idx] = input.getCIEX(idx);
-                cieY[idx] = input.getCIEY(idx);
-            }
-        }
+        int w = input.getWidth();
+        int h = input.getHeight();
         
-        try {
-            HistogramHolder histCIEX = Histogram.createSimpleHistogram(cieX, 
-                Errors.populateYErrorsBySqrt(cieX));
-            HistogramHolder histCIEY = Histogram.createSimpleHistogram(cieY, 
-                Errors.populateYErrorsBySqrt(cieY));
-            histCIEX.plotHistogram("CIE X", "_ciex");
-            histCIEY.plotHistogram("CIE Y", "_ciey");
-        } catch(Exception e) {
-        }
-                
         float factor = 1000;// learn this from numerical resolution
         
         // then subtract the minima in both cieX and cieY
@@ -3051,15 +3031,13 @@ public class ImageProcessor {
         int maxCIEX = Integer.MIN_VALUE;
         int maxCIEY = Integer.MIN_VALUE;
         
-        Set<PairIntWithIndex> points0 = 
-            new HashSet<PairIntWithIndex>();
+        Set<PairIntWithIndex> points0 = new HashSet<PairIntWithIndex>();
         
         Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 = 
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
         
-        for (int i = 0; i < input.getWidth(); ++i) {
-            
-            for (int j = 0; j < input.getHeight(); ++j) {
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
                 
                 int idx = input.getInternalIndex(i, j);
                                 
@@ -3107,11 +3085,10 @@ public class ImageProcessor {
                 list2 = new ArrayList<PairIntWithIndex>();
                 pointsMap.put(p2, list2);
             }
-            list2.add(p2);
+            // because this is a list, this will eventually be present twice:
+            //list2.add(p2);
             
-            List<PairIntWithIndex> list0 = pointsMap0.get(p);
-            assert(list0 != null);
-            for (PairIntWithIndex p0 : list0) {
+            for (PairIntWithIndex p0 : pointsMap0.get(p)) {
                 PairIntWithIndex p3 = new PairIntWithIndex(
                     p0.getX() - minCIEX, p0.getY() - minCIEY, p0.pixIdx);
                 list2.add(p3);
@@ -3128,37 +3105,29 @@ public class ImageProcessor {
             int c = entry.getValue().size();
             freqMap.put(entry.getKey(), Integer.valueOf(c));
         }
-        
+                
+        // ----- debug ---
         // plot the points as an image to see the data first
         GreyscaleImage img = new GreyscaleImage(maxCIEX + 1, maxCIEY + 1);
         for (com.climbwithyourfeet.clustering.util.PairInt p : pointsMap.keySet()) {
             img.setValue(p.getX(), p.getY(), 255);
         }
-        
-        com.climbwithyourfeet.clustering.DistanceTransform dTrans2 = 
-            new com.climbwithyourfeet.clustering.DistanceTransform();
-        int[][] dt2 = dTrans2.applyMeijsterEtAl(pointsMap.keySet(), maxCIEX + 1, 
-            maxCIEY + 1);
         try {
-            
             ImageIOHelper.writeOutputImage(
-                ResourceFinder.findDirectory("bin") + "/dt_input.png", img);
-            
-            int[] minMax2 = com.climbwithyourfeet.clustering.util.MiscMath.findMinMaxValues(dt2);
-            log.info("min and max dt values =" + Arrays.toString(minMax2)
-             + " width=" + maxCIEX + 1 + " height=" + maxCIEY + 1);
-                        
-            MiscDebug.writeImage(dt2, "dt2_output.png");
-            
+                ResourceFinder.findDirectory("bin") + "/dt_input.png", img);            
         } catch (IOException ex) {
             Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE, 
                 null, ex);
         }
+        // --- end debug
         
         DTClusterFinder clusterFinder = new DTClusterFinder(pointsMap.keySet(), 
             maxCIEX + 1, maxCIEY + 1);
         
         clusterFinder.setToDebug();
+        
+        // to recover every point, set limit to 1
+        clusterFinder.setMinimumNumberInCluster(1);
 
         clusterFinder.calculateCriticalDensity();
 

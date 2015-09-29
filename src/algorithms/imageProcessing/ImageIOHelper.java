@@ -1093,17 +1093,20 @@ int z1 = 1;
         if (points == null || input == null) {
             return;
         }
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
                   
         for (PairInt p : points) {
 
             int col = p.getX() + xOffsetToApply;
             int row = p.getY() + yOffsetToApply;
-
-            if ((col > -1) && (col < input.getWidth()) &&
-                (row > -1) && (row < input.getHeight())) {
-
-                input.setRGB(col, row, rClr, gClr, bClr);
+            
+            if ((col < 0) || (row < 0) || (col > (w - 1)) || (row > (h - 1))) {
+                continue;
             }
+
+            input.setRGB(col, row, rClr, gClr, bClr);
         }
     }
     
@@ -1115,21 +1118,26 @@ int z1 = 1;
         if (points == null || input == null) {
             return;
         }
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
                   
         for (PairInt p : points) {
 
             int x = p.getX() + xOffsetToApply;
             int y = p.getY() + yOffsetToApply;
-
-            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); ++dx) {
                 float xx = x + dx;
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    float yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
                 }
             }
         }

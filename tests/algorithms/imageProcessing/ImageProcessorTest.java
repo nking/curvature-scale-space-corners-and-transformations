@@ -1038,16 +1038,33 @@ public class ImageProcessorTest extends TestCase {
         
         List<Set<PairInt>> clusterSets = imageProcessor.calculateColorSegmentation(
             img, true);
+        
+        int nPoints = count(clusterSets);
+        
+        assertTrue(nPoints == img.getNPixels());
+        
+        boolean[] present = new boolean[img.getNPixels()];
+        for (Set<PairInt> set : clusterSets) {
+            for (PairInt p : set) {
+                int pixIdx = img.getInternalIndex(p.getX(), p.getY());
+                assertFalse(present[pixIdx]);
+                present[pixIdx] = true;
+            }
+        }
 
         int nExtraForDot = 0;
         int rClr = 127;
         int gClr = 0;
         int bClr = 0;
         Image img2 = new Image(img.getWidth(), img.getHeight());
+        
         for (int i = 0; i < clusterSets.size(); ++i) {
+            
             Set<PairInt> set = clusterSets.get(i);
+            
             ImageIOHelper.addToImage(set, 0, 0, img2, nExtraForDot, 
                 rClr, gClr, bClr);
+           
             if (i % 3 == 0) {
                 rClr += 127;
                 if (rClr > 255) {
@@ -1073,6 +1090,16 @@ public class ImageProcessorTest extends TestCase {
         String bin = ResourceFinder.findDirectory("bin");
         ImageIOHelper.writeOutputImage(bin + "/cluster.png", img2);
         int z = 1;
+    }
+
+    private int count(List<Set<PairInt>> setList) {
+        
+        int c = 0;
+        for (Set<PairInt> set : setList) {
+            c += set.size();
+        }
+        
+        return c;
     }
     
 }
