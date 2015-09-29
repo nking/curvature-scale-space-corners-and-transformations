@@ -569,23 +569,26 @@ public class ImageIOHelper {
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int i = 0; i < edge.getN(); i++) {
             int x = edge.getX(i);
             int y = edge.getY(i);
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
                 
-                float xx = x + dx;
+                int xx = x + dx;
                 
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                        dy++) {
-                        
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -609,23 +612,26 @@ public class ImageIOHelper {
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (PairInt p : points) {
             int x = p.getX();
             int y = p.getY();
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
                 
-                float xx = x + dx;
+                int xx = x + dx;
                 
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                        dy++) {
-                        
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -652,6 +658,9 @@ public class ImageIOHelper {
         if (xVertexes.length != yVertexes.length) {
             return;
         }
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
         
         for (int i = 0; i < (xVertexes.length - 1); i++) {
             
@@ -694,17 +703,17 @@ int z = 1;
 int z1 = 1;            
                 for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
 
-                    float xx = x + dx;
-
-                    if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                        for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                            dy++) {
-
-                            float yy = y + dy;
-                            if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                                input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                            }
+                    int xx = x + dx;
+                    
+                    if ((xx < 0) || (xx > (w - 1))) {
+                        continue;
+                    }
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                        int yy = y + dy;
+                        if ((yy < 0) || (yy > (h - 1))) {
+                            continue;
                         }
+                        input.setRGB(xx, yy, rClr, gClr, bClr);
                     }
                 }
             }
@@ -733,6 +742,9 @@ int z1 = 1;
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int i = 0; i < xVertexes.length; i++) {
             
             int x = xVertexes[i];
@@ -740,17 +752,17 @@ int z1 = 1;
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
 
-                float xx = x + dx;
+                int xx = x + dx;
 
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                        dy++) {
-
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -774,6 +786,9 @@ int z1 = 1;
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int i = 0; i < edge.getN(); i++) {
             int x = Math.round(edge.getX(i));
             int y = Math.round(edge.getY(i));
@@ -782,15 +797,15 @@ int z1 = 1;
                 
                 int xx = x + dx;
                 
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                        dy++) {
-                        
-                        int yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB(xx, yy, rClr, gClr, bClr);
-                        }
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -811,19 +826,22 @@ int z1 = 1;
     public static void addPointToImage(int x, int y, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
 
             int xx = x + dx;
 
-            if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                    dy++) {
-
-                    int yy = y + dy;
-                    if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                        input.setRGB(xx, yy, rClr, gClr, bClr);
-                    }
+            if ((xx < 0) || (xx > (w - 1))) {
+                continue;
+            }
+            for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                int yy = y + dy;
+                if ((yy < 0) || (yy > (h - 1))) {
+                    continue;
                 }
+                input.setRGB(xx, yy, rClr, gClr, bClr);
             }
         }
     }
@@ -840,19 +858,22 @@ int z1 = 1;
     public static void addPointToImage(int x, int y, Image input, 
         int nExtraForDot, int rgbClr) {
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
 
             int xx = x + dx;
 
-            if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                    dy++) {
-
-                    int yy = y + dy;
-                    if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                        input.setRGB(xx, yy, rgbClr);
-                    }
+            if ((xx < 0) || (xx > (w - 1))) {
+                continue;
+            }
+            for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                int yy = y + dy;
+                if ((yy < 0) || (yy > (h - 1))) {
+                    continue;
                 }
+                input.setRGB(xx, yy, rgbClr);
             }
         }
     }
@@ -872,19 +893,22 @@ int z1 = 1;
     public static void addPointToImage(float x, float y, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
 
             int xx = Math.round(x + dx);
 
-            if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                    dy++) {
-
-                    int yy = Math.round(y + dy);
-                    if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                        input.setRGB(xx, yy, rClr, gClr, bClr);
-                    }
+            if ((xx < 0) || (xx > (w - 1))) {
+                continue;
+            }
+            for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                int yy = Math.round(y + dy);
+                if ((yy < 0) || (yy > (h - 1))) {
+                    continue;
                 }
+                input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
             }
         }
     }
@@ -914,6 +938,9 @@ int z1 = 1;
                 "edgeX and edgeY should be same length");
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int i = 0; i < nPointsInEdge; i++) {
             
             int x = edgeX[i];
@@ -921,17 +948,17 @@ int z1 = 1;
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
                 
-                float xx = x + dx;
+                int xx = x + dx;
                 
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                        dy++) {
-                        
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -969,38 +996,67 @@ int z1 = 1;
             input);
     }
     
-    public static int getNextColorRGB(int clr) {
+    public static int getNextColorRGB(int count) {
         
-        if (clr > 5) {
-            clr = 0;
-        } else if (clr == -1) {
-            clr = 0;
-        }
-        int c = Color.BLUE.getRGB();
-        switch (clr) {
-            case 0:
-                c = Color.BLUE.getRGB();
-                break;
-            case 1:
-                c = Color.PINK.getRGB();
-                break;
-            case 2:
-                c = Color.GREEN.getRGB();
-                break;
-            case 3:
-                c = Color.RED.getRGB();
-                break;
-            case 4:
-                c = Color.CYAN.getRGB();
-                break;
-            case 5:
-                c = Color.MAGENTA.getRGB();
-                break;
-            default:
-                break;
+        int[] c = getNextRGB(count);
+        
+        int rgb = (((c[0] & 0x0ff) << 16) | ((c[1] & 0x0ff) << 8) | 
+            (c[2] & 0x0ff));
+        
+        return rgb;
+    }
+    
+    /*
+    http://graphicdesign.stackexchange.com/questions/3682/where-can-i-find-a-large-palette-set-of-contrasting-colors-for-coloring-many-d
+    {255,0,0}, {228,228,0}, {0,255,0}, 
+    {0,255,255}, {176,176,255}, {255,0,255}, 
+    {228,228,228}, {176,0,0}, {186,186,0}, 
+    {0,176,0}, {0,176,176}, {132,132,255}, 
+    {176,0,176}, {186,186,186}, {135,0,0}, 
+    {135,135,0}, {0,135,0}, {0,135,135}, 
+    {73,73,255}, {135,0,135}, {135,135,135}, 
+    {85,0,0}, {84,84,0}, {0,85,0}, 
+    {0,85,85}, {0,0,255}, {85,0,85}, {84,84,84}
+    */
+    public static int[] getNextRGB(int count) {
+        
+        if (count < 0) {
+            count = 0;
+        } else {
+            count = count % 28;
         }
         
-        return c;
+        int[][] c = new int[28][];
+        c[0] = new int[]{255,0,0};
+        c[1] = new int[]{228,228,0};
+        c[2] = new int[]{0,255,0};
+        c[3] = new int[]{0,255,255}; 
+        c[4] = new int[]{176,176,255};
+        c[5] = new int[]{255,0,255};
+        c[6] = new int[]{228,228,228};
+        c[7] = new int[]{176,0,0}; 
+        c[8] = new int[]{186,186,0};
+        c[9] = new int[]{0,176,0}; 
+        c[10] = new int[]{0,176,176}; 
+        c[11] = new int[]{132,132,255}; 
+        c[12] = new int[]{176,0,176}; 
+        c[13] = new int[]{186,186,186}; 
+        c[14] = new int[]{135,0,0};
+        c[15] = new int[]{135,135,0}; 
+        c[16] = new int[]{0,135,0}; 
+        c[17] = new int[]{0,135,135}; 
+        c[18] = new int[]{73,73,255}; 
+        c[19] = new int[]{135,0,135}; 
+        c[20] = new int[]{135,135,135}; 
+        c[21] = new int[]{85,0,0};
+        c[22] = new int[]{84,84,0}; 
+        c[23] = new int[]{0,85,0};
+        c[24] = new int[]{0,85,85};
+        c[25] = new int[]{0,0,255};
+        c[26] = new int[]{85,0,85};
+        c[27] = new int[]{84,84,84};
+        
+        return c[count];
     }
     
     public static void addAlternatingColorCurvesToImage(
@@ -1071,6 +1127,9 @@ int z1 = 1;
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         int c = Color.BLUE.getRGB();
           
         for (PairInt p : points) {
@@ -1078,11 +1137,11 @@ int z1 = 1;
             int col = p.getX() + xOffsetToApply;
             int row = p.getY() + yOffsetToApply;
 
-            if ((col > -1) && (col < input.getWidth()) &&
-                (row > -1) && (row < input.getHeight())) {
-
-                input.setRGB(col, row, c);
+            if ((col < 0) || (row < 0) || (col > (w - 1)) || (row > (h - 1))) {
+                continue;
             }
+
+            input.setRGB(col, row, c);
         }
     }
     
@@ -1128,16 +1187,16 @@ int z1 = 1;
             int y = p.getY() + yOffsetToApply;
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); ++dx) {
-                float xx = x + dx;
+                int xx = x + dx;
                 if ((xx < 0) || (xx > (w - 1))) {
                     continue;
                 }
                 for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
-                    float yy = y + dy;
+                    int yy = y + dy;
                     if ((yy < 0) || (yy > (h - 1))) {
                         continue;
                     }
-                    input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -1176,19 +1235,24 @@ int z1 = 1;
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int i = 0; i < curve.getSize(); i++) {
-            int x = (int) curve.getX(i);
-            int y = (int) curve.getY(i);
+            int x = Math.round(curve.getX(i));
+            int y = Math.round(curve.getY(i));
             
-            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                float xx = x + dx;
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); ++dx) {
+                int xx = x + dx;
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -1202,21 +1266,26 @@ int z1 = 1;
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int i = 0; i < xP.length; i++) {
             
             int x = Math.round(xP[i]) + xOffsetToApply;
             
             int y = Math.round(yP[i]) + yOffsetToApply;
             
-            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                float xx = x + dx;
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); ++dx) {
+                int xx = x + dx;
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }
@@ -1230,6 +1299,9 @@ int z1 = 1;
             return;
         }
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         for (int i = 0; i < xP.length; i++) {
             
             int x = xP[i] + xOffsetToApply;
@@ -1238,13 +1310,15 @@ int z1 = 1;
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
                 int xx = x + dx;
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
-                        int yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB(xx, yy, rClr, gClr, bClr);
-                        }
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
                     }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }

@@ -3036,15 +3036,25 @@ public class ImageProcessor {
         Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 = 
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
         
+        Set<PairInt> blackPixels = new HashSet<PairInt>();
+        
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 
                 int idx = input.getInternalIndex(i, j);
-                                
+                
+                int r = input.getR(idx);
+                int g = input.getG(idx);
+                int b = input.getB(idx);
+                           
+                if ((r == 0) && (g == 0) && (b == 0)) {
+                    blackPixels.add(new PairInt(i, j));
+                    continue;
+                }
+                
                 int cieXInt = Math.round(factor * input.getCIEX(idx));
                 int cieYInt = Math.round(factor * input.getCIEY(idx));
                 
-                // note that only one point with same color is present
                 PairIntWithIndex p = new PairIntWithIndex(cieXInt, cieYInt, idx);
                 points0.add(p);
                 
@@ -3168,6 +3178,9 @@ public class ImageProcessor {
             
             groupList.add(coordPoints);            
         }
+        
+        // add back in blackPixels
+        groupList.add(blackPixels);
 
         return groupList;
     }
