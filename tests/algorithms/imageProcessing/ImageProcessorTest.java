@@ -1026,10 +1026,10 @@ public class ImageProcessorTest extends TestCase {
         
         // two_circles_color2.png
         // two_circles_color.png
-        // cloudy_san_jose
+        // cloudy_san_jose.jpg
         // middlebury_cones_im2.png
         
-        String fileName = "two_circles_color.png";
+        String fileName = "cloudy_san_jose.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
         ImageExt img = ImageIOHelper.readImageExt(filePath);

@@ -3022,7 +3022,8 @@ public class ImageProcessor {
         int w = input.getWidth();
         int h = input.getHeight();
         
-        float factor = 1000;// learn this from numerical resolution
+        // max = 6250 unless reduce space complexity
+        float factor = 2000;// learn this from numerical resolution
         
         // then subtract the minima in both cieX and cieY
         
@@ -3031,12 +3032,16 @@ public class ImageProcessor {
         int maxCIEX = Integer.MIN_VALUE;
         int maxCIEY = Integer.MIN_VALUE;
         
+        CIEChromaticity cieC = new CIEChromaticity();
+        
         Set<PairIntWithIndex> points0 = new HashSet<PairIntWithIndex>();
         
         Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 = 
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
         
         Set<PairInt> blackPixels = new HashSet<PairInt>();
+        
+        Set<PairInt> whitePixels = new HashSet<PairInt>();
         
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -3052,8 +3057,16 @@ public class ImageProcessor {
                     continue;
                 }
                 
-                int cieXInt = Math.round(factor * input.getCIEX(idx));
-                int cieYInt = Math.round(factor * input.getCIEY(idx));
+                float cx = input.getCIEX(idx);
+                float cy = input.getCIEY(idx);
+                
+                if (cieC.isWhite(cx, cy)) {
+                    whitePixels.add(new PairInt(i, j));
+                    continue;
+                }
+                
+                int cieXInt = Math.round(factor * cx);
+                int cieYInt = Math.round(factor * cy);
                 
                 PairIntWithIndex p = new PairIntWithIndex(cieXInt, cieYInt, idx);
                 points0.add(p);
@@ -3179,8 +3192,9 @@ public class ImageProcessor {
             groupList.add(coordPoints);            
         }
         
-        // add back in blackPixels
+        // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
+        groupList.add(whitePixels);
 
         return groupList;
     }
