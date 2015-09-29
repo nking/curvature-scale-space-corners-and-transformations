@@ -17,14 +17,36 @@ import java.io.Reader;
  */
 public class TwoPointVoidStatsPlotter {
 
+    /**
+     *
+     */
     protected final StringBuffer plotContent;
 
+    /**
+     *
+     */
     protected int plotNumber = 0;
 
+    /**
+     *
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public TwoPointVoidStatsPlotter() throws FileNotFoundException, IOException {
         plotContent = getTemplateHtmlPlot();
     }
 
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param point1IndexOfLine
+     * @param point2IndexOfLine
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     */
     public void addTwoPointPlot(float[] xPoints, float[] yPoints,
         int[] point1IndexOfLine, int[] point2IndexOfLine,
         float xmin, float xmax, float ymin, float ymax) {
@@ -113,6 +135,12 @@ public class TwoPointVoidStatsPlotter {
         plotNumber++;
     }
 
+    /**
+     *
+     * @param values
+     * @param xmax
+     * @param nBins
+     */
     public void addHistogram(float[] values, float xmax, int nBins) {
 
         StringBuffer dataSB = new StringBuffer();
@@ -163,10 +191,23 @@ public class TwoPointVoidStatsPlotter {
         plotNumber++;
     }
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, IOException {
         return getTemplateHtmlPlot("plot_minima_stats.html");
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String fileName) throws FileNotFoundException, IOException {
 
         StringBuffer sb = new StringBuffer();
@@ -219,14 +260,28 @@ public class TwoPointVoidStatsPlotter {
         return sb;
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void writeFile() throws IOException {
         writeToFile(this.plotContent.toString(), "twoptvoid_stats.html");
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void writeFile2() throws IOException {
         writeToFile(this.plotContent.toString(), "twoptvoid_stats2.html");
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @throws IOException
+     */
     protected void writeToFile(String fileContent, String fileName) throws IOException {
 
         String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);

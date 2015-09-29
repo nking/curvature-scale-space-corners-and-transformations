@@ -10,8 +10,15 @@ public class SubsetSamplingVoidFinderTest extends BaseTwoPointTest {
 
     boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindVoids_0() throws Exception {
 
         log.info("testFindVoids_0()");

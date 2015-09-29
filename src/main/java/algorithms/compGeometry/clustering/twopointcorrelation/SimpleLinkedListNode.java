@@ -10,20 +10,41 @@ import java.util.Arrays;
  */
 public class SimpleLinkedListNode {
 
+    /**
+     *
+     */
     protected int key = -1;
 
+    /**
+     *
+     */
     protected SimpleLinkedListNode next = null;
 
+    /**
+     *
+     */
     public SimpleLinkedListNode() {}
     
+    /**
+     *
+     * @param insertKey
+     */
     public SimpleLinkedListNode(int insertKey) {
         this.key = insertKey;
     }
     
+    /**
+     *
+     * @return
+     */
     public int getKey() {
         return key;
     }
     
+    /**
+     *
+     * @return
+     */
     public SimpleLinkedListNode getNext() {
         return next;
     }
@@ -36,6 +57,11 @@ public class SimpleLinkedListNode {
         this.next = nextNode;
     }
     
+    /**
+     *
+     * @param insertKey
+     * @return
+     */
     public SimpleLinkedListNode insert(int insertKey) {
         
         if (insertKey == -1) {
@@ -93,6 +119,10 @@ public class SimpleLinkedListNode {
         return insert(insertKey);
     }
 
+    /**
+     *
+     * @param node
+     */
     public void delete(SimpleLinkedListNode node) {
 
         if (key == -1) {
@@ -124,6 +154,10 @@ public class SimpleLinkedListNode {
         }
     }
 
+    /**
+     *
+     * @param deleteKey
+     */
     public void delete(int deleteKey) {
 
         if (deleteKey == -1) {
@@ -155,6 +189,11 @@ public class SimpleLinkedListNode {
         }
     }
 
+    /**
+     *
+     * @param searchKey
+     * @return
+     */
     public SimpleLinkedListNode search(int searchKey) {
 
         SimpleLinkedListNode latest = this;
@@ -168,11 +207,20 @@ public class SimpleLinkedListNode {
         return null;
     }
 
+    /**
+     *
+     * @param searchKey
+     * @return
+     */
     public boolean contains(int searchKey) {
         SimpleLinkedListNode node = search(searchKey);
         return (node != null);
     }
 
+    /**
+     *
+     * @return
+     */
     public int[] getKeys() {
         if (key == -1) {
             return new int[0];
@@ -194,6 +242,10 @@ public class SimpleLinkedListNode {
         return Arrays.copyOf(nodeKeys, count);
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNumberOfKeys() {
         if (key == -1) {
             return 0;
@@ -208,6 +260,10 @@ public class SimpleLinkedListNode {
         return count;
     }
     
+    /**
+     *
+     * @return
+     */
     public static long approximateMemoryUsed() {
             
         String arch = System.getProperty("sun.arch.data.model");

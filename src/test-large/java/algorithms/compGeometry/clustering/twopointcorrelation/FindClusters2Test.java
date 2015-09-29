@@ -11,8 +11,15 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
     boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void test_Find_Clusters_Stats() throws Exception {
 
         log.info("test_Find_Clusters_Stats()");

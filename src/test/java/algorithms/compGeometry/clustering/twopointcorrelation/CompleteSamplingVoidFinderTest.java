@@ -14,8 +14,15 @@ public class CompleteSamplingVoidFinderTest extends BaseTwoPointTest {
 
     boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindVoids_0() throws Exception {
 
         log.info("testFindVoids_0()");
@@ -124,6 +131,10 @@ public class CompleteSamplingVoidFinderTest extends BaseTwoPointTest {
         assertTrue(count1 == 8);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testExceptions() throws Exception {
 
         log.info("testExceptions()");

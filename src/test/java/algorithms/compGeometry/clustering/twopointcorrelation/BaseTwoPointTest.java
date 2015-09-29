@@ -22,10 +22,20 @@ import junit.framework.TestCase;
  */
 public class BaseTwoPointTest extends TestCase {
 
+    /**
+     *
+     */
     protected RandomClusterAndBackgroundGenerator generator = null;
 
+    /**
+     *
+     */
     protected static Logger log0 = Logger.getLogger(BaseTwoPointTest.class.getName());
     
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
 
@@ -34,30 +44,72 @@ public class BaseTwoPointTest extends TestCase {
         generator = new RandomClusterAndBackgroundGenerator();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     * @return
+     */
     protected int getExpectedNumberOfClusters() {
         return generator.getExpectedNumberOfClusters();
     }
+
+    /**
+     *
+     * @return
+     */
     protected int getTotalNumberOfPoints() {
         return generator.getTotalNumberOfPoints();
     }
 
+    /**
+     *
+     */
     public void testNeededForJunitRuntime() {}
 
+    /**
+     *
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     protected AxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
         return generator.createIndexerWithRandomPoints();
     }
 
+    /**
+     *
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     protected AxisIndexer createIndexerWithRandomPoints(float xmin,
         float xmax, float ymin, float ymax) throws NoSuchAlgorithmException {
 
         return generator.createIndexerWithRandomPoints(xmin, xmax, ymin, ymax);
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param nClusters
+     * @param nBackgroundPoints
+     * @param clusterSeparation
+     * @return
+     */
     protected AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
 
@@ -65,6 +117,19 @@ public class BaseTwoPointTest extends TestCase {
             nClusters, nBackgroundPoints, clusterSeparation);
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfClusters
+     * @param minimumNumberOfPointsPerCluster
+     * @param maximumNumberOfPointsPerCluster
+     * @param backgroundPointFractionToClusters
+     * @return
+     */
     protected AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters) {
@@ -74,6 +139,17 @@ public class BaseTwoPointTest extends TestCase {
             backgroundPointFractionToClusters);
     }
     
+    /**
+     *
+     * @param sr
+     * @param numberOfClusterPoints
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param maximumRadius
+     * @return
+     */
     protected AxisIndexer createIndexerWithRandomPointsAroundCenterWithDSquared(
         SecureRandom sr, int numberOfClusterPoints,
         float xmin, float xmax, float ymin, float ymax, float maximumRadius) {
@@ -83,6 +159,17 @@ public class BaseTwoPointTest extends TestCase {
             xmin, xmax, ymin, ymax, maximumRadius);
     }
 
+    /**
+     *
+     * @param sr
+     * @param maxRadius
+     * @param numberOfPoints
+     * @param xc
+     * @param yc
+     * @param x
+     * @param y
+     * @param xyStartOffset
+     */
     protected void createRandomPointsAroundCenter(SecureRandom sr, float maxRadius,
         int numberOfPoints, float xc, float yc, float[] x, float[] y, int xyStartOffset) {
 
@@ -90,6 +177,18 @@ public class BaseTwoPointTest extends TestCase {
             xc, yc, x, y, xyStartOffset);
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfPointsToCreate
+     * @param xPoints
+     * @param yPoints
+     * @param minSeparationBetweenPoints
+     */
     protected void createRandomSeparatedPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfPointsToCreate, float[] xPoints, float[] yPoints, float minSeparationBetweenPoints) {
 
@@ -97,6 +196,16 @@ public class BaseTwoPointTest extends TestCase {
             numberOfPointsToCreate, xPoints, yPoints, minSeparationBetweenPoints);
     }
 
+    /**
+     *
+     * @param x
+     * @param y
+     * @param nXY
+     * @param xp
+     * @param yp
+     * @param minimumSeparation
+     * @return
+     */
     protected boolean separationBetweenExistingPointsIsLargerThanMin(float[] x, float[] y, int nXY,
         float xp, float yp, float minimumSeparation) {
 
@@ -104,6 +213,18 @@ public class BaseTwoPointTest extends TestCase {
             xp, yp, minimumSeparation);
     }
 
+    /**
+     *
+     * @param sr
+     * @param nBackgroundPoints
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param x
+     * @param y
+     * @param xyStartOffset
+     */
     protected void createRandomPointsInRectangle(SecureRandom sr, int nBackgroundPoints,
         float xmin, float xmax, float ymin, float ymax,
         float[] x, float[] y,  int xyStartOffset) {
@@ -112,6 +233,18 @@ public class BaseTwoPointTest extends TestCase {
             xmin, xmax, ymin, ymax, x, y, xyStartOffset);
     }
 
+    /**
+     *
+     * @param numberOfBackgroundPoints
+     * @param numberOfClusterPoints
+     * @param clusterSeparation
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param sr
+     * @param useRandomForErrors
+     */
     protected void createPoints(int numberOfBackgroundPoints, int[] numberOfClusterPoints,
         CLUSTER_SEPARATION clusterSeparation,
         float xmin, float xmax, float ymin, float ymax, SecureRandom sr, boolean useRandomForErrors) {

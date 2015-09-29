@@ -10,11 +10,19 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class GrahamScanTest extends TestCase {
 
+    /**
+     *
+     */
     protected static Logger log = Logger.getLogger(GrahamScanTest.class.getName());
     
     /**
+     * @throws java.lang.Exception
      * @see TestCase#setUp()
      */
     protected void setUp() throws Exception {
@@ -22,12 +30,17 @@ public class GrahamScanTest extends TestCase {
     }
 
     /**
+     * @throws java.lang.Exception
      * @see TestCase#tearDown()
      */
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testScan() throws Exception {
 
         /*            2,6
@@ -67,6 +80,10 @@ public class GrahamScanTest extends TestCase {
 
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testScanExceptions() throws Exception {
 
         boolean threwException = false;
@@ -128,6 +145,10 @@ public class GrahamScanTest extends TestCase {
         assertTrue(threwException);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalculateConvexHull6() throws Exception {
 
         int ntries = 1;
@@ -157,6 +178,10 @@ public class GrahamScanTest extends TestCase {
 
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalculateConvexHull7() throws Exception {
 
         float[] x = new float[]{2503.197f, 2364.4219f, 2562.4644f, 2562.4644f, 2335.7095f};
@@ -224,6 +249,17 @@ public class GrahamScanTest extends TestCase {
 
     }
 
+    /**
+     *
+     * @param maxRadius
+     * @param numberOfPoints
+     * @param xc
+     * @param yc
+     * @param x
+     * @param y
+     * @param xyStartOffset
+     * @throws NoSuchAlgorithmException
+     */
     protected void createRandomPointsAroundCenter(float maxRadius,
         int numberOfPoints, float xc, float yc, double[] x, double[] y, int xyStartOffset) throws NoSuchAlgorithmException {
 
@@ -242,6 +278,17 @@ public class GrahamScanTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @param maxRadius
+     * @param numberOfPoints
+     * @param xc
+     * @param yc
+     * @param x
+     * @param y
+     * @param xyStartOffset
+     * @throws NoSuchAlgorithmException
+     */
     protected void createRandomPointsAroundCenter(float maxRadius,
         int numberOfPoints, float xc, float yc, float[] x, float[] y, int xyStartOffset) throws NoSuchAlgorithmException {
 
@@ -283,6 +330,15 @@ public class GrahamScanTest extends TestCase {
 
         return calculateXAndYFromXcYcAndRadius(xc, yc, radius, 360 - angleInDegreesFromYEQ0XGT0);
     }
+
+    /**
+     *
+     * @param xc
+     * @param yc
+     * @param radius
+     * @param angleInDegreesFromYEQ0XGT0
+     * @return
+     */
     public static float[] calculateXAndYFromXcYcAndRadius(float xc, float yc, float radius, double angleInDegreesFromYEQ0XGT0) {
 
         double dx = radius * Math.cos(angleInDegreesFromYEQ0XGT0 * (Math.PI/180.f));

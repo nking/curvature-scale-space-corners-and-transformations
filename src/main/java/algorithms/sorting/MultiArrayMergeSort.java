@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  * constructed from pseudo-code in Cormen et al.
  * "Introduction to Algorithms"
- * <pre>
+ * </pre>
  * 
  * @author nichole
  */

@@ -15,6 +15,10 @@ import algorithms.util.MainRunner;
  */
 public class Main {
 
+    /**
+     *
+     * @param args
+     */
     public static void main(String[] args) {
 
         MainRunner runner = new MainRunner();

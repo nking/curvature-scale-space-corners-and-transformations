@@ -11,10 +11,18 @@ import junit.framework.TestCase;
  */
 public class DTGroupFinderTest extends TestCase {
     
+    /**
+     *
+     * @param testName
+     */
     public DTGroupFinderTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalculateGroups() throws Exception {
         
         Set<PairInt> points = getData0();

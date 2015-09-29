@@ -9,6 +9,10 @@ import java.util.List;
  */
 public class Sorter {
     
+    /**
+     *
+     * @param a
+     */
     public static void mergeSortByXThenY(List<PairFloat> a) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -19,6 +23,12 @@ public class Sorter {
         mergeSortByXThenY(a, 0, a.size() - 1);
     }
     
+    /**
+     *
+     * @param a
+     * @param idxLo
+     * @param idxHi
+     */
     public static void mergeSortByXThenY(List<PairFloat> a, int idxLo, int idxHi) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -33,6 +43,10 @@ public class Sorter {
         }
     }
     
+    /**
+     *
+     * @param a
+     */
     public static void mergeSortByYThenX(List<PairFloat> a) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -43,6 +57,12 @@ public class Sorter {
         mergeSortByYThenX(a, 0, a.size() - 1);
     }
     
+    /**
+     *
+     * @param a
+     * @param idxLo
+     * @param idxHi
+     */
     public static void mergeSortByYThenX(List<PairFloat> a, int idxLo, int idxHi) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");

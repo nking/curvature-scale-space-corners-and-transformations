@@ -9,7 +9,7 @@ import algorithms.util.Stack;
  * <pre>
  * An implementation of IGroupFinder that uses a depth first search algorithm
  * to visit all nodes in a dataset and put into groups those within 
- * distance < threshhold * threshholdFactor from each other.
+ * distance &lt; threshhold * threshholdFactor from each other.
  * 
  * the runtime complexity is a little larger, but on the order of O(N^2)
  * 
@@ -24,14 +24,32 @@ import algorithms.util.Stack;
 public class DFSGroupFinder extends AbstractGroupFinder {
 
     // 0 = unvisited, 1 = processing, 2 = visited
-    protected int[] color = null;
+
+    /**
+     *
+     */
+        protected int[] color = null;
     
+    /**
+     *
+     */
     protected int[] sortedXIndexes = null;
     
+    /**
+     *
+     */
     protected final float thrsh;
     
+    /**
+     *
+     */
     protected AxisIndexer indexer = null;
     
+    /**
+     *
+     * @param threshhold
+     * @param threshholdFactor
+     */
     public DFSGroupFinder(float threshhold, float threshholdFactor) {
         
         super(threshhold, threshholdFactor);
@@ -39,10 +57,17 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         thrsh = threshhold * threshholdFactor;        
     }
     
+    /**
+     *
+     */
     public void constructLogger() {
         this.log = Logger.getLogger(this.getClass().getName());
-    }   
-    
+    }
+
+    /**
+     *
+     * @param indexer
+     */
     @Override
     protected void findClusters(AxisIndexer indexer) {
              
@@ -65,6 +90,9 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         
     }
     
+    /**
+     *
+     */
     protected void findClustersIterative() {
 
         Stack stack = new Stack();
@@ -147,6 +175,12 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         }
     }
     
+    /**
+     *
+     * @param indexer
+     * @param uSortedXIndex
+     * @param vSortedXIndex
+     */
     protected void processPair(AxisIndexer indexer, int uSortedXIndex, int vSortedXIndex) {
         
         //log.finest("processPair " + uSortedXIndex + ":" + vSortedXIndex);           

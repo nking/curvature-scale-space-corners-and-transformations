@@ -3,10 +3,21 @@ package algorithms.curves;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class GeneralizedExtremeValueTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testGenerateCurve() throws Exception {
         
         float[] xPoints;

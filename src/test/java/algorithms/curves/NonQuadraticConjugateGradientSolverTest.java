@@ -10,10 +10,21 @@ import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFitCurve() throws Exception {
 
         // while revising code, if not on a development branch, don't assert results
@@ -60,6 +71,10 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void estFitRandomCurves() throws Exception {
 
         log.info("testFitRandomCurves");
@@ -167,6 +182,10 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testAFit() throws Exception {
         /*
         float[] x = new float[]{0.15102175f, 0.22170976f, 0.2923978f, 0.3630858f, 0.43377382f, 0.5044618f, 0.5751499f, 0.6458379f, 0.7165259f, 0.7872139f, 0.85790193f, 0.92859f, 0.999278f, 1.0699661f, 1.1406541f, 1.2113421f, 1.2820301f, 1.3527181f, 1.4234061f, 1.4940941f, 1.5647821f, 1.6354703f, 1.7061583f, 1.7768463f, 1.8475343f, 1.9182223f, 1.9889103f, 2.0595984f, 2.1302867f, 2.2009747f, 2.2716627f, 2.3423507f, 2.4130387f, 2.4837267f, 2.5544147f, 2.6251028f, 2.6957908f, 2.7664788f, 2.8371668f, 2.9078548f};
@@ -231,6 +250,13 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         }
     }
     
+    /**
+     *
+     * @param yfit
+     * @param label
+     * @param solver
+     * @throws IOException
+     */
     protected void plotFit(GEVYFit yfit, String label, GEVChiSquareMinimization solver) throws IOException {
 
         float xIntervalHalf = (yfit.getX()[1] - yfit.getX()[0]) / 2.0f;
@@ -250,6 +276,13 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         }
     }
     
+    /**
+     *
+     * @param yfit
+     * @param label
+     * @param solver
+     * @throws IOException
+     */
     protected void plotFit2(GEVYFit yfit, String label, NonQuadraticConjugateGradientSolver solver) throws IOException {
 
         float xIntervalHalf = (yfit.getX()[1] - yfit.getX()[0]) / 2.0f;

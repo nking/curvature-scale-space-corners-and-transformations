@@ -11,27 +11,80 @@ import java.lang.management.OperatingSystemMXBean;
  */
 public class RunStats {
 
+    /**
+     *
+     */
     protected final double[] loadAverages;
+
+    /**
+     *
+     */
     protected final double[] runtimes;
+
+    /**
+     *
+     */
     protected final long[] freeMemory;
+
+    /**
+     *
+     */
     protected final long totalMemory;
+
+    /**
+     *
+     */
     protected final int[] numProcessors;
+
+    /**
+     *
+     */
     protected int currentMemoryIndex = -1;
+
+    /**
+     *
+     */
     protected int currentRuntimeIndex = -1;
 
+    /**
+     *
+     */
     protected int npoints = -1;
 
+    /**
+     *
+     */
     protected double averageRuntime = -1;
+
+    /**
+     *
+     */
     protected double stdDevRuntime = -1;
+
+    /**
+     *
+     */
     protected double averageFreeMemory = -1;
+
+    /**
+     *
+     */
     protected double stdDevFreeMemory = -1;
 
     private double averageLoadAverage = -1;
     private double stdDevLoadAverage = -1;
 
+    /**
+     *
+     */
     protected final String name;
     private String runttimeUnit = "seconds";
 
+    /**
+     *
+     * @param nIterations
+     * @param name
+     */
     public RunStats(int nIterations, String name) {
         this.runtimes = new double[nIterations];
         this.freeMemory = new long[nIterations];
@@ -41,6 +94,9 @@ public class RunStats {
         this.loadAverages = new double[nIterations];
     }
 
+    /**
+     *
+     */
     public void recordSystemStats() {
         currentMemoryIndex++;
 
@@ -55,11 +111,18 @@ public class RunStats {
         loadAverages[currentMemoryIndex] = osBean.getSystemLoadAverage();
     }
 
+    /**
+     *
+     * @param runtime
+     */
     public void addRuntime(double runtime) {
         currentRuntimeIndex++;
         runtimes[currentRuntimeIndex] = runtime;
     }
 
+    /**
+     *
+     */
     public void calculateFirstMomentRuntimeStats() {
 
         double sum = 0;
@@ -103,30 +166,58 @@ public class RunStats {
         this.stdDevLoadAverage = Math.sqrt(sum)/loadAverages.length;
     }
 
+    /**
+     *
+     * @return
+     */
     public double getAverageRuntime() {
         return averageRuntime;
     }
 
+    /**
+     *
+     * @return
+     */
     public double getStdDevRuntime() {
         return stdDevRuntime;
     }
 
+    /**
+     *
+     * @return
+     */
     public double getAverageFreeMemory() {
         return averageFreeMemory;
     }
 
+    /**
+     *
+     * @return
+     */
     public double getStdDevFreeMemory() {
         return stdDevFreeMemory;
     }
 
+    /**
+     *
+     * @return
+     */
     public long getTotalMemory() {
         return totalMemory;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNumberOfProcessors() {
         return numProcessors[0];
     }
 
+    /**
+     *
+     * @return
+     */
     public String getSummary() {
 
         StringBuffer summary = new StringBuffer();
@@ -146,6 +237,10 @@ public class RunStats {
         return summary.toString();
     }
 
+    /**
+     *
+     * @return
+     */
     public String getName() {
         return name;
     }

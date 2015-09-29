@@ -10,22 +10,41 @@ import junit.framework.TestCase;
  */
 public class DFSGroupFinderTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @param testName
+     */
     public DFSGroupFinderTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
   
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindClusters() throws Exception {
         
         float[] x = new float[] {
@@ -159,6 +178,10 @@ public class DFSGroupFinderTest extends TestCase {
         assertTrue(threwException);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testExceptions() throws Exception {
         
         boolean threwException;

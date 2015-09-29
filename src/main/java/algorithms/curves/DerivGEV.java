@@ -5,6 +5,10 @@ import java.util.logging.Logger;
 
 import algorithms.misc.MiscMath;
 
+/**
+ *
+ * @author nichole
+ */
 public class DerivGEV {
 
     /*<pre>
@@ -127,6 +131,11 @@ public class DerivGEV {
      *              sigma
      * </pre>
      */
+
+    /**
+     *
+     */
+    
 
     protected static Logger log = Logger.getLogger(DerivGEV.class.getName());
 
@@ -274,7 +283,6 @@ public class DerivGEV {
     /**
      * calculate d/dk of GEV using the difference between GEVs given minor changes in k
      *
-     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -416,7 +424,6 @@ public class DerivGEV {
     /**
      * calculate d/dk of GEV using the difference between GEVs given minor changes in k
      *
-     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -503,13 +510,11 @@ public class DerivGEV {
 
     /**
      * estimate d/dmu of GEV using the difference between GEVs given minor changes in k
-     *
-     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @return
+     * @return 
      */
     static Double estimateDerivUsingDeltaMu(float mu, float k, float sigma, float x) {
 
@@ -547,8 +552,6 @@ public class DerivGEV {
      *    item [1] is to return the value of the best chiSqSum here to the invoker
      *    if r was set to non-zero values.
      * @param x normalized x values of histogram to fit
-     * @param y normalized y values of histogram to fit
-     * @param ye normalized y error values of histogram to fit
      * @param r the array to pass back values to be added to vars found by this method.
      *     the items are ordered so that index=0 holds delta k, index=1 holds delta sigma,
      *     index=2 holds delta mu.  the values may be zero if no step was found to
@@ -557,8 +560,6 @@ public class DerivGEV {
      * @param normalizedYErr
      * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
-     * @param r array to populate with answers.  it's given as an argument to reuse the array
-     * @return
      */
     public static void derivsThatMinimizeChiSqSum(float[] vars, float[] varsMin, float[] varsMax, float[] chiSqSumReturn,
         float[] x, float[] normalizedY, float[] normalizedYErr, float[] r, int idx0, int idx1) {
@@ -681,6 +682,15 @@ public class DerivGEV {
         }
     }
 
+    /**
+     *
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
     public static double calculatePreconditionerModifiedResidualK(float yConst, float mu, float k, float sigma, float x) {
 
         // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
@@ -711,6 +721,7 @@ public class DerivGEV {
      * The method uses the tested DerivGEV.derivWRTK() for dfdk and plugs in different k's
      * to estimate d2fdkdk
      *
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -736,6 +747,7 @@ public class DerivGEV {
      * resuse in other equations, but has to trust that dydk was derived with the
      * same k, sigma, mu, and x.
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -764,6 +776,7 @@ public class DerivGEV {
      * resuse in other equations, but has to trust that dydk was derived with the
      * same k, sigma, mu, and x.
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -825,6 +838,7 @@ public class DerivGEV {
      * resuse in other equations, but has to trust that dydsigma was derived with the
      * same k, sigma, mu, and x.
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -856,11 +870,12 @@ public class DerivGEV {
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @param dydsigma
+     * @param dydmu
      * @return
      */
     public static double estimateDY2DMuDMu(float yConst, float mu, float k, float sigma, float x, double dydmu) {
@@ -888,11 +903,12 @@ public class DerivGEV {
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @param dydsigma
+     * @param dydmu
      * @return
      */
     public static double estimateDY2DMuDK(float yConst, float mu, float k, float sigma, float x, double dydmu) {
@@ -920,11 +936,12 @@ public class DerivGEV {
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @param dydsigma
+     * @param dydmu
      * @return
      */
     public static double estimateDY2DMuDSigma(float yConst, float mu, float k, float sigma, float x, double dydmu) {
@@ -952,6 +969,7 @@ public class DerivGEV {
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -984,6 +1002,7 @@ public class DerivGEV {
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -1008,6 +1027,15 @@ public class DerivGEV {
         return (d != null) ? d.doubleValue() : 0;
     }
 
+    /**
+     *
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
     public static double calculatePreconditionerModifiedResidualSigma(
         float yConst, float mu, float k, float sigma, float x) {
 
@@ -1059,6 +1087,15 @@ public class DerivGEV {
         }
     }
 
+    /**
+     *
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
     public static double calculatePreconditionerModifiedResidualMu(
         float yConst, float mu, float k, float sigma, float x) {
 
@@ -1182,6 +1219,16 @@ public class DerivGEV {
         return resid;
     }
 
+    /**
+     *
+     * @param k
+     * @param sigma
+     * @param mu
+     * @param x
+     * @param normalizedY
+     * @param normalizedYErr
+     * @return
+     */
     public static Float chiSqSum(final float k, final float sigma, final float mu, final float[] x,
         final float[] normalizedY, final float[] normalizedYErr) {
 
@@ -1214,7 +1261,6 @@ public class DerivGEV {
      * @param normalizedYGEV
      * @param normalizedY
      * @param normalizedYErr
-     * @param x
      * @param startIdx
      * @param stopIdx the last index, exclusive
      * @return

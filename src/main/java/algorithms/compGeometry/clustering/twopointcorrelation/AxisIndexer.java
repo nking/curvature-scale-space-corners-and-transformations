@@ -58,21 +58,44 @@ public class AxisIndexer {
      */
     protected int nXY;
 
+    /**
+     *
+     */
     protected float xmin = Float.MAX_VALUE;
     
+    /**
+     *
+     */
     protected float ymin = xmin;
     
+    /**
+     *
+     */
     protected float xmax = Float.MIN_VALUE;
     
+    /**
+     *
+     */
     protected float ymax = xmax;
     
+    /**
+     *
+     */
     public AxisIndexer() {
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNXY() {
         return nXY;
     }
 
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed() {
 
         /*
@@ -226,6 +249,10 @@ public class AxisIndexer {
         }
     }
     
+    /**
+     *
+     * @return
+     */
     public float[] findXYMinMax() {
 
         return new float[]{xmin, xmax, ymin, ymax};
@@ -273,6 +300,10 @@ public class AxisIndexer {
         return yErrors;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNumberOfPoints() {
         return nXY;
     }

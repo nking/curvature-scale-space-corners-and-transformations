@@ -9,20 +9,35 @@ import junit.framework.TestCase;
  */
 public class TwoPointHashMapTest extends TestCase {
 
+    /**
+     *
+     * @param testName
+     */
     public TwoPointHashMapTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     */
     public void testHash() {
 
         int nData = 100;
@@ -79,6 +94,9 @@ public class TwoPointHashMapTest extends TestCase {
         }
     }
     
+    /**
+     *
+     */
     public void testConstructor() {
 
         int nData = 46350;

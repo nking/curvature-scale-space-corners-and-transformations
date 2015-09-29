@@ -8,11 +8,19 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class PolarAngleMergeSortTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
     /**
+     * @throws java.lang.Exception
      * @see TestCase#setUp()
      */
     protected void setUp() throws Exception {
@@ -20,12 +28,17 @@ public class PolarAngleMergeSortTest extends TestCase {
     }
 
     /**
+     * @throws java.lang.Exception
      * @see TestCase#tearDown()
      */
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testReduceToUniquePolarAngles() throws Exception {
 
         /*            2,6
@@ -54,6 +67,10 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testReduceToUniquePolarAngles2() throws Exception {
 
         /*
@@ -91,6 +108,10 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testReduceToUniquePolarAngles3() throws Exception {
 
         /*
@@ -129,6 +150,9 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
 
+    /**
+     *
+     */
     public void testSort1() {
 
         /*            2,6
@@ -195,6 +219,9 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
 
+    /**
+     *
+     */
     public void testSort2() {
 
         // p0 has already been found to be the lowest y of the points and
@@ -233,6 +260,9 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
 
+    /**
+     *
+     */
     public void testSort3() {
 
         // p0 has already been found to be the lowest y of the points and
@@ -271,6 +301,9 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
 
+    /**
+     *
+     */
     public void testSort3e() {
 
         // p0 has already been found to be the lowest y of the points and
@@ -309,6 +342,9 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
 
+    /**
+     *
+     */
     public void testSort() {
 
     	/*            2,5
@@ -330,6 +366,9 @@ public class PolarAngleMergeSortTest extends TestCase {
         }
     }
     
+    /**
+     *
+     */
     public void testSortExceptions() {
 
         boolean threwException;
@@ -373,6 +412,10 @@ public class PolarAngleMergeSortTest extends TestCase {
 
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void test0() throws Exception {
         // make coverage reports happy: work around for class built purely for static methods. constructor not directly used...
         PolarAngleMergeSort t = new PolarAngleMergeSort();

@@ -36,6 +36,14 @@ public class Errors {
         return dy;
     }
 
+    /**
+     *
+     * @param x
+     * @param y
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public static float[] calculateYErrorsByGaussian(float[] x, float[] y, float sigma, float mu) {
 
         /*                  1

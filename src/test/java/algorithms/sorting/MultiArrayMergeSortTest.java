@@ -10,9 +10,14 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class MultiArrayMergeSortTest extends TestCase {
 
     /**
+     * @throws java.lang.Exception
      * @see TestCase#setUp()
      */
     protected void setUp() throws Exception {
@@ -20,12 +25,17 @@ public class MultiArrayMergeSortTest extends TestCase {
     }
 
     /**
+     * @throws java.lang.Exception
      * @see TestCase#tearDown()
      */
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testSortByY() throws Exception {
 
         int nPoints = 1000;
@@ -164,6 +174,9 @@ public class MultiArrayMergeSortTest extends TestCase {
         
     }
 
+    /**
+     *
+     */
     public void testSortBy1stArgThen2nd(){
 
         /*   10
@@ -275,6 +288,10 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(caughtException);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void test0() throws Exception {
         // make coverage reports happy: work around for class built purely for static methods. constructor not directly used...
         MultiArrayMergeSort t = new MultiArrayMergeSort();

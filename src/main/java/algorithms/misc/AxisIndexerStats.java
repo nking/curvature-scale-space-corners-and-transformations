@@ -7,10 +7,24 @@ import java.util.logging.Logger;
 
 import algorithms.compGeometry.clustering.twopointcorrelation.AxisIndexer;
 
+/**
+ *
+ * @author nichole
+ */
 public class AxisIndexerStats {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     * @param numberOfBins
+     * @param minValue
+     * @param maxValue
+     * @return
+     */
     protected float calculateBinSize(int numberOfBins, float minValue, float maxValue) {
 
         float divSz = (1.00001f*maxValue - minValue)/numberOfBins;

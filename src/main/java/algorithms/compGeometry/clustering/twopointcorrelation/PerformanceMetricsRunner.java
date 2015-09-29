@@ -15,6 +15,9 @@ import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBa
  */
 public class PerformanceMetricsRunner {
 
+    /**
+     *
+     */
     protected static void printSystemStats() {
 
         Logger log = Logger.getLogger(PerformanceMetricsRunner.class.getName());
@@ -44,6 +47,12 @@ public class PerformanceMetricsRunner {
         bean = null;
     }
 
+    /**
+     *
+     * @param indexer
+     * @throws IOException
+     * @throws TwoPointVoidStatsException
+     */
     protected static void run(AxisIndexer indexer) throws IOException, TwoPointVoidStatsException {
 
         Logger log = Logger.getLogger(PerformanceMetricsRunner.class.getName());
@@ -70,6 +79,11 @@ public class PerformanceMetricsRunner {
         log.info("  ====> total RT(sec) = " + t1 + " for nPoints=" + indexer.getNumberOfPoints());
     }
 
+    /**
+     *
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
 
         // generator background and stars with nPoints = 100, 1000, 10000, 100000 pausing in between

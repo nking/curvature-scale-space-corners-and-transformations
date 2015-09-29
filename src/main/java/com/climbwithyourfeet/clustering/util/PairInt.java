@@ -9,16 +9,38 @@ package com.climbwithyourfeet.clustering.util;
  */
 public class PairInt {
     
+    /**
+     *
+     */
     protected final int x;
+
+    /**
+     *
+     */
     protected final int y;
     
+    /**
+     *
+     * @param xPoint
+     * @param yPoint
+     */
     public PairInt(int xPoint, int yPoint) {
         x = xPoint;
         y = yPoint;
     }
+
+    /**
+     *
+     * @return
+     */
     public int getX() {
         return x;
     }
+
+    /**
+     *
+     * @return
+     */
     public int getY() {
         return y;
     }
@@ -43,9 +65,22 @@ public class PairInt {
         return hash;
     }
 
+    /**
+     *
+     */
     protected static int fnv321aInit = 0x811c9dc5;
+
+    /**
+     *
+     */
     protected static int fnv32Prime = 0x01000193;
 
+    /**
+     *
+     * @param i0
+     * @param i1
+     * @return
+     */
     protected int fnvHashCode(int i0, int i1) {
 
         /*
@@ -77,6 +112,10 @@ public class PairInt {
         return hash;
     }
     
+    /**
+     *
+     * @return
+     */
     public PairInt copy() {
         return new PairInt(x, y);
     }

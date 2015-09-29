@@ -9,17 +9,32 @@ import junit.framework.TestCase;
  */
 public class SimpleLinkedListNodeTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
     
+    /**
+     *
+     * @param testName
+     */
     public SimpleLinkedListNodeTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -226,6 +241,9 @@ public class SimpleLinkedListNodeTest extends TestCase {
         assertTrue(node.contains(key));
     }
    
+    /**
+     *
+     */
     public void testGetKeys() {
 
         log.info("testGetKeys");

@@ -6,6 +6,9 @@ package algorithms.compGeometry.convexHull;
  */
 public class GrahamScanTooFewPointsException extends Exception {
 
+    /**
+     *
+     */
     protected static final long serialVersionUID = 12345678;
 
     GrahamScanTooFewPointsException(String errorMessage) {

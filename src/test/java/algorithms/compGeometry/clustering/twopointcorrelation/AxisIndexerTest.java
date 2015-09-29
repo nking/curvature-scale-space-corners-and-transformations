@@ -10,25 +10,42 @@ import junit.framework.TestCase;
  */
 public class AxisIndexerTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @param testName
+     */
     public AxisIndexerTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
-
-
-     public void testFindXYMinMax() throws Exception {
+    /**
+     *
+     * @throws Exception
+     */
+    public void testFindXYMinMax() throws Exception {
         log.info("testFindXYMinMax()");
 
         float[] x = new float[] {
@@ -70,6 +87,10 @@ public class AxisIndexerTest extends TestCase {
         assertTrue(minMaxes[3] == 10.0f);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testsortAndIndexX() throws Exception {
         log.info("testsortAndIndexX()");
 
@@ -108,6 +129,10 @@ public class AxisIndexerTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testsortAndIndexX_0() throws Exception {
 
         log.info("testsortAndIndexX_0()");
@@ -146,6 +171,10 @@ public class AxisIndexerTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testsortAndIndexX_1() throws Exception {
 
         log.info("testsortAndIndexX_1()");
@@ -191,6 +220,10 @@ public class AxisIndexerTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testsortAndIndexX_2() throws Exception {
         log.info("testsortAndIndexX_2()");
 

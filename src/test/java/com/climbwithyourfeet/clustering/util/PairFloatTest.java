@@ -8,10 +8,17 @@ import junit.framework.TestCase;
  */
 public class PairFloatTest extends TestCase {
     
+    /**
+     *
+     * @param testName
+     */
     public PairFloatTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     */
     public void testGetSetX() {
         float xPoint = 3;
         float yPoint = 100;

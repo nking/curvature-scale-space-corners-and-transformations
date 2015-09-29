@@ -7,8 +7,18 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
  */
 public interface ITwoPointIdentity {
 
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed();
 
+    /**
+     *
+     * @param index0
+     * @param index1
+     * @return
+     */
     public boolean storeIfDoesNotContain(int index0, int index1);
 
 }

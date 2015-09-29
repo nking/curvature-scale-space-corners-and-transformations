@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DTClusterFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">com.climbwithyourfeet.clustering</a> &gt; <span class="el_source">DTClusterFinder.java</span></div><h1>DTClusterFinder.java</h1><pre class="source lang-java linenums">package com.climbwithyourfeet.clustering;
 
+import com.climbwithyourfeet.clustering.util.MiscMath;
 import com.climbwithyourfeet.clustering.util.PairInt;
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 
 /**
  * main class to cluster finder whose logic is based upon distance transform,
@@ -11,104 +21,182 @@ import java.util.Set;
  * 
  * @author nichole
  */
-public class DTClusterFinder {
+public class DTClusterFinder&lt;T extends PairInt&gt; {
     
-    private final Set&lt;PairInt&gt; points;
+    private final Set&lt;T&gt; points;
     private final int width;
     private final int height;
     
-<span class="fc" id="L20">    private float critDens = Float.POSITIVE_INFINITY;</span>
+<span class="fc" id="L30">    private float critDens = Float.POSITIVE_INFINITY;</span>
     
-<span class="fc" id="L22">    private DTGroupFinder groupFinder = null;</span>
-    
+<span class="fc" id="L32">    private DTGroupFinder&lt;T&gt; groupFinder = null;</span>
+
     private enum STATE {
         INIT, HAVE_CLUSTER_DENSITY, HAVE_GROUPS
     }
     
-<span class="fc" id="L28">    private STATE state = null;</span>
+<span class="fc" id="L38">    private STATE state = null;</span>
     
-<span class="fc" id="L30">    private boolean debug = false;</span>
+<span class="fc" id="L40">    private float threshholdFactor = 2.5f;</span>
     
-<span class="fc" id="L32">    public DTClusterFinder(Set&lt;PairInt&gt; points, int width, int height) {</span>
+<span class="fc" id="L42">    private int minimumNumberInCluster = 3;</span>
+    
+<span class="fc" id="L44">    private boolean debug = false;</span>
+
+<span class="fc" id="L46">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="fc" id="L48">    public DTClusterFinder(Set&lt;T&gt; thePoints, int width, int height) {</span>
         
-<span class="fc" id="L34">        this.points = points;</span>
-<span class="fc" id="L35">        this.width = width;</span>
-<span class="fc" id="L36">        this.height = height;</span>
+<span class="fc" id="L50">        this.points = thePoints;</span>
+<span class="fc" id="L51">        this.width = width;</span>
+<span class="fc" id="L52">        this.height = height;</span>
         
-<span class="fc" id="L38">        state = STATE.INIT;</span>
-<span class="fc" id="L39">    }</span>
+<span class="fc" id="L54">        state = STATE.INIT;</span>
+<span class="fc" id="L55">    }</span>
     
     public void setToDebug() {
-<span class="fc" id="L42">        debug = true;</span>
-<span class="fc" id="L43">    }</span>
+<span class="fc" id="L58">        debug = true;</span>
+<span class="fc" id="L59">    }</span>
+    
+    public void setThreshholdFactor(float factor) {
+<span class="nc" id="L62">        this.threshholdFactor = factor;</span>
+<span class="nc" id="L63">    }</span>
+    
+    public void setMinimumNumberInCluster(int n) {
+<span class="nc" id="L66">        this.minimumNumberInCluster = n;</span>
+<span class="nc" id="L67">    }</span>
     
     public void calculateCriticalDensity() {
         
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
-<span class="nc" id="L48">            return;</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
+<span class="nc" id="L72">            return;</span>
         }
         
-<span class="fc" id="L51">        DistanceTransform dtr = new DistanceTransform();</span>
-<span class="fc" id="L52">        int[][] dt = dtr.applyMeijsterEtAl(points, width, height);</span>
+<span class="fc" id="L75">        DistanceTransform&lt;T&gt; dtr = new DistanceTransform&lt;T&gt;();</span>
+<span class="fc" id="L76">        int[][] dt = dtr.applyMeijsterEtAl(points, width, height);</span>
         
-<span class="fc" id="L54">        CriticalDensitySolver densSolver = new CriticalDensitySolver();</span>
+<span class="fc" id="L78">        CriticalDensitySolver densSolver = new CriticalDensitySolver();</span>
         
-<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (debug) {</span>
-<span class="fc" id="L57">            densSolver.setToDebug();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (debug) {</span>
+            
+<span class="fc" id="L82">            densSolver.setToDebug();</span>
+
+<span class="fc" id="L84">            log.info(&quot;print dist trans for &quot; + points.size() + &quot; points &quot; +</span>
+                &quot;within width=&quot; + width + &quot; height=&quot; + height);
+            
+<span class="fc" id="L87">            int[] minMax = MiscMath.findMinMaxValues(dt);</span>
+            
+<span class="fc" id="L89">            log.info(&quot;min and max =&quot; + Arrays.toString(minMax));</span>
+            
+            try {
+<span class="fc" id="L92">                writeDebugImage(dt, Long.toString(System.currentTimeMillis()));</span>
+<span class="nc" id="L93">            } catch (IOException ex) {</span>
+<span class="nc" id="L94">                Logger.getLogger(DTClusterFinder.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L95">            }</span>
         }
+                
+<span class="fc" id="L98">        this.critDens = densSolver.findCriticalDensity(dt, points.size(), </span>
+            width, height);  
         
-<span class="fc" id="L60">        this.critDens = densSolver.findCriticalDensity(dt, points.size(), width, height);               </span>
-<span class="fc" id="L61">    }</span>
+<span class="fc" id="L101">        this.state = STATE.HAVE_CLUSTER_DENSITY;</span>
+<span class="fc" id="L102">    }</span>
     
     public void setCriticalDensity(float dens) {
         
-<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
-<span class="nc" id="L66">            throw new IllegalStateException(&quot;cluster density is already set&quot;);</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
+<span class="nc" id="L107">            throw new IllegalStateException(&quot;cluster density is already set&quot;);</span>
         }
         
-<span class="nc" id="L69">        this.critDens = dens;</span>
-<span class="nc" id="L70">    }</span>
+<span class="nc" id="L110">        this.critDens = dens;</span>
+        
+<span class="nc" id="L112">        this.state = STATE.HAVE_CLUSTER_DENSITY;</span>
+<span class="nc" id="L113">    }</span>
     
     public void findClusters() {
         
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_GROUPS) &lt; 1) {</span>
-<span class="fc" id="L75">            calculateCriticalDensity();</span>
-<span class="nc bnc" id="L76" title="All 2 branches missed.">        } else if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
-<span class="nc" id="L77">            return;</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &lt; 0) {</span>
+<span class="nc" id="L118">            calculateCriticalDensity();</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        } else if (state.compareTo(STATE.HAVE_GROUPS) &gt;= 0) {</span>
+<span class="nc" id="L120">            return;</span>
         }
         
-<span class="fc" id="L80">        groupFinder = new DTGroupFinder();</span>
+<span class="fc" id="L123">        groupFinder = new DTGroupFinder&lt;T&gt;();</span>
         
-<span class="fc" id="L82">        groupFinder.calculateGroups(critDens, points);</span>
+<span class="fc" id="L125">        groupFinder.setThreshholdFactor(threshholdFactor);</span>
         
-<span class="fc" id="L84">    }</span>
+<span class="fc" id="L127">        groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);</span>
+        
+<span class="fc" id="L129">        groupFinder.calculateGroups(critDens, points);</span>
+        
+<span class="fc" id="L131">    }</span>
     
     public int getNumberOfClusters() {
         
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L89">            return 0;</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L136">            return 0;</span>
         }
         
-<span class="fc" id="L92">        return groupFinder.getNumberOfGroups();</span>
+<span class="fc" id="L139">        return groupFinder.getNumberOfGroups();</span>
     }
     
-    public Set&lt;PairInt&gt; getCluster(int idx) {
+    public Set&lt;T&gt; getCluster(int idx) {
         
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L98">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L145">            throw new IllegalArgumentException(</span>
                 &quot;findClusters was not successfully invoked&quot;);
         }
         
-<span class="pc bpc" id="L102" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (groupFinder.getNumberOfGroups() - 1))) {</span>
-<span class="nc" id="L103">            throw new IllegalArgumentException(&quot;idx is out of bounds&quot;);</span>
+<span class="pc bpc" id="L149" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (groupFinder.getNumberOfGroups() - 1))) {</span>
+<span class="nc" id="L150">            throw new IllegalArgumentException(&quot;idx is out of bounds&quot;);</span>
         }
         
-<span class="fc" id="L106">        return groupFinder.getGroup(idx);</span>
+<span class="fc" id="L153">        return groupFinder.getGroup(idx);</span>
     }
     
     public float getCriticalDensity() {
-<span class="fc" id="L110">        return critDens;</span>
+<span class="fc" id="L157">        return critDens;</span>
     }
+    
+    private void writeDebugImage(int[][] dt, String fileSuffix) throws IOException {
+        
+<span class="fc" id="L162">        BufferedImage outputImage = new BufferedImage(width, height, </span>
+            BufferedImage.TYPE_BYTE_GRAY);
+
+<span class="fc" id="L165">        WritableRaster raster = outputImage.getRaster();</span>
+        
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        for (int i = 0; i &lt; dt.length; ++i) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (int j = 0; j &lt; dt[0].length; ++j) {</span>
+<span class="fc" id="L169">                int v = dt[i][j];</span>
+<span class="fc" id="L170">                raster.setSample(i, j, 0, v);</span>
+            }
+        }
+        
+        // write to an output directory.  we have user.dir from system properties
+        // but no other knowledge of users's directory structure
+<span class="fc" id="L176">        URL baseDirURL = this.getClass().getClassLoader().getResource(&quot;.&quot;);</span>
+<span class="fc" id="L177">        String baseDir = null;</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (baseDirURL != null) {</span>
+<span class="fc" id="L179">            baseDir = baseDirURL.getPath();</span>
+        } else {
+<span class="nc" id="L181">            baseDir = System.getProperty(&quot;user.dir&quot;);</span>
+        }
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (baseDir == null) {</span>
+<span class="nc" id="L184">            return;</span>
+        }
+<span class="fc" id="L186">        File t = new File(baseDir + &quot;/bin&quot;);</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (t.exists()) {</span>
+<span class="nc" id="L188">            baseDir = t.getPath();</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        } else if ((new File(baseDir + &quot;/target&quot;)).exists()) {</span>
+<span class="nc" id="L190">            baseDir = baseDir + &quot;/target&quot;;</span>
+        }
+        
+        // no longer need to use file.separator
+<span class="fc" id="L194">        String outFilePath = baseDir + &quot;/distance_transform_&quot; + fileSuffix + &quot;.png&quot;;</span>
+        
+<span class="fc" id="L196">        ImageIO.write(outputImage, &quot;PNG&quot;, new File(outFilePath));</span>
+        
+<span class="fc" id="L198">        Logger.getLogger(this.getClass().getName()).info(&quot;wrote &quot; + outFilePath);</span>
+<span class="fc" id="L199">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -15,8 +15,15 @@ public class ConvexHullTest extends BaseTwoPointTest {
 
     boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void test0() throws Exception {
 
         log.info("test0()");
@@ -78,6 +85,10 @@ public class ConvexHullTest extends BaseTwoPointTest {
         log.info("\n start computing stats for all sets");
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void test1() throws Exception {
 
         log.info("test1()");
@@ -114,6 +125,18 @@ public class ConvexHullTest extends BaseTwoPointTest {
         log.info("plot file = " + plotFilePath);
     }
     
+    /**
+     *
+     * @param nIterations
+     * @param xMin
+     * @param xMax
+     * @param yMin
+     * @param yMax
+     * @param plotter
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     public RunStats[] runAlgorithms(int nIterations,
         float xMin, float xMax, float yMin, float yMax, 
         PolygonAndPointPlotter plotter) throws 
@@ -132,6 +155,14 @@ public class ConvexHullTest extends BaseTwoPointTest {
         return new RunStats[]{grahamStats};
     }
 
+    /**
+     *
+     * @param runStats
+     * @param x
+     * @param y
+     * @param plotter
+     * @throws GrahamScanTooFewPointsException
+     */
     public void runGrahamScan(RunStats runStats, float[] x, float[] y,
         PolygonAndPointPlotter plotter) 
         throws GrahamScanTooFewPointsException {

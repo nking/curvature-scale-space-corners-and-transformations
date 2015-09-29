@@ -9,8 +9,17 @@ import java.io.IOException;
  */
 public interface IPointBackgroundStats {
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String persistIndexer() throws IOException;
 
+    /**
+     *
+     * @param turnDebugOn
+     */
     public void setDebug(boolean turnDebugOn);
 
     /**
@@ -39,5 +48,9 @@ public interface IPointBackgroundStats {
      */
     public float getBackgroundDensityError();
     
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed();
 }

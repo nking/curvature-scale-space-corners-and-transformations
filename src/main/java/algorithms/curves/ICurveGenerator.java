@@ -6,5 +6,10 @@ package algorithms.curves;
  */
 public interface ICurveGenerator {
 
+    /**
+     *
+     * @param parameters
+     * @return
+     */
     public float[] generateNormalizedCurve(float[] parameters);
 }

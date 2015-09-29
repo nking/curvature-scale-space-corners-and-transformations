@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * <pre>
+ * <code>
    Class to find the minimum difference between a GEV model function(k, sigma, mu)
    and normalized data with errors.
    
@@ -190,33 +190,66 @@ import java.util.List;
                                  ) 
                                  
        Note that below in the code, r is &nabla;f.
-  </pre>
+  </code>
   @author nichole
  */
 public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     */
     protected int maxIterations = 200;
     
+    /**
+     *
+     */
     protected PolygonAndPointPlotter plotter;
     
+    /**
+     *
+     */
     protected static float eps = 1e-8f;
     
+    /**
+     *
+     */
     protected static float convergedEps = 0.00001f;
     
+    /**
+     *
+     */
     protected boolean calcStepParamsSeparately = true;
         
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xErrPoints
+     * @param yErrPoints
+     */
     public NonQuadraticConjugateGradientSolver(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
 
         super(xPoints, yPoints, xErrPoints, yErrPoints);
     }    
 
+    /**
+     *
+     * @param maxNumber
+     */
     public void setMaximumNumberOfIterations(int maxNumber) {
         this.maxIterations = maxNumber;
     }
     
+    /**
+     *
+     * @param doUseDebug
+     */
     @Override
     public void setDebug(boolean doUseDebug) {
         
@@ -235,6 +268,10 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      * fit the x and y data using default ranges for the parameters k, sigma, and mu.
      * The generated curves use parameter step sizes determined from using
      * the k, sigma, and mu derivatives separately and keeping the best result.
+     * @param weightMethod
+     * @return 
+     * @throws algorithms.curves.FailedToConvergeException
+     * @throws java.io.IOException
      */
     public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) 
         throws FailedToConvergeException, IOException {
@@ -248,6 +285,10 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      * fit the x and y data using default ranges for the parameters k, sigma, and mu.
      * The generated curves use parameter step sizes determined from using all
      * of the k, sigma, and mu derivatives at once.
+     * @param weightMethod
+     * @return 
+     * @throws algorithms.curves.FailedToConvergeException
+     * @throws java.io.IOException
      */
     public GEVYFit fitCurveKGreaterThanZeroAllAtOnce(WEIGHTS_DURING_CHISQSUM weightMethod) 
         throws FailedToConvergeException, IOException {
@@ -257,6 +298,12 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         return fitCurveKGreaterThanZero();
     }
     
+    /**
+     *
+     * @return
+     * @throws FailedToConvergeException
+     * @throws IOException
+     */
     protected GEVYFit fitCurveKGreaterThanZero() throws FailedToConvergeException, IOException {
         
         String filePath = ResourceFinder.findFileInResources("sim_curve_params_01.txt");
@@ -340,7 +387,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      * 
      * The range of values given to this method by TwoPointVoidStats are those found to be most useful
      * for representing the range of normalized GEV curves that match the datasets given to it.
-     * k < 0 are not fit because the distributions are not physical for the expected datasets,
+     * k &lt; 0 are not fit because the distributions are not physical for the expected datasets,
      * though that can be changed if needed.
      * 
      * @param kMin  minimum range of value of k, the shape parameter
@@ -393,7 +440,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      * 
      * The range of values given to this method by TwoPointVoidStats are those found to be most useful
      * for representing the range of normalized GEV curves that match the datasets given to it.
-     * k < 0 are not fit because the distributions are not physical for the expected datasets,
+     * k &lt; 0 are not fit because the distributions are not physical for the expected datasets,
      * though that can be changed if needed.
      * 
      * @param kMin  minimum range of value of k, the shape parameter
@@ -530,6 +577,13 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         return bestYFit;
     }
   
+    /**
+     *
+     * @param bestYFit
+     * @param vars
+     * @param chiSqSumForLineSearch
+     * @return
+     */
     protected GEVYFit compareFits(GEVYFit bestYFit, float[] vars, float[] chiSqSumForLineSearch) {
         
         if ((bestYFit == null) || (chiSqSumForLineSearch[0] < bestYFit.getChiSqSum())) {
@@ -555,6 +609,12 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         return bestYFit;
     }
 
+    /**
+     *
+     * @param yGEV
+     * @param label
+     * @throws IOException
+     */
     protected void plotFit(float[] yGEV, String label) throws IOException {
 
         if (plotter == null) {

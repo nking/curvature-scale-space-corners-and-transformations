@@ -30,10 +30,25 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
      */
     protected float backgroundDensityError;
 
+    /**
+     *
+     */
     protected final AxisIndexer indexer;
+
+    /**
+     *
+     */
     protected boolean didReadPerisistedIndexer = false;
+
+    /**
+     *
+     */
     protected boolean debug = false;
 
+    /**
+     *
+     * @param indexedSortedPoints
+     */
     public AbstractPointBackgroundStats(AxisIndexer indexedSortedPoints) {
         if (indexedSortedPoints == null) {
             throw new IllegalArgumentException("indexedSortedPoints cannot be null");
@@ -53,10 +68,18 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
         didReadPerisistedIndexer = true;
     }
 
+    /**
+     *
+     * @param turnDebugOn
+     */
     public void setDebug(boolean turnDebugOn) {
         this.debug = turnDebugOn;
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     */
     public abstract void calc() throws TwoPointVoidStatsException;
 
     /**
@@ -82,18 +105,49 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
         calculateStats();
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     */
     protected abstract void calculateStats() throws TwoPointVoidStatsException;
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public abstract String persistTwoPointBackground() throws IOException;
 
+    /**
+     *
+     * @param persistedFilePath
+     * @return
+     * @throws IOException
+     */
     public abstract boolean readTwoPointBackground(String persistedFilePath) throws IOException;
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String persistIndexer() throws IOException {
         return SerializerUtil.serializeIndexer(indexer);
     }
 
+    /**
+     *
+     * @param oos
+     * @throws IOException
+     */
     protected abstract void serializeTwoPointBackground(ObjectOutputStream oos) throws IOException;
 
+    /**
+     *
+     * @param fileRootName
+     * @return
+     * @throws IOException
+     */
     protected String serializeTwoPointBackground(String fileRootName) throws IOException {
 
         String number = Calendar.getInstance().getTime().toString();
@@ -130,8 +184,19 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
         }
     }
 
+    /**
+     *
+     * @param oos
+     * @throws IOException
+     */
     protected abstract void deserializeTwoPointBackground(ObjectInputStream oos) throws IOException;
 
+    /**
+     *
+     * @param persistedFilePath
+     * @return
+     * @throws IOException
+     */
     protected boolean deserializeTwoPointBackground(String persistedFilePath) throws IOException {
 
         File file = new File(persistedFilePath);

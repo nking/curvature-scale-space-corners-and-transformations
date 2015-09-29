@@ -7,28 +7,81 @@ import java.util.Arrays;
 import algorithms.curves.GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM;
 import algorithms.misc.MiscMath;
 
+/**
+ *
+ * @author nichole
+ */
 public abstract class AbstractCurveFitter implements ICurveFitter {
 
+    /**
+     *
+     */
     protected final float[] x;
+
+    /**
+     *
+     */
     protected final float[] y;
 
+    /**
+     *
+     */
     protected final float[] xe;
+
+    /**
+     *
+     */
     protected final float[] ye;
 
+    /**
+     *
+     */
     protected final float xmin; 
+
+    /**
+     *
+     */
     protected final float xmax;
+
+    /**
+     *
+     */
     protected final float ymin;
+
+    /**
+     *
+     */
     protected final float ymax;
 
+    /**
+     *
+     */
     protected float xScale = -1;
     
     // the factor by which the y axis can be multiplied to return it to the original values
-    protected float yScale = -1;
+
+    /**
+     *
+     */
+        protected float yScale = -1;
     
+    /**
+     *
+     */
     protected final GeneralizedExtremeValue gev;
     
+    /**
+     *
+     */
     protected boolean debug = false;
     
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xErrPoints
+     * @param yErrPoints
+     */
     public AbstractCurveFitter(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
 
@@ -70,11 +123,22 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
       
     }
     
+    /**
+     *
+     * @param a
+     * @return
+     */
     protected final float scaleDataTo1(float[] a) {
         float max = MiscMath.findMax(a);
         scaleDataTo1(a, max);
         return max;
     }
+
+    /**
+     *
+     * @param a
+     * @param scale
+     */
     protected final void scaleDataTo1(float[] a, float scale) {
         if (a == null) {
             return;
@@ -159,6 +223,11 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
         return w;
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     protected boolean hasValidValues(float[] a) {
         if (a == null) {
             return false;
@@ -255,6 +324,13 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
        return new float[]{k, sigma};
    }
 
+    /**
+     *
+     * @param weightMethod
+     * @return
+     * @throws FailedToConvergeException
+     * @throws IOException
+     */
     public abstract GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) 
         throws FailedToConvergeException, IOException;
        

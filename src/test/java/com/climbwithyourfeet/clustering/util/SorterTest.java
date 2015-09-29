@@ -10,10 +10,17 @@ import junit.framework.TestCase;
  */
 public class SorterTest extends TestCase {
     
+    /**
+     *
+     * @param testName
+     */
     public SorterTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     */
     public void testMergeSortByXThenY_List() {
         
         List<PairFloat> a = new ArrayList<PairFloat>();

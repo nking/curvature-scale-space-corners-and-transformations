@@ -8,6 +8,15 @@ import java.util.Arrays;
  */
 public class Histogram {
     
+    /**
+     *
+     * @param xMin
+     * @param xMax
+     * @param nBins
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder createSimpleHistogram(
         final float xMin, final float xMax, int nBins, 
         float[] values, float[] valueErrors) {
@@ -47,6 +56,13 @@ public class Histogram {
         return histogram;
     }
     
+    /**
+     *
+     * @param minValue
+     * @param maxValue
+     * @param nBins
+     * @return
+     */
     protected static float calculateBinWidth(float minValue, float maxValue, int nBins) {
 
         float xInterval = (maxValue - minValue)/(float)nBins;
@@ -62,6 +78,16 @@ public class Histogram {
         return xInterval;
     }
     
+    /**
+     *
+     * @param a
+     * @param nBins
+     * @param aMin
+     * @param aMax
+     * @param xHist
+     * @param yHist
+     * @param binWidth
+     */
     public static void createHistogram(float[] a, int nBins,
         float aMin, float aMax, float[] xHist, int[] yHist, float binWidth) {
 

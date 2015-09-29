@@ -13,15 +13,27 @@ import junit.framework.TestCase;
  */
 public class SerializerUtilTest extends TestCase {
 
+    /**
+     *
+     * @param testName
+     */
     public SerializerUtilTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -29,6 +41,7 @@ public class SerializerUtilTest extends TestCase {
 
     /**
      * Test of findResourcesDirectory method, of class SerializerUtil.
+     * @throws java.lang.Exception
      */
     public void testFindTmpDataDirectory() throws Exception {
 
@@ -41,6 +54,10 @@ public class SerializerUtilTest extends TestCase {
         assertTrue(dir.isDirectory());
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testSerializeIndexer() throws Exception {
         System.out.println("testSerializeIndexer()");
         
@@ -50,6 +67,8 @@ public class SerializerUtilTest extends TestCase {
 
     /**
      * Test of serializeIndexer method, of class SerializerUtil.
+     * @param includeErrors
+     * @throws java.lang.Exception
      */
     public void serializeIndexer(boolean includeErrors) throws Exception {
         int npoints = 100;
@@ -132,6 +151,10 @@ public class SerializerUtilTest extends TestCase {
         assertTrue(threwException);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void test0() throws Exception {
         // this isn't used, but completes the coverage
         SerializerUtil util = new SerializerUtil();

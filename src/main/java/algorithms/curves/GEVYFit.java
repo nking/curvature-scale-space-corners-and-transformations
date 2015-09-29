@@ -2,27 +2,81 @@ package algorithms.curves;
 
 import algorithms.misc.MiscMath;
 
+/**
+ *
+ * @author nichole
+ */
 public class GEVYFit implements IYFit {
 
+    /**
+     *
+     */
     protected float[] yfit;
+
+    /**
+     *
+     */
     protected float[] x;
+
+    /**
+     *
+     */
     protected float xScale = 1;
+
+    /**
+     *
+     */
     protected float yScale = 1;
+
+    /**
+     *
+     */
     protected int xPeakIndex = -1;
+
+    /**
+     *
+     */
     protected float k;
+
+    /**
+     *
+     */
     protected float sigma;
+
+    /**
+     *
+     */
     protected float mu;
+
+    /**
+     *
+     */
     protected float chiSqSum = Float.MAX_VALUE;
+
+    /**
+     *
+     */
     protected float chiSqStatistic = Float.MAX_VALUE;
     float kSolutionResolution;
     float sigmaSolutionResolution;
     float muSolutionResolution;
+
+    /**
+     *
+     */
     protected float yDataErrSq;
 
+    /**
+     *
+     */
     protected String[] parameterNames = new String[]{
         "k", "sigma", "mu"
     };
 
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed() {
 
         String arch = System.getProperty("sun.arch.data.model");
@@ -63,10 +117,18 @@ public class GEVYFit implements IYFit {
         return sumBytes;
     }
 
+    /**
+     *
+     * @return
+     */
     public String[] getParameterNames() {
         return parameterNames;
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getParameters() {
         return new float[]{k, sigma, mu};
     }
@@ -81,6 +143,10 @@ public class GEVYFit implements IYFit {
         return sb.toString();
     }
 
+    /**
+     *
+     * @return
+     */
     public float getXPeak() {
         if (xPeakIndex == -1) {
             xPeakIndex = MiscMath.findYMaxIndex(yfit);
@@ -88,6 +154,10 @@ public class GEVYFit implements IYFit {
         return xScale*x[xPeakIndex];
     }
     
+    /**
+     *
+     * @return
+     */
     public int getXPeakIndex() {
         if (xPeakIndex == -1) {
             xPeakIndex = MiscMath.findYMaxIndex(yfit);
@@ -95,42 +165,82 @@ public class GEVYFit implements IYFit {
         return xPeakIndex;
     }
     
+    /**
+     *
+     * @return
+     */
     public float[] getYFit() {
         return yfit;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getK() {
         return k;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getSigma() {
         return sigma;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getMu() {
         return mu;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getKResolution() {
         return kSolutionResolution;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getSigmaResolution() {
         return sigmaSolutionResolution;
     }
     
+    /**
+     *
+     * @return
+     */
     public float getMuSolutionResolution() {
         return muSolutionResolution;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getChiSqSum() {
         return chiSqSum;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getYDataErrSq() {
         return yDataErrSq;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getChiSqStatistic() {
         // minus one if mean was computed from the data
         if (yfit == null) {
@@ -139,11 +249,22 @@ public class GEVYFit implements IYFit {
         return chiSqSum / (yfit.length - 3 - 1);
     }
 
+    /**
+     *
+     * @param index
+     * @param isStepFunction
+     * @return
+     */
     protected float calculateArea(int index, boolean isStepFunction) {
 
         return CurveMisc.calculateArea(x, yfit, index, isStepFunction, xScale, yScale);
     }
 
+    /**
+     *
+     * @param index
+     * @return
+     */
     public float getX(int index) {
         return xScale*x[index];
     }
@@ -155,6 +276,10 @@ public class GEVYFit implements IYFit {
         this.yfit = yfit;
     }
 
+    /**
+     *
+     * @param scale
+     */
     public void setYScale(float scale) {
         this.yScale = scale;
     }
@@ -173,6 +298,10 @@ public class GEVYFit implements IYFit {
         this.x = x;
     }
 
+    /**
+     *
+     * @param scale
+     */
     public void setXScale(float scale) {
         this.xScale = scale;
     }
@@ -219,6 +348,10 @@ public class GEVYFit implements IYFit {
         this.yDataErrSq = yErrSq;
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getOriginalScaleX() {
         if (x == null) {
             return null;
@@ -230,6 +363,10 @@ public class GEVYFit implements IYFit {
         return xsc;
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getOriginalScaleYFit() {
         if (yfit == null) {
             return null;
@@ -241,10 +378,18 @@ public class GEVYFit implements IYFit {
         return ysc;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getXScale() {
         return xScale;
     }
 
+    /**
+     *
+     * @return
+     */
     public float getYScale() {
         return yScale;
     }

@@ -11,10 +11,20 @@ import java.util.logging.Logger;
  */
 public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
+    /**
+     *
+     */
     protected boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalc_Compare_Complete_toPartial() throws Exception {
 
         log.info("testCalc_Compare_Complete_toPartial()");
@@ -89,6 +99,10 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         } catch (IOException e) {}
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void checkRuntimes() throws Exception {
 
         int[] nn = new int[]{10, 1000, 1000000};
@@ -108,6 +122,12 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     * @param n
+     * @param k
+     * @return
+     */
     protected static long computeDiv(int n, int k) {
 
         long result = 1;

@@ -14,13 +14,24 @@ import junit.framework.TestCase;
  */
 public class MiscMathTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -118,6 +129,10 @@ public class MiscMathTest extends TestCase {
         assertTrue(MiscMath.roundUpByLargestPower(5.0f) == 5.0f);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testTaylor() throws Exception {
         double s;
         int i;
@@ -167,6 +182,10 @@ public class MiscMathTest extends TestCase {
         assertTrue(Math.abs(s - -3.38) < 0.1);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testPoissonRandom() throws Exception {
                 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -201,6 +220,10 @@ public class MiscMathTest extends TestCase {
         plotter.writeFile();
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void test0() throws Exception {
         // constructor isn't used, this is to complete the coverage.
         MiscMath mm = new MiscMath();

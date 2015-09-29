@@ -13,15 +13,27 @@ import junit.framework.TestCase;
  */
 public class TwoPointHashTest extends TestCase {
 
+    /**
+     *
+     * @param testName
+     */
     public TwoPointHashTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -53,6 +65,9 @@ public class TwoPointHashTest extends TestCase {
         
     }
 
+    /**
+     *
+     */
     public void testInsert2() {
         
         int count = 105000;

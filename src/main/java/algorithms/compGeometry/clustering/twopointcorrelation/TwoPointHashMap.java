@@ -10,8 +10,8 @@ import java.util.logging.Logger;
  * the indexer.nXY.
  *
  * TwoPointHashMap can only be used if
- *     (N^2) < Integer.MAX_VALUE
- *     ==> N < 46340
+ *     (N^2) &lt; Integer.MAX_VALUE
+ *     ==&gt; N &lt; 46340
  *
  * For datasets with N larger than 46340, the binary search tree impl should be
  * used instead.

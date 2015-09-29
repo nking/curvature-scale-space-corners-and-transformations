@@ -11,6 +11,11 @@ import java.util.Set;
  */
 public class MiscMath {
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static int findPowerOf10_2(float a) {
 
         if (a == 0) {
@@ -36,6 +41,11 @@ public class MiscMath {
         return power;
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static int findPowerOf10(float a) {
 
         if (a == 0) {
@@ -89,6 +99,11 @@ public class MiscMath {
         return max;
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static float findMin(float[] a) {
         float min = Float.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
@@ -151,6 +166,11 @@ public class MiscMath {
         return index;
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static int findYMaxIndex(int[] a) {
         if (a == null) {
             return -1;
@@ -166,6 +186,11 @@ public class MiscMath {
         return index;
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static float[] calculateOuterRoundedMinAndMax(float[] a) {
 
         // find the powers of 10 for the data min and max
@@ -275,6 +300,14 @@ public class MiscMath {
      @param sr an instance of secure random which is a strong random number generator
      @param lambda a value less than 4 roughly looks like the tested dataset histograms
      */
+
+    /**
+     *
+     * @param sr
+     * @param lambda
+     * @return
+     */
+    
     public static int poissonRandom(SecureRandom sr, int lambda) {
 
         double L = Math.exp(-lambda);

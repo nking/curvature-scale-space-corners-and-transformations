@@ -11,18 +11,33 @@ import junit.framework.TestCase;
  */
 public class AxisIndexerStatsTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalculateCellDensities() throws Exception {
         
         AxisIndexerStats stats = new AxisIndexerStats();
@@ -71,6 +86,10 @@ public class AxisIndexerStatsTest extends TestCase {
                 
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testAllAreSame() throws Exception {
         
         AxisIndexerStats stats = new AxisIndexerStats();
@@ -100,6 +119,10 @@ public class AxisIndexerStatsTest extends TestCase {
         assertTrue(fractionOutliers < 0.1f);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testAllAreSame1() throws Exception {
         
         AxisIndexerStats stats = new AxisIndexerStats();
@@ -141,6 +164,10 @@ public class AxisIndexerStatsTest extends TestCase {
         assertTrue(fractionOutliers < 0.1f);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testDoesNotHaveLargeGaps() throws Exception {
         
         AxisIndexerStats stats = new AxisIndexerStats();
@@ -160,6 +187,10 @@ public class AxisIndexerStatsTest extends TestCase {
         assertFalse(same);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testDoesNotHaveLargeGaps2() throws Exception {
         
         AxisIndexerStats stats = new AxisIndexerStats();
@@ -188,6 +219,10 @@ public class AxisIndexerStatsTest extends TestCase {
         assertTrue(fractionOutliers < 0.1f);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testChooseARandomCell() throws Exception {
         
         AxisIndexerStats stats = new AxisIndexerStats();

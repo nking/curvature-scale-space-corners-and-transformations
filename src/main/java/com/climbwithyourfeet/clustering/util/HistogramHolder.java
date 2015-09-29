@@ -14,10 +14,29 @@ public class HistogramHolder {
     
     private static final long serialVersionUID = -7105371701539621066L;
 
+    /**
+     *
+     */
     protected float[] xHist = null;
+
+    /**
+     *
+     */
     protected int[] yHist = null;
+
+    /**
+     *
+     */
     protected float[] yHistFloat = null;
+
+    /**
+     *
+     */
     protected float[] yErrors = null;
+
+    /**
+     *
+     */
     protected float[] xErrors = null;
 
     /**

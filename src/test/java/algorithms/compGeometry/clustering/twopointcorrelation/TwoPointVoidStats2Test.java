@@ -15,8 +15,15 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
 
     boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testTopCentroid() throws Exception {
 
         /* (0)                     | (1)                     | (2)                   | (3)

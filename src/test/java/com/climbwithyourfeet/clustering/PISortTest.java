@@ -13,10 +13,18 @@ public class PISortTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     * @param testName
+     */
     public PISortTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testMergeSort0() throws Exception {
         
         int nPoints = 3;
@@ -31,6 +39,10 @@ public class PISortTest extends TestCase {
         assertOrdered(points);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testQuickSort0() throws Exception {
         
         int nPoints = 3;
@@ -45,6 +57,10 @@ public class PISortTest extends TestCase {
         assertOrdered(points);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testMergeSort1() throws Exception {
         
         PairInt[] points = generateRandomPoints(100);
@@ -54,6 +70,10 @@ public class PISortTest extends TestCase {
         assertOrdered(points);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testQuickSort1() throws Exception {
         
         PairInt[] points = generateRandomPoints(100);

@@ -15,13 +15,13 @@ import java.util.logging.Logger;
   <pre>
   A chi square minimization routine for the Generalized Extreme Value function.
   It has been tailored for use with the two-point correlation algorithm,
-  that is for k > 0.
+  that is for k &gt; 0.
  
   If one knows the range of parameter space for k and sigma, it is better to
   use methods which calculate the fit with that better knowledge.
  
   mu is  the location parameter
-  sigma is the scale parameter and is > 0
+  sigma is the scale parameter and is &gt; 0
   k is the shape parameter
  
                            (   (      ( x-mu))-(1/k))
@@ -35,15 +35,49 @@ import java.util.logging.Logger;
  */
 public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
+    /**
+     *
+     */
     public static final int downhillSimplexStartDivisionsDefault = 1000;
+
+    /**
+     *
+     */
     protected int downhillSimplexStartDivisions = downhillSimplexStartDivisionsDefault;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     *
+     */
     public enum WEIGHTS_DURING_CHISQSUM {
-        ERRORS, INVERSE_Y, MODEL_Y
+
+        /**
+         *
+         */
+        ERRORS,
+
+        /**
+         *
+         */
+        INVERSE_Y,
+
+        /**
+         *
+         */
+        MODEL_Y
     }
 
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param dXPoints
+     * @param dYPoints
+     */
     public GEVChiSquareMinimization(float[] xPoints, float[] yPoints,
         float[] dXPoints, float[] dYPoints) {
 
@@ -210,6 +244,12 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
         return bestFit;
     }
 
+    /**
+     *
+     * @param yfit
+     * @param label
+     * @throws IOException
+     */
     protected void plotFit(GEVYFit yfit, String label) throws IOException {
         
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(
@@ -223,6 +263,15 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
         }
     }
 
+    /**
+     *
+     * @param k
+     * @param sigma
+     * @param mu
+     * @param wdc
+     * @param yNorm
+     * @return
+     */
     public GEVYFit calculateChiSqSumAndCurve(float k, float sigma, float mu, 
         WEIGHTS_DURING_CHISQSUM wdc, float yNorm) {
 

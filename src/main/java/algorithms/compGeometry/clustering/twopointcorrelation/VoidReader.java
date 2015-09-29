@@ -11,6 +11,11 @@ import java.util.logging.Logger;
  */
 public class VoidReader extends AbstractVoidFinder {
 
+    /**
+     *
+     * @param ois
+     * @throws IOException
+     */
     public VoidReader(ObjectInputStream ois) throws IOException {
         
         super();
@@ -20,10 +25,19 @@ public class VoidReader extends AbstractVoidFinder {
         deserializeTwoPointBackground(ois);        
     }
     
+    /**
+     *
+     * @param sampling
+     */
     public void setSampling(VoidSampling sampling) {
         // do nothing
     }
     
+    /**
+     *
+     * @param indexer
+     * @throws TwoPointVoidStatsException
+     */
     public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException {
         
         if (indexer == null) {
@@ -41,16 +55,27 @@ public class VoidReader extends AbstractVoidFinder {
         condenseArrays();
     }
     
+    /**
+     *
+     */
     @Override
     protected void findVoidsImpl() {
         // do nothing.  the voids were already 'found' and read in from ObjectInputStream
     }
 
+    /**
+     *
+     */
     @Override
     public void constructLogger() {
         this.log = Logger.getLogger(this.getClass().getName());
     }
 
+    /**
+     *
+     * @param ois
+     * @throws IOException
+     */
     protected void deserializeTwoPointBackground(ObjectInputStream ois) throws IOException {
         
         this.nTwoPointSurfaceDensities = ois.readInt();

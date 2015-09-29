@@ -21,8 +21,15 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
     boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalc0() throws Exception {
 
         log.info("testCalc0()");
@@ -134,6 +141,10 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
        
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalulateAndHistogramBinErrors() throws Exception {
 
         log.info("testCalulateAndHistogramBinErrors()");
@@ -186,11 +197,24 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testProcessIndexedRegion() throws Exception {
     }
+
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalculateStatsForBackground() throws Exception {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalulateHistogramBinErrors_2() throws Exception {
 
         // note, this dataset needs a GEV with k < 0 which is not allowed by the fitting code
@@ -238,6 +262,10 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalc3() throws Exception {
 
         log.info("testCalc3");
@@ -274,6 +302,10 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         assertNotNull(stats.getBestFit());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalc4() throws Exception {
 
         log.info("testCalc4");
@@ -327,6 +359,10 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         assertNotNull(stats.getBestFit());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void checkRuntimes() throws Exception {
 
         int[] nn = new int[]{10, 1000, 1000000};
@@ -346,6 +382,10 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         }
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testExceptions() throws Exception {
         
         boolean threwException = false;
@@ -367,6 +407,12 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         assertTrue(threwException);
     }
 
+    /**
+     *
+     * @param n
+     * @param k
+     * @return
+     */
     protected static long computeDiv(int n, int k) {
 
         long result = 1;

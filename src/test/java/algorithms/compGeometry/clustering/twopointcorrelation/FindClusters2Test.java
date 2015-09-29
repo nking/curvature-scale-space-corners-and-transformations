@@ -16,8 +16,15 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
     boolean writeToTmpData = false;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindClustersStats() throws Exception {
 
         log.info("testFindClustersStats()");

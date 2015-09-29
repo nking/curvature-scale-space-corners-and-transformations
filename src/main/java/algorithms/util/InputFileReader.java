@@ -13,20 +13,51 @@ import java.util.logging.Logger;
  */
 public class InputFileReader implements IInputFileReader {
 
+    /**
+     *
+     */
     protected float[] x = null;
+
+    /**
+     *
+     */
     protected float[] y = null;
+
+    /**
+     *
+     */
     protected float[] xErrors = null;
+
+    /**
+     *
+     */
     protected float[] yErrors = null;
+
+    /**
+     *
+     */
     protected int nPoints = 0;
 
+    /**
+     *
+     */
     protected Logger log = null;
 
+    /**
+     *
+     */
     protected String filePath = null;
 
+    /**
+     *
+     */
     public InputFileReader(){
         log = Logger.getLogger(this.getClass().getName());
     }
 
+    /**
+     *
+     */
     protected void initArrays() {
         int n = 100;
         x = new float[n];
@@ -35,6 +66,11 @@ public class InputFileReader implements IInputFileReader {
         yErrors = new float[n];
     }
 
+    /**
+     *
+     * @param pathToFile
+     * @throws IOException
+     */
     public void read(String pathToFile) throws IOException {
 
         this.filePath = pathToFile;
@@ -105,6 +141,9 @@ public class InputFileReader implements IInputFileReader {
         }
     }
 
+    /**
+     *
+     */
     protected void expandArraysIfNecessary() {
         
         // 0 1 2 3  nPoints=3    x.length should be at least nPoints+1
@@ -118,6 +157,9 @@ public class InputFileReader implements IInputFileReader {
         }
     }
     
+    /**
+     *
+     */
     protected void condenseArrays() {
         x = Arrays.copyOf(x, nPoints);
         y = Arrays.copyOf(y, nPoints);
@@ -125,18 +167,37 @@ public class InputFileReader implements IInputFileReader {
         yErrors = Arrays.copyOf(yErrors, nPoints);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getX() {
         return x;
     }
+
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getY() {
         return y;
     }
+
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getXErrors() {
         return xErrors;
     }
+
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getYErrors() {
         return yErrors;

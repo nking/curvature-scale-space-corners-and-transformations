@@ -15,19 +15,50 @@ import java.util.regex.Pattern;
  */
 public class InputPhotFileReader implements IInputFileReader{
 
+    /**
+     *
+     */
     protected float[] x = null;
+
+    /**
+     *
+     */
     protected float[] y = null;
+
+    /**
+     *
+     */
     protected float[] xErrors = null;
+
+    /**
+     *
+     */
     protected float[] yErrors = null;
+
+    /**
+     *
+     */
     protected int nPoints = 0;
 
+    /**
+     *
+     */
     protected Logger log = null;
 
+    /**
+     *
+     */
     protected String filePath = null;
 
+    /**
+     *
+     */
     public InputPhotFileReader(){
     }
 
+    /**
+     *
+     */
     protected void initArrays() {
         int n = 100;
         x = new float[n];
@@ -36,10 +67,19 @@ public class InputPhotFileReader implements IInputFileReader{
         yErrors = new float[n];
     }
 
+    /**
+     *
+     * @return
+     */
     protected String getFilePath() {
         return filePath;
     }
 
+    /**
+     *
+     * @param pathToFile
+     * @throws IOException
+     */
     public void read(String pathToFile) throws IOException {
 
         this.filePath = pathToFile;
@@ -128,6 +168,9 @@ public class InputPhotFileReader implements IInputFileReader{
         }
     }
 
+    /**
+     *
+     */
     protected void expandArraysIfNecessary() {
         if (nPoints > (x.length - 2)) {
             int expand = (int)(1.3f*x.length);
@@ -137,6 +180,10 @@ public class InputPhotFileReader implements IInputFileReader{
             yErrors = Arrays.copyOf(yErrors, expand);
         }
     }
+
+    /**
+     *
+     */
     protected void condenseArrays() {
         x = Arrays.copyOf(x, nPoints);
         y = Arrays.copyOf(y, nPoints);
@@ -144,15 +191,34 @@ public class InputPhotFileReader implements IInputFileReader{
         yErrors = Arrays.copyOf(yErrors, nPoints);
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getX() {
         return x;
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getY() {
         return y;
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getXErrors() {
         return xErrors;
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getYErrors() {
         return yErrors;
     }

@@ -12,6 +12,9 @@ import java.util.logging.Logger;
  */
 public class Histogram {
 
+    /**
+     *
+     */
     protected static Logger log = Logger.getLogger(Histogram.class.getName());
 
     /**
@@ -34,6 +37,13 @@ public class Histogram {
         createHistogram(a, nBins, minMax[0], minMax[1], xHist, yHist);
     }
 
+    /**
+     *
+     * @param minValue
+     * @param maxValue
+     * @param nBins
+     * @return
+     */
     protected static float calculateBinWidth(float minValue, float maxValue, int nBins) {
 
         float xInterval = (maxValue - minValue)/(float)nBins;
@@ -49,6 +59,16 @@ public class Histogram {
         return xInterval;
     }
 
+    /**
+     *
+     * @param a
+     * @param nBins
+     * @param aMin
+     * @param aMax
+     * @param xHist
+     * @param yHist
+     * @param binWidth
+     */
     public static void createHistogram(float[] a, int nBins,
         float aMin, float aMax, float[] xHist, int[] yHist, float binWidth) {
 
@@ -76,6 +96,15 @@ public class Histogram {
         }
     }
 
+    /**
+     *
+     * @param a
+     * @param nBins
+     * @param aMin
+     * @param aMax
+     * @param xHist
+     * @param yHist
+     */
     public static void createHistogram(float[] a, int nBins,
         float aMin, float aMax, float[] xHist, int[] yHist) {
 
@@ -96,6 +125,12 @@ public class Histogram {
         createHistogram(a, nBins, aMin, aMax, xHist, yHist, xInterval);
     }
 
+    /**
+     *
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder createSimpleHistogram(float[] values, 
         float[] valueErrors) {
 
@@ -108,6 +143,13 @@ public class Histogram {
         return createSimpleHistogram(nBins, values, valueErrors);
     }
     
+    /**
+     *
+     * @param nBins
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder createSimpleHistogram(int nBins, 
         float[] values, float[] valueErrors) {
 
@@ -148,7 +190,14 @@ public class Histogram {
         return histogram;
     }
 
-     public static HistogramHolder createSimpleHistogram(float binWidth,
+    /**
+     *
+     * @param binWidth
+     * @param values
+     * @param valueErrors
+     * @return
+     */
+    public static HistogramHolder createSimpleHistogram(float binWidth,
         float[] values, float[] valueErrors) {
 
         if (values == null || valueErrors == null ||
@@ -190,8 +239,14 @@ public class Histogram {
 
         return histogram;
     }
-    
-     public static HistogramHolder createSimpleHistogram(int binWidth,
+
+    /**
+     *
+     * @param binWidth
+     * @param theValues
+     * @return
+     */
+    public static HistogramHolder createSimpleHistogram(int binWidth,
         List<Integer> theValues) {
 
         if (theValues == null || theValues.isEmpty()) {
@@ -242,6 +297,15 @@ public class Histogram {
         return histogram;
     }
      
+    /**
+     *
+     * @param xMin
+     * @param xMax
+     * @param nBins
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder createSimpleHistogram(
         final float xMin, final float xMax, int nBins, 
         float[] values, float[] valueErrors) {
@@ -400,9 +464,6 @@ public class Histogram {
     }
     
     /**
-     * determine the errors in determining the width of the histogram for points 
-     * with y above yLimit.  This is meant to determine the error in 
-     * calculations of things like fwhm.
      * 
      * @param xHist
      * @param yHist
@@ -462,6 +523,12 @@ public class Histogram {
         return sum;
     }
 
+    /**
+     *
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder defaultHistogramCreator(float[] values, 
         float[] valueErrors) {
         
@@ -480,6 +547,14 @@ public class Histogram {
         return hist;
     }
     
+    /**
+     *
+     * @param xMin
+     * @param xMax
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder calculateSturgesHistogram(
         final float xMin, final float xMax,
         float[] values, float[] valueErrors) {
@@ -528,6 +603,12 @@ public class Histogram {
         return histogram;
     }
     
+    /**
+     *
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder calculateSturgesHistogramRemoveZeroTail(
         float[] values, float[] valueErrors) {
     
@@ -673,6 +754,11 @@ public class Histogram {
         return tmp;
     }
 
+    /**
+     *
+     * @param hist
+     * @return
+     */
     public static int findFirstPeakIndex(HistogramHolder hist) {
         
         float yPeak = Float.MIN_VALUE;
@@ -692,6 +778,12 @@ public class Histogram {
         return yPeakIdx;
     }
 
+    /**
+     *
+     * @param hist
+     * @param yPeakIdx
+     * @return
+     */
     public static int findFirstMinimaFollowingPeak(HistogramHolder hist, 
         int yPeakIdx) {
     

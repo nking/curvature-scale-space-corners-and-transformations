@@ -18,6 +18,14 @@ public class PolarAngleMergeSort {
      */
     protected static final double eps = 0.0000000001;//Double.MAX_VALUE;
 
+    /**
+     *
+     * @param xP0
+     * @param yP0
+     * @param x
+     * @param y
+     * @return
+     */
     public static int sort(float xP0, float yP0, float[] x, float[] y) {
 
         if (x == null) {
@@ -117,6 +125,16 @@ public class PolarAngleMergeSort {
         return lastKeptIndex + 1;
     }
 
+    /**
+     *
+     * @param xP0
+     * @param yP0
+     * @param x
+     * @param y
+     * @param indexLo
+     * @param indexHi
+     * @param polarAngle
+     */
     protected static void sort(float xP0, float yP0, float[] x, float[] y, int indexLo, int indexHi, double[] polarAngle) {
 
         int indexMid = -1;

@@ -12,12 +12,35 @@ public class HistogramHolder implements Externalizable {
 
     private static final long serialVersionUID = -7105371701539621066L;
 
+    /**
+     *
+     */
     protected float[] xHist = null;
+
+    /**
+     *
+     */
     protected int[] yHist = null;
+
+    /**
+     *
+     */
     protected float[] yHistFloat = null;
+
+    /**
+     *
+     */
     protected float[] yErrors = null;
+
+    /**
+     *
+     */
     protected float[] xErrors = null;
 
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed() {
 
         String arch = System.getProperty("sun.arch.data.model");

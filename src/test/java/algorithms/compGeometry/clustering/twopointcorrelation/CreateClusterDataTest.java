@@ -26,18 +26,45 @@ import java.util.logging.Logger;
  */
 public class CreateClusterDataTest extends BaseTwoPointTest {
 
+    /**
+     *
+     */
     public static final String histogramFileNamePrefix = "histogram_random_background_with_";
 
+    /**
+     *
+     */
     public static final String indexerFileNamePrefix = "indexer_random_background_with_";
 
+    /**
+     *
+     */
     public static final String indexerSpatialDistrFileNamePrefix = "indexer_spatial_distr_with_";
+
+    /**
+     *
+     */
     public static final String spatialDistrFewOutliers = "_few_outliers";
+
+    /**
+     *
+     */
     public static final String spatialDistrManyOutliers = "_many_outliers";
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     */
     protected boolean enable = false;
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCreateData() throws Exception {
 
         if (!enable) {
@@ -296,6 +323,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         count++;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String[] getSpatialDistributionTestFilePaths() throws IOException {
 
         String tmpDataDirPath = ResourceFinder.findTmpDataDirectory();
@@ -313,6 +345,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         return filePaths;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String[] getHistogramFilePaths() throws IOException {
 
         String tmpDataDirPath = ResourceFinder.findTmpDataDirectory();
@@ -330,6 +367,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         return filePaths;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String[] getIndexerFilePaths() throws IOException {
 
         String tmpDataDirPath = ResourceFinder.findTmpDataDirectory();
@@ -347,6 +389,9 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         return filePaths;
     }
 
+    /**
+     *
+     */
     protected static class HistogramFileFilter implements FileFilter {
         @Override
         public boolean accept(File pathname) {
@@ -357,6 +402,9 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     */
     protected static class IndexerFileFilter implements FileFilter {
         @Override
         public boolean accept(File pathname) {
@@ -367,6 +415,9 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     */
     protected static class SpatialDistrFileFilter implements FileFilter {
         @Override
         public boolean accept(File pathname) {
@@ -377,14 +428,31 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     * @param filePath
+     * @return
+     */
     public static boolean nameSuggestsBackgroundIsSparse(String filePath) {
         return (filePath.contains(spatialDistrFewOutliers));
     }
 
+    /**
+     *
+     * @param filePath
+     * @return
+     * @throws IOException
+     */
     public static AxisIndexer readIndexer(String filePath) throws IOException {
         return SerializerUtil.readPersistedPoints(filePath, true);
     }
 
+    /**
+     *
+     * @param filePath
+     * @return
+     * @throws IOException
+     */
     public static HistogramHolder readHistogram(String filePath) throws IOException {
 
         HistogramHolder histogram = new HistogramHolder();
@@ -420,6 +488,12 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         SerializerUtil.serializeIndexer(indexer, filePath);
     }
 
+    /**
+     *
+     * @param filePath
+     * @param histogram
+     * @throws IOException
+     */
     protected static void writeHistogram(String filePath, HistogramHolder histogram) throws IOException {
 
         FileOutputStream fileOutputStream = null;
@@ -447,12 +521,20 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     */
     protected class TwoPointVoidStatsExt extends TwoPointVoidStats {
 
         public TwoPointVoidStatsExt(AxisIndexer indexer) {
             super(indexer);
         }
 
+        /**
+         *
+         * @return
+         * @throws TwoPointVoidStatsException
+         */
         public HistogramHolder constructAndFitHistogram() throws TwoPointVoidStatsException {
 
             calc();
@@ -461,6 +543,12 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
     }
     
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static AxisIndexer getUEFClusteringDataset(String fileName) throws IOException {
         
         String dirPath = ResourceFinder.findDirectory("uEasternFinlandClustering");

@@ -15,10 +15,18 @@ import junit.framework.TestCase;
  */
 public class CriticalDensitySolverTest extends TestCase {
     
+    /**
+     *
+     * @param testName
+     */
     public CriticalDensitySolverTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindCriticalDensity_ran() throws Exception {
 
         String[] fileNames = new String[]{
@@ -67,6 +75,10 @@ public class CriticalDensitySolverTest extends TestCase {
         }
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindCriticalDensity_other() throws Exception {
 
         String[] fileNames = new String[]{
@@ -111,6 +123,10 @@ public class CriticalDensitySolverTest extends TestCase {
         }
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindCriticalDensity_no_clusters() throws Exception {
 
         String[] fileNames = new String[]{

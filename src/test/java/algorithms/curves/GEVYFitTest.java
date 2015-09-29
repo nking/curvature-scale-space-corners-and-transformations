@@ -10,13 +10,24 @@ import junit.framework.TestCase;
  */
 public class GEVYFitTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
     
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -82,6 +93,10 @@ public class GEVYFitTest extends TestCase {
         assertTrue(yfit.getYScale() == yScale);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void test0() throws Exception {
         // for coverage tool:
         CurveMisc cm = new CurveMisc();

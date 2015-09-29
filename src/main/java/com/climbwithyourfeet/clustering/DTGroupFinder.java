@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 /**
  *
  * @author nichole
+ * @param <T>
  */
 public class DTGroupFinder<T extends PairInt> {
     /**
@@ -24,12 +25,20 @@ public class DTGroupFinder<T extends PairInt> {
      */
     protected List<Set<T> > groupMembership = new ArrayList<Set<T>>();
     
+    /**
+     *
+     */
     protected Logger log = null;
         
      /*
      * map w/ key holding indexes for a point to the group it belongs to.
      * note that the point index is relative to indexer.x and indexer.y
      */
+
+    /**
+     *
+     */
+    
     protected Map<T, Integer> pointToGroupMap = new HashMap<T, Integer>();
     
     /**
@@ -39,28 +48,58 @@ public class DTGroupFinder<T extends PairInt> {
     protected TreeMap<Integer, Set<Integer>> mergeGroupsBeforePrune = new
         TreeMap<Integer, Set<Integer>>();
     
+    /**
+     *
+     */
     protected int minimumNumberInCluster = 3;
     
+    /**
+     *
+     */
     protected boolean notValue = false;
     
+    /**
+     *
+     */
     protected boolean debug = false;
     
+    /**
+     *
+     */
     protected float threshholdFactor = 2.5f;
     
+    /**
+     *
+     */
     protected float critDensity = 0;
             
+    /**
+     *
+     */
     public DTGroupFinder() {                
         this.log = Logger.getLogger(this.getClass().getName());
     }
         
+    /**
+     *
+     * @param n
+     */
     public void setMinimumNumberInCluster(int n) {
         this.minimumNumberInCluster = n;
     }
     
+    /**
+     *
+     * @param setDebugToTrue
+     */
     public void setDebug(boolean setDebugToTrue) {
         this.debug = setDebugToTrue;
     }
     
+    /**
+     *
+     * @param factor
+     */
     public void setThreshholdFactor(float factor) {
         this.threshholdFactor = factor;
     }
@@ -71,8 +110,6 @@ public class DTGroupFinder<T extends PairInt> {
      * runtime complexity is O(N_points * lg2(N_points)).
      * @param criticalDensity
      * @param points
-     * @param width
-     * @param height 
      */
     void calculateGroups(float criticalDensity, Set<T> points) {
         
@@ -99,6 +136,13 @@ public class DTGroupFinder<T extends PairInt> {
         prune(); 
     }
     
+    /**
+     * find groups within points using the threshold to calculate the critical
+     * separation, then groups are connected points closer to one another than
+     * the critical separation.
+     * @param thrsh
+     * @param points 
+     */
     private void findGroups(float thrsh, Set<T> points) {
         
         if (points.isEmpty()) {
@@ -349,6 +393,10 @@ public class DTGroupFinder<T extends PairInt> {
         }
     }
     
+    /**
+     *
+     * @param uPoint
+     */
     protected void process(T uPoint) {
                 
         Integer groupId = pointToGroupMap.get(uPoint);

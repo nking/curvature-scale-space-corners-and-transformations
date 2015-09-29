@@ -14,19 +14,39 @@ import algorithms.compGeometry.clustering.twopointcorrelation.TwoPointCorrelatio
 
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class InputFileReaderTest extends TestCase {
 
+    /**
+     *
+     */
     protected boolean runForCoverage = false;
     
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
+
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testRead() throws Exception {
         
         int n = 1000;
@@ -56,6 +76,10 @@ public class InputFileReaderTest extends TestCase {
        
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testMainRunner() throws Exception {
         
         if (!runForCoverage) {
@@ -108,6 +132,13 @@ public class InputFileReaderTest extends TestCase {
         
     }
     
+    /**
+     *
+     * @param n
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     protected String writeFile(int n) throws NoSuchAlgorithmException, IOException {
 
         String filePath = getLocalPath() + "/tmp.txt";
@@ -146,6 +177,13 @@ public class InputFileReaderTest extends TestCase {
         return filePath;
     }
     
+    /**
+     *
+     * @param indexer
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     protected String writeFile(AxisIndexer indexer) throws NoSuchAlgorithmException, IOException {
         
         String filePath = getLocalPath() + "/tmp.txt";
@@ -181,6 +219,10 @@ public class InputFileReaderTest extends TestCase {
         return filePath;
     }
     
+    /**
+     *
+     * @return
+     */
     protected String getLocalPath() {
         
         ClassLoader cls = ResourceFinder.class.getClassLoader();

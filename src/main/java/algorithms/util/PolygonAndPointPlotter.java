@@ -13,14 +13,50 @@ import java.io.IOException;
  */
 public class PolygonAndPointPlotter {
 
+    /**
+     *
+     */
     protected final StringBuffer plotContent;
 
+    /**
+     *
+     */
     protected int plotNumber = 0;
 
+    /**
+     *
+     */
     protected boolean dataMinMaxAreSet = false;
     
-    protected float minX, maxX, minY, maxY;
+    /**
+     *
+     */
+    protected float minX;
 
+    /**
+     *
+     */
+    protected float maxX;
+
+    /**
+     *
+     */
+    protected float minY;
+
+    /**
+     *
+     */
+    protected float maxY;
+
+    /**
+     *
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public PolygonAndPointPlotter(float minX, float maxX, float minY, 
         float maxY) throws FileNotFoundException, IOException {
 
@@ -29,11 +65,24 @@ public class PolygonAndPointPlotter {
         setDataMinMax(plotContent, minX, maxX, minY, maxY);
     }
 
+    /**
+     *
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public PolygonAndPointPlotter() throws FileNotFoundException, IOException {
 
         plotContent = getTemplateHtmlPlot();
     }
 
+    /**
+     *
+     * @param plotContent
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     */
     protected void setDataMinMax(StringBuffer plotContent, 
         float minX, float maxX, float minY, float maxY) {
 
@@ -60,6 +109,18 @@ public class PolygonAndPointPlotter {
         dataMinMaxAreSet = true;
     }
 
+    /**
+     *
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     * @param xPoints
+     * @param yPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(float minX, float maxX, float minY, float maxY,
         int[] xPoints, int[] yPoints, int[] xPolygon, int[] yPolygon, 
         String plotLabel) {
@@ -86,6 +147,18 @@ public class PolygonAndPointPlotter {
             x1, y1, plotLabel);
     }
     
+    /**
+     *
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     * @param xPoints
+     * @param yPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(float minX, float maxX, float minY, float maxY,
         float[] xPoints, float[] yPoints, float[] xPolygon, float[] yPolygon, 
         String plotLabel) {
@@ -94,6 +167,14 @@ public class PolygonAndPointPlotter {
             xPolygon, yPolygon, plotLabel);
     }
 
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(int[] xPoints, float[] yPoints, int[] xPolygon, 
         float[] yPolygon, String plotLabel) {
         
@@ -113,12 +194,28 @@ public class PolygonAndPointPlotter {
     	addPlot(xx, yPoints, null, null, xp, yPolygon, plotLabel);
     }
 
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(float[] xPoints, float[] yPoints, float[] xPolygon, 
         float[] yPolygon, String plotLabel) {
         
         addPlot(xPoints, yPoints, null, null, xPolygon, yPolygon, plotLabel);
     }
     
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(int[] xPoints, int[] yPoints, int[] xPolygon, 
         int[] yPolygon, String plotLabel) {
         
@@ -143,6 +240,14 @@ public class PolygonAndPointPlotter {
         addPlot(x0, y0, Null, Null, x1, y1, plotLabel);
     }
     
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(float[] xPoints, float[] yPoints, int[] xPolygon, 
         int[] yPolygon, String plotLabel) {
         
@@ -161,6 +266,16 @@ public class PolygonAndPointPlotter {
         addPlot(xPoints, yPoints, Null, Null, x1, y1, plotLabel);
     }
     
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xErrPoints
+     * @param yErrPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(float[] xPoints, float[] yPoints, float[] xErrPoints, 
         float[] yErrPoints, float[] xPolygon, float[] yPolygon, 
         String plotLabel) {
@@ -291,6 +406,14 @@ public class PolygonAndPointPlotter {
         plotNumber++;
     }
 
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPolygon
+     * @param yPolygon
+     * @param plotLabel
+     */
     public void addPlot(double[] xPoints, double[] yPoints, double[] xPolygon, 
         double[] yPolygon, String plotLabel) {
 
@@ -314,10 +437,23 @@ public class PolygonAndPointPlotter {
         addPlot(xx, yy, null, null, xp, yp, plotLabel);
     }
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, IOException {
         return getTemplateHtmlPlot("plot_points_and_polygon.html");
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String fileName) throws FileNotFoundException, IOException {
 
         String path = ResourceFinder.findFileInResources(fileName);
@@ -344,33 +480,73 @@ public class PolygonAndPointPlotter {
         return sb;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile() throws IOException {
         return writeToFile(this.plotContent.toString(), "points_and_polygon.html");
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile2() throws IOException {
         return writeToFile(this.plotContent.toString(), "points_and_polygon2.html");
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile3() throws IOException {
         return writeToFile(this.plotContent.toString(), "points_and_polygon3.html");
     }
     
+    /**
+     *
+     * @param num
+     * @return
+     * @throws IOException
+     */
     public String writeFile(Integer num) throws IOException {
         return writeToFile(this.plotContent.toString(), 
             "points_and_polygon" + num.toString() +".html");
     }
     
+    /**
+     *
+     * @param fileSuffix
+     * @return
+     * @throws IOException
+     */
     public String writeFile(String fileSuffix) throws IOException {
         return writeToFile(this.plotContent.toString(), 
             "points_and_polygon_" + fileSuffix + ".html");
     }
     
+    /**
+     *
+     * @param num
+     * @return
+     * @throws IOException
+     */
     public String writeFile(long num) throws IOException {
         return writeToFile(this.plotContent.toString(), 
             "points_and_polygon" + Long.toString(num) +".html");
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     protected String writeToFile(String fileContent, String fileName) throws IOException {
 
         return ResourceFinder.writeToCWD(fileContent, fileName);

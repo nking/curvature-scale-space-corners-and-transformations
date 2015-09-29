@@ -20,6 +20,7 @@ import javax.imageio.ImageIO;
  * runtime complexity ~ O(N_pixels) + ~O(N_points * lg2(N_points))
  * 
  * @author nichole
+ * @param <T>
  */
 public class DTClusterFinder<T extends PairInt> {
     
@@ -45,6 +46,12 @@ public class DTClusterFinder<T extends PairInt> {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     * @param thePoints
+     * @param width
+     * @param height
+     */
     public DTClusterFinder(Set<T> thePoints, int width, int height) {
         
         this.points = thePoints;
@@ -54,18 +61,32 @@ public class DTClusterFinder<T extends PairInt> {
         state = STATE.INIT;
     }
     
+    /**
+     *
+     */
     public void setToDebug() {
         debug = true;
     }
     
+    /**
+     *
+     * @param factor
+     */
     public void setThreshholdFactor(float factor) {
         this.threshholdFactor = factor;
     }
     
+    /**
+     *
+     * @param n
+     */
     public void setMinimumNumberInCluster(int n) {
         this.minimumNumberInCluster = n;
     }
     
+    /**
+     *
+     */
     public void calculateCriticalDensity() {
         
         if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) > -1) {
@@ -101,6 +122,10 @@ public class DTClusterFinder<T extends PairInt> {
         this.state = STATE.HAVE_CLUSTER_DENSITY;
     }
     
+    /**
+     *
+     * @param dens
+     */
     public void setCriticalDensity(float dens) {
         
         if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) > -1) {
@@ -112,6 +137,9 @@ public class DTClusterFinder<T extends PairInt> {
         this.state = STATE.HAVE_CLUSTER_DENSITY;
     }
     
+    /**
+     *
+     */
     public void findClusters() {
         
         if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) < 0) {
@@ -130,6 +158,10 @@ public class DTClusterFinder<T extends PairInt> {
         
     }
     
+    /**
+     *
+     * @return
+     */
     public int getNumberOfClusters() {
         
         if (groupFinder == null) {
@@ -139,6 +171,11 @@ public class DTClusterFinder<T extends PairInt> {
         return groupFinder.getNumberOfGroups();
     }
     
+    /**
+     *
+     * @param idx
+     * @return
+     */
     public Set<T> getCluster(int idx) {
         
         if (groupFinder == null) {
@@ -153,6 +190,10 @@ public class DTClusterFinder<T extends PairInt> {
         return groupFinder.getGroup(idx);
     }
     
+    /**
+     *
+     * @return
+     */
     public float getCriticalDensity() {
         return critDens;
     }

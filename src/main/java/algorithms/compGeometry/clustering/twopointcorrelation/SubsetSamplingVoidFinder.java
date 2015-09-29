@@ -11,20 +11,35 @@ import java.util.logging.Logger;
  */
 public class SubsetSamplingVoidFinder extends AbstractVoidFinder {
         
+    /**
+     *
+     */
     protected int sortedIdxLo = -1;
     
+    /**
+     *
+     */
     protected int sortedIdxHi = -1;
     
+    /**
+     *
+     */
     public void constructLogger() {
         this.log = Logger.getLogger(this.getClass().getName());
-    }   
-    
+    }
+
+    /**
+     *
+     */
     @Override
     protected void findVoidsImpl() {
 
         findVoidsByPairBounds();
     }
     
+    /**
+     *
+     */
     @Override
     protected void initializeVariables() {
         

@@ -17,6 +17,10 @@ import java.util.Map.Entry;
  */
 public class Main {
 
+    /**
+     *
+     * @param args
+     */
     public static void main(String[] args) {
 
         String dir = System.getProperty("user.dir") + "/photfiles";
@@ -61,6 +65,13 @@ public class Main {
         }
     }
 
+    /**
+     *
+     * @param args
+     * @throws IOException
+     * @throws FileNotFoundException
+     * @throws algorithms.compGeometry.clustering.twopointcorrelation.TwoPointVoidStatsException
+     */
     public static void run(String[] args) throws IOException, 
         FileNotFoundException, TwoPointVoidStatsException {
 

@@ -12,15 +12,27 @@ import junit.framework.TestCase;
  */
 public class FindClusters3Test extends TestCase {
 
+    /**
+     *
+     * @param testName
+     */
     public FindClusters3Test(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -30,8 +42,15 @@ public class FindClusters3Test extends TestCase {
 
     boolean persistHistogram = false;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindClusters() throws Exception {
 
         log.info("testFindClusters()");

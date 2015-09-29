@@ -17,6 +17,10 @@ import algorithms.compGeometry.clustering.twopointcorrelation.SimpleLinkedListNo
  */
 public class Stack extends SimpleLinkedListNode {
 
+    /**
+     *
+     * @return
+     */
     public SimpleLinkedListNode pop() {
         
         if (this.key == -1) {
@@ -40,10 +44,18 @@ public class Stack extends SimpleLinkedListNode {
         return node;        
     }
     
+    /**
+     *
+     * @return
+     */
     public int peek() {
         return this.key;
     }
     
+    /**
+     *
+     * @return
+     */
     public boolean isEmpty() {
         
         return (this.key == -1);

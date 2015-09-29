@@ -13,15 +13,27 @@ import junit.framework.TestCase;
  */
 public class TwoPointBinarySearchTreeTest extends TestCase {
 
+    /**
+     *
+     * @param testName
+     */
     public TwoPointBinarySearchTreeTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -87,6 +99,11 @@ public class TwoPointBinarySearchTreeTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @param node
+     * @return
+     */
     protected List<Node> preOrderTraversal(Node node) {
             
         List<Node> list = new ArrayList<Node>();

@@ -29,6 +29,10 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindRanGenClusters() throws Exception {
         
         float xmin = 0;
@@ -168,6 +172,10 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         log.info("SEED=" + seed);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindClustersOtherData() throws Exception {
         
         String[] fileNames = {
@@ -235,6 +243,10 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         plotter.writeFile2();
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testNoClusters() throws Exception {
         
         /* Goal of this test is to examine the substructure created by increasing numbers of randomly 
@@ -362,6 +374,13 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         log.info("SEED=" + seed);
     }
     
+    /**
+     *
+     * @param values
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String writeDataset(float[] values, String fileName) throws 
         IOException {
         
@@ -463,6 +482,11 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         }
     }
     
+    /**
+     *
+     * @param clrCount
+     * @return
+     */
     public int getNextColorRGB(int clrCount) {
         
         if (clrCount == -1) {

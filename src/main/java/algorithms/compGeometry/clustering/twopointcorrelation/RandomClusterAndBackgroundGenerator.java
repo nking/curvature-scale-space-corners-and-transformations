@@ -22,17 +22,48 @@ public class RandomClusterAndBackgroundGenerator {
 
     Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     *
+     */
     public static enum CLUSTER_SEPARATION {
-        SMALL, MODERATE, LARGE
+
+        /**
+         *
+         */
+        SMALL,
+
+        /**
+         *
+         */
+        MODERATE,
+
+        /**
+         *
+         */
+        LARGE
     }
 
+    /**
+     *
+     * @return
+     */
     protected int getExpectedNumberOfClusters() {
         return (xc == null) ? 0 : xc.length;
     }
+
+    /**
+     *
+     * @return
+     */
     protected int getTotalNumberOfPoints() {
         return (x == null) ? 0 : x.length;
     }
 
+    /**
+     *
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     public AxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
 
         float xmin = 0;
@@ -43,6 +74,15 @@ public class RandomClusterAndBackgroundGenerator {
         return createIndexerWithRandomPoints(xmin, xmax, ymin, ymax);
     }
 
+    /**
+     *
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     public AxisIndexer createIndexerWithRandomPoints(float xmin,
         float xmax, float ymin, float ymax) throws NoSuchAlgorithmException {
 
@@ -116,6 +156,18 @@ public class RandomClusterAndBackgroundGenerator {
         return createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax, nClusters, nBackgroundPoints, clusterSep);
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param nClusters
+     * @param nBackgroundPoints
+     * @param clusterSeparation
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
 
@@ -127,6 +179,19 @@ public class RandomClusterAndBackgroundGenerator {
         return indexer;
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfClusters
+     * @param minimumNumberOfPointsPerCluster
+     * @param maximumNumberOfPointsPerCluster
+     * @param backgroundPointFractionToClusters
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters) {
@@ -154,6 +219,20 @@ public class RandomClusterAndBackgroundGenerator {
         return indexer;
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfClusters
+     * @param minimumNumberOfPointsPerCluster
+     * @param maximumNumberOfPointsPerCluster
+     * @param backgroundPointFractionToClusters
+     * @param clusterSeparation
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters, CLUSTER_SEPARATION clusterSeparation) {
@@ -178,6 +257,17 @@ public class RandomClusterAndBackgroundGenerator {
         return indexer;
     }
 
+    /**
+     *
+     * @param sr
+     * @param maxRadius
+     * @param numberOfPoints
+     * @param xc0
+     * @param yc0
+     * @param x0
+     * @param y0
+     * @param xyStartOffset
+     */
     protected void createRandomPointsAroundCenter(SecureRandom sr, float maxRadius,
         int numberOfPoints, float xc0, float yc0, float[] x0, float[] y0, int xyStartOffset) {
 
@@ -338,6 +428,18 @@ public class RandomClusterAndBackgroundGenerator {
         }
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfPointsToCreate
+     * @param xPoints
+     * @param yPoints
+     * @param minSeparationBetweenPoints
+     */
     protected void createRandomSeparatedPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfPointsToCreate, float[] xPoints, float[] yPoints, float minSeparationBetweenPoints) {
 
@@ -364,6 +466,16 @@ public class RandomClusterAndBackgroundGenerator {
         }
     }
 
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param nXY
+     * @param xp
+     * @param yp
+     * @param minimumSeparation
+     * @return
+     */
     protected boolean separationBetweenExistingPointsIsLargerThanMin(float[] x0, float[] y0, int nXY,
         float xp, float yp, float minimumSeparation) {
 
@@ -386,6 +498,18 @@ public class RandomClusterAndBackgroundGenerator {
         return true;
     }
 
+    /**
+     *
+     * @param sr
+     * @param nBackgroundPoints
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param x0
+     * @param y0
+     * @param xyStartOffset
+     */
     protected void createRandomPointsInRectangle(SecureRandom sr, int nBackgroundPoints,
         float xmin, float xmax, float ymin, float ymax,
         float[] x0, float[] y0,  int xyStartOffset) {
@@ -399,6 +523,18 @@ public class RandomClusterAndBackgroundGenerator {
         }
     }
     
+    /**
+     *
+     * @param numberOfBackgroundPoints
+     * @param numberOfClusterPoints
+     * @param clusterSeparation
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param sr
+     * @param useRandomForErrors
+     */
     protected void createPoints(int numberOfBackgroundPoints, int[] numberOfClusterPoints,
         CLUSTER_SEPARATION clusterSeparation,
         float xmin, float xmax, float ymin, float ymax, SecureRandom sr, boolean useRandomForErrors) {
@@ -448,7 +584,9 @@ public class RandomClusterAndBackgroundGenerator {
      * @param clusterSeparation
      * @param xx
      * @param yy
+     * @param xcenters
      * @param startOffset
+     * @param ycenters
      */
     public void createRandomClusters(SecureRandom sr, float xmin, float xmax, float ymin, float ymax, 
         int[] numberOfClusterPoints, CLUSTER_SEPARATION clusterSeparation, float[] xx, float[] yy, 
@@ -496,6 +634,17 @@ public class RandomClusterAndBackgroundGenerator {
         }
     }
 
+    /**
+     *
+     * @param sr
+     * @param numberOfClusterPoints
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param maximumRadius
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPointsAroundCenterWithDSquared(
         SecureRandom sr, int numberOfClusterPoints,
         float xmin, float xmax, float ymin, float ymax, float maximumRadius) {
@@ -542,12 +691,13 @@ public class RandomClusterAndBackgroundGenerator {
     }
 
      /**
-     *      |
-     *      |
-     * -----|.....  <---- angle is w.r.t y=0, x=xc.  increases in CW order
-     *      |
-     *      |
-     *
+     <pre>
+            |
+            |
+       -----|.....  &lt;---- angle is w.r.t y=0, x=xc.  increases in CW order
+            |
+            |
+     </pre>
      * @param xc
      * @param yc
      * @param radius
@@ -565,12 +715,13 @@ public class RandomClusterAndBackgroundGenerator {
     }
 
     /**
-     *   *  |  *
-     *      |
-     * -----|.....  <---- angle is w.r.t y=0, x=xc.  increases in CCW order
-     *  *   |
-     *      |  *
-     *
+     <pre>
+         *  |  *
+            |
+       -----|.....  &lt;---- angle is w.r.t y=0, x=xc.  increases in CCW order
+        *   |
+            |  *
+     </pre>
      * @param xc
      * @param yc
      * @param radius

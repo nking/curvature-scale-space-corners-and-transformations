@@ -34,15 +34,45 @@ The path to the output file is printed to standard out.
 */
 public class TwoPointCorrelationPlotter {
 
+    /**
+     *
+     */
     protected final StringBuffer plotContent;
 
+    /**
+     *
+     */
     protected int plotNumber = 0;
     
+    /**
+     *
+     */
     protected Float x0 = null;
+
+    /**
+     *
+     */
     protected Float x1 = null;
+
+    /**
+     *
+     */
     protected Float y0 = null;
+
+    /**
+     *
+     */
     protected Float y1 = null;
 
+    /**
+     *
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public TwoPointCorrelationPlotter(float minX, float maxX, float minY, float maxY) throws FileNotFoundException, IOException {
 
         plotContent = getTemplateHtmlPlot();
@@ -50,11 +80,26 @@ public class TwoPointCorrelationPlotter {
         setDataMinMax(plotContent, minX, maxX, minY, maxY);
     }
     
+    /**
+     *
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public TwoPointCorrelationPlotter() throws FileNotFoundException, IOException {
 
         plotContent = getTemplateHtmlPlot();
     }
 
+    /**
+     *
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     * @param relDirectory
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public TwoPointCorrelationPlotter(float minX, float maxX, float minY, float maxY, String relDirectory) throws FileNotFoundException, IOException {
 
         plotContent = getTemplateHtmlPlotWRTDir(relDirectory);
@@ -62,6 +107,14 @@ public class TwoPointCorrelationPlotter {
         setDataMinMax(plotContent, minX, maxX, minY, maxY);
     }
 
+    /**
+     *
+     * @param plotContent
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     */
     protected void setDataMinMax(StringBuffer plotContent, float minX, 
         float maxX, float minY, float maxY) {
 
@@ -86,10 +139,19 @@ public class TwoPointCorrelationPlotter {
         plotContent.insert(insertOffset, dataSB.toString());
     }
 
+    /**
+     *
+     * @param twoPtCorr
+     */
     public void addPlot(TwoPointCorrelation twoPtCorr) {
         addPlot(twoPtCorr, null);
     }
 
+    /**
+     *
+     * @param twoPtCorr
+     * @param plotLabel2
+     */
     public void addPlot(TwoPointCorrelation twoPtCorr, String plotLabel2) {
 
         StringBuffer dataSB = new StringBuffer();
@@ -248,6 +310,11 @@ public class TwoPointCorrelationPlotter {
         plotNumber++;
     }
 
+    /**
+     *
+     * @param twoPtCorr
+     * @param plotLabel2
+     */
     public void addPlotWithoutHull(TwoPointCorrelation twoPtCorr, String plotLabel2) {
         
         if (x0 == null) {
@@ -260,6 +327,15 @@ public class TwoPointCorrelationPlotter {
         addPlotWithoutHull(twoPtCorr, plotLabel2, x0, x1, y0, y1);
     }
     
+    /**
+     *
+     * @param twoPtCorr
+     * @param plotLabel2
+     * @param xMin
+     * @param xMax
+     * @param yMin
+     * @param yMax
+     */
     public void addPlotWithoutHull(TwoPointCorrelation twoPtCorr, 
         String plotLabel2, Float xMin, Float xMax, Float yMin, Float yMax) {
 
@@ -465,16 +541,37 @@ public class TwoPointCorrelationPlotter {
         plotNumber++;
     }
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, 
         IOException {
         return getTemplateHtmlPlot("plot_twoptcorrelation.html");
     }
 
+    /**
+     *
+     * @param relDir
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlotWRTDir(String relDir) throws 
         FileNotFoundException, IOException {
         return getTemplateHtmlPlot(relDir, "plot_twoptcorrelation.html");
     }
 
+    /**
+     *
+     * @param subDir
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String subDir, String fileName) 
         throws FileNotFoundException, IOException {
 
@@ -508,6 +605,13 @@ public class TwoPointCorrelationPlotter {
         return sb;
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String fileName) throws 
         FileNotFoundException, IOException {
 
@@ -561,13 +665,31 @@ public class TwoPointCorrelationPlotter {
         return sb;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile() throws IOException {
         return writeToFile(this.plotContent.toString(), "twoptcorrelation.html");
     }
+
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile3() throws IOException {
         return writeToFile(this.plotContent.toString(), "twoptcorrelation3.html");
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     protected String writeToFile(String fileContent, String fileName) throws IOException {
 
         String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);

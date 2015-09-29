@@ -12,31 +12,74 @@ import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class GEVChiSquareMinimizationTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     */
     protected float[] x = null;
+
+    /**
+     *
+     */
     protected float[] y = null;
+
+    /**
+     *
+     */
     protected float[] dx = null;
+
+    /**
+     *
+     */
     protected float[] dy = null;
 
+    /**
+     *
+     */
     protected boolean debug = true;
 
+    /**
+     *
+     */
     protected GEVChiSquareMinimization chiSqMin = null;
 
+    /**
+     *
+     */
     protected boolean enable = true;
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testSortFromMinToMax() throws Exception {
 
         if (!enable) {
@@ -71,6 +114,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFitCurve_WEIGHTED_BY_ERRORS_RANDOM_DATA_00() throws Exception {
 
         if (!enable) {
@@ -180,6 +227,9 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         }
     }
 
+    /**
+     *
+     */
     protected void useTestData1() {
 
         x = new float[]{0.0005f, 0.0015f, 0.0025f, 0.0035f, 0.0045f, 0.0055f, 0.0065f, 0.0075f, 0.0085f};
@@ -197,6 +247,12 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         chiSqMin = new GEVChiSquareMinimization(x, y, dx, dy);
     }
 
+    /**
+     *
+     * @param sr
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     protected float[] createTestDataUsingRandomParameters(SecureRandom sr) throws NoSuchAlgorithmException {
         // generate histogram
         float xmin = (float) (sr.nextFloat() * Math.pow(10, -1*sr.nextInt(2)));
@@ -207,6 +263,14 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         return createTestDataUsingRandomParameters(sr, xmin, xmax);
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     protected float[] createTestDataUsingRandomParameters(SecureRandom sr, float xmin, float xmax) throws NoSuchAlgorithmException {
 
         int nPoints = sr.nextInt(30);

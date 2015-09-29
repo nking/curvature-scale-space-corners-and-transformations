@@ -21,6 +21,7 @@ import java.util.Set;
  * http://www.agencia.fapesp.br/arquivos/survey-final-fabbri-ACMCSurvFeb2008.pdf
  * 
  * @author nichole
+ * @param <T>
  */
 public class DistanceTransform<T extends PairInt> {
     

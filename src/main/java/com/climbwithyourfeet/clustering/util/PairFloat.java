@@ -9,16 +9,38 @@ package com.climbwithyourfeet.clustering.util;
  */
 public class PairFloat {
     
+    /**
+     *
+     */
     protected final float x;
+
+    /**
+     *
+     */
     protected final float y;
     
+    /**
+     *
+     * @param xPoint
+     * @param yPoint
+     */
     public PairFloat(float xPoint, float yPoint) {
         x = xPoint;
         y = yPoint;
     }
+
+    /**
+     *
+     * @return
+     */
     public float getX() {
         return x;
     }
+
+    /**
+     *
+     * @return
+     */
     public float getY() {
         return y;
     }
@@ -44,9 +66,22 @@ public class PairFloat {
         return hash;
     }
 
+    /**
+     *
+     */
     protected static int fnv321aInit = 0x811c9dc5;
+
+    /**
+     *
+     */
     protected static int fnv32Prime = 0x01000193;
 
+    /**
+     *
+     * @param i0
+     * @param i1
+     * @return
+     */
     protected int fnvHashCode(int i0, int i1) {
 
         /*

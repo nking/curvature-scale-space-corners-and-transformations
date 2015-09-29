@@ -29,9 +29,16 @@ import junit.framework.TestCase;
  */
 public class DistanceTransformTest extends TestCase {
 
+    /**
+     *
+     */
     public DistanceTransformTest() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testApplyTransforms1() throws Exception {
 
         String filePath = ResourceFinder.findFileInTestResources("two_circles.png");
@@ -66,6 +73,10 @@ public class DistanceTransformTest extends TestCase {
         writeDebugImage(dtInv, Long.toString(System.currentTimeMillis()));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testApplyTransforms3() throws Exception {
 
         // snapshot of spiral at http://www.agencia.fapesp.br/arquivos/survey-final-fabbri-ACMCSurvFeb2008.pdf
@@ -102,6 +113,10 @@ public class DistanceTransformTest extends TestCase {
         writeDebugImage(dtInv, Long.toString(System.currentTimeMillis()));
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testApplyTransforms4() throws Exception {
 
         int w = 9;
@@ -184,6 +199,10 @@ public class DistanceTransformTest extends TestCase {
         }
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testApplyTransforms5() throws Exception {
         
         Set<PairInt> points = getWikipediaDBScanExampleData();
@@ -224,6 +243,10 @@ public class DistanceTransformTest extends TestCase {
                       
     }
     
+    /**
+     *
+     * @return
+     */
     public static Set<PairInt> getWikipediaDBScanExampleData() {
 
         // dug these points out of http://upload.wikimedia.org/wikipedia/commons/0/05/DBSCAN-density-data.svg

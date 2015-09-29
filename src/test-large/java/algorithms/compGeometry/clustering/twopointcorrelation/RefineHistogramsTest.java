@@ -21,8 +21,15 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
 
     boolean findClusters = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testWriteDensityFiles() throws Exception {
 
         if (!writeToTmpData) {
@@ -100,6 +107,10 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testRefineHistograms() throws Exception {
 
         log.info("testRefineHistograms()");
@@ -195,6 +206,11 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String[] getDensityFilePaths() throws IOException {
 
         String tmpDataDirPath = ResourceFinder.findTmpDataDirectory();
@@ -212,6 +228,9 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
         return filePaths;
     }
 
+    /**
+     *
+     */
     protected static class DensityFileFilter implements FileFilter {
         @Override
         public boolean accept(File pathname) {
@@ -222,6 +241,12 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
         }
     }
 
+    /**
+     *
+     * @param indexerFilePaths
+     * @param twoPtDensityFilePath
+     * @return
+     */
     protected String getIndexerFilePath(String[] indexerFilePaths, String twoPtDensityFilePath) {
         //"stats_2pt_voids_" + String.valueOf(nFile)
 
@@ -240,16 +265,34 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
         return null;
     }
 
+    /**
+     *
+     */
     public class TwoPointVoidStatsExt extends TwoPointVoidStats {
 
+        /**
+         *
+         * @param indexedSortedPoints
+         */
         public TwoPointVoidStatsExt(AxisIndexer indexedSortedPoints) {
             super(indexedSortedPoints);
         }
 
+        /**
+         *
+         * @param persistedIndexerFileName
+         * @throws IOException
+         */
         public TwoPointVoidStatsExt(String persistedIndexerFileName) throws IOException {
             super(persistedIndexerFileName);
         }
 
+        /**
+         *
+         * @param histogram
+         * @param yfit
+         * @throws TwoPointVoidStatsException
+         */
         @Override
         protected void finalizeStats(HistogramHolder histogram, GEVYFit yfit) throws TwoPointVoidStatsException {
 

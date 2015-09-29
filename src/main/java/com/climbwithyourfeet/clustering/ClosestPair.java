@@ -22,9 +22,15 @@ public class ClosestPair {
 
     private boolean debug = false;
     
+    /**
+     *
+     */
     public ClosestPair() {
     }
     
+    /**
+     *
+     */
     public void setDebug() {
         this.debug = true;
     }
@@ -212,6 +218,11 @@ public class ClosestPair {
         }        
     }
     
+    /**
+     *
+     * @param p
+     * @return
+     */
     protected ClosestPairFloat bruteForceMinDistance(List<PairFloat> p) {
         
         if (p.size() < 1) {
@@ -250,10 +261,20 @@ public class ClosestPair {
         return new ClosestPairFloat(p.get(idx0), p.get(idx1), minDist);
     }
 
+    /**
+     *
+     */
     public class ClosestPairFloat {
         PairFloat point0;
         PairFloat point1;
         float separation;
+
+        /**
+         *
+         * @param p0
+         * @param p1
+         * @param sep
+         */
         public ClosestPairFloat(PairFloat p0, PairFloat p1, float sep) {
             this.point0 = p0;
             this.point1 = p1;

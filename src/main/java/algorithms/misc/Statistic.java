@@ -1,13 +1,29 @@
 package algorithms.misc;
 
+/**
+ *
+ * @author nichole
+ */
 public class Statistic {
 
+    /**
+     *
+     */
     protected float avg = Float.MIN_VALUE;
     
+    /**
+     *
+     */
     protected final int n;
     
+    /**
+     *
+     */
     protected float stDev = -1;
     
+    /**
+     *
+     */
     protected final int[] m;
     
     /**
@@ -30,6 +46,14 @@ public class Statistic {
      */
     protected final float ySz;
     
+    /**
+     *
+     * @param items
+     * @param xCells
+     * @param yCells
+     * @param xDivSz
+     * @param yDivSz
+     */
     public Statistic(int[] items, float[] xCells, float[] yCells, float xDivSz, float yDivSz) {
         
         if (items == null) {
@@ -51,32 +75,73 @@ public class Statistic {
         calculateStats();
     }
     
+    /**
+     *
+     * @return
+     */
     public float getAverage() {
         return avg;
     }
+
+    /**
+     *
+     * @return
+     */
     public float getStandardDeviation() {
         return stDev;
     }
+
+    /**
+     *
+     * @return
+     */
     public int[] getItems() {
         return m;
     }
+
+    /**
+     *
+     * @return
+     */
     public int getNumberOfItems() {
         return n;
     }
     
+    /**
+     *
+     * @return
+     */
     public float[] getItemsX() {
         return itemsX;
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getItemsY() {
         return itemsY;
     }
+
+    /**
+     *
+     * @return
+     */
     public float getXSz() {
         return xSz;
     }
+
+    /**
+     *
+     * @return
+     */
     public float getYSz() {
         return ySz;
     }
     
+    /**
+     *
+     */
     protected void calculateStats() {
         if (avg > Float.MIN_VALUE) {
             return;

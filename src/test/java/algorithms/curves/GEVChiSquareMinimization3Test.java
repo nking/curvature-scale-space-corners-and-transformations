@@ -9,31 +9,74 @@ import java.io.File;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class GEVChiSquareMinimization3Test extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     *
+     */
     protected float[] x = null;
+
+    /**
+     *
+     */
     protected float[] y = null;
+
+    /**
+     *
+     */
     protected float[] dx = null;
+
+    /**
+     *
+     */
     protected float[] dy = null;
 
+    /**
+     *
+     */
     protected boolean debug = true;
 
+    /**
+     *
+     */
     protected GEVChiSquareMinimization chiSqMin = null;
 
+    /**
+     *
+     */
     protected boolean enable = true;
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testAFit() throws Exception {
 
         log.info("testAFit()");

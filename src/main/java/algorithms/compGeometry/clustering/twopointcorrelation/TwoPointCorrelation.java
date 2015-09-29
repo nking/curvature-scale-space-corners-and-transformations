@@ -109,20 +109,66 @@ import java.util.logging.Logger;
  */
 public class TwoPointCorrelation {
 
+    /**
+     *
+     */
     protected enum STATE {
-        INITIALIZED, BACKGROUND_SET, CLUSTERS_FOUND
+
+        /**
+         *
+         */
+        INITIALIZED,
+
+        /**
+         *
+         */
+        BACKGROUND_SET,
+
+        /**
+         *
+         */
+        CLUSTERS_FOUND
     }
 
+    /**
+     *
+     */
     protected enum BACKGROUND_METHOD {
-        FIT_TWO_POINT_VOIDS, USER_SUPPLIED, DESERIALIZED
+
+        /**
+         *
+         */
+        FIT_TWO_POINT_VOIDS,
+
+        /**
+         *
+         */
+        USER_SUPPLIED,
+
+        /**
+         *
+         */
+        DESERIALIZED
     }
 
+    /**
+     *
+     */
     protected final AxisIndexer indexer;
 
+    /**
+     *
+     */
     protected Boolean refineSolution = Boolean.FALSE;
 
+    /**
+     *
+     */
     protected boolean allowRefinement = false;
 
+    /**
+     *
+     */
     protected AxisIndexer tempRefineSolnIndexer = null;
 
     private float backgroundDensity;
@@ -130,32 +176,81 @@ public class TwoPointCorrelation {
     private float sigmaFactor = 2.5f;
     // we are looking for points which have density > sigmaFactor*backgroundAverage
 
+    /**
+     *
+     */
     protected int minimumNumberInCluster = 5;
 
+    /**
+     *
+     */
     protected STATE state = null;
+
+    /**
+     *
+     */
     protected BACKGROUND_METHOD bMethod = null;
 
+    /**
+     *
+     */
     protected IGroupFinder groupFinder = null;
 
+    /**
+     *
+     */
     protected boolean persistTheMinimaStats = false;
+
+    /**
+     *
+     */
     protected String indexerFilePath = null;
+
+    /**
+     *
+     */
     protected String minimaStatsFilePath = null;
 
     // for debugging plots, keeping a handle on TwoPointVoidStats.
-    public IPointBackgroundStats backgroundStats = null;
 
+    /**
+     *
+     */
+        public IPointBackgroundStats backgroundStats = null;
+
+    /**
+     *
+     */
     protected boolean debug = false;
 
+    /**
+     *
+     */
     protected boolean doLogPerformanceMetrics = false;
 
+    /**
+     *
+     */
     protected boolean setUseDownhillSimplexHistogramFitting = false;
     
+    /**
+     *
+     */
     protected boolean useFindMethodForSparseBackground = false;
     
+    /**
+     *
+     */
     protected boolean useFindMethodForHavingABackground = false;
     
+    /**
+     *
+     */
     protected boolean automateTheFindMethodChoice = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
@@ -179,6 +274,14 @@ public class TwoPointCorrelation {
         state = STATE.INITIALIZED;
     }
 
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPointErrors
+     * @param yPointErrors
+     * @param nXYPoints
+     */
     public TwoPointCorrelation(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nXYPoints) {
 
         this.indexer = new AxisIndexer();
@@ -188,6 +291,11 @@ public class TwoPointCorrelation {
         state = STATE.INITIALIZED;
     }
 
+    /**
+     *
+     * @param indexerFilePath
+     * @throws IOException
+     */
     public TwoPointCorrelation(String indexerFilePath) throws IOException {
 
         this.indexer = SerializerUtil.readPersistedPoints(indexerFilePath, true);
@@ -195,6 +303,11 @@ public class TwoPointCorrelation {
         state = STATE.INITIALIZED;
     }
 
+    /**
+     *
+     * @param axisIndexer
+     * @throws IOException
+     */
     public TwoPointCorrelation(AxisIndexer axisIndexer) throws IOException {
 
         this.indexer = axisIndexer;
@@ -202,18 +315,29 @@ public class TwoPointCorrelation {
         state = STATE.INITIALIZED;
     }
 
+    /**
+     *
+     */
     public void setThresholdFactorToTwo() {
         if (debug) {
             log.info("threshhold=2.0");
         }
         sigmaFactor = 2.0f;
     }
+
+    /**
+     *
+     */
     public void setThresholdFactorToTwoPointFive() {
         if (debug) {
             log.info("threshhold=2.5");
         }
         sigmaFactor = 2.5f;
     }
+
+    /**
+     *
+     */
     public void setThresholdFactorToThree() {
         if (debug) {
             log.info("threshhold=3.0");
@@ -221,6 +345,10 @@ public class TwoPointCorrelation {
         sigmaFactor = 3.0f;
     }
 
+    /**
+     *
+     * @param turnDebugOn
+     */
     public void setDebug(boolean turnDebugOn) {
         this.debug = turnDebugOn;
     }
@@ -259,26 +387,50 @@ public class TwoPointCorrelation {
         this.setUseDownhillSimplexHistogramFitting = true;
     }
 
+    /**
+     *
+     */
     protected void logPerformanceMetrics() {
         this.doLogPerformanceMetrics = true;
     }
 
+    /**
+     *
+     * @param doPersistIndexer
+     * @throws IOException
+     */
     public void persistIndexer(boolean doPersistIndexer) throws IOException {
         indexerFilePath = SerializerUtil.serializeIndexer(indexer);
     }
 
+    /**
+     *
+     * @param doPersistMinimaStats
+     */
     public void setPersistMinimaStats(boolean doPersistMinimaStats) {
         persistTheMinimaStats = doPersistMinimaStats;
     }
 
+    /**
+     *
+     * @param minimumNumberForClusterMembership
+     */
     public void setMinimumNumberInCluster(int minimumNumberForClusterMembership) {
         this.minimumNumberInCluster = minimumNumberForClusterMembership;
     }
 
+    /**
+     *
+     */
     public void setAllowRefinement() {
         allowRefinement = true;
     }
 
+    /**
+     *
+     * @param backgroundDensity
+     * @param standardDeviationOfBackground
+     */
     public void setBackground(float backgroundDensity, float standardDeviationOfBackground) {
 
         this.backgroundDensity = backgroundDensity;
@@ -293,8 +445,6 @@ public class TwoPointCorrelation {
     /**
      * calculate the background density if it has not been set manually by the user.
      *
-     * @see TwoPointVoidStats.calc()
-     *
      * @throws TwoPointVoidStatsException
      * @throws IOException
      */
@@ -306,7 +456,14 @@ public class TwoPointCorrelation {
         }
     }
 
-    void reuseStatsForBackgroundCalculation(String minimaFilePath) throws TwoPointVoidStatsException, IOException {
+    /**
+     * 
+     * @param minimaFilePath
+     * @throws TwoPointVoidStatsException
+     * @throws IOException 
+     */
+    void reuseStatsForBackgroundCalculation(String minimaFilePath) throws 
+        TwoPointVoidStatsException, IOException {
 
         TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);
         minStats.setDebug(debug);
@@ -343,6 +500,11 @@ public class TwoPointCorrelation {
         bMethod = BACKGROUND_METHOD.DESERIALIZED;
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
     protected void calculateBackgroundVia2PtVoidFit() throws TwoPointVoidStatsException, IOException {
 
         if ((bMethod != null) && (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
@@ -422,6 +584,13 @@ public class TwoPointCorrelation {
         bMethod = BACKGROUND_METHOD.FIT_TWO_POINT_VOIDS;
     }
 
+    /**
+     *
+     * @param startTimeMillis
+     * @param stopTimeMillis
+     * @param methodName
+     * @param nPoints
+     */
     protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName, int nPoints) {
 
         long diffSec = (stopTimeMillis - startTimeMillis)/1000;
@@ -438,6 +607,10 @@ public class TwoPointCorrelation {
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
     }
 
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed() {
 
         String arch = System.getProperty("sun.arch.data.model");
@@ -500,6 +673,11 @@ public class TwoPointCorrelation {
         return sumBytes;
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
     public void findClusters() throws TwoPointVoidStatsException, IOException {
 
         if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
@@ -509,10 +687,25 @@ public class TwoPointCorrelation {
         findGroups();
     }
 
+    /**
+     *
+     * @return
+     */
     public IGroupFinder getGroupFinder() {
         return groupFinder;
     }
 
+    /**
+     *
+     * @param xMin
+     * @param xMax
+     * @param yMin
+     * @param yMax
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @throws TwoPointVoidStatsException
+     */
     public String plotClusters(float xMin, float xMax, float yMin, float yMax)
         throws FileNotFoundException, IOException, TwoPointVoidStatsException {
 
@@ -522,6 +715,13 @@ public class TwoPointCorrelation {
         return plotter.writeFile();
     }
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @throws TwoPointVoidStatsException
+     */
     public String plotClusters() throws FileNotFoundException, IOException, TwoPointVoidStatsException {
 
         float[] xMinMax = MiscMath.calculateOuterRoundedMinAndMax(indexer.getX());
@@ -540,6 +740,11 @@ public class TwoPointCorrelation {
         return plotter.writeFile3();
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
     protected void findGroups() throws TwoPointVoidStatsException, IOException {
 
         long startTimeMillis = System.currentTimeMillis();
@@ -657,6 +862,10 @@ public class TwoPointCorrelation {
         return tmpIndexer;
     }
 
+    /**
+     *
+     * @return
+     */
     protected float calculateFractionOfPointsOutsideOfClusters() {
 
         if (groupFinder == null) {
@@ -695,6 +904,12 @@ public class TwoPointCorrelation {
         return frac;
     }
     
+    /**
+     *
+     * @param xHull
+     * @param yHull
+     * @return
+     */
     public float[] calculateAreaAndCentroidOfHull(float[] xHull, float[] yHull) {
         if (xHull == null || yHull == null) {
             throw new IllegalArgumentException("neither xHull nor yHull can be null");
@@ -702,10 +917,19 @@ public class TwoPointCorrelation {
         return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xHull, yHull);
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNumberOfGroups() {
         return (groupFinder != null) ? groupFinder.getNumberOfGroups() : 0;
     }
 
+    /**
+     *
+     * @param groupNumber
+     * @return
+     */
     public float[] calculateGroupCentroidUsingAllPointsEquallyWeighted(
         int groupNumber) {
 
@@ -738,6 +962,11 @@ public class TwoPointCorrelation {
         return new float[]{xCoordsAvg, yCoordsAvg};
     }
 
+    /**
+     *
+     * @param groupNumber
+     * @return
+     */
     public ArrayPair getGroupHull(int groupNumber) {
 
         if (groupFinder == null) {
@@ -769,6 +998,10 @@ public class TwoPointCorrelation {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public ArrayPair getHullCentroids() {
 
         if (groupFinder == null) {
@@ -805,6 +1038,10 @@ public class TwoPointCorrelation {
         return new ArrayPair(xc, yc);
     }
 
+    /**
+     *
+     * @return
+     */
     public float getBackgroundDensity() {
         return backgroundDensity;
     }
@@ -819,16 +1056,34 @@ public class TwoPointCorrelation {
         return backgroundError;
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getX() {
         return indexer.getX();
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getY() {
         return indexer.getY();
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getXErrors() {
         return indexer.getXErrors();
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getYErrors() {
         return indexer.getYErrors();
     }
@@ -836,13 +1091,27 @@ public class TwoPointCorrelation {
         return indexer;
     }
     
+    /**
+     *
+     * @return
+     */
     public int getMinimumNumberForGroupMembership() {
         return minimumNumberInCluster;
     }
+
+    /**
+     *
+     * @param minNumber
+     */
     public void setMinimumNumberForGroupMembership(int minNumber) {
         this.minimumNumberInCluster = minNumber;
     }
     
+    /**
+     *
+     * @param groupNumber
+     * @return
+     */
     public ArrayPair getGroup(int groupNumber) {
         
         if (groupFinder == null) {

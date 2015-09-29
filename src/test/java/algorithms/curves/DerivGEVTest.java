@@ -8,10 +8,21 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PolygonAndPointPlotter;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class DerivGEVTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testDerivWRTX() throws Exception {
         
         float k = 1.80f;
@@ -139,6 +150,10 @@ public class DerivGEVTest extends TestCase {
         */
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testDerivWRTK() throws Exception {
         
         // k is the shape parameter
@@ -290,6 +305,10 @@ public class DerivGEVTest extends TestCase {
         
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testDerivWRTSigma() throws Exception {
         
         log.info("testDerivWRTSigma");
@@ -442,6 +461,10 @@ public class DerivGEVTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testDerivWRTMu() throws Exception {
         
         log.info("testDerivWRTMu");

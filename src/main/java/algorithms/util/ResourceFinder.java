@@ -14,10 +14,22 @@ import java.util.logging.Logger;
  */
 public class ResourceFinder {
 
+    /**
+     *
+     */
     protected final static String sep = System.getProperty("file.separator");
 
+    /**
+     *
+     */
     protected final static Logger log = Logger.getLogger(ResourceFinder.class.getName());
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String findFileInResources(String fileName) throws IOException {
 
         String dirPath = findResourcesDirectory();
@@ -31,6 +43,13 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @param subDir
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String findFileInResources(String subDir, String fileName) throws IOException {
 
         String dirPath = findResourcesDirectory(subDir);
@@ -44,6 +63,12 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @param subDir
+     * @return
+     * @throws IOException
+     */
     public static String findResourcesDirectory(String subDir) throws IOException {
 
         String dirPath = findResourcesDirectory();
@@ -58,6 +83,11 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String findResourcesDirectory() throws IOException {
 
         String srcPath = findDirectory("src");
@@ -71,6 +101,12 @@ public class ResourceFinder {
         return path;
     }
 
+    /**
+     *
+     * @param dirName
+     * @return
+     * @throws IOException
+     */
     public static String findDirectory(String dirName) throws IOException {
 
         ClassLoader cls = ResourceFinder.class.getClassLoader();
@@ -103,6 +139,11 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String findTestDirectory() throws IOException {
 
         String srcPath = findDirectory("src");
@@ -116,6 +157,12 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String getAFilePathInTestResources(String fileName) throws IOException {
 
         String dirPath = findTestDirectory();
@@ -124,6 +171,12 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String findFileInTestResources(String fileName) throws IOException {
 
         String filePath = getAFilePathInTestResources(fileName);
@@ -135,6 +188,12 @@ public class ResourceFinder {
         return filePath;
     }
     
+    /**
+     *
+     * @param fileNamePrefix
+     * @return
+     * @throws IOException
+     */
     public static File[] findFilesInTestResources(String fileNamePrefix) throws IOException {
         
         String dirPath = findTestDirectory() + sep + "resources";
@@ -146,8 +205,20 @@ public class ResourceFinder {
         return files;
     }
     
+    /**
+     *
+     */
     protected static class PrefixFileFilter implements FileFilter {
+
+        /**
+         *
+         */
         protected final String prefix;
+
+        /**
+         *
+         * @param prefixForFileName
+         */
         public PrefixFileFilter(String prefixForFileName) {
             this.prefix = prefixForFileName;
         }
@@ -160,6 +231,12 @@ public class ResourceFinder {
         }
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String getAFilePathInCWD(String fileName) throws IOException {
 
         ClassLoader cls = ResourceFinder.class.getClassLoader();
@@ -181,6 +258,13 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String writeToTestResources(String fileContent, String fileName) throws IOException {
 
         String filePath = getAFilePathInTestResources(fileName);
@@ -188,6 +272,13 @@ public class ResourceFinder {
         return writeDataToDirectory(fileContent, filePath);
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String writeToCWD(String fileContent, String fileName) throws IOException {
 
         String filePath = getAFilePathInCWD(fileName);
@@ -195,6 +286,13 @@ public class ResourceFinder {
         return writeDataToDirectory(fileContent, filePath);
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String writeToTmpData(String fileContent, String fileName) throws IOException {
 
         String filePath = getAFilePathInTmpData(fileName);
@@ -202,6 +300,13 @@ public class ResourceFinder {
         return writeDataToDirectory(fileContent, filePath);
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param filePath
+     * @return
+     * @throws IOException
+     */
     protected static String writeDataToDirectory(String fileContent, String filePath) throws IOException {
 
         FileWriter fw = null;
@@ -230,11 +335,22 @@ public class ResourceFinder {
         return filePath;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String findTmpDataDirectory() throws IOException {
 
         return findDirectory("tmpdata");
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static File findFileInTmpData(String fileName) throws IOException {
 
         String filePath = getAFilePathInTmpData(fileName);
@@ -246,6 +362,12 @@ public class ResourceFinder {
         return fl;
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static String getAFilePathInTmpData(String fileName) throws IOException {
 
         String baseDir = findTmpDataDirectory();

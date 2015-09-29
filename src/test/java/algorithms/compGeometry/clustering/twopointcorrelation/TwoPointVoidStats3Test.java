@@ -18,8 +18,15 @@ public class TwoPointVoidStats3Test extends BaseTwoPointTest {
 
     boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFindVoidsSemiCompleteSearch() throws Exception {
 
         log.info("testFindVoidsSemiCompleteSearch");

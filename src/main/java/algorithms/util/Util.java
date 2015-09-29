@@ -6,8 +6,20 @@ import java.io.IOException;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.ManagementFactory;
 
+/**
+ *
+ * @author nichole
+ */
 public class Util {
     
+    /**
+     *
+     * @param hist
+     * @param label
+     * @param outputFileSuffix
+     * @return
+     * @throws IOException
+     */
     public static String plotHistogram(HistogramHolder hist,
         String label, String outputFileSuffix) throws IOException {
                 
@@ -33,6 +45,14 @@ public class Util {
         return plotter.writeFile(outputFileSuffix);
     }
     
+    /**
+     *
+     * @param hist
+     * @param label
+     * @param outputFileSuffix
+     * @return
+     * @throws IOException
+     */
     public String plotLogHistogram(HistogramHolder hist,
         String label, String outputFileSuffix) throws IOException {
                 
@@ -66,6 +86,7 @@ public class Util {
     Note that it does not know if the amount
     of memory available to the program from the OS is less than the JVM expects
     from command line flags
+     * @return 
     */
     public static long getAvailableHeapMemory() {
 

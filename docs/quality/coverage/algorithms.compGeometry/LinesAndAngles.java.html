@@ -519,14 +519,14 @@ import java.util.Arrays;
 <span class="fc" id="L519">            float b = xPolygon[i+1] * yPolygon[i];</span>
 <span class="fc" id="L520">            area += (a-b);</span>
 
-<span class="pc bpc" id="L522" title="1 of 4 branches missed.">            if ((xPolygon[i] &lt; 0) || (yPolygon[i] &lt; 0)) {</span>
-<span class="fc" id="L523">                allPointsArePositive = false;</span>
+<span class="pc bpc" id="L522" title="2 of 4 branches missed.">            if ((xPolygon[i] &lt; 0) || (yPolygon[i] &lt; 0)) {</span>
+<span class="nc" id="L523">                allPointsArePositive = false;</span>
             }
         }
-<span class="pc bpc" id="L526" title="1 of 4 branches missed.">        if ((xPolygon[xPolygon.length - 1] &lt; 0) || (yPolygon[xPolygon.length - 1] &lt; 0)) {</span>
-<span class="fc" id="L527">            allPointsArePositive = false;</span>
+<span class="pc bpc" id="L526" title="2 of 4 branches missed.">        if ((xPolygon[xPolygon.length - 1] &lt; 0) || (yPolygon[xPolygon.length - 1] &lt; 0)) {</span>
+<span class="nc" id="L527">            allPointsArePositive = false;</span>
         }
-<span class="fc bfc" id="L529" title="All 4 branches covered.">        if ((area &lt; 0) &amp;&amp; allPointsArePositive) {</span>
+<span class="pc bpc" id="L529" title="1 of 4 branches missed.">        if ((area &lt; 0) &amp;&amp; allPointsArePositive) {</span>
 <span class="fc" id="L530">            area *= -1;</span>
         }
 <span class="fc" id="L532">        area *= 0.5f;</span>

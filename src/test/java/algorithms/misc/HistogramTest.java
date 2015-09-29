@@ -26,8 +26,15 @@ import junit.framework.TestCase;
  */
 public class HistogramTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testPersistedHistograms() throws Exception {
         
         log.info("testPersistedHistograms");
@@ -282,6 +289,10 @@ public class HistogramTest extends TestCase {
         assertTrue(threwException);
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testCalculateHistogramWidthYLimitError() throws Exception {
         System.out.println("testCalculateHistogramWidthYLimitError()");
         
@@ -302,6 +313,12 @@ public class HistogramTest extends TestCase {
         assertTrue(Math.abs(tmp - 0.141f) < 0.01f);
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws Exception
+     */
     protected ArrayPair readTestFile(String fileName) throws Exception {
        
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -311,6 +328,12 @@ public class HistogramTest extends TestCase {
         return readTestFile(file);
     }
     
+    /**
+     *
+     * @param file
+     * @return
+     * @throws Exception
+     */
     protected ArrayPair readTestFile(File file) throws Exception {
         
         float[] a = null;
@@ -355,6 +378,10 @@ public class HistogramTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testReadWriteExternal() throws Exception {
 
         float[] aa = new float[]{
@@ -456,6 +483,10 @@ public class HistogramTest extends TestCase {
 
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testReduceHistogramToFirstPeak() throws Exception {
         
         String[] fileNames = new String[] {
@@ -538,10 +569,19 @@ public class HistogramTest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void test0() throws Exception {
         Histogram h = new Histogram();
     }
     
+    /**
+     *
+     * @param fileName
+     * @return
+     */
     protected HistogramHolder getHistogram(String fileName) {
         
         HistogramHolder hist = new HistogramHolder();

@@ -15,21 +15,45 @@ import java.util.HashMap;
  */
 public class MainRunner {
 
+    /**
+     *
+     */
     protected HashMap<String, String> arguments = null;
 
+    /**
+     *
+     */
     protected TwoPointCorrelation clusterFinder = null;
 
+    /**
+     *
+     */
     public MainRunner() {
 
     }
+
+    /**
+     *
+     * @return
+     */
     public HashMap<String, String> getArguments() {
         return arguments;
     }
 
+    /**
+     *
+     * @return
+     */
     public TwoPointCorrelation getTwoPointCorrelation() {
         return clusterFinder;
     }
 
+    /**
+     *
+     * @param reader
+     * @param args
+     * @return
+     */
     public TwoPointCorrelation run(IInputFileReader reader, String[] args) {
 
         if (args != null) {

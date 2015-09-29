@@ -87,35 +87,96 @@ import java.util.logging.Logger;
  */
 public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
+    /**
+     *
+     */
     public enum State {
-        POINTS_LOADED, DENSITIES_CALCULATED, HISTOGRAM_CREATED, 
-        HISTOGRAM_FITTED, STATS_FINALIZED
+
+        /**
+         *
+         */
+        POINTS_LOADED, 
+
+        /**
+         *
+         */
+        DENSITIES_CALCULATED, 
+
+        /**
+         *
+         */
+        HISTOGRAM_CREATED, 
+
+        /**
+         *
+         */
+        HISTOGRAM_FITTED,
+
+        /**
+         *
+         */
+        STATS_FINALIZED
     }
 
     // null is signficant, so don't set a default unless change the code where check for null
-    protected VoidSampling sampling = null;
+
+    /**
+     *
+     */
+        protected VoidSampling sampling = null;
 
     // null is signficant, so don't set a default unless change the code where check for null
-    protected Boolean interpretForSparseBackground = null;
+
+    /**
+     *
+     */
+        protected Boolean interpretForSparseBackground = null;
     
     boolean automateTheFindMethodChoice = false;
 
+    /**
+     *
+     */
     protected State state = null;
 
+    /**
+     *
+     */
     protected IVoidFinder voidFinder = null;
 
+    /**
+     *
+     */
     protected int defaultNBins = 40;
 
     //for debugging, hold on to intermediate data:  histogram and bestFit
-    protected HistogramHolder statsHistogram = null;
+
+    /**
+     *
+     */
+        protected HistogramHolder statsHistogram = null;
+
+    /**
+     *
+     */
     protected GEVYFit bestFit = null;
 
+    /**
+     *
+     */
     protected boolean doLogPerformanceMetrics = false;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     // uses conjugate gradient method for non quadratic functions if = true, else downhill simplex.
-    protected boolean useDefaultFitting = true;
+
+    /**
+     *
+     */
+        protected boolean useDefaultFitting = true;
 
     /**
      * the factor to use when comparing a density to backgroundDensity*sigmaFactor
@@ -126,13 +187,26 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected float sigmaFactor = 2.5f;
 
     //
-    public HistogramHolder getStatsHistogram() {
+
+    /**
+     *
+     * @return
+     */
+        public HistogramHolder getStatsHistogram() {
         return statsHistogram;
     }
+
+    /**
+     *
+     * @return
+     */
     public GEVYFit getBestFit() {
         return bestFit;
     }
 
+    /**
+     *
+     */
     protected float[] gevRangeFittingParameters = null;
 
     /**
@@ -147,6 +221,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         state = State.POINTS_LOADED;
     }
 
+    /**
+     *
+     * @param persistedIndexerFilePath
+     * @throws IOException
+     */
     public TwoPointVoidStats(String persistedIndexerFilePath) throws IOException {
 
         super(persistedIndexerFilePath);
@@ -154,6 +233,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         state = State.POINTS_LOADED;
     }
 
+    /**
+     *
+     */
     public void setUseDownhillSimplexHistogramFitting() {
         this.useDefaultFitting = false;
     }
@@ -168,10 +250,18 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         this.sampling = VoidSampling.COMPLETE;
     }
 
+    /**
+     *
+     * @return
+     */
     public VoidSampling getSampling() {
         return sampling;
     }
 
+    /**
+     *
+     * @return
+     */
     public Boolean getInterpretForSparseBackground() {
         return interpretForSparseBackground;
     }
@@ -187,6 +277,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
         this.interpretForSparseBackground = Boolean.TRUE;
     }
+
+    /**
+     *
+     */
     protected void setInterpretForSparseBackgroundToFalse() {
         if (automateTheFindMethodChoice) {
             throw new IllegalStateException(
@@ -195,6 +289,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         this.interpretForSparseBackground = Boolean.FALSE;
     }
 
+    /**
+     *
+     */
     protected void automateTheFindMethodChoice() {
         if (interpretForSparseBackground != null) {
             throw new IllegalStateException(
@@ -210,10 +307,20 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         this.sigmaFactor = stDevFactor;
     }
 
+    /**
+     *
+     */
     protected void logPerformanceMetrics() {
         this.doLogPerformanceMetrics = true;
     }
 
+    /**
+     *
+     * @param startTimeMillis
+     * @param stopTimeMillis
+     * @param methodName
+     * @param bigOh
+     */
     protected void printPerformanceMetrics(long startTimeMillis, 
         long stopTimeMillis, String methodName, String bigOh) {
 
@@ -233,7 +340,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     // TODO:  replace with estimation using reflection one day
-    public long approximateMemoryUsed() {
+
+    /**
+     *
+     * @return
+     */
+        public long approximateMemoryUsed() {
 
         String arch = System.getProperty("sun.arch.data.model");
 
@@ -288,6 +400,15 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         return sumBytes;
     }
 
+    /**
+     *
+     * @param kMin
+     * @param kMax
+     * @param sigmaMin
+     * @param sigmaMax
+     * @param muMin
+     * @param muMax
+     */
     public void setGEVRangeParameters(float kMin, float kMax, 
         float sigmaMin, float sigmaMax, float muMin, float muMax) {
         
@@ -309,6 +430,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         calculateStats();
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     */
     @Override
     protected void calculateStats() throws TwoPointVoidStatsException {
 
@@ -379,9 +504,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * calculate the space between points in the dataset as linear densities
      * using automated methods by default or a pre-selected sampling choice.
      * 
-     * @see algorithms.compGeometry.clustering.twopointcorrelation.CompleteSamplingVoidFinder#findVoids()
-     * @see algorithms.compGeometry.clustering.twopointcorrelation.DivideAndConquerVoidFinder#findVoids()
-     * @see algorithms.compGeometry.clustering.twopointcorrelation.SubsetSamplingVoidFinder#findVoids()
+     * @throws algorithms.compGeometry.clustering.twopointcorrelation.TwoPointVoidStatsException
      */
     protected void findVoids() throws TwoPointVoidStatsException {
 
@@ -512,6 +635,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
     }
 
+    /**
+     *
+     * @return
+     * @throws TwoPointVoidStatsException
+     */
     protected HistogramHolder createHistogram() throws TwoPointVoidStatsException {
 
         if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
@@ -546,6 +674,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         finalizeStats(histogram, yfit);
     }
 
+    /**
+     *
+     * @param histogram
+     * @param yMaxBin
+     * @return
+     * @throws TwoPointVoidStatsException
+     */
     protected GEVYFit fitBackgroundHistogram(HistogramHolder histogram, 
         int yMaxBin) throws TwoPointVoidStatsException {
 
@@ -637,6 +772,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
     }
 
+    /**
+     *
+     * @param histogram
+     * @param yfit
+     * @throws TwoPointVoidStatsException
+     */
     protected void finalizeStats(HistogramHolder histogram, GEVYFit yfit) 
         throws TwoPointVoidStatsException {
 
@@ -793,15 +934,29 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             xy.getY());
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNumberOfDensityPoints() {
         return (voidFinder != null) ? voidFinder.getNumberOfTwoPointDensities() 
             : 0;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String persistTwoPointBackground() throws IOException {
         return serializeTwoPointDensities();
     }
 
+    /**
+     *
+     * @param oos
+     * @throws IOException
+     */
     protected void serializeTwoPointBackground(ObjectOutputStream oos) 
         throws IOException {
 
@@ -828,11 +983,22 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         oos.flush();
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     protected String serializeTwoPointDensities() throws IOException {
 
         return serializeTwoPointBackground("stats_2pt_voids_");
     }
 
+    /**
+     *
+     * @param persistedFileName
+     * @return
+     * @throws IOException
+     */
     public boolean readTwoPointBackground(String persistedFileName) throws 
         IOException {
 
@@ -849,6 +1015,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         return didDeserialize;
     }
 
+    /**
+     *
+     * @param ois
+     * @throws IOException
+     */
     protected void deserializeTwoPointBackground(ObjectInputStream ois) throws 
         IOException {
 
@@ -881,6 +1052,9 @@ int z = 1;
 
     }
     
+    /**
+     *
+     */
     protected void plotPairSeparations() {
 
         try {
@@ -904,6 +1078,14 @@ int z = 1;
         }
     }
 
+    /**
+     *
+     * @param plotter
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     */
     protected void plotPairSeparations(TwoPointVoidStatsPlotter plotter, 
         float xmin, float xmax, float ymin, float ymax) {
 

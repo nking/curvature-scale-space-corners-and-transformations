@@ -9,6 +9,11 @@ import algorithms.util.Util;
  */
 public class TwoPointIdentityFactory {
     
+    /**
+     *
+     * @param indexerNXY
+     * @return
+     */
     public static ITwoPointIdentity create(int indexerNXY) {
 
         if (indexerNXY <= TwoPointHashMap.nMax) {

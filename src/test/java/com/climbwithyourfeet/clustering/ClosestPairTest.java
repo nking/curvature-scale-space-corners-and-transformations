@@ -11,10 +11,17 @@ import junit.framework.TestCase;
  */
 public class ClosestPairTest extends TestCase {
     
+    /**
+     *
+     * @param testName
+     */
     public ClosestPairTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     */
     public void testBruteForceMinDistance() {
         
         List<Float> xPoints = new ArrayList<Float>();
@@ -55,6 +62,9 @@ public class ClosestPairTest extends TestCase {
         assertTrue(found1);
     }
     
+    /**
+     *
+     */
     public void testFindClosestPair() {
         
         List<Float> xPoints = new ArrayList<Float>();

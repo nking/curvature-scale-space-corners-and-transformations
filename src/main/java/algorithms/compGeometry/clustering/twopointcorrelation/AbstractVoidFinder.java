@@ -5,65 +5,138 @@ import java.util.logging.Logger;
 
 import algorithms.compGeometry.LinesAndAngles;
 
+/**
+ *
+ * @author nichole
+ */
 public abstract class AbstractVoidFinder implements IVoidFinder {
 
+    /**
+     *
+     */
     protected float[] allTwoPointSurfaceDensities = null;
 
+    /**
+     *
+     */
     protected float[] allTwoPointSurfaceDensitiesErrors = null;
 
+    /**
+     *
+     */
     protected int nTwoPointSurfaceDensities = 0;
 
+    /**
+     *
+     */
     protected int[] point1 = null;
 
+    /**
+     *
+     */
     protected int[] point2 = null;
 
+    /**
+     *
+     */
     protected ITwoPointIdentity twoPointIdentities = null;
 
+    /**
+     *
+     */
     protected VoidSampling sampling = null;
 
+    /**
+     *
+     */
     protected Logger log = null;
 
+    /**
+     *
+     */
     protected boolean debug = false;
 
+    /**
+     *
+     */
     protected AxisIndexer indexer = null;
 
+    /**
+     *
+     */
     public AbstractVoidFinder() {
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getTwoPointDensities() {
         return allTwoPointSurfaceDensities;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getTwoPointDensityErrors() {
         return allTwoPointSurfaceDensitiesErrors;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public int getNumberOfTwoPointDensities() {
         return nTwoPointSurfaceDensities;
     }
 
+    /**
+     *
+     * @return
+     */
     public int[] getPoint1() {
         return point1;
     }
 
+    /**
+     *
+     * @return
+     */
     public int[] getPoint2() {
         return point2;
     }
 
+    /**
+     *
+     * @param sampling
+     */
     public void setSampling(VoidSampling sampling) {
         this.sampling = sampling;
     }
+
+    /**
+     *
+     * @return
+     */
     public VoidSampling getSampling() {
         return this.sampling;
     }
 
+    /**
+     *
+     * @param setDebugToTrue
+     */
     public void setDebug(boolean setDebugToTrue) {
         this.debug = setDebugToTrue;
     }
 
+    /**
+     *
+     */
     protected void initializeVariables() {
 
         allTwoPointSurfaceDensities = new float[100];
@@ -72,10 +145,21 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());
     }
 
+    /**
+     *
+     */
     protected abstract void findVoidsImpl();
 
+    /**
+     *
+     */
     public abstract void constructLogger();
 
+    /**
+     *
+     * @param indexer
+     * @throws TwoPointVoidStatsException
+     */
     public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException {
 
         if (indexer == null) {
@@ -245,6 +329,10 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         }
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     */
     protected void condenseArrays() throws TwoPointVoidStatsException {
 
         if (nTwoPointSurfaceDensities == 0) {
@@ -270,6 +358,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
     }
 
     /**
+     * <pre>
      * Calculate the 2 point density errors following the chain rule
      *
      *                                | df |^2               | df |^2         df   df
@@ -279,14 +368,14 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
      *      For uncorrelated variables the covariance terms are zero.
      *
      * For two-point density:
-     *                 N             dF      -N
-     *      F(x,y) = ------   ==>   ---- =  -----
-     *                 X             dx      X^2
+     *                 N              dF      -N
+     *      F(x,y) = ------  ==&gt;  ---- =  -----
+     *                 X              dx      X^2
      *
      *                                  |   -N   |^2
      *     (sigma_f)^2 =  (sigma_x)^2 * |--------|
      *                                  |   X^2  |
-     *
+     * </pre>
      * @param densities - the two point densities
      * @param point1Indexes indexes to xp, yp of one of the 2 points in the two-point densities
      * @param point2Indexes indexes to xp, yp of the other of the 2 points in the two-point densities
@@ -347,6 +436,12 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
      (non-Javadoc)
      * @see algorithms.compGeometry.clustering.twopointcorrelation.IVoidFinder#approximateMemoryUsed()
      */
+
+    /**
+     *
+     * @return
+     */
+    
     @Override
     public long approximateMemoryUsed() {
 

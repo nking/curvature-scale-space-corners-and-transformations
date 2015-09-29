@@ -12,6 +12,11 @@ import java.util.TreeMap;
  */
 public class MiscMath {
     
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static float findMax(float[] a) {
         float max = Float.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
@@ -22,6 +27,11 @@ public class MiscMath {
         return max;
     }
     
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static float findMin(float[] a) {
         float min = Float.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
@@ -52,6 +62,11 @@ public class MiscMath {
         return index;
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static int findYMaxIndex(int[] a) {
         if (a == null) {
             return -1;
@@ -67,6 +82,13 @@ public class MiscMath {
         return index;
     }
     
+    /**
+     *
+     * @param hist
+     * @param idxStart
+     * @param idxStopIncl
+     * @return
+     */
     public static double calculateArea(HistogramHolder hist, int idxStart, int idxStopIncl) {
         
         if (hist == null) {
@@ -94,6 +116,11 @@ public class MiscMath {
         return area;
     }
     
+    /**
+     *
+     * @param points
+     * @return
+     */
     public static double[] calculateXYCentroids(Set<PairInt> points) {
         
         double xc = 0;
@@ -109,6 +136,11 @@ public class MiscMath {
         return new double[]{xc, yc};
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static int findPowerOf10(float a) {
         
         if (a == 0) {
@@ -132,6 +164,11 @@ public class MiscMath {
         }
     }
     
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static int findPowerOf10_2(float a) {
 
         if (a == 0) {
@@ -196,6 +233,11 @@ public class MiscMath {
         return keys;
     }
     
+    /**
+     *
+     * @param a
+     * @return
+     */
     public static int[] findMinMaxValues(int[][] a) {
         
         int min = Integer.MAX_VALUE;

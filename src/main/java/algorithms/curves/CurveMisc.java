@@ -1,7 +1,21 @@
 package algorithms.curves;
 
+/**
+ *
+ * @author nichole
+ */
 public class CurveMisc {
 
+    /**
+     *
+     * @param x
+     * @param y
+     * @param xyIndex
+     * @param isStepFunction
+     * @param xScaleFactor
+     * @param yScaleFactor
+     * @return
+     */
     public static float calculateArea(float[] x, float[] y, int xyIndex,
         boolean isStepFunction, float xScaleFactor, float yScaleFactor) {
 

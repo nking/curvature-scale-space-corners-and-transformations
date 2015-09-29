@@ -2,8 +2,16 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class TwoPointIdentityFactoryTest extends TestCase {
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testCreate() throws Exception {
                         
         AxisIndexer indexer = new AxisIndexer();

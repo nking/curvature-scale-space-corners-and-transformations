@@ -9,10 +9,20 @@ import java.util.Arrays;
  */
 public class PISort {
     
+    /**
+     *
+     * @param a
+     */
     public static void mergeSortByXThenY(PairInt[] a) {
         mergeSortByXThenY(a, 0, a.length - 1);
     }
     
+    /**
+     *
+     * @param a
+     * @param idxLo
+     * @param idxHi
+     */
     public static void mergeSortByXThenY(PairInt[] a, int idxLo, int idxHi) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -70,10 +80,20 @@ public class PISort {
         }
     }
     
+    /**
+     *
+     * @param a
+     */
     public static void quickSortByXThenY(PairInt[] a) {
         quickSortByXThenY(a, 0, a.length - 1);
     }
     
+    /**
+     *
+     * @param a
+     * @param idxLo
+     * @param idxHi
+     */
     public static void quickSortByXThenY(PairInt[] a, int idxLo, int idxHi) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");

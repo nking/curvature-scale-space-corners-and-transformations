@@ -26,14 +26,33 @@ import java.util.Arrays;
  */
 public class GrahamScan {
 
+    /**
+     *
+     */
     protected XYStack points = null;
 
+    /**
+     *
+     */
     protected float[] xHull = null;
+
+    /**
+     *
+     */
     protected float[] yHull = null;
 
-	public GrahamScan() {
+    /**
+     *
+     */
+    public GrahamScan() {
 	}
 
+    /**
+     *
+     * @param x
+     * @param y
+     * @throws GrahamScanTooFewPointsException
+     */
     public void computeHull(float[] x, float[] y) throws GrahamScanTooFewPointsException {
 
         if (x == null) {
@@ -125,14 +144,26 @@ public class GrahamScan {
         populateHull();
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getXHull() {
         return this.xHull;
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getYHull() {
         return this.yHull;
     }
 
+    /**
+     *
+     * @throws GrahamScanTooFewPointsException
+     */
     protected void populateHull() throws GrahamScanTooFewPointsException {
 
         if (points == null) {

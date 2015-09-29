@@ -16,13 +16,28 @@ import java.util.logging.Logger;
  */
 public class OutputFileWriter {
 
+    /**
+     *
+     */
     protected final Logger log;
 
+    /**
+     *
+     * @param pathToFile
+     */
     public OutputFileWriter(String pathToFile) {
 
         log = Logger.getLogger(this.getClass().getName());
     }
 
+    /**
+     *
+     * @param clusterFinder
+     * @param filePath
+     * @throws IOException
+     * @throws FileNotFoundException
+     * @throws algorithms.compGeometry.clustering.twopointcorrelation.TwoPointVoidStatsException
+     */
     public void writeFile(TwoPointCorrelation clusterFinder, String filePath)
         throws IOException, FileNotFoundException, TwoPointVoidStatsException {
 
@@ -105,6 +120,12 @@ public class OutputFileWriter {
         }
     }
 
+    /**
+     *
+     * @param input
+     * @return
+     * @throws IOException
+     */
     public static String getContent(InputStream input) throws IOException {
         if (input == null) {
             return null;

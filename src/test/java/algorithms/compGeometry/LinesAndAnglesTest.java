@@ -9,17 +9,32 @@ import junit.framework.TestCase;
  */
 public class LinesAndAnglesTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @param testName
+     */
     public LinesAndAnglesTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
@@ -121,6 +136,9 @@ public class LinesAndAnglesTest extends TestCase {
         assertFalse(result);
     }
     
+    /**
+     *
+     */
     public void testLinesIntersect3() {
         log.info("testLinesIntersect3");
         /*    
@@ -148,6 +166,10 @@ public class LinesAndAnglesTest extends TestCase {
         boolean result = LinesAndAngles.linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4);
         assertTrue(result);
     }
+
+    /**
+     *
+     */
     public void testLinesIntersect4() {
         log.info("testLinesIntersect4");
         /*    
@@ -179,6 +201,9 @@ public class LinesAndAnglesTest extends TestCase {
 
     }
  
+    /**
+     *
+     */
     public void testIntersectionOf2Lines() {
 
         /*
@@ -267,6 +292,9 @@ public class LinesAndAnglesTest extends TestCase {
         assertTrue( Math.abs(p2[1] - 3.) < 0.01);
     }
 
+    /**
+     *
+     */
     public void testIntersectionOf2Lines_2() {
 
         // results for 2 lines that do not intersect
@@ -313,6 +341,9 @@ public class LinesAndAnglesTest extends TestCase {
         assertNull(p);
     }
 
+    /**
+     *
+     */
     public void testCalculateSlope() {
         float x1 = 6.f;
         float y1 = 2.f;
@@ -323,6 +354,9 @@ public class LinesAndAnglesTest extends TestCase {
         assertTrue(Math.abs(slope - 1.) < 0.01);
     }
 
+    /**
+     *
+     */
     public void testCalculateSlope2() {
 
         float x1 = 8.f; float y1 = 4.f;
@@ -342,6 +376,10 @@ public class LinesAndAnglesTest extends TestCase {
         assertTrue( Math.abs(endpointsArray[3] - 10.) < 0.01);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testDirection() throws Exception {
 
         /* 0   1   2   3   4   5   6   7   8   9   10  11
@@ -410,6 +448,10 @@ public class LinesAndAnglesTest extends TestCase {
         
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     public void testSegmentIsWithinSegment() throws Exception {
 
         // ==== horizontal line
@@ -765,6 +807,15 @@ public class LinesAndAnglesTest extends TestCase {
 
         return calculateXAndYFromXcYcAndRadius(xc, yc, radius, 360 - angleInDegreesFromYEQ0XGT0);
     }
+
+    /**
+     *
+     * @param xc
+     * @param yc
+     * @param radius
+     * @param angleInDegreesFromYEQ0XGT0
+     * @return
+     */
     public static float[] calculateXAndYFromXcYcAndRadius(float xc, float yc, float radius, double angleInDegreesFromYEQ0XGT0) {
 
         double dx = radius * Math.cos(angleInDegreesFromYEQ0XGT0 * (Math.PI/180.f));

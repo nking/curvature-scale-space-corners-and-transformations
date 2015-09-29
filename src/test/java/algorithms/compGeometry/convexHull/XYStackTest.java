@@ -6,14 +6,28 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class XYStackTest extends TestCase {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @param testName
+     */
     public XYStackTest(String testName) {
         super(testName);
     }
 
+    /**
+     *
+     */
     public void testLIFO() {
 
         SecureRandom sr = new SecureRandom();
@@ -65,6 +79,9 @@ public class XYStackTest extends TestCase {
         }
     }
     
+    /**
+     *
+     */
     public void testEmptyStack() {
         XYStack stack = new XYStack();
         assertTrue(Float.isInfinite(stack.peekTopX()));
@@ -83,6 +100,9 @@ public class XYStackTest extends TestCase {
         assertTrue(stack.x.length == 10);
     }
 
+    /**
+     *
+     */
     public void testPush() {
         XYStack stack = new XYStack(10);
         for (int i = 0; i < 11; i++) {
@@ -92,6 +112,12 @@ public class XYStackTest extends TestCase {
         assertTrue(stack.x.length > 10);
     }
 
+    /**
+     *
+     * @param sr
+     * @param n
+     * @return
+     */
     protected float[] createRandomNumbers(SecureRandom sr, int n) {
         float[] x = new float[n];
         for (int i = 0; i < n; i++) {

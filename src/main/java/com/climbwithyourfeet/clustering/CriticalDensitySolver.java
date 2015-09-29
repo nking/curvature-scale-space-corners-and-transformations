@@ -15,11 +15,20 @@ public class CriticalDensitySolver {
         
     private boolean debug = false;
     
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     */
     public CriticalDensitySolver() {
     }
     
+    /**
+     *
+     */
     public void setToDebug() {
         debug = true;
     }

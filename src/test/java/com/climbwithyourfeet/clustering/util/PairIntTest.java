@@ -8,9 +8,15 @@ import junit.framework.TestCase;
  */
 public class PairIntTest extends TestCase {
     
+    /**
+     *
+     */
     public PairIntTest() {
     }
     
+    /**
+     *
+     */
     public void testGetSetX() {
         int xPoint = 3;
         int yPoint = 100;

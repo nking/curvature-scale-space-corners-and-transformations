@@ -14,12 +14,12 @@ import algorithms.misc.MiscMath;
                 sigma                                   (      (sigma))
  
   mu is  the location parameter
-  sigma is the scale parameter and is > 0
+  sigma is the scale parameter and is &gt; 0
   k is the shape parameter
  
  
   if k != 0,
-      1 + (k * (x-mu)/sigma) > 0
+      1 + (k * (x-mu)/sigma) &gt; 0
  
  
   Let z = (x-mu)/sigma
@@ -29,7 +29,7 @@ import algorithms.misc.MiscMath;
       y = y_const * ----- * exp( -z -exp(-z))
                     sigma
       
-      sigma > 0
+      sigma &gt; 0
       k = 0
  
   Extreme Value Type II:
@@ -37,9 +37,9 @@ import algorithms.misc.MiscMath;
       y = y_const * ----- * (-----)       * exp( - (-----)  )
                     sigma   (  x  )            (   (  x  )  )
  
-      k  > 0
-      sigma > 0
-      x > 0
+      k  &gt; 0
+      sigma &gt; 0
+      x &gt; 0
  
   Extreme Value Type III:
                       k     (x - mu)^(k+1)      (   (x - mu)^k)
@@ -50,21 +50,42 @@ import algorithms.misc.MiscMath;
         = y_const * ----- * (z)^(k+1) * exp( -1*(z)^k )
                     sigma
  
-      k < 0
-      sigma > 0
-      x > 0
+      k &lt; 0
+      sigma &gt; 0
+      x &gt; 0
  
  </pre>
  * @author nichole
  */
 public class GeneralizedExtremeValue implements ICurveGenerator {
 
+    /**
+     *
+     */
     protected final float[] x;
+
+    /**
+     *
+     */
     protected final float[] y;
 
+    /**
+     *
+     */
     protected final float[] dx;
+
+    /**
+     *
+     */
     protected final float[] dy;
 
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param dXPoints
+     * @param dYPoints
+     */
     public GeneralizedExtremeValue(float[] xPoints, float[] yPoints, float[] dXPoints, float[] dYPoints) {
         this.x = xPoints;
         this.y = yPoints;
@@ -72,6 +93,12 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         this.dy = dYPoints;
     }
 
+    /**
+     *
+     * @param parameters
+     * @param yConst
+     * @return
+     */
     public float[] generateNormalizedCurve(float[] parameters, float yConst) {
         if (parameters == null) {
             throw new IllegalArgumentException("parameters cannot be null");
@@ -83,6 +110,11 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return generateNormalizedCurve(parameters[0], parameters[1], parameters[2], yConst);
     }
 
+    /**
+     *
+     * @param parameters
+     * @return
+     */
     public float[] generateNormalizedCurve(float[] parameters) {
         if (parameters == null) {
             throw new IllegalArgumentException("parameters cannot be null");
@@ -94,6 +126,13 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return generateNormalizedCurve(parameters[0], parameters[1], parameters[2]);
     }
 
+    /**
+     *
+     * @param k
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public float[] generateNormalizedCurve(float k, float sigma, float mu) {
 
         float[] yGEV = generateCurve(x, k, sigma, mu);
@@ -153,6 +192,16 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
      *   then y = (yconst/sigma) * f1 * f2
      *</pre>
      */
+
+    /**
+     *
+     * @param xPoint
+     * @param k
+     * @param sigma
+     * @param mu
+     * @return
+     */
+    
     public static Double generateYGEV(float xPoint, float k, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -203,6 +252,13 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         }
     }
 
+    /**
+     *
+     * @param xPoint
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public static Double generateYEVTypeI(float xPoint, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -218,6 +274,14 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return yGEV;
     }
 
+    /**
+     *
+     * @param x1
+     * @param k
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public float[] generateCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -274,6 +338,13 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return yGEV;
     }
 
+    /**
+     *
+     * @param x1
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public static float[] generateEVTypeICurve(float[] x1, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -294,6 +365,12 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return yGEV;
     }
 
+    /**
+     *
+     * @param yGEV
+     * @param mu
+     * @return
+     */
     public float determineYConstant(float[] yGEV, float mu) {
 
         int index = MiscMath.findYMaxIndex(y);
@@ -304,6 +381,13 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return determineYConstant(yGEV, mu, index);
     }
 
+    /**
+     *
+     * @param yGEV
+     * @param mu
+     * @param index
+     * @return
+     */
     public float determineYConstant(float[] yGEV, float mu, int index) {
 
         float yConst = y[index]/yGEV[index];
@@ -344,7 +428,8 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
        (err_y_fit)^2 =  (err_x)^2|--------|   + (err_k)^2|--------|   + (err_s)^2|-------|   + (err_m)^2|------|
                                  |   dx   |              |   dk   |              |  ds   |              |  dm  |
      </pre>
-     * @param bestFit2
+     * @param yFit
+     * @param xPoint
      * @return
      */
     public static double calculateFittingErrorSquared(GEVYFit yFit, float xPoint) {
@@ -398,11 +483,11 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
     /**
       <pre>
-      calculate the error in an area / height calculation for y=0 to y > yLimitFraction where y is
+      calculate the error in an area / height calculation for y=0 to y &gt; yLimitFraction where y is
       yLimitFraction to to the right of the peak.  This is useful for determining errors for things
       like FWHM for example.
      
-      For FWHM we have sum of f = sum(X_i*Y_i)_(i < yLimit)/ Y_i
+      For FWHM we have sum of f = sum(X_i*Y_i)_(i &lt; yLimit)/ Y_i
 
           err^2 = xError^2*(Y_i/Y_i) = xError^2
 
@@ -410,7 +495,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
      </pre>
      
      * @param yFit
-     * @param yLimitFraction
+     * @param yMaxFactor
      * @return
      */
     public static double calculateWidthFittingError(GEVYFit yFit, float yMaxFactor) {
@@ -452,6 +537,14 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return sum;
     }
 
+    /**
+     *
+     * @param x1
+     * @param k
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public static float[] generateNormalizedCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -470,6 +563,14 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return yGEV;
     }
 
+    /**
+     *
+     * @param x1
+     * @param k
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public static float[] genCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {

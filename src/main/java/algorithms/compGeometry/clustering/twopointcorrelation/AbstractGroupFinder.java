@@ -3,6 +3,10 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
+/**
+ *
+ * @author nichole
+ */
 public abstract class AbstractGroupFinder implements IGroupFinder {
 
     /**
@@ -11,37 +15,77 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
      */
     protected SimpleLinkedListNode[] groupMembership = null;
 
+    /**
+     *
+     */
     protected int nGroups = 0;
     
+    /**
+     *
+     */
     protected Logger log = null;
     
     /*
      * array holding indexes for a point to the group it belongs to.
      * note that the point index is relative to indexer.x and indexer.y
      */
+
+    /**
+     *
+     */
+    
     protected int[] pointToGroupIndex = null;
             
+    /**
+     *
+     */
     protected final float threshhold;
     
+    /**
+     *
+     */
     protected final float threshholdFactor;
     
+    /**
+     *
+     */
     protected int minimumNumberInCluster = 3;
     
+    /**
+     *
+     */
     protected boolean debug = false;
     
+    /**
+     *
+     * @param threshhold
+     * @param threshholdFactor
+     */
     public AbstractGroupFinder(float threshhold, float threshholdFactor) {
         this.threshhold = threshhold;
         this.threshholdFactor = threshholdFactor;
     }
     
+    /**
+     *
+     * @param n
+     */
     public void setMinimumNumberInCluster(int n) {
         this.minimumNumberInCluster = n;
     }
     
+    /**
+     *
+     * @param setDebugToTrue
+     */
     public void setDebug(boolean setDebugToTrue) {
         this.debug = setDebugToTrue;
     }
     
+    /**
+     *
+     * @param indexer
+     */
     protected void initializeVariables(AxisIndexer indexer) {
 
         if (indexer == null) {
@@ -60,10 +104,21 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         }
     }
     
+    /**
+     *
+     * @param indexer
+     */
     protected abstract void findClusters(AxisIndexer indexer);
     
+    /**
+     *
+     */
     public abstract void constructLogger();
     
+    /**
+     *
+     * @param indexer
+     */
     public void findGroups(AxisIndexer indexer) {
         
         if (indexer == null) {
@@ -79,16 +134,28 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         prune();        
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public SimpleLinkedListNode[] getGroupMembershipList() {
         return groupMembership;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public int getNumberOfGroups() {
         return nGroups;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public int[] getPointToGroupIndexes() {
         return pointToGroupIndex;
@@ -150,6 +217,9 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         log.finest("number of groups after prune=" + nGroups);
     }
 
+    /**
+     *
+     */
     protected void checkAndExpandGroupMembershipArray() {
         
         if (groupMembership == null) {
@@ -168,8 +238,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     }
 
     /**
-     * estimate the amount of memory used by this class and its instance and class variables
-     * @return the memory in bytes used by this class and its instance and class variables.
+     * @return
     */
     public long approximateMemoryUsed() {
         
@@ -203,6 +272,12 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         return sumBytes;
     }
     
+    /**
+     *
+     * @param groupId
+     * @param indexer
+     * @return
+     */
     public float[] getX(int groupId, AxisIndexer indexer) {
         
         if (nGroups == 0) {
@@ -228,6 +303,12 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         return x;
     }
     
+    /**
+     *
+     * @param groupId
+     * @param indexer
+     * @return
+     */
     public float[] getY(int groupId, AxisIndexer indexer) {
         
         if (nGroups == 0) {
@@ -253,6 +334,11 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         return y;
     }
     
+    /**
+     *
+     * @param groupId
+     * @return
+     */
     public int[] getIndexes(int groupId) {
         
         if (nGroups == 0) {
@@ -284,6 +370,12 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         return Arrays.copyOf(indexes, count);
     }
    
+    /**
+     *
+     * @param a
+     * @param nTotal
+     * @return
+     */
     protected int[] expandIfNeeded(int[] a, int nTotal) {
         if (nTotal > a.length) {
             int n = a.length + 10;

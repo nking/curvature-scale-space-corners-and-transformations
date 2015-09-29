@@ -18,14 +18,34 @@ import java.io.Reader;
  */
 public class GEVParametersPlotter {
 
+    /**
+     *
+     */
     protected final StringBuffer plotContent;
 
+    /**
+     *
+     */
     protected int plotNumber = 0;
 
+    /**
+     *
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public GEVParametersPlotter() throws FileNotFoundException, IOException {
         plotContent = getTemplateHtmlPlot();
     }
 
+    /**
+     *
+     * @param k
+     * @param sigma
+     * @param mu
+     * @param slope0
+     * @param slope1
+     * @param slope2
+     */
     public void addPlot(float[] k, float[] sigma, float[] mu, float[] slope0, float[] slope1, float[] slope2) {
 
         float kMin      = Float.MAX_VALUE;
@@ -160,10 +180,23 @@ public class GEVParametersPlotter {
         plotNumber++;
     }
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, IOException {
         return getTemplateHtmlPlot("plot_gev.html");
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String fileName) throws FileNotFoundException, IOException {
 
         StringBuffer sb = new StringBuffer();
@@ -216,10 +249,20 @@ public class GEVParametersPlotter {
         return sb;
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void writeFile() throws IOException {
         writeToFile(this.plotContent.toString(), "gev.html");
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @throws IOException
+     */
     protected void writeToFile(String fileContent, String fileName) throws IOException {
 
         String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);

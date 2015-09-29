@@ -21,20 +21,57 @@ cluster code.
 */
 public class ClusterPlotter {
 
+    /**
+     *
+     */
     protected final StringBuffer plotContent;
 
+    /**
+     *
+     */
     protected int plotNumber = 0;
     
+    /**
+     *
+     */
     protected Float x0 = null;
+
+    /**
+     *
+     */
     protected Float x1 = null;
+
+    /**
+     *
+     */
     protected Float y0 = null;
+
+    /**
+     *
+     */
     protected Float y1 = null;
 
+    /**
+     *
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public ClusterPlotter() throws FileNotFoundException, IOException {
 
         plotContent = getTemplateHtmlPlot();
     }
 
+    /**
+     *
+     * @param xMin
+     * @param xMax
+     * @param yMin
+     * @param yMax
+     * @param points
+     * @param clusterSets
+     * @param clusterDensity
+     * @param plotLabel2
+     */
     public void addPlotWithoutHull( 
         float xMin, float xMax, float yMin, float yMax,
         Set<PairInt> points, List<Set<PairInt>> clusterSets, float clusterDensity,
@@ -155,16 +192,37 @@ public class ClusterPlotter {
         plotNumber++;
     }
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, 
         IOException {
         return getTemplateHtmlPlot("plot_twoptcorrelation.html");
     }
 
+    /**
+     *
+     * @param relDir
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlotWRTDir(String relDir) throws 
         FileNotFoundException, IOException {
         return getTemplateHtmlPlot(relDir, "plot_twoptcorrelation.html");
     }
 
+    /**
+     *
+     * @param subDir
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String subDir, String fileName) 
         throws FileNotFoundException, IOException {
 
@@ -198,6 +256,13 @@ public class ClusterPlotter {
         return sb;
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String fileName) throws 
         FileNotFoundException, IOException {
 
@@ -251,16 +316,40 @@ public class ClusterPlotter {
         return sb;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile() throws IOException {
         return writeToFile(this.plotContent.toString(), "clusters.html");
     }
+
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile2() throws IOException {
         return writeToFile(this.plotContent.toString(), "clusters2.html");
     }
+
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String writeFile3() throws IOException {
         return writeToFile(this.plotContent.toString(), "clusters3.html");
     }
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     protected String writeToFile(String fileContent, String fileName) throws IOException {
 
         String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);

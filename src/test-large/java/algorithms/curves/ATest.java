@@ -8,29 +8,69 @@ import algorithms.util.PolygonAndPointPlotter;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
+/**
+ *
+ * @author nichole
+ */
 public class ATest extends TestCase {
 
+    /**
+     *
+     */
     protected float[] x = null;
+
+    /**
+     *
+     */
     protected float[] y = null;
+
+    /**
+     *
+     */
     protected float[] dx = null;
+
+    /**
+     *
+     */
     protected float[] dy = null;
 
+    /**
+     *
+     */
     protected boolean debug = true;
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void setUp() throws Exception {
         super.setUp();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
     }
 
+    /**
+     *
+     */
     public void test() {}
 
+    /**
+     *
+     * @throws Exception
+     */
     public void estCalculateChiSqSumForCurve_0() throws Exception {
 
         // not a test.  this is a way to fit a curve by eye if needed.
@@ -82,6 +122,10 @@ public class ATest extends TestCase {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void estCalculateChiSqSumForCurve_1() throws Exception {
 
         float[] xp = new float[20];

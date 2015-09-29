@@ -20,6 +20,11 @@ import java.util.logging.Logger;
  */
 public class SerializerUtil {
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public static String findTmpDataDirectory() throws IOException {
 
         String path = ResourceFinder.findTmpDataDirectory();
@@ -27,6 +32,12 @@ public class SerializerUtil {
         return path;
     }
 
+    /**
+     *
+     * @param dain
+     * @return
+     * @throws IOException
+     */
     public static String serializeIndexer(AxisIndexer dain) throws IOException {
 
         String resDirectory = SerializerUtil.findTmpDataDirectory();
@@ -49,6 +60,13 @@ public class SerializerUtil {
         return serializeIndexer(dain, filePath);
     }
 
+    /**
+     *
+     * @param dain
+     * @param filePath
+     * @return
+     * @throws IOException
+     */
     public static String serializeIndexer(AxisIndexer dain, String filePath) throws IOException {
 
         File file = new File(filePath);
@@ -104,10 +122,23 @@ public class SerializerUtil {
         }
     }
 
+    /**
+     *
+     * @param persistedPointsFilePath
+     * @return
+     * @throws IOException
+     */
     public static AxisIndexer readPersistedPoints(String persistedPointsFilePath) throws IOException {
         return readPersistedPoints(persistedPointsFilePath, persistedPointsFilePath.contains("with_errors"));
     }
 
+    /**
+     *
+     * @param persistedPointsFilePath
+     * @param containsErrorArrays
+     * @return
+     * @throws IOException
+     */
     public static AxisIndexer readPersistedPoints(String persistedPointsFilePath,
         boolean containsErrorArrays) throws IOException {
 

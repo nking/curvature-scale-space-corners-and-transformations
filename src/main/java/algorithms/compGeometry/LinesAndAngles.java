@@ -19,18 +19,18 @@ public class LinesAndAngles {
           * P2
           .
           .
-          .   * P1      <--- P2 is counterclockwise from P1 w.r.t. origin o
+          .   * P1     &lt;--- P2 is counterclockwise from P1 w.r.t. origin o
           .
           o
       
                 * P2
                 .
-        P1 *    .       <--- P2 is clockwise from P1 w.r.t. origin o
+        P1 *    .      &lt;--- P2 is clockwise from P1 w.r.t. origin o
                 .
                 .
                 o
-     </pre>
      
+     </pre>
      * @param x1
      * @param y1
      * @param x2
@@ -40,10 +40,31 @@ public class LinesAndAngles {
     public static int crossProduct(int x1, int y1, int x2, int y2) {
         return ((x1*y2) - (x2*y1));
     }
+
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double crossProduct(double x1, double y1, double x2, double y2) {
         return ((x1*y2) - (x2*y1));
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @param x4
+     * @param y4
+     * @return
+     */
     public static boolean linesIntersect(int x1, int y1,
         int x2, int y2, int x3, int y3, int x4, int y4) {
 
@@ -70,6 +91,16 @@ public class LinesAndAngles {
         return false;
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
     public static int direction(int x1, int y1, int x2, int y2, int x3, int y3) {
 
         int x31 = x3 - x1;
@@ -81,6 +112,16 @@ public class LinesAndAngles {
         return crossProduct(x31, y31, x21, y21);
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
     public static double direction(float x1, float y1, float x2, float y2, float x3, float y3) {
 
         double x31 = x3 - x1;
@@ -165,6 +206,14 @@ public class LinesAndAngles {
         }
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double calculatePolarSineTheta(float x1, float y1, float x2, float y2) {
         // log.info("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
         // determine quadrant of points
@@ -212,11 +261,27 @@ public class LinesAndAngles {
        }
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double lengthOfLine(double x1, double y1, double x2, double y2) {
         double d = Math.sqrt( distSquared( x1,  y1,  x2,  y2) );
         return d;
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double distSquared(double x1, double y1, double x2, double y2) {
 
         double dx2 = (x2 - x1);
@@ -244,7 +309,7 @@ public class LinesAndAngles {
                                \
                                 *
                             (x2, y2)
-           <pre>
+           </pre>
          * 
          * @param x1
          * @param y1
@@ -313,6 +378,18 @@ public class LinesAndAngles {
         return new double[]{p_x, p_y};
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @param x4
+     * @param y4
+     * @return
+     */
     public static double[] intersectionOf2Lines_2(float x1, float y1, float x2, float y2,
         float x3, float y3, float x4, float y4) {
 
@@ -345,22 +422,68 @@ public class LinesAndAngles {
         return new double[]{p_x, p_y};
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static float calculateSlope(float x1, float y1, float x2, float y2) {
         return ( y2 - y1 ) / (x2 - x1);
     }
+
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static float calculateTangentSlope(float x1, float y1, float x2, float y2) {
         return -1.f*( x2 - x1 ) / (y2 - y1);
     }
 
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param y
+     * @param slope
+     * @return
+     */
     public static float calculateX(float x0, float y0, float y, float slope) {
         return ( x0 + ((y - y0)/slope) );
     }
 
     //  (yTopPolygon-y0)/(xTopPolygon-x0) = slope
-    public static float calculateY(float x0, float y0, float x, float slope) {
+
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param x
+     * @param slope
+     * @return
+     */
+        public static float calculateY(float x0, float y0, float x, float slope) {
         return ( y0 + slope*(x - x0) );
     }
 
+    /**
+     *
+     * @param xi
+     * @param yi
+     * @param xj
+     * @param yj
+     * @param xMin
+     * @param xMax
+     * @param yMin
+     * @param yMax
+     * @return
+     */
     public static float[] calculatePerpendicularBisectingSegment(float xi, 
         float yi, float xj, float yj, float xMin, float xMax, float yMin, 
         float yMax) {
@@ -440,6 +563,19 @@ public class LinesAndAngles {
         return new float[]{xLeft, yLeft, xRight, yRight};
     }
    
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @param generalEps
+     * @return
+     */
     public static boolean segmentIsWithinSegment(float x0, float y0, float x1, 
         float y1, float x2, float y2, float x3, float y3, float generalEps) {
 
@@ -502,6 +638,12 @@ public class LinesAndAngles {
         return false;
     }
 
+    /**
+     *
+     * @param xPolygon
+     * @param yPolygon
+     * @return
+     */
     public static float[] calcAreaAndCentroidOfSimplePolygon(float[] xPolygon, 
         float[] yPolygon) {
 

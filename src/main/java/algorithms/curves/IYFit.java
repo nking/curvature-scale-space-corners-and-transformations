@@ -6,7 +6,15 @@ package algorithms.curves;
  */
 public interface IYFit {
 
+    /**
+     *
+     * @return
+     */
     public String[] getParameterNames();
 
+    /**
+     *
+     * @return
+     */
     public float[] getParameters();
 }

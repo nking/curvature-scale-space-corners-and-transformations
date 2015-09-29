@@ -10,8 +10,15 @@ import java.util.logging.Logger;
  */
 public class FittingStatsTest extends BaseTwoPointTest {
 
+    /**
+     *
+     */
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
+    /**
+     *
+     * @throws Exception
+     */
     public void testFitStats() throws Exception {
 
         log.info("testFitStats()");

@@ -493,9 +493,9 @@ import algorithms.misc.MiscMath;
 
 <span class="fc" id="L494">        double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );</span>
 
-<span class="pc bpc" id="L496" title="1 of 2 branches missed.">        if (Double.isNaN(dydmu)) {</span>
-<span class="nc" id="L497">            Double d = estimateDerivUsingDeltaMu(mu, k, sigma, x);</span>
-<span class="nc bnc" id="L498" title="All 2 branches missed.">            return (d != null) ? d.doubleValue() : 0;</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (Double.isNaN(dydmu)) {</span>
+<span class="fc" id="L497">            Double d = estimateDerivUsingDeltaMu(mu, k, sigma, x);</span>
+<span class="pc bpc" id="L498" title="1 of 2 branches missed.">            return (d != null) ? d.doubleValue() : 0;</span>
         }
 
 <span class="fc" id="L501">        return dydmu;</span>
