@@ -4,7 +4,6 @@ import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -415,27 +414,7 @@ public class CIEChromaticity {
         
         double diffY = Math.abs(cieY - 0.35);
       
-        return ((diffX < deltaWhite) && (diffY < deltaWhite));
-    }
-    
-    /**
-     * returns roughly whether the CIE (X,Y) coordinate lands within the large
-     * white zone in the center of the diagram.
-     * @param cieX
-     * @param cieY
-     * @return 
-     */
-    public boolean isCentralWhite(float cieX, float cieY) {
-                       
-        if ((cieX > (0.35f + deltaWhite)) || (cieX < (0.35 - deltaWhite))) {
-            return false;
-        }
-        
-        if ((cieY > (0.35f + deltaWhite)) || (cieY < (0.35 - deltaWhite))) {
-            return false;
-        }
-        
-        return true;
+        return ((diffX <= deltaWhite) && (diffY <= deltaWhite));
     }
     
     /**

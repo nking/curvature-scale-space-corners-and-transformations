@@ -43,7 +43,7 @@ public class ImageProcessor {
      * this is the n=2 binomial filter for a Gaussian first derivative,
        that is sigma = sqrt(2)/2 = 0.707
        </pre>
-     * @param input 
+     * @param input
      */
     public void applySobelKernel(Image input) {
 
@@ -775,7 +775,7 @@ public class ImageProcessor {
      * @param input
      * @param kBands
      * @throws IOException
-     * @throws NoSuchAlgorithmException 
+     * @throws NoSuchAlgorithmException
      */
     public void applyImageSegmentation(GreyscaleImage input, int kBands)
         throws IOException, NoSuchAlgorithmException {
@@ -1510,7 +1510,7 @@ public class ImageProcessor {
 
     public void applyInvert255(GreyscaleImage img) {
         // assumption that pixels lie in range 0 to 255
-        
+
         for (int i = 0; i < img.getWidth(); ++i) {
             for (int j = 0; j < img.getHeight(); ++j) {
                 int v = img.getValue(i, j);
@@ -1519,10 +1519,10 @@ public class ImageProcessor {
             }
         }
     }
-    
+
     public void applyInvert255(Image img) {
         // assumption that pixels lie in range 0 to 255
-        
+
         for (int i = 0; i < img.getWidth(); ++i) {
             for (int j = 0; j < img.getHeight(); ++j) {
                 img.setRGB(i, j,
@@ -1532,7 +1532,7 @@ public class ImageProcessor {
             }
         }
     }
-    
+
     public GreyscaleImage binImageToKeepZeros(GreyscaleImage img,
         int binFactor) {
 
@@ -2126,36 +2126,36 @@ public class ImageProcessor {
 
         return new double[]{avgY, avgR, avgG, avgB};
     }
-    
+
     public GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
-        
+
         int w0 = input.getWidth();
         int h0 = input.getHeight();
-        
+
         int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
         int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
 
         int xOffset = w - w0;
         int yOffset = h - h0;
-        
+
         if (xOffset == 0 && yOffset == 0) {
             return input;
         }
-        
+
         int xOffsetOrig = input.getXRelativeOffset();
         int yOffsetOrig = input.getYRelativeOffset();
-        
+
         GreyscaleImage output = new GreyscaleImage(w, h);
         output.setXRelativeOffset(xOffset + xOffsetOrig);
         output.setYRelativeOffset(yOffset + yOffsetOrig);
-      
+
         for (int i = 0; i < w0; ++i) {
             for (int j = 0; j < h0; ++j) {
                 int v = input.getValue(i, j);
                 output.setValue(i + xOffset, j + yOffset, v);
             }
         }
-        
+
         return output;
     }
 
@@ -2168,7 +2168,7 @@ public class ImageProcessor {
 
         int xOffsetOrig = input.getXRelativeOffset();
         int yOffsetOrig = input.getYRelativeOffset();
-            
+
         //TODO remove the other power of 2 padding method
         GreyscaleImage tmp = padUpToPowerOfTwo(input);
 
@@ -2178,12 +2178,12 @@ public class ImageProcessor {
         Complex[][] ccOut = apply2DFFT(cc, forward);
 
         writeToImage(tmp, ccOut);
-        
+
         if (tmp.getNPixels() > input.getNPixels()) {
-                        
+
             int xOffset = tmp.getXRelativeOffset();
             int yOffset = tmp.getYRelativeOffset();
-            
+
             // padding is at front of cols and rows
             int x = 0;
             for (int col = xOffset; col < tmp.getWidth(); col++) {
@@ -2522,7 +2522,7 @@ public class ImageProcessor {
 
         return img2;
     }
-    
+
     /**
      * create an image segmented by color...useful for experimenting with corners
      * due to color differences rather than original intensity differences.
@@ -2536,7 +2536,7 @@ public class ImageProcessor {
 
         return createGreyscaleFromColorSegmentation(input, kColors);
     }
-    
+
     /**
      * create an image segmented by color...useful for experimenting with corners
      * due to color differences rather than original intensity differences.
@@ -2544,7 +2544,7 @@ public class ImageProcessor {
      * @param input
      * @return
      */
-    public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt 
+    public GreyscaleImage createGreyscaleFromColorSegmentationKMPP(ImageExt
         input) {
 
         int kColors = 8;
@@ -2568,7 +2568,7 @@ public class ImageProcessor {
 
         return createGreyscaleFromColorSegmentation(input, kColors, useBlur);
     }
-    
+
     /**
      * create an image segmented by color...useful for experimenting with corners
      * due to color differences rather than original intensity differences.
@@ -2807,7 +2807,7 @@ public class ImageProcessor {
 
         return img;
     }
-    
+
     /**
      * convert the color image into an image scaled into values 0 to 255
      * by the polar theta angle in CIE XY color space.  The colors are
@@ -2992,21 +2992,21 @@ public class ImageProcessor {
     /**
      * NOT READY FOR USE.  STILL EXPERIMENTING.
      * create an image segmented by CIE XY Lab Color space using qualities of
-     * the data.  
+     * the data.
      * Note that black is not a color in CIE XY color space and white
      * is a large general area in the center of the color space.
      * @param input
      * @param useBlur
      * @return
      */
-    public List<Set<PairInt>> calculateColorSegmentation(ImageExt input, 
+    public List<Set<PairInt>> calculateColorSegmentation(ImageExt input,
         boolean useBlur) {
         // method name may change to apply.  might average the cluster color and apply it to points
-        
+
         if (useBlur) {
             blur(input, 1.0f);
         }
-        
+
         //TODO: consider making a segmentation method using CIEXY theta
         // for x and the frequency for y, both scaled to numerically
         // resolvable range < max of 5000.
@@ -3014,70 +3014,70 @@ public class ImageProcessor {
         // uses CIE XY Theta followed by histograms or KMeans++.
         // No need to specify the number of bins before use for suggested
         // version.
-        
+
         //NOTE: the method needs to have gaps in the data given to it
         //    that is a lack of points for some region between the
         //    min and max of x and y data in integer space
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         // max = 6250 unless reduce space complexity
         float factor = 2000;// learn this from numerical resolution
-        
+
         // then subtract the minima in both cieX and cieY
-        
+
         int minCIEX = Integer.MAX_VALUE;
         int minCIEY = Integer.MAX_VALUE;
         int maxCIEX = Integer.MIN_VALUE;
         int maxCIEY = Integer.MIN_VALUE;
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-        
+
         Set<PairIntWithIndex> points0 = new HashSet<PairIntWithIndex>();
-        
-        Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 = 
+
+        Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 =
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
-        
+
         Set<PairInt> blackPixels = new HashSet<PairInt>();
-        
+
         Set<PairInt> whitePixels = new HashSet<PairInt>();
-        
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                
+
                 int idx = input.getInternalIndex(i, j);
-                
+
                 int r = input.getR(idx);
                 int g = input.getG(idx);
                 int b = input.getB(idx);
-                           
+
                 if ((r == 0) && (g == 0) && (b == 0)) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
                 }
-                
+
                 float cx = input.getCIEX(idx);
                 float cy = input.getCIEY(idx);
-                
+
                 if (cieC.isWhite(cx, cy)) {
                     whitePixels.add(new PairInt(i, j));
                     continue;
                 }
-                
+
                 int cieXInt = Math.round(factor * cx);
                 int cieYInt = Math.round(factor * cy);
-                
+
                 PairIntWithIndex p = new PairIntWithIndex(cieXInt, cieYInt, idx);
                 points0.add(p);
-                
+
                 List<PairIntWithIndex> list = pointsMap0.get(p);
                 if (list == null) {
                     list = new ArrayList<PairIntWithIndex>();
                     pointsMap0.put(p, list);
                 }
                 list.add(p);
-                
+
                 if (cieXInt < minCIEX) {
                     minCIEX = cieXInt;
                 }
@@ -3092,16 +3092,16 @@ public class ImageProcessor {
                 }
             }
         }
-        
-        Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap = 
+
+        Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap =
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
-        
+
         // subtract minima from the points
         for (PairIntWithIndex p : points0) {
-            
+
             int x = p.getX() - minCIEX;
             int y = p.getY() - minCIEY;
-            
+
             PairIntWithIndex p2 = new PairIntWithIndex(x, y, p.pixIdx);
             List<PairIntWithIndex> list2 = pointsMap.get(p2);
             if (list2 == null) {
@@ -3110,7 +3110,7 @@ public class ImageProcessor {
             }
             // because this is a list, this will eventually be present twice:
             //list2.add(p2);
-            
+
             for (PairIntWithIndex p0 : pointsMap0.get(p)) {
                 PairIntWithIndex p3 = new PairIntWithIndex(
                     p0.getX() - minCIEX, p0.getY() - minCIEY, p0.pixIdx);
@@ -3119,16 +3119,16 @@ public class ImageProcessor {
         }
         maxCIEX -= minCIEX;
         maxCIEY -= minCIEY;
-        
+
         // frequency of colors:
-        Map<PairIntWithIndex, Integer> freqMap = new 
+        Map<PairIntWithIndex, Integer> freqMap = new
             HashMap<PairIntWithIndex, Integer>();
         for (Entry<PairIntWithIndex, List<PairIntWithIndex>> entry :
             pointsMap.entrySet()) {
             int c = entry.getValue().size();
             freqMap.put(entry.getKey(), Integer.valueOf(c));
         }
-                
+
         // ----- debug ---
         // plot the points as an image to see the data first
         GreyscaleImage img = new GreyscaleImage(maxCIEX + 1, maxCIEY + 1);
@@ -3137,18 +3137,18 @@ public class ImageProcessor {
         }
         try {
             ImageIOHelper.writeOutputImage(
-                ResourceFinder.findDirectory("bin") + "/dt_input.png", img);            
+                ResourceFinder.findDirectory("bin") + "/dt_input.png", img);
         } catch (IOException ex) {
-            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE, 
+            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
                 null, ex);
         }
         // --- end debug
-        
-        DTClusterFinder clusterFinder = new DTClusterFinder(pointsMap.keySet(), 
+
+        DTClusterFinder clusterFinder = new DTClusterFinder(pointsMap.keySet(),
             maxCIEX + 1, maxCIEY + 1);
-        
+
         clusterFinder.setToDebug();
-        
+
         // to recover every point, set limit to 1
         clusterFinder.setMinimumNumberInCluster(1);
 
@@ -3159,24 +3159,24 @@ public class ImageProcessor {
         int nGroups = clusterFinder.getNumberOfClusters();
 
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
-        
+
         for (int k = 0; k < nGroups; ++k) {
-            
-            Set<com.climbwithyourfeet.clustering.util.PairInt> group 
+
+            Set<com.climbwithyourfeet.clustering.util.PairInt> group
                 = clusterFinder.getCluster(k);
-            
+
             Set<PairInt> coordPoints = new HashSet<PairInt>();
-            
+
             for (com.climbwithyourfeet.clustering.util.PairInt p : group) {
-                
+
                 PairIntWithIndex p2 = (PairIntWithIndex)p;
                 int idx = p2.pixIdx;
                 int xCoord = input.getCol(idx);
-                int yCoord = input.getRow(idx);                
-                                
+                int yCoord = input.getRow(idx);
+
                 PairInt pCoord = new PairInt(xCoord, yCoord);
                 coordPoints.add(pCoord);
-                
+
                 // include the other points of/ same color
                 List<PairIntWithIndex> list = pointsMap.get(p2);
                 assert(list != null);
@@ -3188,17 +3188,453 @@ public class ImageProcessor {
                     coordPoints.add(pCoord);
                 }
             }
-            
-            groupList.add(coordPoints);            
+
+            groupList.add(coordPoints);
         }
-        
+
         // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
         groupList.add(whitePixels);
 
         return groupList;
     }
-    
+
+    /**
+     * NOT READY FOR USE.  STILL EXPERIMENTING.
+     * create an image segmented by CIE XY Lab Color space using qualities of
+     * the data (this one uses cie XY theta and frequency.
+     * Note that black is not a color in CIE XY color space and white
+     * is a large general area in the center of the color space so those are
+     * extracted
+     * and made into groups separate from the other clustering.
+     * @param input
+     * @param useBlur
+     * @return
+     */
+    public List<Set<PairInt>> calculateColorSegmentation2(ImageExt input,
+        boolean useBlur) {
+        // method name may change to apply.  might average the cluster 
+        //    color and apply it to points
+
+        if (useBlur) {
+            blur(input, 1.0f);
+        }
+
+        //making a segmentation method using CIEXY theta
+        // for x and the frequency for y, both scaled to numerically
+        // resolvable range < max of 5000.
+        // this would be good to compare to the method here which
+        // uses CIE XY Theta followed by histograms or KMeans++.
+        // No need to specify the number of bins before use for suggested
+        // version.
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        // max = 5000 unless reduce space complexity
+
+        double minTheta0 = Double.MAX_VALUE;
+        double maxTheta0 = Double.MIN_VALUE;
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        Set<PairInt> blackPixels = new HashSet<PairInt>();
+
+        Set<PairInt> whitePixels = new HashSet<PairInt>();
+
+        Set<PairInt> points0 = new HashSet<PairInt>();
+
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+
+                int idx = input.getInternalIndex(i, j);
+
+                int r = input.getR(idx);
+                int g = input.getG(idx);
+                int b = input.getB(idx);
+
+                if ((r == 0) && (g == 0) && (b == 0)) {
+                    blackPixels.add(new PairInt(i, j));
+                    continue;
+                }
+
+                float cx = input.getCIEX(idx);
+                float cy = input.getCIEY(idx);
+
+                if (cieC.isWhite(cx, cy)) {
+                    whitePixels.add(new PairInt(i, j));
+                    continue;
+                }
+
+                points0.add(new PairInt(i, j));
+
+                double theta = cieC.calculateXYTheta(cx, cy);
+
+                if (theta < minTheta0) {
+                    minTheta0 = theta;
+                }
+                if (theta > maxTheta0) {
+                    maxTheta0 = theta;
+                }
+            }
+        }
+
+        log.info("for all non-white and non-black, minTheta=" + minTheta0
+            + " maxTheta=" + maxTheta0);
+
+        /* ----- create a map of theta scaled so that 360 degrees is in 1000 pixels -------
+        theta = (theta - minTheta)*1000/(maxTheta - minTheta).
+        */
+        
+        if ((maxTheta0 - minTheta0) == 0) {
+             List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+             if (points0.isEmpty()) {
+                 groupList.add(points0);
+             }
+             if (!blackPixels.isEmpty()) {
+                 groupList.add(blackPixels);
+             }
+             if (!whitePixels.isEmpty()) {
+                 groupList.add(whitePixels);
+             }
+        }
+        
+        double[] minMaxTheta = new double[2];
+        int[] minMaxFreq = new int[2];
+        double thetaFactor0 = 500./(maxTheta0 - minTheta0);
+        Map<Integer, List<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
+            input, minTheta0, thetaFactor0, minMaxTheta, minMaxFreq);
+        
+        /* ---- create frequency maps partitioned by given fractions ----
+        starting w/ partitions at 3 percent (maybe discard below),
+            15 percent, and 25 percent resulting in 4 maps
+        
+        For each map:
+            key is pairint w/ x=theta, y=freq,
+            value is all pixels having same key
+        */
+        
+        final float[] partitionFreqFracs = new float[]{0.03f, 0.15f, 0.25f};
+        
+        List<Map<com.climbwithyourfeet.clustering.util.PairInt,
+            List<PairIntWithIndex>>> thetaFreqMaps =
+            partitionIntoFrequencyMaps(input, thetaPointMap,
+                partitionFreqFracs, minMaxFreq[1]);
+        
+        //---- debug, assert number of pixels ----
+        int nTot = blackPixels.size() + whitePixels.size();
+        for (Map<com.climbwithyourfeet.clustering.util.PairInt,
+        List<PairIntWithIndex>> map : thetaFreqMaps) {
+            for (Entry<com.climbwithyourfeet.clustering.util.PairInt,
+                List<PairIntWithIndex>> entry : map.entrySet()) {
+                nTot += entry.getValue().size();
+            }
+        }
+        log.info("img nPix=" + input.getNPixels() + " nTot=" + nTot);
+        assert(nTot == input.getNPixels());
+        
+        // TODO: handle wrap around values!
+        //    if there are points at 0 and 360, and a gap elsewhere, can
+        //    shift the values so the gap is at 360 instead.
+        
+        // ------ TODO: rescale each map by frequencies to span ~1000 pixels -----
+        rescaleKeys(thetaFreqMaps, 750);
+        
+        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+
+        int nTot2 = 0;
+        
+        for (int i = 1; i < thetaFreqMaps.size(); ++i) {
+        
+            Map<com.climbwithyourfeet.clustering.util.PairInt,
+                List<PairIntWithIndex>> thetaFreqMapI = thetaFreqMaps.get(i);
+            
+            int[] maxXY = findMaxXY(thetaFreqMapI.keySet());
+            
+            if (maxXY[0] <= 0 || maxXY[1] <= 0) {
+                continue;
+            }
+            
+            // ----- debug ---
+            // plot the points as an image to see the data first
+            GreyscaleImage img = new GreyscaleImage(maxXY[0] + 1, maxXY[1] + 1);
+            for (com.climbwithyourfeet.clustering.util.PairInt p : thetaFreqMapI.keySet()) {
+                img.setValue(p.getX(), p.getY(), 255);
+            }
+            try {
+                ImageIOHelper.writeOutputImage(
+                    ResourceFinder.findDirectory("bin") + "/dt2_input_" + i 
+                        + "_.png", img);
+            } catch (IOException ex) {
+                Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
+                    null, ex);
+            }
+            // --- end debug
+            
+            DTClusterFinder clusterFinder = new DTClusterFinder(thetaFreqMapI.keySet(),
+                maxXY[0] + 1, maxXY[1] + 1);
+
+            clusterFinder.setToDebug();
+
+            // to recover every point, set limit to 1
+            clusterFinder.setMinimumNumberInCluster(1);
+
+            clusterFinder.calculateCriticalDensity();
+
+            clusterFinder.findClusters();
+
+            int nGroups = clusterFinder.getNumberOfClusters();
+            
+            for (int k = 0; k < nGroups; ++k) {
+
+                Set<com.climbwithyourfeet.clustering.util.PairInt> group
+                    = clusterFinder.getCluster(k);
+
+                Set<PairInt> coordPoints = new HashSet<PairInt>();
+
+                for (com.climbwithyourfeet.clustering.util.PairInt p : group) {
+
+                    coordPoints.add(new PairInt(p.getX(), p.getY()));
+
+                    // include the other points of same ciexy theta, freq
+                    List<PairIntWithIndex> list = thetaFreqMapI.get(p);
+                    assert (list != null);
+                    for (PairIntWithIndex p3 : list) {
+                        int idx3 = p3.pixIdx;
+                        int xCoord3 = input.getCol(idx3);
+                        int yCoord3 = input.getRow(idx3);
+                        PairInt pCoord = new PairInt(xCoord3, yCoord3);
+                        coordPoints.add(pCoord);
+                    }
+                }
+
+                nTot2 += coordPoints.size();
+
+                groupList.add(coordPoints);
+            }
+        }
+                
+        // add back in blackPixels and whitePixels
+        groupList.add(blackPixels);
+        groupList.add(whitePixels);
+
+        log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
+        nTot2 += (blackPixels.size() + whitePixels.size());
+        //assert(nTot2 == input.getNPixels());
+
+        return groupList;
+    }
+
+    private Map<Integer, List<PairInt>> createThetaCIEXYMap(Set<PairInt>
+        points0, ImageExt input, double minTheta, double thetaFactor,
+        double[] outputMinMaxTheta, int[] outputMinMaxFreq) {
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        // key = theta, value = pixels having that key
+        Map<Integer, List<PairInt>> thetaPointMap = new HashMap<Integer, List<PairInt>>();
+
+        double minTheta0 = minTheta;
+        outputMinMaxTheta[0] = Double.MIN_VALUE;
+        outputMinMaxTheta[1] = Double.MAX_VALUE;
+
+        for (PairInt p : points0) {
+
+            int idx = input.getInternalIndex(p.getX(), p.getY());
+
+            float cx = input.getCIEX(idx);
+            float cy = input.getCIEY(idx);
+
+            double theta = thetaFactor * (cieC.calculateXYTheta(cx, cy)
+                - minTheta0);
+
+            Integer thetaCIEXY = Integer.valueOf((int)Math.round(theta));
+
+            List<PairInt> list = thetaPointMap.get(thetaCIEXY);
+            if (list == null) {
+                list = new ArrayList<PairInt>();
+                thetaPointMap.put(thetaCIEXY, list);
+            }
+            list.add(p);
+
+            if (theta < outputMinMaxTheta[0]) {
+                outputMinMaxTheta[0] = theta;
+            }
+            if (theta > outputMinMaxTheta[1]) {
+                outputMinMaxTheta[1] = theta;
+            }
+        }
+
+        outputMinMaxFreq[0] = Integer.MAX_VALUE;
+        outputMinMaxFreq[1] = Integer.MIN_VALUE;
+        for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
+            int count = entry.getValue().size();
+            if (count < outputMinMaxFreq[0]) {
+                outputMinMaxFreq[0] = count;
+            }
+            if (count > outputMinMaxFreq[1]) {
+                outputMinMaxFreq[1] = count;
+            }
+        }
+
+        return thetaPointMap;
+    }
+
+    private List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
+    List<PairIntWithIndex>>> partitionIntoFrequencyMaps(
+        ImageExt input, Map<Integer, List<PairInt>> thetaPointMap, 
+        float[] partitionFreqFracs, int maxFreq) {
+        
+        List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
+            List<PairIntWithIndex>>> 
+            mapsList = 
+                new ArrayList<Map<com.climbwithyourfeet.clustering.util.PairInt, 
+                List<PairIntWithIndex>>>();
+        
+        int nMaps = partitionFreqFracs.length + 1;
+        
+        for (int i = 0; i < nMaps; ++i) {
+            mapsList.add(
+                new HashMap<com.climbwithyourfeet.clustering.util.PairInt, 
+                List<PairIntWithIndex>>());
+        }
+        
+        final int[] partitionFreqs = new int[partitionFreqFracs.length];
+        for (int i = 0; i < partitionFreqs.length; ++i) {
+            partitionFreqs[i] = Math.round(partitionFreqFracs[i]*maxFreq);
+        }
+        
+        for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
+
+            Integer theta = entry.getKey();
+
+            int count = entry.getValue().size();
+
+            List<PairIntWithIndex> list = new ArrayList<PairIntWithIndex>();
+            for (PairInt p : entry.getValue()) {
+                int pixIdx = input.getInternalIndex(p.getX(), p.getY());
+                PairIntWithIndex p2 = new PairIntWithIndex(theta.intValue(),
+                    count, pixIdx);
+                list.add(p2);
+            }
+            
+            int n = partitionFreqs.length;
+            int idx = 0;
+            for (int i = 0; i < n; ++i) {
+                if (i == 0) {
+                    if (count < partitionFreqs[0]) {
+                        idx = 0;
+                        break;
+                    }
+                } else if ((i == (n - 1)) && count >= partitionFreqs[i]) {
+                    idx = n;// one past partitions is last list bin
+                    break;
+                } else {
+                    if ((count >= partitionFreqs[i - 1]) && (count < partitionFreqs[i])) {
+                        idx = i;
+                        break;
+                    }
+                }
+            }
+            
+            // this is unique to all maps, not stomping on existing key
+            mapsList.get(idx).put(
+                new com.climbwithyourfeet.clustering.util.PairInt(
+                    theta.intValue(), count), list);
+        }
+        
+        return mapsList;
+    }
+
+    private void rescaleKeys(
+        List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
+            List<PairIntWithIndex>>> thetaFreqMaps, int scaleTo) {
+        
+        for (int i = 0; i < thetaFreqMaps.size(); ++i) {
+            
+            Map<com.climbwithyourfeet.clustering.util.PairInt, 
+                List<PairIntWithIndex>> thetaFreqMap = thetaFreqMaps.get(i);
+            
+            int[] minMax = findMinMaxOfKeyYs(thetaFreqMap.keySet());
+            
+            Map<com.climbwithyourfeet.clustering.util.PairInt, 
+                List<PairIntWithIndex>> thetaFreqMap2 = rescaleKeyYs(
+                    thetaFreqMap, scaleTo, minMax);
+            
+            thetaFreqMaps.set(i, thetaFreqMap2);
+        }
+    }
+
+    private int[] findMinMaxOfKeyYs(
+        Set<com.climbwithyourfeet.clustering.util.PairInt> keySet) {
+        
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        
+        for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {
+            int y = p.getY();
+            if (y < min) {
+                min = y;
+            }
+            if (y > max) {
+                max = y;
+            }
+        }
+        return new int[]{min, max};
+    }
+
+    private Map<com.climbwithyourfeet.clustering.util.PairInt, 
+    List<PairIntWithIndex>> rescaleKeyYs(
+        Map<com.climbwithyourfeet.clustering.util.PairInt, 
+            List<PairIntWithIndex>> thetaFreqMap, final int scaleTo, 
+            final int[] minMaxY) {
+        
+        Map<com.climbwithyourfeet.clustering.util.PairInt, 
+            List<PairIntWithIndex>> scaledMap 
+            = new HashMap<com.climbwithyourfeet.clustering.util.PairInt, 
+                List<PairIntWithIndex>>();
+        
+        if ((minMaxY[1] - minMaxY[0]) == 0) {
+            return scaledMap;
+        }
+        
+        float factor = scaleTo/(minMaxY[1] - minMaxY[0]);
+        
+        for (Entry<com.climbwithyourfeet.clustering.util.PairInt, 
+            List<PairIntWithIndex>> entry : thetaFreqMap.entrySet()) {
+            
+            com.climbwithyourfeet.clustering.util.PairInt p = entry.getKey();
+            
+            int y = Math.round(factor * (p.getY() - minMaxY[0]));
+            
+            com.climbwithyourfeet.clustering.util.PairInt p2 = new
+                com.climbwithyourfeet.clustering.util.PairInt(p.getX(), y);
+            
+            scaledMap.put(p2, entry.getValue());
+        }
+        
+        return scaledMap;
+    }
+
+    private int[] findMaxXY(Set<com.climbwithyourfeet.clustering.util.PairInt> 
+        keySet) {
+        
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        
+        for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {
+            int x = p.getX();
+            int y = p.getY();
+            if (x > maxX) {
+                maxX = x;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+        }
+        return new int[]{maxX, maxY};
+    }
+
     public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
 
         int pixIdx;
@@ -3210,17 +3646,17 @@ public class ImageProcessor {
 
         @Override
         public boolean equals(Object obj) {
-            
+
             if (!(obj instanceof com.climbwithyourfeet.clustering.util.PairInt)) {
                 return false;
             }
 
-            com.climbwithyourfeet.clustering.util.PairInt other 
+            com.climbwithyourfeet.clustering.util.PairInt other
                 = (com.climbwithyourfeet.clustering.util.PairInt) obj;
 
             return (x == other.getX()) && (y == other.getY());
         }
-        
+
         @Override
         public int hashCode() {
 
@@ -3242,9 +3678,9 @@ public class ImageProcessor {
 
             return sb.toString();
         }
-                
+
     }
-    
+
     /**
      * read the image and store the non-zero pixels in a set.  note that negative
      * values will also be stored in the output set.
@@ -3504,7 +3940,7 @@ public class ImageProcessor {
             Errors.populateYErrorsBySqrt(thetaValues));
 
         try {
-            hist.plotHistogram("cie XY theta histogram", "cieXY_hist_" 
+            hist.plotHistogram("cie XY theta histogram", "cieXY_hist_"
                 + MiscDebug.getCurrentTimeFormatted());
         } catch (Exception e) {}
 
@@ -3558,19 +3994,19 @@ public class ImageProcessor {
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
         final int kColors) {
 
-        //TODO: assert kColors.  The invoker is reserving 2 bands for 
+        //TODO: assert kColors.  The invoker is reserving 2 bands for
         // B & W, so nBins should probably be (kColors - 2)...
         // correct this for the invoker when testing
         int nBins = kColors;
-        
+
         KMeansPlusPlusFloat kmpp = new KMeansPlusPlusFloat();
         kmpp.computeMeans(nBins, thetaValues);
-        
+
         float minValue = kmpp.getMinValue();
         float maxValue = kmpp.getMaxValue();
 
         float[] binCenters = kmpp.getCenters();
-        
+
         Iterator<Entry<PairInt, Float> > iter = pixThetaMap.entrySet().iterator();
 
         while (iter.hasNext()) {
@@ -3595,14 +4031,14 @@ public class ImageProcessor {
 
                     //TODO: check this
                     int mappedValue = 255 - nBins + i;
-                    
+
                     output.setValue(p.getX(), p.getY(), mappedValue);
 
                     break;
                 }
             }
-            
-            /* 
+
+            /*
             // if binCenters is ordered, use binary search for faster results
             int idx = Arrays.binarySearch(startBins, theta);
 
@@ -3618,13 +4054,13 @@ public class ImageProcessor {
         }
     }
     public void applyAdaptiveMeanThresholding(GreyscaleImage img) {
-        
+
         applyAdaptiveMeanThresholding(img, 3);
     }
-    
-    public void applyAdaptiveMeanThresholding(GreyscaleImage img, 
+
+    public void applyAdaptiveMeanThresholding(GreyscaleImage img,
         int halfDimension) {
-        
+
         GreyscaleImage imgM = img.copyImage();
 
         /*
@@ -3650,16 +4086,16 @@ public class ImageProcessor {
             }
         }
     }
-    
+
     /**
-     * create an image of the mean of the surrounding dimension x dimension 
+     * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel.  The calculation starts at 0 and the end
      * dimension pixels are averaged using the decreasing number of pixels.
      * <pre>
      * for example, image:
-     * [10] [12] [12]     
      * [10] [12] [12]
-     * 
+     * [10] [12] [12]
+     *
      * for dimension = 2 becomes:
      * [11] [12] [12]
      * [11] [12] [12]
@@ -3670,26 +4106,26 @@ public class ImageProcessor {
      * @param dimension
      */
     public void applyBoxcarMean(GreyscaleImage img, int dimension) {
-        
+
         if ((img.getWidth() < dimension) || (img.getHeight() < dimension)) {
             throw new IllegalArgumentException("dimension is larger than image"
                 + " dimensions.  method not yet handling that.");
         }
-        
+
         /*
         becomes efficient when dimension > 3
-        
+
         sum along columns first using dynamic programming:
         sumCol[j=0] = sum_j=0_to_dim of row[i]
         sumCol[j=1] = sumCol[0] - row[j-1] + row[dim + j - 1]
         sumCol[j=2] = sumCol[1] - row[j-1] + row[dim + j - 1]
         */
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         GreyscaleImage mean = img.createWithDimensions();
-        
+
         // sum along rows
         for (int i = 0; i < w; ++i) {
             int sum0 = 0;
@@ -3697,7 +4133,7 @@ public class ImageProcessor {
                 sum0 += img.getValue(i, j);
             }
             mean.setValue(i, 0, sum0);
-            for (int j = 1; j <= (h - dimension); ++j) {                
+            for (int j = 1; j <= (h - dimension); ++j) {
                 int vp = img.getValue(i, j - 1);
                 int vl =  img.getValue(i, dimension + j - 1);
                 sum0 = sum0 - vp + vl;
@@ -3715,7 +4151,7 @@ public class ImageProcessor {
                 mean.setValue(i, j, Math.round(sum));
             }
         }
-        
+
         // sum along columns
         for (int j = 0; j < h; ++j) {
             int sum0 = 0;
@@ -3729,7 +4165,7 @@ public class ImageProcessor {
                 sum0 = sum0 - vp + vl;
                 img.setValue(i, j, sum0);
             }
-            
+
             // last dimension - 1 cols: sum along them, divide by count then mult by dimension
             for (int i = (w - dimension + 1); i < w; ++i) {
                 float count = h - i;
@@ -3740,7 +4176,7 @@ public class ImageProcessor {
                 sum /= count;
                 sum *= dimension;
                 img.setValue(i, j, Math.round(sum));
-            }            
+            }
         }
 
         // divide each value by dimension * dimension
@@ -3751,19 +4187,19 @@ public class ImageProcessor {
                 v = Math.round((float)v/dsq);
                 img.setValue(i, j, v);
             }
-        } 
+        }
     }
-    
+
     /**
-     * create an image of the mean of the surrounding dimension x dimension 
+     * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel centered on each pixel.  For the starting
      * and ending (dimension/2) pixels, the average uses a descreasing
      * number of pixels.
      * <pre>
      * for example, image:
-     * [10] [12] [12]     
      * [10] [12] [12]
-     * 
+     * [10] [12] [12]
+     *
      * for halfDimension = 1 becomes:
      * [11] [11] [12]
      * [11] [11] [12]
@@ -3774,31 +4210,31 @@ public class ImageProcessor {
      * are averaged
      */
     public void applyCenteredMean(GreyscaleImage img, int halfDimension) {
-        
-        if ((img.getWidth() < 2*halfDimension) || 
+
+        if ((img.getWidth() < 2*halfDimension) ||
             (img.getHeight() < 2*halfDimension)) {
             throw new IllegalArgumentException("dimension is larger than image"
                 + " dimensions.  method not yet handling that.");
         }
-        
+
         /*
         becomes efficient when halfDimension > 1
-        
+
         sum along columns first using dynamic programming, then rows
         */
-        
+
         int dimension = 2*halfDimension + 1;
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         GreyscaleImage mean = img.createWithDimensions();
-        
+
         // sum along rows
         for (int i = 0; i < w; ++i) {
-            
+
             /* pixels before halfDimension
-            halfDimension = 2            
+            halfDimension = 2
             0 1 2 3 4 5 6
                 <
             */
@@ -3812,9 +4248,9 @@ public class ImageProcessor {
                 sum *= dimension;
                 mean.setValue(i, j, Math.round(sum));
             }
-            
+
             /* pixels between halfDimension and j-halfDimension
-            halfDimension = 2            
+            halfDimension = 2
             0 1 2 3 4 5
             |   *   |  sum from idx - halfDimension to idx + halfDimension, incl
             but store in idx
@@ -3825,20 +4261,20 @@ public class ImageProcessor {
             }
             mean.setValue(i, halfDimension, sum0);
             /*
-            halfDimension = 2            
+            halfDimension = 2
             0 1 2 3 4 5 6
-              |   *   | 
+              |   *   |
                 |   *   |
-                    
+
             */
-            for (int j = halfDimension + 1; j < (h - halfDimension); ++j) {                
+            for (int j = halfDimension + 1; j < (h - halfDimension); ++j) {
                 int vp = img.getValue(i, j - halfDimension - 1);
                 int vl =  img.getValue(i, j + halfDimension);
                 sum0 = sum0 - vp + vl;
                 mean.setValue(i, j, sum0);
             }
             /* last halfDimension pixels
-            0 1 2 3   n=4, halfDimension = 2 
+            0 1 2 3   n=4, halfDimension = 2
                 >
             */
             for (int j = (h - halfDimension); j < h; ++j) {
@@ -3852,12 +4288,12 @@ public class ImageProcessor {
                 mean.setValue(i, j, Math.round(sum));
             }
         }
-        
+
         // sum along columns
         for (int j = 0; j < h; ++j) {
-          
+
             /* pixels before halfDimension
-            halfDimension = 2            
+            halfDimension = 2
             0 1 2 3 4 5 6
                 <
             */
@@ -3871,9 +4307,9 @@ public class ImageProcessor {
                 sum *= dimension;
                 img.setValue(i, j, Math.round(sum));
             }
-            
+
             /* pixels between halfDimension and j-halfDimension
-            halfDimension = 2            
+            halfDimension = 2
             0 1 2 3 4 5
             |   *   |  sum from idx - halfDimension to idx + halfDimension, incl
             but store in idx
@@ -3884,20 +4320,20 @@ public class ImageProcessor {
             }
             img.setValue(halfDimension, j, sum0);
             /*
-            halfDimension = 2            
+            halfDimension = 2
             0 1 2 3 4 5 6
-              |   *   | 
+              |   *   |
                 |   *   |
-                    
+
             */
-            for (int i = halfDimension + 1; i < (w - halfDimension); ++i) {                
+            for (int i = halfDimension + 1; i < (w - halfDimension); ++i) {
                 int vp = mean.getValue(i - halfDimension - 1, j);
                 int vl =  mean.getValue(i + halfDimension, j);
                 sum0 = sum0 - vp + vl;
                 img.setValue(i, j, sum0);
             }
             /* last halfDimension pixels
-            0 1 2 3   n=4, halfDimension = 2 
+            0 1 2 3   n=4, halfDimension = 2
                 >
             */
             for (int i = (w - halfDimension); i < w; ++i) {
@@ -3911,7 +4347,7 @@ public class ImageProcessor {
                 img.setValue(i, j, Math.round(sum));
             }
         }
-        
+
         // divide each value by dimension * dimension
         float dsq = dimension * dimension;
         for (int i = 0; i < w; ++i) {
@@ -3920,6 +4356,6 @@ public class ImageProcessor {
                 v = Math.round((float)v/dsq);
                 img.setValue(i, j, v);
             }
-        } 
+        }
     }
 }

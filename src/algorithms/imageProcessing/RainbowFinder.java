@@ -392,7 +392,7 @@ log.fine(String.format(
                     "(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f  hue=%f",
                     x, y, r, g, b, rDivB, cieX, cieY, colorImg.getHue(idx)));
 
-                boolean isWhite = cieC.isCentralWhite(cieX, cieY);
+                boolean isWhite = cieC.isWhite(cieX, cieY);
                 
                 if (cieX >= 0.35) {
                     nGTX++;

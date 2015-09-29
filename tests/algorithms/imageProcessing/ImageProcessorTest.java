@@ -1029,28 +1029,17 @@ public class ImageProcessorTest extends TestCase {
         // cloudy_san_jose.jpg
         // middlebury_cones_im2.png
         
-        String fileName = "cloudy_san_jose.jpg";
+        String fileName = "middlebury_cones_im2.png";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        List<Set<PairInt>> clusterSets = imageProcessor.calculateColorSegmentation(
-            img, true);
+        List<Set<PairInt>> clusterSets = 
+            imageProcessor.calculateColorSegmentation2(img, true);
         
         int nPoints = count(clusterSets);
-        
-        assertTrue(nPoints == img.getNPixels());
-        
-        boolean[] present = new boolean[img.getNPixels()];
-        for (Set<PairInt> set : clusterSets) {
-            for (PairInt p : set) {
-                int pixIdx = img.getInternalIndex(p.getX(), p.getY());
-                assertFalse(present[pixIdx]);
-                present[pixIdx] = true;
-            }
-        }
         
         int nExtraForDot = 0;
         
@@ -1067,6 +1056,19 @@ public class ImageProcessorTest extends TestCase {
         }
         String bin = ResourceFinder.findDirectory("bin");
         ImageIOHelper.writeOutputImage(bin + "/cluster.png", img2);
+        
+        
+        //assertTrue(nPoints == img.getNPixels());
+        
+        boolean[] present = new boolean[img.getNPixels()];
+        for (Set<PairInt> set : clusterSets) {
+            for (PairInt p : set) {
+                int pixIdx = img.getInternalIndex(p.getX(), p.getY());
+                assertFalse(present[pixIdx]);
+                present[pixIdx] = true;
+            }
+        }
+        
         int z = 1;
     }
 
