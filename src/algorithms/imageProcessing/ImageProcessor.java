@@ -3951,7 +3951,7 @@ public class ImageProcessor {
         return thetaPointMap;
     }
 
-    private PairIntArray findPeaksInThetaPointMap(int[] orderedThetaKeys, 
+    protected PairIntArray findPeaksInThetaPointMap(int[] orderedThetaKeys, 
         Map<Integer, List<PairInt>> thetaPointMap, int limit) {
         
         int lastKey = -1;
@@ -3984,8 +3984,8 @@ public class ImageProcessor {
             } else if (nInMap != 0) {
                 if (isIncr) {
                     if (count < lastValue) {
-                        if (count > limit) {
-                            peaks.add(key.intValue(), count);
+                        if (lastValue > limit) {
+                            peaks.add(lastKey, lastValue);
                         }
                         isIncr = false;
                     }
