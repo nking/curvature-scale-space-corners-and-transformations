@@ -3301,7 +3301,7 @@ public class ImageProcessor {
         
         double[] minMaxTheta = new double[2];
         int[] minMaxFreq = new int[2];
-        double thetaFactor0 = 500./(maxTheta0 - minTheta0);
+        double thetaFactor0 = 2000./(maxTheta0 - minTheta0);
         Map<Integer, List<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
             input, minTheta0, thetaFactor0, minMaxTheta, minMaxFreq);
         
@@ -3338,7 +3338,7 @@ public class ImageProcessor {
         //    shift the values so the gap is at 360 instead.
         
         // ------ TODO: rescale each map by frequencies to span ~1000 pixels -----
-        rescaleKeys(thetaFreqMaps, 750);
+        rescaleKeys(thetaFreqMaps, 1000);
         
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
 
