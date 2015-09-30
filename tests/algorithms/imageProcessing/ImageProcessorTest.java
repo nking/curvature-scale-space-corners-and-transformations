@@ -1037,7 +1037,7 @@ public class ImageProcessorTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         List<Set<PairInt>> clusterSets = 
-            imageProcessor.calculateColorSegmentation2(img, true);
+            imageProcessor.calculateColorSegmentation3(img, true);
         
         int nPoints = count(clusterSets);
         

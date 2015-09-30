@@ -2888,11 +2888,11 @@ public class ImageProcessor {
                     output.setValue(col, row, 255);
                 } else {
 
-                    double theta = cieC.calculateXYTheta(cieXY[0], cieXY[1]);
+                    double thetaRadians = cieC.calculateXYTheta(cieXY[0], cieXY[1]);
 
-                    thetaValues[thetaCount] = (float)theta;
+                    thetaValues[thetaCount] = (float)thetaRadians;
 
-                    pixThetaMap.put(p, Float.valueOf((float)theta));
+                    pixThetaMap.put(p, Float.valueOf((float)thetaRadians));
 
                     thetaCount++;
                 }
@@ -2971,11 +2971,11 @@ public class ImageProcessor {
                     output.setValue(col, row, 255);
                 } else {
 
-                    double theta = cieC.calculateXYTheta(cieXY[0], cieXY[1]);
+                    double thetaRadians = cieC.calculateXYTheta(cieXY[0], cieXY[1]);
 
-                    thetaValues[thetaCount] = (float)theta;
+                    thetaValues[thetaCount] = (float)thetaRadians;
 
-                    pixThetaMap.put(p, Float.valueOf((float)theta));
+                    pixThetaMap.put(p, Float.valueOf((float)thetaRadians));
 
                     thetaCount++;
                 }
@@ -3268,7 +3268,8 @@ public class ImageProcessor {
 
                 points0.add(new PairInt(i, j));
 
-                double theta = cieC.calculateXYTheta(cx, cy);
+                double thetaRadians = cieC.calculateXYTheta(cx, cy);
+                double theta = thetaRadians * 180./Math.PI;
 
                 if (theta < minTheta0) {
                     minTheta0 = theta;
@@ -3297,11 +3298,12 @@ public class ImageProcessor {
              if (!whitePixels.isEmpty()) {
                  groupList.add(whitePixels);
              }
+             return groupList;
         }
         
         double[] minMaxTheta = new double[2];
         int[] minMaxFreq = new int[2];
-        double thetaFactor0 = 2000./(maxTheta0 - minTheta0);
+        double thetaFactor0 = 3000./(maxTheta0 - minTheta0);
         Map<Integer, List<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
             input, minTheta0, thetaFactor0, minMaxTheta, minMaxFreq);
         
@@ -3424,6 +3426,260 @@ public class ImageProcessor {
 
         return groupList;
     }
+    
+    /**
+     * NOT READY FOR USE.  STILL EXPERIMENTING.
+     * create an image segmented by CIE XY Lab Color space using qualities of
+     * the data (this one uses cie XY theta and frequency.
+     * Note that black is not a color in CIE XY color space and white
+     * is a large general area in the center of the color space so those are
+     * extracted
+     * and made into groups separate from the other clustering.
+     * @param input
+     * @param useBlur
+     * @return
+     */
+    public List<Set<PairInt>> calculateColorSegmentation3(ImageExt input,
+        boolean useBlur) {
+
+        if (useBlur) {
+            blur(input, 1.0f);
+        }
+
+        //making a segmentation method using CIEXY polar theta
+        // and the number of points with those colors.
+        // choosing the peaks to be the cluster centers, then
+        // gathering the pixels by proximity to the theta peaks
+        // and when equidistant, chooses the largest peak.
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        // max = 5000 unless reduce space complexity
+
+        double minTheta0 = Double.MAX_VALUE;
+        double maxTheta0 = Double.MIN_VALUE;
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        Set<PairInt> blackPixels = new HashSet<PairInt>();
+
+        Set<PairInt> whitePixels = new HashSet<PairInt>();
+
+        Set<PairInt> points0 = new HashSet<PairInt>();
+
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+
+                int idx = input.getInternalIndex(i, j);
+
+                int r = input.getR(idx);
+                int g = input.getG(idx);
+                int b = input.getB(idx);
+
+                if ((r == 0) && (g == 0) && (b == 0)) {
+                    blackPixels.add(new PairInt(i, j));
+                    continue;
+                }
+
+                float cx = input.getCIEX(idx);
+                float cy = input.getCIEY(idx);
+
+                if (cieC.isWhite(cx, cy)) {
+                    whitePixels.add(new PairInt(i, j));
+                    continue;
+                }
+
+                points0.add(new PairInt(i, j));
+
+                double thetaRadians = cieC.calculateXYTheta(cx, cy);
+                double theta = thetaRadians * 180./Math.PI;
+
+                if (theta < minTheta0) {
+                    minTheta0 = theta;
+                }
+                if (theta > maxTheta0) {
+                    maxTheta0 = theta;
+                }
+            }
+        }
+
+        log.info("for all non-white and non-black, minTheta=" + minTheta0
+            + " maxTheta=" + maxTheta0);
+        
+        assert((points0.size() + blackPixels.size() + whitePixels.size()) ==
+            input.getNPixels());
+
+        if ((maxTheta0 - minTheta0) == 0) {
+             List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+             if (points0.isEmpty()) {
+                 groupList.add(points0);
+             }
+             if (!blackPixels.isEmpty()) {
+                 groupList.add(blackPixels);
+             }
+             if (!whitePixels.isEmpty()) {
+                 groupList.add(whitePixels);
+             }
+             return groupList;
+        }
+        
+        /* ----- create a map of theta and frequency ----
+        need to find the peaks in frequency for frequencies larger than about
+        3 percent of max frequency (TODO: revise)
+        but don't want to use a spline3 to smooth, so will average every 
+        few pixels.
+        */
+
+        int binWidth = 3;
+        Map<Integer, List<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
+            input, binWidth);
+       
+        int n = (360/binWidth) + 1;
+        
+        int[] orderedThetaKeys = new int[n];
+        for (int i = 0; i < n; ++i) {
+            orderedThetaKeys[i] = i;
+        }
+        int maxFreq = Integer.MIN_VALUE;
+        int nTot = 0;
+        for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
+            int count = entry.getValue().size();
+            if (count > maxFreq) {
+                maxFreq = count;
+            }
+            nTot += entry.getValue().size();
+        }
+        nTot += (blackPixels.size() + whitePixels.size());
+        assert(nTot == input.getNPixels());
+        
+        PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, 
+            thetaPointMap, Math.round(0.03f * maxFreq));
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(peaks);
+        
+        // ----- debug ---
+        // plot the points as an image to see the data first
+        Image img;
+        if (peaks.getN() == 0) {
+            img = new Image(361, maxFreq + 1);
+        } else {
+            img = new Image(minMaxXY[1] + 1, maxFreq + 1);
+        }
+        for (int i : orderedThetaKeys) {
+            Integer key = Integer.valueOf(i);
+            List<PairInt> list = thetaPointMap.get(key);
+            if (list == null) {
+                continue;
+            }
+            int y = list.size();
+            img.setRGB(i, y, 255, 255, 255);
+        }
+        for (int i = 0; i < peaks.getN(); ++i) {
+            img.setRGB(peaks.getX(i), peaks.getY(i), 255, 0, 0);
+        }
+        try {
+            ImageIOHelper.writeOutputImage(
+                ResourceFinder.findDirectory("bin") + "/dt3_input.png", img);
+        } catch (IOException ex) {
+            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
+                null, ex);
+        }
+        // --- end debug
+        
+        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(n);
+        
+        if (peaks.getN() == 0) {
+            for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
+                groupList.add(new HashSet<PairInt>(entry.getValue()));
+            }
+            groupList.add(blackPixels);
+            groupList.add(whitePixels);
+            return groupList;
+        }
+        for (int i = 0; i < peaks.getN(); ++i) {
+            groupList.add(new HashSet<PairInt>());
+        }
+        
+        /* traverse in ordered manner thetaPointMap to compare to current theta position
+           w.r.t. peaks
+           then place it in the groupsList.
+           points before the first peak are compared with last peak too for wrap around.
+        */
+        int currentPeakIdx = -1;
+        for (int i : orderedThetaKeys) {
+            Integer key = Integer.valueOf(i);
+            List<PairInt> list = thetaPointMap.get(key);
+            if (list == null) {
+                continue;
+            }
+            int idx = -1;
+            if ((currentPeakIdx == -1) || (currentPeakIdx == (peaks.getN() - 1))) {
+                int diffL, diffF;
+                if (currentPeakIdx == -1) {
+                    diffL = key.intValue() + 360 - peaks.getX(peaks.getN() - 1);
+                    diffF = peaks.getX(0) - key.intValue();
+                    if (diffF == 0) {
+                        currentPeakIdx = 0;
+                    }
+                } else {
+                    diffL = key.intValue() - peaks.getX(currentPeakIdx);
+                    diffF = peaks.getX(0) + 360 - key.intValue();
+                }
+                if (diffL < diffF) {
+                    idx = peaks.getN() - 1;
+                } else if (diffL == diffF) {
+                    int freqL = peaks.getY(peaks.getN() - 1);
+                    int freqF = peaks.getY(0);
+                    if (freqL < freqF) {
+                        idx = peaks.getN() - 1;
+                    } else {
+                        idx = 0;
+                    }
+                } else {
+                    idx = 0;
+                }
+            } else {
+                // this has to update currentPeakIdx
+                int diffP = key.intValue() - peaks.getX(currentPeakIdx);
+                int diffN = peaks.getX(currentPeakIdx + 1) - key.intValue();
+                if (diffN == 0) {
+                    currentPeakIdx++;
+                    idx = currentPeakIdx;
+                } else {
+                    if (diffP < diffN) {
+                        idx = currentPeakIdx;
+                    } else if (diffP == diffN) {
+                        int freqP = peaks.getY(currentPeakIdx);
+                        int freqN = peaks.getY(currentPeakIdx + 1);
+                        if (freqP < freqN) {
+                            idx = currentPeakIdx;
+                        } else {
+                            idx = currentPeakIdx + 1;
+                        }
+                    } else {
+                        idx = currentPeakIdx + 1;
+                    }
+                }
+            }
+            assert(idx != -1);
+            groupList.get(idx).addAll(list);
+        }
+                     
+        // add back in blackPixels and whitePixels
+        groupList.add(blackPixels);
+        groupList.add(whitePixels);
+        
+        int nTot2 = 0;
+        for (Set<PairInt> groups : groupList) {
+            nTot2 += groups.size();
+        }
+           
+        log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
+        assert(nTot2 == input.getNPixels());
+
+        return groupList;
+    }
 
     private Map<Integer, List<PairInt>> createThetaCIEXYMap(Set<PairInt>
         points0, ImageExt input, double minTheta, double thetaFactor,
@@ -3445,8 +3701,8 @@ public class ImageProcessor {
             float cx = input.getCIEX(idx);
             float cy = input.getCIEY(idx);
 
-            double theta = thetaFactor * (cieC.calculateXYTheta(cx, cy)
-                - minTheta0);
+            double theta = thetaFactor * (
+                (cieC.calculateXYTheta(cx, cy)*180./Math.PI) - minTheta0);
 
             Integer thetaCIEXY = Integer.valueOf((int)Math.round(theta));
 
@@ -3504,6 +3760,9 @@ public class ImageProcessor {
             partitionFreqs[i] = Math.round(partitionFreqFracs[i]*maxFreq);
         }
         
+        int[] maxXY = new int[2];
+        Arrays.fill(maxXY, Integer.MIN_VALUE);
+        
         for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
 
             Integer theta = entry.getKey();
@@ -3541,7 +3800,31 @@ public class ImageProcessor {
             mapsList.get(idx).put(
                 new com.climbwithyourfeet.clustering.util.PairInt(
                     theta.intValue(), count), list);
+            
+            if (theta.intValue() > maxXY[0]) {
+                maxXY[0] = theta.intValue();
+            }
+            if (count > maxXY[1]) {
+                maxXY[1] = count;
+            }
         }
+        
+        // ----- temporary print of all pixels -------
+        // ----- debug ---
+        GreyscaleImage img = new GreyscaleImage(maxXY[0] + 1, maxXY[1] + 1);
+        for (int i = 0; i < mapsList.size(); ++i) {            
+            for (com.climbwithyourfeet.clustering.util.PairInt p : mapsList.get(i).keySet()) {
+                img.setValue(p.getX(), p.getY(), 255);
+            }
+        }
+        try {
+            ImageIOHelper.writeOutputImage(
+                ResourceFinder.findDirectory("bin") + "/dt2_input.png", img);
+        } catch (IOException ex) {
+            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
+                null, ex);
+        }
+        // --- end debug
         
         return mapsList;
     }
@@ -3633,6 +3916,105 @@ public class ImageProcessor {
             }
         }
         return new int[]{maxX, maxY};
+    }
+
+    private Map<Integer, List<PairInt>> createThetaCIEXYMap(Set<PairInt> 
+        points, ImageExt input, int binWidth) {
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        // key = theta, value = pixels having that key
+        Map<Integer, List<PairInt>> thetaPointMap = new HashMap<Integer, List<PairInt>>();
+        
+        for (PairInt p : points) {
+
+            int idx = input.getInternalIndex(p.getX(), p.getY());
+
+            float cx = input.getCIEX(idx);
+            float cy = input.getCIEY(idx);
+
+            double thetaRadians = cieC.calculateXYTheta(cx, cy);
+            double theta = thetaRadians * 180./Math.PI;
+
+            int thetaCIEXY = (int)Math.round(theta);
+            
+            Integer binKey = Integer.valueOf(thetaCIEXY/binWidth);
+
+            List<PairInt> list = thetaPointMap.get(binKey);
+            if (list == null) {
+                list = new ArrayList<PairInt>();
+                thetaPointMap.put(binKey, list);
+            }
+            list.add(p);
+        }
+        
+        return thetaPointMap;
+    }
+
+    private PairIntArray findPeaksInThetaPointMap(int[] orderedThetaKeys, 
+        Map<Integer, List<PairInt>> thetaPointMap, int limit) {
+        
+        int lastKey = -1;
+        int lastValue = -1;
+        boolean isIncr = false;
+        PairIntArray peaks = new PairIntArray();
+        int nInMap = 0;
+        for (int i : orderedThetaKeys) {
+            Integer key = Integer.valueOf(i);
+            List<PairInt> list = thetaPointMap.get(key);
+            if (list == null) {
+                if ((nInMap > 0) && isIncr && (lastValue > limit)) {
+                    peaks.add(lastKey, lastValue);
+                }
+                lastKey = key.intValue();
+                lastValue = 0;
+                isIncr = false;
+                continue;
+            }
+            int count = list.size();
+            if (nInMap == 1) {
+                if (count > lastValue) {
+                    isIncr = true;
+                } else {
+                    if (count > limit) {
+                        peaks.add(lastKey, lastValue);
+                    }
+                    isIncr = false;
+                }
+            } else if (nInMap != 0) {
+                if (isIncr) {
+                    if (count < lastValue) {
+                        if (count > limit) {
+                            peaks.add(key.intValue(), count);
+                        }
+                        isIncr = false;
+                    }
+                } else {
+                    if (count > lastValue) {
+                        isIncr = true;
+                    }
+                }
+            }
+            lastValue = count;
+            lastKey = key.intValue();
+            nInMap++;
+        }
+        if ((nInMap > 0) && isIncr && (lastValue > limit)) {
+            //checking value at theta=0 to make sure this is a peak
+            Integer key = orderedThetaKeys[0];
+            if (key.intValue() == 0) {
+                List<PairInt> list = thetaPointMap.get(key);
+                if (list == null) {
+                    peaks.add(lastKey, lastValue);
+                } else if (list.size() < lastValue) {
+                    peaks.add(lastKey, lastValue);
+                }
+            } else {
+                peaks.add(lastKey, lastValue);
+            }
+        }
+        
+        return peaks;
     }
 
     public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {

@@ -453,7 +453,7 @@ public class CIEChromaticity {
         }
         
         double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);
-        
+                    
         return theta;
     }
     

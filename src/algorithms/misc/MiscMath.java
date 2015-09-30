@@ -1042,6 +1042,38 @@ public class MiscMath {
         }
         return new int[]{xMin, xMax, yMin, yMax};
     }
+    
+    /**
+     * find the minima and maxima of x and y and return them as
+     * int[]{xMin, xMax, yMin, yMax}
+     * @param points
+     * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
+     */
+    public static int[] findMinMaxXY(PairIntArray points) {
+        
+        int xMin = Integer.MAX_VALUE;
+        int xMax = Integer.MIN_VALUE;
+        int yMin = Integer.MAX_VALUE;
+        int yMax = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < points.getN(); ++i) {
+            int x = points.getX(i);
+            int y = points.getY(i);
+            if (x < xMin) {
+                xMin = x;
+            }
+            if (y < yMin) {
+                yMin = y;
+            }
+            if (x > xMax) {
+                xMax = x;
+            }
+            if (y > yMax) {
+                yMax = y;
+            }
+        }
+        return new int[]{xMin, xMax, yMin, yMax};
+    }
 
     public static int numberOfBits(long i) {
         
@@ -1130,6 +1162,10 @@ public class MiscMath {
             } else {
                 theta = Math.PI + theta;
             }
+        }
+        
+        if (theta > (2*Math.PI)) {
+            theta -= 2*Math.PI;
         }
         
         return theta;
