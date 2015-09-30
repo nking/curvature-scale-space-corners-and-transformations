@@ -3488,6 +3488,9 @@ public class ImageProcessor {
 
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
+        Set<PairInt> ltGreyPixels = new HashSet<PairInt>();
+        Set<PairInt> dkGreyPixels = new HashSet<PairInt>();
+        
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
         Set<PairInt> points0 = new HashSet<PairInt>();
@@ -3501,7 +3504,7 @@ public class ImageProcessor {
                 int g = input.getG(idx);
                 int b = input.getB(idx);
 
-                if ((r == 0) && (g == 0) && (b == 0)) {
+                if ((r <= 16) && (g <= 16) && (b <= 16)) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
                 }
@@ -3510,7 +3513,15 @@ public class ImageProcessor {
                 float cy = input.getCIEY(idx);
 
                 if (cieC.isWhite2(cx, cy)) {
-                    whitePixels.add(new PairInt(i, j));
+                    //TODO: may need a separate search for peak frequencies within
+                    // all grey and white pixels instead of hard set filters here
+                    if ((r <= 127) && (g <= 127) && (b <= 127)) {
+                        dkGreyPixels.add(new PairInt(i, j));
+                    } else if ((r <= 191) && (g <= 191) && (b <= 191)) {
+                        ltGreyPixels.add(new PairInt(i, j));
+                    } else {
+                        whitePixels.add(new PairInt(i, j));
+                    }
                     continue;
                 }
 
@@ -3531,8 +3542,8 @@ public class ImageProcessor {
         log.info("for all non-white and non-black, minTheta=" + minTheta0
             + " maxTheta=" + maxTheta0);
         
-        assert((points0.size() + blackPixels.size() + whitePixels.size()) ==
-            input.getNPixels());
+        assert((points0.size() + blackPixels.size() + dkGreyPixels.size() + 
+            + ltGreyPixels.size() + whitePixels.size()) == input.getNPixels());
 
         if ((maxTheta0 - minTheta0) == 0) {
              List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
@@ -3541,6 +3552,12 @@ public class ImageProcessor {
              }
              if (!blackPixels.isEmpty()) {
                  groupList.add(blackPixels);
+             }
+             if (!ltGreyPixels.isEmpty()) {
+                 groupList.add(ltGreyPixels);
+             }
+             if (!dkGreyPixels.isEmpty()) {
+                 groupList.add(dkGreyPixels);
              }
              if (!whitePixels.isEmpty()) {
                  groupList.add(whitePixels);
@@ -3574,7 +3591,8 @@ public class ImageProcessor {
             }
             nTot += entry.getValue().size();
         }
-        nTot += (blackPixels.size() + whitePixels.size());
+        nTot += (blackPixels.size() + dkGreyPixels.size() + ltGreyPixels.size() 
+            + whitePixels.size());
         assert(nTot == input.getNPixels());
         
         PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, 
@@ -3617,6 +3635,7 @@ public class ImageProcessor {
             count++;
         }
         try {
+            //maxY=2000;
             PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
             plotter.addPlot(0, maxX, 0, maxY, xPoints, yPoints, xPoints, yPoints, "cieXY theta vs freq");
             plotter.writeFile("_segmentation3_");
@@ -3633,6 +3652,8 @@ public class ImageProcessor {
                 groupList.add(new HashSet<PairInt>(entry.getValue()));
             }
             groupList.add(blackPixels);
+            groupList.add(dkGreyPixels);
+            groupList.add(ltGreyPixels);
             groupList.add(whitePixels);
             return groupList;
         }
@@ -3707,6 +3728,8 @@ public class ImageProcessor {
                      
         // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
+        groupList.add(dkGreyPixels);
+        groupList.add(ltGreyPixels);
         groupList.add(whitePixels);
         
         int nTot2 = 0;

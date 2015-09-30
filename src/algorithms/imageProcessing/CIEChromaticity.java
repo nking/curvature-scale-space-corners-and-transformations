@@ -420,6 +420,8 @@ public class CIEChromaticity {
     /**
      * returns roughly whether the CIE (X,Y) coordinate lands within the large
      * white zone in the center of the diagram.
+     * Note that this returns true for grey too, so test for lower intensities
+     * first
      * @param cieX
      * @param cieY
      * @return 
