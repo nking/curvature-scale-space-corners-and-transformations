@@ -3060,7 +3060,7 @@ public class ImageProcessor {
                 float cx = input.getCIEX(idx);
                 float cy = input.getCIEY(idx);
 
-                if (cieC.isWhite(cx, cy)) {
+                if (cieC.isWhite2(cx, cy)) {
                     whitePixels.add(new PairInt(i, j));
                     continue;
                 }
@@ -3261,7 +3261,7 @@ public class ImageProcessor {
                 float cx = input.getCIEX(idx);
                 float cy = input.getCIEY(idx);
 
-                if (cieC.isWhite(cx, cy)) {
+                if (cieC.isWhite2(cx, cy)) {
                     whitePixels.add(new PairInt(i, j));
                     continue;
                 }
@@ -3485,7 +3485,7 @@ public class ImageProcessor {
                 float cx = input.getCIEX(idx);
                 float cy = input.getCIEY(idx);
 
-                if (cieC.isWhite(cx, cy)) {
+                if (cieC.isWhite2(cx, cy)) {
                     whitePixels.add(new PairInt(i, j));
                     continue;
                 }
@@ -3976,7 +3976,7 @@ public class ImageProcessor {
                 if (count > lastValue) {
                     isIncr = true;
                 } else {
-                    if (count > limit) {
+                    if (lastValue > limit) {
                         peaks.add(lastKey, lastValue);
                     }
                     isIncr = false;

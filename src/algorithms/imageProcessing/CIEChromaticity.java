@@ -418,6 +418,24 @@ public class CIEChromaticity {
     }
     
     /**
+     * returns roughly whether the CIE (X,Y) coordinate lands within the large
+     * white zone in the center of the diagram.
+     * @param cieX
+     * @param cieY
+     * @return 
+     */
+    public boolean isWhite2(float cieX, float cieY) {
+        
+        double diffX = Math.abs(cieX - 0.35);
+        
+        double diffY = Math.abs(cieY - 0.35);
+      
+        double delta = 2.*(0.1/7.);
+        
+        return ((diffX <= delta) && (diffY <= delta));        
+    }
+    
+    /**
      * calculate the angle in radians of the point (cieX, cieY) in the 
      * CIE chromaticity
      * diagram with respect to an origin of (0.35, 0.35).
