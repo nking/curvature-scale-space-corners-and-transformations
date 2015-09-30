@@ -3445,6 +3445,30 @@ public class ImageProcessor {
         if (useBlur) {
             blur(input, 1.0f);
         }
+        
+        float fracFreqLimit = 0.03f;
+        
+        return calculateColorSegmentation3(input, fracFreqLimit, useBlur);
+    }
+    
+    /**
+     * NOT READY FOR USE.  STILL EXPERIMENTING.
+     * create an image segmented by CIE XY Lab Color space using qualities of
+     * the data (this one uses cie XY theta and frequency.
+     * Note that black is not a color in CIE XY color space and white
+     * is a large general area in the center of the color space so those are
+     * extracted
+     * and made into groups separate from the other clustering.
+     * @param input
+     * @param useBlur
+     * @return
+     */
+    public List<Set<PairInt>> calculateColorSegmentation3(ImageExt input,
+        float fracFreqLimit, boolean useBlur) {
+
+        if (useBlur) {
+            blur(input, 1.0f);
+        }
 
         //making a segmentation method using CIEXY polar theta
         // and the number of points with those colors.
@@ -3554,18 +3578,15 @@ public class ImageProcessor {
         assert(nTot == input.getNPixels());
         
         PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, 
-            thetaPointMap, Math.round(0.03f * maxFreq));
+            thetaPointMap, Math.round(fracFreqLimit * maxFreq));
         
         int[] minMaxXY = MiscMath.findMinMaxXY(peaks);
         
         // ----- debug ---
         // plot the points as an image to see the data first
-        Image img;
-        if (peaks.getN() == 0) {
-            img = new Image(361, maxFreq + 1);
-        } else {
-            img = new Image(minMaxXY[1] + 1, maxFreq + 1);
-        }
+        int nPoints = 0;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
         for (int i : orderedThetaKeys) {
             Integer key = Integer.valueOf(i);
             List<PairInt> list = thetaPointMap.get(key);
@@ -3573,14 +3594,32 @@ public class ImageProcessor {
                 continue;
             }
             int y = list.size();
-            img.setRGB(i, y, 255, 255, 255);
+            nPoints++;
+            if (key.intValue() > maxX) {
+                maxX = key.intValue();
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
         }
-        for (int i = 0; i < peaks.getN(); ++i) {
-            img.setRGB(peaks.getX(i), peaks.getY(i), 255, 0, 0);
+        float[] xPoints = new float[nPoints];
+        float[] yPoints = new float[nPoints];
+        int count = 0;
+        for (int i : orderedThetaKeys) {
+            Integer key = Integer.valueOf(i);
+            List<PairInt> list = thetaPointMap.get(key);
+            if (list == null) {
+                continue;
+            }
+            int y = list.size();
+            xPoints[count] = key.intValue();
+            yPoints[count] = y;
+            count++;
         }
         try {
-            ImageIOHelper.writeOutputImage(
-                ResourceFinder.findDirectory("bin") + "/dt3_input.png", img);
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            plotter.addPlot(0, maxX, 0, maxY, xPoints, yPoints, xPoints, yPoints, "cieXY theta vs freq");
+            plotter.writeFile("_segmentation3_");
         } catch (IOException ex) {
             Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
                 null, ex);
