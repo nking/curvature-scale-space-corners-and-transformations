@@ -4268,10 +4268,9 @@ public class ImageProcessor {
 
     private void filterPeaksIfNoisey(PairIntArray peaks) {
         
-        /*
-        x:  2,  7,  9, 13, 18, 21, 23   //2+3+5+4+2+5
-        y: 16, 14, 16, 17, 16, 10,  8
-        */
+        if (peaks.getN() == 0) {
+            return;
+        }
         
         int sumDeltaX = 0;
         for (int i = (peaks.getN() - 1); i > 0; --i) {
@@ -4296,6 +4295,7 @@ public class ImageProcessor {
                 sumY = Math.round((float)sumY/(float)count);
                 peaks2.add(sumX, sumY);
             }
+            
             peaks.removeRange(0, peaks.getN() - 1);
             peaks.addAll(peaks2);
         }
