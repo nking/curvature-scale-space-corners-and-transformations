@@ -11,6 +11,7 @@ import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.Errors;
 import algorithms.util.ResourceFinder;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -3459,8 +3461,10 @@ public class ImageProcessor {
      * is a large general area in the center of the color space so those are
      * extracted
      * and made into groups separate from the other clustering.
-     * @param input
-     * @param useBlur
+     * @param input image to find color clusters within
+     * @param fracFreqLimit fraction of the maximum above which peaks will be found
+     * @param useBlur if true, performs a gaussian blur of sigma=1 before finding
+     * clusters.
      * @return
      */
     public List<Set<PairInt>> calculateColorSegmentation3(ImageExt input,
@@ -3488,13 +3492,14 @@ public class ImageProcessor {
 
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
-        Set<PairInt> ltGreyPixels = new HashSet<PairInt>();
-        Set<PairInt> dkGreyPixels = new HashSet<PairInt>();
+        Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
         
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
         Set<PairInt> points0 = new HashSet<PairInt>();
-
+        
+        int nGrey = 0;
+        
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
 
@@ -3504,7 +3509,8 @@ public class ImageProcessor {
                 int g = input.getG(idx);
                 int b = input.getB(idx);
 
-                if ((r <= 16) && (g <= 16) && (b <= 16)) {
+                //dark grey, such as r,g,b=105,105,105?
+                if ((r <= 32) && (g <= 32) && (b <= 32)) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
                 }
@@ -3513,12 +3519,16 @@ public class ImageProcessor {
                 float cy = input.getCIEY(idx);
 
                 if (cieC.isWhite2(cx, cy)) {
-                    //TODO: may need a separate search for peak frequencies within
-                    // all grey and white pixels instead of hard set filters here
-                    if ((r <= 127) && (g <= 127) && (b <= 127)) {
-                        dkGreyPixels.add(new PairInt(i, j));
-                    } else if ((r <= 191) && (g <= 191) && (b <= 191)) {
-                        ltGreyPixels.add(new PairInt(i, j));
+                    //grey will be binned into clusters by avgRGB and peak frequency
+                    if ((r <= 191) && (g <= 191) && (b <= 191)) {
+                        Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));
+                        Collection<PairInt> set = greyPixelMap.get(avgRGB);
+                        if (set == null) {
+                            set = new HashSet<PairInt>();
+                            greyPixelMap.put(avgRGB, set);
+                        }
+                        set.add(new PairInt(i, j));
+                        nGrey++;
                     } else {
                         whitePixels.add(new PairInt(i, j));
                     }
@@ -3538,26 +3548,30 @@ public class ImageProcessor {
                 }
             }
         }
-
+        
         log.info("for all non-white and non-black, minTheta=" + minTheta0
             + " maxTheta=" + maxTheta0);
         
-        assert((points0.size() + blackPixels.size() + dkGreyPixels.size() + 
-            + ltGreyPixels.size() + whitePixels.size()) == input.getNPixels());
+        assert((points0.size() + blackPixels.size() + nGrey + 
+            whitePixels.size()) == input.getNPixels());
 
+        // TODO: need to keep the grey list separate and use it after the
+        // remaining points have been clustered.  should examine whether
+        // they are more similar to an adjacent color and place them in that 
+        // cluster instead if so.
+        List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
+        
+        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(greyPixelGroups.size());
+        
         if ((maxTheta0 - minTheta0) == 0) {
-             List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
              if (points0.isEmpty()) {
                  groupList.add(points0);
              }
              if (!blackPixels.isEmpty()) {
                  groupList.add(blackPixels);
              }
-             if (!ltGreyPixels.isEmpty()) {
-                 groupList.add(ltGreyPixels);
-             }
-             if (!dkGreyPixels.isEmpty()) {
-                 groupList.add(dkGreyPixels);
+             for (Set<PairInt> set : greyPixelGroups) {
+                groupList.add(set);
              }
              if (!whitePixels.isEmpty()) {
                  groupList.add(whitePixels);
@@ -3573,7 +3587,7 @@ public class ImageProcessor {
         */
 
         int binWidth = 3;
-        Map<Integer, List<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
+        Map<Integer, Collection<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
             input, binWidth);
        
         int n = (360/binWidth) + 1;
@@ -3584,19 +3598,19 @@ public class ImageProcessor {
         }
         int maxFreq = Integer.MIN_VALUE;
         int nTot = 0;
-        for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
+        for (Entry<Integer, Collection<PairInt>> entry : thetaPointMap.entrySet()) {
             int count = entry.getValue().size();
             if (count > maxFreq) {
                 maxFreq = count;
             }
             nTot += entry.getValue().size();
         }
-        nTot += (blackPixels.size() + dkGreyPixels.size() + ltGreyPixels.size() 
-            + whitePixels.size());
+        nTot += (blackPixels.size() + nGrey + whitePixels.size());
         assert(nTot == input.getNPixels());
         
         PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, 
-            thetaPointMap, Math.round(fracFreqLimit * maxFreq));
+            thetaPointMap, 
+            Math.round(fracFreqLimit * maxFreq));
         
         int[] minMaxXY = MiscMath.findMinMaxXY(peaks);
         
@@ -3607,7 +3621,7 @@ public class ImageProcessor {
         int maxY = Integer.MIN_VALUE;
         for (int i : orderedThetaKeys) {
             Integer key = Integer.valueOf(i);
-            List<PairInt> list = thetaPointMap.get(key);
+            Collection<PairInt> list = thetaPointMap.get(key);
             if (list == null) {
                 continue;
             }
@@ -3625,7 +3639,7 @@ public class ImageProcessor {
         int count = 0;
         for (int i : orderedThetaKeys) {
             Integer key = Integer.valueOf(i);
-            List<PairInt> list = thetaPointMap.get(key);
+            Collection<PairInt> list = thetaPointMap.get(key);
             if (list == null) {
                 continue;
             }
@@ -3645,15 +3659,11 @@ public class ImageProcessor {
         }
         // --- end debug
         
-        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(n);
-        
         if (peaks.getN() == 0) {
-            for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
+            for (Entry<Integer, Collection<PairInt>> entry : thetaPointMap.entrySet()) {
                 groupList.add(new HashSet<PairInt>(entry.getValue()));
             }
             groupList.add(blackPixels);
-            groupList.add(dkGreyPixels);
-            groupList.add(ltGreyPixels);
             groupList.add(whitePixels);
             return groupList;
         }
@@ -3669,7 +3679,7 @@ public class ImageProcessor {
         int currentPeakIdx = -1;
         for (int i : orderedThetaKeys) {
             Integer key = Integer.valueOf(i);
-            List<PairInt> list = thetaPointMap.get(key);
+            Collection<PairInt> list = thetaPointMap.get(key);
             if (list == null) {
                 continue;
             }
@@ -3725,11 +3735,12 @@ public class ImageProcessor {
             assert(idx != -1);
             groupList.get(idx).addAll(list);
         }
-                     
+        
+        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
+            blackPixels, whitePixels);
+        
         // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
-        groupList.add(dkGreyPixels);
-        groupList.add(ltGreyPixels);
         groupList.add(whitePixels);
         
         int nTot2 = 0;
@@ -3980,13 +3991,13 @@ public class ImageProcessor {
         return new int[]{maxX, maxY};
     }
 
-    private Map<Integer, List<PairInt>> createThetaCIEXYMap(Set<PairInt> 
+    private Map<Integer, Collection<PairInt>> createThetaCIEXYMap(Set<PairInt> 
         points, ImageExt input, int binWidth) {
         
         CIEChromaticity cieC = new CIEChromaticity();
 
         // key = theta, value = pixels having that key
-        Map<Integer, List<PairInt>> thetaPointMap = new HashMap<Integer, List<PairInt>>();
+        Map<Integer, Collection<PairInt>> thetaPointMap = new HashMap<Integer, Collection<PairInt>>();
         
         for (PairInt p : points) {
 
@@ -4002,7 +4013,7 @@ public class ImageProcessor {
             
             Integer binKey = Integer.valueOf(thetaCIEXY/binWidth);
 
-            List<PairInt> list = thetaPointMap.get(binKey);
+            Collection<PairInt> list = thetaPointMap.get(binKey);
             if (list == null) {
                 list = new ArrayList<PairInt>();
                 thetaPointMap.put(binKey, list);
@@ -4013,8 +4024,8 @@ public class ImageProcessor {
         return thetaPointMap;
     }
 
-    protected PairIntArray findPeaksInThetaPointMap(int[] orderedThetaKeys, 
-        Map<Integer, List<PairInt>> thetaPointMap, int limit) {
+    protected PairIntArray findPeaksInThetaPointMap(final int[] orderedThetaKeys, 
+        final Map<Integer, Collection<PairInt>> thetaPointMap, final int limit) {
         
         int lastKey = -1;
         int lastValue = -1;
@@ -4023,7 +4034,7 @@ public class ImageProcessor {
         int nInMap = 0;
         for (int i : orderedThetaKeys) {
             Integer key = Integer.valueOf(i);
-            List<PairInt> list = thetaPointMap.get(key);
+            Collection<PairInt> list = thetaPointMap.get(key);
             if (list == null) {
                 if ((nInMap > 0) && isIncr && (lastValue > limit)) {
                     peaks.add(lastKey, lastValue);
@@ -4065,7 +4076,7 @@ public class ImageProcessor {
             //checking value at theta=0 to make sure this is a peak
             Integer key = orderedThetaKeys[0];
             if (key.intValue() == 0) {
-                List<PairInt> list = thetaPointMap.get(key);
+                Collection<PairInt> list = thetaPointMap.get(key);
                 if (list == null) {
                     peaks.add(lastKey, lastValue);
                 } else if (list.size() < lastValue) {
@@ -4077,6 +4088,333 @@ public class ImageProcessor {
         }
         
         return peaks;
+    }
+
+    private List<Set<PairInt>> groupByPeaks(
+        Map<Integer, Collection<PairInt>> greyPixelMap) {
+        
+        int nTot = 0;
+        int minKey = Integer.MAX_VALUE;
+        int maxKey = Integer.MIN_VALUE;
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            int key = entry.getKey().intValue();
+            if (key < minKey) {
+                minKey = key;
+            }
+            if (key > maxKey) {
+                maxKey = key;
+            }
+            nTot += entry.getValue().size();
+        }
+        
+        int binWidth = 8;
+        greyPixelMap = binByKeys(greyPixelMap, minKey, maxKey, binWidth);
+        
+        int nTot2 = 0;
+        minKey = Integer.MAX_VALUE;
+        maxKey = Integer.MIN_VALUE;
+        int maxFreq = Integer.MIN_VALUE;
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            int key = entry.getKey().intValue();
+            if (key < minKey) {
+                minKey = key;
+            }
+            if (key > maxKey) {
+                maxKey = key;
+            }
+            int y = entry.getValue().size();
+            if (y > maxFreq) {
+                maxFreq = y;
+            }
+            nTot2 += y;
+        }
+        assert(nTot == nTot2);
+        
+        // --- debug
+        float[] xPoints = new float[greyPixelMap.size()];
+        float[] yPoints = new float[greyPixelMap.size()];
+        int count = 0;
+        for (int i = minKey; i <= maxKey; ++i) {
+            Integer key = Integer.valueOf(i);
+            Collection<PairInt> set = greyPixelMap.get(key);
+            if (set == null) {
+                continue;
+            }
+            int y = set.size();
+            xPoints[count] = key.intValue();
+            yPoints[count] = y;
+            count++;
+        }
+        try {
+            //maxY=2000;
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            plotter.addPlot(0, maxKey, 0, maxFreq, xPoints, yPoints, xPoints, yPoints, "grey avgRGB vs freq");
+            plotter.writeFile("_segmentation3_grey_");
+        } catch (IOException ex) {
+            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
+                null, ex);
+        }
+        // --- end debug
+        
+        final int[] orderedKeys = new int[maxKey - minKey + 1];
+        count = 0;
+        for (int i = minKey; i <= maxKey; ++i) {
+            orderedKeys[count] = i;
+            count++;
+        }
+        int limit = (int)(0.03 * maxFreq);
+        PairIntArray peaks = findPeaksInThetaPointMap(orderedKeys, greyPixelMap, limit);
+
+        // if there are several peaks within small range of keys, that's noise,
+        // so removing them
+        filterPeaksIfNoisey(peaks);
+        
+        // ---- gather points in greyPixelMap into groups around the peaks ----
+        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(orderedKeys.length + 1);
+        for (int i = 0; i < peaks.getN(); ++i) {
+            groupList.add(new HashSet<PairInt>());
+        }
+        
+        if (peaks.getN() == 0) {
+            return groupList;
+        } else if (peaks.getN() == 1) {
+            for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+                Collection<PairInt> set = entry.getValue();
+                groupList.get(0).addAll(set);
+            }
+            return groupList;
+        }
+        
+        int currentPeakIdx = -1;
+        for (int i : orderedKeys) {
+            Integer key = Integer.valueOf(i);
+            Collection<PairInt> set = greyPixelMap.get(key);
+            if (set == null) {
+                continue;
+            }
+            int idx = -1;
+            if (currentPeakIdx == -1) {
+                currentPeakIdx = 0;
+                idx = 0;
+            } else if (currentPeakIdx == (peaks.getN() - 1)) {
+                idx = currentPeakIdx;
+            } else {
+                // this has to update currentPeakIdx
+                int diffP = key.intValue() - peaks.getX(currentPeakIdx);
+                int diffN = peaks.getX(currentPeakIdx + 1) - key.intValue();
+                if (diffN == 0) {
+                    currentPeakIdx++;
+                    idx = currentPeakIdx;
+                } else {
+                    if (diffP < diffN) {
+                        idx = currentPeakIdx;
+                    } else if (diffP == diffN) {
+                        int freqP = peaks.getY(currentPeakIdx);
+                        int freqN = peaks.getY(currentPeakIdx + 1);
+                        if (freqP < freqN) {
+                            idx = currentPeakIdx;
+                        } else {
+                            idx = currentPeakIdx + 1;
+                        }
+                    } else {
+                        idx = currentPeakIdx + 1;
+                    }
+                }
+            }
+            assert(idx != -1);
+            groupList.get(idx).addAll(set);
+        }
+        
+        // ----- debug ----
+        int nTot3 = 0;
+        for (Collection<PairInt> set : groupList) {
+            nTot3 += set.size();
+        }
+        assert(nTot == nTot3);
+        // ----- end debug -----
+        
+        return groupList;
+    }
+
+    private Map<Integer, Collection<PairInt>> binByKeys(
+        Map<Integer, Collection<PairInt>> greyPixelMap, 
+        int minKey, int maxKey, int binWidth) {
+        
+        Map<Integer, Collection<PairInt>> map2 
+            = new HashMap<Integer, Collection<PairInt>>();
+        
+        for (int i = minKey; i <= maxKey; ++i) {
+            
+            Integer key = Integer.valueOf(i);
+            
+            Collection<PairInt> c = greyPixelMap.get(key);
+            
+            if (c == null) {
+                continue;
+            }
+            
+            Integer binKey = Integer.valueOf(i/binWidth);
+            
+            Collection<PairInt> c2 = map2.get(binKey);
+            if (c2 == null) {
+                c2 = new HashSet<PairInt>();
+                map2.put(binKey, c2);
+            }
+            c2.addAll(c);
+        }
+        
+        return map2;
+    }
+
+    private void filterPeaksIfNoisey(PairIntArray peaks) {
+        
+        /*
+        x:  2,  7,  9, 13, 18, 21, 23   //2+3+5+4+2+5
+        y: 16, 14, 16, 17, 16, 10,  8
+        */
+        
+        int sumDeltaX = 0;
+        for (int i = (peaks.getN() - 1); i > 0; --i) {
+            sumDeltaX += (peaks.getX(i) - peaks.getX(i - 1));
+        }
+        //TODO: this may need to be revised:
+        // if there are more than 1 peaks per delta x of 5 or so, re-bin by 4 
+        float deltaX = (float)sumDeltaX/((float)peaks.getN() - 1);
+        if (deltaX < 5) {
+            // re-bin by 4
+            PairIntArray peaks2 = new PairIntArray();
+            for (int i = 0; i < peaks.getN(); i += 4) {
+                int sumX = 0;
+                int sumY = 0;
+                int count = 0;
+                for (int j = i; j < (i + 5); ++j) {
+                    sumX += peaks.getX(i);
+                    sumY += peaks.getY(i);
+                    count++;
+                }
+                sumX = Math.round((float)sumX/(float)count);
+                sumY = Math.round((float)sumY/(float)count);
+                peaks2.add(sumX, sumY);
+            }
+            peaks.removeRange(0, peaks.getN() - 1);
+            peaks.addAll(peaks2);
+        }
+        
+    }
+
+    private void mergeOrAppendGreyWithOthers(ImageExt input, 
+        List<Set<PairInt>> greyPixelGroups, 
+        List<Set<PairInt>> groupList, Set<PairInt> blackPixels,
+        Set<PairInt> whitePixels) {
+                
+        Map<PairInt, Integer> colorPixGroupMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < groupList.size(); ++i) {
+            Set<PairInt> set = groupList.get(i);
+            Integer groupKey = Integer.valueOf(i);
+            for (PairInt p : set) {
+                colorPixGroupMap.put(p, groupKey);
+            }
+        }
+        
+        // similarity limit for a grey pixel to join adjacent color pixel's cluster
+        int limit = 40;
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        for (Set<PairInt> greyGroup : greyPixelGroups) {
+            Set<PairInt> remove = new HashSet<PairInt>();
+            for (PairInt greyP : greyGroup) {
+                int x = greyP.getX();
+                int y = greyP.getY();
+                
+                int idx = input.getInternalIndex(x, y);
+                int r = input.getR(idx);
+                int g = input.getG(idx);
+                int b = input.getB(idx);
+                
+                // ---- check for color similarity ------
+                int minDiffRGB = Integer.MAX_VALUE;
+                int colorClusterIdx = -1;
+                int minDiffBlack = Integer.MAX_VALUE;
+                int minDiffWhite = Integer.MAX_VALUE;
+                
+                for (int i = 0; i < dxs.length; ++i) {
+                    int x2 = x + dxs[i];
+                    int y2 = y + dys[i];
+                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p2 = new PairInt(x2, y2);
+                    
+                    boolean adjIsBlack = blackPixels.contains(p2);
+                    boolean adjIsWhite = whitePixels.contains(p2);
+                    
+                    Integer colorClusterIndex = colorPixGroupMap.get(p2);
+                    if ((colorClusterIndex == null) && !adjIsBlack && !adjIsWhite) {
+                        continue;
+                    }
+                                        
+                    int idx2 = input.getInternalIndex(x2, y2);
+                    int r2 = input.getR(idx2);
+                    int g2 = input.getG(idx2);
+                    int b2 = input.getB(idx2);
+                    
+                    int diffR = Math.abs(r2 - r);
+                    int diffG = Math.abs(g2 - g);
+                    int diffB = Math.abs(b2 - b);
+                    
+                    int diffRGB = diffR + diffG + diffB;
+                    
+                    if (adjIsBlack) {
+                        if (diffR == diffG && diffR == diffB) {
+                            minDiffBlack = diffR;
+                        }
+                    } else if (adjIsWhite) {
+                        if (diffR == diffG && diffR == diffB) {
+                            minDiffWhite = diffR;
+                        }
+                    } else {
+                        if ((diffRGB < minDiffRGB) && (diffRGB < limit)) {
+                            minDiffRGB = diffRGB;
+                            colorClusterIdx = colorClusterIndex.intValue();
+                            diffR = Math.abs(r2 - r); 
+                            diffG = Math.abs(g2 - g);
+                            diffB = Math.abs(b2 - b);
+                        }
+                    }
+                }
+                if (minDiffBlack < 75) {
+                    blackPixels.add(greyP);
+                    remove.add(greyP);
+                    continue;
+                } else if (minDiffWhite < 75) {
+                    whitePixels.add(greyP);
+                    remove.add(greyP);
+                    continue;
+                } else {
+                    if (colorClusterIdx != -1) {
+                        //add to color cluster and remove from grey list
+                        groupList.get(colorClusterIdx).add(greyP);
+                        remove.add(greyP);
+                        continue;
+                    }
+                }
+            }
+            for (PairInt rm : remove) {
+                greyGroup.remove(rm);
+            }
+        }
+        
+        // any remaining points in the grey list should be added as sets to
+        // the color pixels list now
+        for (int i = 0; i < greyPixelGroups.size(); ++i) {
+            Set<PairInt> greyGroup = greyPixelGroups.get(i);
+            groupList.add(greyGroup);
+        }
+        
     }
 
     public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
