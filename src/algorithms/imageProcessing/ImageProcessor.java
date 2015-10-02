@@ -3267,8 +3267,8 @@ public class ImageProcessor {
              return groupList;
         }
         
-        double xFactor = 2000.;
-        int yFactor = 2000;
+        double xFactor = 1000.;
+        int yFactor = 1000;
         
         double[] minMaxTheta = new double[2];
         int[] minMaxFreq = new int[2];
