@@ -1,13 +1,10 @@
 package algorithms.imageProcessing;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import static junit.framework.Assert.assertTrue;
 
 import junit.framework.TestCase;
 

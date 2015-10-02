@@ -476,7 +476,7 @@ public class DistanceTransformTest extends TestCase {
         
         Set<PairInt> points = new HashSet<PairInt>();
         for (int i = 0; i < x.length; i++) {
-            PairInt p = new PairInt((int)Math.round(x[i]), (int)Math.round(y[i]));
+            PairInt p = new PairInt(Math.round(x[i]), Math.round(y[i]));
             points.add(p);
         }
         

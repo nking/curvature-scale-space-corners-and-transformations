@@ -1,6 +1,5 @@
 package algorithms.graphs;
 
-import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
 /**

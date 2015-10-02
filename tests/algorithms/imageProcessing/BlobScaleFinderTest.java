@@ -4,7 +4,6 @@ import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.Set;
 import java.util.logging.Logger;
-import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
 /**

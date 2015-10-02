@@ -1024,13 +1024,13 @@ public class ImageProcessorTest extends TestCase {
     
     public void testApplyColorSegmentation() throws Exception {
         
-        // two_circles_color2.png
+        //String fileName = "two_circles_color2.png";
         //String fileName = "two_circles_color.png";
         //String fileName = "cloudy_san_jose.jpg";
-        String fileName = "middlebury_cones_im2.png"; // a limitFrac of 0.1 works well
+        //String fileName = "middlebury_cones_im2.png"; // a limitFrac of 0.1 works well
         //String fileName = "brown_lowe_2003_image1.jpg";
         //String fileName = "venturi_mountain_j6_0010.png";
-        //String fileName = "books_illum3_v6_695x555.png";
+        String fileName = "books_illum3_v6_695x555.png";
         //String fileName = "brown_lowe_2003_image1.jpg";
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -1044,6 +1044,7 @@ public class ImageProcessorTest extends TestCase {
         
         List<Set<PairInt>> clusterSets = 
             imageProcessor.calculateColorSegmentation3(img, /*0.1f,*/ true);
+            //imageProcessor.calculateColorSegmentation2(img, true);
         
         int nPoints = count(clusterSets);
         

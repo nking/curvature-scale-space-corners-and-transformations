@@ -1,6 +1,5 @@
 package algorithms.compGeometry.convexHull;
 
-import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairIntArray;
 

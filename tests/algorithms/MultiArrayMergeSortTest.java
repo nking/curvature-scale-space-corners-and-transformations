@@ -2,7 +2,6 @@ package algorithms;
 
 import java.util.Arrays;
 import algorithms.util.PairIntArray;
-import static junit.framework.Assert.assertTrue;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.framework.TestCase;

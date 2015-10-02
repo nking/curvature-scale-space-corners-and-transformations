@@ -541,13 +541,14 @@ public final class PointMatcher extends AbstractPointMatcher {
         //    (float)rightImg.getHeight()/200.));
 
         ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
         GreyscaleImage csImg1, csImg2;
 
         long t0 = System.currentTimeMillis();
 
         if (false) {
             csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(leftImg, 3);
-            imageProcessor.applyImageSegmentation(csImg1, 2);
+            imageSegmentation.applyImageSegmentation(csImg1, 2);
             Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(csImg1);
             int lowValue1 = Integer.MAX_VALUE;
             int highValue1 = Integer.MIN_VALUE;
@@ -566,7 +567,7 @@ public final class PointMatcher extends AbstractPointMatcher {
                 + "/color_segmentation1.png", csImg1);
 
             csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(rightImg, 3);
-            imageProcessor.applyImageSegmentation(csImg2, 2);
+            imageSegmentation.applyImageSegmentation(csImg2, 2);
             freqMap = Histogram.createAFrequencyMap(csImg2);
             int lowValue2 = Integer.MAX_VALUE;
             int highValue2 = Integer.MIN_VALUE;
@@ -587,14 +588,14 @@ public final class PointMatcher extends AbstractPointMatcher {
             ImageExt leftImgBinned = imageProcessor.binImage(leftImg, binFactor1);
 
             csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(leftImgBinned, 3);
-            imageProcessor.applyImageSegmentation(csImg1, 2);
+            imageSegmentation.applyImageSegmentation(csImg1, 2);
 
             ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
                 + "/color_segmentation1.png", csImg1);
 
             ImageExt rightImgBinned = imageProcessor.binImage(rightImg, binFactor1);
             csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(rightImgBinned, 3);
-            imageProcessor.applyImageSegmentation(csImg2, 2);
+            imageSegmentation.applyImageSegmentation(csImg2, 2);
 
             ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
                 + "/color_segmentation2.png", csImg2);

@@ -4,7 +4,6 @@ import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
-
 import algorithms.util.PolygonAndPointPlotter;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
 /**

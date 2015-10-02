@@ -908,7 +908,7 @@ int z1 = 1;
                 if ((yy < 0) || (yy > (h - 1))) {
                     continue;
                 }
-                input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                input.setRGB(xx, yy, rClr, gClr, bClr);
             }
         }
     }

@@ -281,6 +281,7 @@ public class SegmentedImageHelper {
         }
         
         ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         GreyscaleImage gsImg = getGreyscaleImageBinned();
 
@@ -290,7 +291,7 @@ public class SegmentedImageHelper {
             
             segImg = gsImg.copyImage();
             
-            imageProcessor.applyImageSegmentation(segImg, 2);
+            imageSegmentation.applyImageSegmentation(segImg, 2);
             // consider
             //imageProcessor.convertToCIEXYPolarTheta( color binned, 2);
             
@@ -302,7 +303,7 @@ public class SegmentedImageHelper {
             
             segImg = gsImg.copyImage();
             
-            imageProcessor.applyImageSegmentation(segImg, k);
+            imageSegmentation.applyImageSegmentation(segImg, k);
             
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -362,6 +363,7 @@ public class SegmentedImageHelper {
         }
 
         ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         if (type.equals(SegmentationType.BINARY)) {
             
@@ -371,7 +373,7 @@ public class SegmentedImageHelper {
                         
             segImg = imgGrey.copyImage();
          
-            imageProcessor.applyImageSegmentation(segImg, 2);
+            imageSegmentation.applyImageSegmentation(segImg, 2);
                         
             imageProcessor.blur(segImg, SIGMA.ZEROPOINTSEVENONE);
             
@@ -384,7 +386,7 @@ public class SegmentedImageHelper {
             segImg = imgGrey.copyImage();
             
             // expecting k=2
-            imageProcessor.applyImageSegmentation(segImg, k);
+            imageSegmentation.applyImageSegmentation(segImg, k);
             
             imgSegmentedMap.put(type, segImg);
             

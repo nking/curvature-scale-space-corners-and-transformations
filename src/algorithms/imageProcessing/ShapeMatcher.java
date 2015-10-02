@@ -48,6 +48,7 @@ public class ShapeMatcher {
         GreyscaleImage img2Grey = image2.copyToGreyscale();
         
         ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         final boolean performBinning = false;
         int binFactor1 = 1;
@@ -126,8 +127,8 @@ public class ShapeMatcher {
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
 
-        imageProcessor.applyImageSegmentation(img1Grey, kN);
-        imageProcessor.applyImageSegmentation(img2Grey, kN);
+        imageSegmentation.applyImageSegmentation(img1Grey, kN);
+        imageSegmentation.applyImageSegmentation(img2Grey, kN);
 
         // == contiguous regions within size limits become blobs of interest,
         //    indexed by their intensity levels

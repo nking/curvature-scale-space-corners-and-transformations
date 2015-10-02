@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.logging.Logger;
-import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 import org.ejml.simple.*;
 import static org.junit.Assert.fail;
@@ -798,6 +797,9 @@ TransformationPointFit fit = fits.get(0);
 if (true) {
     return;
 }
+
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+            
         Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
 
         /*
@@ -814,8 +816,8 @@ if (true) {
         GreyscaleImage img1Grey = img1.copyToGreyscale();
         GreyscaleImage img2Grey = img2.copyToGreyscale();
         
-        imageProcessor.applyImageSegmentation(img1Grey, 3);
-        imageProcessor.applyImageSegmentation(img2Grey, 3);
+        imageSegmentation.applyImageSegmentation(img1Grey, 3);
+        imageSegmentation.applyImageSegmentation(img2Grey, 3);
         
         writeImage(ImageIOHelper.convertImage(img1Grey), corners1,
             "segmentation1_" + ".png");

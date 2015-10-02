@@ -88,6 +88,8 @@ public class BinSegmentationHelper {
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
         ImageHelperForTests helper = new ImageHelperForTests(img1Orig, true);
         
         if (performSkySubtraction) {
@@ -205,8 +207,8 @@ public class BinSegmentationHelper {
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
 
-        imageProcessor.applyImageSegmentation(img1GreyOrig, kN);
-        imageProcessor.applyImageSegmentation(img2GreyOrig, kN);
+        imageSegmentation.applyImageSegmentation(img1GreyOrig, kN);
+        imageSegmentation.applyImageSegmentation(img2GreyOrig, kN);
 
         // == contiguous regions within size limits become blobs of interest,
         //    indexed by their intensity levels
@@ -735,10 +737,12 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
             img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         if (performSegmentation || performBinarySegmentation) {
-            imageProcessor.applyImageSegmentation(img1GreyOrig, kN2);
-            imageProcessor.applyImageSegmentation(img2GreyOrig, kN2);
+            imageSegmentation.applyImageSegmentation(img1GreyOrig, kN2);
+            imageSegmentation.applyImageSegmentation(img2GreyOrig, kN2);
         }
 
         // == contiguous regions within size limits become blobs of interest,

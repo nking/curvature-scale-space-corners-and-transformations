@@ -771,49 +771,6 @@ public class ImageProcessor {
 
     }
 
-    /**
-     * applies KMeansPlusPlus algorithm to the values in input to create
-     * kBands segmented image (operates on input).
-     * @param input
-     * @param kBands
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     */
-    public void applyImageSegmentation(GreyscaleImage input, int kBands)
-        throws IOException, NoSuchAlgorithmException {
-
-        KMeansPlusPlus instance = new KMeansPlusPlus();
-        instance.computeMeans(kBands, input);
-
-        int[] binCenters = instance.getCenters();
-
-        for (int col = 0; col < input.getWidth(); col++) {
-
-            for (int row = 0; row < input.getHeight(); row++) {
-
-                int v = input.getValue(col, row);
-
-                for (int i = 0; i < binCenters.length; i++) {
-
-                    int vc = binCenters[i];
-
-                    int bisectorBelow = ((i - 1) > -1) ?
-                        ((binCenters[i - 1] + vc) / 2) : 0;
-
-                    int bisectorAbove = ((i + 1) > (binCenters.length - 1)) ?
-                        255 : ((binCenters[i + 1] + vc) / 2);
-
-                    if ((v >= bisectorBelow) && (v <= bisectorAbove)) {
-
-                        input.setValue(col, row, vc);
-
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     public void convertToBinaryImage(GreyscaleImage input) {
         for (int col = 0; col < input.getWidth(); col++) {
             for (int row = 0; row < input.getHeight(); row++) {
@@ -842,7 +799,8 @@ public class ImageProcessor {
 
         theta = theta.copyImage();
 
-        applyImageSegmentation(theta, 2);
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        imageSegmentation.applyImageSegmentation(theta, 2);
 
         subtractMinimum(theta);
 
@@ -3137,7 +3095,10 @@ public class ImageProcessor {
         }
         // --- end debug
 
-        DTClusterFinder clusterFinder = new DTClusterFinder(pointsMap.keySet(),
+        //Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap
+        
+        DTClusterFinder<PairIntWithIndex> clusterFinder 
+            = new DTClusterFinder<PairIntWithIndex>(pointsMap.keySet(),
             maxCIEX + 1, maxCIEY + 1);
 
         clusterFinder.setToDebug();
@@ -3155,15 +3116,15 @@ public class ImageProcessor {
 
         for (int k = 0; k < nGroups; ++k) {
 
-            Set<com.climbwithyourfeet.clustering.util.PairInt> group
-                = clusterFinder.getCluster(k);
+            ////Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap
+            
+            Set<PairIntWithIndex> group = clusterFinder.getCluster(k);
 
             Set<PairInt> coordPoints = new HashSet<PairInt>();
 
-            for (com.climbwithyourfeet.clustering.util.PairInt p : group) {
+            for (PairIntWithIndex p : group) {
 
-                PairIntWithIndex p2 = (PairIntWithIndex)p;
-                int idx = p2.pixIdx;
+                int idx = p.pixIdx;
                 int xCoord = input.getCol(idx);
                 int yCoord = input.getRow(idx);
 
@@ -3171,7 +3132,7 @@ public class ImageProcessor {
                 coordPoints.add(pCoord);
 
                 // include the other points of/ same color
-                List<PairIntWithIndex> list = pointsMap.get(p2);
+                List<PairIntWithIndex> list = pointsMap.get(p);
                 assert(list != null);
                 for (PairIntWithIndex p3 : list) {
                     int idx3 = p3.pixIdx;
@@ -3351,9 +3312,14 @@ public class ImageProcessor {
             }
             // --- end debug
             
+            // Map<com.climbwithyourfeet.clustering.util.PairInt,
+            //     List<PairIntWithIndex>> thetaFreqMapI
+                
             // map w/ key=(theta, freq) value=collection of coords
-            DTClusterFinder clusterFinder = new DTClusterFinder(thetaFreqMapI.keySet(),
-                maxXY[0] + 1, maxXY[1] + 1);
+            DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt> 
+                clusterFinder 
+                = new DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt>(
+                    thetaFreqMapI.keySet(), maxXY[0] + 1, maxXY[1] + 1);
 
             clusterFinder.setToDebug();
 

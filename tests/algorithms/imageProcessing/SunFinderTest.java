@@ -1,25 +1,14 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.PolynomialFitter;
 import algorithms.util.ResourceFinder;
-import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
-import org.junit.Test;
 
 /**
  *

@@ -1,16 +1,13 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.misc.Histogram;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.awt.Color;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
-import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 import org.ejml.simple.*;
 import static org.junit.Assert.fail;
