@@ -3021,9 +3021,6 @@ public class ImageProcessor {
         //    that is a lack of points for some region between the
         //    min and max of x and y data in integer space
 
-        int w = input.getWidth();
-        int h = input.getHeight();
-
         // max = 6250 unless reduce space complexity
         float factor = 2000;// learn this from numerical resolution
 
@@ -3034,64 +3031,58 @@ public class ImageProcessor {
         int maxCIEX = Integer.MIN_VALUE;
         int maxCIEY = Integer.MIN_VALUE;
 
-        CIEChromaticity cieC = new CIEChromaticity();
+        Set<PairInt> blackPixels = new HashSet<PairInt>();
 
-        Set<PairIntWithIndex> points0 = new HashSet<PairIntWithIndex>();
+        Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
+        
+        Set<PairInt> whitePixels = new HashSet<PairInt>();
 
+        Set<PairInt> points0 = new HashSet<PairInt>();
+        
+        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
+                
+        // -------- debug -------
+        int nGrey = 0;
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            nGrey += entry.getValue().size();
+        }
+        assert((points0.size() + blackPixels.size() + nGrey + 
+            whitePixels.size()) == input.getNPixels());
+        // -------- end debug -------
+
+        List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
+        
         Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 =
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
 
-        Set<PairInt> blackPixels = new HashSet<PairInt>();
+        for (PairInt p : points0) {
+            
+            int idx = input.getInternalIndex(p.getX(), p.getY());
+            float cx = input.getCIEX(idx);
+            float cy = input.getCIEY(idx);               
+            
+            int cieXInt = Math.round(factor * cx);
+            int cieYInt = Math.round(factor * cy);
 
-        Set<PairInt> whitePixels = new HashSet<PairInt>();
+            PairIntWithIndex p0 = new PairIntWithIndex(cieXInt, cieYInt, idx);
+            List<PairIntWithIndex> list = pointsMap0.get(p0);
+            if (list == null) {
+                list = new ArrayList<PairIntWithIndex>();
+                pointsMap0.put(p0, list);
+            }
+            list.add(p0);
 
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-
-                int idx = input.getInternalIndex(i, j);
-
-                int r = input.getR(idx);
-                int g = input.getG(idx);
-                int b = input.getB(idx);
-
-                if ((r == 0) && (g == 0) && (b == 0)) {
-                    blackPixels.add(new PairInt(i, j));
-                    continue;
-                }
-
-                float cx = input.getCIEX(idx);
-                float cy = input.getCIEY(idx);
-
-                if (cieC.isWhite2(cx, cy)) {
-                    whitePixels.add(new PairInt(i, j));
-                    continue;
-                }
-
-                int cieXInt = Math.round(factor * cx);
-                int cieYInt = Math.round(factor * cy);
-
-                PairIntWithIndex p = new PairIntWithIndex(cieXInt, cieYInt, idx);
-                points0.add(p);
-
-                List<PairIntWithIndex> list = pointsMap0.get(p);
-                if (list == null) {
-                    list = new ArrayList<PairIntWithIndex>();
-                    pointsMap0.put(p, list);
-                }
-                list.add(p);
-
-                if (cieXInt < minCIEX) {
-                    minCIEX = cieXInt;
-                }
-                if (cieYInt < minCIEY) {
-                    minCIEY = cieYInt;
-                }
-                if (cieXInt > maxCIEX) {
-                    maxCIEX = cieXInt;
-                }
-                if (cieYInt > maxCIEY) {
-                    maxCIEY = cieYInt;
-                }
+            if (cieXInt < minCIEX) {
+                minCIEX = cieXInt;
+            }
+            if (cieYInt < minCIEY) {
+                minCIEY = cieYInt;
+            }
+            if (cieXInt > maxCIEX) {
+                maxCIEX = cieXInt;
+            }
+            if (cieYInt > maxCIEY) {
+                maxCIEY = cieYInt;
             }
         }
 
@@ -3099,7 +3090,7 @@ public class ImageProcessor {
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
 
         // subtract minima from the points
-        for (PairIntWithIndex p : points0) {
+        for (PairIntWithIndex p : pointsMap0.keySet()) {
 
             int x = p.getX() - minCIEX;
             int y = p.getY() - minCIEY;
@@ -3193,26 +3184,25 @@ public class ImageProcessor {
 
             groupList.add(coordPoints);
         }
-
+        
+        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
+            blackPixels, whitePixels);
+        
         // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
         groupList.add(whitePixels);
+        
+        int nTot2 = 0;
+        for (Set<PairInt> groups : groupList) {
+            nTot2 += groups.size();
+        }
+           
+        log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
+        assert(nTot2 == input.getNPixels());
 
         return groupList;
     }
-
-    /**
-     * NOT READY FOR USE.  STILL EXPERIMENTING.
-     * create an image segmented by CIE XY Lab Color space using qualities of
-     * the data (this one uses cie XY theta and frequency.
-     * Note that black is not a color in CIE XY color space and white
-     * is a large general area in the center of the color space so those are
-     * extracted
-     * and made into groups separate from the other clustering.
-     * @param input
-     * @param useBlur
-     * @return
-     */
+    
     public List<Set<PairInt>> calculateColorSegmentation2(ImageExt input,
         boolean useBlur) {
         // method name may change to apply.  might average the cluster 
@@ -3232,70 +3222,44 @@ public class ImageProcessor {
 
         int w = input.getWidth();
         int h = input.getHeight();
-
-        // max = 5000 unless reduce space complexity
-
-        double minTheta0 = Double.MAX_VALUE;
-        double maxTheta0 = Double.MIN_VALUE;
-
-        CIEChromaticity cieC = new CIEChromaticity();
-
+        
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
+        Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
+        
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
         Set<PairInt> points0 = new HashSet<PairInt>();
-
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-
-                int idx = input.getInternalIndex(i, j);
-
-                int r = input.getR(idx);
-                int g = input.getG(idx);
-                int b = input.getB(idx);
-
-                if ((r == 0) && (g == 0) && (b == 0)) {
-                    blackPixels.add(new PairInt(i, j));
-                    continue;
-                }
-
-                float cx = input.getCIEX(idx);
-                float cy = input.getCIEY(idx);
-
-                if (cieC.isWhite2(cx, cy)) {
-                    whitePixels.add(new PairInt(i, j));
-                    continue;
-                }
-
-                points0.add(new PairInt(i, j));
-
-                double thetaRadians = cieC.calculateXYTheta(cx, cy);
-                double theta = thetaRadians * 180./Math.PI;
-
-                if (theta < minTheta0) {
-                    minTheta0 = theta;
-                }
-                if (theta > maxTheta0) {
-                    maxTheta0 = theta;
-                }
-            }
-        }
-
-        log.info("for all non-white and non-black, minTheta=" + minTheta0
-            + " maxTheta=" + maxTheta0);
-
-        /* ----- create a map of theta scaled so that 360 degrees is in 1000 pixels -------
-        theta = (theta - minTheta)*1000/(maxTheta - minTheta).
-        */
         
-        if ((maxTheta0 - minTheta0) == 0) {
-             List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
+        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
+        
+        double[] minMaxTheta0 = findMinMaxTheta(input, points0);
+        
+        log.info("for all non-white and non-black, minTheta=" + minMaxTheta0[0]
+            + " maxTheta=" + minMaxTheta0[1]);
+        
+        // -------- debug -------
+        int nGrey = 0;
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            nGrey += entry.getValue().size();
+        }
+        assert((points0.size() + blackPixels.size() + nGrey + 
+            whitePixels.size()) == input.getNPixels());
+        // -------- end debug -------
+
+        List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
+        
+        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(greyPixelGroups.size());
+        
+        if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {
              if (points0.isEmpty()) {
                  groupList.add(points0);
              }
              if (!blackPixels.isEmpty()) {
                  groupList.add(blackPixels);
+             }
+             for (Set<PairInt> set : greyPixelGroups) {
+                groupList.add(set);
              }
              if (!whitePixels.isEmpty()) {
                  groupList.add(whitePixels);
@@ -3303,11 +3267,14 @@ public class ImageProcessor {
              return groupList;
         }
         
+        double xFactor = 2000.;
+        int yFactor = 2000;
+        
         double[] minMaxTheta = new double[2];
         int[] minMaxFreq = new int[2];
-        double thetaFactor0 = 3000./(maxTheta0 - minTheta0);
+        double thetaFactor0 = xFactor/(minMaxTheta0[1] - minMaxTheta0[0]);
         Map<Integer, List<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
-            input, minTheta0, thetaFactor0, minMaxTheta, minMaxFreq);
+            input, minMaxTheta0[0], thetaFactor0, minMaxTheta, minMaxFreq);
         
         /* ---- create frequency maps partitioned by given fractions ----
         starting w/ partitions at 3 percent (maybe discard below),
@@ -3342,10 +3309,8 @@ public class ImageProcessor {
         //    shift the values so the gap is at 360 instead.
         
         // ------ TODO: rescale each map by frequencies to span ~1000 pixels -----
-        rescaleKeys(thetaFreqMaps, 1000);
+        rescaleKeys(thetaFreqMaps, yFactor);
         
-        List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
-
         int nTot2 = 0;
         
         for (int i = 1; i < thetaFreqMaps.size(); ++i) {
@@ -3417,14 +3382,15 @@ public class ImageProcessor {
                 groupList.add(coordPoints);
             }
         }
-                
+        
+        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
+            blackPixels, whitePixels);
+        
         // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
         groupList.add(whitePixels);
 
-        log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
-        nTot2 += (blackPixels.size() + whitePixels.size());
-        //assert(nTot2 == input.getNPixels());
+        //TODO: assert npixels
 
         return groupList;
     }
@@ -3480,16 +3446,6 @@ public class ImageProcessor {
         // gathering the pixels by proximity to the theta peaks
         // and when equidistant, chooses the largest peak.
 
-        int w = input.getWidth();
-        int h = input.getHeight();
-
-        // max = 5000 unless reduce space complexity
-
-        double minTheta0 = Double.MAX_VALUE;
-        double maxTheta0 = Double.MIN_VALUE;
-
-        CIEChromaticity cieC = new CIEChromaticity();
-
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
         Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
@@ -3498,72 +3454,27 @@ public class ImageProcessor {
 
         Set<PairInt> points0 = new HashSet<PairInt>();
         
+        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
+        
+        double[] minMaxTheta0 = findMinMaxTheta(input, points0);
+        
+        log.info("for all non-white and non-black, minTheta=" + minMaxTheta0[0]
+            + " maxTheta=" + minMaxTheta0[1]);
+        
+        // -------- debug -------
         int nGrey = 0;
-        
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-
-                int idx = input.getInternalIndex(i, j);
-
-                int r = input.getR(idx);
-                int g = input.getG(idx);
-                int b = input.getB(idx);
-
-                //dark grey, such as r,g,b=105,105,105?
-                if ((r <= 32) && (g <= 32) && (b <= 32)) {
-                    blackPixels.add(new PairInt(i, j));
-                    continue;
-                }
-
-                float cx = input.getCIEX(idx);
-                float cy = input.getCIEY(idx);
-
-                if (cieC.isWhite2(cx, cy)) {
-                    //grey will be binned into clusters by avgRGB and peak frequency
-                    if ((r <= 191) && (g <= 191) && (b <= 191)) {
-                        Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));
-                        Collection<PairInt> set = greyPixelMap.get(avgRGB);
-                        if (set == null) {
-                            set = new HashSet<PairInt>();
-                            greyPixelMap.put(avgRGB, set);
-                        }
-                        set.add(new PairInt(i, j));
-                        nGrey++;
-                    } else {
-                        whitePixels.add(new PairInt(i, j));
-                    }
-                    continue;
-                }
-
-                points0.add(new PairInt(i, j));
-
-                double thetaRadians = cieC.calculateXYTheta(cx, cy);
-                double theta = thetaRadians * 180./Math.PI;
-
-                if (theta < minTheta0) {
-                    minTheta0 = theta;
-                }
-                if (theta > maxTheta0) {
-                    maxTheta0 = theta;
-                }
-            }
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            nGrey += entry.getValue().size();
         }
-        
-        log.info("for all non-white and non-black, minTheta=" + minTheta0
-            + " maxTheta=" + maxTheta0);
-        
         assert((points0.size() + blackPixels.size() + nGrey + 
             whitePixels.size()) == input.getNPixels());
+        // -------- end debug -------
 
-        // TODO: need to keep the grey list separate and use it after the
-        // remaining points have been clustered.  should examine whether
-        // they are more similar to an adjacent color and place them in that 
-        // cluster instead if so.
         List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
         
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(greyPixelGroups.size());
         
-        if ((maxTheta0 - minTheta0) == 0) {
+        if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {
              if (points0.isEmpty()) {
                  groupList.add(points0);
              }
@@ -3906,19 +3817,38 @@ public class ImageProcessor {
         List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
             List<PairIntWithIndex>>> thetaFreqMaps, int scaleTo) {
         
+        // --- can remove the count after debugging ----
+        int nTotBefore = 0;
+        for (int i = 0; i < thetaFreqMaps.size(); ++i) {
+            for (Entry<com.climbwithyourfeet.clustering.util.PairInt, 
+                List<PairIntWithIndex>> entry : thetaFreqMaps.get(i).entrySet()) {
+                nTotBefore += entry.getValue().size();
+            }
+        }
+        
         for (int i = 0; i < thetaFreqMaps.size(); ++i) {
             
             Map<com.climbwithyourfeet.clustering.util.PairInt, 
                 List<PairIntWithIndex>> thetaFreqMap = thetaFreqMaps.get(i);
             
             int[] minMax = findMinMaxOfKeyYs(thetaFreqMap.keySet());
-            
+                 
             Map<com.climbwithyourfeet.clustering.util.PairInt, 
                 List<PairIntWithIndex>> thetaFreqMap2 = rescaleKeyYs(
                     thetaFreqMap, scaleTo, minMax);
             
             thetaFreqMaps.set(i, thetaFreqMap2);
         }
+        
+        // --- can remove the count after debugging ----
+        int nTotAfter = 0;
+        for (int i = 0; i < thetaFreqMaps.size(); ++i) {
+            for (Entry<com.climbwithyourfeet.clustering.util.PairInt, 
+                List<PairIntWithIndex>> entry : thetaFreqMaps.get(i).entrySet()) {
+                nTotAfter += entry.getValue().size();
+            }
+        }
+        assert(nTotBefore == nTotAfter);
     }
 
     private int[] findMinMaxOfKeyYs(
@@ -4415,6 +4345,78 @@ public class ImageProcessor {
             groupList.add(greyGroup);
         }
         
+    }
+    
+    protected double[] findMinMaxTheta(ImageExt input, Set<PairInt> points0) {
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        double[] minMaxTheta = new double[2];
+        
+        for (PairInt p : points0) {
+            int x = p.getX();
+            int y = p.getY();
+            
+            double thetaRadians = cieC.calculateXYTheta(x, y);
+            double theta = thetaRadians * 180. / Math.PI;
+
+            if (theta < minMaxTheta[0]) {
+                minMaxTheta[0] = theta;
+            }
+            if (theta > minMaxTheta[1]) {
+                minMaxTheta[1] = theta;
+            }
+        }
+        
+        return minMaxTheta;
+    }
+
+    private void populatePixelLists(ImageExt input, Set<PairInt> points0, 
+        Set<PairInt> blackPixels, Set<PairInt> whitePixels, 
+        Map<Integer, Collection<PairInt>> greyPixelMap) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+
+                int idx = input.getInternalIndex(i, j);
+
+                int r = input.getR(idx);
+                int g = input.getG(idx);
+                int b = input.getB(idx);
+
+                //dark grey, such as r,g,b=105,105,105?
+                if ((r <= 32) && (g <= 32) && (b <= 32)) {
+                    blackPixels.add(new PairInt(i, j));
+                    continue;
+                }
+
+                float cx = input.getCIEX(idx);
+                float cy = input.getCIEY(idx);
+
+                if (cieC.isWhite2(cx, cy)) {
+                    //grey will be binned into clusters by avgRGB and peak frequency
+                    if ((r <= 191) && (g <= 191) && (b <= 191)) {
+                        Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));
+                        Collection<PairInt> set = greyPixelMap.get(avgRGB);
+                        if (set == null) {
+                            set = new HashSet<PairInt>();
+                            greyPixelMap.put(avgRGB, set);
+                        }
+                        set.add(new PairInt(i, j));
+                    } else {
+                        whitePixels.add(new PairInt(i, j));
+                    }
+                    continue;
+                }
+
+                points0.add(new PairInt(i, j));                
+            }
+        }
     }
 
     public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
