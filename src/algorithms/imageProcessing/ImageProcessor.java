@@ -3269,8 +3269,8 @@ public class ImageProcessor {
              return groupList;
         }
         
-        double xFactor = 1000.;
-        int yFactor = 1000;
+        double xFactor = 2000.;
+        int yFactor = 2000;
         
         double[] minMaxTheta = new double[2];
         int[] minMaxFreq = new int[2];
@@ -3881,9 +3881,8 @@ public class ImageProcessor {
 
     private Map<com.climbwithyourfeet.clustering.util.PairInt, 
     List<PairIntWithIndex>> rescaleKeyYs(
-        Map<com.climbwithyourfeet.clustering.util.PairInt, 
-            List<PairIntWithIndex>> thetaFreqMap, final int scaleTo, 
-            final int[] minMaxY) {
+    Map<com.climbwithyourfeet.clustering.util.PairInt, 
+    List<PairIntWithIndex>> thetaFreqMap, final int scaleTo, final int[] minMaxY) {
         
         Map<com.climbwithyourfeet.clustering.util.PairInt, 
             List<PairIntWithIndex>> scaledMap 
