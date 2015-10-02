@@ -1429,13 +1429,13 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         String fileNameRoot = fileName.substring(0, idx);
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         // to experiment w/ a color mapping instead of intensity:
         if (fileName.contains("cones") || fileName.contains("venturi")) {//cannot use on B&W images
-            ImageProcessor imageProcessor = new ImageProcessor();
             ImageExt clrImg = ImageIOHelper.readImageExt(filePath);
             //img = imageProcessor.createGreyscaleFromColorSegmentation(clrImg);
-            img = imageProcessor.createGreyscaleFromColorSegmentationKMPP(clrImg, 4, false);
+            img = imageSegmentation.applyUsingCIEXYPolarThetaThenKMPPThenHistEq(clrImg, 4, false);
             
             ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot 
                 + "_color_theta.png", img);

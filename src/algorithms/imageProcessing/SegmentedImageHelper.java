@@ -291,7 +291,7 @@ public class SegmentedImageHelper {
             
             segImg = gsImg.copyImage();
             
-            imageSegmentation.applyImageSegmentation(segImg, 2);
+            imageSegmentation.applyUsingKMPP(segImg, 2);
             // consider
             //imageProcessor.convertToCIEXYPolarTheta( color binned, 2);
             
@@ -303,7 +303,7 @@ public class SegmentedImageHelper {
             
             segImg = gsImg.copyImage();
             
-            imageSegmentation.applyImageSegmentation(segImg, k);
+            imageSegmentation.applyUsingKMPP(segImg, k);
             
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -312,7 +312,7 @@ public class SegmentedImageHelper {
             // not expecting to use binned color images:
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
             
-            segImg = imageProcessor.createGreyscaleFromColorSegmentation(imgBinned, k);
+            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(imgBinned, k, true);
             
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             
@@ -323,10 +323,10 @@ public class SegmentedImageHelper {
             // not expecting to use binned color images:
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
             
-            segImg = imageProcessor.createGreyscaleFromColorSegmentation(imgBinned, k);
+            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(imgBinned, k, true);
             
             // also a possiblity:
-            //= imageProcessor.createGreyscaleFromColorSegmentationKMPP(img, k, false);
+            //= imageProcessor.applyUsingCIEXYPolarThetaKMPP(img, k, false);
             
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -373,7 +373,7 @@ public class SegmentedImageHelper {
                         
             segImg = imgGrey.copyImage();
          
-            imageSegmentation.applyImageSegmentation(segImg, 2);
+            imageSegmentation.applyUsingKMPP(segImg, 2);
                         
             imageProcessor.blur(segImg, SIGMA.ZEROPOINTSEVENONE);
             
@@ -386,13 +386,13 @@ public class SegmentedImageHelper {
             segImg = imgGrey.copyImage();
             
             // expecting k=2
-            imageSegmentation.applyImageSegmentation(segImg, k);
+            imageSegmentation.applyUsingKMPP(segImg, k);
             
             imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
             
-            segImg = imageProcessor.createGreyscaleFromColorSegmentation(img, k);
+            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(img, k, true);
             
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             
@@ -400,10 +400,10 @@ public class SegmentedImageHelper {
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
             
-            segImg = imageProcessor.createGreyscaleFromColorSegmentation(img, k);
+            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(img, k, true);
             
             // also a possiblity:
-            //= imageProcessor.createGreyscaleFromColorSegmentationKMPP(img, k, false);
+            //= imageProcessor.applyUsingCIEXYPolarThetaKMPP(img, k, false);
             
             imgSegmentedMap.put(type, segImg);
             

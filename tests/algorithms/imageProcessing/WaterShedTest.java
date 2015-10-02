@@ -610,13 +610,13 @@ public class WaterShedTest extends TestCase {
         
         brown & lowe:
             img0 = img.copyToGreyscale();
-            imageProcessor.applyImageSegmentation(img0, 2);
+            imageProcessor.applyUsingKMPP(img0, 2);
             img0 = imageProcessor.binImage(img0, binFactor);
             imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
         */
 /*
         USES:
-             imageProcessor.applyImageSegmentation(img0, 2);
+             imageProcessor.applyUsingKMPP(img0, 2);
              img0 = imageProcessor.binImage(img0, binFactor);
              imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
         */
@@ -624,7 +624,7 @@ public class WaterShedTest extends TestCase {
         GreyscaleImage img0 =
             //imageProcessor.createGreyscaleFromColorSegmentation(img, 4);//4,8 Venturi, books;  3 or alt for bl2003?
             img.copyToGreyscale();
-        imageProcessor.applyImageSegmentation(img0, 2);
+        imageProcessor.applyUsingKMPP(img0, 2);
 
         img0 = imageProcessor.binImage(img0, binFactor);
 

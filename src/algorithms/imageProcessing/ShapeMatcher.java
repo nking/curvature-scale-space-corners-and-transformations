@@ -127,8 +127,8 @@ public class ShapeMatcher {
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
 
-        imageSegmentation.applyImageSegmentation(img1Grey, kN);
-        imageSegmentation.applyImageSegmentation(img2Grey, kN);
+        imageSegmentation.applyUsingKMPP(img1Grey, kN);
+        imageSegmentation.applyUsingKMPP(img2Grey, kN);
 
         // == contiguous regions within size limits become blobs of interest,
         //    indexed by their intensity levels

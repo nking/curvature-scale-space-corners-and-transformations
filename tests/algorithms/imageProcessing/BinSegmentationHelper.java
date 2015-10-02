@@ -207,8 +207,8 @@ public class BinSegmentationHelper {
             img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
         }
 
-        imageSegmentation.applyImageSegmentation(img1GreyOrig, kN);
-        imageSegmentation.applyImageSegmentation(img2GreyOrig, kN);
+        imageSegmentation.applyUsingKMPP(img1GreyOrig, kN);
+        imageSegmentation.applyUsingKMPP(img2GreyOrig, kN);
 
         // == contiguous regions within size limits become blobs of interest,
         //    indexed by their intensity levels
@@ -741,8 +741,8 @@ log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         if (performSegmentation || performBinarySegmentation) {
-            imageSegmentation.applyImageSegmentation(img1GreyOrig, kN2);
-            imageSegmentation.applyImageSegmentation(img2GreyOrig, kN2);
+            imageSegmentation.applyUsingKMPP(img1GreyOrig, kN2);
+            imageSegmentation.applyUsingKMPP(img2GreyOrig, kN2);
         }
 
         // == contiguous regions within size limits become blobs of interest,

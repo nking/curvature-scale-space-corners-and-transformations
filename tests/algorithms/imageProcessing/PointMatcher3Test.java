@@ -816,8 +816,8 @@ if (true) {
         GreyscaleImage img1Grey = img1.copyToGreyscale();
         GreyscaleImage img2Grey = img2.copyToGreyscale();
         
-        imageSegmentation.applyImageSegmentation(img1Grey, 3);
-        imageSegmentation.applyImageSegmentation(img2Grey, 3);
+        imageSegmentation.applyUsingKMPP(img1Grey, 3);
+        imageSegmentation.applyUsingKMPP(img2Grey, 3);
         
         writeImage(ImageIOHelper.convertImage(img1Grey), corners1,
             "segmentation1_" + ".png");

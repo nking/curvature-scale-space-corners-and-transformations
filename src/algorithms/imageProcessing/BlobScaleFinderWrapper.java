@@ -66,11 +66,11 @@ public class BlobScaleFinderWrapper {
      dark blobs is used:
          img0 = img.copyToGreyscale();
          img0 = imageProcessor.binImage(img0, binFactor);
-         imageProcessor.applyImageSegmentation(img0, 2);
+         imageSegmentation.applyUsingKMPP(img0, 2);
          imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
      else:
          img0 = imageProcessor.binImage(img0, binFactor);
-         img0 = imageProcessor.createGreyscaleFromColorSegmentation(img, 4)
+         img0 = imageSegmentation.applyUsingCIEXYPolarTheta(img, 4)
          imageProcessor.applyAdaptiveMeanThresholding(img0, 2); 2 is for unbinned so may need tuning
      </pre>
 
