@@ -38,8 +38,8 @@ public class ImageSegmentationTest extends TestCase {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         List<Set<PairInt>> clusterSets = 
-            imageSegmentation.calculateColorSegmentation3(img, /*0.1f,*/ true);
-            //imageProcessor.calculateColorSegmentation2(img, true);
+            imageSegmentation.calculateUsingPolarCIEXYAndFrequency(img, /*0.1f,*/ true);
+            //imageProcessor.calculateUsingPolarCIEXYAndClustering(img, true);
         
         int nPoints = count(clusterSets);
         

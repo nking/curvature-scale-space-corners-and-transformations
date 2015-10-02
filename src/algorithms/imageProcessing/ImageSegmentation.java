@@ -661,18 +661,36 @@ public class ImageSegmentation {
     
     /**
      * NOT READY FOR USE.  STILL EXPERIMENTING.
-     * create an image segmented by CIE XY Lab Color space using qualities of
-     * the data.
-     * Note that black is not a color in CIE XY color space and white
-     * is a large general area in the center of the color space.
+     * 
+     * Calculates lists of black pixels, white pixels, grey pixels, and assigns
+     * the remaining to CIEXY Lab color space, then creates a map of the 
+     * CIEX and CIEY points and uses density based clustering  
+     * (http://nking.github.io/two-point-correlation/)
+     * to find clusters of points in CIE X, CIEY space,
+     * then merges pixels in the grey list with adjacent clusters if 
+     * similar, and the final result is a list of pixel clusters, including the
+     * black and white and remaining grey.
+     * 
+     * Note that the color black is not defined in CIE XY color space and that
+     * the color white is at the center of the space as a large circle so they
+     * are not included in the density based clustering.
+     * Note also that the remaining grey pixels which did not merge with the
+     * cie xy pixel clusters, may be in separate groups already due to a
+     * frequency based grouping for them.
+     * 
      * @param input
      * @param useBlur
      * @return
      */
-    public List<Set<PairInt>> calculateColorSegmentation(ImageExt input,
+    public List<Set<PairInt>> calculateUsingCIEXYAndClustering(ImageExt input,
         boolean useBlur) {
         // method name may change to apply.  might average the cluster color and apply it to points
 
+        //TODO: improve the clustering results in two ways:
+        // (1) for smaller ciexy clusters, merge with adjacent clusters if
+        //     similar color
+        // (2) any pixel with 7 neighbors of same color should be that color too
+        
         if (useBlur) {
             ImageProcessor imageProcessor = new ImageProcessor();
             imageProcessor.blur(input, 1.0f);
@@ -826,8 +844,6 @@ public class ImageSegmentation {
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
 
         for (int k = 0; k < nGroups; ++k) {
-
-            ////Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap
             
             Set<PairIntWithIndex> group = clusterFinder.getCluster(k);
 
@@ -875,10 +891,41 @@ public class ImageSegmentation {
         return groupList;
     }
     
-    public List<Set<PairInt>> calculateColorSegmentation2(ImageExt input,
+    /**     
+     * Calculates lists of black pixels, white pixels, grey pixels, and assigns
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * polar angles and the number of pixels with those angles (=frequency)
+     * and uses density based clustering  
+     * (http://nking.github.io/two-point-correlation/)
+     * to find clusters in that space (polar CIEXY vs frequency),
+     * then merges pixels in the grey list with adjacent clusters if 
+     * similar, and the final result is a list of pixel clusters, including the
+     * black and white and remaining grey.
+     * The changeable parameters are the scaling of the range of polar angles
+     * and the range of frequency in order to place the data between values of 0
+     * and a number.
+     * <code>The scale factors are double xFactor = 2000. and int yFactor = 2000
+     * for example.  Smaller scale factors result in faster runtimes,
+     * but must be balanced by a large enough factor to have cluster resulution.
+     * </code>
+     * Note that the polar angle vs frequency maps are actually partitioned into
+     * 4 maps to do density based cluster finding separately.
+     * partitionFreqFracs = new float[]{0.03f, 0.15f, 0.25f} is the fraction of
+     * the maximum frequency defining a partition.
+     * 
+     * Note that the color black is not defined in CIE XY color space and that
+     * the color white is at the center of the space as a large circle so they
+     * are not included in the density based clustering.
+     * Note also that the remaining grey pixels which did not merge with the
+     * CIE xy pixel clusters, may be in separate groups already due to a
+     * frequency based grouping for them.
+     * 
+     * @param input
+     * @param useBlur apply a gaussian blur of sigma=1 before the method logic
+     * @return 
+     */
+    public List<Set<PairInt>> calculateUsingPolarCIEXYAndClustering(ImageExt input,
         boolean useBlur) {
-        // method name may change to apply.  might average the cluster 
-        //    color and apply it to points
 
         if (useBlur) {
             ImageProcessor imageProcessor = new ImageProcessor();
@@ -1084,45 +1131,59 @@ public class ImageSegmentation {
     }
     
     /**
-     * NOT READY FOR USE.  STILL EXPERIMENTING.
-     * create an image segmented by CIE XY Lab Color space using qualities of
-     * the data (this one uses cie XY theta and frequency.
-     * Note that black is not a color in CIE XY color space and white
-     * is a large general area in the center of the color space so those are
-     * extracted
-     * and made into groups separate from the other clustering.
+     * Calculates lists of black pixels, white pixels, grey pixels, and assigns
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * polar angles and the number of pixels with those angles (=frequency),
+     * then finds peaks in theta above a fraction =0.03 of max limit then groups all 
+     * pixels in the map by proximity to the peak,
+     * then merges pixels in the grey list with adjacent clusters if 
+     * similar, and the final result is a list of pixel clusters, including the
+     * black and white and remaining grey.
+     * 
+     * Note that the color black is not defined in CIE XY color space and that
+     * the color white is at the center of the space as a large circle so they
+     * are not included in the density based clustering.
+     * Note also that the remaining grey pixels which did not merge with the
+     * CIE xy pixel clusters, may be in separate groups already due to a
+     * frequency based grouping for them.
      * @param input
-     * @param useBlur
+     * @param useBlur apply a gaussian blur of sigma=1 before the method logic
      * @return
      */
-    public List<Set<PairInt>> calculateColorSegmentation3(ImageExt input,
+    public List<Set<PairInt>> calculateUsingPolarCIEXYAndFrequency(ImageExt input,
         boolean useBlur) {
 
-        if (useBlur) {
-            ImageProcessor imageProcessor = new ImageProcessor();
-            imageProcessor.blur(input, 1.0f);
-        }
-        
         float fracFreqLimit = 0.03f;
         
-        return calculateColorSegmentation3(input, fracFreqLimit, useBlur);
+        return calculateUsingPolarCIEXYAndFrequency(input, fracFreqLimit, useBlur);
     }
     
     /**
-     * NOT READY FOR USE.  STILL EXPERIMENTING.
-     * create an image segmented by CIE XY Lab Color space using qualities of
-     * the data (this one uses cie XY theta and frequency.
-     * Note that black is not a color in CIE XY color space and white
-     * is a large general area in the center of the color space so those are
-     * extracted
-     * and made into groups separate from the other clustering.
+     * Calculates lists of black pixels, white pixels, grey pixels, and assigns
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * polar angles and the number of pixels with those angles (=frequency),
+     * then finds peaks in theta above a fraction of max limit then groups all 
+     * pixels in the map by proximity to the peak,
+     * then merges pixels in the grey list with adjacent clusters if 
+     * similar, and the final result is a list of pixel clusters, including the
+     * black and white and remaining grey.
+     * The changeable parameter is the fracFreqLimit.  Larger values exclude
+     * smaller frequency peaks.
+     * 
+     * Note that the color black is not defined in CIE XY color space and that
+     * the color white is at the center of the space as a large circle so they
+     * are not included in the density based clustering.
+     * Note also that the remaining grey pixels which did not merge with the
+     * CIE xy pixel clusters, may be in separate groups already due to a
+     * frequency based grouping for them.
+     * 
      * @param input image to find color clusters within
      * @param fracFreqLimit fraction of the maximum above which peaks will be found
      * @param useBlur if true, performs a gaussian blur of sigma=1 before finding
      * clusters.
      * @return
      */
-    public List<Set<PairInt>> calculateColorSegmentation3(ImageExt input,
+    public List<Set<PairInt>> calculateUsingPolarCIEXYAndFrequency(ImageExt input,
         float fracFreqLimit, boolean useBlur) {
 
         if (useBlur) {
@@ -1182,7 +1243,7 @@ public class ImageSegmentation {
         
         /* ----- create a map of theta and frequency ----
         need to find the peaks in frequency for frequencies larger than about
-        3 percent of max frequency (TODO: revise)
+        3 percent of max frequency
         but don't want to use a spline3 to smooth, so will average every 
         few pixels.
         */
