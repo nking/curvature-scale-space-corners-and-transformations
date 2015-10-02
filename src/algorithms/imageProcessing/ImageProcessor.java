@@ -3243,8 +3243,10 @@ public class ImageProcessor {
         for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
             nGrey += entry.getValue().size();
         }
-        assert((points0.size() + blackPixels.size() + nGrey + 
-            whitePixels.size()) == input.getNPixels());
+        int nGreyBW = + blackPixels.size() + nGrey + whitePixels.size();
+        int nTot = (points0.size() + nGreyBW);
+        log.info("img nPix=" + input.getNPixels() + " nTot=" + nTot);
+        assert(nTot == input.getNPixels());
         // -------- end debug -------
 
         List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
@@ -3275,6 +3277,15 @@ public class ImageProcessor {
         double thetaFactor0 = xFactor/(minMaxTheta0[1] - minMaxTheta0[0]);
         Map<Integer, List<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
             input, minMaxTheta0[0], thetaFactor0, minMaxTheta, minMaxFreq);
+
+        // ---- debug ------
+        nTot = nGreyBW;
+        for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
+            nTot += entry.getValue().size();
+        }
+        log.info("img nPix=" + input.getNPixels() + " nTot=" + nTot);
+        assert(nTot == input.getNPixels());
+        // ----- end debug ------
         
         /* ---- create frequency maps partitioned by given fractions ----
         starting w/ partitions at 3 percent (maybe discard below),
@@ -3293,12 +3304,12 @@ public class ImageProcessor {
                 partitionFreqFracs, minMaxFreq[1]);
         
         //---- debug, assert number of pixels ----
-        int nTot = blackPixels.size() + whitePixels.size();
+        nTot = nGreyBW;
         for (Map<com.climbwithyourfeet.clustering.util.PairInt,
         List<PairIntWithIndex>> map : thetaFreqMaps) {
             for (Entry<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> entry : map.entrySet()) {
-                nTot += entry.getValue().size();
+                nTot += entry.getValue().size();                
             }
         }
         log.info("img nPix=" + input.getNPixels() + " nTot=" + nTot);
@@ -3317,10 +3328,10 @@ public class ImageProcessor {
         
             Map<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> thetaFreqMapI = thetaFreqMaps.get(i);
-            
+
             int[] maxXY = findMaxXY(thetaFreqMapI.keySet());
             
-            if (maxXY[0] <= 0 || maxXY[1] <= 0) {
+            if (maxXY[0] < 0 || maxXY[1] <= 0) {
                 continue;
             }
             
@@ -3340,6 +3351,7 @@ public class ImageProcessor {
             }
             // --- end debug
             
+            // map w/ key=(theta, freq) value=collection of coords
             DTClusterFinder clusterFinder = new DTClusterFinder(thetaFreqMapI.keySet(),
                 maxXY[0] + 1, maxXY[1] + 1);
 
@@ -3360,13 +3372,11 @@ public class ImageProcessor {
                     = clusterFinder.getCluster(k);
 
                 Set<PairInt> coordPoints = new HashSet<PairInt>();
-
-                for (com.climbwithyourfeet.clustering.util.PairInt p : group) {
-
-                    coordPoints.add(new PairInt(p.getX(), p.getY()));
+                
+                for (com.climbwithyourfeet.clustering.util.PairInt pThetaFreq : group) {
 
                     // include the other points of same ciexy theta, freq
-                    List<PairIntWithIndex> list = thetaFreqMapI.get(p);
+                    List<PairIntWithIndex> list = thetaFreqMapI.get(pThetaFreq);
                     assert (list != null);
                     for (PairIntWithIndex p3 : list) {
                         int idx3 = p3.pixIdx;
@@ -3375,14 +3385,14 @@ public class ImageProcessor {
                         PairInt pCoord = new PairInt(xCoord3, yCoord3);
                         coordPoints.add(pCoord);
                     }
-                }
+                }               
 
                 nTot2 += coordPoints.size();
 
                 groupList.add(coordPoints);
             }
         }
-        
+     
         mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
             blackPixels, whitePixels);
         
@@ -3722,8 +3732,8 @@ public class ImageProcessor {
 
     private List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
     List<PairIntWithIndex>>> partitionIntoFrequencyMaps(
-        ImageExt input, Map<Integer, List<PairInt>> thetaPointMap, 
-        float[] partitionFreqFracs, int maxFreq) {
+    ImageExt input, Map<Integer, List<PairInt>> thetaPointMap, 
+    float[] partitionFreqFracs, int maxFreq) {
         
         List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
             List<PairIntWithIndex>>> 
@@ -3746,7 +3756,7 @@ public class ImageProcessor {
         
         int[] maxXY = new int[2];
         Arrays.fill(maxXY, Integer.MIN_VALUE);
-        
+                
         for (Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
 
             Integer theta = entry.getKey();
@@ -4056,6 +4066,7 @@ public class ImageProcessor {
             if (y > maxFreq) {
                 maxFreq = y;
             }
+
             nTot2 += y;
         }
         assert(nTot == nTot2);
@@ -4245,7 +4256,7 @@ public class ImageProcessor {
                 colorPixGroupMap.put(p, groupKey);
             }
         }
-        
+
         // similarity limit for a grey pixel to join adjacent color pixel's cluster
         int limit = 40;
         
@@ -4337,14 +4348,14 @@ public class ImageProcessor {
                 greyGroup.remove(rm);
             }
         }
-        
+
         // any remaining points in the grey list should be added as sets to
         // the color pixels list now
         for (int i = 0; i < greyPixelGroups.size(); ++i) {
             Set<PairInt> greyGroup = greyPixelGroups.get(i);
             groupList.add(greyGroup);
+            greyPixelGroups.get(i).clear();
         }
-        
     }
     
     protected double[] findMinMaxTheta(ImageExt input, Set<PairInt> points0) {
