@@ -3891,7 +3891,7 @@ public class ImageProcessor {
                 List<PairIntWithIndex>>();
         
         if ((minMaxY[1] - minMaxY[0]) == 0) {
-            return scaledMap;
+            return thetaFreqMap;
         }
         
         float factor = scaleTo/(minMaxY[1] - minMaxY[0]);
