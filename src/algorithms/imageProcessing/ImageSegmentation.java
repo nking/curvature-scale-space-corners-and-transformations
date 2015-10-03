@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -82,7 +83,7 @@ public class ImageSegmentation {
     }
     
     /**
-     * applies a blue of sigma=1 to image,
+     * applies a blur of sigma=1 to image,
      * converts each pixel color to the polar angle of CIE XY Lab color space
      * with an origin of (0.35, 0.35) and uses a histogram binning of kColors=8,
      * then maps those bins to 0 to 255,
@@ -684,7 +685,6 @@ public class ImageSegmentation {
      */
     public List<Set<PairInt>> calculateUsingCIEXYAndClustering(ImageExt input,
         boolean useBlur) {
-        // method name may change to apply.  might average the cluster color and apply it to points
 
         //TODO: improve the clustering results in two ways:
         // (1) for smaller ciexy clusters, merge with adjacent clusters if
@@ -739,11 +739,18 @@ public class ImageSegmentation {
 
         List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
         
+        // ------- debug -------
+        int nGrey2 = 0;
+        for (Set<PairInt> set : greyPixelGroups) {
+            nGrey2 += set.size();
+        }
+        assert(nGrey == nGrey2);
+        // ------- end debug =====
+        
         Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 =
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
 
         for (PairInt p : points0) {
-            
             int idx = input.getInternalIndex(p.getX(), p.getY());
             float cx = input.getCIEX(idx);
             float cy = input.getCIEY(idx);               
@@ -810,6 +817,16 @@ public class ImageSegmentation {
         }
 
         // ----- debug ---
+        int nGreyBW = nGrey + blackPixels.size() + whitePixels.size();
+        int nTot = 0;
+        //Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap
+        for (Entry<PairIntWithIndex, List<PairIntWithIndex>> entry : pointsMap.entrySet()) {
+            nTot += entry.getValue().size();
+        }
+        nTot += nGreyBW;
+        log.info("nTot=" + nTot + " nPixels=" + input.getNPixels());
+        assert(nTot == input.getNPixels());
+        
         // plot the points as an image to see the data first
         GreyscaleImage img = new GreyscaleImage(maxCIEX + 1, maxCIEY + 1);
         for (com.climbwithyourfeet.clustering.util.PairInt p : pointsMap.keySet()) {
@@ -872,6 +889,16 @@ public class ImageSegmentation {
 
             groupList.add(coordPoints);
         }
+        
+        // ------ debug ---------
+        nTot = 0;
+        for (Set<PairInt> set : groupList) {
+            nTot += set.size();
+        }
+        nTot += nGreyBW;
+        log.info("nTot=" + nTot + " nPixels=" + input.getNPixels());
+        assert(nTot == input.getNPixels());
+        // ------ end debug -----
         
         mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
             blackPixels, whitePixels);
@@ -2006,7 +2033,9 @@ public class ImageSegmentation {
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         for (Set<PairInt> greyGroup : greyPixelGroups) {
+            
             Set<PairInt> remove = new HashSet<PairInt>();
+            
             for (PairInt greyP : greyGroup) {
                 int x = greyP.getX();
                 int y = greyP.getY();
@@ -2094,8 +2123,8 @@ public class ImageSegmentation {
         for (int i = 0; i < greyPixelGroups.size(); ++i) {
             Set<PairInt> greyGroup = greyPixelGroups.get(i);
             groupList.add(greyGroup);
-            greyPixelGroups.get(i).clear();
         }
+        greyPixelGroups.clear();
     }
     
     protected double[] findMinMaxTheta(ImageExt input, Set<PairInt> points0) {
