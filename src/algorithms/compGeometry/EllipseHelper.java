@@ -24,7 +24,7 @@ public class EllipseHelper {
      <pre>
      adapted from:
         "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
-        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
         in directory doc/tech-reports/2xx
         The files begin with 217.* and the list includes matlab source code.
         files algellipse.m and ellipse_params.m are adapted here.
@@ -34,7 +34,7 @@ public class EllipseHelper {
      The parameters returned can be used as:
      x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
      y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
-     where t range is 0 ≤ t ≤ 2π
+     where t range is 0 &lt; == t &lt; == 2π
       </pre>
      * @param xyPoints
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
@@ -48,7 +48,7 @@ public class EllipseHelper {
      <pre>
      adapted from:
         "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
-        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
         in directory doc/tech-reports/2xx
         The files begin with 217.* and the list includes matlab source code.
         files algellipse.m and ellipse_params.m are adapted here.
@@ -58,7 +58,7 @@ public class EllipseHelper {
      The parameters returned can be used as:
      x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
      y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
-     where t range is 0 ≤ t ≤ 2π
+     where t range is 0 &lt; == t &lt; == 2π
       </pre>
      * @param xyPoints
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
@@ -90,7 +90,7 @@ public class EllipseHelper {
      <pre>
      adapted from:
         "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
-        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
         in directory doc/tech-reports/2xx
         The files begin with 217.* and the list includes matlab source code.
         files algellipse.m and ellipse_params.m are adapted here.
@@ -100,7 +100,7 @@ public class EllipseHelper {
      The parameters returned can be used as:
      x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
      y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
-     where t range is 0 ≤ t ≤ 2π
+     where t range is 0 &lt; == t &lt; == 2π
       </pre>
      * @param xyPoints
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
@@ -131,15 +131,16 @@ public class EllipseHelper {
     }
     
     /**
+     <pre>
      adapted from:
         "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
-        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
         in directory doc/tech-reports/2xx
         The files begin with 217.* and the list includes matlab source code.
         files algellipse.m and ellipse_params.m are adapted here.
      
        algebraic, least square ellipse fit
-      
+      </pre>
      * @param xyPoints
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
      */
@@ -167,9 +168,10 @@ public class EllipseHelper {
     }
     
     /**
+     <pre>
      adapted from:
         "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
-        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
         in directory doc/tech-reports/2xx
         The files begin with 217.* and the list includes matlab source code.
         files algellipse.m and ellipse_params.m are adapted here.
@@ -177,9 +179,9 @@ public class EllipseHelper {
        algebraic, least square ellipse fit
       
      NOTE: SimpleMatrix.solve(...) method may throw:
-     *    org.ejml.factory.SingularMatrixException: Solution contains 
-     *    uncountable numbers
-     * 
+          org.ejml.factory.SingularMatrixException: Solution contains 
+          uncountable numbers
+     </pre> 
      * @param a
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
      */
@@ -216,7 +218,7 @@ public class EllipseHelper {
             B^2 - 4*C < 0
         
             D^2 + E^2
-            ---   --- - F > 0
+            ---   --- - F &gt; 0
              4    4*C
         */
    
@@ -370,14 +372,14 @@ public class EllipseHelper {
     <pre>
     adapted from:
         "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
-        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        Golub, &amp; Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
         in directory doc/tech-reports/2xx
         file: ellipse_params.m in compressed archive for 217.*
        
      The parameters returned can be used as:
      x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
      y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
-     where t range is 0 ≤ t ≤ 2π
+     where t range is 0 &lt; == t &lt; == 2π
      </pre>  
      * @param u
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};

@@ -6,16 +6,17 @@ import java.util.Arrays;
 /**
  * a sort for integers in range 0 to k that has an O(N) runtime at the expense 
  * of space where N is the maximum of (size of array to be sorted, maximum value in array).
+ * <pre>
  * To use this algorithm:
  *    (1) numbers must be positive.
  *    (2) the maximum number in the array should probably not be much greater
  *        than 10,000,000 unless the jvm settings for maximum stack size
  *        are increased.  An internal long array of size maximum of array values
  *        is constructed and that consumes memory which also affects
- *        performance for max > 10,000,000.
+ *        performance for max &gt; 10,000,000.
  * 
  * implemented from Cormen et al. "Introduction to Algorithms"
- * 
+ * </pre>
  * @author nichole
  */
 public class CountingSort {
@@ -23,11 +24,11 @@ public class CountingSort {
     /**
      * sort the members of a with values less than max and return as an
      * ordered array.
-     * 
+     * <pre>
      * Note that the numbers have to be positive, so if negative numbers are
      * in the array, the invoker needs to add a number to bring the values
-     * to >= 0 and then subtract that after the sort.
-     * 
+     * to &gt; == 0 and then subtract that after the sort.
+     * </pre>
      * @param a
      * @param max 
      * @return  
@@ -80,11 +81,11 @@ public class CountingSort {
     /**
      * sort the members of a with values less than max and apply the same
      * changes of item position to b.
-     * 
+     * <pre>
      * Note that the numbers have to be positive, so if negative numbers are
      * in the array, the invoker needs to add a number to bring the values
-     * to >= 0 and then subtract that after the sort.
-     * 
+     * to &gte; == 0 and then subtract that after the sort.
+     * </pre>
      * @param a
      * @param b
      * @param max 
@@ -146,11 +147,11 @@ public class CountingSort {
     /**
      * apply a descending sort to the members of a with values less than max 
      * and apply the same changes of item position to b.
-     * 
+     * <pre>
      * Note that the numbers have to be positive, so if negative numbers are
      * in the array, the invoker needs to add a number to bring the values
-     * to >= 0 and then subtract that after the sort.
-     * 
+     * to &gte; == 0 and then subtract that after the sort.
+     * </pre>
      * @param a
      * @param b
      * @param maxValueInA max value in a 

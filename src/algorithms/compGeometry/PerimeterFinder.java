@@ -1,18 +1,12 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
-import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.util.PathStep;
-import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.BitVectorRepresentation;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -119,7 +113,10 @@ public class PerimeterFinder {
      * This returns an outline of the points attempting to correct for
      * concave portions of the hull, that is, it is roughly a concave hull
      * that includes embedded PairInts that are not in the set points.
-     *
+     * @param rowMinMax
+     * @param imageMaxColumn
+     * @param rowColRanges
+     * @return 
      */
     public Set<PairInt> findEmbeddedGivenRowData(
         int[] rowMinMax, int imageMaxColumn,
@@ -266,9 +263,6 @@ public class PerimeterFinder {
      * larger than O(N) for points datasets that are less dense than the min
      * max range.
      *
-     * @param points
-     * @param outputRowMinMax output populated as the min and max of rows are
-     * determined.
      * @return a map with key = row, value = list of contiguous points in the
      * row.
      */
@@ -1097,6 +1091,7 @@ public class PerimeterFinder {
      * by min row, max row, and the minimum of columns and the maximum of columns.
      * @param rowColRanges
      * @param rowMinMax
+     * @param colMinMax
      * @param imageMaxColumn
      * @param imageMaxRow
      * @return

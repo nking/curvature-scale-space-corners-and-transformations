@@ -20,15 +20,16 @@ public class KSelect {
     }
     
      /**
-     * Complexity of run time:
+     <pre>
+     Complexity of run time:
 
             j = math.floor( math.log(N)/math.log(5))
 
             Total cost =  T(    ∑   (N/(5*i)) * const   )  + 2T(j/2) + j
                            ( ¡=1 to j                   )
 
-            ===> It's a little more than O(j) but less than O(j*lg(j)).
-
+            ===&gt; It's a little more than O(j) but less than O(j*lg(j)).
+      </pre>
      * @param a
      * @param indexLo
      * @param indexHi
@@ -100,16 +101,16 @@ public class KSelect {
     /**
      * find the median index of a, while performing the same sort (or swap)
      * operations on b and c too though not reading the later.
-     * 
-     * Complexity of run time:
+     <pre> 
+     Complexity of run time:
 
             j = math.floor( math.log(N)/math.log(5))
 
             Total cost =  T(    ∑   (N/(5*i)) * const   )  + 2T(j/2) + j
                            ( ¡=1 to j                   )
 
-            ===> It's a little more than O(j) but less than O(j*lg(j)).
-
+            ===&gt; It's a little more than O(j) but less than O(j*lg(j)).
+     </pre>
      * @param a
      * @param b array to perform same swap operations on that a receives
      * @param c array to perform same swap operations on that a receives

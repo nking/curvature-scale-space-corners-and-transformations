@@ -61,13 +61,13 @@ public class LinesAndAngles {
           * P2
           .
           .
-          .   * P1      <--- P2 is counterclockwise from P1 w.r.t. origin o
+          .   * P1      &lt;--- P2 is counterclockwise from P1 w.r.t. origin o
           .
           o
       
                 * P2
                 .
-        P1 *    .       <--- P2 is clockwise from P1 w.r.t. origin o
+        P1 *    .       &lt;--- P2 is clockwise from P1 w.r.t. origin o
                 .
                 .
                 o
@@ -175,7 +175,7 @@ public class LinesAndAngles {
          *     pt_i        pt_j    |   pt_i           pt_j   |                       |
          *    ------------------   |  ---------------------  |  -------------------  |  ----------------------
          *                         |                         |                       |
-         *   pt_0             pt_k | pt_0              pt_k  |   pt_0      pt_k      |  <no point>      <no point>
+         *   pt_0             pt_k | pt_0              pt_k  |   pt_0      pt_k      |  &lt;no point&gt;      &lt;no point&gt;
          *                         |                         |                       |
          *
          *                                                                           | (4)     peak
@@ -183,7 +183,7 @@ public class LinesAndAngles {
          *                                                                           |      pt_i       pt_j
          *                                                                           |  ----------------------
          *                                                                           |
-         *                                                                           | <no point>      <no point>
+         *                                                                           | &lt;no point&gt;      &lt;no point&gt;
          * </pre>
          */
 
