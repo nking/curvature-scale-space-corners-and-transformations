@@ -392,7 +392,7 @@ import java.util.logging.Logger;
                     &quot;(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f  hue=%f&quot;,
 <span class="fc" id="L393">                    x, y, r, g, b, rDivB, cieX, cieY, colorImg.getHue(idx)));</span>
 
-<span class="fc" id="L395">                boolean isWhite = cieC.isCentralWhite(cieX, cieY);</span>
+<span class="fc" id="L395">                boolean isWhite = cieC.isWhite(cieX, cieY);</span>
                 
 <span class="fc bfc" id="L397" title="All 2 branches covered.">                if (cieX &gt;= 0.35) {</span>
 <span class="fc" id="L398">                    nGTX++;</span>

@@ -1343,14 +1343,14 @@ import java.util.Set;
               -  -       1
            2  1  0 -1
         */
-<span class="pc bpc" id="L1346" title="1 of 2 branches missed.">        if (matchesPattern) {</span>
-<span class="nc" id="L1347">            HorizSegment segment = new HorizSegment();</span>
-<span class="nc" id="L1348">            segment.p0 = new PairInt(x, y);</span>
-<span class="nc" id="L1349">            segment.p1 = new PairInt(x, y - 1);</span>
-<span class="nc" id="L1350">            segment.p2 = new PairInt(x + 1, y - 1);</span>
-<span class="nc" id="L1351">            segment.p3 = new PairInt(x + 1, y);</span>
+<span class="fc bfc" id="L1346" title="All 2 branches covered.">        if (matchesPattern) {</span>
+<span class="fc" id="L1347">            HorizSegment segment = new HorizSegment();</span>
+<span class="fc" id="L1348">            segment.p0 = new PairInt(x, y);</span>
+<span class="fc" id="L1349">            segment.p1 = new PairInt(x, y - 1);</span>
+<span class="fc" id="L1350">            segment.p2 = new PairInt(x + 1, y - 1);</span>
+<span class="fc" id="L1351">            segment.p3 = new PairInt(x + 1, y);</span>
             
-<span class="nc" id="L1353">            return segment;</span>
+<span class="fc" id="L1353">            return segment;</span>
         }
         
 <span class="fc" id="L1356">        return null;</span>

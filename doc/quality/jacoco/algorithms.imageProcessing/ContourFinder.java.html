@@ -594,10 +594,10 @@ public class ContourFinder {
 <span class="fc" id="L594">            boolean rightIsTaller = (right.getPeakSigma()</span>
 <span class="fc bfc" id="L595" title="All 2 branches covered.">                &gt; left.getPeakSigma());</span>
 
-<span class="fc bfc" id="L597" title="All 4 branches covered.">            if (leftIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L597" title="1 of 4 branches missed.">            if (leftIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
 
-<span class="fc" id="L599">                contours.remove(right);</span>
-<span class="fc" id="L600">                resort = true;</span>
+<span class="nc" id="L599">                contours.remove(right);</span>
+<span class="nc" id="L600">                resort = true;</span>
 <span class="fc bfc" id="L601" title="All 4 branches covered.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
 
 <span class="fc" id="L603">                contours.remove(left);</span>

@@ -1718,8 +1718,8 @@ import java.util.logging.Level;
 <span class="nc" id="L1718">                        isFirstEndPoint1 = true;</span>
                     }
 
-<span class="fc bfc" id="L1721" title="All 4 branches covered.">                    if (isFirstEndPoint0 &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
-<span class="fc" id="L1722">                        continue;</span>
+<span class="pc bpc" id="L1721" title="1 of 4 branches missed.">                    if (isFirstEndPoint0 &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
+<span class="nc" id="L1722">                        continue;</span>
 <span class="pc bpc" id="L1723" title="1 of 4 branches missed.">                    } else if (!isFirstEndPoint0 &amp;&amp; removedLastSet0.contains(joinPoint)) {</span>
 <span class="nc" id="L1724">                        continue;</span>
                     }
@@ -2475,7 +2475,7 @@ import java.util.logging.Level;
 <span class="fc" id="L2475">                int diffX = Math.abs(x1 - x2);</span>
 <span class="fc" id="L2476">                int diffY = Math.abs(y1 - y2);</span>
 <span class="fc" id="L2477">                double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
-<span class="pc bpc" id="L2478" title="1 of 2 branches missed.">                if (dist &lt; minDist) {</span>
+<span class="fc bfc" id="L2478" title="All 2 branches covered.">                if (dist &lt; minDist) {</span>
 <span class="fc" id="L2479">                    minDist = dist;</span>
 <span class="fc" id="L2480">                    closest = edge2Loc;</span>
                 }
@@ -3010,11 +3010,11 @@ import java.util.logging.Level;
 <span class="fc" id="L3010">            return 1;</span>
         } else {
 <span class="fc" id="L3012">            didReverse = reverseBottomIfPossible(edge2, closest.getY());</span>
-<span class="pc bpc" id="L3013" title="1 of 2 branches missed.">            if (didReverse) {</span>
-<span class="nc" id="L3014">                edge2.addAll(edge1);</span>
-<span class="nc" id="L3015">                edges.set(edge1Idx, edge2);</span>
-<span class="nc" id="L3016">                edges.remove(edge2Idx);</span>
-<span class="nc" id="L3017">                return 1;</span>
+<span class="fc bfc" id="L3013" title="All 2 branches covered.">            if (didReverse) {</span>
+<span class="fc" id="L3014">                edge2.addAll(edge1);</span>
+<span class="fc" id="L3015">                edges.set(edge1Idx, edge2);</span>
+<span class="fc" id="L3016">                edges.remove(edge2Idx);</span>
+<span class="fc" id="L3017">                return 1;</span>
             }
         }
 

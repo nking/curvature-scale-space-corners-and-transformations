@@ -66,11 +66,11 @@ public class BlobScaleFinderWrapper {
      dark blobs is used:
          img0 = img.copyToGreyscale();
          img0 = imageProcessor.binImage(img0, binFactor);
-         imageProcessor.applyImageSegmentation(img0, 2);
+         imageSegmentation.applyUsingKMPP(img0, 2);
          imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
      else:
          img0 = imageProcessor.binImage(img0, binFactor);
-         img0 = imageProcessor.createGreyscaleFromColorSegmentation(img, 4)
+         img0 = imageSegmentation.applyUsingCIEXYPolarTheta(img, 4)
          imageProcessor.applyAdaptiveMeanThresholding(img0, 2); 2 is for unbinned so may need tuning
      &lt;/pre&gt;
 
@@ -206,7 +206,7 @@ public class BlobScaleFinderWrapper {
 <span class="fc" id="L206">                    outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));</span>
 
                 //TODO: review this limit
-<span class="pc bpc" id="L209" title="1 of 2 branches missed.">                if (((outputScaleRotTransXYStDev[0]/params.getScale()) &lt; 0.2)) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">                if (((outputScaleRotTransXYStDev[0]/params.getScale()) &lt; 0.2)) {</span>
 <span class="fc" id="L210">                    return params;</span>
                 }
             }
@@ -224,7 +224,7 @@ public class BlobScaleFinderWrapper {
                 + &quot; nContours2=&quot; + nContours2);
             
 <span class="pc bpc" id="L226" title="1 of 2 branches missed.">            if (useSameSegmentation) {</span>
-<span class="pc bpc" id="L227" title="4 of 16 branches missed.">                if (</span>
+<span class="pc bpc" id="L227" title="5 of 16 branches missed.">                if (</span>
                     ((useBinned1 &amp;&amp; (nContours1 &lt; 3)) &amp;&amp; (useBinned2 &amp;&amp; (nContours2 &lt; 10))) ||
                     ((useBinned1 &amp;&amp; (nContours1 &lt; 10)) &amp;&amp; (useBinned2 &amp;&amp; (nContours2 &lt; 3)))
                     ) {
