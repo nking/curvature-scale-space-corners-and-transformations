@@ -222,6 +222,14 @@ public class GreyscaleImage {
         return height;
     }
     
+    public float[] getFloatValues() {
+        float[] t = new float[nPixels];
+        for (int i = 0; i < nPixels; ++i) {
+            t[i] = a[i];
+        }
+        return t;
+    }
+    
     public GreyscaleImage copyImage() {
        
         GreyscaleImage img2 = createWithDimensions();

@@ -87,7 +87,7 @@ public class ImageSegmentation {
      * converts each pixel color to the polar angle of CIE XY Lab color space
      * with an origin of (0.35, 0.35) and uses a histogram binning of kColors=8,
      * then maps those bins to 0 to 255,
-     * then replaces a pixel if 7 or its neighbors have the same color,
+     * then replaces a pixel if 5,6 or its neighbors have the same color,
      * then applies histogram equalization to stretch the values to range 
      * 0 to 255.
      * @param input
@@ -104,7 +104,7 @@ public class ImageSegmentation {
      * converts each pixel color to the polar angle of CIE XY Lab color space
      * with an origin of (0.35, 0.35) and uses a histogram binning of kColors,
      * then maps those bins to 0 to 255,
-     * then replaces a pixel if 7 or its neighbors have the same color,
+     * then replaces a pixel if 5,6 or its neighbors have the same color,
      * then applies histogram equalization to stretch the values to range 
      * 0 to 255.
      * @param input
@@ -150,7 +150,7 @@ public class ImageSegmentation {
         int w = img.getWidth();
         int h = img.getHeight();
 
-        // ----replace pixel, if 7 or more neighbors have same color -----
+        // ----replace pixel, if 5,6 or more neighbors have same color -----
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
 
@@ -238,7 +238,7 @@ public class ImageSegmentation {
     /**
      * converts each pixel's color into CIE XY polar theta, then uses KMeansPlusPlus
      * to create kColors bins points then remaps the points to use the
-     * range 0 to 255, then replaces a pixel if it has 7 neighbors of same 
+     * range 0 to 255, then replaces a pixel if it has 5,6 neighbors of same 
      * color, then applies histogram equalization to rescale the range to be
      * between 0 and 255.
      * 
@@ -284,7 +284,7 @@ public class ImageSegmentation {
         int w = img.getWidth();
         int h = img.getHeight();
 
-        // ----replace pixel, if 7 or more neighbors have same color -----
+        // ----replace pixel, if 5,6 or more neighbors have same color -----
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
 
@@ -855,6 +855,8 @@ public class ImageSegmentation {
         clusterFinder.calculateCriticalDensity();
 
         clusterFinder.findClusters();
+        
+        log.info("clustering critical density=" + clusterFinder.getCriticalDensity());
 
         int nGroups = clusterFinder.getNumberOfClusters();
 
@@ -1439,7 +1441,7 @@ public class ImageSegmentation {
            
         log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
         assert(nTot2 == input.getNPixels());
-
+        
         return groupList;
     }
 
@@ -2195,6 +2197,92 @@ public class ImageSegmentation {
                 }
 
                 points0.add(new PairInt(i, j));                
+            }
+        }
+    }
+
+    private void mergeNoise(ImageExt input, List<Set<PairInt>> groupList) {
+        
+        Map<PairInt, Integer> pixelToGroupMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < groupList.size(); ++i) {
+            Set<PairInt> set = groupList.get(i);
+            for (PairInt p : set) {
+                pixelToGroupMap.put(p, Integer.valueOf(i));
+            }
+        }
+                
+        final int w = input.getWidth();
+        final int h = input.getHeight();
+        
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+        
+        float diffLimit = 0.01f;
+        
+        for (int i = 0; i < groupList.size(); ++i) {
+            Set<PairInt> set = groupList.get(i);
+            Set<PairInt> remove = new HashSet<PairInt>();
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                int idx = input.getInternalIndex(x, y);
+                
+                float cieX = input.getCIEX(idx);
+                float cieY = input.getCIEY(idx);
+                
+                Integer groupIndex = pixelToGroupMap.get(p);
+                
+                // key=groupIndex, value=number of pixels similar
+                Map<Integer, Integer> groupSimilarCount = new HashMap<Integer, Integer>();
+                
+                // use cieXY, polar theta of cieXY, or rgb?
+                for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
+                    int x2 = x + dxs8[nIdx];
+                    int y2 = y + dys8[nIdx];
+                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    int idx2 = input.getInternalIndex(x2, y2);
+                    
+                    Integer groupIndex2 = pixelToGroupMap.get(new PairInt(x2, y2));
+                    
+                    if (groupIndex.intValue() == groupIndex2.intValue()) {
+                        continue;
+                    }
+                    
+                    float cieX2 = input.getCIEX(idx2);
+                    float cieY2 = input.getCIEY(idx2);
+                    
+                    float diffCIEX = Math.abs(cieX2 - cieX);
+                    float diffCIEY = Math.abs(cieY2 - cieY);
+                    
+                    if ((diffCIEX > diffLimit) || (diffCIEY > diffLimit)) {
+                        continue;
+                    }
+                    
+                    Integer count = groupSimilarCount.get(groupIndex2);
+                    if (count == null) {
+                        groupSimilarCount.put(groupIndex2, Integer.valueOf(1));
+                    } else {
+                        groupSimilarCount.put(groupIndex2, Integer.valueOf(count.intValue() + 11));
+                    }
+                   
+                }
+                if (groupSimilarCount.isEmpty()) {
+                    continue;
+                }
+                for (Entry<Integer, Integer> entry : groupSimilarCount.entrySet()) {
+                    if (entry.getValue() >= 6) {
+                        // assign this group to pixel p
+                        pixelToGroupMap.put(p, entry.getKey());
+                        remove.add(p);
+                        groupList.get(entry.getKey().intValue()).add(p);
+                        break;
+                    }
+                }
+            }
+            for (PairInt rm : remove) {
+                set.remove(rm);
             }
         }
     }
