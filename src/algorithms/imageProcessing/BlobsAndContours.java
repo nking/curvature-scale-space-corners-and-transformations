@@ -247,7 +247,7 @@ public class BlobsAndContours {
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         List<Integer> remove = new ArrayList<Integer>();
-
+        
         for (int i = 0; i < inOutBlobs.size(); ++i) {
 
             Set<PairInt> blob = inOutBlobs.get(i);
@@ -331,15 +331,14 @@ public class BlobsAndContours {
             lengths[i] = outputBounds.get(i).getN();
         }
         MultiArrayMergeSort.sortByDecr(lengths, indexes);
-        
-//TODO: filter by area...cannot use 
-
+      
         List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
         List<PairIntArray> curves = new ArrayList<PairIntArray>();
 
         log.info("nBlobs before filtered to top =" + inOutBlobs.size());
 
-        int last = (inOutBlobs.size() > 15) ? 15 : inOutBlobs.size();
+        //TODO: note, results are sensitive to this limit:
+        int last = (inOutBlobs.size() > 20) ? 20 : inOutBlobs.size();
         for (int i = 0; i < last; ++i) {
             int idx = indexes[i];
             blobs2.add(inOutBlobs.get(idx));
