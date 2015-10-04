@@ -217,11 +217,11 @@ public class SegmentedImageHelper {
         
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
             
-            applySegmentationToBinned(type, 4);
+            applySegmentationToBinned(type, -1);
         
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
             
-            applySegmentationToBinned(type, 4);
+            applySegmentationToBinned(type, -1);
         
         }
     }
@@ -249,11 +249,11 @@ public class SegmentedImageHelper {
         
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
             
-            applySegmentation(type, 4);
+            applySegmentation(type, -1);
         
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
             
-            applySegmentation(type, 4);
+            applySegmentation(type, -1);
         
         }
     }
@@ -287,13 +287,14 @@ public class SegmentedImageHelper {
 
         if (type.equals(SegmentationType.BINARY)) {
                         
-            int scl = 20/binFactor;
+            int scl = 1;//20/binFactor;
+            if (scl == 0) {
+                scl = 1;
+            }
             
             segImg = gsImg.copyImage();
             
             imageSegmentation.applyUsingKMPP(segImg, 2);
-            // consider
-            //imageProcessor.convertToCIEXYPolarTheta( color binned, 2);
             
             imageProcessor.applyAdaptiveMeanThresholding(segImg, scl);
             
@@ -312,7 +313,7 @@ public class SegmentedImageHelper {
             // not expecting to use binned color images:
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
             
-            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(imgBinned, k, true);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(imgBinned, 0.2f, true);
             
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             
@@ -323,10 +324,7 @@ public class SegmentedImageHelper {
             // not expecting to use binned color images:
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
             
-            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(imgBinned, k, true);
-            
-            // also a possiblity:
-            //= imageProcessor.applyUsingCIEXYPolarThetaKMPP(img, k, false);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(imgBinned, 0.2f, false);
             
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -369,7 +367,7 @@ public class SegmentedImageHelper {
             
             //TODO: replace w/ resolution based scl
             
-            int scl = 20;
+            int scl = 1;
                         
             segImg = imgGrey.copyImage();
          
@@ -392,7 +390,7 @@ public class SegmentedImageHelper {
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
             
-            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(img, k, true);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 0.2f, true);
             
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             
@@ -400,10 +398,7 @@ public class SegmentedImageHelper {
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
             
-            segImg = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(img, k, true);
-            
-            // also a possiblity:
-            //= imageProcessor.applyUsingCIEXYPolarThetaKMPP(img, k, false);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 0.2f, true);
             
             imgSegmentedMap.put(type, segImg);
             

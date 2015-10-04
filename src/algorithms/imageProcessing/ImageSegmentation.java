@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.CountingSort;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
 import algorithms.misc.Histogram;
@@ -1157,6 +1158,105 @@ public class ImageSegmentation {
         //TODO: assert npixels
 
         return groupList;
+    }
+    
+    /**
+     * Calculates lists of black pixels, white pixels, grey pixels, and assigns
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * polar angles and the number of pixels with those angles (=frequency),
+     * then finds peaks in theta above a fraction =0.03 of max limit then groups all 
+     * pixels in the map by proximity to the peak,
+     * then merges pixels in the grey list with adjacent clusters if 
+     * similar, and the final result is a list of pixel clusters, including the
+     * black and white and remaining grey.  The list is sorted by size and
+     * set to values from 255 to 0.  If there are more than 255 clusters, the
+     * remaining (smaller) clusters are pixels with value 0. 
+     * 
+     * Note that the color black is not defined in CIE XY color space and that
+     * the color white is at the center of the space as a large circle so they
+     * are not included in the density based clustering.
+     * Note also that the remaining grey pixels which did not merge with the
+     * CIE xy pixel clusters, may be in separate groups already due to a
+     * frequency based grouping for them.
+     * @param input
+     * @param useBlur apply a gaussian blur of sigma=1 before the method logic
+     * @return 
+     */
+    public GreyscaleImage applyUsingPolarCIEXYAndFrequency(ImageExt input,
+        boolean useBlur) {
+        
+        float fracFreqLimit = 0.03f;
+        
+        return applyUsingPolarCIEXYAndFrequency(input, fracFreqLimit, useBlur);
+    }
+    
+    /**
+     * Calculates lists of black pixels, white pixels, grey pixels, and assigns
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * polar angles and the number of pixels with those angles (=frequency),
+     * then finds peaks in theta above a fraction =0.03 of max limit then groups all 
+     * pixels in the map by proximity to the peak,
+     * then merges pixels in the grey list with adjacent clusters if 
+     * similar, and the final result is a list of pixel clusters, including the
+     * black and white and remaining grey.  The list is sorted by size and
+     * set to values from 255 to 0.  If there are more than 255 clusters, the
+     * remaining (smaller) clusters are pixels with value 0. 
+     * 
+     * Note that the color black is not defined in CIE XY color space and that
+     * the color white is at the center of the space as a large circle so they
+     * are not included in the density based clustering.
+     * Note also that the remaining grey pixels which did not merge with the
+     * CIE xy pixel clusters, may be in separate groups already due to a
+     * frequency based grouping for them.
+     * @param input
+     * @param useBlur apply a gaussian blur of sigma=1 before the method logic
+     * @return 
+     */
+    public GreyscaleImage applyUsingPolarCIEXYAndFrequency(ImageExt input,
+        final float fracFreqLimit, boolean useBlur) {
+        
+        List<Set<PairInt>> clusters = calculateUsingPolarCIEXYAndFrequency(
+            input, fracFreqLimit, useBlur);
+        
+        int n = clusters.size();
+        //assert(n < 256);
+        
+        // sort indexes by set size
+        int maxSize = Integer.MIN_VALUE;
+        int[] indexes = new int[n];
+        int[] sizes = new int[n];
+        for (int i = 0; i < n; ++i) {
+            indexes[i] = i;
+            sizes[i] = clusters.get(i).size();
+            if (sizes[i] > maxSize) {
+                maxSize = sizes[i];
+            }
+        }
+        CountingSort.sort(sizes, indexes, maxSize);
+        
+        int delta = 256/clusters.size();
+        if (delta == 0) {
+            delta = 1;
+        }
+        
+        GreyscaleImage img2 = new GreyscaleImage(input.getWidth(), input.getHeight());
+        for (int k = 0; k < n; ++k) {
+            
+            int idx = indexes[n - k - 1];
+            
+            Set<PairInt> set = clusters.get(idx);
+            
+            int v = 255 - delta*k;
+            if (v < 1) {
+                continue;
+            }
+            
+            for (PairInt p : set) {
+                img2.setValue(p.getX(), p.getY(), v);
+            }
+        }
+        
+        return img2;
     }
     
     /**

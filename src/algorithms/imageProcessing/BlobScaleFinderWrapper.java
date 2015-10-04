@@ -142,12 +142,14 @@ public class BlobScaleFinderWrapper {
         */
         
         SegmentationOrder[] seg1 = new SegmentationOrder[]{
-            new SegmentationOrder(SegmentationType.BINARY, 1, 1),
-            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY_ADAPT, 0, 1)
+            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
+            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 1, 1),
+            //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
         };
         SegmentationOrder[] seg2 = new SegmentationOrder[]{
-            new SegmentationOrder(SegmentationType.BINARY, 1, 1),
-            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY_ADAPT, 0, 1)
+            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
+            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 1, 1),
+            //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
         };
                 
         int ordered1Idx = 0;
@@ -224,7 +226,7 @@ public class BlobScaleFinderWrapper {
                 + " nContours2=" + nContours2);
             
             if (useSameSegmentation) {
-                if (
+                /*if (
                     ((useBinned1 && (nContours1 < 3)) && (useBinned2 && (nContours2 < 10))) ||
                     ((useBinned1 && (nContours1 < 10)) && (useBinned2 && (nContours2 < 3)))
                     ) {
@@ -237,7 +239,7 @@ public class BlobScaleFinderWrapper {
                         ordered2Idx++;
                         continue;
                     }
-                }
+                }*/
                 boolean incr1 = !seg1[ordered1Idx].incrementAndHasNext();
                 boolean incr2 = !seg2[ordered2Idx].incrementAndHasNext();
                 if (incr1 || incr2) {
@@ -306,25 +308,14 @@ public class BlobScaleFinderWrapper {
     public TransformationParameters calculateScale0() throws IOException,
         NoSuchAlgorithmException {
 
-        /*
-        Tries to solve using various combinations of binning and segmentation,
-        starting with binned images because the solution if possible with them
-        is faster.
-        (1) Greyscale binned, k=2
-        (2) Clr binned, k=2
-            -- possibly watershed on blobs if no solution
-        (3) Greyscale not binned, k=2
-        (4) Clr binned, k=2
-            -- possibly watershed on blobs if no solution
-        (5) Clr not binned, k=3 or 4
-        */
-
         SegmentationType[] orderOfSeg1 = new SegmentationType[]{
-            SegmentationType.GREYSCALE_KMPP, 
+            SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.GREYSCALE_KMPP, 
-            SegmentationType.COLOR_POLARCIEXY};
-        boolean[] orderOfBinning1 = new boolean[] {true, true, false, false};
+            SegmentationType.GREYSCALE_KMPP, 
+            
+        };
+        boolean[] orderOfBinning1 = new boolean[] {true, false, true, false};
         
         boolean didApplyHistEq =
             img1Helper.applyEqualizationIfNeededByComparison(img2Helper);
@@ -462,9 +453,12 @@ public class BlobScaleFinderWrapper {
             if (currentIsBinned && (numBinnedAttempts < numExtraBinnedAllowed)) {
                 numBinnedAttempts++;
                 return true;
-            } else if (numUnbinnedAttempts < numExtraUnbinnedAllowed) {
-                numUnbinnedAttempts++;
+            } else if (currentIsBinned) {
+                numBinnedAttempts++;
                 currentIsBinned = false;
+                return true;
+            } else if (!currentIsBinned && (numUnbinnedAttempts < numExtraUnbinnedAllowed)) {
+                numUnbinnedAttempts++;
                 return true;
             }
             return false;

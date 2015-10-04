@@ -113,7 +113,7 @@ public class ImageSegmentationTest extends TestCase {
              ImageSegmentation imageSegmentation = new ImageSegmentation();
              String bin = ResourceFinder.findDirectory("bin");
              
-             for (int j = 17; j < 18/*19*/; ++j) {
+             for (int j = 0; j < 20; ++j) {
                  ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
                  ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
                  log.info("   j=" + j);
@@ -307,6 +307,15 @@ public class ImageSegmentationTest extends TestCase {
                          break;
                      }
                      case 16: {
+                         GreyscaleImage gsImg1 = 
+                             imageSegmentation.applyUsingPolarCIEXYAndFrequency(img1, true);
+                         GreyscaleImage gsImg2 = 
+                             imageSegmentation.applyUsingPolarCIEXYAndFrequency(img2, true);
+                         img1 = gsImg1.createColorGreyscaleExt();
+                         img2 = gsImg1.createColorGreyscaleExt();
+                         break;
+                     }
+                     case 17: {
                          List<Set<PairInt>> groups1 = 
                              imageSegmentation.calculateUsingPolarCIEXYAndClustering(img1, true);
                          List<Set<PairInt>> groups2 = 
@@ -332,7 +341,7 @@ public class ImageSegmentationTest extends TestCase {
                          img2 = img22;
                          break;
                      }
-                     case 17: {
+                     case 18: {
                          List<Set<PairInt>> groups1 = 
                              imageSegmentation.calculateUsingPolarCIEXYAndFrequency(img1, true);
                          List<Set<PairInt>> groups2 = 
@@ -358,7 +367,7 @@ public class ImageSegmentationTest extends TestCase {
                          img2 = img22;
                          break;
                      }
-                     case 18: {
+                     case 19: {
                          List<Set<PairInt>> groups1 = 
                              imageSegmentation.calculateUsingPolarCIEXYAndFrequency(img1, 0.2f, true);
                          List<Set<PairInt>> groups2 = 
