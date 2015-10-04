@@ -45,9 +45,9 @@ public class IntensityFeatureComparisonStats implements
         
 <span class="fc" id="L46">        boolean compareByCost = decideByCost(other);</span>
         
-<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (compareByCost) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (compareByCost) {</span>
             
-<span class="nc" id="L50">            return compareByCost(other);</span>
+<span class="fc" id="L50">            return compareByCost(other);</span>
             
         } else {
             
@@ -79,15 +79,15 @@ public class IntensityFeatureComparisonStats implements
      */
     public int compareByCost(IntensityFeatureComparisonStats other) {
         
-<span class="nc" id="L82">        double otherCost = other.adjustedCost;</span>
+<span class="fc" id="L82">        double otherCost = other.adjustedCost;</span>
         
-<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (otherCost == adjustedCost) {</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (otherCost == adjustedCost) {</span>
 <span class="nc" id="L85">            return 0;</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        } else if (adjustedCost &lt; otherCost) {</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        } else if (adjustedCost &lt; otherCost) {</span>
             // prefer the smaller
 <span class="nc" id="L88">            return -1;</span>
         }
-<span class="nc" id="L90">        return 1;</span>
+<span class="fc" id="L90">        return 1;</span>
     }
     
     private double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; compStats) {
@@ -139,8 +139,8 @@ public class IntensityFeatureComparisonStats implements
 
     private boolean decideByCost(IntensityFeatureComparisonStats other) {
         
-<span class="pc bpc" id="L142" title="1 of 4 branches missed.">        if (other.getComparisonStats().size() &gt; 2 &amp;&amp; comparisonStats.size() &gt; 2) {</span>
-<span class="nc" id="L143">            return true;</span>
+<span class="fc bfc" id="L142" title="All 4 branches covered.">        if (other.getComparisonStats().size() &gt; 2 &amp;&amp; comparisonStats.size() &gt; 2) {</span>
+<span class="fc" id="L143">            return true;</span>
         }
         
 <span class="fc" id="L146">        return false;        </span>

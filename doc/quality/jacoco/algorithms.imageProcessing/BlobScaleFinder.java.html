@@ -346,16 +346,16 @@ import thirdparty.HungarianAlgorithm;
         int xPrev, yPrev;
         int xNext, yNext;
 
-<span class="fc bfc" id="L349" title="All 2 branches covered.">        if (detailIdx == 0) {</span>
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">        if (detailIdx == 0) {</span>
             // wrap around closed curve
-<span class="fc" id="L351">            xPrev = perimeter.getX(perimeter.getN() - 1);</span>
-<span class="fc" id="L352">            yPrev = perimeter.getY(perimeter.getN() - 1);</span>
-<span class="pc bpc" id="L353" title="2 of 4 branches missed.">            if ((xm != perimeter.getX(detailIdx)) || (ym != perimeter.getY(detailIdx))) {</span>
+<span class="nc" id="L351">            xPrev = perimeter.getX(perimeter.getN() - 1);</span>
+<span class="nc" id="L352">            yPrev = perimeter.getY(perimeter.getN() - 1);</span>
+<span class="nc bnc" id="L353" title="All 4 branches missed.">            if ((xm != perimeter.getX(detailIdx)) || (ym != perimeter.getY(detailIdx))) {</span>
 <span class="nc" id="L354">                xNext = perimeter.getX(detailIdx + 2);</span>
 <span class="nc" id="L355">                yNext = perimeter.getY(detailIdx + 2);</span>
             } else {
-<span class="fc" id="L357">                xNext = perimeter.getX(detailIdx + 1);</span>
-<span class="fc" id="L358">                yNext = perimeter.getY(detailIdx + 1);</span>
+<span class="nc" id="L357">                xNext = perimeter.getX(detailIdx + 1);</span>
+<span class="nc" id="L358">                yNext = perimeter.getY(detailIdx + 1);</span>
             }
 <span class="pc bpc" id="L360" title="2 of 4 branches missed.">        } else if ((xm != perimeter.getX(detailIdx)) || (ym != perimeter.getY(detailIdx))) {</span>
 <span class="nc" id="L361">            xPrev = perimeter.getX(detailIdx - 1);</span>
@@ -969,7 +969,7 @@ try {
                         }
                         
                         //--- compare diffTheta and scale with ---
-<span class="fc bfc" id="L972" title="All 2 branches covered.">                        if ((Math.abs(diffThetaMnStdv.getX() - diffThetaMnStdv2.getX()) &lt; 10)</span>
+<span class="pc bpc" id="L972" title="1 of 2 branches missed.">                        if ((Math.abs(diffThetaMnStdv.getX() - diffThetaMnStdv2.getX()) &lt; 10)</span>
 <span class="pc bpc" id="L973" title="1 of 2 branches missed.">                            &amp;&amp; (Math.abs(scale - stat2.getScale()) &lt; 0.1)) {</span>
 <span class="fc" id="L974">                            similarParamsIndexes1.add(Integer.valueOf(idx1P));</span>
                         }
@@ -1046,8 +1046,8 @@ try {
                 blob1, blob2, curve1, curve2, features1, features2,
                 matcher);
 
-<span class="pc bpc" id="L1049" title="1 of 2 branches missed.">            if (compStats.isEmpty()) {</span>
-<span class="nc" id="L1050">                continue;</span>
+<span class="fc bfc" id="L1049" title="All 2 branches covered.">            if (compStats.isEmpty()) {</span>
+<span class="fc" id="L1050">                continue;</span>
             }
             
 <span class="pc bpc" id="L1053" title="3 of 4 branches missed.">            assert(compStats.size() == 1);</span>
@@ -1094,12 +1094,12 @@ try {
 <span class="fc" id="L1094">            float dtm = AngleUtil.getAngleDifference(</span>
 <span class="fc" id="L1095">                fcs.getImg1PointRotInDegrees(), fcs.getImg2PointRotInDegrees());</span>
 
-<span class="fc bfc" id="L1097" title="All 2 branches covered.">            if (Math.abs(dtm - thetaDiffBest) &gt; 20) {</span>
-<span class="fc" id="L1098">                continue;</span>
+<span class="pc bpc" id="L1097" title="1 of 2 branches missed.">            if (Math.abs(dtm - thetaDiffBest) &gt; 20) {</span>
+<span class="nc" id="L1098">                continue;</span>
             }
             
-<span class="fc bfc" id="L1101" title="All 2 branches covered.">            if (ssd &gt; (3 * ssdBest)) {</span>
-<span class="fc" id="L1102">                continue;</span>
+<span class="pc bpc" id="L1101" title="1 of 2 branches missed.">            if (ssd &gt; (3 * ssdBest)) {</span>
+<span class="nc" id="L1102">                continue;</span>
             }
 
 <span class="fc" id="L1105">            costs2[count2] = costs[i];</span>
@@ -1122,8 +1122,8 @@ try {
 <span class="fc" id="L1122">            Integer index1 = Integer.valueOf(idx1s2[i]);</span>
 <span class="fc" id="L1123">            Integer index2 = Integer.valueOf(idx2s2[i]);</span>
 
-<span class="fc bfc" id="L1125" title="All 2 branches covered.">            if (chosen1.contains(index1)) {</span>
-<span class="fc" id="L1126">                continue;</span>
+<span class="pc bpc" id="L1125" title="1 of 2 branches missed.">            if (chosen1.contains(index1)) {</span>
+<span class="nc" id="L1126">                continue;</span>
             }
 <span class="pc bpc" id="L1128" title="1 of 2 branches missed.">            if (chosen2.contains(index2)) {</span>
 <span class="nc" id="L1129">                continue;</span>
@@ -1361,8 +1361,8 @@ try {
 <span class="fc" id="L1361">            Integer index1 = Integer.valueOf(idx1s2[i]);</span>
 <span class="fc" id="L1362">            Integer index2 = Integer.valueOf(idx2s2[i]);</span>
             
-<span class="fc bfc" id="L1364" title="All 2 branches covered.">            if (chosen1.contains(index1)) {</span>
-<span class="fc" id="L1365">                continue;</span>
+<span class="pc bpc" id="L1364" title="1 of 2 branches missed.">            if (chosen1.contains(index1)) {</span>
+<span class="nc" id="L1365">                continue;</span>
             }
 <span class="pc bpc" id="L1367" title="1 of 2 branches missed.">            if (chosen2.contains(index2)) {</span>
 <span class="nc" id="L1368">                continue;</span>

@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PerimeterFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">PerimeterFinder.java</span></div><h1>PerimeterFinder.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
-import algorithms.imageProcessing.EdgeExtractorForBlobBorder;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.util.PathStep;
-import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.BitVectorRepresentation;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,11 +30,11 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-<span class="fc" id="L39">public class PerimeterFinder {</span>
+<span class="fc" id="L33">public class PerimeterFinder {</span>
 
-<span class="fc" id="L41">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L35">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="fc" id="L43">    private boolean debug = true;</span>
+<span class="fc" id="L37">    private boolean debug = true;</span>
 
     /**
      * For the given points, find the ranges of columns that bound the points
@@ -64,22 +58,22 @@ import java.util.logging.Logger;
         int[] outputRowMinMax, int imageMaxColumn,
         Set&lt;PairInt&gt; outputEmbeddedGapPoints) {
 
-<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (points == null) {</span>
-<span class="nc" id="L68">	    	throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L62">	    	throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (outputRowMinMax == null) {</span>
-<span class="nc" id="L71">	    	throw new IllegalArgumentException(&quot;outputRowMinMax cannot be null&quot;);</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (outputRowMinMax == null) {</span>
+<span class="nc" id="L65">	    	throw new IllegalArgumentException(&quot;outputRowMinMax cannot be null&quot;);</span>
         }
 
         //== O(N):
-<span class="fc" id="L75">        int[] minMaxXY = MiscMath.findMinMaxXY(points);</span>
-<span class="fc" id="L76">        int minX = minMaxXY[0];</span>
-<span class="fc" id="L77">        int maxX = minMaxXY[1];</span>
-<span class="fc" id="L78">        int minY = minMaxXY[2];</span>
-<span class="fc" id="L79">        int maxY = minMaxXY[3];</span>
+<span class="fc" id="L69">        int[] minMaxXY = MiscMath.findMinMaxXY(points);</span>
+<span class="fc" id="L70">        int minX = minMaxXY[0];</span>
+<span class="fc" id="L71">        int maxX = minMaxXY[1];</span>
+<span class="fc" id="L72">        int minY = minMaxXY[2];</span>
+<span class="fc" id="L73">        int maxY = minMaxXY[3];</span>
 
-<span class="fc" id="L81">        outputRowMinMax[0] = minY;</span>
-<span class="fc" id="L82">        outputRowMinMax[1] = maxY;</span>
+<span class="fc" id="L75">        outputRowMinMax[0] = minY;</span>
+<span class="fc" id="L76">        outputRowMinMax[1] = maxY;</span>
 
         /*
         TODO: consider where can make changes to iterate over data by
@@ -90,26 +84,26 @@ import java.util.logging.Logger;
         //== O((maxX-minX+1)*(maxY-minY+1)):
         // key holds row number
         // value holds (first column number, last column number) for points in the row
-<span class="fc" id="L93">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = findRowColRanges(points,</span>
+<span class="fc" id="L87">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = findRowColRanges(points,</span>
             minX, maxX, minY, maxY);
 
         // runtime complexity is &gt; O(m) where m is the number of contig gap ranges by row
-<span class="fc" id="L97">        List&lt;List&lt;Gap&gt;&gt; contiguousGaps = findContiguousGaps(rowColRanges,</span>
+<span class="fc" id="L91">        List&lt;List&lt;Gap&gt;&gt; contiguousGaps = findContiguousGaps(rowColRanges,</span>
             minX, maxX, minY, maxY);
 
         //runtime complexity is &gt; O(m) where m is the number of contig gap ranges by row
-<span class="fc" id="L101">        List&lt;List&lt;Gap&gt;&gt; embeddedGapGroups = findBoundedGaps(contiguousGaps,</span>
+<span class="fc" id="L95">        List&lt;List&lt;Gap&gt;&gt; embeddedGapGroups = findBoundedGaps(contiguousGaps,</span>
             minY, maxY, imageMaxColumn, rowColRanges);
 
         // update the rowColRanges to encapsulate the truly embedded points too
-<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (List&lt;Gap&gt; embeddedGroup : embeddedGapGroups) {</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (List&lt;Gap&gt; embeddedGroup : embeddedGapGroups) {</span>
 
-<span class="fc" id="L107">            updateRowColRangesForVerifiedEmbedded(rowColRanges,</span>
+<span class="fc" id="L101">            updateRowColRangesForVerifiedEmbedded(rowColRanges,</span>
                 embeddedGroup, outputEmbeddedGapPoints);
 
-<span class="fc" id="L110">        }</span>
+<span class="fc" id="L104">        }</span>
 
-<span class="fc" id="L112">        return rowColRanges;</span>
+<span class="fc" id="L106">        return rowColRanges;</span>
     }
 
     /**
@@ -119,144 +113,147 @@ import java.util.logging.Logger;
      * This returns an outline of the points attempting to correct for
      * concave portions of the hull, that is, it is roughly a concave hull
      * that includes embedded PairInts that are not in the set points.
-     *
+     * @param rowMinMax
+     * @param imageMaxColumn
+     * @param rowColRanges
+     * @return 
      */
     public Set&lt;PairInt&gt; findEmbeddedGivenRowData(
         int[] rowMinMax, int imageMaxColumn,
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges) {
 
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (rowColRanges == null) {</span>
-<span class="nc" id="L129">	    	throw new IllegalArgumentException(&quot;rowColRanges cannot be null&quot;);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (rowColRanges == null) {</span>
+<span class="nc" id="L126">	    	throw new IllegalArgumentException(&quot;rowColRanges cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (rowMinMax == null) {</span>
-<span class="nc" id="L132">	    	throw new IllegalArgumentException(&quot;outputRowMinMax cannot be null&quot;);</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (rowMinMax == null) {</span>
+<span class="nc" id="L129">	    	throw new IllegalArgumentException(&quot;outputRowMinMax cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L135">        int minX = Integer.MAX_VALUE;</span>
-<span class="fc" id="L136">        int maxX = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
-<span class="fc" id="L138">            List&lt;PairInt&gt; rcr = rowColRanges.get(Integer.valueOf(row));</span>
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            if (rcr.isEmpty()) {</span>
-<span class="nc" id="L140">                continue;</span>
+<span class="fc" id="L132">        int minX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L133">        int maxX = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
+<span class="fc" id="L135">            List&lt;PairInt&gt; rcr = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">            if (rcr.isEmpty()) {</span>
+<span class="nc" id="L137">                continue;</span>
             }
-<span class="fc" id="L142">            int x0 = rcr.get(0).getX();</span>
-<span class="fc" id="L143">            int xf = rcr.get(rcr.size() - 1).getY();</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (x0 &lt; minX) {</span>
-<span class="fc" id="L145">                minX = x0;</span>
+<span class="fc" id="L139">            int x0 = rcr.get(0).getX();</span>
+<span class="fc" id="L140">            int xf = rcr.get(rcr.size() - 1).getY();</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (x0 &lt; minX) {</span>
+<span class="fc" id="L142">                minX = x0;</span>
             }
-<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (xf &gt; maxX) {</span>
-<span class="fc" id="L148">                maxX = xf;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (xf &gt; maxX) {</span>
+<span class="fc" id="L145">                maxX = xf;</span>
             }
         }
 
         // runtime complexity is &gt; O(m) where m is the number of contig gap ranges by row
-<span class="fc" id="L153">        List&lt;List&lt;Gap&gt;&gt; contiguousGaps = findContiguousGaps(rowColRanges,</span>
+<span class="fc" id="L150">        List&lt;List&lt;Gap&gt;&gt; contiguousGaps = findContiguousGaps(rowColRanges,</span>
             minX, maxX, rowMinMax[0], rowMinMax[1]);
 
         //runtime complexity is &gt; O(m) where m is the number of contig gap ranges by row
-<span class="fc" id="L157">        List&lt;List&lt;Gap&gt;&gt; embeddedGapGroups = findBoundedGaps(contiguousGaps,</span>
+<span class="fc" id="L154">        List&lt;List&lt;Gap&gt;&gt; embeddedGapGroups = findBoundedGaps(contiguousGaps,</span>
             rowMinMax[0], rowMinMax[1], imageMaxColumn, rowColRanges);
 
-<span class="fc" id="L160">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L157">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
 
         // update the rowColRanges to encapsulate the truly embedded points too
-<span class="fc bfc" id="L163" title="All 2 branches covered.">        for (List&lt;Gap&gt; embeddedGroup : embeddedGapGroups) {</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (List&lt;Gap&gt; embeddedGroup : embeddedGapGroups) {</span>
 
-<span class="fc" id="L165">            updateRowColRangesForVerifiedEmbedded(rowColRanges,</span>
+<span class="fc" id="L162">            updateRowColRangesForVerifiedEmbedded(rowColRanges,</span>
                 embeddedGroup, outputEmbeddedGapPoints);
-<span class="fc" id="L167">        }</span>
+<span class="fc" id="L164">        }</span>
 
-<span class="fc" id="L169">        return outputEmbeddedGapPoints;</span>
+<span class="fc" id="L166">        return outputEmbeddedGapPoints;</span>
     }
 
     boolean boundedByPointsInHigherRows(int row, int gapStart, int gapStop,
         int maxRow, int imageMaxColumn, Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRange) {
 
-<span class="fc" id="L175">        LinkedHashSet&lt;Integer&gt; gapRange = createRange(gapStart, gapStop);</span>
+<span class="fc" id="L172">        LinkedHashSet&lt;Integer&gt; gapRange = createRange(gapStart, gapStop);</span>
 
-<span class="fc" id="L177">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L174">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (int r = (row + 1); r &lt;= maxRow; r++) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        for (int r = (row + 1); r &lt;= maxRow; r++) {</span>
 
-<span class="fc" id="L181">            List&lt;PairInt&gt; colRanges = rowColRange.get(Integer.valueOf(r));</span>
+<span class="fc" id="L178">            List&lt;PairInt&gt; colRanges = rowColRange.get(Integer.valueOf(r));</span>
 
-<span class="fc" id="L183">            boolean bounded = boundedByPoints(colRanges, imageMaxColumn,</span>
+<span class="fc" id="L180">            boolean bounded = boundedByPoints(colRanges, imageMaxColumn,</span>
                 gapRange, remove);
 
-<span class="fc bfc" id="L186" title="All 2 branches covered.">            if (bounded) {</span>
-<span class="fc" id="L187">                return true;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">            if (bounded) {</span>
+<span class="fc" id="L184">                return true;</span>
             }
         }
 
-<span class="fc" id="L191">        return gapRange.isEmpty();</span>
+<span class="fc" id="L188">        return gapRange.isEmpty();</span>
     }
 
     boolean boundedByPointsInLowerRows(int row, int gapStart, int gapStop,
         int minRow, int imageMaxColumn,
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges) {
 
-<span class="fc" id="L198">        LinkedHashSet&lt;Integer&gt; gapRange = createRange(gapStart, gapStop);</span>
-<span class="fc" id="L199">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L195">        LinkedHashSet&lt;Integer&gt; gapRange = createRange(gapStart, gapStop);</span>
+<span class="fc" id="L196">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (int r = (row - 1); r &gt;= minRow; r--) {</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (int r = (row - 1); r &gt;= minRow; r--) {</span>
 
-<span class="fc" id="L203">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(r));</span>
+<span class="fc" id="L200">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(r));</span>
 
-<span class="fc" id="L205">            boolean bounded = boundedByPoints(colRanges, imageMaxColumn,</span>
+<span class="fc" id="L202">            boolean bounded = boundedByPoints(colRanges, imageMaxColumn,</span>
                 gapRange, remove);
 
-<span class="fc bfc" id="L208" title="All 2 branches covered.">            if (bounded) {</span>
-<span class="fc" id="L209">                return true;</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">            if (bounded) {</span>
+<span class="fc" id="L206">                return true;</span>
             }
         }
 
-<span class="fc" id="L213">        return gapRange.isEmpty();</span>
+<span class="fc" id="L210">        return gapRange.isEmpty();</span>
     }
 
     private boolean boundedByPoints(List&lt;PairInt&gt; colRanges, int imageMaxColumn,
         LinkedHashSet&lt;Integer&gt; gapRange, List&lt;Integer&gt; remove) {
 
-<span class="fc bfc" id="L219" title="All 2 branches covered.">        for (PairInt colRange : colRanges) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (PairInt colRange : colRanges) {</span>
 
-<span class="fc" id="L221">            int col0 = colRange.getX();</span>
-<span class="fc" id="L222">            int col1 = colRange.getY();</span>
+<span class="fc" id="L218">            int col0 = colRange.getX();</span>
+<span class="fc" id="L219">            int col1 = colRange.getY();</span>
 
-<span class="fc bfc" id="L224" title="All 2 branches covered.">            for (Integer gapColumn : gapRange) {</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">            for (Integer gapColumn : gapRange) {</span>
 
-<span class="fc" id="L226">                int col = gapColumn.intValue();</span>
+<span class="fc" id="L223">                int col = gapColumn.intValue();</span>
 
-<span class="fc bfc" id="L228" title="All 4 branches covered.">                if ((col &gt;= col0) &amp;&amp; (col &lt;= col1)) {</span>
+<span class="fc bfc" id="L225" title="All 4 branches covered.">                if ((col &gt;= col0) &amp;&amp; (col &lt;= col1)) {</span>
 
-<span class="fc" id="L230">                    remove.add(gapColumn);</span>
+<span class="fc" id="L227">                    remove.add(gapColumn);</span>
                 }
+<span class="fc" id="L229">            }</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">            for (Integer rm : remove) {</span>
+<span class="fc" id="L231">                gapRange.remove(rm);</span>
 <span class="fc" id="L232">            }</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">            for (Integer rm : remove) {</span>
-<span class="fc" id="L234">                gapRange.remove(rm);</span>
-<span class="fc" id="L235">            }</span>
-<span class="fc" id="L236">            remove.clear();</span>
+<span class="fc" id="L233">            remove.clear();</span>
 
-<span class="fc bfc" id="L238" title="All 2 branches covered.">            if (gapRange.isEmpty()) {</span>
-<span class="fc" id="L239">                return true;</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">            if (gapRange.isEmpty()) {</span>
+<span class="fc" id="L236">                return true;</span>
             }
-<span class="fc" id="L241">        }</span>
+<span class="fc" id="L238">        }</span>
 
-<span class="fc" id="L243">        return gapRange.isEmpty();</span>
+<span class="fc" id="L240">        return gapRange.isEmpty();</span>
     }
 
     LinkedHashSet&lt;Integer&gt; createRange(int start, int stopInclusive) {
 
-<span class="fc" id="L248">        int n = stopInclusive - start + 1;</span>
+<span class="fc" id="L245">        int n = stopInclusive - start + 1;</span>
 
-<span class="fc" id="L250">        LinkedHashSet&lt;Integer&gt; range = new LinkedHashSet&lt;Integer&gt;(n);</span>
+<span class="fc" id="L247">        LinkedHashSet&lt;Integer&gt; range = new LinkedHashSet&lt;Integer&gt;(n);</span>
 
-<span class="fc bfc" id="L252" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
 
-<span class="fc" id="L254">            Integer value = Integer.valueOf(start + i);</span>
+<span class="fc" id="L251">            Integer value = Integer.valueOf(start + i);</span>
 
-<span class="fc" id="L256">            range.add(value);</span>
+<span class="fc" id="L253">            range.add(value);</span>
         }
 
-<span class="fc" id="L259">        return range;</span>
+<span class="fc" id="L256">        return range;</span>
     }
 
     /**
@@ -266,17 +263,14 @@ import java.util.logging.Logger;
      * larger than O(N) for points datasets that are less dense than the min
      * max range.
      *
-     * @param points
-     * @param outputRowMinMax output populated as the min and max of rows are
-     * determined.
      * @return a map with key = row, value = list of contiguous points in the
      * row.
      */
     Map&lt;Integer, List&lt;PairInt&gt;&gt; findRowColRanges(Set&lt;PairInt&gt; points,
         int minX, int maxX, int minY, int maxY) {
 
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">        if (points == null) {</span>
-<span class="nc" id="L279">	    	throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L273">	    	throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
 
         /*
@@ -287,56 +281,56 @@ import java.util.logging.Logger;
 
         // key holds row number
         // value holds (first column number, last column number) for points in the row
-<span class="fc" id="L290">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRange = new HashMap&lt;Integer, List&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L284">        Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRange = new HashMap&lt;Integer, List&lt;PairInt&gt;&gt;();</span>
 
         //O(N):
-<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (int row = minY; row &lt;= maxY; row++) {</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        for (int row = minY; row &lt;= maxY; row++) {</span>
 
-<span class="fc" id="L295">            List&lt;PairInt&gt; colRanges = new ArrayList&lt;PairInt&gt;();</span>
-<span class="fc" id="L296">            Integer key = Integer.valueOf(row);</span>
-<span class="fc" id="L297">            rowColRange.put(key, colRanges);</span>
+<span class="fc" id="L289">            List&lt;PairInt&gt; colRanges = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L290">            Integer key = Integer.valueOf(row);</span>
+<span class="fc" id="L291">            rowColRange.put(key, colRanges);</span>
 
-<span class="fc" id="L299">            PairInt currentColRange = null;</span>
+<span class="fc" id="L293">            PairInt currentColRange = null;</span>
 
-<span class="fc bfc" id="L301" title="All 2 branches covered.">            for (int col = minX; col &lt;= maxX; col++) {</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">            for (int col = minX; col &lt;= maxX; col++) {</span>
 
-<span class="fc" id="L303">                boolean contains = points.contains(new PairInt(col, row));</span>
+<span class="fc" id="L297">                boolean contains = points.contains(new PairInt(col, row));</span>
 
-<span class="fc bfc" id="L305" title="All 2 branches covered.">                if (currentColRange == null) {</span>
-<span class="fc bfc" id="L306" title="All 2 branches covered.">                    if (contains) {</span>
-<span class="fc" id="L307">                        currentColRange = new PairInt(col, col);</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">                if (currentColRange == null) {</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">                    if (contains) {</span>
+<span class="fc" id="L301">                        currentColRange = new PairInt(col, col);</span>
                     }
                 } else {
-<span class="fc bfc" id="L310" title="All 2 branches covered.">                    if (contains) {</span>
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">                        if (col == (currentColRange.getY() + 1)) {</span>
-<span class="fc" id="L312">                            currentColRange.setY(col);</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                    if (contains) {</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">                        if (col == (currentColRange.getY() + 1)) {</span>
+<span class="fc" id="L306">                            currentColRange.setY(col);</span>
                         } else {
-<span class="nc" id="L314">                            colRanges.add(currentColRange);</span>
-<span class="nc" id="L315">                            currentColRange = null;</span>
+<span class="nc" id="L308">                            colRanges.add(currentColRange);</span>
+<span class="nc" id="L309">                            currentColRange = null;</span>
                         }
                     } else {
-<span class="fc" id="L318">                        colRanges.add(currentColRange);</span>
-<span class="fc" id="L319">                        currentColRange = null;</span>
+<span class="fc" id="L312">                        colRanges.add(currentColRange);</span>
+<span class="fc" id="L313">                        currentColRange = null;</span>
                     }
                 }
             }
 
             //store last currentColRange
-<span class="fc bfc" id="L325" title="All 2 branches covered.">            if (currentColRange != null) {</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">            if (currentColRange != null) {</span>
 
-<span class="fc bfc" id="L327" title="All 2 branches covered.">                if (colRanges.isEmpty()) {</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">                if (colRanges.isEmpty()) {</span>
 
-<span class="fc" id="L329">                    colRanges.add(currentColRange);</span>
+<span class="fc" id="L323">                    colRanges.add(currentColRange);</span>
 
-<span class="fc" id="L331">                } else if (</span>
-<span class="pc bpc" id="L332" title="1 of 2 branches missed.">                    !colRanges.get(colRanges.size() - 1).equals(currentColRange)) {</span>
+<span class="fc" id="L325">                } else if (</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">                    !colRanges.get(colRanges.size() - 1).equals(currentColRange)) {</span>
 
-<span class="fc" id="L334">                    colRanges.add(currentColRange);</span>
+<span class="fc" id="L328">                    colRanges.add(currentColRange);</span>
                 }
             }
         }
 
-<span class="fc" id="L339">        return rowColRange;</span>
+<span class="fc" id="L333">        return rowColRange;</span>
     }
 
     /**
@@ -357,50 +351,50 @@ import java.util.logging.Logger;
         // ---------------- store the gaps in a stack ---------------------
         // runtime complexity is
         // O((maxY-minY+1)*k) where k is the number of contig ranges per row
-<span class="fc" id="L360">        Stack&lt;Gap&gt; stack = findGaps(rowColRanges, minX, maxX, minY, maxY);</span>
+<span class="fc" id="L354">        Stack&lt;Gap&gt; stack = findGaps(rowColRanges, minX, maxX, minY, maxY);</span>
 
         // ----------------- find contiguous gaps ------------------------
-<span class="fc" id="L363">        List&lt;List&lt;Gap&gt;&gt; gapGroups = new ArrayList&lt;List&lt;Gap&gt;&gt;();</span>
+<span class="fc" id="L357">        List&lt;List&lt;Gap&gt;&gt; gapGroups = new ArrayList&lt;List&lt;Gap&gt;&gt;();</span>
 
-<span class="fc bfc" id="L365" title="All 2 branches covered.">        if (stack.isEmpty()) {</span>
-<span class="fc" id="L366">            return gapGroups;</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        if (stack.isEmpty()) {</span>
+<span class="fc" id="L360">            return gapGroups;</span>
         }
 
-<span class="fc" id="L369">        Map&lt;Gap, Integer&gt; gapToIndexMap = new HashMap&lt;Gap, Integer&gt;();</span>
+<span class="fc" id="L363">        Map&lt;Gap, Integer&gt; gapToIndexMap = new HashMap&lt;Gap, Integer&gt;();</span>
 
-<span class="fc" id="L371">        Map&lt;Gap, Boolean&gt; visited = new HashMap&lt;Gap, Boolean&gt;();</span>
+<span class="fc" id="L365">        Map&lt;Gap, Boolean&gt; visited = new HashMap&lt;Gap, Boolean&gt;();</span>
 
         //TODO: add minimum and maximum runtime estimates here.
 
-<span class="fc bfc" id="L375" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
 
-<span class="fc" id="L377">            Gap uNode = stack.pop();</span>
+<span class="fc" id="L371">            Gap uNode = stack.pop();</span>
 
-<span class="fc bfc" id="L379" title="All 2 branches covered.">            if (visited.containsKey(uNode)) {</span>
-<span class="fc" id="L380">                continue;</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">            if (visited.containsKey(uNode)) {</span>
+<span class="fc" id="L374">                continue;</span>
             }
 
-<span class="fc" id="L383">            visited.put(uNode, Boolean.TRUE);</span>
+<span class="fc" id="L377">            visited.put(uNode, Boolean.TRUE);</span>
 
-<span class="fc" id="L385">            int row = uNode.getRow();</span>
-<span class="fc" id="L386">            int uStart = uNode.getStart();</span>
-<span class="fc" id="L387">            int uStopIncl = uNode.getStopInclusive();</span>
+<span class="fc" id="L379">            int row = uNode.getRow();</span>
+<span class="fc" id="L380">            int uStart = uNode.getStart();</span>
+<span class="fc" id="L381">            int uStopIncl = uNode.getStopInclusive();</span>
 
             // search in row above for a neighbor.
             // to save space, just looking in rowColRanges
 
-<span class="fc" id="L392">            int vRow = row + 1;</span>
+<span class="fc" id="L386">            int vRow = row + 1;</span>
 
-<span class="fc bfc" id="L394" title="All 2 branches covered.">            if (vRow &gt; maxY) {</span>
-<span class="fc" id="L395">                continue;</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">            if (vRow &gt; maxY) {</span>
+<span class="fc" id="L389">                continue;</span>
             }
 
             // ------ find the connected neighbors of u, below u ---------
 
-<span class="fc" id="L400">            List&lt;Gap&gt; vNodes = new ArrayList&lt;Gap&gt;();</span>
+<span class="fc" id="L394">            List&lt;Gap&gt; vNodes = new ArrayList&lt;Gap&gt;();</span>
 
             // these are ordered by increasing range:
-<span class="fc" id="L403">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(vRow));</span>
+<span class="fc" id="L397">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(vRow));</span>
 
             /*
                   |----|    |----|
@@ -409,114 +403,114 @@ import java.util.logging.Logger;
                       @@@@@          case 2
                     @@               case 3
             */
-<span class="fc bfc" id="L412" title="All 2 branches covered.">            for (int i = 1; i &lt; colRanges.size(); i++) {</span>
-<span class="fc" id="L413">                int gapStart = colRanges.get(i - 1).getY() + 1;</span>
-<span class="fc" id="L414">                int gapStop = colRanges.get(i).getX() - 1;</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">            for (int i = 1; i &lt; colRanges.size(); i++) {</span>
+<span class="fc" id="L407">                int gapStart = colRanges.get(i - 1).getY() + 1;</span>
+<span class="fc" id="L408">                int gapStop = colRanges.get(i).getX() - 1;</span>
 
-<span class="fc" id="L416">                Gap vNode = null;</span>
+<span class="fc" id="L410">                Gap vNode = null;</span>
 
                 // is any portion of uStart is within col0:col2
-<span class="fc bfc" id="L419" title="All 4 branches covered.">                if ((uStart &lt;= gapStart) &amp;&amp; (uStopIncl &gt;= gapStop)) {</span>
-<span class="fc" id="L420">                    vNode = new Gap(vRow, gapStart, gapStop);</span>
-<span class="fc bfc" id="L421" title="All 4 branches covered.">                } else if ((uStopIncl &gt;= gapStart) &amp;&amp; (uStopIncl &lt;= gapStop)) {</span>
-<span class="fc" id="L422">                    vNode = new Gap(vRow, gapStart, gapStop);</span>
-<span class="fc bfc" id="L423" title="All 4 branches covered.">                } else if ((uStart &gt;= gapStart) &amp;&amp; (uStart &lt;= gapStop)) {</span>
-<span class="fc" id="L424">                    vNode = new Gap(vRow, gapStart, gapStop);</span>
+<span class="fc bfc" id="L413" title="All 4 branches covered.">                if ((uStart &lt;= gapStart) &amp;&amp; (uStopIncl &gt;= gapStop)) {</span>
+<span class="fc" id="L414">                    vNode = new Gap(vRow, gapStart, gapStop);</span>
+<span class="fc bfc" id="L415" title="All 4 branches covered.">                } else if ((uStopIncl &gt;= gapStart) &amp;&amp; (uStopIncl &lt;= gapStop)) {</span>
+<span class="fc" id="L416">                    vNode = new Gap(vRow, gapStart, gapStop);</span>
+<span class="fc bfc" id="L417" title="All 4 branches covered.">                } else if ((uStart &gt;= gapStart) &amp;&amp; (uStart &lt;= gapStop)) {</span>
+<span class="fc" id="L418">                    vNode = new Gap(vRow, gapStart, gapStop);</span>
                 }
 
-<span class="fc bfc" id="L427" title="All 2 branches covered.">                if (vNode != null) {</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">                if (vNode != null) {</span>
 
-<span class="fc" id="L429">                    vNodes.add(vNode);</span>
+<span class="fc" id="L423">                    vNodes.add(vNode);</span>
                 }
             }
 
             // ---------------- process the neighbors -----------------
 
-<span class="fc bfc" id="L435" title="All 2 branches covered.">            for (Gap vNode : vNodes) {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">            for (Gap vNode : vNodes) {</span>
                 // process each node.  add to existing group or start a new one
-<span class="fc" id="L437">                Integer uIdx = gapToIndexMap.get(uNode);</span>
-<span class="fc" id="L438">                Integer vIdx = gapToIndexMap.get(vNode);</span>
-<span class="fc" id="L439">                Integer groupIdx = null;</span>
-<span class="fc bfc" id="L440" title="All 4 branches covered.">                if ((uIdx != null) &amp;&amp; (vIdx != null)) {</span>
-<span class="pc bpc" id="L441" title="1 of 2 branches missed.">                    if (uIdx.intValue() == vIdx.intValue()) {</span>
+<span class="fc" id="L431">                Integer uIdx = gapToIndexMap.get(uNode);</span>
+<span class="fc" id="L432">                Integer vIdx = gapToIndexMap.get(vNode);</span>
+<span class="fc" id="L433">                Integer groupIdx = null;</span>
+<span class="fc bfc" id="L434" title="All 4 branches covered.">                if ((uIdx != null) &amp;&amp; (vIdx != null)) {</span>
+<span class="pc bpc" id="L435" title="1 of 2 branches missed.">                    if (uIdx.intValue() == vIdx.intValue()) {</span>
                         // these are already in the same group... should not be visited again though
-<span class="nc" id="L443">                        groupIdx = uIdx;</span>
+<span class="nc" id="L437">                        groupIdx = uIdx;</span>
                     } else {
                         Integer moveTo;
                         Integer moveFrom;
-<span class="pc bpc" id="L447" title="1 of 2 branches missed.">                        if (uIdx.intValue() &lt; vIdx.intValue()) {</span>
-<span class="nc" id="L448">                            moveTo = uIdx;</span>
-<span class="nc" id="L449">                            moveFrom = vIdx;</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">                        if (uIdx.intValue() &lt; vIdx.intValue()) {</span>
+<span class="nc" id="L442">                            moveTo = uIdx;</span>
+<span class="nc" id="L443">                            moveFrom = vIdx;</span>
                         } else {
-<span class="fc" id="L451">                            moveTo = vIdx;</span>
-<span class="fc" id="L452">                            moveFrom = uIdx;</span>
+<span class="fc" id="L445">                            moveTo = vIdx;</span>
+<span class="fc" id="L446">                            moveFrom = uIdx;</span>
                         }
-<span class="fc" id="L454">                        List&lt;Gap&gt; moveFromG = gapGroups.get(moveFrom);</span>
-<span class="fc bfc" id="L455" title="All 2 branches covered.">                        for (Gap g : moveFromG) {</span>
-<span class="fc" id="L456">                            gapToIndexMap.put(g, moveTo);</span>
-<span class="fc" id="L457">                        }</span>
-<span class="fc" id="L458">                        gapGroups.get(moveTo).addAll(moveFromG);</span>
-<span class="fc" id="L459">                        gapGroups.get(moveFrom).clear();</span>
-<span class="fc" id="L460">                    }</span>
-<span class="fc bfc" id="L461" title="All 2 branches covered.">                } else if (uIdx != null) {</span>
-<span class="fc" id="L462">                    groupIdx = uIdx;</span>
-<span class="fc" id="L463">                    List&lt;Gap&gt; group = gapGroups.get(groupIdx);</span>
-<span class="fc" id="L464">                    group.add(vNode);</span>
-<span class="fc" id="L465">                    gapToIndexMap.put(vNode, groupIdx);</span>
-<span class="fc bfc" id="L466" title="All 2 branches covered.">                } else if (vIdx != null) {</span>
-<span class="fc" id="L467">                    groupIdx = vIdx;</span>
-<span class="fc" id="L468">                    List&lt;Gap&gt; group = gapGroups.get(groupIdx);</span>
-<span class="fc" id="L469">                    group.add(uNode);</span>
-<span class="fc" id="L470">                    gapToIndexMap.put(uNode, groupIdx);</span>
-<span class="fc" id="L471">                } else {</span>
+<span class="fc" id="L448">                        List&lt;Gap&gt; moveFromG = gapGroups.get(moveFrom);</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">                        for (Gap g : moveFromG) {</span>
+<span class="fc" id="L450">                            gapToIndexMap.put(g, moveTo);</span>
+<span class="fc" id="L451">                        }</span>
+<span class="fc" id="L452">                        gapGroups.get(moveTo).addAll(moveFromG);</span>
+<span class="fc" id="L453">                        gapGroups.get(moveFrom).clear();</span>
+<span class="fc" id="L454">                    }</span>
+<span class="fc bfc" id="L455" title="All 2 branches covered.">                } else if (uIdx != null) {</span>
+<span class="fc" id="L456">                    groupIdx = uIdx;</span>
+<span class="fc" id="L457">                    List&lt;Gap&gt; group = gapGroups.get(groupIdx);</span>
+<span class="fc" id="L458">                    group.add(vNode);</span>
+<span class="fc" id="L459">                    gapToIndexMap.put(vNode, groupIdx);</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">                } else if (vIdx != null) {</span>
+<span class="fc" id="L461">                    groupIdx = vIdx;</span>
+<span class="fc" id="L462">                    List&lt;Gap&gt; group = gapGroups.get(groupIdx);</span>
+<span class="fc" id="L463">                    group.add(uNode);</span>
+<span class="fc" id="L464">                    gapToIndexMap.put(uNode, groupIdx);</span>
+<span class="fc" id="L465">                } else {</span>
                     // both are null
-<span class="fc" id="L473">                    List&lt;Gap&gt; group = new ArrayList&lt;Gap&gt;();</span>
-<span class="fc" id="L474">                    group.add(uNode);</span>
-<span class="fc" id="L475">                    group.add(vNode);</span>
-<span class="fc" id="L476">                    groupIdx = Integer.valueOf(gapGroups.size());</span>
-<span class="fc" id="L477">                    gapGroups.add(group);</span>
-<span class="fc" id="L478">                    gapToIndexMap.put(uNode, groupIdx);</span>
-<span class="fc" id="L479">                    gapToIndexMap.put(vNode, groupIdx);</span>
+<span class="fc" id="L467">                    List&lt;Gap&gt; group = new ArrayList&lt;Gap&gt;();</span>
+<span class="fc" id="L468">                    group.add(uNode);</span>
+<span class="fc" id="L469">                    group.add(vNode);</span>
+<span class="fc" id="L470">                    groupIdx = Integer.valueOf(gapGroups.size());</span>
+<span class="fc" id="L471">                    gapGroups.add(group);</span>
+<span class="fc" id="L472">                    gapToIndexMap.put(uNode, groupIdx);</span>
+<span class="fc" id="L473">                    gapToIndexMap.put(vNode, groupIdx);</span>
                 }
 
                 //System.out.println(groupIdx + &quot; ==&gt; u &quot; + uNode.toString()
                 //    + &quot; v &quot; + vNode.toString());
 
-<span class="fc" id="L485">                stack.push(vNode);</span>
-<span class="fc" id="L486">            }</span>
+<span class="fc" id="L479">                stack.push(vNode);</span>
+<span class="fc" id="L480">            }</span>
 
-<span class="fc bfc" id="L488" title="All 2 branches covered.">            if (vNodes.isEmpty()) {</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">            if (vNodes.isEmpty()) {</span>
                 // store u alone
-<span class="fc" id="L490">                Integer groupIdx = gapToIndexMap.get(uNode);</span>
-<span class="fc bfc" id="L491" title="All 2 branches covered.">                if (groupIdx == null) {</span>
-<span class="fc" id="L492">                    groupIdx = Integer.valueOf(gapGroups.size());</span>
-<span class="fc" id="L493">                    List&lt;Gap&gt; group = new ArrayList&lt;Gap&gt;();</span>
-<span class="fc" id="L494">                    group.add(uNode);</span>
-<span class="fc" id="L495">                    gapGroups.add(group);</span>
-<span class="fc" id="L496">                    gapToIndexMap.put(uNode, groupIdx);</span>
+<span class="fc" id="L484">                Integer groupIdx = gapToIndexMap.get(uNode);</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">                if (groupIdx == null) {</span>
+<span class="fc" id="L486">                    groupIdx = Integer.valueOf(gapGroups.size());</span>
+<span class="fc" id="L487">                    List&lt;Gap&gt; group = new ArrayList&lt;Gap&gt;();</span>
+<span class="fc" id="L488">                    group.add(uNode);</span>
+<span class="fc" id="L489">                    gapGroups.add(group);</span>
+<span class="fc" id="L490">                    gapToIndexMap.put(uNode, groupIdx);</span>
                 }
             }
-<span class="fc" id="L499">        }</span>
+<span class="fc" id="L493">        }</span>
 
         // condense:
-<span class="fc" id="L502">        boolean hasAnEmpty = false;</span>
-<span class="fc bfc" id="L503" title="All 2 branches covered.">        for (List&lt;Gap&gt; group : gapGroups) {</span>
-<span class="fc bfc" id="L504" title="All 2 branches covered.">            if (group.isEmpty()) {</span>
-<span class="fc" id="L505">                hasAnEmpty = true;</span>
-<span class="fc" id="L506">                break;</span>
+<span class="fc" id="L496">        boolean hasAnEmpty = false;</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">        for (List&lt;Gap&gt; group : gapGroups) {</span>
+<span class="fc bfc" id="L498" title="All 2 branches covered.">            if (group.isEmpty()) {</span>
+<span class="fc" id="L499">                hasAnEmpty = true;</span>
+<span class="fc" id="L500">                break;</span>
             }
-<span class="fc" id="L508">        }</span>
-<span class="fc bfc" id="L509" title="All 2 branches covered.">        if (hasAnEmpty) {</span>
-<span class="fc" id="L510">            List&lt;List&lt;Gap&gt;&gt; tmp = new ArrayList&lt;List&lt;Gap&gt;&gt;(gapGroups.size() - 1);</span>
-<span class="fc bfc" id="L511" title="All 2 branches covered.">            for (List&lt;Gap&gt; group : gapGroups) {</span>
-<span class="fc bfc" id="L512" title="All 2 branches covered.">                if (!group.isEmpty()) {</span>
-<span class="fc" id="L513">                    tmp.add(group);</span>
+<span class="fc" id="L502">        }</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">        if (hasAnEmpty) {</span>
+<span class="fc" id="L504">            List&lt;List&lt;Gap&gt;&gt; tmp = new ArrayList&lt;List&lt;Gap&gt;&gt;(gapGroups.size() - 1);</span>
+<span class="fc bfc" id="L505" title="All 2 branches covered.">            for (List&lt;Gap&gt; group : gapGroups) {</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">                if (!group.isEmpty()) {</span>
+<span class="fc" id="L507">                    tmp.add(group);</span>
                 }
-<span class="fc" id="L515">            }</span>
-<span class="fc" id="L516">            gapGroups = tmp;</span>
+<span class="fc" id="L509">            }</span>
+<span class="fc" id="L510">            gapGroups = tmp;</span>
         }
 
-<span class="fc" id="L519">        return gapGroups;</span>
+<span class="fc" id="L513">        return gapGroups;</span>
     }
 
     Stack&lt;Gap&gt; findGaps(Map&lt;Integer, List&lt;PairInt&gt;&gt;
@@ -527,26 +521,26 @@ import java.util.logging.Logger;
         // O((maxY-minY+1)*k) where k is the number of contig ranges per row
 
         // stack is lifo, so push in reverse order of desired use
-<span class="fc" id="L530">        Stack&lt;Gap&gt; stack = new java.util.Stack&lt;Gap&gt;();</span>
+<span class="fc" id="L524">        Stack&lt;Gap&gt; stack = new java.util.Stack&lt;Gap&gt;();</span>
 
-<span class="fc bfc" id="L532" title="All 2 branches covered.">        for (int row = maxY; row &gt;= minY; row--) {</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">        for (int row = maxY; row &gt;= minY; row--) {</span>
 
-<span class="fc" id="L534">            Integer key = Integer.valueOf(row);</span>
+<span class="fc" id="L528">            Integer key = Integer.valueOf(row);</span>
 
-<span class="fc" id="L536">            List&lt;PairInt&gt; colRanges = rowColRanges.get(key);</span>
+<span class="fc" id="L530">            List&lt;PairInt&gt; colRanges = rowColRanges.get(key);</span>
 
-<span class="fc bfc" id="L538" title="All 2 branches covered.">            for (int i = (colRanges.size() - 1); i &gt; 0; i--) {</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">            for (int i = (colRanges.size() - 1); i &gt; 0; i--) {</span>
 
-<span class="fc" id="L540">                int gapStart = colRanges.get(i - 1).getY() + 1;</span>
-<span class="fc" id="L541">                int gapStop = colRanges.get(i).getX() - 1;</span>
+<span class="fc" id="L534">                int gapStart = colRanges.get(i - 1).getY() + 1;</span>
+<span class="fc" id="L535">                int gapStop = colRanges.get(i).getX() - 1;</span>
 
-<span class="fc" id="L543">                Gap gap = new Gap(row, gapStart, gapStop);</span>
+<span class="fc" id="L537">                Gap gap = new Gap(row, gapStart, gapStop);</span>
 
-<span class="fc" id="L545">                stack.push(gap);</span>
+<span class="fc" id="L539">                stack.push(gap);</span>
             }
         }
 
-<span class="fc" id="L549">        return stack;</span>
+<span class="fc" id="L543">        return stack;</span>
     }
 
     /**
@@ -565,7 +559,7 @@ import java.util.logging.Logger;
         int minY, int maxY, int imageMaxColumn,
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges) {
 
-<span class="fc" id="L568">        List&lt;List&lt;Gap&gt;&gt; contiguousBoundedGapGroups = new ArrayList&lt;List&lt;Gap&gt;&gt;();</span>
+<span class="fc" id="L562">        List&lt;List&lt;Gap&gt;&gt; contiguousBoundedGapGroups = new ArrayList&lt;List&lt;Gap&gt;&gt;();</span>
 
         /* need a data structure to access all Gaps by row by number.
         Will use a Map with key=integer and value = set of Gaps.
@@ -574,87 +568,87 @@ import java.util.logging.Logger;
         consider in the future with stats of the total number of gaps in
         contiguousBoundedGapGroups compared to the number of pixels in sky.
         */
-<span class="fc" id="L577">        Map&lt;Integer, Set&lt;Gap&gt;&gt; rowGapsMap = createRowMap(contiguousGapGroups);</span>
+<span class="fc" id="L571">        Map&lt;Integer, Set&lt;Gap&gt;&gt; rowGapsMap = createRowMap(contiguousGapGroups);</span>
 
-<span class="fc bfc" id="L579" title="All 2 branches covered.">        for (List&lt;Gap&gt; contiguousGap : contiguousGapGroups) {</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">        for (List&lt;Gap&gt; contiguousGap : contiguousGapGroups) {</span>
 
-<span class="fc" id="L581">            boolean notBounded = false;</span>
+<span class="fc" id="L575">            boolean notBounded = false;</span>
 
-<span class="fc bfc" id="L583" title="All 2 branches covered.">            for (Gap gap : contiguousGap) {</span>
+<span class="fc bfc" id="L577" title="All 2 branches covered.">            for (Gap gap : contiguousGap) {</span>
 
-<span class="fc" id="L585">                int row = gap.getRow();</span>
+<span class="fc" id="L579">                int row = gap.getRow();</span>
 
                 /*
                  check that the gap above it if any is not in a gap that
                  continues to the image boundary
                 */
-<span class="fc" id="L591">                boolean adjRowGapIsUnbounded =</span>
-<span class="fc" id="L592">                    adjacentGapIsConnectedToImageBoundary(gap.getStart(),</span>
-<span class="fc" id="L593">                        gap.getStopInclusive(),</span>
-<span class="fc" id="L594">                        rowGapsMap.get(Integer.valueOf(row + 1)),</span>
-<span class="fc" id="L595">                        rowColRanges.get(Integer.valueOf(row + 1)),</span>
+<span class="fc" id="L585">                boolean adjRowGapIsUnbounded =</span>
+<span class="fc" id="L586">                    adjacentGapIsConnectedToImageBoundary(gap.getStart(),</span>
+<span class="fc" id="L587">                        gap.getStopInclusive(),</span>
+<span class="fc" id="L588">                        rowGapsMap.get(Integer.valueOf(row + 1)),</span>
+<span class="fc" id="L589">                        rowColRanges.get(Integer.valueOf(row + 1)),</span>
                         imageMaxColumn);
 
-<span class="fc bfc" id="L598" title="All 2 branches covered.">                if (adjRowGapIsUnbounded) {</span>
-<span class="fc" id="L599">                    notBounded = true;</span>
-<span class="fc" id="L600">                    break;</span>
+<span class="fc bfc" id="L592" title="All 2 branches covered.">                if (adjRowGapIsUnbounded) {</span>
+<span class="fc" id="L593">                    notBounded = true;</span>
+<span class="fc" id="L594">                    break;</span>
                 }
 
                 /*
                  same check for row below
                 */
-<span class="fc" id="L606">                adjRowGapIsUnbounded = adjacentGapIsConnectedToImageBoundary(</span>
-<span class="fc" id="L607">                    gap.getStart(), gap.getStopInclusive(),</span>
-<span class="fc" id="L608">                    rowGapsMap.get(Integer.valueOf(row - 1)),</span>
-<span class="fc" id="L609">                    rowColRanges.get(Integer.valueOf(row - 1)),</span>
+<span class="fc" id="L600">                adjRowGapIsUnbounded = adjacentGapIsConnectedToImageBoundary(</span>
+<span class="fc" id="L601">                    gap.getStart(), gap.getStopInclusive(),</span>
+<span class="fc" id="L602">                    rowGapsMap.get(Integer.valueOf(row - 1)),</span>
+<span class="fc" id="L603">                    rowColRanges.get(Integer.valueOf(row - 1)),</span>
                     imageMaxColumn);
 
-<span class="fc bfc" id="L612" title="All 2 branches covered.">                if (adjRowGapIsUnbounded) {</span>
-<span class="fc" id="L613">                    notBounded = true;</span>
-<span class="fc" id="L614">                    break;</span>
+<span class="fc bfc" id="L606" title="All 2 branches covered.">                if (adjRowGapIsUnbounded) {</span>
+<span class="fc" id="L607">                    notBounded = true;</span>
+<span class="fc" id="L608">                    break;</span>
                 }
 
-<span class="fc" id="L617">                boolean bounded = boundedByPointsInHigherRows(row,</span>
-<span class="fc" id="L618">                    gap.getStart(), gap.getStopInclusive(), maxY,</span>
+<span class="fc" id="L611">                boolean bounded = boundedByPointsInHigherRows(row,</span>
+<span class="fc" id="L612">                    gap.getStart(), gap.getStopInclusive(), maxY,</span>
                     imageMaxColumn, rowColRanges);
 
-<span class="fc bfc" id="L621" title="All 2 branches covered.">                if (!bounded) {</span>
-<span class="fc" id="L622">                    notBounded = true;</span>
-<span class="fc" id="L623">                    break;</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">                if (!bounded) {</span>
+<span class="fc" id="L616">                    notBounded = true;</span>
+<span class="fc" id="L617">                    break;</span>
                 }
 
-<span class="fc" id="L626">                bounded = boundedByPointsInLowerRows(row, gap.getStart(),</span>
-<span class="fc" id="L627">                    gap.getStopInclusive(), minY, imageMaxColumn, rowColRanges);</span>
+<span class="fc" id="L620">                bounded = boundedByPointsInLowerRows(row, gap.getStart(),</span>
+<span class="fc" id="L621">                    gap.getStopInclusive(), minY, imageMaxColumn, rowColRanges);</span>
 
-<span class="fc bfc" id="L629" title="All 2 branches covered.">                if (!bounded) {</span>
-<span class="fc" id="L630">                    notBounded = true;</span>
-<span class="fc" id="L631">                    break;</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">                if (!bounded) {</span>
+<span class="fc" id="L624">                    notBounded = true;</span>
+<span class="fc" id="L625">                    break;</span>
                 }
-<span class="fc" id="L633">            }</span>
+<span class="fc" id="L627">            }</span>
 
-<span class="fc bfc" id="L635" title="All 2 branches covered.">            if (!notBounded) {</span>
-<span class="fc" id="L636">                contiguousBoundedGapGroups.add(contiguousGap);</span>
+<span class="fc bfc" id="L629" title="All 2 branches covered.">            if (!notBounded) {</span>
+<span class="fc" id="L630">                contiguousBoundedGapGroups.add(contiguousGap);</span>
             }
-<span class="fc" id="L638">        }</span>
+<span class="fc" id="L632">        }</span>
 
-<span class="fc" id="L640">        return contiguousBoundedGapGroups;</span>
+<span class="fc" id="L634">        return contiguousBoundedGapGroups;</span>
     }
 
     protected boolean updateForAddedPoints(
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges, int[] rowMinMax,
         Collection&lt;PairInt&gt; addedPoints) {
 
-<span class="fc" id="L647">        boolean allAreWithinExistingRange = true;</span>
+<span class="fc" id="L641">        boolean allAreWithinExistingRange = true;</span>
 
         // ------------------- update rowColRanges --------------------------
-<span class="fc bfc" id="L650" title="All 2 branches covered.">        for (PairInt p : addedPoints) {</span>
+<span class="fc bfc" id="L644" title="All 2 branches covered.">        for (PairInt p : addedPoints) {</span>
 
-<span class="fc" id="L652">            int row = p.getY();</span>
-<span class="fc" id="L653">            Integer rowKey = Integer.valueOf(row);</span>
+<span class="fc" id="L646">            int row = p.getY();</span>
+<span class="fc" id="L647">            Integer rowKey = Integer.valueOf(row);</span>
 
-<span class="fc" id="L655">            int col = p.getX();</span>
+<span class="fc" id="L649">            int col = p.getX();</span>
 
-<span class="fc" id="L657">            List&lt;PairInt&gt; colRanges = rowColRanges.get(rowKey);</span>
+<span class="fc" id="L651">            List&lt;PairInt&gt; colRanges = rowColRanges.get(rowKey);</span>
 
             /*
              cases:
@@ -675,142 +669,142 @@ import java.util.logging.Logger;
             whether it is adjacent on both sides, in which case it is a merge.
             */
 
-<span class="fc bfc" id="L678" title="All 4 branches covered.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
+<span class="fc bfc" id="L672" title="All 4 branches covered.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
 
                 // case: no row or empty list for row in rowColRanges
 
-<span class="fc" id="L682">                allAreWithinExistingRange = false;</span>
+<span class="fc" id="L676">                allAreWithinExistingRange = false;</span>
 
-<span class="fc bfc" id="L684" title="All 2 branches covered.">                if (colRanges == null) {</span>
-<span class="fc" id="L685">                    colRanges = new ArrayList&lt;PairInt&gt;();</span>
-<span class="fc" id="L686">                    rowColRanges.put(rowKey, colRanges);</span>
+<span class="fc bfc" id="L678" title="All 2 branches covered.">                if (colRanges == null) {</span>
+<span class="fc" id="L679">                    colRanges = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L680">                    rowColRanges.put(rowKey, colRanges);</span>
                 }
-<span class="fc" id="L688">                colRanges.add(new PairInt(col, col));</span>
-<span class="fc bfc" id="L689" title="All 2 branches covered.">                if (row &lt; rowMinMax[0]) {</span>
-<span class="fc" id="L690">                    rowMinMax[0] = row;</span>
+<span class="fc" id="L682">                colRanges.add(new PairInt(col, col));</span>
+<span class="fc bfc" id="L683" title="All 2 branches covered.">                if (row &lt; rowMinMax[0]) {</span>
+<span class="fc" id="L684">                    rowMinMax[0] = row;</span>
                 }
-<span class="fc bfc" id="L692" title="All 2 branches covered.">                if (row &gt; rowMinMax[1]) {</span>
-<span class="fc" id="L693">                    rowMinMax[1] = row;</span>
+<span class="fc bfc" id="L686" title="All 2 branches covered.">                if (row &gt; rowMinMax[1]) {</span>
+<span class="fc" id="L687">                    rowMinMax[1] = row;</span>
                 }
                 continue;
             }
 
-<span class="fc" id="L698">            int n = colRanges.size();</span>
+<span class="fc" id="L692">            int n = colRanges.size();</span>
 
-<span class="fc bfc" id="L700" title="All 2 branches covered.">            if (col &lt; colRanges.get(0).getX()) {</span>
+<span class="fc bfc" id="L694" title="All 2 branches covered.">            if (col &lt; colRanges.get(0).getX()) {</span>
 
                 //case: point is before first range
 
-<span class="fc" id="L704">                allAreWithinExistingRange = false;</span>
+<span class="fc" id="L698">                allAreWithinExistingRange = false;</span>
 
-<span class="fc" id="L706">                PairInt first = colRanges.get(0);</span>
-<span class="pc bpc" id="L707" title="1 of 2 branches missed.">                if (col == (first.getX() - 1)) {</span>
-<span class="fc" id="L708">                    first.setX(col);</span>
+<span class="fc" id="L700">                PairInt first = colRanges.get(0);</span>
+<span class="pc bpc" id="L701" title="1 of 2 branches missed.">                if (col == (first.getX() - 1)) {</span>
+<span class="fc" id="L702">                    first.setX(col);</span>
                 } else {
-<span class="nc" id="L710">                    PairInt add = new PairInt(col, col);</span>
-<span class="nc" id="L711">                    colRanges.add(0, add);</span>
+<span class="nc" id="L704">                    PairInt add = new PairInt(col, col);</span>
+<span class="nc" id="L705">                    colRanges.add(0, add);</span>
                 }
-<span class="fc bfc" id="L713" title="All 2 branches covered.">            } else if (col &gt; colRanges.get(n - 1).getY()) {</span>
+<span class="fc bfc" id="L707" title="All 2 branches covered.">            } else if (col &gt; colRanges.get(n - 1).getY()) {</span>
 
                 //case: point is after last range
 
-<span class="fc" id="L717">                allAreWithinExistingRange = false;</span>
+<span class="fc" id="L711">                allAreWithinExistingRange = false;</span>
 
-<span class="fc" id="L719">                PairInt last = colRanges.get(n - 1);</span>
+<span class="fc" id="L713">                PairInt last = colRanges.get(n - 1);</span>
 
-<span class="fc bfc" id="L721" title="All 2 branches covered.">                if (col == (last.getY() + 1)) {</span>
-<span class="fc" id="L722">                    last.setY(col);</span>
+<span class="fc bfc" id="L715" title="All 2 branches covered.">                if (col == (last.getY() + 1)) {</span>
+<span class="fc" id="L716">                    last.setY(col);</span>
                 } else {
-<span class="fc" id="L724">                    PairInt add = new PairInt(col, col);</span>
-<span class="fc" id="L725">                    colRanges.add(add);</span>
+<span class="fc" id="L718">                    PairInt add = new PairInt(col, col);</span>
+<span class="fc" id="L719">                    colRanges.add(add);</span>
                 }
-<span class="fc bfc" id="L727" title="All 2 branches covered.">            } else if (n == 1) {</span>
+<span class="fc bfc" id="L721" title="All 2 branches covered.">            } else if (n == 1) {</span>
                 // was not before or after the only range, so check within
-<span class="fc" id="L729">                PairInt current = colRanges.get(0);</span>
-<span class="pc bpc" id="L730" title="2 of 4 branches missed.">                if (!((col &gt;= current.getX()) &amp;&amp; (col &lt;= current.getY()))) {</span>
+<span class="fc" id="L723">                PairInt current = colRanges.get(0);</span>
+<span class="pc bpc" id="L724" title="2 of 4 branches missed.">                if (!((col &gt;= current.getX()) &amp;&amp; (col &lt;= current.getY()))) {</span>
                     // not in range.  this should not happen
-<span class="nc" id="L732">                    throw new IllegalStateException(&quot;error in algorithm: point &quot;</span>
+<span class="nc" id="L726">                    throw new IllegalStateException(&quot;error in algorithm: point &quot;</span>
                         + col + &quot;, &quot; + row + &quot; was not added to rowColRanges&quot;);
                 }
-<span class="fc" id="L735">            } else {</span>
+<span class="fc" id="L729">            } else {</span>
 
                 //case: point is between ranges in colRanges
                 // or
                 //case: point is within range in colRanges
 
-<span class="fc" id="L741">                boolean added = false;</span>
+<span class="fc" id="L735">                boolean added = false;</span>
 
-<span class="pc bpc" id="L743" title="1 of 2 branches missed.">                for (int i = (colRanges.size() - 1); i &gt; 0; i--) {</span>
+<span class="pc bpc" id="L737" title="1 of 2 branches missed.">                for (int i = (colRanges.size() - 1); i &gt; 0; i--) {</span>
 
-<span class="fc" id="L745">                    PairInt current = colRanges.get(i);</span>
+<span class="fc" id="L739">                    PairInt current = colRanges.get(i);</span>
 
-<span class="fc" id="L747">                    PairInt prev = colRanges.get(i - 1);</span>
+<span class="fc" id="L741">                    PairInt prev = colRanges.get(i - 1);</span>
 
                     //case: point is within range in colRanges
-<span class="pc bpc" id="L750" title="1 of 4 branches missed.">                    if ((col &gt;= current.getX()) &amp;&amp; (col &lt;= current.getY())) {</span>
+<span class="pc bpc" id="L744" title="1 of 4 branches missed.">                    if ((col &gt;= current.getX()) &amp;&amp; (col &lt;= current.getY())) {</span>
                         // no need to change range
-<span class="fc" id="L752">                        added = true;</span>
-<span class="fc" id="L753">                        break;</span>
-<span class="fc bfc" id="L754" title="All 2 branches covered.">                    } else if ((i == 1) &amp;&amp;</span>
-<span class="pc bpc" id="L755" title="1 of 4 branches missed.">                        (col &gt;= prev.getX()) &amp;&amp; (col &lt;= prev.getY())) {</span>
-<span class="fc" id="L756">                        added = true;</span>
-<span class="fc" id="L757">                        break;</span>
+<span class="fc" id="L746">                        added = true;</span>
+<span class="fc" id="L747">                        break;</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">                    } else if ((i == 1) &amp;&amp;</span>
+<span class="pc bpc" id="L749" title="1 of 4 branches missed.">                        (col &gt;= prev.getX()) &amp;&amp; (col &lt;= prev.getY())) {</span>
+<span class="fc" id="L750">                        added = true;</span>
+<span class="fc" id="L751">                        break;</span>
                     }
 
                     //case: point is between ranges in colRanges
 
-<span class="fc" id="L762">                    allAreWithinExistingRange = false;</span>
+<span class="fc" id="L756">                    allAreWithinExistingRange = false;</span>
 
-<span class="pc bpc" id="L764" title="1 of 4 branches missed.">                    if ((col &gt;= prev.getY()) &amp;&amp; (col &lt;= current.getX())) {</span>
+<span class="pc bpc" id="L758" title="1 of 4 branches missed.">                    if ((col &gt;= prev.getY()) &amp;&amp; (col &lt;= current.getX())) {</span>
 
-<span class="pc bpc" id="L766" title="1 of 2 branches missed.">                        if (col == (prev.getY() + 1)) {</span>
+<span class="pc bpc" id="L760" title="1 of 2 branches missed.">                        if (col == (prev.getY() + 1)) {</span>
 
                             //if adjacent to current range too, merge them
-<span class="pc bpc" id="L769" title="1 of 2 branches missed.">                            if (col == (current.getX() - 1)) {</span>
+<span class="pc bpc" id="L763" title="1 of 2 branches missed.">                            if (col == (current.getX() - 1)) {</span>
                                 // extend prev to current end and remove current
-<span class="fc" id="L771">                                prev.setY(current.getY());</span>
-<span class="fc" id="L772">                                colRanges.remove(current);</span>
+<span class="fc" id="L765">                                prev.setY(current.getY());</span>
+<span class="fc" id="L766">                                colRanges.remove(current);</span>
                             } else {
-<span class="nc" id="L774">                                prev.setY(col);</span>
+<span class="nc" id="L768">                                prev.setY(col);</span>
                             }
-<span class="fc" id="L776">                            added = true;</span>
-<span class="fc" id="L777">                            break;</span>
-<span class="nc bnc" id="L778" title="All 2 branches missed.">                        } else if (col == (current.getX() - 1)) {</span>
-<span class="nc" id="L779">                            current.setX(col);</span>
-<span class="nc" id="L780">                            added = true;</span>
-<span class="nc" id="L781">                            break;</span>
+<span class="fc" id="L770">                            added = true;</span>
+<span class="fc" id="L771">                            break;</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">                        } else if (col == (current.getX() - 1)) {</span>
+<span class="nc" id="L773">                            current.setX(col);</span>
+<span class="nc" id="L774">                            added = true;</span>
+<span class="nc" id="L775">                            break;</span>
                         } else {
-<span class="nc" id="L783">                            PairInt add = new PairInt(col, col);</span>
-<span class="nc" id="L784">                            colRanges.add(i, add);</span>
-<span class="nc" id="L785">                            added = true;</span>
-<span class="nc" id="L786">                            break;</span>
+<span class="nc" id="L777">                            PairInt add = new PairInt(col, col);</span>
+<span class="nc" id="L778">                            colRanges.add(i, add);</span>
+<span class="nc" id="L779">                            added = true;</span>
+<span class="nc" id="L780">                            break;</span>
                         }
                     }
                 }
-<span class="pc bpc" id="L790" title="1 of 2 branches missed.">                if (!added) {</span>
+<span class="pc bpc" id="L784" title="1 of 2 branches missed.">                if (!added) {</span>
 
                     // find min and max of ranges:
-<span class="nc" id="L793">                    int[] minMaxCols = findMinMaxColumns(rowColRanges,</span>
+<span class="nc" id="L787">                    int[] minMaxCols = findMinMaxColumns(rowColRanges,</span>
                         rowMinMax);
 
-<span class="nc" id="L796">                     List&lt;PairInt&gt; colRanges0 = rowColRanges.get(</span>
-<span class="nc" id="L797">                         Integer.valueOf(p.getY()));</span>
-<span class="nc" id="L798">                     StringBuffer sb = new StringBuffer();</span>
-<span class="nc bnc" id="L799" title="All 2 branches missed.">                     for (PairInt cr : colRanges0) {</span>
-<span class="nc" id="L800">                         sb.append(&quot;colRange=&quot; + cr.getX() + &quot;:&quot; + cr.getY());</span>
-<span class="nc" id="L801">                         sb.append(&quot;\n&quot;);</span>
-<span class="nc" id="L802">                     }</span>
+<span class="nc" id="L790">                     List&lt;PairInt&gt; colRanges0 = rowColRanges.get(</span>
+<span class="nc" id="L791">                         Integer.valueOf(p.getY()));</span>
+<span class="nc" id="L792">                     StringBuffer sb = new StringBuffer();</span>
+<span class="nc bnc" id="L793" title="All 2 branches missed.">                     for (PairInt cr : colRanges0) {</span>
+<span class="nc" id="L794">                         sb.append(&quot;colRange=&quot; + cr.getX() + &quot;:&quot; + cr.getY());</span>
+<span class="nc" id="L795">                         sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L796">                     }</span>
 
-<span class="nc" id="L804">                    throw new IllegalStateException(&quot;point &quot; + p.toString() +</span>
+<span class="nc" id="L798">                    throw new IllegalStateException(&quot;point &quot; + p.toString() +</span>
                         &quot; was not added to a colRange. &quot; +
                         &quot; colRanges minX=&quot; + minMaxCols[0] +
                         &quot; maxX=&quot; + minMaxCols[1] + &quot; minRow=&quot; + rowMinMax[0] +
-<span class="nc" id="L808">                        &quot; maxRow=&quot; + rowMinMax[1] + &quot; &quot; + sb.toString());</span>
+<span class="nc" id="L802">                        &quot; maxRow=&quot; + rowMinMax[1] + &quot; &quot; + sb.toString());</span>
                 }
             }
-<span class="fc" id="L811">        }</span>
+<span class="fc" id="L805">        }</span>
 
-<span class="fc" id="L813">        return allAreWithinExistingRange;</span>
+<span class="fc" id="L807">        return allAreWithinExistingRange;</span>
     }
 
     public void updateRowColRangesForAddedPoints(
@@ -833,87 +827,87 @@ import java.util.logging.Logger;
         existing ranges in rowColRanges.
         */
 
-<span class="fc" id="L836">        boolean allAreWithinExistingRange = updateForAddedPoints(</span>
+<span class="fc" id="L830">        boolean allAreWithinExistingRange = updateForAddedPoints(</span>
             rowColRanges, rowMinMax, addedPoints);
 
-<span class="fc bfc" id="L839" title="All 2 branches covered.">        if (allAreWithinExistingRange) {</span>
-<span class="fc" id="L840">            return;</span>
+<span class="fc bfc" id="L833" title="All 2 branches covered.">        if (allAreWithinExistingRange) {</span>
+<span class="fc" id="L834">            return;</span>
         }
 
         // ------- find minX and maxX -------
         // runtime is O(rowColRanges.size)
-<span class="fc" id="L845">        int minY = rowMinMax[0];</span>
-<span class="fc" id="L846">        int maxY = rowMinMax[1];</span>
-<span class="fc" id="L847">        int minX = Integer.MAX_VALUE;</span>
-<span class="fc" id="L848">        int maxX = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L849" title="All 2 branches covered.">        for (int row = minY; row &lt;= maxY; row++) {</span>
-<span class="fc" id="L850">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
-<span class="pc bpc" id="L851" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
-<span class="nc" id="L852">                continue;</span>
+<span class="fc" id="L839">        int minY = rowMinMax[0];</span>
+<span class="fc" id="L840">        int maxY = rowMinMax[1];</span>
+<span class="fc" id="L841">        int minX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L842">        int maxX = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L843" title="All 2 branches covered.">        for (int row = minY; row &lt;= maxY; row++) {</span>
+<span class="fc" id="L844">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="pc bpc" id="L845" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
+<span class="nc" id="L846">                continue;</span>
             }
-<span class="fc" id="L854">            int n = colRanges.size();</span>
-<span class="fc" id="L855">            PairInt cr = colRanges.get(0);</span>
-<span class="fc bfc" id="L856" title="All 2 branches covered.">            if (cr.getX() &lt; minX) {</span>
-<span class="fc" id="L857">                minX = cr.getX();</span>
+<span class="fc" id="L848">            int n = colRanges.size();</span>
+<span class="fc" id="L849">            PairInt cr = colRanges.get(0);</span>
+<span class="fc bfc" id="L850" title="All 2 branches covered.">            if (cr.getX() &lt; minX) {</span>
+<span class="fc" id="L851">                minX = cr.getX();</span>
             }
-<span class="fc bfc" id="L859" title="All 2 branches covered.">            if (n &gt; 1) {</span>
-<span class="fc" id="L860">                cr = colRanges.get(n - 1);</span>
+<span class="fc bfc" id="L853" title="All 2 branches covered.">            if (n &gt; 1) {</span>
+<span class="fc" id="L854">                cr = colRanges.get(n - 1);</span>
             }
-<span class="fc bfc" id="L862" title="All 2 branches covered.">            if (cr.getY() &gt; maxX) {</span>
-<span class="fc" id="L863">                maxX = cr.getY();</span>
+<span class="fc bfc" id="L856" title="All 2 branches covered.">            if (cr.getY() &gt; maxX) {</span>
+<span class="fc" id="L857">                maxX = cr.getY();</span>
             }
         }
 
         // runtime complexity is &gt; O(m) where m is the number of contig gap ranges by row
-<span class="fc" id="L868">        List&lt;List&lt;Gap&gt;&gt; contiguousGaps = findContiguousGaps(rowColRanges,</span>
+<span class="fc" id="L862">        List&lt;List&lt;Gap&gt;&gt; contiguousGaps = findContiguousGaps(rowColRanges,</span>
             minX, maxX, minY, maxY);
 
         //runtime complexity is &gt; O(m) where m is the number of contig gap ranges by row
-<span class="fc" id="L872">        List&lt;List&lt;Gap&gt;&gt; embeddedGapGroups = findBoundedGaps(contiguousGaps, minY,</span>
+<span class="fc" id="L866">        List&lt;List&lt;Gap&gt;&gt; embeddedGapGroups = findBoundedGaps(contiguousGaps, minY,</span>
             maxY, imageMaxColumn, rowColRanges);
 
         // update the rowColRanges to encapsulate the truly embedded points too
-<span class="fc" id="L876">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L870">        Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc bfc" id="L878" title="All 2 branches covered.">        for (List&lt;Gap&gt; embeddedGroup : embeddedGapGroups) {</span>
+<span class="fc bfc" id="L872" title="All 2 branches covered.">        for (List&lt;Gap&gt; embeddedGroup : embeddedGapGroups) {</span>
 
-<span class="fc" id="L880">            updateRowColRangesForVerifiedEmbedded(rowColRanges,</span>
+<span class="fc" id="L874">            updateRowColRangesForVerifiedEmbedded(rowColRanges,</span>
                 embeddedGroup, outputEmbeddedGapPoints);
-<span class="fc" id="L882">        }</span>
-<span class="fc" id="L883">    }</span>
+<span class="fc" id="L876">        }</span>
+<span class="fc" id="L877">    }</span>
 
     private void updateRowColRangesForVerifiedEmbedded(
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges,
         Collection&lt;Gap&gt; embeddedGaps, Set&lt;PairInt&gt; outputEmbeddedGapPoints) {
 
-<span class="fc bfc" id="L889" title="All 2 branches covered.">        for (Gap gap : embeddedGaps) {</span>
+<span class="fc bfc" id="L883" title="All 2 branches covered.">        for (Gap gap : embeddedGaps) {</span>
 
-<span class="fc" id="L891">            int row = gap.getRow();</span>
+<span class="fc" id="L885">            int row = gap.getRow();</span>
 
-<span class="fc" id="L893">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L887">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
 
-<span class="fc bfc" id="L895" title="All 2 branches covered.">            for (int i = (colRanges.size() - 1); i &gt; 0; i--) {</span>
+<span class="fc bfc" id="L889" title="All 2 branches covered.">            for (int i = (colRanges.size() - 1); i &gt; 0; i--) {</span>
 
-<span class="fc" id="L897">                int gapStart = colRanges.get(i - 1).getY() + 1;</span>
-<span class="fc" id="L898">                int gapStop = colRanges.get(i).getX() - 1;</span>
+<span class="fc" id="L891">                int gapStart = colRanges.get(i - 1).getY() + 1;</span>
+<span class="fc" id="L892">                int gapStop = colRanges.get(i).getX() - 1;</span>
 
-<span class="pc bpc" id="L900" title="1 of 4 branches missed.">                if ((gap.getStart() == gapStart) &amp;&amp; (gap.getStopInclusive() == gapStop)) {</span>
+<span class="pc bpc" id="L894" title="1 of 4 branches missed.">                if ((gap.getStart() == gapStart) &amp;&amp; (gap.getStopInclusive() == gapStop)) {</span>
 
-<span class="fc" id="L902">                    PairInt edit = colRanges.get(i - 1);</span>
+<span class="fc" id="L896">                    PairInt edit = colRanges.get(i - 1);</span>
 
-<span class="fc" id="L904">                    PairInt current = colRanges.get(i);</span>
+<span class="fc" id="L898">                    PairInt current = colRanges.get(i);</span>
 
-<span class="fc" id="L906">                    edit.setY(current.getY());</span>
+<span class="fc" id="L900">                    edit.setY(current.getY());</span>
 
-<span class="fc" id="L908">                    colRanges.remove(i);</span>
+<span class="fc" id="L902">                    colRanges.remove(i);</span>
 
-<span class="fc bfc" id="L910" title="All 2 branches covered.">                    for (int cIdx = gapStart; cIdx &lt;= gapStop; cIdx++) {</span>
-<span class="fc" id="L911">                        outputEmbeddedGapPoints.add(new PairInt(cIdx, row));</span>
+<span class="fc bfc" id="L904" title="All 2 branches covered.">                    for (int cIdx = gapStart; cIdx &lt;= gapStop; cIdx++) {</span>
+<span class="fc" id="L905">                        outputEmbeddedGapPoints.add(new PairInt(cIdx, row));</span>
                     }
                 }
             }
-<span class="fc" id="L915">        }</span>
-<span class="fc" id="L916">    }</span>
+<span class="fc" id="L909">        }</span>
+<span class="fc" id="L910">    }</span>
 
     /**
      * find the pixels which are the borders of rowColRanges including concave
@@ -933,14 +927,14 @@ import java.util.logging.Logger;
     public Set&lt;PairInt&gt; getBorderPixels(Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
 
-<span class="fc" id="L936">        Set&lt;PairInt&gt; borderPixels = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L930">        Set&lt;PairInt&gt; borderPixels = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="pc bpc" id="L938" title="1 of 2 branches missed.">        if (rowColRanges.isEmpty()) {</span>
-<span class="nc" id="L939">            return borderPixels;</span>
+<span class="pc bpc" id="L932" title="1 of 2 branches missed.">        if (rowColRanges.isEmpty()) {</span>
+<span class="nc" id="L933">            return borderPixels;</span>
         }
 
-<span class="pc bpc" id="L942" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L943">            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,</span>
+<span class="pc bpc" id="L936" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L937">            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,</span>
                 rowMinMax, imageMaxColumn, imageMaxRow);
         }
 
@@ -985,111 +979,111 @@ import java.util.logging.Logger;
 
         */
 
-<span class="fc" id="L988">        int[] colMinMax = getMinMaxColumnsInRanges(rowColRanges, rowMinMax);</span>
+<span class="fc" id="L982">        int[] colMinMax = getMinMaxColumnsInRanges(rowColRanges, rowMinMax);</span>
 
         // ---- find nonMembers that are connected to the bounds of the -----
         // ---- region bounded by rowMinMax and colMinMax               -----
 
-<span class="fc" id="L993">        Set&lt;PairInt&gt; nonMembersConnectedToBounds =</span>
-<span class="fc" id="L994">            findNonMembersConnectedToBounds(rowColRanges, rowMinMax, colMinMax,</span>
+<span class="fc" id="L987">        Set&lt;PairInt&gt; nonMembersConnectedToBounds =</span>
+<span class="fc" id="L988">            findNonMembersConnectedToBounds(rowColRanges, rowMinMax, colMinMax,</span>
                 imageMaxColumn, imageMaxRow);
 
         //int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         //int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-<span class="fc" id="L999">        int[] dxs = new int[]{-1, 0,  1, 0};</span>
-<span class="fc" id="L1000">        int[] dys = new int[]{ 0, -1, 0, 1};</span>
+<span class="fc" id="L993">        int[] dxs = new int[]{-1, 0,  1, 0};</span>
+<span class="fc" id="L994">        int[] dys = new int[]{ 0, -1, 0, 1};</span>
 
         // --- for each member in colRanges, if it's adjacent to a point
         // --- in nonMembersConnectedToBounds it's a border point
-<span class="fc bfc" id="L1004" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
+<span class="fc bfc" id="L998" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
 
-<span class="fc" id="L1006">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L1000">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
 
-<span class="pc bpc" id="L1008" title="2 of 4 branches missed.">            if (colRanges == null || colRanges.isEmpty()) {</span>
-<span class="nc" id="L1009">                throw new IllegalStateException(</span>
+<span class="pc bpc" id="L1002" title="2 of 4 branches missed.">            if (colRanges == null || colRanges.isEmpty()) {</span>
+<span class="nc" id="L1003">                throw new IllegalStateException(</span>
                 &quot;each row should have a point in it, else not contiguous&quot;);
             }
 
-<span class="fc bfc" id="L1013" title="All 2 branches covered.">            for (PairInt colRange : colRanges) {</span>
-<span class="fc bfc" id="L1014" title="All 2 branches covered.">                for (int col = colRange.getX(); col &lt;= colRange.getY(); ++col) {</span>
+<span class="fc bfc" id="L1007" title="All 2 branches covered.">            for (PairInt colRange : colRanges) {</span>
+<span class="fc bfc" id="L1008" title="All 2 branches covered.">                for (int col = colRange.getX(); col &lt;= colRange.getY(); ++col) {</span>
 
                     // test if adjacent to a point in nonMembersConnectedToBounds
-<span class="fc bfc" id="L1017" title="All 2 branches covered.">                    for (int idx = 0; idx &lt; dxs.length; ++idx) {</span>
+<span class="fc bfc" id="L1011" title="All 2 branches covered.">                    for (int idx = 0; idx &lt; dxs.length; ++idx) {</span>
 
-<span class="fc" id="L1019">                        int x = col + dxs[idx];</span>
-<span class="fc" id="L1020">                        int y = row + dys[idx];</span>
+<span class="fc" id="L1013">                        int x = col + dxs[idx];</span>
+<span class="fc" id="L1014">                        int y = row + dys[idx];</span>
 
-<span class="fc" id="L1022">                        PairInt t = new PairInt(x, y);</span>
-<span class="fc bfc" id="L1023" title="All 2 branches covered.">                        if (nonMembersConnectedToBounds.contains(t)) {</span>
-<span class="fc" id="L1024">                            borderPixels.add(new PairInt(col, row));</span>
-<span class="fc" id="L1025">                            break;</span>
+<span class="fc" id="L1016">                        PairInt t = new PairInt(x, y);</span>
+<span class="fc bfc" id="L1017" title="All 2 branches covered.">                        if (nonMembersConnectedToBounds.contains(t)) {</span>
+<span class="fc" id="L1018">                            borderPixels.add(new PairInt(col, row));</span>
+<span class="fc" id="L1019">                            break;</span>
                         }
                     }
                 }
-<span class="fc" id="L1029">            }</span>
+<span class="fc" id="L1023">            }</span>
         }
 
         // --- then add any pixels on the bounds if the bounds is not the
         //     same as the image bounds
 
         int[] rows;
-<span class="fc bfc" id="L1036" title="All 2 branches covered.">        if (rowMinMax[0] &gt; 0) {</span>
-<span class="fc bfc" id="L1037" title="All 2 branches covered.">            if (rowMinMax[1] &lt; imageMaxRow) {</span>
-<span class="fc" id="L1038">                rows = new int[]{rowMinMax[0], rowMinMax[1]};</span>
+<span class="fc bfc" id="L1030" title="All 2 branches covered.">        if (rowMinMax[0] &gt; 0) {</span>
+<span class="fc bfc" id="L1031" title="All 2 branches covered.">            if (rowMinMax[1] &lt; imageMaxRow) {</span>
+<span class="fc" id="L1032">                rows = new int[]{rowMinMax[0], rowMinMax[1]};</span>
             } else {
-<span class="fc" id="L1040">                rows = new int[]{rowMinMax[0]};</span>
+<span class="fc" id="L1034">                rows = new int[]{rowMinMax[0]};</span>
             }
-<span class="pc bpc" id="L1042" title="1 of 2 branches missed.">        } else if (rowMinMax[1] &lt; imageMaxRow) {</span>
-<span class="fc" id="L1043">            rows = new int[]{rowMinMax[1]};</span>
+<span class="pc bpc" id="L1036" title="1 of 2 branches missed.">        } else if (rowMinMax[1] &lt; imageMaxRow) {</span>
+<span class="fc" id="L1037">            rows = new int[]{rowMinMax[1]};</span>
         } else {
-<span class="nc" id="L1045">            rows = new int[]{};</span>
+<span class="nc" id="L1039">            rows = new int[]{};</span>
         }
 
-<span class="fc bfc" id="L1048" title="All 2 branches covered.">        for (int row : rows) {</span>
+<span class="fc bfc" id="L1042" title="All 2 branches covered.">        for (int row : rows) {</span>
 
-<span class="fc" id="L1050">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L1044">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
 
-<span class="pc bpc" id="L1052" title="2 of 4 branches missed.">            if (colRanges == null || colRanges.isEmpty()) {</span>
-<span class="nc" id="L1053">                throw new IllegalStateException(</span>
+<span class="pc bpc" id="L1046" title="2 of 4 branches missed.">            if (colRanges == null || colRanges.isEmpty()) {</span>
+<span class="nc" id="L1047">                throw new IllegalStateException(</span>
                 &quot;each row should have a point in it, else not contiguous&quot;);
             }
 
-<span class="fc bfc" id="L1057" title="All 2 branches covered.">            for (PairInt colRange : colRanges) {</span>
-<span class="fc bfc" id="L1058" title="All 2 branches covered.">                for (int col = colRange.getX(); col &lt;= colRange.getY(); ++col) {</span>
-<span class="fc" id="L1059">                    borderPixels.add(new PairInt(col, row));</span>
+<span class="fc bfc" id="L1051" title="All 2 branches covered.">            for (PairInt colRange : colRanges) {</span>
+<span class="fc bfc" id="L1052" title="All 2 branches covered.">                for (int col = colRange.getX(); col &lt;= colRange.getY(); ++col) {</span>
+<span class="fc" id="L1053">                    borderPixels.add(new PairInt(col, row));</span>
                 }
-<span class="fc" id="L1061">            }</span>
+<span class="fc" id="L1055">            }</span>
         }
 
-<span class="fc bfc" id="L1064" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
+<span class="fc bfc" id="L1058" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
 
-<span class="fc" id="L1066">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L1060">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
 
-<span class="pc bpc" id="L1068" title="2 of 4 branches missed.">            if (colRanges == null || colRanges.isEmpty()) {</span>
-<span class="nc" id="L1069">                throw new IllegalStateException(</span>
+<span class="pc bpc" id="L1062" title="2 of 4 branches missed.">            if (colRanges == null || colRanges.isEmpty()) {</span>
+<span class="nc" id="L1063">                throw new IllegalStateException(</span>
                 &quot;each row should have a point in it, else not contiguous&quot;);
             }
 
-<span class="fc" id="L1073">            int firstX = colRanges.get(0).getX();</span>
+<span class="fc" id="L1067">            int firstX = colRanges.get(0).getX();</span>
 
-<span class="pc bpc" id="L1075" title="1 of 4 branches missed.">            if ((colMinMax[0] &gt; 0) &amp;&amp; (firstX &gt;= colMinMax[0])) {</span>
-<span class="fc" id="L1076">                borderPixels.add(new PairInt(firstX, row));</span>
-<span class="pc bpc" id="L1077" title="1 of 4 branches missed.">            } else if ((colMinMax[0] == 0) &amp;&amp; (firstX &gt; colMinMax[0])) {</span>
-<span class="fc" id="L1078">                borderPixels.add(new PairInt(firstX, row));</span>
+<span class="pc bpc" id="L1069" title="1 of 4 branches missed.">            if ((colMinMax[0] &gt; 0) &amp;&amp; (firstX &gt;= colMinMax[0])) {</span>
+<span class="fc" id="L1070">                borderPixels.add(new PairInt(firstX, row));</span>
+<span class="pc bpc" id="L1071" title="1 of 4 branches missed.">            } else if ((colMinMax[0] == 0) &amp;&amp; (firstX &gt; colMinMax[0])) {</span>
+<span class="fc" id="L1072">                borderPixels.add(new PairInt(firstX, row));</span>
             }
 
-<span class="fc" id="L1081">            int n = colRanges.size();</span>
+<span class="fc" id="L1075">            int n = colRanges.size();</span>
 
-<span class="fc" id="L1083">            int lastX = colRanges.get(n - 1).getY();</span>
+<span class="fc" id="L1077">            int lastX = colRanges.get(n - 1).getY();</span>
 
-<span class="pc bpc" id="L1085" title="1 of 4 branches missed.">            if ((colMinMax[1] &lt; imageMaxColumn) &amp;&amp; (lastX &lt;= colMinMax[1])) {</span>
-<span class="fc" id="L1086">                borderPixels.add(new PairInt(lastX, row));</span>
-<span class="pc bpc" id="L1087" title="1 of 4 branches missed.">            } else if ((colMinMax[1] == imageMaxColumn) &amp;&amp; (lastX &lt; colMinMax[1])) {</span>
-<span class="fc" id="L1088">                borderPixels.add(new PairInt(lastX, row));</span>
+<span class="pc bpc" id="L1079" title="1 of 4 branches missed.">            if ((colMinMax[1] &lt; imageMaxColumn) &amp;&amp; (lastX &lt;= colMinMax[1])) {</span>
+<span class="fc" id="L1080">                borderPixels.add(new PairInt(lastX, row));</span>
+<span class="pc bpc" id="L1081" title="1 of 4 branches missed.">            } else if ((colMinMax[1] == imageMaxColumn) &amp;&amp; (lastX &lt; colMinMax[1])) {</span>
+<span class="fc" id="L1082">                borderPixels.add(new PairInt(lastX, row));</span>
             }
         }
 
-<span class="fc" id="L1092">        return borderPixels;</span>
+<span class="fc" id="L1086">        return borderPixels;</span>
     }
 
     /**
@@ -1097,6 +1091,7 @@ import java.util.logging.Logger;
      * by min row, max row, and the minimum of columns and the maximum of columns.
      * @param rowColRanges
      * @param rowMinMax
+     * @param colMinMax
      * @param imageMaxColumn
      * @param imageMaxRow
      * @return
@@ -1104,105 +1099,105 @@ import java.util.logging.Logger;
     public Set&lt;PairInt&gt; getVoidsInRectangularRegion(Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges,
         int[] rowMinMax, int[] colMinMax, int imageMaxColumn, int imageMaxRow) {
 
-<span class="fc" id="L1107">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1102">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc bfc" id="L1109" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
+<span class="fc bfc" id="L1104" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
 
-<span class="fc" id="L1111">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L1106">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
 
-<span class="pc bpc" id="L1113" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
-<span class="nc" id="L1114">                continue;</span>
+<span class="pc bpc" id="L1108" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
+<span class="nc" id="L1109">                continue;</span>
             }
 
-<span class="fc" id="L1117">            int n = colRanges.size();</span>
+<span class="fc" id="L1112">            int n = colRanges.size();</span>
 
-<span class="fc" id="L1119">            PairInt colRange = colRanges.get(0);</span>
+<span class="fc" id="L1114">            PairInt colRange = colRanges.get(0);</span>
 
-<span class="fc bfc" id="L1121" title="All 2 branches covered.">            for (int x = colMinMax[0]; x &lt; colRange.getX(); ++x) {</span>
-<span class="fc" id="L1122">                set.add(new PairInt(x, row));</span>
+<span class="fc bfc" id="L1116" title="All 2 branches covered.">            for (int x = colMinMax[0]; x &lt; colRange.getX(); ++x) {</span>
+<span class="fc" id="L1117">                set.add(new PairInt(x, row));</span>
             }
 
-<span class="fc bfc" id="L1125" title="All 2 branches covered.">            for (int i = 1; i &lt; n; ++i) {</span>
-<span class="fc" id="L1126">                int lx = colRange.getY();</span>
-<span class="fc" id="L1127">                colRange = colRanges.get(i);</span>
-<span class="fc" id="L1128">                int rx = colRange.getX();</span>
-<span class="fc bfc" id="L1129" title="All 2 branches covered.">                for (int x = (lx + 1); x &lt; rx; ++x) {</span>
-<span class="fc" id="L1130">                    set.add(new PairInt(x, row));</span>
+<span class="fc bfc" id="L1120" title="All 2 branches covered.">            for (int i = 1; i &lt; n; ++i) {</span>
+<span class="fc" id="L1121">                int lx = colRange.getY();</span>
+<span class="fc" id="L1122">                colRange = colRanges.get(i);</span>
+<span class="fc" id="L1123">                int rx = colRange.getX();</span>
+<span class="fc bfc" id="L1124" title="All 2 branches covered.">                for (int x = (lx + 1); x &lt; rx; ++x) {</span>
+<span class="fc" id="L1125">                    set.add(new PairInt(x, row));</span>
                 }
             }
 
-<span class="fc bfc" id="L1134" title="All 2 branches covered.">            for (int x = (colRange.getY() + 1); x &lt;= colMinMax[1]; ++x) {</span>
-<span class="fc" id="L1135">                set.add(new PairInt(x, row));</span>
+<span class="fc bfc" id="L1129" title="All 2 branches covered.">            for (int x = (colRange.getY() + 1); x &lt;= colMinMax[1]; ++x) {</span>
+<span class="fc" id="L1130">                set.add(new PairInt(x, row));</span>
             }
         }
 
-<span class="fc" id="L1139">        return set;</span>
+<span class="fc" id="L1134">        return set;</span>
     }
 
     public int[] getMinMaxColumnsInRanges(Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges,
         int[] rowMinMax) {
 
-<span class="fc" id="L1145">        int minX = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1146">        int maxX = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1140">        int minX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1141">        int maxX = Integer.MIN_VALUE;</span>
 
-<span class="fc bfc" id="L1148" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
+<span class="fc bfc" id="L1143" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
 
-<span class="fc" id="L1150">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L1145">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
 
-<span class="pc bpc" id="L1152" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
-<span class="nc" id="L1153">                continue;</span>
+<span class="pc bpc" id="L1147" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
+<span class="nc" id="L1148">                continue;</span>
             }
 
-<span class="fc" id="L1156">            int n = colRanges.size();</span>
+<span class="fc" id="L1151">            int n = colRanges.size();</span>
 
-<span class="fc" id="L1158">            int tc = colRanges.get(0).getX();</span>
+<span class="fc" id="L1153">            int tc = colRanges.get(0).getX();</span>
 
-<span class="fc bfc" id="L1160" title="All 2 branches covered.">            if (tc &lt; minX) {</span>
-<span class="fc" id="L1161">                minX = tc;</span>
+<span class="fc bfc" id="L1155" title="All 2 branches covered.">            if (tc &lt; minX) {</span>
+<span class="fc" id="L1156">                minX = tc;</span>
             }
-<span class="fc" id="L1163">            tc = colRanges.get(n - 1).getY();</span>
-<span class="fc bfc" id="L1164" title="All 2 branches covered.">            if (tc &gt; maxX) {</span>
-<span class="fc" id="L1165">                maxX = tc;</span>
+<span class="fc" id="L1158">            tc = colRanges.get(n - 1).getY();</span>
+<span class="fc bfc" id="L1159" title="All 2 branches covered.">            if (tc &gt; maxX) {</span>
+<span class="fc" id="L1160">                maxX = tc;</span>
             }
         }
 
-<span class="fc" id="L1169">        return new int[]{minX, maxX};</span>
+<span class="fc" id="L1164">        return new int[]{minX, maxX};</span>
     }
 
     protected Gap findLastGap(Set&lt;Gap&gt; gaps) {
-<span class="fc" id="L1173">        Gap lastGap = null;</span>
-<span class="fc bfc" id="L1174" title="All 2 branches covered.">        for (Gap gap : gaps) {</span>
-<span class="fc bfc" id="L1175" title="All 2 branches covered.">            if (lastGap == null) {</span>
-<span class="fc" id="L1176">                lastGap = gap;</span>
+<span class="fc" id="L1168">        Gap lastGap = null;</span>
+<span class="fc bfc" id="L1169" title="All 2 branches covered.">        for (Gap gap : gaps) {</span>
+<span class="fc bfc" id="L1170" title="All 2 branches covered.">            if (lastGap == null) {</span>
+<span class="fc" id="L1171">                lastGap = gap;</span>
             } else {
-<span class="fc bfc" id="L1178" title="All 2 branches covered.">                if (gap.getStopInclusive() &gt; lastGap.getStopInclusive()) {</span>
-<span class="fc" id="L1179">                    lastGap = gap;</span>
+<span class="fc bfc" id="L1173" title="All 2 branches covered.">                if (gap.getStopInclusive() &gt; lastGap.getStopInclusive()) {</span>
+<span class="fc" id="L1174">                    lastGap = gap;</span>
                 }
             }
-<span class="fc" id="L1182">        }</span>
-<span class="fc" id="L1183">        return lastGap;</span>
+<span class="fc" id="L1177">        }</span>
+<span class="fc" id="L1178">        return lastGap;</span>
     }
 
     protected Gap findFirstGap(Set&lt;Gap&gt; gaps) {
-<span class="fc" id="L1187">        Gap firstGap = null;</span>
-<span class="fc bfc" id="L1188" title="All 2 branches covered.">        for (Gap gap : gaps) {</span>
-<span class="fc bfc" id="L1189" title="All 2 branches covered.">            if (firstGap == null) {</span>
-<span class="fc" id="L1190">                firstGap = gap;</span>
+<span class="fc" id="L1182">        Gap firstGap = null;</span>
+<span class="fc bfc" id="L1183" title="All 2 branches covered.">        for (Gap gap : gaps) {</span>
+<span class="fc bfc" id="L1184" title="All 2 branches covered.">            if (firstGap == null) {</span>
+<span class="fc" id="L1185">                firstGap = gap;</span>
             } else {
-<span class="fc bfc" id="L1192" title="All 2 branches covered.">                if (gap.getStart() &lt; firstGap.getStart()) {</span>
-<span class="fc" id="L1193">                    firstGap = gap;</span>
+<span class="fc bfc" id="L1187" title="All 2 branches covered.">                if (gap.getStart() &lt; firstGap.getStart()) {</span>
+<span class="fc" id="L1188">                    firstGap = gap;</span>
                 }
             }
-<span class="fc" id="L1196">        }</span>
-<span class="fc" id="L1197">        return firstGap;</span>
+<span class="fc" id="L1191">        }</span>
+<span class="fc" id="L1192">        return firstGap;</span>
     }
 
     protected boolean adjacentGapIsConnectedToImageBoundary(
         int startGap, int stopGapInclusive, Set&lt;Gap&gt; adjacentGaps,
         List&lt;PairInt&gt; adjacentColRanges, int imageMaxColumn) {
 
-<span class="fc bfc" id="L1204" title="All 4 branches covered.">        if ((adjacentColRanges == null) || adjacentColRanges.isEmpty()) {</span>
-<span class="fc" id="L1205">            return true;</span>
+<span class="fc bfc" id="L1199" title="All 4 branches covered.">        if ((adjacentColRanges == null) || adjacentColRanges.isEmpty()) {</span>
+<span class="fc" id="L1200">            return true;</span>
         }
 
         /*
@@ -1210,268 +1205,268 @@ import java.util.logging.Logger;
         row which has a leading or trailing gap which is connected to the image
         boundaries.
         */
-<span class="fc" id="L1213">        PairInt lastColRange = adjacentColRanges.get(adjacentColRanges.size() - 1);</span>
-<span class="pc bpc" id="L1214" title="1 of 4 branches missed.">        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {</span>
-<span class="fc bfc" id="L1215" title="All 2 branches covered.">            if (lastColRange.getY() &lt; imageMaxColumn) {</span>
-<span class="fc bfc" id="L1216" title="All 2 branches covered.">                if (stopGapInclusive &gt;= (lastColRange.getY() + 1)) {</span>
-<span class="fc" id="L1217">                    return true;</span>
+<span class="fc" id="L1208">        PairInt lastColRange = adjacentColRanges.get(adjacentColRanges.size() - 1);</span>
+<span class="pc bpc" id="L1209" title="1 of 4 branches missed.">        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {</span>
+<span class="fc bfc" id="L1210" title="All 2 branches covered.">            if (lastColRange.getY() &lt; imageMaxColumn) {</span>
+<span class="fc bfc" id="L1211" title="All 2 branches covered.">                if (stopGapInclusive &gt;= (lastColRange.getY() + 1)) {</span>
+<span class="fc" id="L1212">                    return true;</span>
                 }
             }
         } else {
-<span class="fc" id="L1221">            Gap lastGap = findLastGap(adjacentGaps);</span>
-<span class="fc bfc" id="L1222" title="All 2 branches covered.">            if (lastColRange.getX() &gt; lastGap.getStopInclusive()) {</span>
-<span class="fc bfc" id="L1223" title="All 2 branches covered.">                if (lastColRange.getY() &lt; imageMaxColumn) {</span>
-<span class="fc bfc" id="L1224" title="All 2 branches covered.">                    if (stopGapInclusive &gt;= (lastColRange.getY() + 1)) {</span>
-<span class="fc" id="L1225">                        return true;</span>
+<span class="fc" id="L1216">            Gap lastGap = findLastGap(adjacentGaps);</span>
+<span class="fc bfc" id="L1217" title="All 2 branches covered.">            if (lastColRange.getX() &gt; lastGap.getStopInclusive()) {</span>
+<span class="fc bfc" id="L1218" title="All 2 branches covered.">                if (lastColRange.getY() &lt; imageMaxColumn) {</span>
+<span class="fc bfc" id="L1219" title="All 2 branches covered.">                    if (stopGapInclusive &gt;= (lastColRange.getY() + 1)) {</span>
+<span class="fc" id="L1220">                        return true;</span>
                     }
                 }
             }
         }
-<span class="fc" id="L1230">        PairInt firstColRange = adjacentColRanges.get(0);</span>
-<span class="pc bpc" id="L1231" title="1 of 4 branches missed.">        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {</span>
-<span class="fc bfc" id="L1232" title="All 2 branches covered.">            if (firstColRange.getX() &gt; 0) {</span>
-<span class="fc bfc" id="L1233" title="All 2 branches covered.">                if (startGap &lt;= (firstColRange.getX() - 1)) {</span>
-<span class="fc" id="L1234">                    return true;</span>
+<span class="fc" id="L1225">        PairInt firstColRange = adjacentColRanges.get(0);</span>
+<span class="pc bpc" id="L1226" title="1 of 4 branches missed.">        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {</span>
+<span class="fc bfc" id="L1227" title="All 2 branches covered.">            if (firstColRange.getX() &gt; 0) {</span>
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">                if (startGap &lt;= (firstColRange.getX() - 1)) {</span>
+<span class="fc" id="L1229">                    return true;</span>
                 }
             }
         } else {
-<span class="fc" id="L1238">            Gap firstGap = findFirstGap(adjacentGaps);</span>
-<span class="fc bfc" id="L1239" title="All 2 branches covered.">            if (firstColRange.getY() &lt; firstGap.getStart()) {</span>
-<span class="fc bfc" id="L1240" title="All 2 branches covered.">                if (firstColRange.getX() &gt; 0) {</span>
-<span class="fc bfc" id="L1241" title="All 2 branches covered.">                    if (startGap &lt;= (firstColRange.getX() - 1)) {</span>
-<span class="fc" id="L1242">                        return true;</span>
+<span class="fc" id="L1233">            Gap firstGap = findFirstGap(adjacentGaps);</span>
+<span class="fc bfc" id="L1234" title="All 2 branches covered.">            if (firstColRange.getY() &lt; firstGap.getStart()) {</span>
+<span class="fc bfc" id="L1235" title="All 2 branches covered.">                if (firstColRange.getX() &gt; 0) {</span>
+<span class="fc bfc" id="L1236" title="All 2 branches covered.">                    if (startGap &lt;= (firstColRange.getX() - 1)) {</span>
+<span class="fc" id="L1237">                        return true;</span>
                     }
                 }
             }
         }
 
-<span class="pc bpc" id="L1248" title="1 of 4 branches missed.">        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {</span>
-<span class="fc" id="L1249">            return false;</span>
+<span class="pc bpc" id="L1243" title="1 of 4 branches missed.">        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {</span>
+<span class="fc" id="L1244">            return false;</span>
         }
 
-<span class="fc bfc" id="L1252" title="All 2 branches covered.">        for (int col = startGap; col &lt;= stopGapInclusive; col++) {</span>
-<span class="fc bfc" id="L1253" title="All 2 branches covered.">            for (Gap gap : adjacentGaps) {</span>
-<span class="fc bfc" id="L1254" title="All 4 branches covered.">                if ((col &gt;= gap.getStart()) &amp;&amp; (col &lt;= gap.getStopInclusive())) {</span>
-<span class="fc bfc" id="L1255" title="All 4 branches covered.">                    if ((gap.getStart() == 0) || (gap.getStopInclusive() == imageMaxColumn)) {</span>
-<span class="fc" id="L1256">                        return true;</span>
+<span class="fc bfc" id="L1247" title="All 2 branches covered.">        for (int col = startGap; col &lt;= stopGapInclusive; col++) {</span>
+<span class="fc bfc" id="L1248" title="All 2 branches covered.">            for (Gap gap : adjacentGaps) {</span>
+<span class="fc bfc" id="L1249" title="All 4 branches covered.">                if ((col &gt;= gap.getStart()) &amp;&amp; (col &lt;= gap.getStopInclusive())) {</span>
+<span class="fc bfc" id="L1250" title="All 4 branches covered.">                    if ((gap.getStart() == 0) || (gap.getStopInclusive() == imageMaxColumn)) {</span>
+<span class="fc" id="L1251">                        return true;</span>
                     }
                 }
-<span class="fc" id="L1259">            }</span>
+<span class="fc" id="L1254">            }</span>
         }
 
-<span class="fc" id="L1262">        return false;</span>
+<span class="fc" id="L1257">        return false;</span>
     }
 
     protected Map&lt;Integer, Set&lt;Gap&gt;&gt; createRowMap(List&lt;List&lt;Gap&gt;&gt; gapLists) {
 
-<span class="fc" id="L1267">        Map&lt;Integer, Set&lt;Gap&gt;&gt; rowSetsMap = new HashMap&lt;Integer, Set&lt;Gap&gt;&gt;();</span>
+<span class="fc" id="L1262">        Map&lt;Integer, Set&lt;Gap&gt;&gt; rowSetsMap = new HashMap&lt;Integer, Set&lt;Gap&gt;&gt;();</span>
 
-<span class="fc bfc" id="L1269" title="All 2 branches covered.">        for (List&lt;Gap&gt; gaps : gapLists) {</span>
+<span class="fc bfc" id="L1264" title="All 2 branches covered.">        for (List&lt;Gap&gt; gaps : gapLists) {</span>
 
-<span class="fc bfc" id="L1271" title="All 2 branches covered.">            for (Gap gap : gaps) {</span>
+<span class="fc bfc" id="L1266" title="All 2 branches covered.">            for (Gap gap : gaps) {</span>
 
-<span class="fc" id="L1273">                Integer row = Integer.valueOf(gap.getRow());</span>
+<span class="fc" id="L1268">                Integer row = Integer.valueOf(gap.getRow());</span>
 
-<span class="fc" id="L1275">                Set&lt;Gap&gt; set = rowSetsMap.get(row);</span>
+<span class="fc" id="L1270">                Set&lt;Gap&gt; set = rowSetsMap.get(row);</span>
 
-<span class="fc bfc" id="L1277" title="All 2 branches covered.">                if (set == null) {</span>
-<span class="fc" id="L1278">                    set = new HashSet&lt;Gap&gt;();</span>
-<span class="fc" id="L1279">                    rowSetsMap.put(row, set);</span>
+<span class="fc bfc" id="L1272" title="All 2 branches covered.">                if (set == null) {</span>
+<span class="fc" id="L1273">                    set = new HashSet&lt;Gap&gt;();</span>
+<span class="fc" id="L1274">                    rowSetsMap.put(row, set);</span>
                 }
 
-<span class="fc" id="L1282">                set.add(gap);</span>
-<span class="fc" id="L1283">            }</span>
-<span class="fc" id="L1284">        }</span>
+<span class="fc" id="L1277">                set.add(gap);</span>
+<span class="fc" id="L1278">            }</span>
+<span class="fc" id="L1279">        }</span>
 
-<span class="fc" id="L1286">        return rowSetsMap;</span>
+<span class="fc" id="L1281">        return rowSetsMap;</span>
     }
 
     protected int findIndexOfOverlappingRange(List&lt;PairInt&gt; colRanges,
         PairInt findColRange) {
 
-<span class="pc bpc" id="L1292" title="1 of 4 branches missed.">        if ((colRanges == null) || colRanges.isEmpty()) {</span>
-<span class="fc" id="L1293">            return -1;</span>
+<span class="pc bpc" id="L1287" title="1 of 4 branches missed.">        if ((colRanges == null) || colRanges.isEmpty()) {</span>
+<span class="fc" id="L1288">            return -1;</span>
         }
-<span class="fc" id="L1295">        int fc0 = findColRange.getX();</span>
-<span class="fc" id="L1296">        int fc1 = findColRange.getY();</span>
+<span class="fc" id="L1290">        int fc0 = findColRange.getX();</span>
+<span class="fc" id="L1291">        int fc1 = findColRange.getY();</span>
 
-<span class="fc bfc" id="L1298" title="All 2 branches covered.">        for (int i = 0; i &lt; colRanges.size(); i++) {</span>
-<span class="fc" id="L1299">            PairInt colRange = colRanges.get(i);</span>
-<span class="fc" id="L1300">            int c0 = colRange.getX();</span>
-<span class="fc" id="L1301">            int c1 = colRange.getY();</span>
+<span class="fc bfc" id="L1293" title="All 2 branches covered.">        for (int i = 0; i &lt; colRanges.size(); i++) {</span>
+<span class="fc" id="L1294">            PairInt colRange = colRanges.get(i);</span>
+<span class="fc" id="L1295">            int c0 = colRange.getX();</span>
+<span class="fc" id="L1296">            int c1 = colRange.getY();</span>
 
-<span class="fc bfc" id="L1303" title="All 4 branches covered.">            if ((fc0 &lt;= c0) &amp;&amp; (fc1 &gt;= c0)) {</span>
-<span class="fc" id="L1304">                return i;</span>
-<span class="fc bfc" id="L1305" title="All 4 branches covered.">            } else if ((fc0 &gt;= c0) &amp;&amp; (fc0 &lt;= c1)) {</span>
-<span class="fc" id="L1306">                return i;</span>
+<span class="fc bfc" id="L1298" title="All 4 branches covered.">            if ((fc0 &lt;= c0) &amp;&amp; (fc1 &gt;= c0)) {</span>
+<span class="fc" id="L1299">                return i;</span>
+<span class="fc bfc" id="L1300" title="All 4 branches covered.">            } else if ((fc0 &gt;= c0) &amp;&amp; (fc0 &lt;= c1)) {</span>
+<span class="fc" id="L1301">                return i;</span>
             }
         }
-<span class="fc" id="L1309">        return -1;</span>
+<span class="fc" id="L1304">        return -1;</span>
     }
 
     private int[] findMinMaxColumns(Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges,
         int[] rowMinMax) {
 
         // runtime is O(rowColRanges.size)
-<span class="nc" id="L1316">        int minY = rowMinMax[0];</span>
-<span class="nc" id="L1317">        int maxY = rowMinMax[1];</span>
-<span class="nc" id="L1318">        int minX = Integer.MAX_VALUE;</span>
-<span class="nc" id="L1319">        int maxX = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L1320" title="All 2 branches missed.">        for (int row = minY; row &lt;= maxY; row++) {</span>
-<span class="nc" id="L1321">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
-<span class="nc bnc" id="L1322" title="All 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
-<span class="nc" id="L1323">                continue;</span>
+<span class="nc" id="L1311">        int minY = rowMinMax[0];</span>
+<span class="nc" id="L1312">        int maxY = rowMinMax[1];</span>
+<span class="nc" id="L1313">        int minX = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1314">        int maxX = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L1315" title="All 2 branches missed.">        for (int row = minY; row &lt;= maxY; row++) {</span>
+<span class="nc" id="L1316">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="nc bnc" id="L1317" title="All 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
+<span class="nc" id="L1318">                continue;</span>
             }
-<span class="nc" id="L1325">            int n = colRanges.size();</span>
-<span class="nc" id="L1326">            PairInt cr = colRanges.get(0);</span>
-<span class="nc bnc" id="L1327" title="All 2 branches missed.">            if (cr.getX() &lt; minX) {</span>
-<span class="nc" id="L1328">                minX = cr.getX();</span>
+<span class="nc" id="L1320">            int n = colRanges.size();</span>
+<span class="nc" id="L1321">            PairInt cr = colRanges.get(0);</span>
+<span class="nc bnc" id="L1322" title="All 2 branches missed.">            if (cr.getX() &lt; minX) {</span>
+<span class="nc" id="L1323">                minX = cr.getX();</span>
             }
-<span class="nc bnc" id="L1330" title="All 2 branches missed.">            if (n &gt; 1) {</span>
-<span class="nc" id="L1331">                cr = colRanges.get(n - 1);</span>
+<span class="nc bnc" id="L1325" title="All 2 branches missed.">            if (n &gt; 1) {</span>
+<span class="nc" id="L1326">                cr = colRanges.get(n - 1);</span>
             }
-<span class="nc bnc" id="L1333" title="All 2 branches missed.">            if (cr.getY() &gt; maxX) {</span>
-<span class="nc" id="L1334">                maxX = cr.getY();</span>
+<span class="nc bnc" id="L1328" title="All 2 branches missed.">            if (cr.getY() &gt; maxX) {</span>
+<span class="nc" id="L1329">                maxX = cr.getY();</span>
             }
         }
 
-<span class="nc" id="L1338">        return new int[]{minX, maxX};</span>
+<span class="nc" id="L1333">        return new int[]{minX, maxX};</span>
     }
 
     private Map&lt;Integer, List&lt;PairInt&gt;&gt; copy(
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges, int[] rowMinMax) {
 
-<span class="nc" id="L1344">         Map&lt;Integer, List&lt;PairInt&gt;&gt; output = new HashMap&lt;Integer, List&lt;PairInt&gt;&gt;();</span>
-<span class="nc bnc" id="L1345" title="All 2 branches missed.">         for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
+<span class="nc" id="L1339">         Map&lt;Integer, List&lt;PairInt&gt;&gt; output = new HashMap&lt;Integer, List&lt;PairInt&gt;&gt;();</span>
+<span class="nc bnc" id="L1340" title="All 2 branches missed.">         for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
 
-<span class="nc" id="L1347">             Integer key = Integer.valueOf(row);</span>
+<span class="nc" id="L1342">             Integer key = Integer.valueOf(row);</span>
 
-<span class="nc" id="L1349">             List&lt;PairInt&gt; colRanges = rowColRanges.get(key);</span>
+<span class="nc" id="L1344">             List&lt;PairInt&gt; colRanges = rowColRanges.get(key);</span>
 
-<span class="nc" id="L1351">             List&lt;PairInt&gt; outputColRanges = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L1346">             List&lt;PairInt&gt; outputColRanges = new ArrayList&lt;PairInt&gt;();</span>
 
-<span class="nc bnc" id="L1353" title="All 2 branches missed.">             for (PairInt p : colRanges) {</span>
-<span class="nc" id="L1354">                 outputColRanges.add(new PairInt(p.getX(), p.getY()));</span>
-<span class="nc" id="L1355">             }</span>
+<span class="nc bnc" id="L1348" title="All 2 branches missed.">             for (PairInt p : colRanges) {</span>
+<span class="nc" id="L1349">                 outputColRanges.add(new PairInt(p.getX(), p.getY()));</span>
+<span class="nc" id="L1350">             }</span>
 
-<span class="nc" id="L1357">             output.put(key, outputColRanges);</span>
+<span class="nc" id="L1352">             output.put(key, outputColRanges);</span>
          }
 
-<span class="nc" id="L1360">         return output;</span>
+<span class="nc" id="L1355">         return output;</span>
     }
 
     public Set&lt;PairInt&gt; findNonMembersConnectedToBounds(
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges, int[] rowMinMax,
         int[] colMinMax, int imageMaxColumn, int imageMaxRow) {
 
-<span class="fc" id="L1367">        Set&lt;PairInt&gt; nonMembers = getVoidsInRectangularRegion(rowColRanges,</span>
+<span class="fc" id="L1362">        Set&lt;PairInt&gt; nonMembers = getVoidsInRectangularRegion(rowColRanges,</span>
             rowMinMax, colMinMax, imageMaxColumn, imageMaxRow);
 
         //Find the contiguous groups among nonMembers.
-<span class="fc" id="L1371">        DFSConnectedGroupsFinder contigFinder = new DFSConnectedGroupsFinder();</span>
-<span class="fc" id="L1372">        contigFinder.setMinimumNumberInCluster(1);</span>
-<span class="fc" id="L1373">        contigFinder.findConnectedPointGroups(nonMembers, imageMaxColumn,</span>
+<span class="fc" id="L1366">        DFSConnectedGroupsFinder contigFinder = new DFSConnectedGroupsFinder();</span>
+<span class="fc" id="L1367">        contigFinder.setMinimumNumberInCluster(1);</span>
+<span class="fc" id="L1368">        contigFinder.findConnectedPointGroups(nonMembers, imageMaxColumn,</span>
             imageMaxRow);
 
-<span class="fc" id="L1376">        Set&lt;Set&lt;PairInt&gt;&gt; contigNonMembers = new HashSet&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="fc bfc" id="L1377" title="All 2 branches covered.">        for (int i = 0; i &lt; contigFinder.getNumberOfGroups(); ++i) {</span>
-<span class="fc" id="L1378">            Set&lt;PairInt&gt; group = contigFinder.getXY(i);</span>
-<span class="fc" id="L1379">            contigNonMembers.add(group);</span>
+<span class="fc" id="L1371">        Set&lt;Set&lt;PairInt&gt;&gt; contigNonMembers = new HashSet&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc bfc" id="L1372" title="All 2 branches covered.">        for (int i = 0; i &lt; contigFinder.getNumberOfGroups(); ++i) {</span>
+<span class="fc" id="L1373">            Set&lt;PairInt&gt; group = contigFinder.getXY(i);</span>
+<span class="fc" id="L1374">            contigNonMembers.add(group);</span>
         }
 
-<span class="fc" id="L1382">        Set&lt;PairInt&gt; contigNonMembersConnectedToBounds = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1377">        Set&lt;PairInt&gt; contigNonMembersConnectedToBounds = new HashSet&lt;PairInt&gt;();</span>
 
         // --- find the top and bottom row pixels not in colRanges and test memberships ---
-<span class="fc" id="L1385">        int[] rows = new int[]{rowMinMax[0], rowMinMax[1]};</span>
+<span class="fc" id="L1380">        int[] rows = new int[]{rowMinMax[0], rowMinMax[1]};</span>
 
-<span class="fc bfc" id="L1387" title="All 2 branches covered.">        for (int row : rows) {</span>
+<span class="fc bfc" id="L1382" title="All 2 branches covered.">        for (int row : rows) {</span>
 
-<span class="fc" id="L1389">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L1384">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
 
-<span class="pc bpc" id="L1391" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
-<span class="nc" id="L1392">                continue;</span>
+<span class="pc bpc" id="L1386" title="2 of 4 branches missed.">            if ((colRanges == null) || colRanges.isEmpty()) {</span>
+<span class="nc" id="L1387">                continue;</span>
             }
 
-<span class="fc" id="L1395">            int n = colRanges.size();</span>
+<span class="fc" id="L1390">            int n = colRanges.size();</span>
 
-<span class="fc" id="L1397">            PairInt colRange = colRanges.get(0);</span>
+<span class="fc" id="L1392">            PairInt colRange = colRanges.get(0);</span>
 
-<span class="fc bfc" id="L1399" title="All 2 branches covered.">            for (int x = colMinMax[0]; x &lt; colRange.getX(); ++x) {</span>
-<span class="fc" id="L1400">                PairInt t = new PairInt(x, row);</span>
-<span class="fc" id="L1401">                Set&lt;PairInt&gt; keep = null;</span>
-<span class="fc bfc" id="L1402" title="All 2 branches covered.">                for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
-<span class="fc bfc" id="L1403" title="All 2 branches covered.">                    if (set.contains(t)) {</span>
-<span class="fc" id="L1404">                        keep = set;</span>
-<span class="fc" id="L1405">                        break;</span>
+<span class="fc bfc" id="L1394" title="All 2 branches covered.">            for (int x = colMinMax[0]; x &lt; colRange.getX(); ++x) {</span>
+<span class="fc" id="L1395">                PairInt t = new PairInt(x, row);</span>
+<span class="fc" id="L1396">                Set&lt;PairInt&gt; keep = null;</span>
+<span class="fc bfc" id="L1397" title="All 2 branches covered.">                for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
+<span class="fc bfc" id="L1398" title="All 2 branches covered.">                    if (set.contains(t)) {</span>
+<span class="fc" id="L1399">                        keep = set;</span>
+<span class="fc" id="L1400">                        break;</span>
                     }
-<span class="fc" id="L1407">                }</span>
-<span class="fc bfc" id="L1408" title="All 2 branches covered.">                if (keep != null) {</span>
-<span class="fc" id="L1409">                    contigNonMembersConnectedToBounds.addAll(keep);</span>
-<span class="fc" id="L1410">                    contigNonMembers.remove(keep);</span>
+<span class="fc" id="L1402">                }</span>
+<span class="fc bfc" id="L1403" title="All 2 branches covered.">                if (keep != null) {</span>
+<span class="fc" id="L1404">                    contigNonMembersConnectedToBounds.addAll(keep);</span>
+<span class="fc" id="L1405">                    contigNonMembers.remove(keep);</span>
                 }
             }
 
-<span class="fc bfc" id="L1414" title="All 2 branches covered.">            for (int i = 1; i &lt; n; ++i) {</span>
-<span class="fc" id="L1415">                int lx = colRange.getY();</span>
-<span class="fc" id="L1416">                colRange = colRanges.get(i);</span>
-<span class="fc" id="L1417">                int rx = colRange.getX();</span>
-<span class="fc bfc" id="L1418" title="All 2 branches covered.">                for (int x = (lx + 1); x &lt; rx; ++x) {</span>
-<span class="fc" id="L1419">                    PairInt t = new PairInt(x, row);</span>
-<span class="fc" id="L1420">                    Set&lt;PairInt&gt; keep = null;</span>
-<span class="fc bfc" id="L1421" title="All 2 branches covered.">                    for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
-<span class="fc bfc" id="L1422" title="All 2 branches covered.">                        if (set.contains(t)) {</span>
-<span class="fc" id="L1423">                            keep = set;</span>
-<span class="fc" id="L1424">                            break;</span>
+<span class="fc bfc" id="L1409" title="All 2 branches covered.">            for (int i = 1; i &lt; n; ++i) {</span>
+<span class="fc" id="L1410">                int lx = colRange.getY();</span>
+<span class="fc" id="L1411">                colRange = colRanges.get(i);</span>
+<span class="fc" id="L1412">                int rx = colRange.getX();</span>
+<span class="fc bfc" id="L1413" title="All 2 branches covered.">                for (int x = (lx + 1); x &lt; rx; ++x) {</span>
+<span class="fc" id="L1414">                    PairInt t = new PairInt(x, row);</span>
+<span class="fc" id="L1415">                    Set&lt;PairInt&gt; keep = null;</span>
+<span class="fc bfc" id="L1416" title="All 2 branches covered.">                    for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
+<span class="fc bfc" id="L1417" title="All 2 branches covered.">                        if (set.contains(t)) {</span>
+<span class="fc" id="L1418">                            keep = set;</span>
+<span class="fc" id="L1419">                            break;</span>
                         }
-<span class="fc" id="L1426">                    }</span>
-<span class="fc bfc" id="L1427" title="All 2 branches covered.">                    if (keep != null) {</span>
-<span class="fc" id="L1428">                        contigNonMembersConnectedToBounds.addAll(keep);</span>
-<span class="fc" id="L1429">                        contigNonMembers.remove(keep);</span>
+<span class="fc" id="L1421">                    }</span>
+<span class="fc bfc" id="L1422" title="All 2 branches covered.">                    if (keep != null) {</span>
+<span class="fc" id="L1423">                        contigNonMembersConnectedToBounds.addAll(keep);</span>
+<span class="fc" id="L1424">                        contigNonMembers.remove(keep);</span>
                     }
                 }
             }
 
-<span class="fc bfc" id="L1434" title="All 2 branches covered.">            for (int x = (colRange.getY() + 1); x &lt;= colMinMax[1]; ++x) {</span>
-<span class="fc" id="L1435">                PairInt t = new PairInt(x, row);</span>
-<span class="fc" id="L1436">                Set&lt;PairInt&gt; keep = null;</span>
-<span class="fc bfc" id="L1437" title="All 2 branches covered.">                for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
-<span class="fc bfc" id="L1438" title="All 2 branches covered.">                    if (set.contains(t)) {</span>
-<span class="fc" id="L1439">                        keep = set;</span>
-<span class="fc" id="L1440">                        break;</span>
+<span class="fc bfc" id="L1429" title="All 2 branches covered.">            for (int x = (colRange.getY() + 1); x &lt;= colMinMax[1]; ++x) {</span>
+<span class="fc" id="L1430">                PairInt t = new PairInt(x, row);</span>
+<span class="fc" id="L1431">                Set&lt;PairInt&gt; keep = null;</span>
+<span class="fc bfc" id="L1432" title="All 2 branches covered.">                for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
+<span class="fc bfc" id="L1433" title="All 2 branches covered.">                    if (set.contains(t)) {</span>
+<span class="fc" id="L1434">                        keep = set;</span>
+<span class="fc" id="L1435">                        break;</span>
                     }
-<span class="fc" id="L1442">                }</span>
-<span class="fc bfc" id="L1443" title="All 2 branches covered.">                if (keep != null) {</span>
-<span class="fc" id="L1444">                    contigNonMembersConnectedToBounds.addAll(keep);</span>
-<span class="fc" id="L1445">                    contigNonMembers.remove(keep);</span>
+<span class="fc" id="L1437">                }</span>
+<span class="fc bfc" id="L1438" title="All 2 branches covered.">                if (keep != null) {</span>
+<span class="fc" id="L1439">                    contigNonMembersConnectedToBounds.addAll(keep);</span>
+<span class="fc" id="L1440">                    contigNonMembers.remove(keep);</span>
                 }
             }
         }
 
         // --- scan the pixels in first and last columns and test membership ---
         // --- in contigNonMembers
-<span class="fc" id="L1452">        int[] cols = new int[]{colMinMax[0], colMinMax[1]};</span>
+<span class="fc" id="L1447">        int[] cols = new int[]{colMinMax[0], colMinMax[1]};</span>
 
-<span class="fc bfc" id="L1454" title="All 2 branches covered.">        for (int col : cols) {</span>
+<span class="fc bfc" id="L1449" title="All 2 branches covered.">        for (int col : cols) {</span>
 
-<span class="fc bfc" id="L1456" title="All 2 branches covered.">            for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
+<span class="fc bfc" id="L1451" title="All 2 branches covered.">            for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; ++row) {</span>
 
-<span class="fc" id="L1458">                PairInt t = new PairInt(col, row);</span>
-<span class="fc" id="L1459">                Set&lt;PairInt&gt; keep = null;</span>
-<span class="fc bfc" id="L1460" title="All 2 branches covered.">                for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
-<span class="fc bfc" id="L1461" title="All 2 branches covered.">                    if (set.contains(t)) {</span>
-<span class="fc" id="L1462">                        keep = set;</span>
-<span class="fc" id="L1463">                        break;</span>
+<span class="fc" id="L1453">                PairInt t = new PairInt(col, row);</span>
+<span class="fc" id="L1454">                Set&lt;PairInt&gt; keep = null;</span>
+<span class="fc bfc" id="L1455" title="All 2 branches covered.">                for (Set&lt;PairInt&gt; set : contigNonMembers) {</span>
+<span class="fc bfc" id="L1456" title="All 2 branches covered.">                    if (set.contains(t)) {</span>
+<span class="fc" id="L1457">                        keep = set;</span>
+<span class="fc" id="L1458">                        break;</span>
                     }
-<span class="fc" id="L1465">                }</span>
+<span class="fc" id="L1460">                }</span>
 
-<span class="fc bfc" id="L1467" title="All 2 branches covered.">                if (keep != null) {</span>
-<span class="fc" id="L1468">                    contigNonMembersConnectedToBounds.addAll(keep);</span>
-<span class="fc" id="L1469">                    contigNonMembers.remove(keep);</span>
+<span class="fc bfc" id="L1462" title="All 2 branches covered.">                if (keep != null) {</span>
+<span class="fc" id="L1463">                    contigNonMembersConnectedToBounds.addAll(keep);</span>
+<span class="fc" id="L1464">                    contigNonMembers.remove(keep);</span>
                 }
             }
         }
 
-<span class="fc" id="L1474">        return contigNonMembersConnectedToBounds;</span>
+<span class="fc" id="L1469">        return contigNonMembersConnectedToBounds;</span>
     }
 
     /** NOT READY FOR USE
@@ -1500,9 +1495,9 @@ import java.util.logging.Logger;
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
 
-<span class="fc" id="L1503">        PerimeterFinderMemo memo = new PerimeterFinderMemo();</span>
+<span class="fc" id="L1498">        PerimeterFinderMemo memo = new PerimeterFinderMemo();</span>
 
-<span class="fc" id="L1505">        BitVectorRepresentation bitVectorHelper = new BitVectorRepresentation(points);</span>
+<span class="fc" id="L1500">        BitVectorRepresentation bitVectorHelper = new BitVectorRepresentation(points);</span>
 
         /*
         the algorithm uses rowColRanges to make a starting point and add it
@@ -1576,29 +1571,29 @@ import java.util.logging.Logger;
 
         */
 
-<span class="fc" id="L1579">        PairIntArray border = new PairIntArray();</span>
+<span class="fc" id="L1574">        PairIntArray border = new PairIntArray();</span>
 
-<span class="pc bpc" id="L1581" title="1 of 2 branches missed.">        if (rowColRanges.isEmpty()) {</span>
-<span class="nc" id="L1582">            return border;</span>
+<span class="pc bpc" id="L1576" title="1 of 2 branches missed.">        if (rowColRanges.isEmpty()) {</span>
+<span class="nc" id="L1577">            return border;</span>
         }
 
-<span class="pc bpc" id="L1585" title="1 of 2 branches missed.">        if (points.size() &lt; 5) {</span>
-<span class="nc" id="L1586">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1580" title="1 of 2 branches missed.">        if (points.size() &lt; 5) {</span>
+<span class="nc" id="L1581">            throw new IllegalArgumentException(</span>
             &quot;points.size() needs to be a least 5 points&quot;);
         }
 
-<span class="pc bpc" id="L1590" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L1591">            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,</span>
+<span class="pc bpc" id="L1585" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L1586">            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,</span>
                 rowMinMax, imageMaxColumn, imageMaxRow);
         }
 
-<span class="fc" id="L1595">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L1590">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
 
         //xc,yc
-<span class="fc" id="L1598">        double[] xyCentroid = curveHelper.calculateXYCentroids(points);</span>
+<span class="fc" id="L1593">        double[] xyCentroid = curveHelper.calculateXYCentroids(points);</span>
 
-<span class="fc" id="L1600">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L1601">        Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1595">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1596">        Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();</span>
 
         // ------- initialize with step 0 ------
         /*
@@ -1609,10 +1604,10 @@ import java.util.logging.Logger;
         starter point with 2 neighbors.
         */
 
-<span class="fc" id="L1612">        int y0 = rowMinMax[0];</span>
-<span class="fc" id="L1613">        List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(y0));</span>
-<span class="fc" id="L1614">        PairInt colRange = colRanges.get(0);</span>
-<span class="fc" id="L1615">        int x0 = colRange.getX();</span>
+<span class="fc" id="L1607">        int y0 = rowMinMax[0];</span>
+<span class="fc" id="L1608">        List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(y0));</span>
+<span class="fc" id="L1609">        PairInt colRange = colRanges.get(0);</span>
+<span class="fc" id="L1610">        int x0 = colRange.getX();</span>
 
         /*
         storing the state of choices in a linked list.
@@ -1620,62 +1615,62 @@ import java.util.logging.Logger;
               for paths not chosen.
         backtracking removes last node and chooses from next to last node
         */
-<span class="fc" id="L1623">        LinkedList&lt;PathStep&gt; path = new LinkedList&lt;PathStep&gt;();</span>
-<span class="fc" id="L1624">        PathStep currentStep = null;</span>
+<span class="fc" id="L1618">        LinkedList&lt;PathStep&gt; path = new LinkedList&lt;PathStep&gt;();</span>
+<span class="fc" id="L1619">        PathStep currentStep = null;</span>
 
-<span class="fc" id="L1626">        curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0, neighbors,</span>
+<span class="fc" id="L1621">        curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0, neighbors,</span>
             points, visited, imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="pc bpc" id="L1629" title="1 of 2 branches missed.">        if (neighbors.size() &lt; 2) {</span>
+<span class="pc bpc" id="L1624" title="1 of 2 branches missed.">        if (neighbors.size() &lt; 2) {</span>
 
-<span class="nc bnc" id="L1631" title="All 2 branches missed.">            while (neighbors.size() &lt; 2) {</span>
-<span class="nc" id="L1632">                PairInt p = neighbors.iterator().next();</span>
-<span class="nc" id="L1633">                x0 = p.getX();</span>
-<span class="nc" id="L1634">                y0 = p.getY();</span>
-<span class="nc" id="L1635">                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0,</span>
+<span class="nc bnc" id="L1626" title="All 2 branches missed.">            while (neighbors.size() &lt; 2) {</span>
+<span class="nc" id="L1627">                PairInt p = neighbors.iterator().next();</span>
+<span class="nc" id="L1628">                x0 = p.getX();</span>
+<span class="nc" id="L1629">                y0 = p.getY();</span>
+<span class="nc" id="L1630">                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0,</span>
                     neighbors, points, visited,
                     imageMaxColumn + 1, imageMaxRow + 1);
-<span class="nc" id="L1638">            }</span>
-<span class="nc" id="L1639">            border.add(x0, y0);</span>
-<span class="nc" id="L1640">            visited.add(new PairInt(x0, y0));</span>
+<span class="nc" id="L1633">            }</span>
+<span class="nc" id="L1634">            border.add(x0, y0);</span>
+<span class="nc" id="L1635">            visited.add(new PairInt(x0, y0));</span>
 
-<span class="nc" id="L1642">            currentStep = new PathStep(new PairInt(x0, y0), neighbors,</span>
-<span class="nc" id="L1643">                bitVectorHelper.createBitstring(visited));</span>
+<span class="nc" id="L1637">            currentStep = new PathStep(new PairInt(x0, y0), neighbors,</span>
+<span class="nc" id="L1638">                bitVectorHelper.createBitstring(visited));</span>
 
-<span class="nc" id="L1645">            path.add(currentStep);</span>
+<span class="nc" id="L1640">            path.add(currentStep);</span>
 
-<span class="nc" id="L1647">            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);</span>
+<span class="nc" id="L1642">            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);</span>
 
         } else {
 
-<span class="fc" id="L1651">            border.add(x0, y0);</span>
-<span class="fc" id="L1652">            visited.add(new PairInt(x0, y0));</span>
+<span class="fc" id="L1646">            border.add(x0, y0);</span>
+<span class="fc" id="L1647">            visited.add(new PairInt(x0, y0));</span>
 
-<span class="fc" id="L1654">            currentStep = new PathStep(new PairInt(x0, y0), neighbors,</span>
-<span class="fc" id="L1655">                bitVectorHelper.createBitstring(visited));</span>
+<span class="fc" id="L1649">            currentStep = new PathStep(new PairInt(x0, y0), neighbors,</span>
+<span class="fc" id="L1650">                bitVectorHelper.createBitstring(visited));</span>
 
-<span class="fc" id="L1657">            path.add(currentStep);</span>
+<span class="fc" id="L1652">            path.add(currentStep);</span>
 
-<span class="fc" id="L1659">            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);</span>
+<span class="fc" id="L1654">            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);</span>
 
             // --- take the 2nd step if colRange.getY() is &gt; col, to make start
             //     direction clockwise ---
 
-<span class="fc bfc" id="L1664" title="All 2 branches covered.">            if (colRange.getY() &gt; colRange.getX()) {</span>
+<span class="fc bfc" id="L1659" title="All 2 branches covered.">            if (colRange.getY() &gt; colRange.getX()) {</span>
 
-<span class="fc" id="L1666">                PairInt p = new PairInt(x0 + 1, y0);</span>
-<span class="fc" id="L1667">                border.add(x0 + 1, y0);</span>
-<span class="fc" id="L1668">                visited.add(p);</span>
-<span class="fc" id="L1669">                log.fine(&quot;adding (&quot; + (x0 + 1) + &quot;,&quot; + y0 + &quot;)&quot;);</span>
+<span class="fc" id="L1661">                PairInt p = new PairInt(x0 + 1, y0);</span>
+<span class="fc" id="L1662">                border.add(x0 + 1, y0);</span>
+<span class="fc" id="L1663">                visited.add(p);</span>
+<span class="fc" id="L1664">                log.fine(&quot;adding (&quot; + (x0 + 1) + &quot;,&quot; + y0 + &quot;)&quot;);</span>
 
-<span class="fc" id="L1671">                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0 + 1, y0, </span>
+<span class="fc" id="L1666">                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0 + 1, y0, </span>
                     neighbors, points, visited,
                     imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc" id="L1675">                currentStep = new PathStep(p, neighbors,</span>
-<span class="fc" id="L1676">                    bitVectorHelper.createBitstring(visited));</span>
+<span class="fc" id="L1670">                currentStep = new PathStep(p, neighbors,</span>
+<span class="fc" id="L1671">                    bitVectorHelper.createBitstring(visited));</span>
 
-<span class="fc" id="L1678">                path.add(currentStep);</span>
+<span class="fc" id="L1673">                path.add(currentStep);</span>
             }
         }
 
@@ -1689,140 +1684,140 @@ import java.util.logging.Logger;
         repeat while col,row is not adjacent to x0,y0 and visited.size &lt; points.size. &lt;=== reviewing this when testing
         */
 
-<span class="fc" id="L1692">        boolean search = true;</span>
+<span class="fc" id="L1687">        boolean search = true;</span>
 
-<span class="fc" id="L1694">        int earliestBacktrack = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1689">        int earliestBacktrack = Integer.MAX_VALUE;</span>
 
-<span class="fc bfc" id="L1696" title="All 2 branches covered.">        while (search) {</span>
+<span class="fc bfc" id="L1691" title="All 2 branches covered.">        while (search) {</span>
 
-<span class="fc" id="L1698">            boolean currentIsNoSolution = memo.isANoSolutionState(currentStep);</span>
+<span class="fc" id="L1693">            boolean currentIsNoSolution = memo.isANoSolutionState(currentStep);</span>
             
-<span class="fc bfc" id="L1700" title="All 4 branches covered.">            if (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {</span>
+<span class="fc bfc" id="L1695" title="All 4 branches covered.">            if (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {</span>
 
-<span class="fc bfc" id="L1702" title="All 4 branches covered.">                while (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {</span>
+<span class="fc bfc" id="L1697" title="All 4 branches covered.">                while (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {</span>
 
-<span class="fc" id="L1704">                    log.fine(&quot;   removing (&quot; + currentStep.getCoords().getX() + &quot;,&quot;</span>
-<span class="fc" id="L1705">                        + currentStep.getCoords().getY() + &quot;)&quot;</span>
-<span class="fc" id="L1706">                        + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
+<span class="fc" id="L1699">                    log.fine(&quot;   removing (&quot; + currentStep.getCoords().getX() + &quot;,&quot;</span>
+<span class="fc" id="L1700">                        + currentStep.getCoords().getY() + &quot;)&quot;</span>
+<span class="fc" id="L1701">                        + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
                     );
 
-<span class="pc bpc" id="L1709" title="1 of 2 branches missed.">                    if (border.getN() == 0) {</span>
-<span class="nc" id="L1710">                        return null;</span>
+<span class="pc bpc" id="L1704" title="1 of 2 branches missed.">                    if (border.getN() == 0) {</span>
+<span class="nc" id="L1705">                        return null;</span>
                     }
 
                     // no solution for this path, so store state and backtrack
 
-<span class="fc bfc" id="L1715" title="All 2 branches covered.">                    if (!currentIsNoSolution) {</span>
+<span class="fc bfc" id="L1710" title="All 2 branches covered.">                    if (!currentIsNoSolution) {</span>
                         // if currentIsNoSolution, state has already been stored
-<span class="fc" id="L1717">                        memo.storeNoSolutionState(path);</span>
+<span class="fc" id="L1712">                        memo.storeNoSolutionState(path);</span>
                     }
 
-<span class="fc" id="L1720">                    path.removeLast();</span>
+<span class="fc" id="L1715">                    path.removeLast();</span>
                     
-<span class="fc" id="L1722">                    PathStep nextStep = path.peekLast();</span>
+<span class="fc" id="L1717">                    PathStep nextStep = path.peekLast();</span>
 
-<span class="pc bpc" id="L1724" title="1 of 2 branches missed.">                    if (nextStep != null) {</span>
-<span class="fc" id="L1725">                        nextStep.getNextSteps().remove(currentStep.getCoords());</span>
+<span class="pc bpc" id="L1719" title="1 of 2 branches missed.">                    if (nextStep != null) {</span>
+<span class="fc" id="L1720">                        nextStep.getNextSteps().remove(currentStep.getCoords());</span>
                     }
 
-<span class="fc" id="L1728">                    border.removeRange(border.getN() - 1, border.getN() - 1);</span>
+<span class="fc" id="L1723">                    border.removeRange(border.getN() - 1, border.getN() - 1);</span>
 
-<span class="fc" id="L1730">                    visited.remove(currentStep.getCoords());</span>
+<span class="fc" id="L1725">                    visited.remove(currentStep.getCoords());</span>
 
-<span class="fc bfc" id="L1732" title="All 2 branches covered.">                    if (path.size() &lt; earliestBacktrack) {</span>
-<span class="fc" id="L1733">                        earliestBacktrack = path.size();</span>
-<span class="fc" id="L1734">                        log.info(&quot;earliestBacktrack=&quot; + earliestBacktrack);</span>
+<span class="fc bfc" id="L1727" title="All 2 branches covered.">                    if (path.size() &lt; earliestBacktrack) {</span>
+<span class="fc" id="L1728">                        earliestBacktrack = path.size();</span>
+<span class="fc" id="L1729">                        log.info(&quot;earliestBacktrack=&quot; + earliestBacktrack);</span>
                     }
 
-<span class="fc" id="L1737">                    currentStep = nextStep;</span>
+<span class="fc" id="L1732">                    currentStep = nextStep;</span>
 
-<span class="pc bpc" id="L1739" title="1 of 2 branches missed.">                    if (currentStep == null) {</span>
-<span class="nc" id="L1740">                        return border;</span>
+<span class="pc bpc" id="L1734" title="1 of 2 branches missed.">                    if (currentStep == null) {</span>
+<span class="nc" id="L1735">                        return border;</span>
                     }
 
-<span class="fc" id="L1743">                    currentIsNoSolution = memo.isANoSolutionState(currentStep);</span>
-<span class="fc" id="L1744">                }</span>
+<span class="fc" id="L1738">                    currentIsNoSolution = memo.isANoSolutionState(currentStep);</span>
+<span class="fc" id="L1739">                }</span>
 
-<span class="fc bfc" id="L1746" title="All 2 branches covered.">            } else if (currentStep.getNextSteps().size() == 1) {</span>
+<span class="fc bfc" id="L1741" title="All 2 branches covered.">            } else if (currentStep.getNextSteps().size() == 1) {</span>
 
-<span class="fc" id="L1748">                PairInt p = currentStep.getNextSteps().iterator().next();</span>
-<span class="fc" id="L1749">                border.add(p.getX(), p.getY());</span>
-<span class="fc" id="L1750">                visited.add(p);</span>
-<span class="fc" id="L1751">                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;</span>
-<span class="fc" id="L1752">                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
+<span class="fc" id="L1743">                PairInt p = currentStep.getNextSteps().iterator().next();</span>
+<span class="fc" id="L1744">                border.add(p.getX(), p.getY());</span>
+<span class="fc" id="L1745">                visited.add(p);</span>
+<span class="fc" id="L1746">                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;</span>
+<span class="fc" id="L1747">                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
                 );
 
-<span class="fc" id="L1755">                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), </span>
-<span class="fc" id="L1756">                    p.getY(), neighbors, points,</span>
+<span class="fc" id="L1750">                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), </span>
+<span class="fc" id="L1751">                    p.getY(), neighbors, points,</span>
                     visited, imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc" id="L1759">                currentStep = new PathStep(p, neighbors,</span>
-<span class="fc" id="L1760">                    bitVectorHelper.createBitstring(visited));</span>
+<span class="fc" id="L1754">                currentStep = new PathStep(p, neighbors,</span>
+<span class="fc" id="L1755">                    bitVectorHelper.createBitstring(visited));</span>
 
-<span class="fc" id="L1762">                path.add(currentStep);</span>
+<span class="fc" id="L1757">                path.add(currentStep);</span>
 
-<span class="fc" id="L1764">            } else {</span>
+<span class="fc" id="L1759">            } else {</span>
 
                 // choose the neighbor with the fewest neighbors and when there
                 // are ties, choose the one furthest from the centroid
 
-<span class="fc" id="L1769">                PairInt p = null;</span>
-<span class="fc" id="L1770">                int minNNeigbors = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1764">                PairInt p = null;</span>
+<span class="fc" id="L1765">                int minNNeigbors = Integer.MAX_VALUE;</span>
 
-<span class="fc bfc" id="L1772" title="All 2 branches covered.">                for (PairInt pn : currentStep.getNextSteps()) {</span>
+<span class="fc bfc" id="L1767" title="All 2 branches covered.">                for (PairInt pn : currentStep.getNextSteps()) {</span>
 
-<span class="fc" id="L1774">                    int x2 = pn.getX();</span>
-<span class="fc" id="L1775">                    int y2 = pn.getY();</span>
+<span class="fc" id="L1769">                    int x2 = pn.getX();</span>
+<span class="fc" id="L1770">                    int y2 = pn.getY();</span>
 
-<span class="fc" id="L1777">                    log.fine(&quot;   compare &quot; + &quot; (&quot; + x2 + &quot;,&quot; + y2 + &quot;)  to&quot;</span>
-<span class="fc" id="L1778">                        + &quot; (&quot; + currentStep.getCoords().getX() + &quot;,&quot;</span>
-<span class="fc" id="L1779">                        + currentStep.getCoords().getY() + &quot;)&quot;);</span>
+<span class="fc" id="L1772">                    log.fine(&quot;   compare &quot; + &quot; (&quot; + x2 + &quot;,&quot; + y2 + &quot;)  to&quot;</span>
+<span class="fc" id="L1773">                        + &quot; (&quot; + currentStep.getCoords().getX() + &quot;,&quot;</span>
+<span class="fc" id="L1774">                        + currentStep.getCoords().getY() + &quot;)&quot;);</span>
 
-<span class="fc" id="L1781">                    int nNeighbors = curveHelper.countNeighbors(x2, y2, points,</span>
+<span class="fc" id="L1776">                    int nNeighbors = curveHelper.countNeighbors(x2, y2, points,</span>
                         imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc bfc" id="L1784" title="All 2 branches covered.">                    if (p == null) {</span>
+<span class="fc bfc" id="L1779" title="All 2 branches covered.">                    if (p == null) {</span>
+
+<span class="fc" id="L1781">                        minNNeigbors = nNeighbors;</span>
+<span class="fc" id="L1782">                        p = pn;</span>
+
+<span class="fc bfc" id="L1784" title="All 2 branches covered.">                    } else if (nNeighbors &lt; minNNeigbors) {</span>
 
 <span class="fc" id="L1786">                        minNNeigbors = nNeighbors;</span>
 <span class="fc" id="L1787">                        p = pn;</span>
 
-<span class="fc bfc" id="L1789" title="All 2 branches covered.">                    } else if (nNeighbors &lt; minNNeigbors) {</span>
+<span class="fc bfc" id="L1789" title="All 2 branches covered.">                    } else if (nNeighbors == minNNeigbors) {</span>
 
-<span class="fc" id="L1791">                        minNNeigbors = nNeighbors;</span>
-<span class="fc" id="L1792">                        p = pn;</span>
-
-<span class="fc bfc" id="L1794" title="All 2 branches covered.">                    } else if (nNeighbors == minNNeigbors) {</span>
-
-<span class="fc" id="L1796">                        double distC = Math.sqrt(</span>
-<span class="fc" id="L1797">                            (p.getX() - xyCentroid[0])*(p.getX() - xyCentroid[0])</span>
+<span class="fc" id="L1791">                        double distC = Math.sqrt(</span>
+<span class="fc" id="L1792">                            (p.getX() - xyCentroid[0])*(p.getX() - xyCentroid[0])</span>
                             +
-<span class="fc" id="L1799">                            (p.getY() - xyCentroid[1])*(p.getY() - xyCentroid[1]));</span>
+<span class="fc" id="L1794">                            (p.getY() - xyCentroid[1])*(p.getY() - xyCentroid[1]));</span>
 
-<span class="fc" id="L1801">                        double dist2 = Math.sqrt(</span>
+<span class="fc" id="L1796">                        double dist2 = Math.sqrt(</span>
                             (x2 - xyCentroid[0])*(x2 - xyCentroid[0])
                             +
                             (y2 - xyCentroid[1])*(y2 - xyCentroid[1]));
 
-<span class="fc bfc" id="L1806" title="All 2 branches covered.">                        if (dist2 &gt; distC) {</span>
-<span class="fc" id="L1807">                            p = pn;</span>
+<span class="fc bfc" id="L1801" title="All 2 branches covered.">                        if (dist2 &gt; distC) {</span>
+<span class="fc" id="L1802">                            p = pn;</span>
                         }
                     }
-<span class="fc" id="L1810">                }</span>
+<span class="fc" id="L1805">                }</span>
 
-<span class="fc" id="L1812">                border.add(p.getX(), p.getY());</span>
-<span class="fc" id="L1813">                visited.add(p);</span>
-<span class="fc" id="L1814">                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;</span>
-<span class="fc" id="L1815">                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
+<span class="fc" id="L1807">                border.add(p.getX(), p.getY());</span>
+<span class="fc" id="L1808">                visited.add(p);</span>
+<span class="fc" id="L1809">                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;</span>
+<span class="fc" id="L1810">                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
                 );
 
-<span class="fc" id="L1818">                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), </span>
-<span class="fc" id="L1819">                    p.getY(), neighbors, points,</span>
+<span class="fc" id="L1813">                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), </span>
+<span class="fc" id="L1814">                    p.getY(), neighbors, points,</span>
                     visited, imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc" id="L1822">                currentStep = new PathStep(p, neighbors,</span>
-<span class="fc" id="L1823">                    bitVectorHelper.createBitstring(visited));</span>
+<span class="fc" id="L1817">                currentStep = new PathStep(p, neighbors,</span>
+<span class="fc" id="L1818">                    bitVectorHelper.createBitstring(visited));</span>
 
-<span class="fc" id="L1825">                path.add(currentStep);</span>
+<span class="fc" id="L1820">                path.add(currentStep);</span>
 
             }
 
@@ -1832,18 +1827,18 @@ import java.util.logging.Logger;
             //      bounded, excepting spurs which should be stored. do not want
             //      a path which turns around early, missing most of the points.
             //      can use point in polygon test...or an area test or centroid test...
-<span class="fc bfc" id="L1835" title="All 2 branches covered.">            if (border.getN() &gt; 8) {</span>
-<span class="fc bfc" id="L1836" title="All 2 branches covered.">                if ((Math.abs(currentStep.getCoords().getX() - x0) &lt; 2)</span>
-<span class="fc bfc" id="L1837" title="All 2 branches covered.">                    &amp;&amp; (Math.abs(currentStep.getCoords().getY() - y0) &lt; 2)) {</span>
-<span class="fc" id="L1838">                    search = false;</span>
+<span class="fc bfc" id="L1830" title="All 2 branches covered.">            if (border.getN() &gt; 8) {</span>
+<span class="fc bfc" id="L1831" title="All 2 branches covered.">                if ((Math.abs(currentStep.getCoords().getX() - x0) &lt; 2)</span>
+<span class="fc bfc" id="L1832" title="All 2 branches covered.">                    &amp;&amp; (Math.abs(currentStep.getCoords().getY() - y0) &lt; 2)) {</span>
+<span class="fc" id="L1833">                    search = false;</span>
                 }
             }
-<span class="fc" id="L1841">        }</span>
+<span class="fc" id="L1836">        }</span>
 
-<span class="fc" id="L1843">        return border;</span>
+<span class="fc" id="L1838">        return border;</span>
     }
 
-<span class="fc" id="L1846">    static class Gap {</span>
+<span class="fc" id="L1841">    static class Gap {</span>
 
         private final int row;
 

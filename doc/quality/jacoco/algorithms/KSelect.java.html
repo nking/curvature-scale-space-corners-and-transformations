@@ -20,15 +20,16 @@
     }
     
      /**
-     * Complexity of run time:
+     &lt;pre&gt;
+     Complexity of run time:
 
             j = math.floor( math.log(N)/math.log(5))
 
             Total cost =  T(    ∑   (N/(5*i)) * const   )  + 2T(j/2) + j
                            ( ¡=1 to j                   )
 
-            ===&gt; It's a little more than O(j) but less than O(j*lg(j)).
-
+            ===&amp;gt; It's a little more than O(j) but less than O(j*lg(j)).
+      &lt;/pre&gt;
      * @param a
      * @param indexLo
      * @param indexHi
@@ -36,35 +37,35 @@
      */
     public int findMedianOfMediansIdx(float[] a, int indexLo, int indexHi) {
         
-<span class="fc" id="L39">        int nItems = (indexHi - indexLo) + 1;</span>
+<span class="fc" id="L40">        int nItems = (indexHi - indexLo) + 1;</span>
 
-<span class="fc" id="L41">        int nPerGroup = 5;</span>
+<span class="fc" id="L42">        int nPerGroup = 5;</span>
 
-<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (nItems &lt;= nPerGroup) {</span>
-<span class="fc" id="L44">            int i0 = indexLo;</span>
-<span class="fc" id="L45">            int i1 = i0 + nPerGroup - 1;</span>
-<span class="fc bfc" id="L46" title="All 2 branches covered.">            if (i1 &gt; indexHi) {</span>
-<span class="fc" id="L47">                i1 = indexHi;</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (nItems &lt;= nPerGroup) {</span>
+<span class="fc" id="L45">            int i0 = indexLo;</span>
+<span class="fc" id="L46">            int i1 = i0 + nPerGroup - 1;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (i1 &gt; indexHi) {</span>
+<span class="fc" id="L48">                i1 = indexHi;</span>
             }
-<span class="fc" id="L49">            float median = findMedian(a, i0, i1);      // 2T(5/2) + 5</span>
-<span class="fc" id="L50">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
-<span class="fc" id="L51">            return medianIdx;</span>
+<span class="fc" id="L50">            float median = findMedian(a, i0, i1);      // 2T(5/2) + 5</span>
+<span class="fc" id="L51">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
+<span class="fc" id="L52">            return medianIdx;</span>
         }
 
-<span class="fc" id="L54">        int nDiv = (int) Math.ceil((float)nItems/nPerGroup);</span>
+<span class="fc" id="L55">        int nDiv = (int) Math.ceil((float)nItems/nPerGroup);</span>
                                                       //    cost       times
-<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (int i = 0; i &lt; nDiv; i++) {              //                n/5</span>
-<span class="fc" id="L57">            int i0 = indexLo + i*nPerGroup;</span>
-<span class="fc" id="L58">            int i1 = i0 + nPerGroup - 1;</span>
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">            if (i1 &gt; indexHi) {</span>
-<span class="nc" id="L60">                i1 = indexHi;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int i = 0; i &lt; nDiv; i++) {              //                n/5</span>
+<span class="fc" id="L58">            int i0 = indexLo + i*nPerGroup;</span>
+<span class="fc" id="L59">            int i1 = i0 + nPerGroup - 1;</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">            if (i1 &gt; indexHi) {</span>
+<span class="nc" id="L61">                i1 = indexHi;</span>
             }
-<span class="fc" id="L62">            float median = findMedian(a, i0, i1);      // 2T(5/2) + 5</span>
-<span class="fc" id="L63">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
+<span class="fc" id="L63">            float median = findMedian(a, i0, i1);      // 2T(5/2) + 5</span>
+<span class="fc" id="L64">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
 
-<span class="fc" id="L65">            float swap = a[medianIdx];</span>
-<span class="fc" id="L66">            a[medianIdx] = a[indexLo + i];</span>
-<span class="fc" id="L67">            a[indexLo + i] = swap;</span>
+<span class="fc" id="L66">            float swap = a[medianIdx];</span>
+<span class="fc" id="L67">            a[medianIdx] = a[indexLo + i];</span>
+<span class="fc" id="L68">            a[indexLo + i] = swap;</span>
         }
 
         /*
@@ -91,25 +92,25 @@
             for N=1000, O(j*lg2(j)) = O(4)
         */
 
-<span class="fc" id="L94">        float median = findMedian(a, indexLo, indexLo + nDiv);</span>
-<span class="fc" id="L95">        int medianIdx = (indexLo + nDiv + indexLo) &gt;&gt; 1;</span>
+<span class="fc" id="L95">        float median = findMedian(a, indexLo, indexLo + nDiv);</span>
+<span class="fc" id="L96">        int medianIdx = (indexLo + nDiv + indexLo) &gt;&gt; 1;</span>
 
-<span class="fc" id="L97">        return medianIdx;</span>
+<span class="fc" id="L98">        return medianIdx;</span>
     }
 
     /**
      * find the median index of a, while performing the same sort (or swap)
      * operations on b and c too though not reading the later.
-     * 
-     * Complexity of run time:
+     &lt;pre&gt; 
+     Complexity of run time:
 
             j = math.floor( math.log(N)/math.log(5))
 
             Total cost =  T(    ∑   (N/(5*i)) * const   )  + 2T(j/2) + j
                            ( ¡=1 to j                   )
 
-            ===&gt; It's a little more than O(j) but less than O(j*lg(j)).
-
+            ===&amp;gt; It's a little more than O(j) but less than O(j*lg(j)).
+     &lt;/pre&gt;
      * @param a
      * @param b array to perform same swap operations on that a receives
      * @param c array to perform same swap operations on that a receives
@@ -120,43 +121,43 @@
     public int findMedianOfMediansIdx(float[] a, int[] b, int[] c,
         int indexLo, int indexHi) {
         
-<span class="nc" id="L123">        int nItems = (indexHi - indexLo) + 1;</span>
+<span class="nc" id="L124">        int nItems = (indexHi - indexLo) + 1;</span>
 
-<span class="nc" id="L125">        int nPerGroup = 5;</span>
+<span class="nc" id="L126">        int nPerGroup = 5;</span>
 
-<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (nItems &lt;= nPerGroup) {</span>
-<span class="nc" id="L128">            int i0 = indexLo;</span>
-<span class="nc" id="L129">            int i1 = i0 + nPerGroup - 1;</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (i1 &gt; indexHi) {</span>
-<span class="nc" id="L131">                i1 = indexHi;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (nItems &lt;= nPerGroup) {</span>
+<span class="nc" id="L129">            int i0 = indexLo;</span>
+<span class="nc" id="L130">            int i1 = i0 + nPerGroup - 1;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            if (i1 &gt; indexHi) {</span>
+<span class="nc" id="L132">                i1 = indexHi;</span>
             }
-<span class="nc" id="L133">            float median = findMedian(a, b, c, i0, i1);      // 2T(5/2) + 5</span>
-<span class="nc" id="L134">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
-<span class="nc" id="L135">            return medianIdx;</span>
+<span class="nc" id="L134">            float median = findMedian(a, b, c, i0, i1);      // 2T(5/2) + 5</span>
+<span class="nc" id="L135">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
+<span class="nc" id="L136">            return medianIdx;</span>
         }
 
-<span class="nc" id="L138">        int nDiv = (int) Math.ceil((float)nItems/nPerGroup);</span>
+<span class="nc" id="L139">        int nDiv = (int) Math.ceil((float)nItems/nPerGroup);</span>
                                                       //    cost       times
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        for (int i = 0; i &lt; nDiv; i++) {              //                n/5</span>
-<span class="nc" id="L141">            int i0 = indexLo + i*nPerGroup;</span>
-<span class="nc" id="L142">            int i1 = i0 + nPerGroup - 1;</span>
-<span class="nc bnc" id="L143" title="All 2 branches missed.">            if (i1 &gt; indexHi) {</span>
-<span class="nc" id="L144">                i1 = indexHi;</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        for (int i = 0; i &lt; nDiv; i++) {              //                n/5</span>
+<span class="nc" id="L142">            int i0 = indexLo + i*nPerGroup;</span>
+<span class="nc" id="L143">            int i1 = i0 + nPerGroup - 1;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (i1 &gt; indexHi) {</span>
+<span class="nc" id="L145">                i1 = indexHi;</span>
             }
-<span class="nc" id="L146">            float median = findMedian(a, b, c, i0, i1);      // 2T(5/2) + 5</span>
-<span class="nc" id="L147">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
+<span class="nc" id="L147">            float median = findMedian(a, b, c, i0, i1);      // 2T(5/2) + 5</span>
+<span class="nc" id="L148">            int medianIdx = (i1 + i0) &gt;&gt; 1;</span>
 
-<span class="nc" id="L149">            float swap = a[medianIdx];</span>
-<span class="nc" id="L150">            a[medianIdx] = a[indexLo + i];</span>
-<span class="nc" id="L151">            a[indexLo + i] = swap;</span>
+<span class="nc" id="L150">            float swap = a[medianIdx];</span>
+<span class="nc" id="L151">            a[medianIdx] = a[indexLo + i];</span>
+<span class="nc" id="L152">            a[indexLo + i] = swap;</span>
             
-<span class="nc" id="L153">            int swap2 = b[medianIdx];</span>
-<span class="nc" id="L154">            b[medianIdx] = b[indexLo + i];</span>
-<span class="nc" id="L155">            b[indexLo + i] = swap2;</span>
+<span class="nc" id="L154">            int swap2 = b[medianIdx];</span>
+<span class="nc" id="L155">            b[medianIdx] = b[indexLo + i];</span>
+<span class="nc" id="L156">            b[indexLo + i] = swap2;</span>
             
-<span class="nc" id="L157">            swap2 = c[medianIdx];</span>
-<span class="nc" id="L158">            c[medianIdx] = c[indexLo + i];</span>
-<span class="nc" id="L159">            c[indexLo + i] = swap2;</span>
+<span class="nc" id="L158">            swap2 = c[medianIdx];</span>
+<span class="nc" id="L159">            c[medianIdx] = c[indexLo + i];</span>
+<span class="nc" id="L160">            c[indexLo + i] = swap2;</span>
         }
 
         /*
@@ -183,10 +184,10 @@
             for N=1000, O(j*lg2(j)) = O(4)
         */
 
-<span class="nc" id="L186">        float median = findMedian(a, b, c, indexLo, indexLo + nDiv);</span>
-<span class="nc" id="L187">        int medianIdx = (indexLo + nDiv + indexLo) &gt;&gt; 1;</span>
+<span class="nc" id="L187">        float median = findMedian(a, b, c, indexLo, indexLo + nDiv);</span>
+<span class="nc" id="L188">        int medianIdx = (indexLo + nDiv + indexLo) &gt;&gt; 1;</span>
 
-<span class="nc" id="L189">        return medianIdx;</span>
+<span class="nc" id="L190">        return medianIdx;</span>
     }
 
     /**
@@ -209,43 +210,43 @@
         
         //  greater than O(j) but less than O(j*lg(j))  
         //  where j = math.floor( math.log(N)/math.log(5))
-<span class="fc" id="L212">        int medianIdx = findMedianOfMediansIdx(a, indexLo, indexHi);</span>
+<span class="fc" id="L213">        int medianIdx = findMedianOfMediansIdx(a, indexLo, indexHi);</span>
 
-<span class="fc" id="L214">        float roughMedian = a[medianIdx];</span>
+<span class="fc" id="L215">        float roughMedian = a[medianIdx];</span>
 
         // greater than O(N) but less than O(N^2).  if medianIdx &lt; half of 
         // sample, its closer to O(N).
-<span class="fc" id="L218">        int pivotIndex = pivotPartition(a, indexLo, indexHi, medianIdx);</span>
+<span class="fc" id="L219">        int pivotIndex = pivotPartition(a, indexLo, indexHi, medianIdx);</span>
 
-<span class="fc" id="L220">        int j0 = -1;</span>
-<span class="fc" id="L221">        int j1 = -1;</span>
+<span class="fc" id="L221">        int j0 = -1;</span>
+<span class="fc" id="L222">        int j1 = -1;</span>
 
         // find the first and last location of median value in array a.
         // O(N)
-<span class="fc bfc" id="L225" title="All 2 branches covered.">        for (int i = indexLo; i &lt;= indexHi; i++) {</span>
-<span class="fc bfc" id="L226" title="All 2 branches covered.">            if (j0 == -1) {</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">                if (a[i] == roughMedian) {</span>
-<span class="fc" id="L228">                    j0 = i;</span>
-<span class="fc" id="L229">                    j1 = i;</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        for (int i = indexLo; i &lt;= indexHi; i++) {</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (j0 == -1) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">                if (a[i] == roughMedian) {</span>
+<span class="fc" id="L229">                    j0 = i;</span>
+<span class="fc" id="L230">                    j1 = i;</span>
                 }
             } else {
-<span class="pc bpc" id="L232" title="1 of 2 branches missed.">                if (a[i] == roughMedian) {</span>
-<span class="nc" id="L233">                    j1 = i;</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">                if (a[i] == roughMedian) {</span>
+<span class="nc" id="L234">                    j1 = i;</span>
                 }
             }
         }
     
         // this resembles an indexed binarySearch:
-<span class="fc" id="L239">        int k = kthIndex;</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">        if (k &lt; j0) {</span>
-<span class="fc" id="L241">            return selectKth(a, indexLo, j0 - 1, k);</span>
-<span class="pc bpc" id="L242" title="1 of 4 branches missed.">        } else if ((k &gt;= j0) &amp;&amp; (k &lt;= j1)) {</span>
-<span class="fc" id="L243">            return roughMedian; // same as a[k]</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        } else if (k &gt; j1) {</span>
-<span class="fc" id="L245">            return selectKth(a, j1 + 1, indexHi, k);</span>
+<span class="fc" id="L240">        int k = kthIndex;</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        if (k &lt; j0) {</span>
+<span class="fc" id="L242">            return selectKth(a, indexLo, j0 - 1, k);</span>
+<span class="pc bpc" id="L243" title="1 of 4 branches missed.">        } else if ((k &gt;= j0) &amp;&amp; (k &lt;= j1)) {</span>
+<span class="fc" id="L244">            return roughMedian; // same as a[k]</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        } else if (k &gt; j1) {</span>
+<span class="fc" id="L246">            return selectKth(a, j1 + 1, indexHi, k);</span>
         }
 
-<span class="nc" id="L248">        throw new IllegalArgumentException(&quot;did not find solution&quot;);</span>
+<span class="nc" id="L249">        throw new IllegalArgumentException(&quot;did not find solution&quot;);</span>
     }
     
     /**
@@ -263,23 +264,23 @@
      */
     public static int pivotPartition(float[] a, int indexLo, int indexHi, int pivotIndex) {
                                                           // cost  times
-<span class="fc" id="L266">        float pivotValue = a[pivotIndex];                 // c00</span>
-<span class="fc" id="L267">        int i = indexLo - 1;                              // c01</span>
+<span class="fc" id="L267">        float pivotValue = a[pivotIndex];                 // c00</span>
+<span class="fc" id="L268">        int i = indexLo - 1;                              // c01</span>
 
-<span class="fc bfc" id="L269" title="All 2 branches covered.">        for (int j = indexLo; j &lt; indexHi ; j++ ) {       // c1     n - 1</span>
-<span class="fc bfc" id="L270" title="All 2 branches covered.">            if (a[j] &lt;= pivotValue) {                     // c2     sum(part of 2-&gt;n)</span>
-<span class="fc" id="L271">                i++;                                      // c3     sum(part of 2-&gt;n)</span>
-<span class="fc" id="L272">                float swap = a[i];                        // c4     sum(part of 2-&gt;n)</span>
-<span class="fc" id="L273">                a[i] = a[j];                              // c5     sum(part of 2-&gt;n)</span>
-<span class="fc" id="L274">                a[j] = swap;                              // c6     sum(part of 2-&gt;n)</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (int j = indexLo; j &lt; indexHi ; j++ ) {       // c1     n - 1</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            if (a[j] &lt;= pivotValue) {                     // c2     sum(part of 2-&gt;n)</span>
+<span class="fc" id="L272">                i++;                                      // c3     sum(part of 2-&gt;n)</span>
+<span class="fc" id="L273">                float swap = a[i];                        // c4     sum(part of 2-&gt;n)</span>
+<span class="fc" id="L274">                a[i] = a[j];                              // c5     sum(part of 2-&gt;n)</span>
+<span class="fc" id="L275">                a[j] = swap;                              // c6     sum(part of 2-&gt;n)</span>
             }
         }
         
-<span class="fc bfc" id="L278" title="All 2 branches covered.">        if (i &gt; (indexLo -1)) {                           //</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        if (i &gt; (indexLo -1)) {                           //</span>
             //TODO:  index might need to be [i - 1] here
-<span class="fc" id="L280">            float swap = a[i];                            // c02</span>
-<span class="fc" id="L281">            a[i] = a[pivotIndex];                         // c03</span>
-<span class="fc" id="L282">            a[pivotIndex] = swap;                         // c04</span>
+<span class="fc" id="L281">            float swap = a[i];                            // c02</span>
+<span class="fc" id="L282">            a[i] = a[pivotIndex];                         // c03</span>
+<span class="fc" id="L283">            a[pivotIndex] = swap;                         // c04</span>
         }
 
         /*  O(partition) = c00 + c01 + (c1*(n-1))
@@ -306,7 +307,7 @@
      *         ==&gt; then, order of growth gives O(N^2)
         */
 
-<span class="fc" id="L309">        return i;</span>
+<span class="fc" id="L310">        return i;</span>
     }
 
     /**
@@ -319,9 +320,9 @@
      */
     private static float findMedian(float[] a, int indexLo, int indexHi) {
                
-<span class="fc" id="L322">        QuickSort.sort(a, indexLo, indexHi);</span>
+<span class="fc" id="L323">        QuickSort.sort(a, indexLo, indexHi);</span>
 
-<span class="fc" id="L324">        return a[(indexHi + indexLo) &gt;&gt; 1];</span>
+<span class="fc" id="L325">        return a[(indexHi + indexLo) &gt;&gt; 1];</span>
     } 
     
     /**
@@ -335,9 +336,9 @@
     private static float findMedian(float[] a, int[] b, int[] c, 
         int indexLo, int indexHi) {
                
-<span class="nc" id="L338">        QuickSort.sort(a, b, c, indexLo, indexHi);</span>
+<span class="nc" id="L339">        QuickSort.sort(a, b, c, indexLo, indexHi);</span>
 
-<span class="nc" id="L340">        return a[(indexHi + indexLo) &gt;&gt; 1];</span>
+<span class="nc" id="L341">        return a[(indexHi + indexLo) &gt;&gt; 1];</span>
     } 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

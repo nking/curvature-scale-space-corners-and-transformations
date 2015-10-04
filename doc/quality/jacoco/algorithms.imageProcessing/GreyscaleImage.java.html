@@ -222,145 +222,153 @@ public class GreyscaleImage {
 <span class="fc" id="L222">        return height;</span>
     }
     
+    public float[] getFloatValues() {
+<span class="nc" id="L226">        float[] t = new float[nPixels];</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
+<span class="nc" id="L228">            t[i] = a[i];</span>
+        }
+<span class="nc" id="L230">        return t;</span>
+    }
+    
     public GreyscaleImage copyImage() {
        
-<span class="fc" id="L227">        GreyscaleImage img2 = createWithDimensions();</span>
+<span class="fc" id="L235">        GreyscaleImage img2 = createWithDimensions();</span>
                 
-<span class="fc" id="L229">        System.arraycopy(a, 0, img2.a, 0, nPixels);</span>
+<span class="fc" id="L237">        System.arraycopy(a, 0, img2.a, 0, nPixels);</span>
         
-<span class="fc" id="L231">        img2.nPixels = nPixels;</span>
+<span class="fc" id="L239">        img2.nPixels = nPixels;</span>
         
-<span class="fc" id="L233">        return img2;</span>
+<span class="fc" id="L241">        return img2;</span>
     }
     
     public GreyscaleImage createWithDimensions() {
        
-<span class="fc" id="L238">        GreyscaleImage img2 = new GreyscaleImage(width, height);</span>
+<span class="fc" id="L246">        GreyscaleImage img2 = new GreyscaleImage(width, height);</span>
                 
-<span class="fc" id="L240">        img2.xRelativeOffset = xRelativeOffset;</span>
-<span class="fc" id="L241">        img2.yRelativeOffset = yRelativeOffset;</span>
+<span class="fc" id="L248">        img2.xRelativeOffset = xRelativeOffset;</span>
+<span class="fc" id="L249">        img2.yRelativeOffset = yRelativeOffset;</span>
         
-<span class="fc" id="L243">        return img2;</span>
+<span class="fc" id="L251">        return img2;</span>
     }
     
     public GreyscaleImage subImage(int xCenter, int yCenter, int subWidth, 
         int subHeight) {
        
-<span class="nc" id="L249">        GreyscaleImage img2 = new GreyscaleImage(subWidth, subHeight);</span>
+<span class="nc" id="L257">        GreyscaleImage img2 = new GreyscaleImage(subWidth, subHeight);</span>
                 
-<span class="nc" id="L251">        int col2 = 0;</span>
-<span class="nc bnc" id="L252" title="All 2 branches missed.">        for (int col = (xCenter - (subWidth/2)); col &lt; (xCenter + (subWidth/2));</span>
-<span class="nc" id="L253">            ++col) {</span>
+<span class="nc" id="L259">        int col2 = 0;</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        for (int col = (xCenter - (subWidth/2)); col &lt; (xCenter + (subWidth/2));</span>
+<span class="nc" id="L261">            ++col) {</span>
             
-<span class="nc" id="L255">            int row2 = 0;</span>
-<span class="nc bnc" id="L256" title="All 2 branches missed.">            for (int row = (yCenter - (subHeight/2)); row &lt; (yCenter + (subHeight/2));</span>
-<span class="nc" id="L257">            ++row) {</span>
+<span class="nc" id="L263">            int row2 = 0;</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">            for (int row = (yCenter - (subHeight/2)); row &lt; (yCenter + (subHeight/2));</span>
+<span class="nc" id="L265">            ++row) {</span>
                 
-<span class="nc" id="L259">                int v = getValue(col, row);</span>
+<span class="nc" id="L267">                int v = getValue(col, row);</span>
                 
-<span class="nc" id="L261">                img2.setValue(col2, row2, v);</span>
+<span class="nc" id="L269">                img2.setValue(col2, row2, v);</span>
                 
-<span class="nc" id="L263">                row2++;</span>
+<span class="nc" id="L271">                row2++;</span>
             }
             
-<span class="nc" id="L266">            col2++;</span>
+<span class="nc" id="L274">            col2++;</span>
         }
                 
-<span class="nc" id="L269">        return img2;</span>
+<span class="nc" id="L277">        return img2;</span>
     }
     
     public Image copyImageToGreen() {
         
-<span class="fc" id="L274">        Image img2 = new Image(width, height);</span>
+<span class="fc" id="L282">        Image img2 = new Image(width, height);</span>
         
-<span class="fc" id="L276">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
+<span class="fc" id="L284">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
         
-<span class="fc" id="L278">        return img2;</span>
+<span class="fc" id="L286">        return img2;</span>
     }
     
     public ImageExt createColorGreyscaleExt() {
         
-<span class="fc" id="L283">        ImageExt img2 = new ImageExt(width, height);</span>
+<span class="fc" id="L291">        ImageExt img2 = new ImageExt(width, height);</span>
         
-<span class="fc" id="L285">        System.arraycopy(a, 0, img2.r, 0, nPixels);</span>
-<span class="fc" id="L286">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
-<span class="fc" id="L287">        System.arraycopy(a, 0, img2.b, 0, nPixels);</span>
+<span class="fc" id="L293">        System.arraycopy(a, 0, img2.r, 0, nPixels);</span>
+<span class="fc" id="L294">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
+<span class="fc" id="L295">        System.arraycopy(a, 0, img2.b, 0, nPixels);</span>
         
-<span class="fc" id="L289">        return img2;</span>
+<span class="fc" id="L297">        return img2;</span>
     }
     
     public void resetTo(final GreyscaleImage copyThis) {
         
-<span class="fc bfc" id="L294" title="All 2 branches covered.">        if (copyThis.nPixels == nPixels) {</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">        if (copyThis.nPixels == nPixels) {</span>
             
-<span class="fc" id="L296">            System.arraycopy(copyThis.a, 0, a, 0, nPixels);</span>
+<span class="fc" id="L304">            System.arraycopy(copyThis.a, 0, a, 0, nPixels);</span>
             
         } else {
             
-<span class="fc" id="L300">            a = copyThis.a;</span>
+<span class="fc" id="L308">            a = copyThis.a;</span>
     
-<span class="fc" id="L302">            width = copyThis.width;</span>
+<span class="fc" id="L310">            width = copyThis.width;</span>
     
-<span class="fc" id="L304">            height = copyThis.height;</span>
+<span class="fc" id="L312">            height = copyThis.height;</span>
     
-<span class="fc" id="L306">            nPixels = copyThis.nPixels;</span>
+<span class="fc" id="L314">            nPixels = copyThis.nPixels;</span>
             
-<span class="fc" id="L308">            xRelativeOffset = copyThis.xRelativeOffset;</span>
+<span class="fc" id="L316">            xRelativeOffset = copyThis.xRelativeOffset;</span>
             
-<span class="fc" id="L310">            yRelativeOffset = copyThis.yRelativeOffset;</span>
+<span class="fc" id="L318">            yRelativeOffset = copyThis.yRelativeOffset;</span>
         }
         
-<span class="fc" id="L313">    }</span>
+<span class="fc" id="L321">    }</span>
 
     /**
      * @return the nPixels
      */
     public int getNPixels() {
-<span class="fc" id="L319">        return nPixels;</span>
+<span class="fc" id="L327">        return nPixels;</span>
     }
 
     /**
      * @return the xRelativeOffset
      */
     public int getXRelativeOffset() {
-<span class="fc" id="L326">        return xRelativeOffset;</span>
+<span class="fc" id="L334">        return xRelativeOffset;</span>
     }
 
     /**
      * @param xRelativeOffset the xRelativeOffset to set
      */
     public void setXRelativeOffset(int xRelativeOffset) {
-<span class="fc" id="L333">        this.xRelativeOffset = xRelativeOffset;</span>
-<span class="fc" id="L334">    }</span>
+<span class="fc" id="L341">        this.xRelativeOffset = xRelativeOffset;</span>
+<span class="fc" id="L342">    }</span>
 
     /**
      * @return the yRelativeOffset
      */
     public int getYRelativeOffset() {
-<span class="fc" id="L340">        return yRelativeOffset;</span>
+<span class="fc" id="L348">        return yRelativeOffset;</span>
     }
 
     /**
      * @param yRelativeOffset the yRelativeOffset to set
      */
     public void setYRelativeOffset(int yRelativeOffset) {
-<span class="fc" id="L347">        this.yRelativeOffset = yRelativeOffset;</span>
-<span class="fc" id="L348">    }</span>
+<span class="fc" id="L355">        this.yRelativeOffset = yRelativeOffset;</span>
+<span class="fc" id="L356">    }</span>
 
     public boolean isThisSize(int[] offsetsAndDimensions) {
         
-<span class="fc" id="L352">        int w = offsetsAndDimensions[2];</span>
-<span class="fc" id="L353">        int h = offsetsAndDimensions[3];</span>
+<span class="fc" id="L360">        int w = offsetsAndDimensions[2];</span>
+<span class="fc" id="L361">        int h = offsetsAndDimensions[3];</span>
         
-<span class="fc" id="L355">        int offsetX = offsetsAndDimensions[0];</span>
-<span class="fc" id="L356">        int offsetY = offsetsAndDimensions[1];</span>
+<span class="fc" id="L363">        int offsetX = offsetsAndDimensions[0];</span>
+<span class="fc" id="L364">        int offsetY = offsetsAndDimensions[1];</span>
         
-<span class="pc bpc" id="L358" title="4 of 8 branches missed.">        if (this.width != w || this.height != h || </span>
+<span class="pc bpc" id="L366" title="4 of 8 branches missed.">        if (this.width != w || this.height != h || </span>
             this.xRelativeOffset != offsetX || this.yRelativeOffset != offsetY) {
-<span class="nc" id="L360">            return false;</span>
+<span class="nc" id="L368">            return false;</span>
         }
         
-<span class="fc" id="L363">        return true;</span>
+<span class="fc" id="L371">        return true;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
