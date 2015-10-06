@@ -143,7 +143,7 @@ public class DFSContiguousValueFinder {
         }
         
         visited.add(stack.peek());
-
+        
         while (!stack.isEmpty()) {
 
             int uIndex = stack.pop().intValue();
@@ -181,7 +181,7 @@ public class DFSContiguousValueFinder {
                 if (visited.contains(vKey)) {
                     continue;
                 }
-                    
+                 
                 visited.add(vKey);
 
                 int vPixValue = img.getValue(vIndex);
@@ -198,10 +198,11 @@ public class DFSContiguousValueFinder {
                 // search continues next from an associated point
                 stack.add(vKey);
             }
+            
+            visited.add(uKey);
         }
-       
     }
-
+    
     protected void processPair(Integer uIdx, Integer vIdx, boolean isBeyondBounds) {
                 
         Integer groupId = pointToGroupMap.get(uIdx);
