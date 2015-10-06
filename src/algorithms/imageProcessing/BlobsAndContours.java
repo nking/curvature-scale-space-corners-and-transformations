@@ -235,8 +235,8 @@ public class BlobsAndContours {
      * @param outputBounds
      * @param discardWhenCavityIsSmallerThanBorder
      */
-    protected void extractBoundsOfBlobs(final GreyscaleImage greyImg, final GreyscaleImage segImg,
-        final List<Set<PairInt>> inOutBlobs,
+    protected void extractBoundsOfBlobs(final GreyscaleImage greyImg, 
+        final GreyscaleImage segImg, final List<Set<PairInt>> inOutBlobs,
         final List<PairIntArray> outputBounds,
         boolean discardWhenCavityIsSmallerThanBorder) {
 

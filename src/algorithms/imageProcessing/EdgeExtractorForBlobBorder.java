@@ -183,7 +183,7 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
 try {
 Misc.persistToFile("blob_" + ts + ".dat", borderPixels);
 int z = 1;
-} catch(IOException e){}
+} catch(java.io.IOException e){}
 */
         // persist specific features to restore if thinned:
         ButterflySectionFinder finder = new ButterflySectionFinder();

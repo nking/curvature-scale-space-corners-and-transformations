@@ -299,7 +299,10 @@ public class ButterflySectionFinder {
             Segment segment = checkZigZagSegmentPattern(x, y, points);
 
             if (segment == null) {
-                continue;
+                segment = checkZigZag2SegmentPattern(x, y, points);
+                if (segment == null) {
+                    continue;
+                }
             }
 
             /*
@@ -1265,6 +1268,36 @@ public class ButterflySectionFinder {
         return pr;
     }
     
+    protected Pattern getZigZag2SegmentPattern() {
+
+        /*
+                   .            -1
+                -  0  -  3       0
+                1  -  2  -       1
+                      .          2
+         -3 -2 -1  0  1  2  3
+        
+        Each of the 4 needs at least one neighbor that is not one of the 4
+        points in the zig zap and all of their neighbors cannot be adjacent
+        to any of the other neighbors.
+        */
+        Pattern pr = new Pattern();
+        pr.ones = new HashSet<PairInt>();
+        pr.zeroes = new HashSet<PairInt>();
+
+        pr.zeroes.add(new PairInt(-1, 0)); 
+        pr.zeroes.add(new PairInt(0, 1));
+        pr.zeroes.add(new PairInt(1, 0)); 
+        pr.zeroes.add(new PairInt(2, 1));
+
+        pr.ones.add(new PairInt(-1, 1));
+        pr.ones.add(new PairInt(0, 0)); pr.ones.add(new PairInt(0, -1));
+        pr.ones.add(new PairInt(1, 1)); pr.ones.add(new PairInt(1, 2)); 
+        pr.ones.add(new PairInt(2, 0));
+
+        return pr;
+    }
+    
     private Segment checkVertSegmentPattern(int x, int y, Set<PairInt> neighbors) {
 
         /*    .  .      -2
@@ -1443,6 +1476,53 @@ public class ButterflySectionFinder {
             segment.p1 = new PairInt(x - 1, y - 1);
             segment.p2 = new PairInt(x, y - 2);
             segment.p3 = new PairInt(x - 1, y + 1);
+            
+            return segment;
+        }
+        
+        return null;
+    }
+    
+    private Segment checkZigZag2SegmentPattern(int x, int y, Set<PairInt> points) {
+
+        Pattern pattern = getZigZag2SegmentPattern();
+        
+        boolean matchesPattern = matchesPattern(x, y, points, pattern);
+        
+        /*
+                   .            -1
+                -  0  -  3       0
+                1  -  2  -       1
+                      .          2
+         -3 -2 -1  0  1  2  3
+        */
+        if (matchesPattern) {
+            ZigZagSegment segment = new ZigZagSegment();
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x - 1, y + 1);
+            segment.p2 = new PairInt(x + 1, y + 1);
+            segment.p3 = new PairInt(x + 2, y);
+            
+            return segment;
+        }
+        
+        swapYDirection(pattern);
+        
+        matchesPattern = matchesPattern(x, y, points, pattern);
+        
+        /*            .         -2
+                1  -  2  -      -1
+                -  0  -  3       0
+                   .             1
+                                 2
+         -3 -2 -1  0  1  2  3
+        */
+        if (matchesPattern) {
+            ZigZagSegment segment = new ZigZagSegment();
+            segment.p0 = new PairInt(x, y);
+            segment.p1 = new PairInt(x - 1, y - 1);
+            segment.p2 = new PairInt(x + 1, y - 1);
+            segment.p3 = new PairInt(x + 2, y);
             
             return segment;
         }

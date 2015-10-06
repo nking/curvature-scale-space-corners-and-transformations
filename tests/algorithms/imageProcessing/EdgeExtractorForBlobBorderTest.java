@@ -111,46 +111,48 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
 
     public void testExtractAndOrderTheBorder0_1() throws Exception {
 
-        String fileName = "blob2_55_126.dat";
-        fileName = "blob_196_314.dat";
-        //String fileName = "blob2_122_253.dat";
-        //String fileName = "blobs1_236_123.dat";
+        String[] fileNames = new String[]{"blob2_55_126.dat", "blob_196_314.dat",
+           "blob_98115120.dat"};
+        
+        for (String fileName : fileNames) {
 
-        String filePath = ResourceFinder.findDirectory("testresources") + "/" + fileName;
+            String filePath = ResourceFinder.findDirectory("testresources") 
+                + "/" + fileName;
 
-        Set<PairInt> blob = Misc.deserializeSetPairInt(filePath);
+            Set<PairInt> blob = Misc.deserializeSetPairInt(filePath);
 
-        assertNotNull(blob);
-        assertFalse(blob.isEmpty());
+            assertNotNull(blob);
+            assertFalse(blob.isEmpty());
 
-        int[] minMaxXY = MiscMath.findMinMaxXY(blob);
+            int[] minMaxXY = MiscMath.findMinMaxXY(blob);
 
-        MiscDebug.plotPoints(blob, minMaxXY[1] + 10, minMaxXY[3] + 10,
-            MiscDebug.getCurrentTimeFormatted());
+            MiscDebug.plotPoints(blob, minMaxXY[1] + 10, minMaxXY[3] + 10,
+                MiscDebug.getCurrentTimeFormatted());
 
-        boolean discardWhenCavityIsSmallerThanBorder = true;
+            boolean discardWhenCavityIsSmallerThanBorder = true;
 
-        EdgeExtractorForBlobBorder instance = new EdgeExtractorForBlobBorder();
-        instance.setToDebug();
-        PairIntArray result = instance.extractAndOrderTheBorder0(blob,
-            minMaxXY[1] + 10, minMaxXY[3] + 10,
-            discardWhenCavityIsSmallerThanBorder);
+            EdgeExtractorForBlobBorder instance = new EdgeExtractorForBlobBorder();
+            instance.setToDebug();
+            PairIntArray result = instance.extractAndOrderTheBorder0(blob,
+                minMaxXY[1] + 10, minMaxXY[3] + 10,
+                discardWhenCavityIsSmallerThanBorder);
 
-        Image img3 = new Image(minMaxXY[1] + 10, minMaxXY[3] + 10);
-        for (int j = 0; j < result.getN(); ++j) {
-            int x = result.getX(j);
-            int y = result.getY(j);
-            if (j == 0 || (j == (result.getN() - 1))) {
-                ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
-            } else {
-                ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
+            Image img3 = new Image(minMaxXY[1] + 10, minMaxXY[3] + 10);
+            for (int j = 0; j < result.getN(); ++j) {
+                int x = result.getX(j);
+                int y = result.getY(j);
+                if (j == 0 || (j == (result.getN() - 1))) {
+                    ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);
+                } else {
+                    ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
+                }
             }
+            MiscDebug.writeImageCopy(img3, "blob_ordered_perimeter_" 
+                + MiscDebug.getCurrentTimeFormatted() + ".png");
+
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+            assertTrue(curveHelper.isAdjacent(result, 0, result.getN() - 1));
         }
-        MiscDebug.writeImageCopy(img3, "blob_ordered_perimeter_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        assertTrue(curveHelper.isAdjacent(result, 0, result.getN() - 1));
-
     }
 }
