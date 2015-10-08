@@ -6,6 +6,8 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -31,27 +33,27 @@ public class ButterflySectionFinder {
      * @return list of points that are part of the 2 pixel width patterns in
      * a curve where the curve closes, but is still connected.
      */
-    public List<Set<PairInt>> findButterflySections(PairIntArray closedCurve) {
+    public List<Routes> findButterflySections(PairIntArray closedCurve) {
         
         Set<PairInt> points = Misc.convert(closedCurve);
         
-        List<Set<PairInt>> sections = findButterflySectionsLarge(closedCurve, 
-            points);
-
-        List<Set<PairInt>> sectionsSmall = findButterflySectionsSmall(
-            closedCurve, points);
+        List<Routes> output = new ArrayList<Routes>();
         
-        if (sections == null && sectionsSmall == null) {
-            return null;
-        } else if (sections == null && sectionsSmall != null) {
-            return sectionsSmall;
-        } else if (sections != null && sectionsSmall == null) {
-            return sections;
-        } else if (sections != null && sectionsSmall != null) {
-            sections.addAll(sectionsSmall);
+        List<Routes> sections = findButterflySectionsLarge(closedCurve, 
+            points);
+        
+        if (sections != null && !sections.isEmpty()) {
+            output.addAll(sections);
+        }
+
+        List<Routes> sectionsSmall = findButterflySectionsSmall(closedCurve, 
+            points);
+        
+        if (sectionsSmall != null && !sectionsSmall.isEmpty()) {
+            output.addAll(sectionsSmall);
         }
         
-        return sections;
+        return output;
     }
 
      /**
@@ -70,7 +72,7 @@ public class ButterflySectionFinder {
      * @return list of points that are part of the 2 pixel width patterns in
      * a curve where the curve closes, but is still connected.
      */
-    protected List<Set<PairInt>> findButterflySectionsLarge(PairIntArray 
+    protected List<Routes> findButterflySectionsLarge(PairIntArray 
         closedCurve, Set<PairInt> points) {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -119,53 +121,30 @@ public class ButterflySectionFinder {
         if (candidateSections.isEmpty()) {
             return null;
         }
+        
+        //TODO: correct for wrap around of section from end of curve to beginning
 
-        Set<PairInt> exclude = new HashSet<PairInt>();
-        for (LinkedList<Segment> section : candidateSections) {
-            for (Segment segment : section) {
-                exclude.add(segment.p0);
-                exclude.add(segment.p1);
-                exclude.add(segment.p2);
-                exclude.add(segment.p3);
-            }
-        }
-
-        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
+        List<Routes> output = new ArrayList<Routes>();
 
         // -- scan for endpoints --
         for (LinkedList<Segment> section : candidateSections) {
-
-            boolean checkFirstSegment = true;
             
-            Set<PairInt> endPoints = checkForAdjacentEndpoints(points, section,
-                exclude, checkFirstSegment);
+            Routes routes = checkForAdjacentEndpoints(points, section);
 
-            if (endPoints == null || endPoints.isEmpty()) {
+            if (routes == null) {
                 continue;
             }
 
-            Set<PairInt> exclude2 = new HashSet<PairInt>(exclude);
-            exclude2.addAll(endPoints);
+            if (section.size() > 1) {
+                
+                routes = checkForAdjacentEndpoints(points, section, routes);
 
-            Set<PairInt> endPoints2 = checkForAdjacentEndpoints(points,
-                section, exclude2, checkFirstSegment);
-
-            if (endPoints2 == null || endPoints2.isEmpty()) {
-                continue;
+                if (routes == null) {
+                    continue;
+                }
             }
-
-            // add all section and endpoints to a set to add to output
-            Set<PairInt> allPoints = new HashSet<PairInt>();
-            allPoints.addAll(endPoints);
-            allPoints.addAll(endPoints2);
-            for (Segment segment : section) {
-                allPoints.add(segment.p0);
-                allPoints.add(segment.p1);
-                allPoints.add(segment.p2);
-                allPoints.add(segment.p3);
-            }
-
-            output.add(allPoints);
+            
+            output.add(routes);
         }
 
         return output;
@@ -278,12 +257,12 @@ public class ButterflySectionFinder {
 
     }
     
-    protected List<Set<PairInt>> findButterflySectionsSmall(PairIntArray 
+    protected List<Routes> findButterflySectionsSmall(PairIntArray 
         closedCurve, Set<PairInt> points) {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
-        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();    
+        List<Routes> output = new ArrayList<Routes>();    
 
         for (int i = 0; i < closedCurve.getN(); ++i) {
 
@@ -318,15 +297,9 @@ public class ButterflySectionFinder {
                 continue;
             }
             
-            // add all section and endpoints to a set to add to output
-            Set<PairInt> allPoints = new HashSet<PairInt>();
-            allPoints.addAll(endPoints);
-            allPoints.add(segment.p0);
-            allPoints.add(segment.p1);
-            allPoints.add(segment.p2);
-            allPoints.add(segment.p3);
-
-            output.add(allPoints);
+            Routes routes = parse(segment, endPoints);
+           
+            output.add(routes);
         }
 
         return output;
@@ -380,75 +353,59 @@ public class ButterflySectionFinder {
         }
     }
 
-    private Set<PairInt> checkForAdjacentEndpoints(Set<PairInt> points,
-        LinkedList<Segment> section, Set<PairInt> exclude, 
-        boolean checkFirstSegment) {
+    private Routes checkForAdjacentEndpoints(Set<PairInt> points,
+        LinkedList<Segment> section) {
+    
+        // the list of segments was built from a closed curve
         
-        Segment segment = checkFirstSegment ? section.getFirst() : 
-            section.getLast();
-                        
-        if (segment instanceof VertSegment) {
-            return checkForAdjacentEndpointsForVertSegment(points, section, 
-                exclude, checkFirstSegment);
-        } else if (segment instanceof HorizSegment) {
-            return checkForAdjacentEndpointsForHorizSegment(points, section, 
-                exclude, checkFirstSegment);
-        } else if (segment instanceof UUDiagSegment) {
-            return checkForAdjacentEndpointsForUUDiagSegment(points, section, 
-                exclude, checkFirstSegment);
+        Segment firstSegment = section.getFirst();
+                      
+        Routes routes = null;
+        
+        boolean checkFirstSegment = true;
+        
+        if (firstSegment instanceof VertSegment) {
+            
+            boolean useVertical = true;
+            
+            routes = findEndPointsVertHorizPatterns(points, routes, firstSegment,
+                useVertical);
+            
+        } else if (firstSegment instanceof HorizSegment) {
+            
+            boolean useVertical = false;
+            
+            routes = findEndPointsVertHorizPatterns(points, routes, firstSegment,
+                useVertical);
+            
+        } else if (firstSegment instanceof UUDiagSegment) {
+            
+            routes = findEndPointsDiagPatterns(points, routes, 
+                (UUDiagSegment)firstSegment);
         }
         
-        return null;
+        if (routes == null) {
+            return routes;
+        }
         
-        /*endpoints for horiz:
-                       #           #
-            # .        - .       - - .
-          - - .  or  - - .  or     # .
-            #          #
-
-        endpoints for vert:
-                -        - -       -
-              # - #    # - - #   # - #
-              . .        . .       . .
-
-        endpoints for diag:
-
-            -  #             -  #               -  #
-            -    .        -  -  .            #  -  .
-            #  .   .      #  .    .          -  .    .
-                 .              .                  .
-        */
-        
-    }
-
-    private Set<PairInt> checkForAdjacentEndpointsForVertSegment(
-        Set<PairInt> points, LinkedList<Segment> section, Set<PairInt> exclude, 
-        boolean checkFirstSegment) {
-        
-        VertSegment segment = checkFirstSegment ? (VertSegment)section.getFirst() :
-            (VertSegment)section.getLast();
+        if (checkFirstSegment && (section.size() > 1)) {
+            for (int i = 1; i < section.size(); ++i) {
                 
-        /*endpoints for vert:
-                -        - -       -
-              # - #    # - - #   # - #
-              . .        . .       . .
-        */
+                Segment segment = section.get(i);
+                
+                // add node to routes
+                addSegmentToRoutes(routes, segment);
+            }
+        }
         
-        boolean useVert = true;
-       
-        Set<PairInt> endPoints = findEndPointsVertHorizPatterns(points, segment,
-            exclude, useVert);
-        
-        return endPoints;
+        return routes;
     }
 
-    private Set<PairInt> findEndPointsVertHorizPatterns(Set<PairInt> points, 
-        Segment segment, Set<PairInt> exclude, boolean useVert) {
+    private Routes findEndPointsVertHorizPatterns(Set<PairInt> points, 
+        Routes routes, Segment segment, boolean useVert) {
         
         int x0 = segment.p0.getX();
         int y0 = segment.p0.getY();
-        
-        Set<PairInt> allEndPoints = new HashSet<PairInt>();
         
         for (int i = 0; i < 6; ++i) {
             Pattern pattern;
@@ -492,18 +449,36 @@ public class ButterflySectionFinder {
                     if (segment.contains(p2)) {
                         continue;
                     }
-                    if (/*exclude.contains(p2) ||*/ !points.contains(p2)) {
+                    if (!points.contains(p2)) {
                         found = false;
                         break;
                     }
                     endPoints.add(p2);
                 }
                 if (found) {
-                    allEndPoints.addAll(endPoints);
+                    if (routes == null) {
+                        routes = createRoute(segment, x0, y0);
+                    }
+                    switch(i) {
+                        case 0:
+                        case 2:
+                        case 4:
+                            addEndpointsForHorizVertPatternForward(x0, y0, 
+                                pattern, routes, endPoints, useVert);
+                            break;
+                        case 1:
+                        case 3:
+                        case 5:
+                            addEndpointsForHorizVertPatternOppos(x0, y0, 
+                                pattern, routes, endPoints, useVert);
+                            break;
+                        default:
+                            return null;
+                    }
                 }
             }
         }        
-        return allEndPoints;
+        return routes;
     }
     
     private Pattern getEndPointsVertPattern1() {
@@ -523,8 +498,18 @@ public class ButterflySectionFinder {
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
         
-        pattern.ones.add(new PairInt(-1, 1)); pattern.ones.add(new PairInt(-1, 2));
-        pattern.ones.add(new PairInt(0, 1)); pattern.ones.add(new PairInt(1, 2));
+        // '.' intermediate points 
+        pattern.ones.add(new PairInt(-1, 1));
+        pattern.ones.add(new PairInt(0, 1));
+        
+        // '#' end points
+        PairInt t1 = new PairInt(-1, 2);
+        pattern.ones.add(t1);
+        PairInt t0 = new PairInt(1, 2);
+        pattern.ones.add(t0);
+        pattern.ep0 = t0;
+        pattern.ones.add(t1);
+        pattern.ep1 = t1;
         
         pattern.zeroes.add(new PairInt(-2, 1)); pattern.zeroes.add(new PairInt(1, 1));
         pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 3));
@@ -571,18 +556,26 @@ public class ButterflySectionFinder {
               -  -       3
           -2 -1  0  1
         */
-        
         Pattern pattern = new Pattern();
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
         
-        pattern.ones.add(new PairInt(-1, 1)); pattern.ones.add(new PairInt(0, 1));
-        pattern.ones.add(new PairInt(-2, -2)); pattern.ones.add(new PairInt(1, 2));
+        // '.' intermediate points
+        pattern.ones.add(new PairInt(-1, 1)); 
+        pattern.ones.add(new PairInt(0, 1));
+        
+        // '#' end points
+        PairInt t1 = new PairInt(-2, 2);
+        pattern.ones.add(t1); 
+        PairInt t0 = new PairInt(1, 2);
+        pattern.ones.add(t0);
+        pattern.ep1 = t1;
+        pattern.ep0 = t0;
         
         pattern.zeroes.add(new PairInt(-2, 1)); pattern.zeroes.add(new PairInt(1, 1));
         pattern.zeroes.add(new PairInt(-1, 2)); pattern.zeroes.add(new PairInt(-1, 3));
         pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 3));
-        
+      
         return pattern;
     }
     
@@ -636,13 +629,21 @@ public class ButterflySectionFinder {
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
         
-        pattern.ones.add(new PairInt(-1, 1)); pattern.ones.add(new PairInt(0, 1));
-        pattern.ones.add(new PairInt(-2, 2));
-        pattern.ones.add(new PairInt(0, 2)); 
-        
         pattern.zeroes.add(new PairInt(-2, 1)); 
-        pattern.zeroes.add(new PairInt(-1, 2)); pattern.zeroes.add(new PairInt(-1, 3));
+        pattern.zeroes.add(new PairInt(-1, 2)); 
+        pattern.zeroes.add(new PairInt(-1, 3));
         pattern.zeroes.add(new PairInt(1, 1)); 
+        
+        // '.' intermediate points
+        pattern.ones.add(new PairInt(-1, 1)); 
+        pattern.ones.add(new PairInt(0, 1));
+        // '#' end points
+        PairInt t1 = new PairInt(-2, 2);
+        pattern.ones.add(t1);
+        PairInt t0 = new PairInt(0, 2);
+        pattern.ones.add(t0);
+        pattern.ep1 = t1;
+        pattern.ep0 = t0;
         
         return pattern;
     }
@@ -675,55 +676,43 @@ public class ButterflySectionFinder {
         return pattern;
     }
     
-    private Set<PairInt> checkForAdjacentEndpointsForHorizSegment(
-        Set<PairInt> points, LinkedList<Segment> section, Set<PairInt> exclude, 
-        boolean checkFirstSegment) {
-        
-        HorizSegment segment = checkFirstSegment ? (HorizSegment)section.getFirst() :
-            (HorizSegment)section.getLast();
-          
-        boolean useVert = false;
-       
-        Set<PairInt> endPoints = findEndPointsVertHorizPatterns(points, segment,
-            exclude, useVert);
-        
-        return endPoints;
-    }
-    
-    private Set<PairInt> checkForAdjacentEndpointsForUUDiagSegment(
-        Set<PairInt> points, LinkedList<Segment> section, Set<PairInt> exclude, 
-        boolean checkFirstSegment) {
-        
-        UUDiagSegment segment = checkFirstSegment ? (UUDiagSegment)section.getFirst() :
-            (UUDiagSegment)section.getLast();
-                
-        Set<PairInt> endPoints = findEndPointsDiagPatterns(points, segment,
-            exclude);
-        
-        return endPoints;
-    }
-    
-    private Set<PairInt> findEndPointsDiagPatterns(Set<PairInt> points, 
-        UUDiagSegment segment, Set<PairInt> exclude) {
+    private Routes findEndPointsDiagPatterns(Set<PairInt> points, 
+        Routes routes, UUDiagSegment segment) {
         
         int x0 = segment.p0.getX();
         int y0 = segment.p0.getY();
-        
-        Pattern[] patterns = new Pattern[] {
-            getEndPointsUUDiagPattern1(), getEndPointsUUDiagPattern1(),
-            getEndPointsUUDiagPattern2(), getEndPointsUUDiagPattern2(),
-            getEndPointsUUDiagPattern3(), getEndPointsUUDiagPattern3()
-        };
-        
-        for (int i = 0; i < patterns.length; ++i) {
-            Pattern pattern = patterns[i];
-            if ((i & 1) == 1) {
-                rotatePattern(pattern, -0.5*Math.PI);
+               
+        for (int i = 0; i < 6; ++i) {
+            Pattern pattern;
+            switch(i) {
+                case 0:
+                    pattern = getEndPointsUUDiagPattern1();
+                    break;
+                case 1:
+                    pattern = getEndPointsUUDiagPattern1();
+                    rotatePattern(pattern, -0.5*Math.PI);
+                    break;
+                case 2:
+                    pattern = getEndPointsUUDiagPattern2();
+                    break;
+                case 3:
+                    pattern = getEndPointsUUDiagPattern2();
+                    rotatePattern(pattern, -0.5*Math.PI);
+                    break;
+                case 4:
+                    pattern = getEndPointsUUDiagPattern3();
+                    break;
+                case 5:
+                    pattern = getEndPointsUUDiagPattern3();
+                    rotatePattern(pattern, -0.5*Math.PI);
+                    break;
+                default:
+                    return null;
             }
             boolean found = true;
             for (PairInt p : pattern.zeroes) {
                 PairInt p2 = new PairInt(x0 + p.getX(), y0 + p.getY());
-                if (points.contains(p2) || exclude.contains(p2)) {
+                if (points.contains(p2)) {
                     found = false;
                     break;
                 }
@@ -736,18 +725,36 @@ public class ButterflySectionFinder {
                     if (segment.contains(p2)) {
                         continue;
                     }
-                    if (exclude.contains(p2) || !points.contains(p2)) {
+                    if (!points.contains(p2)) {
                         found = false;
                         break;
                     }
                     endPoints.add(p2);
                 }
                 if (found) {
-                    return endPoints;
+                    if (routes == null) {
+                        routes = createRoute(segment, x0, y0);
+                    }
+                    switch(i) {
+                        case 0:
+                        case 2:
+                        case 4:
+                            addEndpointsForUUDiagPattern(x0, y0, 
+                                pattern, routes, endPoints);
+                            break;
+                        case 1:
+                        case 3:
+                        case 5:
+                            addEndpointsForULDiagPattern(x0, y0, 
+                                pattern, routes, endPoints);
+                            break;
+                        default:
+                            return null;
+                    }
                 }
             }
         }        
-        return null;
+        return routes;
     }
     
     private Pattern getEndPointsUUDiagPattern1() {
@@ -756,9 +763,9 @@ public class ButterflySectionFinder {
         
                 -  -          -2
           -  2  1  -  -       -1
-          -  -  3 .0  #        0
+          -  -  3 .0  #        0   <--# is route0 end endpoint
              -  .  -           1
-                -  #           2
+                -  #           2   <--# is route1 start endpoint
         
          -3 -2 -1  0  1
         */
@@ -766,14 +773,18 @@ public class ButterflySectionFinder {
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
     
-        pattern.ones.add(new PairInt(-1, 1)); 
-        pattern.ones.add(new PairInt(0, 2));
-        pattern.ones.add(new PairInt(1, 0));
-        
         pattern.zeroes.add(new PairInt(-1, 1));
         pattern.zeroes.add(new PairInt(0, 1)); 
         pattern.zeroes.add(new PairInt(0, -1));
         
+        pattern.ones.add(new PairInt(-1, 1)); 
+        PairInt t1 = new PairInt(0, 2);
+        pattern.ones.add(t1);
+        PairInt t0 = new PairInt(1, 0);
+        pattern.ones.add(t0);
+        pattern.ep1 = t1;
+        pattern.ep0 = t0;
+       
         return pattern;
     }
     
@@ -792,9 +803,17 @@ public class ButterflySectionFinder {
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
 
-        pattern.ones.add(new PairInt(-1, 2)); pattern.ones.add(new PairInt(-1, 1));
+        pattern.zeroes.add(new PairInt(0, 2)); 
+        pattern.zeroes.add(new PairInt(0, 1)); 
+        pattern.zeroes.add(new PairInt(0, 1));
         
-        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 1)); pattern.zeroes.add(new PairInt(0, 1));
+        pattern.ones.add(new PairInt(-1, 1));
+        PairInt t1 = new PairInt(-1, 2);
+        pattern.ones.add(t1);
+        PairInt t0 = new PairInt(1, 0);
+        pattern.ones.add(t0);        
+        pattern.ep0 = t0;
+        pattern.ep1 = t1;
         
         return pattern;
     }
@@ -815,10 +834,17 @@ public class ButterflySectionFinder {
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
    
-        pattern.ones.add(new PairInt(-1, 2)); pattern.ones.add(new PairInt(-1, 1));
-        pattern.ones.add(new PairInt(1, 1));
-       
-        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 1)); pattern.zeroes.add(new PairInt(0, -1));
+        pattern.ones.add(new PairInt(-1, 1));
+        PairInt t1 = new PairInt(-1, 2);
+        pattern.ones.add(t1); 
+        PairInt t0 = new PairInt(1, 1);
+        pattern.ones.add(t0);
+        pattern.ep0 = t0;
+        pattern.ep1 = t1;
+        
+        pattern.zeroes.add(new PairInt(0, 2)); 
+        pattern.zeroes.add(new PairInt(0, 1)); 
+        pattern.zeroes.add(new PairInt(0, -1));
         pattern.zeroes.add(new PairInt(1, 0)); 
         
         return pattern;
@@ -904,6 +930,930 @@ public class ButterflySectionFinder {
             p.setY(yt);
         }
     }
+
+    private Routes createRoute(Segment segment, int x0, int y0) {
+        
+        /*
+             VertSegment              swapY VertSegment
+              .     .        -2
+           -  2     1:E0 -   -1         .     .         -1    E0 marks endpoint 0 and the 
+           -  3:E1  0    -    0      -  3     0:E0  -    0       start of route 0.
+              .     .         1      -  2:E1  1     -    1       which incr w/ incr y.
+                                        .     .          2    route 1 starts at E1 and incr w/ decr y
+          -2 -1     0    1          -2 -1     0     1
+
+            HorizSegment              swap HorizSegment
+                 -    -       -2          -    -         -2
+              .  3:E0 2    .  -1       .  2:E0 3     .   -1    route0 incr w/ incr x
+              .  0    1:E1 .   0       .  1    0:E1  .    0    route1 incr w/ decr x
+                 -    -        1          -    -          1
+             -1  0    1    2          -2 -1    0     1
+        
+        
+                 UUDiagSegment                ULDiagSegment
+                    -  -      -2                    2      -2
+              -  2  1  -  -   -1                 3  1      -1
+              -  -  3  0  -    0                 0          0
+                 -  -          1                            1
+             -3 -2 -1  0  1                 -1   0  1  2
+        
+               E0 is '1', and route0         E0 is '1', and route0
+                  continues with             continues with
+                  point '0'                  point '0'
+               E1 is '3', and route1         E1 is '3', and route1
+                  continues with '2'            continues with '2'
+        */
+        
+        if (segment instanceof VertSegment) {
+            Routes routes = new Routes();
+            if (segment.p1.equals(new PairInt(x0, y0 - 1))) {
+                assert(segment.p2.equals(new PairInt(x0 - 1, y0 + 1))); 
+                assert(segment.p3.equals(new PairInt(x0 - 1, y0))); 
+                routes.route0.add(segment.p1);
+                routes.route0.add(segment.p0);
+                routes.route1.add(segment.p3);
+                routes.route1.add(segment.p2);
+            } else if (segment.p1.equals(new PairInt(x0, y0 + 1))) {
+                assert(segment.p2.equals(new PairInt(x0 - 1, y0 + 1)));
+                assert(segment.p3.equals(new PairInt(x0 - 1, y0)));
+                routes.route0.add(segment.p0);
+                routes.route0.add(segment.p1);
+                routes.route1.add(segment.p2);
+                routes.route1.add(segment.p3);
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+            return routes;
+        } else if (segment instanceof HorizSegment) {
+            Routes routes = new Routes();
+            if (segment.p1.equals(new PairInt(x0 + 1, y0))) {
+                assert(segment.p2.equals(new PairInt(x0 + 1, y0 - 1)));
+                assert(segment.p3.equals(new PairInt(x0, y0 - 1)));
+                routes.route0.add(segment.p3);
+                routes.route0.add(segment.p2);
+                routes.route1.add(segment.p1);
+                routes.route1.add(segment.p0);
+            } else if (segment.p1.equals(new PairInt(x0 - 1, y0))) {
+                assert(segment.p2.equals(new PairInt(x0 - 1, y0 - 1)));
+                assert(segment.p3.equals(new PairInt(x0, y0 - 1)));
+                routes.route0.add(segment.p2);
+                routes.route0.add(segment.p3);
+                routes.route1.add(segment.p0);
+                routes.route1.add(segment.p1);
+            } else {
+                throw new IllegalStateException("error in algorithm!");
+            }
+            return routes;
+            
+        } else if ((segment instanceof UUDiagSegment) || (segment instanceof ULDiagSegment)) {
+            Routes routes = new Routes();
+            routes.route0.add(segment.p1);
+            routes.route0.add(segment.p0);
+            routes.route1.add(segment.p3);
+            routes.route1.add(segment.p2);
+            return routes;
+        } else {
+            throw new IllegalStateException("error in algorithm: " + 
+                " segment not handled:" + segment.getClass().getSimpleName());
+        }
+    }
+
+    private void addEndpointsForHorizVertPatternForward(final int x0, 
+        final int y0, Pattern pattern, final Routes routes, 
+        Set<PairInt> endPoints, boolean useVert) {
+        
+        if (endPoints.size() < 4) {
+            throw new IllegalStateException("error in algorithm");
+        }
+        assert(routes.ep0End == null);
+        assert(routes.ep1 == null);
+            
+        if (useVert) {
+            /*
+               endPointsVertPattern1, for example
+                            -2
+               -  2  1  -   -1
+               -  3  0  -    0
+               -  .  .  -    1
+                  #  -  #    2
+                     -       3
+              -2 -1  0  1
+            */
+            PairInt t = new PairInt(x0, y0 + 1);
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route0.add(t);
+            
+            assert(pattern.ep0 != null);
+            t = pattern.ep0.copy();
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route0.add(t);
+            routes.ep0End = t;
+            
+            assert(pattern.ep1 != null);
+            t = pattern.ep1.copy();
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            PairInt t2 = new PairInt(x0 - 1, y0 + 1);
+            if (!endPoints.contains(t2)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
+            tmpR1.add(t);
+            tmpR1.add(t2);
+            tmpR1.addAll(routes.route1);
+            routes.route1 = tmpR1;
+            routes.ep0 = t;
+        } else {
+            /*
+                endPointsHorizPattern1
+                      -  -  -   -2
+                  #   .  3  2   -1
+              -   -   .  0  1    0  it's vert rotated by -90, so
+                  #   -  -  -    1  route0 is at higher y than route1 here
+                                 2
+                                 3
+             -3  -2  -1  0  1
+            */
+            assert(pattern.ep1 != null);
+            PairInt t = pattern.ep1.copy();
+            PairInt t2 = new PairInt(x0 - 1, y0 - 1);
+            if (!endPoints.contains(t) || !endPoints.contains(t2)) {
+                throw new IllegalStateException("error in algorithm");
+            }            
+            LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
+            tmpR1.add(t);
+            tmpR1.add(t2);
+            tmpR1.addAll(routes.route1);
+            routes.route1 = tmpR1;
+            routes.ep1 = t;
+            
+            t = new PairInt(x0 - 1, y0);
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route0.add(t);
+            
+            assert(pattern.ep0 != null);
+            t = pattern.ep0.copy();
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route0.add(t);
+            routes.ep0End = t;
+        }
+    }
+
+    private void addEndpointsForHorizVertPatternOppos(int x0, int y0, 
+        Pattern pattern, Routes routes, Set<PairInt> endPoints, boolean useVert) {
+        
+        if (endPoints.size() < 4) {
+            throw new IllegalStateException("error in algorithm");
+        }
+        assert(routes.ep0 == null);
+        assert(routes.ep1End == null);
+            
+        if (useVert) {
+            /*
+               getEndPointsVertPattern1Opp, for example
+                     -      -3
+                  #  -  #   -2
+               -  .  .  -   -1
+               -  3  0  -    0
+               -  2  1  -    1
+
+              -2 -1  0  1
+            */
+            assert(pattern.ep0 != null);
+            PairInt t0 = pattern.ep0.copy();
+            PairInt t = new PairInt(x0, y0 - 1);
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            LinkedHashSet<PairInt> tmpR0 = new LinkedHashSet<PairInt>();
+            tmpR0.add(t0);
+            tmpR0.add(t);
+            tmpR0.addAll(routes.route0);
+            routes.route0 = tmpR0;
+            routes.ep0 = t;
+            
+            t = new PairInt(x0 - 1, y0 - 1);
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route1.add(t);
+            
+            t = pattern.ep1.copy();
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route1.add(t);
+            routes.ep1End = t;
+            
+        } else {
+            /*
+               getEndPoints Horiz Pattern1Opp
+                              -3
+                              -2
+                  2  3  .  #  -1
+                  1  0  .      0
+                           #   1
+
+              -2 -1  0  1  2 
+            */
+            assert(pattern.ep0 != null);
+            PairInt t0 = pattern.ep0.copy();
+            PairInt t = new PairInt(x0 + 1, y0);
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            LinkedHashSet<PairInt> tmpR0 = new LinkedHashSet<PairInt>();
+            tmpR0.add(t0);
+            tmpR0.add(t);
+            tmpR0.addAll(routes.route0);
+            routes.route0 = tmpR0;
+            routes.ep0 = t;
+          
+            t = new PairInt(x0 + 1, y0 - 1);
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route1.add(t);
+            
+            t = pattern.ep1.copy();
+            if (!endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route1.add(t);
+            routes.ep1End = t;
+        }
+    }
+
+    private void addEndpointsForUUDiagPattern(final int x0, final int y0, 
+        final Pattern pattern, Routes routes, Set<PairInt> endPoints) {
+        
+        if (endPoints.size() < 3) {
+            throw new IllegalStateException("error in algorithm");
+        }
+        assert(routes.ep0End == null);
+        assert(routes.ep1 == null);
+            
+        /*
+           UUDiagPattern1, for example
+                -  -          -2
+          -  2  1  -  -       -1
+          -  -  3 .0  #        0    <--# is route0 end endpoint
+             -  .  -           1
+                -  #           2    <--# is route1 start endpoint
+
+         -3 -2 -1  0  1
+        */
+        assert(pattern.ep0 != null);
+        assert(pattern.ep1 != null);
+        
+        LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
+        PairInt t = new PairInt(x0 - 1, y0 + 1);
+        PairInt t1 = pattern.ep1.copy();
+        if (!endPoints.contains(t)) {
+            throw new IllegalStateException("error in algorithm");
+        }
+        tmpR1.add(t1);
+        tmpR1.add(t);
+        tmpR1.addAll(routes.route1);
+        routes.route1 = tmpR1;
+        routes.ep1 = t;
+
+        PairInt t0 = pattern.ep0.copy();
+        routes.route0.add(t0);
+        routes.ep0End = t0;            
+    }
+
+    private void addEndpointsForULDiagPattern(int x0, int y0, 
+        Pattern pattern, Routes routes, Set<PairInt> endPoints) {
+        
+        if (endPoints.size() < 3) {
+            throw new IllegalStateException("error in algorithm");
+        }
+        assert(routes.ep0End == null);
+        assert(routes.ep1 == null);
+            
+        /*
+           ULDiagPattern1, for example
+                      2       -2
+                .  3  1       -1
+             #     0           0    <--# is route1 start endpoint
+                   #           1    <--# is route0 end endpoint
+                               2         
+
+         -3 -2 -1  0  1
+        */
+        assert(pattern.ep0 != null);
+        assert(pattern.ep1 != null);
+        
+        LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
+        PairInt t = new PairInt(x0 - 1, y0 - 1);
+        PairInt t1 = pattern.ep1.copy();
+        if (!endPoints.contains(t)) {
+            throw new IllegalStateException("error in algorithm");
+        }
+        tmpR1.add(t1);
+        tmpR1.add(t);
+        tmpR1.addAll(routes.route1);
+        routes.route1 = tmpR1;
+        routes.ep1 = t;
+
+        PairInt t0 = pattern.ep0.copy();
+        routes.route0.add(t0);
+        routes.ep0End = t0;         
+    }
+
+    private Routes checkForAdjacentEndpoints(Set<PairInt> points, 
+        LinkedList<Segment> section, Routes routes) {
+        
+        // the list of segments was built from a closed curve
+        
+        Segment lastSegment = section.getLast();
+
+        if (lastSegment instanceof VertSegment) {
+            
+            boolean useVertical = true;
+            
+            routes = findEndPointsVertHorizPatterns(points, routes, lastSegment,
+                useVertical);
+            
+        } else if (lastSegment instanceof HorizSegment) {
+            
+            boolean useVertical = false;
+            
+            routes = findEndPointsVertHorizPatterns(points, routes, lastSegment,
+                useVertical);
+            
+        } else if (lastSegment instanceof UUDiagSegment) {
+            
+            routes = findEndPointsDiagPatterns(points, routes, 
+                (UUDiagSegment)lastSegment);
+        }
+        
+        return routes;
+    }
+
+    private void addSegmentToRoutes(Routes routes, Segment segment) {
+        
+        if (segment instanceof VertSegment) {
+            addVertSegmentToRoutes(routes, (VertSegment)segment);
+        } else if (segment instanceof HorizSegment) {
+            addHorizSegmentToRoutes(routes, (HorizSegment)segment);
+        } else if (segment instanceof UUDiagSegment) {
+            addUUDiagSegmentToRoutes(routes, (UUDiagSegment)segment);
+        } else if (segment instanceof ULDiagSegment) {
+            addULDiagSegmentToRoutes(routes, (ULDiagSegment)segment);
+        }
+        
+    }
+
+    private void addVertSegmentToRoutes(Routes routes, VertSegment segment) {
+        
+        assert(!routes.route0.isEmpty());
+        assert(!routes.route1.isEmpty());
+        
+        // -------- add to routes0 -------------------------
+        PairInt[] r0FirstLastNodes = getFirstAndLast(routes.route0.iterator());
+        
+        double p0MinDistSq = Double.MAX_VALUE;
+        int p0MinIdx = -1;
+        double p1MinDistSq = Double.MAX_VALUE;
+        int p1MinIdx = -1;
+        for (int i = 0; i < r0FirstLastNodes.length; ++i) {
+            PairInt r0 = r0FirstLastNodes[i];
+            int diffX = segment.p0.getX() - r0.getX();
+            int diffY = segment.p0.getY() - r0.getY();
+            double distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p0MinDistSq) {
+                p0MinDistSq = distSq;
+                p0MinIdx = i;
+            }
+            diffX = segment.p1.getX() - r0.getX();
+            diffY = segment.p1.getY() - r0.getY();
+            distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p1MinDistSq) {
+                p1MinDistSq = distSq;
+                p1MinIdx = i;
+            }
+        }
+        
+        if (segment.p1.getY() < segment.p0.getY()) {
+            
+            /*      VertSegment 
+            
+                       R0
+                       \/
+                  .     .        -2
+               -  2     1:E0 -   -1  
+               -  3:E1  0    -    0 
+                  .     .         1 
+                                  
+              -2 -1     0    1   
+            
+                  /\
+                  R1
+            */
+            if (!(segment.p2.getY() < segment.p3.getY())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p0MinDistSq < p1MinDistSq) {
+                /*
+                1
+                0
+                [*]
+                [*]
+                E0end
+                */
+                if (p0MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep0 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p1);
+                tmp.add(segment.p0);
+                tmp.addAll(routes.route0);
+                routes.route0 = tmp;
+            } else if (p1MinDistSq < p0MinDistSq) {
+                /*
+                E0 
+                [*]
+                [*]
+                1
+                0
+                */
+                if (p1MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep0End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                routes.route0.add(segment.p1);
+                routes.route0.add(segment.p0);
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+            
+        } else if (segment.p0.getY() < segment.p1.getY()) {
+            
+            /*   swapped VertSegment
+                        R0
+                        \/
+                   .     .         -1    E0 marks endpoint 0 and the
+                -  3     0:E0  -    0       start of route 0.
+                -  2:E1  1     -    1       which incr w/ incr y.
+                   .     .          2    route 1 starts at E1 and incr w/ decr y
+               -2 -1     0     1
+            
+                  /\
+                  R1
+            */
+            
+            if (!(segment.p3.getY() < segment.p2.getY())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p0MinDistSq < p1MinDistSq) {
+                /*
+                E0 
+                [*]
+                [*]
+                0
+                1
+                */
+                if (p0MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep0End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                routes.route0.add(segment.p0);
+                routes.route0.add(segment.p1);
+            } else if (p1MinDistSq < p0MinDistSq) {
+                /*
+                0
+                1
+                [*]
+                [*]
+                E0end
+                */
+                if (p1MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep0 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p0);
+                tmp.add(segment.p1);
+                tmp.addAll(routes.route0);
+                routes.route0 = tmp;
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+            
+        } else {
+            throw new IllegalStateException("error in algorithm");
+        }
+        
+        // ------------ add to routes1 -----------------
+        /*   VertSegment              swapY VertSegment
+              .     .        -2
+           -  2     1:E0 -   -1         .     .         -1    E0 marks endpoint 0 and the
+           -  3:E1  0    -    0      -  3     0:E0  -    0       start of route 0.
+              .     .         1      -  2:E1  1     -    1       which incr w/ incr y.
+                                        .     .          2    route 1 starts at E1 and incr w/ decr y
+          -2 -1     0    1          -2 -1     0     1
+        */
+        PairInt[] r1FirstLastNodes = getFirstAndLast(routes.route1.iterator()); 
+        double p2MinDistSq = Double.MAX_VALUE;
+        int p2MinIdx = -1;
+        double p3MinDistSq = Double.MAX_VALUE;
+        int p3MinIdx = -1;
+        for (int i = 0; i < r1FirstLastNodes.length; ++i) {
+            PairInt r1 = r1FirstLastNodes[i];
+            int diffX = segment.p2.getX() - r1.getX();
+            int diffY = segment.p2.getY() - r1.getY();
+            double distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p2MinDistSq) {
+                p2MinDistSq = distSq;
+                p2MinIdx = i;
+            }
+            diffX = segment.p3.getX() - r1.getX();
+            diffY = segment.p3.getY() - r1.getY();
+            distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p3MinDistSq) {
+                p3MinDistSq = distSq;
+                p3MinIdx = i;
+            }
+        }
+        
+        if (segment.p2.getY() < segment.p3.getY()) {
+            
+            /*      VertSegment 
+            
+                       R0
+                       \/
+                  .     .        -2
+               -  2     1:E0 -   -1  
+               -  3:E1  0    -    0 
+                  .     .         1 
+                                  
+              -2 -1     0    1   
+            
+                  /\
+                  R1
+            */
+            if (!(segment.p1.getY() < segment.p0.getY())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p3MinDistSq < p2MinDistSq) {
+                /*
+                2
+                3
+                [*]
+                [*]
+                E1
+                */
+                if (p3MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                routes.route1.add(segment.p3);
+                routes.route1.add(segment.p2);
+            } else if (p2MinDistSq < p3MinDistSq) {
+                /*
+                E1end 
+                [*]
+                [*]
+                2
+                3
+                */
+                if (p2MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p3);
+                tmp.add(segment.p2);
+                tmp.addAll(routes.route1);
+                routes.route1 = tmp;
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+            
+        } else if (segment.p3.getY() < segment.p2.getY()) {
+            
+            /*   swapped VertSegment
+                        R0
+                        \/
+                   .     .         -1    E0 marks endpoint 0 and the
+                -  3     0:E0  -    0       start of route 0.
+                -  2:E1  1     -    1       which incr w/ incr y.
+                   .     .          2    route 1 starts at E1 and incr w/ decr y
+               -2 -1     0     1
+            
+                  /\
+                  R1
+            */
+            if (!(segment.p0.getY() < segment.p1.getY())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p3MinDistSq < p2MinDistSq) {
+                /*
+                E1end 
+                [*]
+                [*]
+                3
+                2
+                */
+                if (p3MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p2);
+                tmp.add(segment.p3);
+                tmp.addAll(routes.route1);
+                routes.route1 = tmp;
+            } else if (p2MinDistSq < p3MinDistSq) {
+                /*
+                3
+                2
+                [*]
+                [*]
+                E1
+                */
+                if (p2MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                routes.route1.add(segment.p2);
+                routes.route1.add(segment.p3);
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+            
+        } else {
+            throw new IllegalStateException("error in algorithm");
+        }
+    }
+    
+    private void addHorizSegmentToRoutes(Routes routes, HorizSegment segment) {
+        
+        assert(!routes.route0.isEmpty());
+        assert(!routes.route1.isEmpty());
+        
+        /*             HorizSegment              swap HorizSegment
+                       -    -       -2          -    -         -2
+        R0 >        .  3:E0 2    .  -1       .  2:E0 3     .   -1    route0 incr w/ incr x
+        R1 <        .  0    1:E1 .   0       .  1    0:E1  .    0    route1 incr w/ decr x
+                       -    -        1          -    -          1
+                   -1  0    1    2          -2 -1    0     1
+        */
+        // -------- add to routes0 -------------------------
+        PairInt[] r0FirstLastNodes = getFirstAndLast(routes.route0.iterator());
+        
+        double p3MinDistSq = Double.MAX_VALUE;
+        int p3MinIdx = -1;
+        double p2MinDistSq = Double.MAX_VALUE;
+        int p2MinIdx = -1;
+        for (int i = 0; i < r0FirstLastNodes.length; ++i) {
+            PairInt r0 = r0FirstLastNodes[i];
+            int diffX = segment.p3.getX() - r0.getX();
+            int diffY = segment.p3.getY() - r0.getY();
+            double distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p3MinDistSq) {
+                p3MinDistSq = distSq;
+                p3MinIdx = i;
+            }
+            diffX = segment.p2.getX() - r0.getX();
+            diffY = segment.p2.getY() - r0.getY();
+            distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p2MinDistSq) {
+                p2MinDistSq = distSq;
+                p2MinIdx = i;
+            }
+        }
+        
+        if (segment.p3.getX() < segment.p2.getX()) {
+            /*             HorizSegment  
+                           -    -       -2 
+            R0 >        .  3:E0 2    .  -1 
+            R1 <        .  0    1:E1 .   0 
+                           -    -        1 
+                       -1  0    1    2    
+            */
+            if (!(segment.p1.getX() > segment.p0.getX())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p3MinDistSq < p2MinDistSq) {
+                if (p3MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                //R0: E0 [*][*]  3 2   append '3' '2' to end of route0
+                if (routes.ep0End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                routes.route0.add(segment.p3);
+                routes.route0.add(segment.p2);
+            } else if (p3MinDistSq > p2MinDistSq) {
+                if (p2MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep0 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                //R0: 3  2  [*][*] E0end insert '3' '2' to beginning of route0
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p3);
+                tmp.add(segment.p2);
+                tmp.addAll(routes.route0);
+                routes.route0 = tmp;
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+        } else if (segment.p3.getX() > segment.p2.getX()) {
+            
+            /*           swapped HorizSegment
+                          -    -         -2
+            R0 >       .  2:E0 3     .   -1    route0 incr w/ incr x
+            R1 <       .  1    0:E1  .    0    route1 incr w/ decr x
+                          -    -          1
+                         -2    -1    0    1
+            */
+            if (!(segment.p0.getX() > segment.p1.getX())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p3MinDistSq < p2MinDistSq) {
+                if (p3MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep0 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                //R0    '2' '3' [*] [*] E0end insert '2' '3' at beginning of route0
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p2);
+                tmp.add(segment.p3);
+                tmp.addAll(routes.route0);
+                routes.route0 = tmp;
+            } else if (p3MinDistSq > p2MinDistSq) {
+                if (p2MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep0End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                //R0 E0 [*] [*] '2' '3'  append '2' '3' to end of route0
+                routes.route0.add(segment.p2);
+                routes.route0.add(segment.p3);
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+        } else {
+            throw new IllegalStateException("error in algorithm");
+        }
+        
+        /*             HorizSegment              swap HorizSegment
+                       -    -       -2          -    -         -2
+        R0 >        .  3:E0 2    .  -1       .  2:E0 3     .   -1    route0 incr w/ incr x
+        R1 <        .  0    1:E1 .   0       .  1    0:E1  .    0    route1 incr w/ decr x
+                       -    -        1          -    -          1
+                   -1  0    1    2          -2 -1    0     1
+        */
+        // -------- add to routes1 -------------------------
+        PairInt[] r1FirstLastNodes = getFirstAndLast(routes.route1.iterator());
+        
+        double p0MinDistSq = Double.MAX_VALUE;
+        int p0MinIdx = -1;
+        double p1MinDistSq = Double.MAX_VALUE;
+        int p1MinIdx = -1;
+        for (int i = 0; i < r1FirstLastNodes.length; ++i) {
+            PairInt r1 = r1FirstLastNodes[i];
+            int diffX = segment.p0.getX() - r1.getX();
+            int diffY = segment.p0.getY() - r1.getY();
+            double distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p0MinDistSq) {
+                p0MinDistSq = distSq;
+                p0MinIdx = i;
+            }
+            diffX = segment.p1.getX() - r1.getX();
+            diffY = segment.p1.getY() - r1.getY();
+            distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p1MinDistSq) {
+                p1MinDistSq = distSq;
+                p1MinIdx = i;
+            }
+        }
+        
+        if (segment.p0.getX() < segment.p1.getX()) {
+            /*             HorizSegment  
+                           -    -       -2 
+            R0 >        .  3:E0 2    .  -1 
+            R1 <        .  0    1:E1 .   0 
+                           -    -        1 
+                       -1  0    1    2    
+            */
+            if (!(segment.p3.getX() < segment.p2.getX())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p0MinDistSq < p1MinDistSq) {
+                // R1 <  E1End [*] [*] '0' '1'    <---- direction of increase
+                if (p0MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p0);
+                tmp.add(segment.p1);
+                tmp.addAll(routes.route1);
+                routes.route1 = tmp;
+            } else if (p1MinDistSq < p0MinDistSq) {
+                // R1 <   '0' '1'  [*] [*] E1  <---- direction of increase
+                if (p1MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                routes.route1.add(segment.p1);
+                routes.route1.add(segment.p0);
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+        } else if (segment.p1.getX() < segment.p0.getX()) {
+            /*           swapped HorizSegment
+                          -    -         -2
+            R0 >       .  2:E0 3     .   -1    route0 incr w/ incr x
+            R1 <       .  1    0:E1  .    0    route1 incr w/ decr x
+                          -    -          1
+                         -2    -1    0    1
+            */
+            if (!(segment.p2.getX() < segment.p3.getX())) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (p0MinDistSq < p1MinDistSq) {
+                // R1 <   '1' '0'  [*] [*] E1 <---- direction of increase
+                if (p0MinIdx != 1) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1End != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                routes.route1.add(segment.p0);
+                routes.route1.add(segment.p1);
+            } else if (p1MinDistSq < p0MinDistSq) {
+                // R1 <  E1end [*] [*] '1' '0'  <---- direction of increase
+                if (p1MinIdx != 0) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                if (routes.ep1 != null) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+                LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+                tmp.add(segment.p1);
+                tmp.add(segment.p0);
+                tmp.addAll(routes.route1);
+                routes.route1 = tmp;
+            } else {
+                throw new IllegalStateException("error in algorithm");
+            }
+        } else {
+            throw new IllegalStateException("error in algorithm");
+        }
+    }
+    
+    protected PairInt[] getFirstAndLast(Iterator<PairInt> iter) {
+        PairInt firstNode = null;
+        PairInt lastNode = null;
+        while (iter.hasNext()) {
+            if (firstNode == null) {
+                firstNode = iter.next();
+            } else {
+                lastNode = iter.next();
+            }
+        }
+        return new PairInt[]{firstNode, lastNode};
+    }
     
     /*
     may change these classes to have ordered points or to specify the
@@ -928,6 +1878,21 @@ public class ButterflySectionFinder {
             }
             return false;
         }
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("p0=").append(p0.toString())
+                .append(" p1=").append(p1.toString())
+                .append(" p2=").append(p2.toString())
+                .append(" p3=").append(p3.toString());
+            return sb.toString();
+        }
+        public void filterOutContaining(Set<PairInt> points) {
+            points.remove(p0);
+            points.remove(p1);
+            points.remove(p2);
+            points.remove(p3);
+        }
     }
     
     public static class VertSegment extends Segment {
@@ -944,6 +1909,14 @@ public class ButterflySectionFinder {
     public static class Pattern {
         Set<PairInt> ones;
         Set<PairInt> zeroes;
+        /*
+        an endpoint in route0.  can be null
+        */
+        PairInt ep0 = null;
+        /*
+        an endpoint in route1.  can be null
+        */
+        PairInt ep1 = null;
     }
 
     protected Pattern getVertSegmentPattern() {
@@ -1284,5 +2257,76 @@ public class ButterflySectionFinder {
         }
         return true;
     }
-
+    
+    /**
+     * route0 and route1 are the two routes in opposite directions for a section
+     * in a closed curve with a junction. route0 and route1 do not cross and are
+     * populated to help populate the curve so that the points are traversed in
+     * opposite directions.
+     */
+    public static class Routes {
+        PairInt ep0 = null;
+        PairInt ep1 = null;
+        PairInt ep0End = null;
+        PairInt ep1End = null;
+        //route0, route1 need to be searchable but ordered.
+        LinkedHashSet<PairInt> route0 = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> route1 = new LinkedHashSet<PairInt>();
+    }
+    public static class VertSegmentRoutes extends Routes {
+    }
+    public static class VertSegmentRoutes1 extends VertSegmentRoutes {
+    }
+    public static class VertSegmentRoutes1Opp extends VertSegmentRoutes {
+    }
+    public static class VertSegmentRoutes2 extends VertSegmentRoutes {
+    }
+    public static class VertSegmentRoutes2Opp extends VertSegmentRoutes {
+    }
+    public static class VertSegmentRoutes3 extends VertSegmentRoutes {
+    }
+    public static class VertSegmentRoutes3Opp extends VertSegmentRoutes {
+    }
+    
+    public static class HorizSegmentRoutes extends Routes {
+    }
+    public static class HorizSegmentRoutes1 extends HorizSegmentRoutes {
+    }
+    public static class HorizSegmentRoutes1Opp extends HorizSegmentRoutes {
+    }
+    public static class HorizSegmentRoutes2 extends HorizSegmentRoutes {
+    }
+    public static class HorizSegmentRoutes2Opp extends HorizSegmentRoutes {
+    }
+    public static class HorizSegmentRoutes3 extends HorizSegmentRoutes {
+    }
+    public static class HorizSegmentRoutes3Opp extends HorizSegmentRoutes {
+    }
+    
+    public static class UUDiagSegmentRoutes extends Routes {
+    }
+    public static class UUDiagSegmentRoutes1 extends UUDiagSegmentRoutes {
+    }
+    public static class UUDiagSegmentRoutes2 extends UUDiagSegmentRoutes {
+    }
+    public static class UUDiagSegmentRoutes3 extends UUDiagSegmentRoutes {
+    }
+    
+    public static class ULDiagSegmentRoutes extends UUDiagSegmentRoutes {
+    }
+    public static class ULDiagSegmentRoutes1 extends ULDiagSegmentRoutes {
+    }
+    public static class ULDiagSegmentRoutes2 extends ULDiagSegmentRoutes {
+    }
+    public static class ULDiagSegmentRoutes3 extends ULDiagSegmentRoutes {
+    }
+    
+    public static class ZigZagSegmentRoutes extends Routes {
+    }
+    public static class ZigZagSegmentRoutes1 extends ZigZagSegmentRoutes {
+    }
+    public static class ZigZagSegmentRoutes2 extends ZigZagSegmentRoutes {
+    }
+    public static class ZigZagSegmentRoutes3 extends ZigZagSegmentRoutes {
+    }
 }
