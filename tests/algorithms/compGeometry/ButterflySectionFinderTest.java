@@ -7,6 +7,7 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -52,25 +53,59 @@ public class ButterflySectionFinderTest extends TestCase {
         
         assertTrue(sections.size() == 1);
         
-        /*
-        Set<PairInt> bPoints = sections.get(0);
+        Routes routes = sections.get(0);
         
-        assertTrue(bPoints.size() == 10);
+        Iterator<PairInt> r = routes.getRoute0().iterator();
+        int nIter = 0;
+        while (r.hasNext()) {
+            PairInt p = r.next();
+            switch(nIter) {
+                case 0:
+                    assertEquals(p, new PairInt(378,264));
+                    break;
+                case 1:
+                    assertEquals(p, new PairInt(377,263));
+                    break;
+                case 2:
+                    assertEquals(p, new PairInt(376,263));
+                    break;
+                case 3:
+                    assertEquals(p, new PairInt(375,263));
+                    break;
+                case 4:
+                    assertEquals(p, new PairInt(374,263));
+                    break;
+            }
+            nIter++;
+        }
         
-        assertTrue(bPoints.contains(new PairInt(374, 263)));
-        assertTrue(bPoints.contains(new PairInt(374, 261)));
-        assertTrue(bPoints.contains(new PairInt(375, 263)));
-        assertTrue(bPoints.contains(new PairInt(375, 262)));
-        assertTrue(bPoints.contains(new PairInt(376, 263)));
-        assertTrue(bPoints.contains(new PairInt(376, 262)));
-        assertTrue(bPoints.contains(new PairInt(377, 263)));
-        assertTrue(bPoints.contains(new PairInt(377, 262)));
-        assertTrue(bPoints.contains(new PairInt(378, 264)));
-        assertTrue(bPoints.contains(new PairInt(378, 262)));
-        */
+        r = routes.getRoute1().iterator();
+        nIter = 0;
+        while (r.hasNext()) {
+            PairInt p = r.next();
+            switch(nIter) {
+                case 0:
+                    assertEquals(p, new PairInt(374,261));
+                    break;
+                case 1:
+                    assertEquals(p, new PairInt(375,262));
+                    break;
+                case 2:
+                    assertEquals(p, new PairInt(376,262));
+                    break;
+                case 3:
+                    assertEquals(p, new PairInt(377,262));
+                    break;
+                case 4:
+                    assertEquals(p, new PairInt(378,262));
+                    break;
+            }
+            nIter++;
+        }
+        
     }
     
-    public void estFindButterflySections3() throws Exception {
+    public void testFindButterflySections3() throws Exception {
         
         int w = 258;
         int h = 187;
@@ -94,16 +129,54 @@ public class ButterflySectionFinderTest extends TestCase {
         /*
         test results should have routes in opposite directions with
         these points:
-        route0=(249,130),(248,130),(247,129),(246,129) <-----
-        route1=(246,126),(247,127),(248,128),(249,129) ----->
+        route1=(249,130),(248,130),(247,129),(246,129) <-----
+        route0=(246,126),(247,127),(248,128),(249,128) ----->
         */
         
         assertTrue(sections.size() == 1);
         
-        /*
-        Set<PairInt> bPoints = sections.get(0);
+        Routes routes = sections.get(0);
         
-        assertTrue(bPoints.size() == 8);
-        */
+        Iterator<PairInt> r = routes.getRoute0().iterator();
+        int nIter = 0;
+        while (r.hasNext()) {
+            PairInt p = r.next();
+            switch(nIter) {
+                case 0:
+                    assertEquals(p, new PairInt(246,126));
+                    break;
+                case 1:
+                    assertEquals(p, new PairInt(247,127));
+                    break;
+                case 2:
+                    assertEquals(p, new PairInt(248,128));
+                    break;
+                case 3:
+                    assertEquals(p, new PairInt(249,128));
+                    break;
+            }
+            nIter++;
+        }
+        
+        r = routes.getRoute1().iterator();
+        nIter = 0;
+        while (r.hasNext()) {
+            PairInt p = r.next();
+            switch(nIter) {
+                case 0:
+                    assertEquals(p, new PairInt(249,130));
+                    break;
+                case 1:
+                    assertEquals(p, new PairInt(248,130));
+                    break;
+                case 2:
+                    assertEquals(p, new PairInt(247,129));
+                    break;
+                case 3:
+                    assertEquals(p, new PairInt(246,129));
+                    break;
+            }
+            nIter++;
+        }
     }
 }
