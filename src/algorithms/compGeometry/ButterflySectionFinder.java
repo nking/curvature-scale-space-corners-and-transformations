@@ -1155,9 +1155,9 @@ public class ButterflySectionFinder {
             assert(pattern.ep0 != null);
             PairInt tE = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
             PairInt tI = new PairInt(x0 - 1, y0);
-            if (!endPoints.contains(tI) || !routes.getRoute0().contains(tI)) {
+            if (!endPoints.contains(tI) && !routes.getRoute0().contains(tI)) {
                 throw new IllegalStateException("error in algorithm");
-            } 
+            }
             if (!endPoints.contains(tE)) {
                 throw new IllegalStateException("error in algorithm");
             }
@@ -1192,7 +1192,7 @@ public class ButterflySectionFinder {
             assert(pattern.ep1 != null);
             tE = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
             tI = new PairInt(x0 - 1, y0 - 1);
-            if (!endPoints.contains(tI) || !routes.getRoute1().contains(tI)) {
+            if (!endPoints.contains(tI) && !routes.getRoute1().contains(tI)) {
                 throw new IllegalStateException("error in algorithm");
             }
             if (!endPoints.contains(tE)) {
