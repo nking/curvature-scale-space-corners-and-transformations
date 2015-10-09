@@ -1107,21 +1107,39 @@ public class ButterflySectionFinder {
             */
             assert(pattern.ep1 != null);
             tI = new PairInt(x0 - 1, y0 + 1);
+            tE = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
             if (!endPoints.contains(tI) && !routes.getRoute1().contains(tI)) {
                 throw new IllegalStateException("error in algorithm");
             }
-            tE = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
             if (!endPoints.contains(tE)) {
                 throw new IllegalStateException("error in algorithm");
             }
-            LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
-            tmpR1.add(tE);
-            if (!routes.getRoute1().contains(tI)) {
-                tmpR1.add(tI);
-            }
-            tmpR1.addAll(routes.route1);
-            routes.route1 = tmpR1;
+            if (routes.getRoute1().isEmpty()) {
+                routes.route1.add(tE);
+                routes.route1.add(tI);
+            } else if (routes.getRoute1().size() > 1) {
+                
+                Iterator<PairInt> iter1 = routes.getRoute1().iterator();
+                PairInt r1 = iter1.next();
+                PairInt r2 = iter1.next();
+                if (r1.equals(tE) && r2.equals(tI)) {
+                    // no need to add to route
+                } else if (r1.equals(tI)) {
+                    LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
+                    tmpR1.add(tE);
+                    tmpR1.addAll(routes.route1);
+                    routes.route1 = tmpR1;
+                } else {
+                    LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
+                    tmpR1.add(tE);
+                    tmpR1.add(tI);
+                    tmpR1.addAll(routes.route1);
+                    routes.route1 = tmpR1;
+                }         
+                
+            } // will never be just one point in a route
             routes.ep1 = tE;
+            
         } else {
             /*
                 endPointsHorizPattern1
@@ -1142,13 +1160,30 @@ public class ButterflySectionFinder {
             if (!endPoints.contains(tE)) {
                 throw new IllegalStateException("error in algorithm");
             }
-            LinkedHashSet<PairInt> tmpR0 = new LinkedHashSet<PairInt>();
-            tmpR0.add(tE);
-            if (!routes.getRoute0().contains(tI)) {
-                tmpR0.add(tI);
-            }
-            tmpR0.addAll(routes.route0);
-            routes.route0 = tmpR0;
+            if (routes.getRoute0().isEmpty()) {
+                routes.route0.add(tE);
+                routes.route0.add(tI);
+            } else if (routes.getRoute0().size() > 1) {
+                
+                Iterator<PairInt> iter0 = routes.getRoute0().iterator();
+                PairInt r1 = iter0.next();
+                PairInt r2 = iter0.next();
+                if (r1.equals(tE) && r2.equals(tI)) {
+                    // no need to add to route
+                } else if (r1.equals(tI)) {
+                    LinkedHashSet<PairInt> tmpR0 = new LinkedHashSet<PairInt>();
+                    tmpR0.add(tE);
+                    tmpR0.addAll(routes.route0);
+                    routes.route0 = tmpR0;
+                } else {
+                    LinkedHashSet<PairInt> tmpR0 = new LinkedHashSet<PairInt>();
+                    tmpR0.add(tE);
+                    tmpR0.add(tI);
+                    tmpR0.addAll(routes.route0);
+                    routes.route0 = tmpR0;
+                }         
+                
+            } // will never be just one point in a route
             routes.ep0 = tE;
             
             /*
@@ -1170,10 +1205,22 @@ public class ButterflySectionFinder {
             if (!endPoints.contains(tE)) {
                 throw new IllegalStateException("error in algorithm");
             }
-            if (!routes.getRoute1().contains(tI)) {
+            if (routes.getRoute1().isEmpty()) {
+                //TODO: revisit the logic. each route is probably always size >= 2
                 routes.route1.add(tI);
+                routes.route1.add(tE);
+            } else if (routes.getRoute1().size() > 1) {
+                PairInt[] secondToLastAndLast = getSecondToLastAndLast(
+                    routes.getRoute1().iterator());
+                if (secondToLastAndLast[0].equals(tI) && secondToLastAndLast[1].equals(tE)) {
+                    // no need to add either to route
+                } else if (secondToLastAndLast[1].equals(tI)) {
+                    routes.route1.add(tE);
+                } else {
+                    routes.route1.add(tI);
+                    routes.route1.add(tE);
+                }
             }
-            routes.route1.add(tE);
             routes.ep1End = tE;
         }
     }
@@ -1209,6 +1256,7 @@ public class ButterflySectionFinder {
             if (!endPoints.contains(tE)) {
                 throw new IllegalStateException("error in algorithm");
             }
+  paused edits
             LinkedHashSet<PairInt> tmpR0 = new LinkedHashSet<PairInt>();
             tmpR0.add(tE);
             if (!routes.getRoute0().contains(tI)) {
