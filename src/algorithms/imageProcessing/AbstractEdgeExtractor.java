@@ -392,12 +392,16 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         for (int i = 0; i < butterFlySections.size(); ++i) {
             Integer index = Integer.valueOf(i);
             Routes r = butterFlySections.get(i);
-            for (PairInt p : r.getRoute0()) {
+            /*for (PairInt p : r.getRoute0()) {
                 pointRoutesMap.put(p, index);
             }
             for (PairInt p : r.getRoute1()) {
                 pointRoutesMap.put(p, index);
-            }
+            }*/
+            pointRoutesMap.put(r.getEP0(), index);
+            pointRoutesMap.put(r.getEP0End(), index);
+            pointRoutesMap.put(r.getEP1(), index);
+            pointRoutesMap.put(r.getEP1End(), index);
         }
         Set<PairInt> added = new HashSet<PairInt>();
         
@@ -435,6 +439,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             if (!pointRoutesMap.isEmpty()) {
                 // checking endpoints only of routes and adding entire route
                 // if there is a match
+                boolean didAddPoints = false;
                 for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                     int vX = dxs[nIdx] + uX;
                     int vY = dys[nIdx] + uY;
@@ -452,9 +457,41 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                     }
                     Integer routeIndex = pointRoutesMap.get(vNode);
                     if (routeIndex != null) {
-                        // if it's an endpoint, add the entire route
-                        <>
+                        Routes routes = butterFlySections.get(routeIndex.intValue());
+                        boolean addRoute0 = routes.getRoute0().contains(vNode);
+                        if (addRoute0) {
+                            for (PairInt chk : routes.getRoute0()) {
+                                if (added.contains(chk)) {
+                                    throw new IllegalStateException(
+                                    "error in algorithm:" + 
+                                     " a point in route0 has already been added");
+                                }
+                                processNeighbor(uX, uY, uIdx, chk.getX(), chk.getY(),
+                                    vIdx, uNodeEdgeIdx, output);
+                                added.add(uNode);
+                                added.add(chk);
+                                stack.add(chk);
+                                didAddPoints = true;
+                            }
+                        } else {
+                            for (PairInt chk : routes.getRoute1()) {
+                                if (added.contains(chk)) {
+                                    throw new IllegalStateException(
+                                    "error in algorithm:" + 
+                                     " a point in route0 has already been added");
+                                }
+                                processNeighbor(uX, uY, uIdx, chk.getX(), chk.getY(),
+                                    vIdx, uNodeEdgeIdx, output);
+                                added.add(uNode);
+                                added.add(chk);
+                                stack.add(chk);
+                                didAddPoints = true;
+                            }
+                        }
                     }
+                }
+                if (didAddPoints) {
+                    continue;
                 }
             }
             
@@ -474,6 +511,10 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 }
 
                 if (img.getValue(vX, vY) < thresh0) {
+                    continue;
+                }
+                
+                if (added.contains(new PairInt(vX, vY))) {
                     continue;
                 }
                 

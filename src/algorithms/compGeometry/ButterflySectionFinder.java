@@ -531,10 +531,17 @@ public class ButterflySectionFinder {
         Pattern pattern = new Pattern();
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
-        
-        pattern.ones.add(new PairInt(-1, -1)); pattern.ones.add(new PairInt(-1, -2)); 
+      
+        // '.' intermediate points 
+        pattern.ones.add(new PairInt(-1, -1));
         pattern.ones.add(new PairInt(0, -1));
-        pattern.ones.add(new PairInt(1, -2));
+        
+        PairInt t1 = new PairInt(-1, -2);
+        pattern.ones.add(t1);
+        pattern.ep1 = t1;
+        PairInt t0 = new PairInt(1, -2);
+        pattern.ones.add(t0);
+        pattern.ep0 = t0;
         
         pattern.zeroes.add(new PairInt(-2, -1)); 
         pattern.zeroes.add(new PairInt(0, -2)); pattern.zeroes.add(new PairInt(0, -3));
@@ -598,10 +605,17 @@ public class ButterflySectionFinder {
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
         
-        pattern.ones.add(new PairInt(-2, -2)); 
+        // '.' intermediate points
         pattern.ones.add(new PairInt(-1, -1));
         pattern.ones.add(new PairInt(0, -1)); 
-        pattern.ones.add(new PairInt(1, -2));
+        
+        // '#' end points
+        PairInt t1 = new PairInt(-2, -2);
+        PairInt t0 = new PairInt(1, -2);
+        pattern.ones.add(t1);
+        pattern.ones.add(t0);
+        pattern.ep0 = t0;
+        pattern.ep1 = t1;
         
         pattern.zeroes.add(new PairInt(-2, -1)); 
         pattern.zeroes.add(new PairInt(-1, -2)); pattern.zeroes.add(new PairInt(-1, -3));
@@ -665,9 +679,17 @@ public class ButterflySectionFinder {
         pattern.ones = new HashSet<PairInt>();
         pattern.zeroes = new HashSet<PairInt>();
         
-        pattern.ones.add(new PairInt(-1, -1)); 
-        pattern.ones.add(new PairInt(-2, -2));
-        pattern.ones.add(new PairInt(0, -1)); pattern.ones.add(new PairInt(0, -2));
+        // '.' intermediate points
+        pattern.ones.add(new PairInt(-1, -1));
+        pattern.ones.add(new PairInt(0, -1));
+        
+        // '#' end points
+        PairInt t1 = new PairInt(-2, -2);
+        PairInt t0 = new PairInt(0, -2);
+        pattern.ones.add(t1);
+        pattern.ones.add(t0);
+        pattern.ep0 = t0;
+        pattern.ep1 = t1;
         
         pattern.zeroes.add(new PairInt(-2, -1));
         pattern.zeroes.add(new PairInt(-1, -2)); pattern.zeroes.add(new PairInt(-1, -3));
@@ -937,15 +959,15 @@ public class ButterflySectionFinder {
              VertSegment              swapY VertSegment
               .     .        -2
            -  2     1:E0 -   -1         .     .         -1    E0 marks endpoint 0 and the 
-           -  3:E1  0    -    0      -  3     0:E0  -    0       start of route 0.
+           -  3:E1  0:E0..    0      -  3     0:E0  -    0       start of route 0.
               .     .         1      -  2:E1  1     -    1       which incr w/ incr y.
                                         .     .          2    route 1 starts at E1 and incr w/ decr y
           -2 -1     0    1          -2 -1     0     1
 
             HorizSegment              swap HorizSegment
                  -    -       -2          -    -         -2
-              .  3:E0 2    .  -1       .  2:E0 3     .   -1    route0 incr w/ incr x
-              .  0    1:E1 .   0       .  1    0:E1  .    0    route1 incr w/ decr x
+              .  3E1  2    .  -1       .  2:E1 3     .   -1    route1 incr w/ incr x
+              .  0  1:E0 .   0       .  1    0:E0  .    0      route0 incr w/ decr x
                  -    -        1          -    -          1
              -1  0    1    2          -2 -1    0     1
         
@@ -963,7 +985,7 @@ public class ButterflySectionFinder {
                E1 is '3', and route1         E1 is '3', and route1
                   continues with '2'            continues with '2'
         */
-        
+                    
         if (segment instanceof VertSegment) {
             Routes routes = new Routes();
             if (segment.p1.equals(new PairInt(x0, y0 - 1))) {
@@ -989,17 +1011,17 @@ public class ButterflySectionFinder {
             if (segment.p1.equals(new PairInt(x0 + 1, y0))) {
                 assert(segment.p2.equals(new PairInt(x0 + 1, y0 - 1)));
                 assert(segment.p3.equals(new PairInt(x0, y0 - 1)));
-                routes.route0.add(segment.p3);
-                routes.route0.add(segment.p2);
-                routes.route1.add(segment.p1);
-                routes.route1.add(segment.p0);
+                routes.route0.add(segment.p1);
+                routes.route0.add(segment.p0);
+                routes.route1.add(segment.p3);
+                routes.route1.add(segment.p2);
             } else if (segment.p1.equals(new PairInt(x0 - 1, y0))) {
                 assert(segment.p2.equals(new PairInt(x0 - 1, y0 - 1)));
                 assert(segment.p3.equals(new PairInt(x0, y0 - 1)));
-                routes.route0.add(segment.p2);
-                routes.route0.add(segment.p3);
-                routes.route1.add(segment.p0);
-                routes.route1.add(segment.p1);
+                routes.route0.add(segment.p0);
+                routes.route0.add(segment.p1);
+                routes.route1.add(segment.p2);
+                routes.route1.add(segment.p3);
             } else {
                 throw new IllegalStateException("error in algorithm!");
             }
@@ -1046,7 +1068,7 @@ public class ButterflySectionFinder {
             routes.route0.add(t);
             
             assert(pattern.ep0 != null);
-            t = pattern.ep0.copy();
+            t = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
             if (!endPoints.contains(t)) {
                 throw new IllegalStateException("error in algorithm");
             }
@@ -1054,7 +1076,7 @@ public class ButterflySectionFinder {
             routes.ep0End = t;
             
             assert(pattern.ep1 != null);
-            t = pattern.ep1.copy();
+            t = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
             if (!endPoints.contains(t)) {
                 throw new IllegalStateException("error in algorithm");
             }
@@ -1080,7 +1102,7 @@ public class ButterflySectionFinder {
              -3  -2  -1  0  1
             */
             assert(pattern.ep1 != null);
-            PairInt t = pattern.ep1.copy();
+            PairInt t = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
             PairInt t2 = new PairInt(x0 - 1, y0 - 1);
             if (!endPoints.contains(t) || !endPoints.contains(t2)) {
                 throw new IllegalStateException("error in algorithm");
@@ -1099,7 +1121,7 @@ public class ButterflySectionFinder {
             routes.route0.add(t);
             
             assert(pattern.ep0 != null);
-            t = pattern.ep0.copy();
+            t = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
             if (!endPoints.contains(t)) {
                 throw new IllegalStateException("error in algorithm");
             }
@@ -1111,7 +1133,7 @@ public class ButterflySectionFinder {
     private void addEndpointsForHorizVertPatternOppos(int x0, int y0, 
         Pattern pattern, Routes routes, Set<PairInt> endPoints, boolean useVert) {
         
-        if (endPoints.size() < 4) {
+        if (endPoints.size() < 2) {
             throw new IllegalStateException("error in algorithm");
         }
         assert(routes.ep0 == null);
@@ -1129,7 +1151,7 @@ public class ButterflySectionFinder {
               -2 -1  0  1
             */
             assert(pattern.ep0 != null);
-            PairInt t0 = pattern.ep0.copy();
+            PairInt t0 = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
             PairInt t = new PairInt(x0, y0 - 1);
             if (!endPoints.contains(t)) {
                 throw new IllegalStateException("error in algorithm");
@@ -1147,7 +1169,7 @@ public class ButterflySectionFinder {
             }
             routes.route1.add(t);
             
-            t = pattern.ep1.copy();
+            t = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
             if (!endPoints.contains(t)) {
                 throw new IllegalStateException("error in algorithm");
             }
@@ -1166,15 +1188,23 @@ public class ButterflySectionFinder {
               -2 -1  0  1  2 
             */
             assert(pattern.ep0 != null);
-            PairInt t0 = pattern.ep0.copy();
+            PairInt t0 = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
             PairInt t = new PairInt(x0 + 1, y0);
-            if (!endPoints.contains(t)) {
-                throw new IllegalStateException("error in algorithm");
-            }
             LinkedHashSet<PairInt> tmpR0 = new LinkedHashSet<PairInt>();
-            tmpR0.add(t0);
-            tmpR0.add(t);
-            tmpR0.addAll(routes.route0);
+            if (!routes.getRoute0().contains(t) && !endPoints.contains(t)) {
+                throw new IllegalStateException("error in algorithm");
+            } 
+            if (routes.getRoute0().contains(t)) {
+                if (routes.getRoute0().iterator().next().equals(t)) {
+                    tmpR0.add(t0);
+                } else if (!routes.getRoute0().iterator().next().equals(t0)) {
+                    throw new IllegalStateException("error in algorithm");
+                }
+            } else {
+                tmpR0.add(t0);
+                tmpR0.add(t);
+            }
+            tmpR0.addAll(routes.getRoute0());
             routes.route0 = tmpR0;
             routes.ep0 = t;
           
@@ -1184,7 +1214,7 @@ public class ButterflySectionFinder {
             }
             routes.route1.add(t);
             
-            t = pattern.ep1.copy();
+            t = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
             if (!endPoints.contains(t)) {
                 throw new IllegalStateException("error in algorithm");
             }
@@ -1217,7 +1247,7 @@ public class ButterflySectionFinder {
         
         LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
         PairInt t = new PairInt(x0 - 1, y0 + 1);
-        PairInt t1 = pattern.ep1.copy();
+        PairInt t1 = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
         if (!endPoints.contains(t)) {
             throw new IllegalStateException("error in algorithm");
         }
@@ -1227,7 +1257,7 @@ public class ButterflySectionFinder {
         routes.route1 = tmpR1;
         routes.ep1 = t;
 
-        PairInt t0 = pattern.ep0.copy();
+        PairInt t0 = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
         routes.route0.add(t0);
         routes.ep0End = t0;            
     }
@@ -1256,7 +1286,7 @@ public class ButterflySectionFinder {
         
         LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
         PairInt t = new PairInt(x0 - 1, y0 - 1);
-        PairInt t1 = pattern.ep1.copy();
+        PairInt t1 = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
         if (!endPoints.contains(t)) {
             throw new IllegalStateException("error in algorithm");
         }
@@ -1266,7 +1296,7 @@ public class ButterflySectionFinder {
         routes.route1 = tmpR1;
         routes.ep1 = t;
 
-        PairInt t0 = pattern.ep0.copy();
+        PairInt t0 = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
         routes.route0.add(t0);
         routes.ep0End = t0;         
     }
@@ -2588,6 +2618,18 @@ public class ButterflySectionFinder {
         }
         public LinkedHashSet<PairInt> getRoute1() {
             return route1;
+        }
+        public PairInt getEP0() {
+            return ep0;
+        }
+        public PairInt getEP0End() {
+            return ep0End;
+        }
+        public PairInt getEP1() {
+            return ep1;
+        }
+        public PairInt getEP1End() {
+            return ep1End;
         }
     }
     public static class VertSegmentRoutes extends Routes {
