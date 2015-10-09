@@ -1,12 +1,15 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.ButterflySectionFinder.Routes;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
@@ -119,8 +122,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
      * find the edges and return as a list of points.  The method uses a
      * DFS search through all points in the image with values > 0 to link
      * adjacent sequential points into edges.
-     * As a side effect, the method also populates
-     * member variables edgeJunctionMap and outputIndexLocatorForJunctionPoints.
      * 
      * @return 
      */
@@ -349,12 +350,11 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
      * find the edges and return as a list of points.  The method uses a
      * DFS search through all points in the image with values > 0 to link
      * adjacent sequential points into edges.
-     * As a side effect, the method also populates
-     * member variables edgeJunctionMap and outputIndexLocatorForJunctionPoints.
      * 
      * @return 
      */
-    protected List<PairIntArray> connectPixelsViaDFSForBounds() {
+    protected List<PairIntArray> connectPixelsViaDFSForBounds(List<Routes> 
+        butterFlySections) {
         
         /*
         the choice among neighbors prefers in order:
@@ -387,6 +387,19 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 }
             }
         }
+               
+        Map<PairInt, Integer> pointRoutesMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < butterFlySections.size(); ++i) {
+            Integer index = Integer.valueOf(i);
+            Routes r = butterFlySections.get(i);
+            for (PairInt p : r.getRoute0()) {
+                pointRoutesMap.put(p, index);
+            }
+            for (PairInt p : r.getRoute1()) {
+                pointRoutesMap.put(p, index);
+            }
+        }
+        Set<PairInt> added = new HashSet<PairInt>();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         double[] xyCen = curveHelper.calculateXYCentroids(points);
@@ -416,6 +429,34 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             int uIdx = img.getIndex(uX, uY);
             
             int count = 0;
+            
+            // first, a separate quick check for whether a point is in
+            //  pointRoutesMap and not in added and route by that if so
+            if (!pointRoutesMap.isEmpty()) {
+                // checking endpoints only of routes and adding entire route
+                // if there is a match
+                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                    int vX = dxs[nIdx] + uX;
+                    int vY = dys[nIdx] + uY;
+                    if ((vX < 0) || (vX > (w - 1)) || (vY < 0) || (vY > (h - 1))) {
+                        continue;
+                    }
+                    int vIdx = img.getIndex(vX, vY);                
+                    if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx) || 
+                        (img.getValue(vX, vY) < thresh0)) {
+                        continue;
+                    }
+                    PairInt vNode = new PairInt(vX, vY);
+                    if (added.contains(vNode)) {
+                        continue;
+                    }
+                    Integer routeIndex = pointRoutesMap.get(vNode);
+                    if (routeIndex != null) {
+                        // if it's an endpoint, add the entire route
+                        <>
+                    }
+                }
+            }
             
             for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                 
@@ -474,6 +515,9 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 
             processNeighbor(uX, uY, uIdx, neighborsX[count - 1], 
                 neighborsY[count - 1], vIdx, uNodeEdgeIdx, output);
+            
+            added.add(uNode);
+            added.add(new PairInt(neighborsX[count - 1], neighborsY[count - 1]));
                 
             stack.add(new PairInt(neighborsX[count - 1], neighborsY[count - 1]));
             

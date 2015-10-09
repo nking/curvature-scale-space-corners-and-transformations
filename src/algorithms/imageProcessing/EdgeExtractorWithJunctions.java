@@ -4,6 +4,7 @@ import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.Rotate;
+import algorithms.compGeometry.ButterflySectionFinder.Routes;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
@@ -1795,13 +1796,18 @@ long nPointsBefore = countPixelsInEdges(edges);
 
     }
 
-    public PairIntArray findAsSingleClosedEdge() {
+    /**
+     * 
+     * @param butterFlySections2
+     * @return 
+     */
+    public PairIntArray findAsSingleClosedEdge(List<Routes> butterFlySections) {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         this.singleClosedEdge = true;
 
-        List<PairIntArray> output = connectPixelsViaDFSForBounds();
+        List<PairIntArray> output = connectPixelsViaDFSForBounds(butterFlySections);
 
 if (debug) {
 Image img0 = ImageIOHelper.convertImage(img);

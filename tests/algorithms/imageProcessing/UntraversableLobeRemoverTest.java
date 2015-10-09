@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.ButterflySectionFinder;
+import algorithms.compGeometry.ButterflySectionFinder.Routes;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -80,13 +81,24 @@ public class UntraversableLobeRemoverTest extends TestCase {
             closedCurve2.add(p.getX(), p.getY());
         }
         
+        Image img = new Image(w, h);
+        MiscDebug.writeImage(closedCurve2, img, 0, "_butterfly2_3");
+        
         // exclude the butterfly sections (theyre traversable in 2 ways)
         ButterflySectionFinder finder = new ButterflySectionFinder();
-        List<Set<PairInt>> sections = finder.findButterflySections(closedCurve2);        
+        List<Routes> sections = finder.findButterflySections(closedCurve2);        
         Set<PairInt> exclude = new HashSet<PairInt>();
-        for (Set<PairInt> set : sections) {
-            exclude.addAll(set);
+        for (Routes r : sections) {
+            exclude.addAll(r.getRoute0());
+            exclude.addAll(r.getRoute1());
         }
+        
+        /*
+        test results should have routes in opposite directions with
+        these points:
+        route0=(246,126),(247,127),(248,128),(249,128) ----->
+        route1=(249,130),(248,130),(247,129),(246,129) <-----
+        */
         
         UntraversableLobeRemover rm = new UntraversableLobeRemover();
         rm.applyFilter(closedCurve, exclude);

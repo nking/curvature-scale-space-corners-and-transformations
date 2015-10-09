@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.ButterflySectionFinder;
+import algorithms.compGeometry.ButterflySectionFinder.Routes;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -187,7 +188,7 @@ int z = 1;
 */
         // persist specific features to restore if thinned:
         ButterflySectionFinder finder = new ButterflySectionFinder();
-        List<Set<PairInt>> butterFlySections = finder.findButterflySections(
+        List<Routes> butterFlySections = finder.findButterflySections(
             Misc.convertWithoutOrder(borderPixels));
         
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
@@ -201,8 +202,9 @@ int z = 1;
         
         // restore butterFlySections if any
         if (butterFlySections != null && !butterFlySections.isEmpty()) {
-            for (Set<PairInt> butterFlySection : butterFlySections) {
-                borderPixels.addAll(butterFlySection);
+            for (Routes butterFlySection : butterFlySections) {
+                borderPixels.addAll(butterFlySection.getRoute0());
+                borderPixels.addAll(butterFlySection.getRoute1());
             }
         }
         
@@ -230,20 +232,23 @@ for (PairInt p : borderPixels) {
 }
 MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
 }
+
         // one more pass after line thinner and spur remover
         finder = new ButterflySectionFinder();
-        List<Set<PairInt>> butterFlySections2 = finder.findButterflySections(
+        List<Routes> butterFlySections2 = finder.findButterflySections(
             Misc.convertWithoutOrder(borderPixels));
         
         Set<PairInt> exclude = new HashSet<PairInt>();
         if (butterFlySections != null && !butterFlySections.isEmpty()) {
-            for (Set<PairInt> butterFlySection : butterFlySections) {
-                exclude.addAll(butterFlySection);
+            for (Routes butterFlySection : butterFlySections) {
+                borderPixels.addAll(butterFlySection.getRoute0());
+                borderPixels.addAll(butterFlySection.getRoute1());
             }
         }
         if (butterFlySections2 != null && !butterFlySections2.isEmpty()) {
-            for (Set<PairInt> butterFlySection : butterFlySections2) {
-                exclude.addAll(butterFlySection);
+            for (Routes butterFlySection : butterFlySections2) {
+                borderPixels.addAll(butterFlySection.getRoute0());
+                borderPixels.addAll(butterFlySection.getRoute1());
             }
         }
 
@@ -283,7 +288,8 @@ MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".pn
         }
         extractor.overrideMaxNumberIterationsJunctionSplice(10);
         //List<PairIntArray> output = extractor.findEdges();
-        PairIntArray out = extractor.findAsSingleClosedEdge();
+
+        PairIntArray out = extractor.findAsSingleClosedEdge(butterFlySections2);
        
         if (out == null) {
             return null;

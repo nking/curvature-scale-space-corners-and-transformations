@@ -27,6 +27,11 @@ public class PairInt {
     public int getY() {
         return y;
     }
+    
+    public PairInt copy() {
+        PairInt c = new PairInt(x, y);
+        return c;
+    }
 
     @Override
     public boolean equals(Object obj) {

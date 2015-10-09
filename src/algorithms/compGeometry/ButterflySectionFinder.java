@@ -297,7 +297,7 @@ public class ButterflySectionFinder {
                 continue;
             }
             
-            Routes routes = parse(segment, endPoints);
+            ZigZagSegmentRoutes routes = parseZigZag(segment, endPoints);
            
             output.add(routes);
         }
@@ -1310,7 +1310,7 @@ public class ButterflySectionFinder {
         } else if (segment instanceof UUDiagSegment) {
             addUUDiagSegmentToRoutes(routes, (UUDiagSegment)segment);
         } else if (segment instanceof ULDiagSegment) {
-            addULDiagSegmentToRoutes(routes, (ULDiagSegment)segment);
+            addUUDiagSegmentToRoutes(routes, (ULDiagSegment)segment);
         }
         
     }
@@ -1854,6 +1854,311 @@ public class ButterflySectionFinder {
         }
         return new PairInt[]{firstNode, lastNode};
     }
+
+    private void addUUDiagSegmentToRoutes(Routes routes, DiagSegment 
+        segment) {
+        
+        assert(!routes.route0.isEmpty());
+        assert(!routes.route1.isEmpty());
+        
+        /*      UUDiagSegment    
+                    -  -      -2  
+              -  2  1  -  -   -1  
+              -  -  3  0  -    0  
+                 -  -          1  
+             -3 -2 -1  0  1         
+
+               E0 is '1', and route0 
+                  continues with     
+                  point '0'          
+               E1 is '3', and route1 
+                  continues with '2' 
+        */
+        
+        // ------- add to route0 ---------
+        PairInt[] r0FirstLastNodes = getFirstAndLast(routes.route0.iterator());
+        
+        double p0MinDistSq = Double.MAX_VALUE;
+        int p0MinIdx = -1;
+        double p1MinDistSq = Double.MAX_VALUE;
+        int p1MinIdx = -1;
+        for (int i = 0; i < r0FirstLastNodes.length; ++i) {
+            PairInt r0 = r0FirstLastNodes[i];
+            int diffX = segment.p0.getX() - r0.getX();
+            int diffY = segment.p0.getY() - r0.getY();
+            double distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p0MinDistSq) {
+                p0MinDistSq = distSq;
+                p0MinIdx = i;
+            }
+            diffX = segment.p1.getX() - r0.getX();
+            diffY = segment.p1.getY() - r0.getY();
+            distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p1MinDistSq) {
+                p1MinDistSq = distSq;
+                p1MinIdx = i;
+            }
+        }
+        
+        if (p1MinDistSq < p0MinDistSq) {
+            /*
+            E0
+            [*]
+            [*]
+            '1'
+            '0'
+            */
+            if (p1MinIdx != 1) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (routes.ep0End != null) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route0.add(segment.p1);
+            routes.route0.add(segment.p0);
+        } else if (p0MinDistSq < p1MinDistSq) {
+            /*
+            '1'
+            '0'
+            [*]
+            [*]
+            E0end
+            */
+            if (p0MinIdx != 0) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (routes.ep0 != null) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+            tmp.add(segment.p1);
+            tmp.add(segment.p0);
+            tmp.addAll(routes.route0);
+            routes.route0 = tmp;
+        } else {
+            throw new IllegalStateException("error in algorithm");
+        }
+        
+        // ------ add to route1 ------------
+        PairInt[] r1FirstLastNodes = getFirstAndLast(routes.route1.iterator());
+        double p2MinDistSq = Double.MAX_VALUE;
+        int p2MinIdx = -1;
+        double p3MinDistSq = Double.MAX_VALUE;
+        int p3MinIdx = -1;
+        for (int i = 0; i < r1FirstLastNodes.length; ++i) {
+            PairInt r1 = r1FirstLastNodes[i];
+            int diffX = segment.p2.getX() - r1.getX();
+            int diffY = segment.p2.getY() - r1.getY();
+            double distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p2MinDistSq) {
+                p2MinDistSq = distSq;
+                p2MinIdx = i;
+            }
+            diffX = segment.p3.getX() - r1.getX();
+            diffY = segment.p3.getY() - r1.getY();
+            distSq = (diffX * diffX) + (diffY * diffY);
+            if (distSq < p3MinDistSq) {
+                p3MinDistSq = distSq;
+                p3MinIdx = i;
+            }
+        }
+        
+        if (p2MinDistSq < p3MinDistSq) {
+            /*
+            E1end
+            [*]
+            [*]
+            '2'
+            '3'
+            */
+            if (p2MinIdx != 0) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (routes.ep1 != null) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+            tmp.add(segment.p3);
+            tmp.add(segment.p2);
+            tmp.addAll(routes.route1);
+            routes.route1 = tmp;
+        } else if (p3MinDistSq < p2MinDistSq) {
+            /*
+            '2'
+            '3'
+            [*]
+            [*]
+            E1
+            */
+            if (p3MinIdx != 1) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            if (routes.ep1End != null) {
+                throw new IllegalStateException("error in algorithm");
+            }
+            routes.route1.add(segment.p3);
+            routes.route1.add(segment.p2);
+        } else {
+            throw new IllegalStateException("error in algorithm");
+        }
+    }
+
+    private ZigZagSegmentRoutes parseZigZag(Segment segment, Set<PairInt> endPoints) {
+        
+        if (!(segment instanceof ZigZagSegment) && 
+            !(segment instanceof ZigZagSegment2)) {
+            throw new IllegalArgumentException(
+            "segment type must be ZigZagSegment or ZigZagSegment2");
+        }
+        
+        if (endPoints.size() != 4) {
+            throw new IllegalStateException("endPoints must be size 4");
+        }
+        
+        ZigZagSegmentRoutes routes = null;
+        
+        if (segment instanceof ZigZagSegment) {
+            if (segment.p2.getX() < segment.p1.getX()) {
+                
+                /*
+                       E0
+                           2  -            -2
+                           -  1 .  E0end   -1
+                  E1end  . 0  -             0
+                           -  3             1
+                                 E1
+                 -3 -2 -1  0  1
+                */
+                
+                // '1' and '2' on one route and '0' and '3' on another.
+                // add the endpoints before and after
+                
+                routes = new ZigZagSegmentRoutes();
+                
+                routes.ep1 = findClosestTo(segment.p3, endPoints);
+                routes.route1.add(routes.ep1);
+                routes.route1.add(segment.p3);
+                routes.route1.add(segment.p0);
+                routes.ep1End = findClosestTo(segment.p0, endPoints);
+                routes.route1.add(routes.ep1End);
+                
+                routes.ep0 = findClosestTo(segment.p2, endPoints);
+                routes.route0.add(routes.ep0);
+                routes.route0.add(segment.p2);
+                routes.route0.add(segment.p1);
+                routes.ep0End = findClosestTo(segment.p1, endPoints);
+                routes.route0.add(routes.ep0End);
+                
+            } else {
+                
+                /*            E0end
+                        -  2          -2
+                 E0   . 1  -          -1
+                        -  0 . E1      0
+                        3  -           1
+                  E1end
+                 -3 -2 -1  0  1
+                */
+                // '1' and '2' on one route and '0' and '3' on another.
+                // add the endpoints before and after
+                
+                routes = new ZigZagSegmentRoutes();
+                
+                routes.ep0 = findClosestTo(segment.p1, endPoints);
+                routes.route0.add(routes.ep0);
+                routes.route0.add(segment.p1);
+                routes.route0.add(segment.p2);
+                routes.ep0End = findClosestTo(segment.p2, endPoints);
+                routes.route0.add(routes.ep0End);
+                
+                routes.ep1 = findClosestTo(segment.p0, endPoints);
+                routes.route1.add(routes.ep1);
+                routes.route1.add(segment.p0);
+                routes.route1.add(segment.p3);
+                routes.ep1End = findClosestTo(segment.p3, endPoints);
+                routes.route1.add(routes.ep1End);
+                
+            }
+        } else {
+            if (segment.p0.getY() < segment.p1.getY()) {
+                
+                /*      E1end     E0
+                           .            -1
+                        -  0  -  3       0
+                        1  -  2  -       1
+                     E1       .  E0end   2
+                 -3 -2 -1  0  1  2  3
+                */
+                // '1' and '0' on one route and '2' and '3' on another.
+                // add the endpoints before and after
+                
+                routes = new ZigZagSegmentRoutes();
+                
+                routes.ep0 = findClosestTo(segment.p3, endPoints);
+                routes.route0.add(routes.ep0);
+                routes.route0.add(segment.p3);
+                routes.route0.add(segment.p2);
+                routes.ep0End = findClosestTo(segment.p2, endPoints);
+                routes.route0.add(routes.ep0End);
+                
+                routes.ep1 = findClosestTo(segment.p1, endPoints);
+                routes.route1.add(routes.ep1);
+                routes.route1.add(segment.p1);
+                routes.route1.add(segment.p0);
+                routes.ep1End = findClosestTo(segment.p0, endPoints);
+                routes.route1.add(routes.ep1End);
+                
+            } else {
+                
+                /*
+                    E1end    E0
+                              .         -2
+                        1  -  2  -      -1
+                        -  0  -  3       0
+                        E1 .    E0end    1
+                                         2
+                 -3 -2 -1  0  1  2  3
+                */
+                // '1' and '0' on one route and '2' and '3' on another.
+                // add the endpoints before and after
+                
+                routes = new ZigZagSegmentRoutes();
+                
+                routes.ep0 = findClosestTo(segment.p2, endPoints);
+                routes.route0.add(routes.ep0);
+                routes.route0.add(segment.p2);
+                routes.route0.add(segment.p3);
+                routes.ep0End = findClosestTo(segment.p3, endPoints);
+                routes.route0.add(routes.ep0End);
+                
+                routes.ep1 = findClosestTo(segment.p0, endPoints);
+                routes.route1.add(routes.ep1);
+                routes.route1.add(segment.p0);
+                routes.route1.add(segment.p1);
+                routes.ep1End = findClosestTo(segment.p1, endPoints);
+                routes.route1.add(routes.ep1End);
+            }
+        }
+        
+        return routes;
+    }
+
+    private PairInt findClosestTo(PairInt p0, Set<PairInt> points) {
+        
+        PairInt pt = null;
+        int minDistSq = Integer.MAX_VALUE;
+        for (PairInt p : points) {
+            int diffX = p.getX() - p0.getX();
+            int diffY = p.getY() - p0.getY();
+            int distSq = (diffX*diffX + diffY*diffY);
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                pt = p;
+            }
+        }
+        
+        return pt;
+    }
     
     /*
     may change these classes to have ordered points or to specify the
@@ -1899,11 +2204,15 @@ public class ButterflySectionFinder {
     }
     public static class HorizSegment extends Segment {
     }
-    public static class UUDiagSegment extends Segment {
+    public static class DiagSegment extends Segment {
     }
-    public static class ULDiagSegment extends Segment {
+    public static class UUDiagSegment extends DiagSegment {
+    }
+    public static class ULDiagSegment extends DiagSegment {
     }
     public static class ZigZagSegment extends Segment {
+    }
+    public static class ZigZagSegment2 extends Segment {
     }
 
     public static class Pattern {
@@ -2144,7 +2453,8 @@ public class ButterflySectionFinder {
         return null;
     }
     
-    private Segment checkZigZagSegmentPattern(int x, int y, Set<PairInt> points) {
+    private ZigZagSegment checkZigZagSegmentPattern(int x, int y, 
+        Set<PairInt> points) {
 
         Pattern pattern = getZigZagSegmentPattern();
         
@@ -2193,7 +2503,8 @@ public class ButterflySectionFinder {
         return null;
     }
     
-    private Segment checkZigZag2SegmentPattern(int x, int y, Set<PairInt> points) {
+    private ZigZagSegment2 checkZigZag2SegmentPattern(int x, int y, 
+        Set<PairInt> points) {
 
         Pattern pattern = getZigZag2SegmentPattern();
         
@@ -2207,7 +2518,7 @@ public class ButterflySectionFinder {
          -3 -2 -1  0  1  2  3
         */
         if (matchesPattern) {
-            ZigZagSegment segment = new ZigZagSegment();
+            ZigZagSegment2 segment = new ZigZagSegment2();
             segment.p0 = new PairInt(x, y);
             segment.p1 = new PairInt(x - 1, y + 1);
             segment.p2 = new PairInt(x + 1, y + 1);
@@ -2228,7 +2539,7 @@ public class ButterflySectionFinder {
          -3 -2 -1  0  1  2  3
         */
         if (matchesPattern) {
-            ZigZagSegment segment = new ZigZagSegment();
+            ZigZagSegment2 segment = new ZigZagSegment2();
             segment.p0 = new PairInt(x, y);
             segment.p1 = new PairInt(x - 1, y - 1);
             segment.p2 = new PairInt(x + 1, y - 1);
@@ -2272,61 +2583,19 @@ public class ButterflySectionFinder {
         //route0, route1 need to be searchable but ordered.
         LinkedHashSet<PairInt> route0 = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> route1 = new LinkedHashSet<PairInt>();
+        public LinkedHashSet<PairInt> getRoute0() {
+            return route0;
+        }
+        public LinkedHashSet<PairInt> getRoute1() {
+            return route1;
+        }
     }
     public static class VertSegmentRoutes extends Routes {
     }
-    public static class VertSegmentRoutes1 extends VertSegmentRoutes {
-    }
-    public static class VertSegmentRoutes1Opp extends VertSegmentRoutes {
-    }
-    public static class VertSegmentRoutes2 extends VertSegmentRoutes {
-    }
-    public static class VertSegmentRoutes2Opp extends VertSegmentRoutes {
-    }
-    public static class VertSegmentRoutes3 extends VertSegmentRoutes {
-    }
-    public static class VertSegmentRoutes3Opp extends VertSegmentRoutes {
-    }
-    
     public static class HorizSegmentRoutes extends Routes {
     }
-    public static class HorizSegmentRoutes1 extends HorizSegmentRoutes {
-    }
-    public static class HorizSegmentRoutes1Opp extends HorizSegmentRoutes {
-    }
-    public static class HorizSegmentRoutes2 extends HorizSegmentRoutes {
-    }
-    public static class HorizSegmentRoutes2Opp extends HorizSegmentRoutes {
-    }
-    public static class HorizSegmentRoutes3 extends HorizSegmentRoutes {
-    }
-    public static class HorizSegmentRoutes3Opp extends HorizSegmentRoutes {
-    }
-    
     public static class UUDiagSegmentRoutes extends Routes {
     }
-    public static class UUDiagSegmentRoutes1 extends UUDiagSegmentRoutes {
-    }
-    public static class UUDiagSegmentRoutes2 extends UUDiagSegmentRoutes {
-    }
-    public static class UUDiagSegmentRoutes3 extends UUDiagSegmentRoutes {
-    }
-    
-    public static class ULDiagSegmentRoutes extends UUDiagSegmentRoutes {
-    }
-    public static class ULDiagSegmentRoutes1 extends ULDiagSegmentRoutes {
-    }
-    public static class ULDiagSegmentRoutes2 extends ULDiagSegmentRoutes {
-    }
-    public static class ULDiagSegmentRoutes3 extends ULDiagSegmentRoutes {
-    }
-    
     public static class ZigZagSegmentRoutes extends Routes {
-    }
-    public static class ZigZagSegmentRoutes1 extends ZigZagSegmentRoutes {
-    }
-    public static class ZigZagSegmentRoutes2 extends ZigZagSegmentRoutes {
-    }
-    public static class ZigZagSegmentRoutes3 extends ZigZagSegmentRoutes {
     }
 }
