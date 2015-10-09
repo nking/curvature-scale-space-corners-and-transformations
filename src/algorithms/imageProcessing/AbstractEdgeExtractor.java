@@ -353,8 +353,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
      * 
      * @return 
      */
-    protected List<PairIntArray> connectPixelsViaDFSForBounds(List<Routes> 
-        butterFlySections) {
+    protected List<PairIntArray> connectPixelsViaDFSForBounds() {
         
         /*
         the choice among neighbors prefers in order:
@@ -387,23 +386,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 }
             }
         }
-               
-        Map<PairInt, Integer> pointRoutesMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < butterFlySections.size(); ++i) {
-            Integer index = Integer.valueOf(i);
-            Routes r = butterFlySections.get(i);
-            /*for (PairInt p : r.getRoute0()) {
-                pointRoutesMap.put(p, index);
-            }
-            for (PairInt p : r.getRoute1()) {
-                pointRoutesMap.put(p, index);
-            }*/
-            pointRoutesMap.put(r.getEP0(), index);
-            pointRoutesMap.put(r.getEP0End(), index);
-            pointRoutesMap.put(r.getEP1(), index);
-            pointRoutesMap.put(r.getEP1End(), index);
-        }
-        Set<PairInt> added = new HashSet<PairInt>();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         double[] xyCen = curveHelper.calculateXYCentroids(points);
@@ -434,67 +416,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             
             int count = 0;
             
-            // first, a separate quick check for whether a point is in
-            //  pointRoutesMap and not in added and route by that if so
-            if (!pointRoutesMap.isEmpty()) {
-                // checking endpoints only of routes and adding entire route
-                // if there is a match
-                boolean didAddPoints = false;
-                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                    int vX = dxs[nIdx] + uX;
-                    int vY = dys[nIdx] + uY;
-                    if ((vX < 0) || (vX > (w - 1)) || (vY < 0) || (vY > (h - 1))) {
-                        continue;
-                    }
-                    int vIdx = img.getIndex(vX, vY);                
-                    if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx) || 
-                        (img.getValue(vX, vY) < thresh0)) {
-                        continue;
-                    }
-                    PairInt vNode = new PairInt(vX, vY);
-                    if (added.contains(vNode)) {
-                        continue;
-                    }
-                    Integer routeIndex = pointRoutesMap.get(vNode);
-                    if (routeIndex != null) {
-                        Routes routes = butterFlySections.get(routeIndex.intValue());
-                        boolean addRoute0 = routes.getRoute0().contains(vNode);
-                        if (addRoute0) {
-                            for (PairInt chk : routes.getRoute0()) {
-                                if (added.contains(chk)) {
-                                    throw new IllegalStateException(
-                                    "error in algorithm:" + 
-                                     " a point in route0 has already been added");
-                                }
-                                processNeighbor(uX, uY, uIdx, chk.getX(), chk.getY(),
-                                    vIdx, uNodeEdgeIdx, output);
-                                added.add(uNode);
-                                added.add(chk);
-                                stack.add(chk);
-                                didAddPoints = true;
-                            }
-                        } else {
-                            for (PairInt chk : routes.getRoute1()) {
-                                if (added.contains(chk)) {
-                                    throw new IllegalStateException(
-                                    "error in algorithm:" + 
-                                     " a point in route0 has already been added");
-                                }
-                                processNeighbor(uX, uY, uIdx, chk.getX(), chk.getY(),
-                                    vIdx, uNodeEdgeIdx, output);
-                                added.add(uNode);
-                                added.add(chk);
-                                stack.add(chk);
-                                didAddPoints = true;
-                            }
-                        }
-                    }
-                }
-                if (didAddPoints) {
-                    continue;
-                }
-            }
-            
             for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                 
                 int vX = dxs[nIdx] + uX;
@@ -511,10 +432,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 }
 
                 if (img.getValue(vX, vY) < thresh0) {
-                    continue;
-                }
-                
-                if (added.contains(new PairInt(vX, vY))) {
                     continue;
                 }
                 
@@ -557,9 +474,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             processNeighbor(uX, uY, uIdx, neighborsX[count - 1], 
                 neighborsY[count - 1], vIdx, uNodeEdgeIdx, output);
             
-            added.add(uNode);
-            added.add(new PairInt(neighborsX[count - 1], neighborsY[count - 1]));
-                
             stack.add(new PairInt(neighborsX[count - 1], neighborsY[count - 1]));
             
         }

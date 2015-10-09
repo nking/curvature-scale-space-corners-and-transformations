@@ -1807,7 +1807,7 @@ long nPointsBefore = countPixelsInEdges(edges);
         
         this.singleClosedEdge = true;
 
-        List<PairIntArray> output = connectPixelsViaDFSForBounds(butterFlySections);
+        List<PairIntArray> output = connectPixelsViaDFSForBounds();
 
 if (debug) {
 Image img0 = ImageIOHelper.convertImage(img);
@@ -1831,6 +1831,7 @@ for (int i = 0; i < output.size(); ++i) {
 }
 MiscDebug.writeImageCopy(img0, "output_before_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");
 }
+
         output = findEdgesIntermediateSteps(output);
 
 if (debug) {
@@ -1864,10 +1865,12 @@ MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTime
             Collections.sort(output, new PairIntArrayDescendingComparator());
         }
 
+        reorderAndJoinForButterflyJunctions(butterFlySections, output);
+        
         PairIntArray out = output.get(0);
 
         reorderEndpointsIfNeeded(out);
-        
+                
         boolean isAdjacent = curveHelper.isAdjacent(out, 0, out.getN() - 1);
         
         if (isAdjacent) {
@@ -3115,5 +3118,13 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         }
 
         return -1;
+    }
+
+    protected void reorderAndJoinForButterflyJunctions(
+        List<Routes> butterFlySections, List<PairIntArray> output) {
+        
+        // output is already ordered by decreasing length
+        
+        
     }
 }
