@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1798,7 +1799,7 @@ long nPointsBefore = countPixelsInEdges(edges);
 
     /**
      * 
-     * @param butterFlySections2
+     * @param butterFlySections
      * @return 
      */
     public PairIntArray findAsSingleClosedEdge(List<Routes> butterFlySections) {
@@ -3123,8 +3124,248 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
     protected void reorderAndJoinForButterflyJunctions(
         List<Routes> butterFlySections, List<PairIntArray> output) {
         
+        if (butterFlySections.isEmpty()) {
+            return;
+        }
+        
         // output is already ordered by decreasing length
         
+        Map<PairInt, PairInt> coordEdgeLocMap = createCoordinateEdgeLocationMap(
+            output);
         
+        for (int i = 0; i < butterFlySections.size(); ++i) {
+            
+            Routes routes = butterFlySections.get(i);
+            
+            boolean isConsistent = isConsistentWithRoutes(routes, coordEdgeLocMap,
+                output);
+            
+            if (!isConsistent) {
+                
+                correctForRoutes(routes, coordEdgeLocMap, output);
+                
+                if (i < (butterFlySections.size() - 1)) {
+                    coordEdgeLocMap = createCoordinateEdgeLocationMap(
+                        output);
+                }
+            }
+        }
+    }
+    
+    protected Map<PairInt, PairInt> createCoordinateEdgeLocationMap(
+        List<PairIntArray> edges) {
+        
+        Map<PairInt, PairInt> coordEdgeLocMap = new HashMap<PairInt, PairInt>();
+        for (int edgeIdx = 0; edgeIdx < edges.size(); ++edgeIdx) {
+            PairIntArray edge = edges.get(edgeIdx);
+            for (int i = 0; i < edge.getN(); ++i) {
+                PairInt p = new PairInt(edge.getX(i), edge.getY(i));
+                PairInt edgeLoc = new PairInt(edgeIdx, i);
+                coordEdgeLocMap.put(p, edgeLoc);
+            }
+        }
+        
+        return coordEdgeLocMap;
+    }
+
+    /**
+     * looks for sequential ordering of points in edges consistent with the
+     * routes r0 and r1 and returns true if finds them.  Note that a route
+     * is expected to be within one edge, that is if a part of route r0 starts 
+     * in one edge and finishes in another edge, that
+     * is not found by this method.
+     * @param routes
+     * @param coordEdgeLocMap
+     * @param output
+     * @return 
+     */
+    private boolean isConsistentWithRoutes(Routes routes, 
+        Map<PairInt, PairInt> coordEdgeLocMap, List<PairIntArray> output) {
+        
+        /* example of correctly ordered
+              1
+          # # # 1 1 1
+        #       # # #
+        # # # # # # #
+              2 2 2 2*/
+        
+        boolean foundR0 = isConsistentWithRoutes(0, routes, coordEdgeLocMap, 
+            output);
+        
+        if (!foundR0) {
+            return false;
+        }
+        
+        boolean foundR1 = isConsistentWithRoutes(1, routes, coordEdgeLocMap, 
+            output);
+        
+        return foundR1;
+    }
+
+    private boolean isConsistentWithRoutes(int route0Or1, Routes routes, 
+        Map<PairInt, PairInt> coordEdgeLocMap, List<PairIntArray> output) {
+        
+        PairInt rStart = null;
+       
+        int n = 0;
+        
+        if (route0Or1 == 0) {
+            rStart = routes.getEP0();
+            n = routes.getRoute0().size();
+        } else if (route0Or1 == 1) {
+            rStart = routes.getEP1();
+            n = routes.getRoute1().size();
+        } else {
+            throw new IllegalArgumentException("route0Or1 must be 0 or 1");
+        }
+        
+        PairInt rELoc = coordEdgeLocMap.get(rStart);
+        assert(rELoc != null);
+        PairIntArray edge = output.get(rELoc.getX());
+        final int idxR = rELoc.getY();
+        boolean foundR = true;
+        // check increasing indexes
+        // idx varies from idxR to idxR + n - 1
+        int idx = idxR;
+        for (PairInt r : routes.getRoute0()) {
+            if ((r.getX() != edge.getX(idx)) || (r.getY() != edge.getY(idx))) {
+                foundR = false;
+                break;
+            }
+            idx++;
+            if (idx > (n - 1)) {
+                idx = 0;
+            }
+        }
+        
+        if (!foundR) {
+            foundR = true;
+            // check decreasing indexes
+            idx = idxR;
+            for (PairInt r : routes.getRoute0()) {
+                if ((r.getX() != edge.getX(idx)) || (r.getY() != edge.getY(idx))) {
+                    foundR = false;
+                    break;
+                }
+                idx--;
+                if (idx < 0) {
+                    idx = n - 1;
+                }
+            }
+        }
+        
+        return foundR;
+    }
+
+    private void correctForRoutes(Routes routes, 
+        Map<PairInt, PairInt> coordEdgeLocMap, List<PairIntArray> edges) {
+        
+        /* example of correctly ordered
+              1
+          # # # 1 1 1
+        #       # # #
+        # # # # # # #
+              2 2 2 2
+        
+        example of incorrectly ordered that needs to follow the section routes
+             1 1
+           # # #  2 2
+        #       # # #
+        # # # # # # #
+            1 1 1 2 2
+        
+        a quick check for consistent routes is done to return quickly if possible.
+        for each start edge point in routes, the point is found in coordEdgeLocMap
+        and a consecutive route is searched for.  if both routes are found
+        as consecutive points in an edge then can continue, otherwise, needs
+        corrections.
+        
+        correcting:
+        traversing edge 1, finds butterfly section endpoint,
+            then, stores each point temporariy in list for r0 as edge locations.
+            same for r1.
+        then all points along r0 are inserted (in correction direction)
+        into edge1 if not already present, and the inserted points are removed
+        elsewhere, and the last point inserted (the endpoint of the route0)
+        has its edge appended to edge1.
+        same for r1 though checks for edge already being the merged edge are needed.
+        -- may need to invoke the merge methods after this
+        */
+
+        //gather the indexes of route point locations and store them in a map
+        Map<Integer, List<Integer>> rLocations = new HashMap<Integer, List<Integer>>();
+        Iterator<PairInt> iter = routes.getRoute0().iterator();
+        int nIter = 0;
+        while (iter.hasNext()) {
+            PairInt p = iter.next();
+            if (nIter == 0) {
+                continue;
+            }
+            PairInt edgeLoc = coordEdgeLocMap.get(p);
+            
+            Integer key = Integer.valueOf(edgeLoc.getX());
+            List<Integer> list = rLocations.get(key);
+            if (list == null) {
+                list = new ArrayList<Integer>();
+                rLocations.put(key, list);
+            }
+            list.add(Integer.valueOf(edgeLoc.getY()));
+            nIter++;
+        }
+        iter = routes.getRoute1().iterator();
+        nIter = 0;
+        while (iter.hasNext()) {
+            PairInt p = iter.next();
+            if (nIter == 0) {
+                continue;
+            }
+            PairInt edgeLoc = coordEdgeLocMap.get(p);
+            
+            Integer key = Integer.valueOf(edgeLoc.getX());
+            List<Integer> list = rLocations.get(key);
+            if (list == null) {
+                list = new ArrayList<Integer>();
+                rLocations.put(key, list);
+            }
+            list.add(Integer.valueOf(edgeLoc.getY()));
+            nIter++;
+        }
+        
+        for (Entry<Integer, List<Integer>> entry : rLocations.entrySet()) {
+            List<Integer> list = entry.getValue();
+            PairIntArray edge = edges.get(entry.getKey().intValue());
+            Collections.sort(list);
+            for (int i = (list.size() - 1); i > -1; --i) {
+                int idx = list.get(i).intValue();
+                edge.removeRange(idx, idx);
+            }
+        }
+        
+        // add route0 points to edge for edge0, before or after endpoint r0
+        // and the same for r1
+        PairInt r0EdgeLoc = coordEdgeLocMap.get(routes.getEP0());
+        PairInt r1EdgeLoc = coordEdgeLocMap.get(routes.getEP1());
+        PairIntArray r0 = edges.get(r0EdgeLoc.getX());
+        PairIntArray r1 = edges.get(r1EdgeLoc.getX());
+                
+        int prevR0Idx = r0EdgeLoc.getY() - 1;
+        if (prevR0Idx < 0) {
+            prevR0Idx = r0.getN() - 1;
+        }
+        int prevR1Idx = r1EdgeLoc.getY() - 1;
+        if (prevR1Idx < 0) {
+            prevR1Idx = r1.getN() - 1;
+        }
+        int nextR0Idx = r0EdgeLoc.getY() - 1;
+        if (nextR0Idx < 0) {
+            nextR0Idx = r0.getN() - 1;
+        }
+        int nextR1Idx = r1EdgeLoc.getY() - 1;
+        if (nextR1Idx < 0) {
+            nextR1Idx = r1.getN() - 1;
+        }
+        
+        // paused here
+
     }
 }

@@ -1012,6 +1012,199 @@ mapper.debugImg2 = img2GreyOrig;
         }
     }
 
+    public void applySteps3() throws IOException, NoSuchAlgorithmException {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        TransformationParameters params90 = new TransformationParameters();
+        params90.setRotationInDegrees(90);
+        params90.setOriginX(0);
+        params90.setOriginY(0);
+        params90.setTranslationX(0);
+        params90.setTranslationY(img1Orig.getWidth() - 1);
+
+        Transformer transformer = new Transformer();
+
+        img1Orig = (ImageExt) transformer.applyTransformation(img1Orig, params90,
+            img1Orig.getHeight(), img1Orig.getWidth());
+
+        //---------------
+
+        img1GreyOrig = img1Orig.copyToGreyscale();
+        img2GreyOrig = img2Orig.copyToGreyscale();
+
+        final boolean performBinning = false;
+        int binFactor1 = 1;
+        
+        int smallestGroupLimit = 100;
+        //TODO: consider scaling this by image size or by size and res if one
+        //  day that information is passed to this method
+        int largestGroupLimit = 5000;
+
+        ImageExt img1Cp = (ImageExt)img1Orig.copyImage();
+        ImageExt img2Cp = (ImageExt)img2Orig.copyImage();
+
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1GreyOrig, true);
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2GreyOrig, true);
+
+        log.info("stats1=" + stats1.toString());
+        log.info("stats2=" + stats2.toString());
+
+        boolean performHistEq = false;
+        double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();
+        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();
+        double meanDivMedian2 = stats2.getMean()/stats2.getMedian();
+        if (
+            ((median1DivMedian2 > 1) && ((median1DivMedian2 - 1) > 0.2)) ||
+            ((median1DivMedian2 < 1) && (median1DivMedian2 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian1 > 1) && ((meanDivMedian1 - 1) > 0.2)) ||
+            ((meanDivMedian1 < 1) && (meanDivMedian1 < 0.8))) {
+            performHistEq = true;
+        } else if (
+            ((meanDivMedian2 > 1) && ((meanDivMedian2 - 1) > 0.2)) ||
+            ((meanDivMedian2 < 1) && (meanDivMedian2 < 0.8))) {
+            performHistEq = true;
+        }
+        if (performHistEq) {
+            log.info("use histogram equalization on the greyscale images");
+            HistogramEqualization hEq = new HistogramEqualization(img1GreyOrig);
+            hEq.applyFilter();
+            hEq = new HistogramEqualization(img2GreyOrig);
+            hEq.applyFilter();
+            /*HistogramEqualizationForColor hEqC = new HistogramEqualizationForColor(img1Cp);
+            hEqC.applyFilter();
+            hEqC = new HistogramEqualizationForColor(img2Cp);
+            hEqC.applyFilter();*/
+        }
+
+        if (performBinning) {
+            binFactor1 = (int) Math.ceil(
+                Math.max((float)img1GreyOrig.getWidth()/200.f,
+                (float)img2GreyOrig.getHeight()/200.));
+            smallestGroupLimit /= (binFactor1*binFactor1);
+            largestGroupLimit /= (binFactor1*binFactor1);
+
+            log.info("binFactor1=" + binFactor1);
+
+            // prevent from being smaller than needed for a convex hull
+            if (smallestGroupLimit < 4) {
+                smallestGroupLimit = 4;
+            }
+            img1GreyOrig = imageProcessor.binImage(img1GreyOrig, binFactor1);
+            img2GreyOrig = imageProcessor.binImage(img2GreyOrig, binFactor1);
+            img1Cp = imageProcessor.binImage(img1Cp, binFactor1);
+            img2Cp = imageProcessor.binImage(img2Cp, binFactor1);
+        }
+
+        // make corners
+
+        if (!performBinning) {
+            imageProcessor.blur(img1GreyOrig, SIGMA.ONE);
+            imageProcessor.blur(img2GreyOrig, SIGMA.ONE);
+        }
+        
+log.info("img1Grey.w=" + img1GreyOrig.getWidth() + " img1Grey.h=" + img1GreyOrig.getHeight());
+log.info("img2Grey.w=" + img2GreyOrig.getWidth() + " img2Grey.h=" + img2GreyOrig.getHeight());
+
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img1GreyOrig);
+        detector.doNotPerformHistogramEqualization();
+        detector.findCorners();        
+        corners1 = detector.getCornersInOriginalReferenceFrame();
+        cornerRegions1 = detector.getEdgeCornerRegions(true);
+        //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        gXY1 = detector.getEdgeFilterProducts().getGradientXY();
+        img1Grey = img1GreyOrig.copyImage();
+        imageProcessor.shrinkImage(img1Grey, 
+            new int[]{gXY1.getXRelativeOffset(), gXY1.getYRelativeOffset(),
+                gXY1.getWidth(), gXY1.getHeight()
+            });
+        MiscDebug.writeEdges(detector.getEdgesInOriginalReferenceFrame(), 
+            img1GreyOrig, "1_edges");
+        MiscDebug.writeImage(img1Cp, "1_clr");
+        MiscDebug.plotCorners(img1GreyOrig, corners1, "1__corners");
+        
+        CurvatureScaleSpaceCornerDetector detector2 = new
+            CurvatureScaleSpaceCornerDetector(img2GreyOrig);
+        detector2.doNotPerformHistogramEqualization();
+        detector2.findCorners();
+        corners2 = detector2.getCornersInOriginalReferenceFrame();
+        cornerRegions2 = detector2.getEdgeCornerRegions(true);
+        //cornerRegions2 = detector2.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        gXY2 = detector2.getEdgeFilterProducts().getGradientXY();
+        img2Grey = img2GreyOrig.copyImage();
+        imageProcessor.shrinkImage(img2Grey, 
+            new int[]{gXY2.getXRelativeOffset(), gXY2.getYRelativeOffset(),
+                gXY2.getWidth(), gXY2.getHeight()
+            });
+        MiscDebug.writeEdges(detector2.getEdgesInOriginalReferenceFrame(), 
+            img2GreyOrig, "2_edges");
+        MiscDebug.writeImage(img2Cp, "2_clr");
+        MiscDebug.plotCorners(img2GreyOrig, corners2, "2__corners");
+        
+        log.info("n1Corners=" + corners1.getN() + " n2Corners2=" + corners2.getN());
+
+        // experimenting with a slightly different definition for theta:
+        theta1 = imageProcessor.computeTheta360(
+            detector.getEdgeFilterProducts().getGradientX(), 
+            detector.getEdgeFilterProducts().getGradientY());
+        theta2 = imageProcessor.computeTheta360(
+            detector2.getEdgeFilterProducts().getGradientX(), 
+            detector2.getEdgeFilterProducts().getGradientY());
+        
+        MiscDebug.writeImage(img1Grey, "1_greyscale_trimmed");
+        MiscDebug.writeImage(img2Grey, "2_greyscale_trimmed");
+        
+        MiscDebug.writeImage(theta1, "1_theta360_trimmed");
+        MiscDebug.writeImage(theta2, "2_theta360_trimmed");
+        
+        MiscDebug.writeImage(gXY1, "1_gXY_trimmed");
+        MiscDebug.writeImage(gXY2, "2_gXY_trimmed");
+     
+        /*
+        //TEMP files to visualize an offset:
+        GreyscaleImage theta1_tmp = theta1.copyImage();
+        GreyscaleImage theta2_tmp = theta2.copyImage();
+        for (int col = 0; col < theta1_tmp.getWidth(); ++col) {
+            for (int row = 0; row < theta1_tmp.getHeight(); ++row) {
+                int v = theta1_tmp.getValue(col, row);
+                v -= 308;
+                if (v < 0) {
+                    v += 360;
+                } else if (v > 359) {
+                    v = v - 360;
+                }
+                theta1_tmp.setValue(col, row, v);
+            }
+        }
+        for (int col = 0; col < theta2_tmp.getWidth(); ++col) {
+            for (int row = 0; row < theta2_tmp.getHeight(); ++row) {
+                int v = theta2_tmp.getValue(col, row);
+                v -= 225;
+                if (v < 0) {
+                    v += 360;
+                } else if (v > 359) {
+                    v = v - 360;
+                }
+                theta2_tmp.setValue(col, row, v);
+            }
+        }
+        MiscDebug.writeImage(theta1_tmp, "1_theta360_tmp");
+        MiscDebug.writeImage(theta2_tmp, "2_theta360_tmp");
+        */
+        
+            
+        //log.info("corners1=" + corners1.toString());
+        //log.info("corners2=" + corners2.toString());
+
+        MiscDebug.plotCorners(img1GreyOrig, corners1, "1_corners");
+        MiscDebug.plotCorners(img2GreyOrig, corners2, "2_corners");
+
+        int z = 1;
+    }
+    
     protected void removeEdgesShorterThan(List<PairIntArray> output, 
         int minNumberOfPixelsInEdge) {
         
