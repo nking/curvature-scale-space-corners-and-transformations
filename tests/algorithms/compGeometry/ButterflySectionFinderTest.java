@@ -125,7 +125,7 @@ public class ButterflySectionFinderTest extends TestCase {
         
             Routes routes = sections.get(0);
             
-            log.info("i=" + i);
+            log.fine("i=" + i);
             
             Iterator<PairInt> iter = routes.getRoute0().iterator();
             StringBuilder sb = new StringBuilder("r0: ");
@@ -139,7 +139,7 @@ public class ButterflySectionFinderTest extends TestCase {
             }
             sb.append("\nexpected r0:").append(Arrays.toString(expectedR0));
             sb.append("\nexpected r1:").append(Arrays.toString(expectedR1));
-            log.info(sb.toString());
+            log.fine(sb.toString());
         
             Iterator<PairInt> r = routes.getRoute0().iterator();
             int nIter = 0;
@@ -161,7 +161,7 @@ public class ButterflySectionFinderTest extends TestCase {
         }
     }
     
-    public void estFindButterflySections3() throws Exception {
+    public void testFindButterflySections3() throws Exception {
         
         int w = 258;
         int h = 187;
@@ -271,7 +271,7 @@ public class ButterflySectionFinderTest extends TestCase {
             }
             sb.append("\nexpected r0:").append(Arrays.toString(expectedR0));
             sb.append("\nexpected r1:").append(Arrays.toString(expectedR1));
-            log.info(sb.toString());
+            log.fine(sb.toString());
         
             Iterator<PairInt> r = routes.getRoute0().iterator();
             int nIter = 0;
