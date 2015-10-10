@@ -989,7 +989,7 @@ public class ButterflySectionFinder {
         if (segment instanceof VertSegment) {
             Routes routes = new Routes();
             if (segment.p1.equals(new PairInt(x0, y0 - 1))) {
-                assert(segment.p2.equals(new PairInt(x0 - 1, y0 + 1))); 
+                assert(segment.p2.equals(new PairInt(x0 - 1, y0 - 1))); 
                 assert(segment.p3.equals(new PairInt(x0 - 1, y0))); 
                 routes.route0.add(segment.p1);
                 routes.route0.add(segment.p0);
