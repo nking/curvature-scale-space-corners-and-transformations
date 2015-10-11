@@ -53,6 +53,8 @@ public class ButterflySectionFinder {
             output.addAll(sectionsSmall);
         }
         
+        setNullEndpoints(output);
+        
         return output;
     }
 
@@ -143,10 +145,10 @@ public class ButterflySectionFinder {
                     continue;
                 }
             }
-            
+                        
             output.add(routes);
         }
-
+        
         return output;
 
         /*
@@ -2436,6 +2438,36 @@ public class ButterflySectionFinder {
         
         return pt;
     }
+
+    private void setNullEndpoints(Routes routes) {
+        
+        if (!routes.getRoute0().isEmpty()) {
+            if (routes.getEP0() == null) {
+                routes.ep0 = routes.getRoute0().iterator().next();
+            }
+            if (routes.getEP0End() == null) {
+                PairInt[] a = getFirstAndLast(routes.getRoute0().iterator());
+                routes.ep0End = a[1];
+            }
+        }
+        
+        if (!routes.getRoute1().isEmpty()) {
+            if (routes.getEP1() == null) {
+                routes.ep1 = routes.getRoute1().iterator().next();
+            }
+            if (routes.getEP1End() == null) {
+                PairInt[] a = getFirstAndLast(routes.getRoute1().iterator());
+                routes.ep1End = a[1];
+            }
+        }
+    }
+
+    private void setNullEndpoints(List<Routes> routesList) {
+        
+        for (Routes routes : routesList) {
+            setNullEndpoints(routes);
+        }
+    }
     
     /*
     may change these classes to have ordered points or to specify the
@@ -2877,6 +2909,36 @@ public class ButterflySectionFinder {
         }
         public PairInt getEP1End() {
             return ep1End;
+        }
+        public void applyOffsets(final int xOffset, final int yOffset) {
+            if (ep0 != null) {
+                ep0 = new PairInt(ep0.getX() + xOffset, ep0.getY() + yOffset);
+            }
+            if (ep0End != null) {
+                ep0End = new PairInt(ep0End.getX() + xOffset, ep0End.getY() + yOffset);
+            }
+            if (ep1 != null) {
+                ep1 = new PairInt(ep1.getX() + xOffset, ep1.getY() + yOffset);
+            }
+            if (ep1End != null) {
+                ep1End = new PairInt(ep1End.getX() + xOffset, ep1End.getY() + yOffset);
+            }
+            
+            LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
+            Iterator<PairInt> iter = this.route0.iterator();
+            while (iter.hasNext()) {
+                PairInt p = iter.next();
+                tmp.add(new PairInt(p.getX() + xOffset, p.getY() + yOffset));
+            }
+            route0 = tmp;
+         
+            tmp = new LinkedHashSet<PairInt>();
+            iter = this.route1.iterator();
+            while (iter.hasNext()) {
+                PairInt p = iter.next();
+                tmp.add(new PairInt(p.getX() + xOffset, p.getY() + yOffset));
+            }
+            route1 = tmp;
         }
     }
     public static class VertSegmentRoutes extends Routes {

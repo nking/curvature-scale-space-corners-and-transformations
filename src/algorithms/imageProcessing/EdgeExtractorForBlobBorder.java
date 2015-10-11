@@ -241,14 +241,14 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
         Set<PairInt> exclude = new HashSet<PairInt>();
         if (butterFlySections != null && !butterFlySections.isEmpty()) {
             for (Routes butterFlySection : butterFlySections) {
-                borderPixels.addAll(butterFlySection.getRoute0());
-                borderPixels.addAll(butterFlySection.getRoute1());
+                exclude.addAll(butterFlySection.getRoute0());
+                exclude.addAll(butterFlySection.getRoute1());
             }
         }
         if (butterFlySections2 != null && !butterFlySections2.isEmpty()) {
             for (Routes butterFlySection : butterFlySections2) {
-                borderPixels.addAll(butterFlySection.getRoute0());
-                borderPixels.addAll(butterFlySection.getRoute1());
+                exclude.addAll(butterFlySection.getRoute0());
+                exclude.addAll(butterFlySection.getRoute1());
             }
         }
 
@@ -280,6 +280,15 @@ MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".pn
             int x = p.getX() - xOffset;
             int y = p.getY() - yOffset;
             img.setValue(x, y, 1);
+        }
+        img.setXRelativeOffset(xOffset);
+        img.setYRelativeOffset(yOffset);
+        
+        if (!butterFlySections2.isEmpty()) {
+            // remove offsets to put into same frame as img
+            for (Routes routes : butterFlySections2) {
+                routes.applyOffsets(-1*xOffset, -1*yOffset);
+            }
         }
         
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
