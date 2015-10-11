@@ -444,12 +444,12 @@ public class SegmentedImageHelper {
         
         if (debug) {
             blobsAndContours = new BlobsAndContours(getGreyscaleImage(),
-                segImg, smallestGroupLimit, 
-                largestGroupLimit, type, segmentedToLineDrawing, debugTag);
+                segImg, smallestGroupLimit, largestGroupLimit, type, 
+                segmentedToLineDrawing, debugTag);
         } else {
             blobsAndContours = new BlobsAndContours(getGreyscaleImage(),
-                segImg, smallestGroupLimit, 
-                largestGroupLimit, type, segmentedToLineDrawing);
+                segImg, smallestGroupLimit, largestGroupLimit, type, 
+                segmentedToLineDrawing);
         }
         
         imgBlobsAndContoursMap.put(type, blobsAndContours);

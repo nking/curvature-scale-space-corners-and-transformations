@@ -48,7 +48,7 @@ public class Heap {
 	/** root of tree containing a minimum key.  it's null for an empty tree */
 	protected HeapNode minimumNode = null;
 	
-	protected int n = 0;
+	protected long n = 0;
 
     /**
      * insert node into heap.  runtime is O(1).  makes no attempt to consolidate
@@ -102,13 +102,16 @@ public class Heap {
             
         	// detach each child and add it to heap
         	HeapNode x = z.getChildren().getSentinel().getRight();
-        	
+        
+//TODO: fix bug... 
+if (!x.equals(nextMin)) {            
         	// for each child x of z
             while (x.getKey() != sentinel) {
                 HeapNode next = x.getRight();
                 rootList.insert(x);
                 x = next;
             }
+}
 
             rootList.remove(z);
     
@@ -120,6 +123,7 @@ public class Heap {
             }
 
             n--;
+            
         }
 
         return z;

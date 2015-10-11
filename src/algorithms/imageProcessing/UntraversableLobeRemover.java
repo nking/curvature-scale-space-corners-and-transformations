@@ -1,12 +1,17 @@
 package algorithms.imageProcessing;
 
 import algorithms.LongestPath;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.shortestPath.AStar;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -23,7 +28,8 @@ class UntraversableLobeRemover {
      * @param closedCurve
      * @return true if points were removed
      */
-    public boolean applyFilter(Set<PairInt> closedCurve, Set<PairInt> exclude) {
+    public boolean applyFilter(Set<PairInt> closedCurve, Set<PairInt> exclude,
+        int imageWidth, int imageHeight) {
 
         /*
         Example:
@@ -57,19 +63,26 @@ class UntraversableLobeRemover {
         int nChanges = 0;
         int nIter = 0;
         int nIterMax = 10;
-        
+               
         boolean wasChanged = false;
 
         while ((nIter == 0) || ((nChanges > 0) && (nIter < nIterMax))) {
 
             nChanges = 0;
-
+            
+Image img1 = new Image(imageWidth, imageHeight);
+for (PairInt p : closedCurve) {
+    img1.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img1, "before_removed_untr_lobe_" 
++ MiscDebug.getCurrentTimeFormatted() + ".png");
+ 
             for (PairInt p : closedCurve) {
                 
                 if (exclude.contains(p)) {
                     continue;
                 }
-
+                
                 Set<PairInt> junctionPoints = findJunction(p.getX(), p.getY(),
                     closedCurve);
 
@@ -86,19 +99,31 @@ class UntraversableLobeRemover {
                     continue;
                 }
 
-                List<Set<PairInt>> longestPaths = findLongestPaths(spokes,
+                List<Set<PairInt>> longestPaths = findShortestPathBetweenSpokes(spokes,
                     closedCurve);
 
-                assert(longestPaths.size() == 3);
+                //assert(longestPaths.size() == 3);
 
                 removeShortestPath(spokes, longestPaths, closedCurve);
 
+Image img3 = new Image(imageWidth, imageHeight);
+for (PairInt p2 : closedCurve) {
+    img3.setRGB(p2.getX(), p2.getY(), 255, 0, 0);
+}
+MiscDebug.writeImageCopy(img3, "removed_untr_lobe_" 
++ MiscDebug.getCurrentTimeFormatted() + ".png");
+
                 assert(closedCurve.size() > 0);
 
+                SpurRemover spurRm = new SpurRemover();
+                spurRm.remove(closedCurve, imageWidth, imageHeight);
+        
+                assert(closedCurve.size() > 0);
+                
                 nChanges++;
                 
                 wasChanged = true;
-
+                
                 break;
             }
 
@@ -108,6 +133,7 @@ class UntraversableLobeRemover {
         // if any have changed, use contiguous pix finder to keep only
         // the contiguous
         if (wasChanged) {
+
             int[] minMaxXY = MiscMath.findMinMaxXY(closedCurve);
             DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
             finder.findConnectedPointGroups(closedCurve, minMaxXY[1] + 1, 
@@ -257,7 +283,7 @@ class UntraversableLobeRemover {
         }
 
         patternPoints.add(new PairInt(x, y));
-
+        
         return patternPoints;
     }
 
@@ -290,10 +316,7 @@ class UntraversableLobeRemover {
             Set<PairInt> neighbors = curveHelper.findNeighbors(p.getX(),
                 p.getY(), closedCurve);
 
-            // remove the points that are other junction points
-            for (PairInt jp : junctionPoints) {
-                neighbors.remove(jp);
-            }
+            neighbors.removeAll(junctionPoints);
 
             if (neighbors.size() > 2 || neighbors.isEmpty()) {
                 return null;
@@ -326,9 +349,7 @@ class UntraversableLobeRemover {
                     Set<PairInt> spokeJ = spokes.get(j);
                     assert(!spokeJ.isEmpty());
                     for (PairInt pJ : spokeJ) {
-                        int diffX = Math.abs(pI.getX() - pJ.getX());
-                        int diffY = Math.abs(pI.getY() - pJ.getY());
-                        if ((diffX < 2) && (diffY < 2)) {
+                        if (areAdjacent(pI, pJ)) {
                             return null;
                         }
                     }
@@ -396,10 +417,142 @@ class UntraversableLobeRemover {
         rm.remove(spokes.j0);
         rm.remove(spokes.j1);
         rm.remove(spokes.j2);
+        if (minIdx == 0) {
+            rm.remove(spokes.s0);
+        } else if (minIdx == 1) {
+            rm.remove(spokes.s1);
+        } else {
+            rm.remove(spokes.s2);
+        }
 
         closedCurve.removeAll(rm);
     }
 
+    /**
+     * find the shortest paths between spokes, excluding the junction points.
+     * @param spokes
+     * @param closedCurve
+     * @return 
+     */
+    private List<Set<PairInt>> findShortestPathBetweenSpokes(Junction spokes,
+        Set<PairInt> closedCurve) {
+        
+        int n = closedCurve.size();
+        
+        /* 
+        A* needs
+        -- point list as an array (excluding junctions)
+        -- adjacency list as a parallel array of linked lists holding indexes
+        -- heuristics (or let the algorithm determine the line of sight from
+           a point to the destination.  it's only needed for the points which
+           are visited).
+        -- the adjacency lists should not contain the junction points
+        
+        For local bookkeeping, need to keep track of where the spokes
+        variables are and need to keep track of where the points are in the
+        points array in order to be able to make the adjacency list.
+        */
+        
+        Map<PairInt, Integer> coordsIndexMap = new HashMap<PairInt, Integer>();
+        
+        PairInt[] points = new PairInt[n - 3];
+                
+        int s0Idx = -1;
+        int s1Idx = -1;
+        int s2Idx = -1;
+        
+        int count = 0;
+        for (PairInt p : closedCurve) {
+            if (p.equals(spokes.j0) || p.equals(spokes.j1) || p.equals(spokes.j2)) {
+                continue;
+            }
+            if (p.equals(spokes.s0)) {
+                s0Idx = count;
+            } else if (p.equals(spokes.s1)) {
+                s1Idx = count;
+            } else if (p.equals(spokes.s2)) {
+                s2Idx = count;
+            }
+            points[count] = p;
+            
+            coordsIndexMap.put(p, Integer.valueOf(count));
+            
+            count++;
+        }
+        
+        assert(s0Idx > -1);
+        assert(s1Idx > -1);
+        assert(s2Idx > -1);
+        assert(count == (n - 3));
+        
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+        
+        List<LinkedList<Integer>> adjList = new ArrayList<LinkedList<Integer>>();
+     
+        for (int i = 0; i < points.length; ++i) {
+            
+            PairInt p = points[i];
+            
+            LinkedList<Integer> list = new LinkedList<Integer>();
+            
+            for (int j = 0; j < dxs8.length; ++j) {
+                PairInt p2 = new PairInt(p.getX() + dxs8[j], p.getY() + dys8[j]);
+                if (p2.equals(spokes.j0) || p2.equals(spokes.j1) || p2.equals(spokes.j2)) {
+                    continue;
+                }
+                Integer index2 = coordsIndexMap.get(p2);
+                if (index2 == null) {
+                    continue;
+                }
+                list.add(index2);
+            }
+            adjList.add(list);
+        }
+        
+        /*
+        shortest path from 
+           src0Idx to src1Idx
+           src0Idx to src2Idx
+           src1Idx to src2Idx
+        */
+        AStar aStar = new AStar(points, adjList, s0Idx, s1Idx);
+        int[] path01 = aStar.search();
+        
+        aStar = new AStar(points, adjList, s0Idx, s2Idx);
+        int[] path02 = aStar.search();
+        
+        aStar = new AStar(points, adjList, s1Idx, s2Idx);
+        int[] path12 = aStar.search();
+        
+        List<Set<PairInt>> paths = new ArrayList<Set<PairInt>>();
+        if (path01 != null) {
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (int i = 0; i < path01.length; ++i) {
+                set.add(points[path01[i]]);
+            }
+            paths.add(set);
+        }
+        
+        if (path02 != null) {
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (int i = 0; i < path02.length; ++i) {
+                set.add(points[path02[i]]);
+            }
+            paths.add(set);
+        }
+        
+        if (path12 != null) {
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (int i = 0; i < path12.length; ++i) {
+                set.add(points[path12[i]]);
+            }
+            paths.add(set);
+        }
+        
+        return paths;
+    }
+    
     private List<Set<PairInt>> findLongestPaths(Junction spokes,
         Set<PairInt> closedCurve) {
 
@@ -407,7 +560,7 @@ class UntraversableLobeRemover {
         each path source is spokes.si and dest is one of spokes.jj or a point
         on the path for that spoke.
         */
-
+        
         List<Set<PairInt>> paths = new ArrayList<Set<PairInt>>();
 
         LongestPath longestPath = new LongestPath();
@@ -432,8 +585,17 @@ class UntraversableLobeRemover {
         Set<PairInt> path2 = longestPath.findMaxCostPath(closedCurve,
             spokes.s2, dest);
         paths.add(path2);
-
+        
         return paths;
+    }
+
+    private boolean areAdjacent(PairInt p0, PairInt p1) {
+        int diffX = Math.abs(p0.getX() - p1.getX());
+        int diffY = Math.abs(p0.getY() - p1.getY());
+        if ((diffX < 2) && (diffY < 2)) {
+            return true;
+        }
+        return false;
     }
 
     public static class Pattern {

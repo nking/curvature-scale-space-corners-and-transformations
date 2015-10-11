@@ -3138,6 +3138,15 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
             
             Routes routes = butterFlySections.get(i);
             
+            //some of the routes have been removed from the curve, so check
+            // for existence first.
+            if (coordEdgeLocMap.get(routes.getEP0()) == null || 
+            coordEdgeLocMap.get(routes.getEP0End()) == null || 
+            coordEdgeLocMap.get(routes.getEP1()) == null || 
+            coordEdgeLocMap.get(routes.getEP1End()) == null) {
+                continue;
+            }
+            
             boolean isConsistent = isConsistentWithRoutes(routes, coordEdgeLocMap,
                 output);
             

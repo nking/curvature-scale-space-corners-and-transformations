@@ -38,6 +38,9 @@ public class UntraversableLobeRemoverTest extends TestCase {
         Misc.persistToFile("blob_junction01.txt", points);
         */
         
+        //TODO: check these numbers:
+        int w = 58;
+        int h = 41;
         
         String filePath = ResourceFinder.findFileInTestResources("blob_junction01.dat");
         Set<PairInt> closedCurve = Misc.deserializeSetPairInt(filePath);
@@ -49,7 +52,7 @@ public class UntraversableLobeRemoverTest extends TestCase {
         Set<PairInt> exclude = new HashSet<PairInt>();
         
         UntraversableLobeRemover rm = new UntraversableLobeRemover();
-        rm.applyFilter(closedCurve, exclude);
+        rm.applyFilter(closedCurve, exclude, w, h);
         
         int nAfter = closedCurve.size();
         // TODO: assert size removed
@@ -57,8 +60,6 @@ public class UntraversableLobeRemoverTest extends TestCase {
         assertTrue(nBefore - nAfter >= 9);
         assertTrue(nAfter > 100);
                
-        int w = 58;
-        int h = 41;
         GreyscaleImage img2 = new GreyscaleImage(w, h);
         for (PairInt p : closedCurve) {
             img2.setValue(p.getX(), p.getY(), 255);
@@ -101,7 +102,7 @@ public class UntraversableLobeRemoverTest extends TestCase {
         */
         
         UntraversableLobeRemover rm = new UntraversableLobeRemover();
-        rm.applyFilter(closedCurve, exclude);
+        rm.applyFilter(closedCurve, exclude, w, h);
         
         GreyscaleImage img2 = new GreyscaleImage(w, h);
         for (PairInt p : closedCurve) {

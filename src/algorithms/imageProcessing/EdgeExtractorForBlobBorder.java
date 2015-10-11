@@ -253,7 +253,7 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
         }
 
         UntraversableLobeRemover remover = new UntraversableLobeRemover();
-        remover.applyFilter(borderPixels, exclude);
+        remover.applyFilter(borderPixels, exclude, imageWidth, imageHeight);
         
         if (borderPixels.isEmpty()) {
             return null;
@@ -286,6 +286,7 @@ MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".pn
         
         if (!butterFlySections2.isEmpty()) {
             // remove offsets to put into same frame as img
+            //NOTE: that some of these have been removed from the curve
             for (Routes routes : butterFlySections2) {
                 routes.applyOffsets(-1*xOffset, -1*yOffset);
             }
