@@ -5,8 +5,10 @@ import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * An extension of Dijkstra's algorithm that uses heuristics to improve the
@@ -135,11 +137,11 @@ public class AStar {
     }
     
     public int[] search() {
-        
+
         int count = 0;
         
         HeapNode uNode = heap.extractMin();
-        
+                
         while (uNode != null) {
                         
             int uIndx = ((Integer)uNode.getData()).intValue();
@@ -156,8 +158,10 @@ public class AStar {
                                 
                 int vIndx = vIndex.intValue();
                 
-                // u has been visited before so should never be max
-                assert(distFromS[uIndx] != Long.MAX_VALUE);
+                if (distFromS[uIndx] == Long.MAX_VALUE) {
+                    vIndex = adj.poll();
+                    continue;
+                }
                 
                 long distUV = distBetween(uIndx, vIndx);
                 
@@ -171,7 +175,7 @@ public class AStar {
                     
                     long vDistFromSrc = distFromS[uIndx] + distUV;
                     
-                    long vDistPlusHeuristic = vDistFromSrc + heuristic(vIndex);
+                    long vDistPlusHeuristic = vDistFromSrc + heuristic(vIndx);
                     
                     HeapNode vNode = nodes[vIndx];
                     

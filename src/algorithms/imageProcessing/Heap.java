@@ -103,8 +103,8 @@ public class Heap {
         	// detach each child and add it to heap
         	HeapNode x = z.getChildren().getSentinel().getRight();
         
-//TODO: fix bug... 
-if (!x.equals(nextMin)) {            
+//TODO: fix bug...  
+if (!x.equals(nextMin) && !z.equals(x)) {            
         	// for each child x of z
             while (x.getKey() != sentinel) {
                 HeapNode next = x.getRight();
