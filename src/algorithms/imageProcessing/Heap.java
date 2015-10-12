@@ -351,21 +351,7 @@ public class Heap {
         }
         sb.append(";  heap=\n");
 
-        /*
-        pre-order traversal
-
-        for this example:
-            rootList    0     1     2
-                      7 9 4        8 3
-                      5
-        would like to see logs similar to:
-            [0]key=0,
-              [1]=7,9,4,
-                 [2]=5
-            [0]key=1,
-            [0]key=2,
-               [1]=8,3
-        */
+        // pre-order traversal of the heap
 
         HeapNode node = rootList.getSentinel().getRight();
 
@@ -380,6 +366,13 @@ public class Heap {
 
                 currentLevel++;
                 
+                if (sb.length() > 72) {
+                    log.info(sb.toString());
+                    if (currentLevel > 0) {
+                        sb = new StringBuilder("    ");
+                    }
+                }
+                
                 sb.append(" ").append("[").append(currentLevel).append("] key=")
                     .append(node.getKey());
 
@@ -390,23 +383,29 @@ public class Heap {
             } else {
 
                 node = stack.pop();
-
-                if (currentLevel == 0) {
-                    sb.append("\n");
-                } else {
-                    boolean eol = true;
+                
+                boolean eol = (currentLevel == 0);
+                if (!eol) {
+                    eol = true;
                     int nSb = sb.length();
                     if (nSb > 1) {
                         int c0 = sb.charAt(nSb - 1);
                         int c1 = sb.charAt(nSb - 2);
-                        int space = (char)' ';
+                        int space = (int)' ';
                         if (c0 == space && c1 == space) {
                             eol = false;
                         }
                     }
-                    if (eol) {
-                        sb.append("\n    ");
+                }
+                if (!eol) {
+                    if (sb.length() > 72) {
+                        log.info(sb.toString());
+                        sb = new StringBuilder("    ");
                     }
+                }
+                if (eol) {
+                    log.info(sb.toString());
+                    sb = new StringBuilder();
                 }
 
                 currentLevel--;

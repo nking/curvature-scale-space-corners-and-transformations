@@ -145,7 +145,7 @@ public class AStar {
         while (uNode != null) {
 
             int uIndx = ((Integer)uNode.getData()).intValue();
-heap.printRootList();
+
             LinkedList<Integer> adj = adjList.get(uIndx);
 
             if (adj == null) {
@@ -181,10 +181,8 @@ heap.printRootList();
 
                     if (vDistPlusHeuristic < vNode.getKey()) {
 
-log.info("decrease key: " + vNode.toString() + " to key=" + vDistPlusHeuristic);
-
                         heap.decreaseKey(vNode, vDistPlusHeuristic);
-heap.printRootList();
+
                         distFromS[vIndex] = vDistFromSrc;
 
                         prevNode[vIndex] = uNode;
