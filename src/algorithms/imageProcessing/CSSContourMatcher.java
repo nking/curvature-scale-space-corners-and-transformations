@@ -371,7 +371,7 @@ public final class CSSContourMatcher {
             throw new IllegalStateException("matchContours cannot be invoked more than once");
         }
 
-        if (heap.n == 0) {
+        if (heap.getNumberOfNodes() == 0) {
             solverHasFinished = true;
             return false;
         }

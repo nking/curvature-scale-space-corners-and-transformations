@@ -70,7 +70,7 @@ public class HeapNode {
      *
      * @param childKey
      */
-    public void removeChild(int childKey) {
+    public void removeChild(long childKey) {
     	if (children == null) {
     		return;
     	}

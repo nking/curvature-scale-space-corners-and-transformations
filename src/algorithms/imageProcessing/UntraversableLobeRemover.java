@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.LongestPath;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -417,13 +416,6 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         rm.remove(spokes.j0);
         rm.remove(spokes.j1);
         rm.remove(spokes.j2);
-        /*if (minIdx == 0) {
-            rm.remove(spokes.s0);
-        } else if (minIdx == 1) {
-            rm.remove(spokes.s1);
-        } else {
-            rm.remove(spokes.s2);
-        }*/
 
         closedCurve.removeAll(rm);
     }
@@ -565,42 +557,6 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         return paths;
     }
     
-    private List<Set<PairInt>> findLongestPaths(Junction spokes,
-        Set<PairInt> closedCurve) {
-
-        /*
-        each path source is spokes.si and dest is one of spokes.jj or a point
-        on the path for that spoke.
-        */
-        
-        List<Set<PairInt>> paths = new ArrayList<Set<PairInt>>();
-
-        LongestPath longestPath = new LongestPath();
-
-        Set<PairInt> dest = new HashSet<PairInt>();
-        dest.add(spokes.j1);
-        dest.add(spokes.j2);
-        Set<PairInt> path0 = longestPath.findMaxCostPath(closedCurve,
-            spokes.s0, dest);
-        paths.add(path0);
-
-        dest = new HashSet<PairInt>();
-        dest.add(spokes.j0);
-        dest.add(spokes.j2);
-        Set<PairInt> path1 = longestPath.findMaxCostPath(closedCurve,
-            spokes.s1, dest);
-        paths.add(path1);
-
-        dest = new HashSet<PairInt>();
-        dest.add(spokes.j0);
-        dest.add(spokes.j1);
-        Set<PairInt> path2 = longestPath.findMaxCostPath(closedCurve,
-            spokes.s2, dest);
-        paths.add(path2);
-        
-        return paths;
-    }
-
     private boolean areAdjacent(PairInt p0, PairInt p1) {
         int diffX = Math.abs(p0.getX() - p1.getX());
         int diffY = Math.abs(p0.getY() - p1.getY());

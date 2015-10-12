@@ -17,11 +17,11 @@ public class DoubleLinkedCircularList {
     //appears between head and tail
     private final HeapNode sentinel;
     
-    public final static int sentinelKey = Integer.MIN_VALUE;
-    public final static int noValue = Integer.MIN_VALUE + 1;
-    public final static int minValue = Integer.MIN_VALUE + 2;
+    public final static long sentinelKey = Long.MIN_VALUE;
+    public final static long noValue = Long.MIN_VALUE + 1;
+    public final static long minValue = Long.MIN_VALUE + 2;
 
-    protected int number = 0;
+    protected long number = 0;
     
     public DoubleLinkedCircularList() {
         sentinel = new HeapNode(sentinelKey);
@@ -73,7 +73,7 @@ public class DoubleLinkedCircularList {
         return node;
     }
 
-    public boolean remove(int key) {
+    public boolean remove(long key) {
         HeapNode cn = search(key);
         remove(cn);
         return (cn != null);
@@ -101,7 +101,7 @@ public class DoubleLinkedCircularList {
         number--;
     }
    
-    public HeapNode search(int key) {
+    public HeapNode search(long key) {
         
         HeapNode cn = sentinel.getRight();
         

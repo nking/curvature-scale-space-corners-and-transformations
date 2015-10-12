@@ -156,7 +156,7 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         h.insert(new HeapNode(1));
         h.insert(new HeapNode(2));
         
-        printHeap(h);
+        h.printHeap();
 
         HeapNode min1 = h.extractMin();
         assertNotNull(min1);
@@ -165,13 +165,13 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         //     |
         //    [3]
 
-        printHeap(h);
+        h.printHeap();
         
         HeapNode min2 = h.extractMin();
         assertNotNull(min2);
         assertTrue(min2.getKey() == 2);
         
-        printHeap(h);
+        h.printHeap();
         
         assertTrue(h.minimumNode.getKey() == 3);
         
@@ -233,7 +233,7 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         h.insert(node7);
         h.insert(node21);
         
-        assertTrue(h.n == 6);
+        assertTrue(h.getNumberOfNodes() == 6);
         
         
         // the insert removes the children, and unmarks the nodes so redo that for test conditions
@@ -246,27 +246,25 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         node18.addChild(node39);
         node38.addChild(node41);       
         node26.addChild(node35);
-        
-        h.n += 9;
-        
+                
         node18.setMark(true);
         node39.setMark(true);
         node26.setMark(true);
         
+        //heap.n will be wrong
 
         assertTrue(h.minimumNode.getKey() == node3.getKey());
         assertTrue(h.getRootList().number == 6);
         
-        printHeap(h);
+        h.printHeap();
         
         HeapNode min = h.extractMin();
         
-        printHeap(h);
+        h.printHeap();
         
         // results are different from the figure 20.3 because I use a DoubleLinkedCircularList which adds nodes to the right of the sentinel.
         
         assertTrue(min.getKey() == 3);
-        assertTrue(h.n == 14);
         
         assertTrue(h.minimumNode.getKey() == 7);
         assertTrue(h.getRootList().number == 3);
@@ -335,7 +333,7 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         h.insert(node18);
         h.insert(node7);
                 
-        assertTrue(h.n == 3);
+        assertTrue(h.getNumberOfNodes() == 3);
         
         // the insert removes the children, and unmarks the nodes so redo that for test conditions
         node7.addChild(node23);
@@ -350,7 +348,7 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         node21.addChild(node52);
         node38.addChild(node41);
         
-        h.n += 11;
+        // heap.n will now be wrong
         
         node18.setMark(true);
         node39.setMark(true);
@@ -358,14 +356,12 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
 
         assertTrue(h.minimumNode.getKey() == 7);
         assertTrue(h.getRootList().number == 3);
-        
-        assertTrue(h.n == 14);
-        
-        printHeap(h);
+                
+        h.printHeap();
         
         h.decreaseKey(node46, 15);
         
-        printHeap(h);
+        h.printHeap();
         
 //         *  *key=15 (children=0)
 //    [junit] *key=7 (children=3)
@@ -394,7 +390,7 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         
         h.decreaseKey(node35, 5);
         
-        printHeap(h);
+        h.printHeap();
         
         //
  //        *  *key=24 (children=0)
@@ -559,53 +555,4 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
 	    }
     }
 
-	private void printHeap(Heap h) {
-	    // this is convenient for tests, but for real printout, should copy h.search's dfs and add style and a print instead of == statement
-		// -------
-        HeapNode nd = h.getRootList().getSentinel().getRight();
-        while (nd.getKey() != DoubleLinkedCircularList.sentinelKey) {
-        	System.out.println("*key=" + nd.getKey() + " (children=" + nd.getNumberOfChildren() + ")");
-
-        	DoubleLinkedCircularList children = nd.getChildren();
-
-        	String lvl = "    ";
-        	if (children.number > 0) {
-        		HeapNode nd1 = children.getSentinel().getRight();
-        		while (nd1.getKey() != DoubleLinkedCircularList.sentinelKey) {
-        		    System.out.println(lvl + "key=" + nd1.getKey() + " (children=" + nd1.getNumberOfChildren() + ")");
-
-
-        		    DoubleLinkedCircularList children2 = nd1.getChildren();
-        		    if (children2.number > 0) {
-                		HeapNode nd2 = children2.getSentinel().getRight();
-                		while (nd2.getKey() != DoubleLinkedCircularList.sentinelKey) {
-                		    System.out.println(lvl + lvl + "key=" + nd2.getKey() + " (children=" + nd2.getNumberOfChildren() + ")");
-
-
-                		    DoubleLinkedCircularList children3 = nd2.getChildren();
-
-                		    if (children3.number > 0) {
-                        		HeapNode nd3 = children3.getSentinel().getRight();
-                        		while (nd3.getKey() != DoubleLinkedCircularList.sentinelKey) {
-                        		    System.out.println(lvl + lvl + lvl + "key=" + nd3.getKey() 
-                                        + " (children=" + nd3.getNumberOfChildren() + ")");
-
-
-                        		    nd3 = nd3.getRight();
-                        		}
-                        	}
-
-
-                		    nd2 = nd2.getRight();
-                		}
-                	}
-
-        		    nd1 = nd1.getRight();
-        		}
-        	}
-        	nd = nd.getRight();
-        }
-        System.out.println("------");
-
-	}
 }
