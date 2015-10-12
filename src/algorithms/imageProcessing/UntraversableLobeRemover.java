@@ -417,13 +417,13 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         rm.remove(spokes.j0);
         rm.remove(spokes.j1);
         rm.remove(spokes.j2);
-        if (minIdx == 0) {
+        /*if (minIdx == 0) {
             rm.remove(spokes.s0);
         } else if (minIdx == 1) {
             rm.remove(spokes.s1);
         } else {
             rm.remove(spokes.s2);
-        }
+        }*/
 
         closedCurve.removeAll(rm);
     }
@@ -529,7 +529,11 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         if (path01 != null) {
             Set<PairInt> set = new HashSet<PairInt>();
             for (int i = 0; i < path01.length; ++i) {
-                set.add(points[path01[i]]);
+                PairInt p = points[path01[i]];
+                if (p.equals(spokes.s0) || p.equals(spokes.s1)) {
+                    continue;
+                }
+                set.add(p);
             }
             paths.add(set);
         }
@@ -537,7 +541,11 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         if (path02 != null) {
             Set<PairInt> set = new HashSet<PairInt>();
             for (int i = 0; i < path02.length; ++i) {
-                set.add(points[path02[i]]);
+                PairInt p = points[path02[i]];
+                if (p.equals(spokes.s0) || p.equals(spokes.s2)) {
+                    continue;
+                }
+                set.add(p);
             }
             paths.add(set);
         }
@@ -545,7 +553,11 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         if (path12 != null) {
             Set<PairInt> set = new HashSet<PairInt>();
             for (int i = 0; i < path12.length; ++i) {
-                set.add(points[path12[i]]);
+                PairInt p = points[path12[i]];
+                if (p.equals(spokes.s1) || p.equals(spokes.s2)) {
+                    continue;
+                }
+                set.add(p);
             }
             paths.add(set);
         }

@@ -196,4 +196,19 @@ public class HeapNode {
     public void setMark(boolean mark) {
         this.mark = mark;
     }
+    
+    @Override
+    public String toString() {
+       
+        StringBuilder sb = new StringBuilder();
+        sb.append("key=").append(Long.toString(key))
+            .append(" nChildren=").append(Integer.toString(numberOfChildren))
+            .append(" mark=").append(Boolean.toString(mark))
+            .append(" data=");
+            if (data != null) {
+                sb.append(data.toString());
+            }
+        
+        return sb.toString();
+    }
 }

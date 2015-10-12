@@ -5,10 +5,8 @@ import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * An extension of Dijkstra's algorithm that uses heuristics to improve the

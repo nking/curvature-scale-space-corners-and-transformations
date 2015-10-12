@@ -85,47 +85,43 @@ public class Heap {
     /**
      * extract minimum from the heap.
      *
-     * minor differences from Cormen et al. pseudocode are present.
-     *
      * @return
      */
     public HeapNode extractMin() {
-
+        
         int sentinel = DoubleLinkedCircularList.sentinelKey;
         
     	HeapNode z = minimumNode;
 
-        if (z != null) {
-
-            boolean noRemaining = z.getRight().getKey() == z.getKey();
-            HeapNode nextMin = z.getRight();
-            
-        	// detach each child and add it to heap
-        	HeapNode x = z.getChildren().getSentinel().getRight();
-        
-//TODO: fix bug...  
-if (!x.equals(nextMin) && !z.equals(x)) {            
-        	// for each child x of z
-            while (x.getKey() != sentinel) {
-                HeapNode next = x.getRight();
-                rootList.insert(x);
-                x = next;
-            }
-}
-
-            rootList.remove(z);
-    
-            if (noRemaining) {
-                minimumNode = null;
-            } else {
-                minimumNode = nextMin;
-                consolidate();
-            }
-
-            n--;
-            
+        if (z == null) {
+            return z;
         }
 
+        //save reference to right of minimum node
+        HeapNode nextMin = z.getRight();
+        
+        // detach each child and add it to heap
+        HeapNode x = z.getChildren().getSentinel().getRight();
+          
+        // for each child x of z
+        while (x.getKey() != sentinel) {
+            HeapNode next = x.getRight();
+            x.setParent(null);
+            rootList.insert(x);
+            x = next;
+        }
+
+        rootList.remove(z);
+    
+        if (z.equals(nextMin)) {
+            minimumNode = null;
+        } else {
+            minimumNode = nextMin;
+            consolidate();
+        }
+
+        n--;
+            
         return z;
     }
 
@@ -134,7 +130,7 @@ if (!x.equals(nextMin) && !z.equals(x)) {
     	// D[n] = max degree of any node = lg_2(n) = lg_2(Integer.MAX) = 31
         //int maxDegree = (int) (Math.log(this.n)/Math.log(2));
         int maxDegree = 31;
-        
+
         HeapNode[] a = new HeapNode[maxDegree];
 
         HeapNode w = rootList.getSentinel().getRight();
@@ -149,6 +145,8 @@ if (!x.equals(nextMin) && !z.equals(x)) {
             HeapNode next = w.getRight();
                                   
             int d = x.getNumberOfChildren();
+            
+            assert(d <= maxDegree);
 
             // is there another node of the same degree, that is, has the 
             // same number of children?
@@ -180,21 +178,21 @@ if (!x.equals(nextMin) && !z.equals(x)) {
         }
 
         minimumNode = null;
+        
+        // remove all from root list:
+        rootList.resetSentinel();
+        rootList.number = 0;
                 
         for (int i = 0; i < a.length; i++) {
             if (a[i] != null) {
-                
-                rootList.remove(a[i]);
+            
             	rootList.insert(a[i]);
                             	
-            	// not changing the minimumNode because the rootList content 
-                // has not changed, so the minimum in that has not changed
-                if ( (minimumNode == null) || (a[i].getKey() < minimumNode.getKey()) ) {
+                if ((minimumNode == null) || (a[i].getKey() < minimumNode.getKey()) ) {
                     minimumNode = a[i];
                 }
             }
         }
-
     }
 
     void link(HeapNode y, HeapNode x) {
