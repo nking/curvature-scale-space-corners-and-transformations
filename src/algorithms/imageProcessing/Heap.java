@@ -1,6 +1,23 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.ResourceFinder;
 import algorithms.util.Stack;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.WRITE;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
+import java.nio.file.OpenOption;
+import java.util.EnumSet;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -303,7 +320,6 @@ public class Heap {
 
                 node = stack.pop();
 
-                //System.out.println(node.key);
                 if (node.getKey() == key) {
                     return node;
                 }
@@ -340,17 +356,87 @@ public class Heap {
         log.info(sb.toString());
     }
 
-    public void printHeap() {
+    private BufferedWriter debugWriter = null;
+    
+    private BufferedWriter createWriter() throws IOException {
+                
+        String bin = ResourceFinder.findDirectory("bin");
+        String fileName = "debug_heap_" + System.currentTimeMillis() + ".txt";
+        String filePath = bin + "/" + fileName;
+        File file = new File(filePath);
+        
+        BufferedWriter writer = Files.newBufferedWriter(file.toPath(), 
+            Charset.forName("US-ASCII"));
+        
+        return writer;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            closeDebug();
+        } finally {
+            super.finalize();
+        }
+    }
+    
+    private void closeDebug() {
+        if (debugWriter != null) {
+            try {
+                debugWriter.close();
+            } catch (IOException ex) {
+                log.severe(ex.getMessage());
+            }
+        }
+    }
+    
+    public void printHeapToTestOut(String label) {
+        
+        boolean print = true;
+        
+        if (debugWriter == null) {
+            try {
+                debugWriter = createWriter();
+            } catch (IOException ex) {
+                closeDebug();
+                print = false;
+            }
+        }
+        
+        if (print) {
+            try {
+                printHeap(label, debugWriter);
+            } catch (IOException ex) {
+                log.severe(ex.getMessage());
+            }
+        }
+    }
+    
+    public void printHeap(String label, BufferedWriter writer) throws IOException {
+        
+        int bufferSize = 1024;//2 * 72 * 4;
+                        
+        if (label != null) {
+            char[] c = label.toCharArray();
+            writer.write(c, 0, c.length);
+            writer.write("\n");
+            writer.flush();
+        }
 
         // traverse heap using in-order traversal
-        StringBuilder sb = new StringBuilder(
-            String.format("(n=%d rootList.n=%d) ", n, rootList.number));
-        sb.append(" minimumNode=");
+        
+        char[] c = String.format("(n=%d rootList.n=%d) ", n, rootList.number).toCharArray();
+        writer.write(c, 0, c.length);
+        c = " minimumNode=".toCharArray();
+        writer.write(c, 0, c.length);
         if (minimumNode != null) {
-            sb.append(minimumNode);
+            c = minimumNode.toString().toCharArray();
+            writer.write(c, 0, c.length);
         }
-        sb.append(";  heap=\n");
-
+        c = ";  heap=\n".toCharArray();
+        writer.write(c, 0, c.length);
+        writer.flush();
+            
         // pre-order traversal of the heap
 
         HeapNode node = rootList.getSentinel().getRight();
@@ -360,21 +446,38 @@ public class Heap {
         Stack<HeapNode> stack = new Stack<HeapNode>();
 
         int currentLevel = -1;
+        
+        StringBuilder sb = new StringBuilder(bufferSize);
 
+        int nIter = 0;
+        
         while (!stack.isEmpty() || (node.getKey() != sentinel)) {
+            
+            nIter++;
+            
             if (node.getKey() != sentinel) {
 
                 currentLevel++;
                 
                 if (sb.length() > 72) {
-                    log.info(sb.toString());
+                    sb.append("\n");
+                    c = sb.toString().toCharArray();
+                    writer.write(c, 0, c.length);
+                    if (nIter % 100 == 0) {
+                        writer.flush();
+                    }
+                    sb = new StringBuilder(bufferSize);
                     if (currentLevel > 0) {
-                        sb = new StringBuilder("    ");
+                        sb.append("    ");
                     }
                 }
-                
-                sb.append(" ").append("[").append(currentLevel).append("] key=")
-                    .append(node.getKey());
+
+                sb.append(" ").append("[").append(currentLevel).append("] key=");
+                if (node.getKey() == Long.MAX_VALUE) {
+                    sb.append("M");
+                } else {
+                    sb.append(node.getKey());
+                }
 
                 stack.push(node);
 
@@ -383,7 +486,7 @@ public class Heap {
             } else {
 
                 node = stack.pop();
-                
+
                 boolean eol = (currentLevel == 0);
                 if (!eol) {
                     eol = true;
@@ -399,13 +502,26 @@ public class Heap {
                 }
                 if (!eol) {
                     if (sb.length() > 72) {
-                        log.info(sb.toString());
+                        sb.append("\n");
+                        c = sb.toString().toCharArray();
+                        writer.write(c, 0, c.length);
+                        if (nIter % 100 == 0) {
+                            writer.flush();
+                        }
                         sb = new StringBuilder("    ");
                     }
                 }
                 if (eol) {
-                    log.info(sb.toString());
+                    sb.append("\n");
+                    c = sb.toString().toCharArray();
+                    writer.write(c, 0, c.length);
+                    if ((nIter % 100) == 0) {
+                        writer.flush();
+                    }
                     sb = new StringBuilder();
+                    if (currentLevel > 0) {
+                        sb.append("    ");
+                    }
                 }
 
                 currentLevel--;
@@ -414,7 +530,9 @@ public class Heap {
             }
         }
 
-        log.info(sb.toString());
+        c = sb.toString().toCharArray();
+        writer.write(c, 0, c.length);
+        writer.flush();
     }
 
 }

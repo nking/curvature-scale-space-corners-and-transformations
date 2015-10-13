@@ -134,6 +134,9 @@ public class AStar {
 
             nodes[i] = node;
         }
+        
+log.info("create heap n=" + points.length + " n=" + heap.getNumberOfNodes());
+
     }
 
     public int[] search() {
@@ -145,6 +148,8 @@ public class AStar {
         while (uNode != null) {
 
             int uIndx = ((Integer)uNode.getData()).intValue();
+            
+heap.printHeapToTestOut("after extractMin");
 
             LinkedList<Integer> adj = adjList.get(uIndx);
 
@@ -182,6 +187,8 @@ public class AStar {
                     if (vDistPlusHeuristic < vNode.getKey()) {
 
                         heap.decreaseKey(vNode, vDistPlusHeuristic);
+                        
+heap.printHeapToTestOut("after decrease key: " + vDistPlusHeuristic);
 
                         distFromS[vIndex] = vDistFromSrc;
 
