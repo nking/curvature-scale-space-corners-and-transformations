@@ -373,6 +373,7 @@ public class Heap {
         if (debugWriter != null) {
             try {
                 debugWriter.close();
+                debugWriter = null;
             } catch (IOException ex) {
                 log.severe(ex.getMessage());
             }
@@ -380,19 +381,16 @@ public class Heap {
     }
     
     public void printHeapToTestOut(String label) {
-        
-        boolean print = true;
-        
+                
         if (debugWriter == null) {
             try {
                 debugWriter = createWriter();
             } catch (IOException ex) {
                 closeDebug();
-                print = false;
             }
         }
         
-        if (print) {
+        if (debugWriter != null) {
             try {
                 printHeap(label, debugWriter);
             } catch (IOException ex) {
@@ -411,8 +409,6 @@ public class Heap {
             writer.write("\n");
             writer.flush();
         }
-
-        // traverse heap using in-order traversal
         
         char[] c = String.format("(n=%d rootList.n=%d) ", n, rootList.number).toCharArray();
         writer.write(c, 0, c.length);
