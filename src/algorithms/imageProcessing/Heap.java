@@ -4,20 +4,9 @@ import algorithms.util.ResourceFinder;
 import algorithms.util.Stack;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.WRITE;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CoderResult;
-import java.nio.file.OpenOption;
-import java.util.EnumSet;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -139,9 +128,7 @@ public class Heap {
         }
 
         n--;
- if (n < 0) {
-     int zz = 1;
- }
+ 
         return z;
     }
 
@@ -295,9 +282,8 @@ public class Heap {
     }
 
     /**
-     * a depth first search of all nodes (that is, it descends all children
-     * of a node before proceeding to the next in the current doubly linked
-     * circular list).
+     * searches the rootList and children using in-order traversal to
+     * find the node with the given key.
      *
      * @param key
      * @return
