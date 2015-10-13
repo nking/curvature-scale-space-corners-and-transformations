@@ -3381,6 +3381,7 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         PairInt r0EndEdgeLoc = coordEdgeLocMap.get(routes.getEP0End());
         PairInt r1EndEdgeLoc = coordEdgeLocMap.get(routes.getEP1End());
         
+  //TODO: paused here      
         if (distSqPrevR0 < distSqNextR0) {
             // add route points before r0 r0EdgeLoc.getY()
         } else {

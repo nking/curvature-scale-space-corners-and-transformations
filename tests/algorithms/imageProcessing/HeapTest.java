@@ -156,7 +156,7 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         h.insert(new HeapNode(1));
         h.insert(new HeapNode(2));
         
-        h.printHeap();
+        h.printHeapToTestOut("testExtractMin");
 
         HeapNode min1 = h.extractMin();
         assertNotNull(min1);
@@ -165,13 +165,13 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         //     |
         //    [3]
 
-        h.printHeap();
+        h.printHeapToTestOut("--");
         
         HeapNode min2 = h.extractMin();
         assertNotNull(min2);
         assertTrue(min2.getKey() == 2);
         
-        h.printHeap();
+        h.printHeapToTestOut("--");
         
         assertTrue(h.minimumNode.getKey() == 3);
         
@@ -256,11 +256,11 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         assertTrue(h.minimumNode.getKey() == node3.getKey());
         assertTrue(h.getRootList().number == 6);
         
-        h.printHeap();
+        h.printHeapToTestOut("--");
         
         HeapNode min = h.extractMin();
         
-        h.printHeap();
+        h.printHeapToTestOut("--");
         
         // results are different from the figure 20.3 because I use a DoubleLinkedCircularList which adds nodes to the right of the sentinel.
         
@@ -357,11 +357,11 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         assertTrue(h.minimumNode.getKey() == 7);
         assertTrue(h.getRootList().number == 3);
                 
-        h.printHeap();
+        h.printHeapToTestOut("--");
         
         h.decreaseKey(node46, 15);
         
-        h.printHeap();
+        h.printHeapToTestOut("--");
         
 //         *  *key=15 (children=0)
 //    [junit] *key=7 (children=3)
@@ -390,7 +390,7 @@ log.info("h.minimumNode.key=" + h.minimumNode.key);*/
         
         h.decreaseKey(node35, 5);
         
-        h.printHeap();
+        h.printHeapToTestOut("--");
         
         //
  //        *  *key=24 (children=0)

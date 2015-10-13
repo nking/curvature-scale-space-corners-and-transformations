@@ -85,7 +85,7 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
             expected.add(new PairInt(54, y));
         }
         assertTrue(expected.size() == 36);
-        
+
         // subtract the 4 corners that spur remover now removes for unambiguous
         // sequence
         expected.remove(new PairInt(45, 45));
@@ -111,7 +111,7 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
 
     public void testExtractAndOrderTheBorder0_1() throws Exception {
 
-        String[] fileNames = new String[]{"blob2_55_126.dat", "blob_196_314.dat",
+        String[] fileNames = new String[]{//"blob2_55_126.dat", "blob_196_314.dat",
            "blob_98115120.dat"};
         
         for (String fileName : fileNames) {
@@ -149,6 +149,37 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
             }
             MiscDebug.writeImageCopy(img3, "blob_ordered_perimeter_" 
                 + MiscDebug.getCurrentTimeFormatted() + ".png");
+
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+            assertTrue(curveHelper.isAdjacent(result, 0, result.getN() - 1));
+        }
+    }
+    
+    public void testExtractAndOrderTheBorder0_2() throws Exception {
+
+        String[] fileNames = new String[]{
+           "tmp_blob_673712548.dat"};
+        
+        int w = 374;
+        int h = 517;
+        
+        for (String fileName : fileNames) {
+
+            String filePath = ResourceFinder.findDirectory("testresources") 
+                + "/" + fileName;
+
+            Set<PairInt> blob = Misc.deserializeSetPairInt(filePath);
+
+            assertNotNull(blob);
+            assertFalse(blob.isEmpty());
+
+            boolean discardWhenCavityIsSmallerThanBorder = true;
+
+            EdgeExtractorForBlobBorder instance = new EdgeExtractorForBlobBorder();
+            instance.setToDebug();
+            PairIntArray result = instance.extractAndOrderTheBorder0(blob,
+                w, h, discardWhenCavityIsSmallerThanBorder);
 
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 

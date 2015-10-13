@@ -228,7 +228,10 @@ public class Heap {
     }
 
     /**
-     * decrease key for node x
+     * decrease key for node x.  Note that it is the responsibility of the
+     * invoker to assert that x is currently in the heap.  If x is not in
+     * the heap, it gets added to it and then the state of the heap is
+     * corrupted.
      *
      * runtime is O(1)
      *
