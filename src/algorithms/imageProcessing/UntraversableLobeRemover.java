@@ -62,44 +62,64 @@ class UntraversableLobeRemover {
         int nChanges = 0;
         int nIter = 0;
         int nIterMax = 10;
-               
+
         boolean wasChanged = false;
 
         while ((nIter == 0) || ((nChanges > 0) && (nIter < nIterMax))) {
 
             nChanges = 0;
-            
+
 Image img1 = new Image(imageWidth, imageHeight);
 for (PairInt p : closedCurve) {
     img1.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img1, "before_removed_untr_lobe_" 
+MiscDebug.writeImageCopy(img1, "before_removed_untr_lobe_"
 + MiscDebug.getCurrentTimeFormatted() + ".png");
- 
+
             for (PairInt p : closedCurve) {
-                
+
                 if (exclude.contains(p)) {
                     continue;
                 }
-                
+
                 Set<PairInt> junctionPoints = findJunction(p.getX(), p.getY(),
                     closedCurve);
 
+                Set<PairInt> diagJunctionPoints = null;
+
+                boolean isDefaultJunction = true;
+                
                 if (junctionPoints == null) {
-                    continue;
+
+                    diagJunctionPoints = findDiagJunction(p.getX(), p.getY(),
+                        closedCurve);
+
+                    if (diagJunctionPoints == null) {
+                        continue;
+                    }
+                    
+                    isDefaultJunction = false;
                 }
 
-                assert(junctionPoints.size() == 3);
+                assert((isDefaultJunction && junctionPoints.size() == 3) ||
+                    (!isDefaultJunction && diagJunctionPoints.size() == 4));
 
-                Junction spokes = findSpokesOfJunction(junctionPoints,
-                    closedCurve);
+                Junction spokes = null;
+
+                if (isDefaultJunction) {
+                    spokes = findSpokesOfJunction(junctionPoints,
+                        closedCurve);
+                } else {
+                    spokes = findSpokesOfJunction2(diagJunctionPoints,
+                        closedCurve);
+                }
 
                 if (spokes == null) {
                     continue;
                 }
 
-                List<Set<PairInt>> longestPaths = findShortestPathBetweenSpokes(spokes,
-                    closedCurve);
+                List<Set<PairInt>> longestPaths = findShortestPathBetweenSpokes(
+                    spokes, closedCurve, isDefaultJunction);
 
                 //assert(longestPaths.size() == 3);
 
@@ -109,33 +129,33 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p2 : closedCurve) {
     img3.setRGB(p2.getX(), p2.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "removed_untr_lobe_" 
+MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
 + MiscDebug.getCurrentTimeFormatted() + ".png");
 
                 assert(closedCurve.size() > 0);
 
                 SpurRemover spurRm = new SpurRemover();
                 spurRm.remove(closedCurve, imageWidth, imageHeight);
-        
+
                 assert(closedCurve.size() > 0);
-                
+
                 nChanges++;
-                
+
                 wasChanged = true;
-                
+
                 break;
             }
 
             nIter++;
         }
-        
+
         // if any have changed, use contiguous pix finder to keep only
         // the contiguous
         if (wasChanged) {
 
             int[] minMaxXY = MiscMath.findMinMaxXY(closedCurve);
             DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-            finder.findConnectedPointGroups(closedCurve, minMaxXY[1] + 1, 
+            finder.findConnectedPointGroups(closedCurve, minMaxXY[1] + 1,
                 minMaxXY[3] + 1);
             int nMax = Integer.MIN_VALUE;
             int maxIdx = -1;
@@ -149,7 +169,7 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
             if (maxIdx > -1) {
                 closedCurve.clear();
                 closedCurve.addAll(finder.getXY(maxIdx));
-                
+
                 SpurRemover spurRm = new SpurRemover();
                 spurRm.remove(closedCurve, minMaxXY[1] + 1, minMaxXY[3] + 1);
             }
@@ -188,11 +208,77 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
 
         patternPoints = findPattern(x, y, points, pattern);
 
+        return patternPoints;
+    }
+
+    private Set<PairInt> findDiagJunction(int x, int y, Set<PairInt> points) {
+
+        Pattern pattern = getDiagPattern();
+
+        Set<PairInt> patternPoints = findPattern(x, y, points, pattern);
+
         if (patternPoints != null) {
             return patternPoints;
         }
 
-        return null;
+        swapXDirection(pattern);
+
+        patternPoints = findPattern(x, y, points, pattern);
+
+        if (patternPoints != null) {
+            return patternPoints;
+        }
+
+        swapYDirection(pattern);
+
+        patternPoints = findPattern(x, y, points, pattern);
+
+        if (patternPoints != null) {
+            return patternPoints;
+        }
+
+        swapXDirection(pattern);
+
+        patternPoints = findPattern(x, y, points, pattern);
+
+        if (patternPoints != null) {
+            return patternPoints;
+        }
+
+        // ----- diag pattern 2 ---
+        pattern = getDiagPattern2();
+
+        patternPoints = findPattern(x, y, points, pattern);
+
+        if (patternPoints != null) {
+            return patternPoints;
+        }
+
+        swapXDirection(pattern);
+
+        patternPoints = findPattern(x, y, points, pattern);
+
+        if (patternPoints != null) {
+            return patternPoints;
+        }
+
+        pattern = getDiagPattern3();
+
+        patternPoints = findPattern(x, y, points, pattern);
+
+        if (patternPoints != null) {
+            return patternPoints;
+        }
+
+        swapYDirection(pattern);
+
+        patternPoints = findPattern(x, y, points, pattern);
+
+        if (patternPoints != null) {
+            return patternPoints;
+        }
+
+        return patternPoints;
     }
 
     protected Pattern getHorizPattern() {
@@ -207,6 +293,7 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
 
        -2 -1  0  1  2
         */
+
         Pattern pr = new Pattern();
         pr.ones = new HashSet<PairInt>();
         pr.zeroes = new HashSet<PairInt>();
@@ -238,6 +325,80 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         pr.zeroes.add(new PairInt(1, 0));
 
         pr.ones.add(new PairInt(-1, 1)); pr.ones.add(new PairInt(1, 1));
+
+        return pr;
+    }
+
+    protected DiagPattern getDiagPattern() {
+
+        /*
+                         -3
+              -  #  -    -2
+              -  #  #    -1
+              #  -  -     0
+                          1
+       -2 -1  0  1  2
+        */
+
+        DiagPattern pr = new DiagPattern();
+        pr.ones = new HashSet<PairInt>();
+        pr.zeroes = new HashSet<PairInt>();
+
+        pr.zeroes.add(new PairInt(0, -1)); pr.zeroes.add(new PairInt(0, -2));
+        pr.zeroes.add(new PairInt(1, 0));
+        pr.zeroes.add(new PairInt(2, 0)); pr.zeroes.add(new PairInt(2, -2));
+
+        pr.ones.add(new PairInt(1, -1)); pr.ones.add(new PairInt(1, -2));
+        pr.ones.add(new PairInt(2, -1));
+
+        return pr;
+    }
+
+    protected DiagPattern getDiagPattern2() {
+
+        /*
+                         -3
+              -  #  -    -2
+              -  #  #    -1
+              -  #  -     0
+                          1
+          -2 -1  0  1  2
+        */
+
+        DiagPattern pr = new DiagPattern();
+        pr.ones = new HashSet<PairInt>();
+        pr.zeroes = new HashSet<PairInt>();
+
+        pr.zeroes.add(new PairInt(-1, 0)); pr.zeroes.add(new PairInt(-1, -1)); pr.zeroes.add(new PairInt(-1, -2));
+        pr.zeroes.add(new PairInt(1, 0)); pr.zeroes.add(new PairInt(1, -2));
+
+        pr.ones.add(new PairInt(0, -1)); pr.ones.add(new PairInt(0, -2));
+        pr.ones.add(new PairInt(1, -1));
+
+        return pr;
+    }
+
+    protected DiagPattern getDiagPattern3() {
+
+        /*
+                         -2
+              -  #  -    -1
+              #  #  #     0
+              -  -  -     1
+
+          -1  0  1  2
+        */
+
+        DiagPattern pr = new DiagPattern();
+        pr.ones = new HashSet<PairInt>();
+        pr.zeroes = new HashSet<PairInt>();
+
+        pr.zeroes.add(new PairInt(0, 1)); pr.zeroes.add(new PairInt(0, -1));
+        pr.zeroes.add(new PairInt(1, 1));
+        pr.zeroes.add(new PairInt(2, 1)); pr.zeroes.add(new PairInt(2, -1));
+
+        pr.ones.add(new PairInt(1, 0)); pr.ones.add(new PairInt(1, -1));
+        pr.ones.add(new PairInt(2, 0));
 
         return pr;
     }
@@ -282,7 +443,7 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         }
 
         patternPoints.add(new PairInt(x, y));
-        
+
         return patternPoints;
     }
 
@@ -306,7 +467,7 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
 
         List<Set<PairInt>> spokes = null;
 
-        Junction junction = new Junction();
+        Junction junction = new Junction(3);
 
         int count = 0;
 
@@ -322,13 +483,9 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
             }
 
             if (count == 0) {
-                junction.j0 = p;
                 spokes = new ArrayList<Set<PairInt>>();
-            } else if (count == 1) {
-                junction.j1 = p;
-            } else {
-                junction.j2 = p;
             }
+            junction.setJ(count, p);
             Set<PairInt> spoke = new HashSet<PairInt>();
             spoke.addAll(neighbors);
             spokes.add(spoke);
@@ -354,45 +511,145 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
                     }
                 }
                 if (i == 0) {
-                    int diffX = Math.abs(pI.getX() - junction.j1.getX());
-                    int diffY = Math.abs(pI.getY() - junction.j1.getY());
-                    if ((diffX < 2) && (diffY < 2)) {
+                    if (areAdjacent(pI, junction.getJ(1))) {
                         return null;
                     }
-                    diffX = Math.abs(pI.getX() - junction.j2.getX());
-                    diffY = Math.abs(pI.getY() - junction.j2.getY());
-                    if ((diffX < 2) && (diffY < 2)) {
+                    if (areAdjacent(pI, junction.getJ(2))) {
                         return null;
                     }
                 } else if (i == 1) {
-                    int diffX = Math.abs(pI.getX() - junction.j0.getX());
-                    int diffY = Math.abs(pI.getY() - junction.j0.getY());
-                    if ((diffX < 2) && (diffY < 2)) {
+                    if (areAdjacent(pI, junction.getJ(0))) {
                         return null;
                     }
-                    diffX = Math.abs(pI.getX() - junction.j2.getX());
-                    diffY = Math.abs(pI.getY() - junction.j2.getY());
-                    if ((diffX < 2) && (diffY < 2)) {
+                    if (areAdjacent(pI, junction.getJ(2))) {
                         return null;
                     }
                 } else {
-                    int diffX = Math.abs(pI.getX() - junction.j0.getX());
-                    int diffY = Math.abs(pI.getY() - junction.j0.getY());
-                    if ((diffX < 2) && (diffY < 2)) {
+                    if (areAdjacent(pI, junction.getJ(0))) {
                         return null;
                     }
-                    diffX = Math.abs(pI.getX() - junction.j1.getX());
-                    diffY = Math.abs(pI.getY() - junction.j1.getY());
-                    if ((diffX < 2) && (diffY < 2)) {
+                    if (areAdjacent(pI, junction.getJ(1))) {
                         return null;
                     }
                 }
             }
         }
 
-        junction.s0 = spokes.get(0).iterator().next();
-        junction.s1 = spokes.get(1).iterator().next();
-        junction.s2 = spokes.get(2).iterator().next();
+        junction.setS0(spokes.get(0).iterator().next());
+        junction.setS1(spokes.get(1).iterator().next());
+        junction.setS2(spokes.get(2).iterator().next());
+
+        return junction;
+    }
+
+    /**
+     * find spokes for the diagonal patterns
+     * @param junctionPoints
+     * @param closedCurve
+     * @return
+     */
+    private Junction findSpokesOfJunction2(Set<PairInt> junctionPoints,
+        Set<PairInt> closedCurve) {
+
+        assert(junctionPoints.size() == 4);
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+        /*
+        Example:
+              S          -2
+              #          -1    The center pattern can be found, then if each
+              #  #  S     0    of the 3 has a neighbor that isn't adjacent
+              #           1    to the others and those spokes are single pixel,
+              S                widths, it is a junction that cannot be traversed
+                               one way and then the other.
+       -2 -1  0  1  2
+        */
+
+        List<Set<PairInt>> spokes = null;
+
+        Junction junction = new Junction(4);
+
+        int count = 0;
+
+        // find the center junction by centroid
+        double[] xyCen = curveHelper.calculateXYCentroids(junctionPoints);
+        PairInt jC = new PairInt((int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));
+        assert(junctionPoints.contains(jC));
+
+        for (PairInt p : junctionPoints) {
+
+            Set<PairInt> neighbors = curveHelper.findNeighbors(p.getX(),
+                p.getY(), closedCurve);
+
+            neighbors.removeAll(junctionPoints);
+
+            if (!p.equals(jC)) {
+                if (neighbors.isEmpty() || neighbors.size() > 2) {
+                    return null;
+                }
+                if (neighbors.size() > 1) {
+                    // keep the closest to jC
+                    int minDistSq = Integer.MAX_VALUE;
+                    PairInt minDistP = null;
+                    for (PairInt pN : neighbors) {
+                        int distSq = distSq(jC, pN);
+                        if (distSq < minDistSq) {
+                            minDistSq = distSq;
+                            minDistP = pN;
+                        }
+                    }
+                    neighbors.clear();
+                    neighbors.add(minDistP);
+                }
+            }
+
+            if (count == 0) {
+                spokes = new ArrayList<Set<PairInt>>();
+            }
+            junction.setJ(count, p);
+            if (!p.equals(jC)) {
+                Set<PairInt> spoke = new HashSet<PairInt>();
+                spoke.addAll(neighbors);
+                spokes.add(spoke);
+            }
+
+            count++;
+        }
+
+        assert(spokes.size() == 3);
+
+        // assert that the points in one spoke are not adjacent to others
+        // and not adjacent to the oppossing junction points
+        for (int i = 0; i < spokes.size(); ++i) {
+            Set<PairInt> spokeI = spokes.get(i);
+            assert(!spokeI.isEmpty());
+            for (PairInt pI : spokeI) {
+                for (int j = (i + 1); j < spokes.size(); ++j) {
+                    Set<PairInt> spokeJ = spokes.get(j);
+                    assert(!spokeJ.isEmpty());
+                    for (PairInt pJ : spokeJ) {
+                        if (areAdjacent(pI, pJ)) {
+                            return null;
+                        }
+                    }
+                }
+                // it will be adjacent to 1 junction point
+                int nAdj = 0;
+                for (int k = 0; k < junction.getJLength(); ++k) {
+                    if (areAdjacent(pI, junction.getJ(k))) {
+                        nAdj++;
+                    }
+                }
+                if (nAdj > 1) {
+                    return null;
+                }
+            }
+        }
+
+        junction.setS0(spokes.get(0).iterator().next());
+        junction.setS1(spokes.get(1).iterator().next());
+        junction.setS2(spokes.get(2).iterator().next());
 
         return junction;
     }
@@ -413,9 +670,9 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         Set<PairInt> rm = longestPaths.get(minIdx);
 
         // make sure the junction points don't get removed
-        rm.remove(spokes.j0);
-        rm.remove(spokes.j1);
-        rm.remove(spokes.j2);
+        for (int j = 0; j < spokes.getJLength(); ++j) {
+            rm.remove(spokes.getJ(j));
+        }
 
         closedCurve.removeAll(rm);
     }
@@ -424,14 +681,16 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
      * find the shortest paths between spokes, excluding the junction points.
      * @param spokes
      * @param closedCurve
-     * @return 
+     * @param isDefaultJunction if horiz or vert patterns were found, this
+     * is the default junction pattern, else is one of the diag patterns
+     * @return
      */
     private List<Set<PairInt>> findShortestPathBetweenSpokes(Junction spokes,
-        Set<PairInt> closedCurve) {
-        
+        Set<PairInt> closedCurve, boolean isDefaultJunction) {
+
         int n = closedCurve.size();
-        
-        /* 
+
+        /*
         A* needs
         -- point list as an array (excluding junctions)
         -- adjacency list as a parallel array of linked lists holding indexes
@@ -439,58 +698,74 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
            a point to the destination.  it's only needed for the points which
            are visited).
         -- the adjacency lists should not contain the junction points
-        
+
         For local bookkeeping, need to keep track of where the spokes
         variables are and need to keep track of where the points are in the
         points array in order to be able to make the adjacency list.
         */
-        
+
         Map<PairInt, Integer> coordsIndexMap = new HashMap<PairInt, Integer>();
-        
-        PairInt[] points = new PairInt[n - 3];
-                
+
+        PairInt[] points = isDefaultJunction ?
+            new PairInt[n - 3] : new PairInt[n - 4];
+
         int s0Idx = -1;
         int s1Idx = -1;
         int s2Idx = -1;
-        
+
         int count = 0;
         for (PairInt p : closedCurve) {
-            if (p.equals(spokes.j0) || p.equals(spokes.j1) || p.equals(spokes.j2)) {
+            boolean skip = false;
+            for (int j = 0; j < spokes.getJLength(); ++j) {
+                if (p.equals(spokes.getJ(j))) {
+                    skip = true;
+                    break;
+                }
+            }
+            if (skip) {
                 continue;
             }
-            if (p.equals(spokes.s0)) {
+            if (p.equals(spokes.getS0())) {
                 s0Idx = count;
-            } else if (p.equals(spokes.s1)) {
+            } else if (p.equals(spokes.getS1())) {
                 s1Idx = count;
-            } else if (p.equals(spokes.s2)) {
+            } else if (p.equals(spokes.getS2())) {
                 s2Idx = count;
             }
             points[count] = p;
-            
+
             coordsIndexMap.put(p, Integer.valueOf(count));
-            
+
             count++;
         }
-        
+
         assert(s0Idx > -1);
         assert(s1Idx > -1);
         assert(s2Idx > -1);
-        assert(count == (n - 3));
-        
+        assert((isDefaultJunction && (count == (n - 3))) ||
+            (!isDefaultJunction && (count == (n - 4))));
+
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
-        
+
         List<LinkedList<Integer>> adjList = new ArrayList<LinkedList<Integer>>();
-     
+
         for (int i = 0; i < points.length; ++i) {
-            
+
             PairInt p = points[i];
-            
+
             LinkedList<Integer> list = new LinkedList<Integer>();
-            
+
             for (int j = 0; j < dxs8.length; ++j) {
                 PairInt p2 = new PairInt(p.getX() + dxs8[j], p.getY() + dys8[j]);
-                if (p2.equals(spokes.j0) || p2.equals(spokes.j1) || p2.equals(spokes.j2)) {
+                boolean skip = false;
+                for (int k = 0; k < spokes.getJLength(); ++k) {
+                    if (p2.equals(spokes.getJ(k))) {
+                        skip = true;
+                        break;
+                    }
+                }
+                if (skip) {
                     continue;
                 }
                 Integer index2 = coordsIndexMap.get(p2);
@@ -501,62 +776,83 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
             }
             adjList.add(list);
         }
-        
+
         /*
-        shortest path from 
+        shortest path from
            src0Idx to src1Idx
            src0Idx to src2Idx
            src1Idx to src2Idx
-        */
-        AStar aStar = new AStar(points, adjList, s0Idx, s1Idx);
-        int[] path01 = aStar.search();
+        */ 
+        int[] path01;
+        int[] path02;
+        int[] path12;
         
-        aStar = new AStar(points, adjList, s0Idx, s2Idx);
-        int[] path02 = aStar.search();
-        
-        aStar = new AStar(points, adjList, s1Idx, s2Idx);
-        int[] path12 = aStar.search();
-        
+        if (isDefaultJunction) {
+            AStar aStar = new AStar(points, adjList, s0Idx, s1Idx);
+            path01 = aStar.search();
+            aStar = new AStar(points, adjList, s0Idx, s2Idx);
+            path02 = aStar.search();
+            aStar = new AStar(points, adjList, s1Idx, s2Idx);
+            path12 = aStar.search();
+        } else {
+            /*
+            can find the loop to delete by making a path from source to
+            furthest non-sentinel distance using the astar distFromS
+            */
+            AStar aStar = new AStar(points, adjList, s0Idx, s1Idx);
+            path01 = aStar.search();
+            path01 = aStar.createSourceToSourcePath();
+            
+            aStar = new AStar(points, adjList, s1Idx, s0Idx);
+            path02 = aStar.search();
+            path02 = aStar.createSourceToSourcePath();
+            
+            aStar = new AStar(points, adjList, s2Idx, s0Idx);
+            path12 = aStar.search();
+            path12 = aStar.createSourceToSourcePath();
+            int z = 1;
+        }
+       
         List<Set<PairInt>> paths = new ArrayList<Set<PairInt>>();
         if (path01 != null) {
             Set<PairInt> set = new HashSet<PairInt>();
             for (int i = 0; i < path01.length; ++i) {
                 PairInt p = points[path01[i]];
-                if (p.equals(spokes.s0) || p.equals(spokes.s1)) {
+                if (p.equals(spokes.getS0()) || p.equals(spokes.getS1())) {
                     continue;
                 }
                 set.add(p);
             }
             paths.add(set);
         }
-        
+
         if (path02 != null) {
             Set<PairInt> set = new HashSet<PairInt>();
             for (int i = 0; i < path02.length; ++i) {
                 PairInt p = points[path02[i]];
-                if (p.equals(spokes.s0) || p.equals(spokes.s2)) {
+                if (p.equals(spokes.getS0()) || p.equals(spokes.getS2())) {
                     continue;
                 }
                 set.add(p);
             }
             paths.add(set);
         }
-        
+
         if (path12 != null) {
             Set<PairInt> set = new HashSet<PairInt>();
             for (int i = 0; i < path12.length; ++i) {
                 PairInt p = points[path12[i]];
-                if (p.equals(spokes.s1) || p.equals(spokes.s2)) {
+                if (p.equals(spokes.getS1()) || p.equals(spokes.getS2())) {
                     continue;
                 }
                 set.add(p);
             }
             paths.add(set);
         }
-        
+
         return paths;
     }
-    
+
     private boolean areAdjacent(PairInt p0, PairInt p1) {
         int diffX = Math.abs(p0.getX() - p1.getX());
         int diffY = Math.abs(p0.getY() - p1.getY());
@@ -565,18 +861,59 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         }
         return false;
     }
+    
+    private int distSq(PairInt p0, PairInt p1) {
+        int diffX = Math.abs(p0.getX() - p1.getX());
+        int diffY = Math.abs(p0.getY() - p1.getY());
+        return (diffX*diffX) + (diffY*diffY);
+    }
 
     public static class Pattern {
         Set<PairInt> ones;
         Set<PairInt> zeroes;
     }
 
+    public static class DiagPattern extends Pattern {
+    }
+
     public static class Junction {
-        PairInt j0 = null;
-        PairInt j1 = null;
-        PairInt j2 = null;
-        PairInt s0 = null;
-        PairInt s1 = null;
-        PairInt s2 = null;
+        final PairInt[] s = new PairInt[3];
+        final PairInt[] j;
+        public Junction(int nJunctions) {
+            j = new PairInt[nJunctions];
+        }
+        public void setS0(PairInt p) {
+            s[0] = p;
+        }
+        public void setS1(PairInt p) {
+            s[1] = p;
+        }
+        public void setS2(PairInt p) {
+            s[2] = p;
+        }
+        public PairInt getS0() {
+            return s[0];
+        }
+        public PairInt getS1() {
+            return s[1];
+        }
+        public PairInt getS2() {
+            return s[2];
+        }
+        public void setJ(int index, PairInt p) {
+            if (index < 0 || (index > (j.length - 1))) {
+                throw new IllegalArgumentException("index is out of bounds");
+            }
+            j[index] = p;
+        }
+        public PairInt getJ(int index) {
+            if (index < 0 || (index > (j.length - 1))) {
+                throw new IllegalArgumentException("index is out of bounds");
+            }
+            return j[index];
+        }
+        public int getJLength() {
+            return j.length;
+        }
     }
 }

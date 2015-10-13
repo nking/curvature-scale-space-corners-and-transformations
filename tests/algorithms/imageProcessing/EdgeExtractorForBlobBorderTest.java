@@ -159,7 +159,9 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
     public void testExtractAndOrderTheBorder0_2() throws Exception {
 
         String[] fileNames = new String[]{
-           "tmp_blob_673712548.dat"};
+           //"tmp_blob_673712548.dat"
+            "tmp_blob_708758270.dat"
+        };
         
         int w = 374;
         int h = 517;

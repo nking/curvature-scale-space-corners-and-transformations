@@ -1,5 +1,6 @@
 package algorithms.shortestPath;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
@@ -69,6 +70,12 @@ public class AStar {
 
     protected final int sourceIndx;
     protected final int destinationIndx;
+    
+    private enum State {
+       INITIALIZED, COMPLETE
+    }
+    
+    private State state = null;
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -114,7 +121,7 @@ public class AStar {
     }
 
     private void initHeap() {
-
+        
         int n = points.length;
 
         nodes = new HeapNode[n];
@@ -134,6 +141,7 @@ public class AStar {
             nodes[i] = node;
         }
         
+        state = State.INITIALIZED;
     }
 
     public int[] search() {
@@ -212,11 +220,16 @@ public class AStar {
         }
 
         if (count == 0) {
+            
+            state = State.COMPLETE;
+            
             return null;
         }
 
         int[] pathIndexes = getNodeIndexesToDestination();
 
+        state = State.COMPLETE;
+        
         return pathIndexes;
     }
 
@@ -275,6 +288,45 @@ public class AStar {
         int[] out = Arrays.copyOfRange(destNodes, count + 1, prevNode.length);
 
         return out;
+    }
+
+    /**
+     * create a path from source to source from the distance array if the
+     * first and last points are adjacent, else return null.
+     * runtime is &lt; O(N)
+     * @return 
+     */
+    public int[] createSourceToSourcePath() {
+        
+        if (!state.equals(State.COMPLETE)) {
+            search();
+        }
+        
+        int[] distances = new int[distFromS.length];
+        int[] indexes = new int[distances.length];
+        
+        int count = 0;
+        
+        for (int i = 0; i < distFromS.length; ++i) {
+            long d = distFromS[i];
+            if (d == Long.MAX_VALUE) {
+                continue;
+            }
+            distances[count] = (int)d;
+            indexes[count] = i;
+            count++;
+        }
+        
+        if (count == 0) {
+            return null;
+        }
+        
+        //distances = Arrays.copyOf(distances, count);
+        indexes = Arrays.copyOf(indexes, count);
+        
+        //MultiArrayMergeSort.sortByDecr(distances, indexes);
+        
+        return indexes;
     }
 
 }
