@@ -91,7 +91,7 @@ public class Heap {
 
     /**
      * extract minimum from the heap.
-     *
+     * runtime is O(log_2 N) or better.
      * @return
      */
     public HeapNode extractMin() {
@@ -128,6 +128,13 @@ public class Heap {
         }
 
         n--;
+        
+        // remove z's member variables so that any use outside of heap does not
+        // affect the heap
+        z.removeChildren();
+        z.setParent(null);
+        z.setRight(null);
+        z.setLeft(null);
  
         return z;
     }
