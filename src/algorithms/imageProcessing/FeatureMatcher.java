@@ -24,11 +24,26 @@ public class FeatureMatcher {
     public FeatureMatcher() {
     }
 
+    /**
+     * 
+     * @param img1
+     * @param gXY1
+     * @param theta1
+     * @param cornerRegions1
+     * @param img2
+     * @param gXY2
+     * @param theta2
+     * @param cornerRegions2
+     * @param scale the scale factor between img1 and img2 (can be determined
+     * with BlobScaleFinderWrapper before use here).
+     * @return 
+     */
     public CorrespondenceList findSimilarFeatures(
         GreyscaleImage img1, GreyscaleImage gXY1, GreyscaleImage theta1,
         CornerRegion[] cornerRegions1,
         GreyscaleImage img2, GreyscaleImage gXY2, GreyscaleImage theta2,
-        CornerRegion[] cornerRegions2) {
+        CornerRegion[] cornerRegions2,
+        final float scale) {
         
         if (img1 == null) {
             throw new IllegalArgumentException("img1 cannot be null");
@@ -55,23 +70,12 @@ public class FeatureMatcher {
             throw new IllegalArgumentException("cornerRegions2 cannot be null");
         }
         
-        //TODO: need to solve for scale using the scale space curves that went 
-        // into making the corners. see doc/contours.pdf in this project.
-        // the creation of scale space maps for inflection points takes longer
-        // though, so might need to use what exists less precisely.
-        // interestingly, to estimate scale well with scale space maps requires
-        // finding closed curves ("contours") and then matching the peaks of the
-        // scale space maps created from the inflection
-        // points and that solves for scale, and translation and rotation
-        // very quickly if there are contours in common with both frames and
-        // then one would not need this feature based matching.
-        // the combination of both is probably a very strong recognizer.
-        
-        // until then, making an assumption of '1' here for limited use
-        float scale = 1.f;
-        
         int blockHalfWidth = 5;
         boolean useNormalizedIntensities = true;
+        
+        //NOTE: scale was not used in the feature descriptors, but
+        // should be in the future.  For large scale factor, would want to
+        // scale the grid sizes in the descriptor
         
         Features features1 = new Features(img1, gXY1, theta1, blockHalfWidth, 
             useNormalizedIntensities);
@@ -86,8 +90,7 @@ public class FeatureMatcher {
         // a quick rough look at the most frequent parameters of euclidean
         // transformations.
         
-        //TODO: this may need alot of adjustment, espec for histogram bin
-        // sizes.
+        //TODO: this may need alot of adjustment, espec for histogram bin sizes.
         
         List<PairInt> points1 = new ArrayList<PairInt>();
         List<PairInt> points2 = new ArrayList<PairInt>();

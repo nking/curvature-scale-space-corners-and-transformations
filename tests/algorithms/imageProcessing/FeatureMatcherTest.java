@@ -111,11 +111,11 @@ public class FeatureMatcherTest extends TestCase {
 
         int dither = 1;// 1 is fine for B&L2003
 
-        Features features1 = new Features(gsImg1,
-            gXY1, theta1, blockHalfWidth, useNormalizedIntensities);
+        Features features1 = new Features(gsImg1, gXY1, theta1, blockHalfWidth, 
+            useNormalizedIntensities);
 
-        Features features2 = new Features(gsImg2,
-            gXY2, theta2, blockHalfWidth, useNormalizedIntensities);
+        Features features2 = new Features(gsImg2, gXY2, theta2, blockHalfWidth, 
+            useNormalizedIntensities);
 
         // iterate over the manual list of corners and find the corner regions
         for (int ii = 0; ii < points1.getN(); ++ii) {
@@ -313,8 +313,6 @@ public class FeatureMatcherTest extends TestCase {
         idx = fileName2.lastIndexOf(".");
         String fileName2Root = fileName2.substring(0, idx);
 
-        ImageProcessor imageProcessor = new ImageProcessor();
-
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();
 
@@ -358,10 +356,13 @@ public class FeatureMatcherTest extends TestCase {
         
         FeatureMatcher matcher = new FeatureMatcher();
         
+        final float scale = 1.0f;
+        
         CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
             cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
             gsImg2, gXY2, theta2,
-            cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]));
+            cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
+            scale);
         
         Collection<PairInt> m1 = cl.getPoints1();
         Collection<PairInt> m2 = cl.getPoints2();

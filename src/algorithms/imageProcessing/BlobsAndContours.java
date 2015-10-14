@@ -419,6 +419,9 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
                     sscImg, edgeIndex, true, edge);
             }*/
 
+            //TODO: consider extracting smaller contours for each edge if needed
+            // instead of only when there are no strong contours
+            
             outputContours.add(c);
 
             if (!c.isEmpty()) {

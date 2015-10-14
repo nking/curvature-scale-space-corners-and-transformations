@@ -69,13 +69,14 @@ class UntraversableLobeRemover {
 
             nChanges = 0;
 
+if (false) {
 Image img1 = new Image(imageWidth, imageHeight);
 for (PairInt p : closedCurve) {
     img1.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
 MiscDebug.writeImageCopy(img1, "before_removed_untr_lobe_"
 + MiscDebug.getCurrentTimeFormatted() + ".png");
-
+}
             for (PairInt p : closedCurve) {
 
                 if (exclude.contains(p)) {
@@ -124,14 +125,14 @@ MiscDebug.writeImageCopy(img1, "before_removed_untr_lobe_"
                 //assert(longestPaths.size() == 3);
 
                 removeShortestPath(spokes, longestPaths, closedCurve);
-
+if (false) {
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p2 : closedCurve) {
     img3.setRGB(p2.getX(), p2.getY(), 255, 0, 0);
 }
 MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
 + MiscDebug.getCurrentTimeFormatted() + ".png");
-
+}
                 assert(closedCurve.size() > 0);
 
                 SpurRemover spurRm = new SpurRemover();

@@ -356,7 +356,6 @@ for (Routes routes : butterFlySections2) {
     }
 }
 MiscDebug.writeImageCopy(img2, "before_single_curve_extraction_" + ts + ".png");
-int z = 1;
 }
 
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);

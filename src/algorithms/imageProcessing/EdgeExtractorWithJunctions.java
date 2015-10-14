@@ -3258,13 +3258,4 @@ MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.get
         return foundR;
     }
 
-    private int distanceSq(PairInt p0, PairIntArray r, int idxP1) {
-        
-        int diffX = p0.getX() - r.getX(idxP1);
-        int diffY = p0.getY() - r.getY(idxP1);
-        
-        int distSq = (diffX*diffX) + (diffY*diffY);
-        
-        return distSq;
-    }
 }

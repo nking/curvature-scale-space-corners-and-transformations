@@ -476,7 +476,7 @@ public class PointMatcher2Test extends TestCase {
             ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image2);
 
         } catch (Exception e) {
-             e.printStackTrace();
+            e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
         }
     }
@@ -495,7 +495,7 @@ public class PointMatcher2Test extends TestCase {
             ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image1);
 
         } catch (Exception e) {
-             e.printStackTrace();
+            e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
         }
     }
