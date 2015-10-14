@@ -1,0 +1,85 @@
+========================================================================
+Story: Determine scale w/ blob perimeters and corners
+ 
+    summary: The current implementation of scale calculation uses scale 
+      space image contours of the blob perimeters to find matching 
+      points and hence scale, but it is vulnerable to differences in the 
+      contours between images, for example, due to a large bump or 
+      occulusion.  An alternate method is needed to use the same blob 
+      perimeters, but corners instead of inflection points and contours.  
+      Both methods should be available for use after the changes, but 
+      the new algorithm will be the default.
+      (see the end of docs/contours.pdf)
+
+    time estimate: 
+        minimum: 
+        maximum: 
+
+    amount of time used: 
+
+    state of completion: design phase
+
+    comments regarding state:
+
+    comments:
+        refactoring code associated with the current calculations is
+        necessary before the new algorithm to assert that the 
+        abstraction is correct.
+
+---------------------------------------------------------------------
+Task 1:
+    goal: 
+
+    details:  
+
+    time estimate: 
+  
+    amount of time used: 
+
+    state of completion:
+
+    comments:
+              
+---------------------------------------------------------------------
+Task 2:
+    goal: 
+
+    details:  
+
+    time estimate: 
+  
+    amount of time used: 
+
+    state of completion:
+
+    comments:
+              
+---------------------------------------------------------------------
+Task 3:
+    goal: 
+
+    details:  
+
+    time estimate: 
+  
+    amount of time used: 
+
+    state of completion:
+
+    comments:
+              
+---------------------------------------------------------------------
+Task 4:
+    goal: 
+
+    details:  
+
+    time estimate: 
+  
+    amount of time used: 
+
+    state of completion:
+
+    comments:
+              
+---------------------------------------------------------------------
