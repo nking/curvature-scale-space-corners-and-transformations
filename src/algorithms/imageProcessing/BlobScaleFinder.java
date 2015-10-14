@@ -157,6 +157,12 @@ double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
 log.info("index1=" + index1.toString() + " index2=" + index2.toString()
  + " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
 
+log.info(
+String.format("[%d](%d,%d) [%d](%d,%d)  nCurvePoints=%d, %d", 
+idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
+idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
+curve1.getN(), curve2.getN()));               
+
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper =
                     new CurvatureScaleSpaceInflectionSingleEdgeMapper(
                     0, 0, 0, 0);
@@ -444,7 +450,7 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
                 BlobPerimeterRegion region2 = extractBlobPerimeterRegion(
                     index2.intValue(), details2[jj], curve2, blob2
                 );
-
+   
                 FeatureComparisonStat compStat =
                     featureMatcher.ditherAndRotateForBestLocation(
                     features1, features2, region1, region2, dither);

@@ -184,7 +184,7 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
         // ----- remove spurs, merge curves, re-order points to form a 
         //       single closed curve if possible -------
         
-log.info("for " + ts + " starting additional line processing");
+log.fine("for " + ts + " starting additional line processing");
 /*
 try {
 Misc.persistToFile("blob_" + ts + ".dat", borderPixels);
@@ -265,7 +265,7 @@ int z = 1;
             }
         }
         
-log.info("for " + ts + " start UntraversableLobeRemover");
+log.fine("for " + ts + " start UntraversableLobeRemover");
 
         UntraversableLobeRemover remover = new UntraversableLobeRemover();
         remover.applyFilter(borderPixels, exclude, imageWidth, imageHeight);
@@ -281,7 +281,7 @@ for (PairInt p : borderPixels) {
 }
 MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".png");
 }
-log.info("for " + ts + " finished UntraversableLobeRemover");
+log.fine("for " + ts + " finished UntraversableLobeRemover");
 
         //xMin, xMax, yMin, yMax
         int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);

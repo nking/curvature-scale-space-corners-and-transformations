@@ -47,7 +47,7 @@ public class BlobsAndContours {
     
     protected final GreyscaleImage imgSeg;
     
-    private boolean modifyBlobs = false;
+    private boolean modifyBlobs = true;
     
     private boolean debug = false;
 
@@ -212,10 +212,10 @@ public class BlobsAndContours {
         
         if (modifyBlobs) {
             // helps to fill in single pixel holes
-            /*for (Set<PairInt> blob : outputBlobs) {
-                growRadius(blob, segImg.getWidth(), segImg.getHeight());
-            }*/
             for (Set<PairInt> blob : outputBlobs) {
+                growRadius(blob, segImg.getWidth(), segImg.getHeight());
+            }
+            /*for (Set<PairInt> blob : outputBlobs) {
                 shrinkRadius(blob, segImg.getWidth(), segImg.getHeight());
             }
             
@@ -233,6 +233,7 @@ public class BlobsAndContours {
             for (int i = (rmBlobIndexes.size() - 1); i > -1; --i) {
                 outputBlobs.remove(rmBlobIndexes.get(i).intValue());
             }
+            */
         }
 
         if (debug) {
@@ -683,7 +684,8 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
     }
 
     /**
-     * grow blob by 1 pixel radius
+     * grow blob by 1 pixel radius, but exclude growing any image boundary
+     * pixels.
      * @param blob
      * @param w
      * @param h 
@@ -699,7 +701,8 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
             for (int i = 0; i < dxs8.length; ++i) {
                 int x2 = p.getX() + dxs8[i];
                 int y2 = p.getY() + dys8[i];
-                if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                // do not grow image boundary pixels too
+                if ((x2 < 1) || (y2 < 1) || (x2 > (w - 2)) || (y2 > (h - 2))) {
                     continue;
                 }
                 PairInt p2 = new PairInt(x2, y2);
