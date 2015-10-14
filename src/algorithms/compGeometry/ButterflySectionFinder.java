@@ -1185,7 +1185,7 @@ public class ButterflySectionFinder {
         final int y0, Pattern pattern, final Routes routes,
         Set<PairInt> endPoints, boolean useVert) {
 
-        if (endPoints.size() < 4) {
+        if (endPoints.size() < 2) {
             throw new IllegalStateException("error in algorithm");
         }
         assert(routes.ep0End == null);
