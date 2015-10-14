@@ -1,6 +1,5 @@
 package algorithms.shortestPath;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
@@ -291,10 +290,24 @@ public class AStar {
     }
 
     /**
-     * create a path from source to source from the distance array if the
-     * first and last points are adjacent, else return null.
-     * runtime is &lt; O(N)
-     * @return 
+     * method to be used for use cases where one knows that the incomplete
+     * path from search() is due to a certain type of junction 
+     * (specifically, the diagonal pattern of the 
+     * untraversable lobe remover class).  The returned
+     * indexes are all visited nodes from the internal distance array which
+     * should represent a loop for the specific junction.
+     * Note that for wider use, the method could be adapted to make a 
+     * partial path from the ordered distance array and then used with the
+     * previous node array to complete the other half of the source to
+     * source loop, possibly needing additional search for unvisited nodes.
+     * The results are not currently used in an ordered manner so the
+     * additional work for ordered points isn't useful currently.  The results 
+     * are used to remove a sub-loop isolated by a specific type of junction 
+     * in a closed curve.
+     * runtime is O(|V|).
+     * @return unordered indexes representing path points if the search was
+     * through a specific type of junction (the diagonal pattern of the 
+     * untraversable lobe remover class)
      */
     public int[] createSourceToSourcePath() {
         

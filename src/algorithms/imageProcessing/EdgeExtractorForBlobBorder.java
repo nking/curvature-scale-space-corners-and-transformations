@@ -119,10 +119,8 @@ MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeForma
         if (contiguousPoints == null) {
             return null;
         }
- 
-if (debug) {        
-MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCurrentTimeFormatted());        
-}
+        
+long ts = MiscDebug.getCurrentTimeFormatted(); 
 
         // ---- extract the border pixels from contiguousPoints ------
 
@@ -151,7 +149,6 @@ MiscDebug.plotPoints(contiguousPoints, imageWidth, imageHeight, MiscDebug.getCur
         int nCavity = contiguousPoints.size() + outputEmbeddedGapPoints.size()
             - nBorder;
 
-long ts = MiscDebug.getCurrentTimeFormatted();
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
@@ -180,6 +177,8 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
         
         // ----- remove spurs, merge curves, re-order points to form a 
         //       single closed curve if possible -------
+        
+log.info("for " + ts + " starting additional line processing");
 /*
 try {
 Misc.persistToFile("blob_" + ts + ".dat", borderPixels);
@@ -232,6 +231,14 @@ for (PairInt p : borderPixels) {
 }
 MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
 }
+if (debug) {     
+try {
+Misc.persistToFile(
+"tmp_blob_" + ts + "_" + imageWidth + "_" + imageHeight + ".dat", borderPixels);
+log.info("for " + ts + " imageWidth=" + imageWidth + " imageHeight=" + imageHeight);
+int z = 1;
+} catch(java.io.IOException e){}
+}
 
         // one more pass after line thinner and spur remover
         finder = new ButterflySectionFinder();
@@ -251,6 +258,8 @@ MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
                 exclude.addAll(butterFlySection.getRoute1());
             }
         }
+        
+log.info("for " + ts + " start UntraversableLobeRemover");
 
         UntraversableLobeRemover remover = new UntraversableLobeRemover();
         remover.applyFilter(borderPixels, exclude, imageWidth, imageHeight);
@@ -266,6 +275,7 @@ for (PairInt p : borderPixels) {
 }
 MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".png");
 }
+log.info("for " + ts + " finished UntraversableLobeRemover");
 
         //xMin, xMax, yMin, yMax
         int[] minMaxXY = MiscMath.findMinMaxXY(borderPixels);
@@ -292,6 +302,10 @@ MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".pn
             }
         }
         
+if (debug) {
+MiscDebug.writeImageCopy(img, "before_exract_single_curve_" + ts + ".png");
+}
+
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
         if (debug) {
             extractor.setToDebug();

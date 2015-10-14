@@ -679,6 +679,7 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
 
     /**
      * find the shortest paths between spokes, excluding the junction points.
+     * runtime complexity is O(|V|) + O(|E| + |V|lg2|V|).
      * @param spokes
      * @param closedCurve
      * @param isDefaultJunction if horiz or vert patterns were found, this
@@ -797,7 +798,23 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
         } else {
             /*
             can find the loop to delete by making a path from source to
-            furthest non-sentinel distance using the astar distFromS
+            furthest non-sentinel distance using the astar distFromS.
+            
+            Note, since the junction type for these next searches is
+            known to make a distinct separated loop when junctions are treated
+            as infinite cost nodes (or edges), one can use a DFS pattern
+            search instead of the dynamic programming pattern of AStar if one
+            knows that the loop itself does not contain further junctions and
+            looks.  For that case where one has found all junctions first and
+            is certain that the loop is a simple junction-free path, one
+            can use a DFS style pattern for a slightly faster search.
+               The AStar runtime is O(|E| + |V|lg2|V|).
+               A DFS style search is approx O(|E|), and worse case is O(|V| + |E|).
+            TODO: consider adapting the class logic to search for all junctions
+            first, then adapt this section to use DFS pattern search when
+            know that the path is free of junctions.  Note, the current existing
+            logic might be preferred because removing untraversable lobes
+            sometimes removes other unprocessed junctions too.
             */
             AStar aStar = new AStar(points, adjList, s0Idx, s1Idx);
             path01 = aStar.search();
@@ -810,7 +827,6 @@ MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
             aStar = new AStar(points, adjList, s2Idx, s0Idx);
             path12 = aStar.search();
             path12 = aStar.createSourceToSourcePath();
-            int z = 1;
         }
        
         List<Set<PairInt>> paths = new ArrayList<Set<PairInt>>();

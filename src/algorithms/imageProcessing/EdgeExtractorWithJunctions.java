@@ -1811,6 +1811,8 @@ long nPointsBefore = countPixelsInEdges(edges);
 
         List<PairIntArray> output = connectPixelsViaDFSForBounds();
 
+        //TODO: a correction for butterfly sections should happen here
+        
 if (debug) {
 Image img0 = ImageIOHelper.convertImage(img);
 for (int i = 0; i < output.size(); ++i) {
