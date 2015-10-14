@@ -207,8 +207,17 @@ public class BlobScaleFinderWrapper {
                     outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
                     outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
 
-                //TODO: review this limit
-                if (((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)) {
+                // TODO: consider returning the number of points used in the
+                // calculation
+                float f0 = (outputScaleRotTransXYStDev[0]/params.getScale());
+                float f1 = (float)(2.*Math.PI/params.getRotationInRadians());
+                
+                // consider comparing stdev in translations to a fraction of the image
+                float f2 = outputScaleRotTransXYStDev[2];
+                float f3 = outputScaleRotTransXYStDev[3];
+
+                //TODO: review these limits
+                if ((f0 < 0.2) && (f1 >= 18.) && (f2 < 100) && (f3 < 100)) {
                     return params;
                 }
             }

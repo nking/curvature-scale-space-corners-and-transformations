@@ -174,12 +174,12 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString()
                     }
 
 if (mapper.getMatcher() != null) {
-log.info(String.format("discarding [%d] (%d,%d)  [%d] (%d,%d)  nMCs=%d",
+log.info(String.format("*discarding [%d] (%d,%d)  [%d] (%d,%d)  nMCs=%d",
 idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
 idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
 mapper.getMatcher().getSolutionMatchedContours1().size()));
 } else {
-log.info(String.format("discarding [%d] (%d,%d)  [%d] (%d,%d)",
+log.info(String.format("*discarding [%d] (%d,%d)  [%d] (%d,%d)",
 idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
 idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
 }

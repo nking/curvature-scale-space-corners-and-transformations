@@ -94,7 +94,9 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
 
         log.fine("LIMIT: number of border points=" + nBorder + " nCavity=" + nCavity);
         
-        if (discardWhenCavityIsSmallerThanBorder && (nBorder > 0.8*nCavity)) {
+        if (discardWhenCavityIsSmallerThanBorder 
+            && ((nBorder > 0.8*nCavity) && 
+                (Math.abs(nBorder - nCavity) > 0.1*nCavity))) {
             return null;
         }
         
@@ -167,7 +169,9 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
 
         // expecting nBorder to be < nCavity
 
-        if (discardWhenCavityIsSmallerThanBorder && (nBorder > 0.8*nCavity)) {
+        if (discardWhenCavityIsSmallerThanBorder 
+            && ((nBorder > 0.8*nCavity) && 
+                (Math.abs(nBorder - nCavity) > 0.1*nCavity))) {
            
             log.info(String.format(
                 "discarding (%d, %d) number of border points=%d nCavity=%d ", 
@@ -305,14 +309,18 @@ log.info("for " + ts + " finished UntraversableLobeRemover");
                 routes.applyOffsets(-1*xOffset, -1*yOffset);
                 boolean rm = false;
                 for (PairInt p : routes.getRoute0()) {
-                    if (p.getX() < 0 || p.getY() < 0) {
+                    if (p.getX() < 0 || p.getY() < 0 || (p.getX() > (w - 1)) ||
+                        (p.getY() > (h - 1)) || 
+                        (img.getValue(p.getX(), p.getY()) == 0)) {
                         rm = true;
                         break;
                     }
                 }
                 if (!rm) {
                     for (PairInt p : routes.getRoute1()) {
-                        if (p.getX() < 0 || p.getY() < 0) {
+                        if (p.getX() < 0 || p.getY() < 0|| (p.getX() > (w - 1)) ||
+                            (p.getY() > (h - 1)) || 
+                            (img.getValue(p.getX(), p.getY()) == 0)) {
                             rm = true;
                             break;
                         }
