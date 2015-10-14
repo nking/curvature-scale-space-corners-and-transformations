@@ -143,12 +143,12 @@ public class BlobScaleFinderWrapper {
         
         SegmentationOrder[] seg1 = new SegmentationOrder[]{
             new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
-            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 1, 1),
+            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 0, 0),
             //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
         };
         SegmentationOrder[] seg2 = new SegmentationOrder[]{
             new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
-            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 1, 1),
+            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 0, 0),
             //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
         };
                 

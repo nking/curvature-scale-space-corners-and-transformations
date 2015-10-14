@@ -47,6 +47,8 @@ public class BlobsAndContours {
     
     protected final GreyscaleImage imgSeg;
     
+    private boolean modifyBlobs = false;
+    
     private boolean debug = false;
 
     private String debugTag = "";
@@ -207,6 +209,31 @@ public class BlobsAndContours {
             removeRedundantBlobs(outputBlobs);
             
         }
+        
+        if (modifyBlobs) {
+            // helps to fill in single pixel holes
+            /*for (Set<PairInt> blob : outputBlobs) {
+                growRadius(blob, segImg.getWidth(), segImg.getHeight());
+            }*/
+            for (Set<PairInt> blob : outputBlobs) {
+                shrinkRadius(blob, segImg.getWidth(), segImg.getHeight());
+            }
+            
+            // if shrink radius, have to redo contiguous search
+            List<Integer> rmBlobIndexes = new ArrayList<Integer>();
+            for (int i = 0; i < outputBlobs.size(); ++i) {
+                Set<PairInt> tmp = redoContiguous(outputBlobs.get(i), 
+                    segImg.getWidth(), segImg.getHeight());
+                if (tmp.isEmpty()) {
+                    rmBlobIndexes.add(Integer.valueOf(i));
+                } else {
+                    outputBlobs.set(i, tmp);
+                }
+            }
+            for (int i = (rmBlobIndexes.size() - 1); i > -1; --i) {
+                outputBlobs.remove(rmBlobIndexes.get(i).intValue());
+            }
+        }
 
         if (debug) {
             Image img0 = ImageIOHelper.convertImage(segImg);
@@ -257,6 +284,16 @@ public class BlobsAndContours {
             if (debug) {
                 //extractor.setToDebug();
             }
+
+double[] xyCen = curveHelper.calculateXYCentroids(blob);
+if ((Math.abs(xyCen[0] - 124) < 50) && (Math.abs(xyCen[1] - 24) < 50)) {
+    //extractor.setToDebug();
+    int z = 1;
+}
+if ((Math.abs(xyCen[0] - 250) < 50) && (Math.abs(xyCen[1] - 50) < 50)) {
+    //extractor.setToDebug();
+    int z = 1;
+}
 
             PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(
                 blob, width, height,
@@ -374,8 +411,11 @@ public class BlobsAndContours {
                     }
                 }
             }
+            long ts = MiscDebug.getCurrentTimeFormatted();
+            MiscDebug.writeImageCopy(segImg, "segmentation_" + debugTag +
+                "_" + ts + ".png");
             MiscDebug.writeImageCopy(img0, "blob_perimeters_" + debugTag +
-                "_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+                "_" + ts + ".png");
         }
     }
 
@@ -642,4 +682,87 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
         return false;
     }
 
+    /**
+     * grow blob by 1 pixel radius
+     * @param blob
+     * @param w
+     * @param h 
+     */
+    private void growRadius(Set<PairInt> blob, int w, int h) {
+        
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+        
+        Set<PairInt> tmp = new HashSet<PairInt>();
+                
+        for (PairInt p : blob) {
+            for (int i = 0; i < dxs8.length; ++i) {
+                int x2 = p.getX() + dxs8[i];
+                int y2 = p.getY() + dys8[i];
+                if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                    continue;
+                }
+                PairInt p2 = new PairInt(x2, y2);
+                tmp.add(p2);
+            }
+        }
+        blob.addAll(tmp);
+    }
+
+    /**
+     * shrink blob by 1 pixel radius
+     * @param blob
+     * @param w
+     * @param h 
+     */
+    private void shrinkRadius(Set<PairInt> blob, int w, int h) {
+        
+        // any point in blob with a non-point neighbor gets removed
+        
+        Set<PairInt> tmp = new HashSet<PairInt>();
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        for (PairInt p : blob) {
+            int nN = curveHelper.countNeighbors(p.getX(), p.getY(), blob, w, h);
+            if (nN == 8) {
+                tmp.add(p);
+            }
+        }
+        blob.clear();
+        blob.addAll(tmp);
+    }
+
+    private Set<PairInt> redoContiguous(Set<PairInt> points, int w, int h) {
+        
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        if (smallestGroupLimit == 0) {
+            finder.setMinimumNumberInCluster(1);
+        } else {
+            finder.setMinimumNumberInCluster(smallestGroupLimit);
+        }
+        finder.findConnectedPointGroups(points, w, h);
+            
+        int nGroups = finder.getNumberOfGroups();
+
+        int nMaxGroup = Integer.MIN_VALUE;
+        int groupIdx = -1;
+        
+        for (int i = 0; i < nGroups; ++i) {
+            Set<PairInt> group = finder.getXY(i);
+            int nGroup = group.size();
+            if (nGroup < largestGroupLimit) {
+                if (nGroup > nMaxGroup) {
+                    groupIdx = i;
+                    nMaxGroup = nGroup;
+                }
+            }
+        }
+        
+        if (groupIdx == -1) {
+            return new HashSet<PairInt>();
+        }
+        
+        return finder.getXY(groupIdx);
+    }
 }

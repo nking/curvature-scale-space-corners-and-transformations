@@ -1064,6 +1064,9 @@ log.info("WARNING: processing single solutions... may remove these in future");
             
             count++;
         }
+        if (count == 0) {
+            return null;
+        }
         costs = Arrays.copyOf(costs, count);
         idx1s = Arrays.copyOf(idx1s, count);
         idx2s = Arrays.copyOf(idx2s, count);
