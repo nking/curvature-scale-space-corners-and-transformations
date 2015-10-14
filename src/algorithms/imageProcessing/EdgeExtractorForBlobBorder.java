@@ -8,7 +8,9 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -252,7 +254,7 @@ int z = 1;
                 exclude.addAll(butterFlySection.getRoute1());
             }
         }
-        if (butterFlySections2 != null && !butterFlySections2.isEmpty()) {
+        if (!butterFlySections2.isEmpty()) {
             for (Routes butterFlySection : butterFlySections2) {
                 exclude.addAll(butterFlySection.getRoute0());
                 exclude.addAll(butterFlySection.getRoute1());
@@ -297,13 +299,64 @@ log.info("for " + ts + " finished UntraversableLobeRemover");
         if (!butterFlySections2.isEmpty()) {
             // remove offsets to put into same frame as img
             //NOTE: that some of these have been removed from the curve
-            for (Routes routes : butterFlySections2) {
+            List<Integer> remove = new ArrayList<Integer>();
+            for (int i = 0; i < butterFlySections2.size(); ++i) {
+                Routes routes = butterFlySections2.get(i);
                 routes.applyOffsets(-1*xOffset, -1*yOffset);
+                boolean rm = false;
+                for (PairInt p : routes.getRoute0()) {
+                    if (p.getX() < 0 || p.getY() < 0) {
+                        rm = true;
+                        break;
+                    }
+                }
+                if (!rm) {
+                    for (PairInt p : routes.getRoute1()) {
+                        if (p.getX() < 0 || p.getY() < 0) {
+                            rm = true;
+                            break;
+                        }
+                    }
+                }
+                if (rm) {
+                    remove.add(Integer.valueOf(i));
+                }
+            }
+            for (int i = (remove.size() - 1); i > -1; --i) {
+                int rmIdx = remove.get(i).intValue();
+                butterFlySections2.remove(rmIdx);
             }
         }
         
 if (debug) {
-MiscDebug.writeImageCopy(img, "before_exract_single_curve_" + ts + ".png");
+Image img2 = new Image(img.getWidth(), img.getHeight());
+for (int col = 0; col < img.getWidth(); ++col) {
+    for (int row = 0; row < img.getHeight(); ++row) {
+        int v = img.getValue(col, row);
+        if (v > 0) {
+            img2.setRGB(col, row, 255, 255, 255);
+        }
+    }
+}
+MiscDebug.writeImageCopy(img2, "before_single_curve_extraction_" + ts + ".png");
+for (Routes routes : butterFlySections2) {
+    Iterator<PairInt> iter = routes.getRoute0().iterator();
+    while (iter.hasNext()) {
+        PairInt p = iter.next();
+        int r = img2.getR(p.getX(), p.getY());
+        assert(r == 255);
+        img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
+    }
+    iter = routes.getRoute1().iterator();
+    while (iter.hasNext()) {
+        PairInt p = iter.next();
+        int r = img2.getR(p.getX(), p.getY());
+        assert(r == 255);
+        img2.setRGB(p.getX(), p.getY(), 0, 0, 255);
+    }
+}
+MiscDebug.writeImageCopy(img2, "before_single_curve_extraction_" + ts + ".png");
+int z = 1;
 }
 
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
@@ -311,8 +364,7 @@ MiscDebug.writeImageCopy(img, "before_exract_single_curve_" + ts + ".png");
             extractor.setToDebug();
         }
         extractor.overrideMaxNumberIterationsJunctionSplice(10);
-        //List<PairIntArray> output = extractor.findEdges();
-
+        
         PairIntArray out = extractor.findAsSingleClosedEdge(butterFlySections2);
        
         if (out == null) {

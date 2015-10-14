@@ -1,11 +1,14 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.ButterflySectionFinder;
+import algorithms.compGeometry.ButterflySectionFinder.Routes;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -13,52 +16,52 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Edge extractor operates on an image that has already been reduced to 
- * single pixel width lines, with the exception of single step patterns. 
- * 
+ * Edge extractor operates on an image that has already been reduced to
+ * single pixel width lines, with the exception of single step patterns.
+ *
  * If an edgeGuideImage is provided, the last step will be an attempt to
- * move pixels in the edges towards the highest intensity pixels in the 
+ * move pixels in the edges towards the highest intensity pixels in the
  * edgeGuide image if the pixel move does not break the edge.
    The guidance image helps corrects errors in
  * the input image due to a line thinner like the ErosionFilter.  A Zhang-Suen
  * thinner is used now, so the guide image is not necessary.
- * 
+ *
  * @author nichole
  */
 public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
-    
+
     protected final GreyscaleImage img;
-    
+
     protected GreyscaleImage edgeGuideImage = null;
-        
+
     protected long numberOfPixelsAboveThreshold = 0;
-    
+
     protected boolean removeShorterEdges = false;
-    
+
     protected Logger log = Logger.getLogger(this.getClass().getName());
-            
+
     /**
      * if the image is smaller than 100 on a side, this will be lowered to 5
      */
     protected int edgeSizeLowerLimit = 15;
-    
+
     protected boolean repeatConnectAndTrim = false;
-    
+
     /**
      * NOTE:  input should have a black (empty) background and edges should
      * have values > 125 counts.  Edges should also have width of 1 and no larger.
-     * 
-     * @param input 
+     *
+     * @param input
      */
     public AbstractEdgeExtractor(GreyscaleImage input) {
-        
+
         img = input;
-        
+
         if (img.getWidth() < 100 || img.getHeight() < 100) {
             edgeSizeLowerLimit = 5;
         }
     }
-    
+
     /**
      * NOTE:  input should have a black (empty) background and edges should
      * have values > 125 counts.  Edges should also have width of 1 and no larger.
@@ -66,76 +69,76 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
      * highest intensity pixels of the guide image.  The guide image is expected
      * to be the combined X and Y gradient image from earlier processing
      * stages.
-     * 
+     *
      * @param input
      * @param anEdgeGuideImage
      */
-    public AbstractEdgeExtractor(GreyscaleImage input, 
+    public AbstractEdgeExtractor(GreyscaleImage input,
         final GreyscaleImage anEdgeGuideImage) {
-        
+
         img = input;
-        
+
         edgeGuideImage = anEdgeGuideImage;
-        
+
         if (img.getWidth() < 100 || img.getHeight() < 100) {
             edgeSizeLowerLimit = 5;
         }
     }
-    
+
     @Override
     public GreyscaleImage getImage() {
         return img;
     }
-    
+
     @Override
     public void overrideEdgeSizeLowerLimit(int length) {
         edgeSizeLowerLimit = length;
     }
-    
+
     @Override
     public List<PairIntArray> findEdges() {
-        
+
         List<PairIntArray> output = connectPixelsViaDFS();
-        
+
         output = findEdgesIntermediateSteps(output);
-        
+
         if (removeShorterEdges) {
             removeEdgesShorterThan(output, edgeSizeLowerLimit);
         } else {
             removeEdgesShorterThan(output, 1);
         }
-                
+
         return output;
     }
-    
+
     public void removeShorterEdges(boolean doRemove) {
         removeShorterEdges = doRemove;
     }
-    
+
     protected abstract List<PairIntArray> findEdgesIntermediateSteps(
         List<PairIntArray> edges);
-            
+
     /**
      * find the edges and return as a list of points.  The method uses a
      * DFS search through all points in the image with values > 0 to link
      * adjacent sequential points into edges.
-     * 
-     * @return 
+     *
+     * @return
      */
     protected List<PairIntArray> connectPixelsViaDFS() {
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
+
         // DFS search for sequential neighbors.
-        
+
         Stack<PairInt> stack = new Stack<PairInt>();
-      
+
         int thresh0 = 1;
-        
+
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
                 int v = img.getValue(i, j);
@@ -144,28 +147,28 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 }
             }
         }
-        
+
         numberOfPixelsAboveThreshold = stack.size();
-        
-        log.log(Level.FINE, 
-            "Number of pixels that meet or exceed threshhold={0}", 
+
+        log.log(Level.FINE,
+            "Number of pixels that meet or exceed threshhold={0}",
             Long.toString(numberOfPixelsAboveThreshold));
-        
+
         List<PairIntArray> output = new ArrayList<PairIntArray>();
         int[] uNodeEdgeIdx = new int[img.getWidth() * img.getHeight()];
         Arrays.fill(uNodeEdgeIdx, -1);
-                   
+
         // > O(N) and << O(N^2)
         while (!stack.isEmpty()) {
-            
+
             PairInt uNode = stack.pop();
-            
+
             int uX = uNode.getX();
             int uY = uNode.getY();
             int uIdx = img.getIndex(uX, uY);
-                                    
+
             for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                
+
                 int vX = dxs[nIdx] + uX;
                 int vY = dys[nIdx] + uY;
 
@@ -174,7 +177,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 }
 
                 int vIdx = img.getIndex(vX, vY);
-                
+
                 if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx)) {
                     continue;
                 }
@@ -182,29 +185,29 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 if (img.getValue(vX, vY) < thresh0) {
                     continue;
                 }
-                   
+
                 processNeighbor(uX, uY, uIdx, vX, vY, vIdx, uNodeEdgeIdx, output);
-                
+
                 stack.add(new PairInt(vX, vY));
-            }   
+            }
         }
-        
+
         log.fine(output.size() + " edges after DFS");
-        
+
         // count the number of points in edges
         long sum = countPixelsInEdges(output);
-        
-        log.log(Level.FINE, 
-            "==> {0} pixels are in edges out of {1} pixels > threshhold", 
-            new Object[]{Long.toString(sum), 
+
+        log.log(Level.FINE,
+            "==> {0} pixels are in edges out of {1} pixels > threshhold",
+            new Object[]{Long.toString(sum),
                 Long.toString(numberOfPixelsAboveThreshold)});
-        
-        log.log(Level.FINE, "there are {0} edges", 
+
+        log.log(Level.FINE, "there are {0} edges",
             Integer.toString(output.size()));
-        
+
         return output;
     }
-    
+
     protected long countPixelsInEdges(List<PairIntArray> edges) {
         long sum = 0;
         for (PairIntArray edge : edges) {
@@ -213,35 +216,35 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         return sum;
     }
 
-    protected void removeEdgesShorterThan(List<PairIntArray> output, 
+    protected void removeEdgesShorterThan(List<PairIntArray> output,
         int minNumberOfPixelsInEdge) {
-        
+
         for (int i = (output.size() - 1); i > -1; i--) {
             if (output.get(i).getN() < minNumberOfPixelsInEdge) {
                 output.remove(i);
             }
         }
     }
-    
+
     protected void adjustEdgesTowardsBrightPixels(List<PairIntArray> tmpEdges) {
-        
+
         if (edgeGuideImage == null) {
             return;
         }
-        
+
         int nReplaced = 1;
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+
         int nMaxIter = 100;
         int nIter = 0;
-      
+
         while ((nIter < nMaxIter) && (nReplaced > 0)) {
-           
+
            nReplaced = 0;
-        
+
            for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
-            
+
                 PairIntArray edge = tmpEdges.get(lIdx);
 
                 if (edge.getN() < 3) {
@@ -250,7 +253,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
 
                 int nEdgeReplaced = curveHelper.adjustEdgesTowardsBrighterPixels(
                     edge, edgeGuideImage);
-                
+
                 nReplaced += nEdgeReplaced;
             }
 
@@ -258,19 +261,19 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
 
             nIter++;
         }
-        
+
         //TODO: fix this method!
         curveHelper.removeRedundantPoints(tmpEdges);
-        
+
         curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
-        
+
         curveHelper.correctCheckeredSegments(tmpEdges);
     }
 
     /**
      * add (vX, vY) to output where (uX,uY) is the last point, else create
      * new edges where necessary.  returns the index
-     * 
+     *
      * @param uX
      * @param uY
      * @param uIdx
@@ -279,12 +282,12 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
      * @param vIdx
      * @param uNodeEdgeIdx
      * @param output
-     * @return 
+     * @return
      */
     private void processNeighbor(int uX, int uY, int uIdx,
         int vX, int vY, int vIdx,
         int[] uNodeEdgeIdx, List<PairIntArray> output) {
-        
+
         // if u is not in an edge already, create a new one
         if (uNodeEdgeIdx[uIdx] == -1) {
 
@@ -294,7 +297,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
 
             uNodeEdgeIdx[uIdx] = output.size();
 
-            output.add(edge);                        
+            output.add(edge);
         }
 
         // keep the curve points ordered
@@ -303,7 +306,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
 
         PairIntArray appendToNode = output.get(uNodeEdgeIdx[uIdx]);
         int aIdx = appendToNode.getN() - 1;
-        if ((appendToNode.getX(aIdx) != uX) || 
+        if ((appendToNode.getX(aIdx) != uX) ||
             (appendToNode.getY(aIdx) != uY)) {
             return;
         }
@@ -311,27 +314,27 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         appendToNode.add(vX, vY);
 
         uNodeEdgeIdx[vIdx] = uNodeEdgeIdx[uIdx];
-        
+
     }
-    
+
     /**
      * get the other endPoint within this edge.  NOTE that the method assumes
-     * that endPoint is truly an endPoint of edge, so it will always return 
+     * that endPoint is truly an endPoint of edge, so it will always return
      * a value.
      * @param endPoint
      * @param edge
-     * @return 
+     * @return
      */
-    protected PairInt getOppositeEndPointOfEdge(PairInt endPoint, 
+    protected PairInt getOppositeEndPointOfEdge(PairInt endPoint,
         PairIntArray edge) {
-        
+
         int x = endPoint.getX();
         int y = endPoint.getY();
-        
+
         int idx = 0;
-        
+
         int n = edge.getN();
-        
+
         if ((edge.getX(idx) == x) && (edge.getY(idx) == y)) {
             int x2 = edge.getX(n - 1);
             int y2 = edge.getY(n - 1);
@@ -342,79 +345,127 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             return new PairInt(x2, y2);
         }
     }
-    
+
     /**
      * find the edges and return as a list of points.  The method uses a
      * DFS search through all points in the image with values > 0 to link
      * adjacent sequential points into edges.
-     * 
-     * @return 
+     *
+     * @param butterFlySections
+     * @return
      */
-    protected List<PairIntArray> connectPixelsViaDFSForBounds() {
-        
+    protected List<PairIntArray> connectPixelsViaDFSForBounds(
+        List<ButterflySectionFinder.Routes> butterFlySections) {
+
         /*
         the choice among neighbors prefers in order:
             large distance from centroid
         or  fewer neighbors
         */
         boolean preferDistFromCentroid = false;
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-        
+
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
+
         // DFS search for sequential neighbors.
-        
+
         Stack<PairInt> stack = new Stack<PairInt>();
-        
+
         Set<PairInt> points = new HashSet<PairInt>();
-      
+
         int thresh0 = 1;
-        
+
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
                 int v = img.getValue(i, j);
                 if (v >= thresh0) {
-                    PairInt p = new PairInt(i, j); 
+                    PairInt p = new PairInt(i, j);
                     stack.add(p);
                     points.add(p);
                 }
             }
         }
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         double[] xyCen = curveHelper.calculateXYCentroids(points);
-        
+
         numberOfPixelsAboveThreshold = stack.size();
-        
-        log.log(Level.FINE, 
-            "Number of pixels that meet or exceed threshhold={0}", 
+
+        log.log(Level.FINE,
+            "Number of pixels that meet or exceed threshhold={0}",
             Long.toString(numberOfPixelsAboveThreshold));
-        
+
         List<PairIntArray> output = new ArrayList<PairIntArray>();
         int[] uNodeEdgeIdx = new int[img.getWidth() * img.getHeight()];
         Arrays.fill(uNodeEdgeIdx, -1);
-        
+
+        Set<PairInt> added = new HashSet<PairInt>();
+
+        if (!butterFlySections.isEmpty()) {
+            // make groups for routes and let remaining code find and merge
+            // with those
+            for (Routes routes : butterFlySections) {
+                PairInt last = null;
+                int lastImgIdx = -1;
+                Iterator<PairInt> iter = routes.getRoute0().iterator();
+                while (iter.hasNext()) {
+                    PairInt p = iter.next();
+                    int pImgIdx = img.getIndex(p.getX(), p.getY());
+                    if (last != null) {
+                        processNeighbor(last.getX(), last.getY(), lastImgIdx,
+                            p.getX(), p.getY(), pImgIdx,
+                            uNodeEdgeIdx, output);
+                        added.add(last);
+                        added.add(p);
+                    }
+                    last = p;
+                    lastImgIdx = pImgIdx;
+                }
+
+                last = null;
+                lastImgIdx = -1;
+                iter = routes.getRoute1().iterator();
+                while (iter.hasNext()) {
+                    PairInt p = iter.next();
+                    int pImgIdx = img.getIndex(p.getX(), p.getY());
+                    if (last != null) {
+                        processNeighbor(last.getX(), last.getY(), lastImgIdx,
+                            p.getX(), p.getY(), pImgIdx,
+                            uNodeEdgeIdx, output);
+                        added.add(last);
+                        added.add(p);
+                    }
+                    last = p;
+                    lastImgIdx = pImgIdx;
+                }
+            }
+        }
+
         int[] neighborsX = new int[8];
         int[] neighborsY = new int[8];
         double[] neighborsNNon = new double[8];
         double[] neighborsDistCen = new double[8];
-                   
+
         // > O(N) and << O(N^2)
         while (!stack.isEmpty()) {
-            
+
             PairInt uNode = stack.pop();
-            
+
+            if (added.contains(uNode)) {
+                continue;
+            }
+
             int uX = uNode.getX();
             int uY = uNode.getY();
             int uIdx = img.getIndex(uX, uY);
-            
+
             int count = 0;
-            
+
             for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                
+
                 int vX = dxs[nIdx] + uX;
                 int vY = dys[nIdx] + uY;
 
@@ -423,7 +474,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 }
 
                 int vIdx = img.getIndex(vX, vY);
-                
+
                 if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx)) {
                     continue;
                 }
@@ -431,71 +482,72 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
                 if (img.getValue(vX, vY) < thresh0) {
                     continue;
                 }
-                
+
                 int nc = curveHelper.countNeighbors(vX, vY, points, w, h);
-                
+
                 if (nc == 8) {
                     // not a border pixel
                     continue;
                 }
-                
+
                 neighborsX[count] = vX;
                 neighborsY[count] = vY;
                 neighborsNNon[count] = 8 - nc;
-                
+
                 double diffX = vX - xyCen[0];
                 double diffY = vY - xyCen[1];
                 neighborsDistCen[count] = Math.sqrt(diffX*diffX + diffY*diffY);
-                
+
                 count++;
             }
-            
+
             if (count == 0) {
                 continue;
             }
-            
+
             //sort ascending.  largest neighborsDistCen and largest neighborsNNon
             // are near end of array at index count - 1
             if (preferDistFromCentroid) {
-                QuickSort.sortBy1stThen2nd(neighborsDistCen, neighborsNNon, 
+                QuickSort.sortBy1stThen2nd(neighborsDistCen, neighborsNNon,
                     neighborsX, neighborsY, 0, count - 1);
             } else {
-                QuickSort.sortBy1stThen2nd(neighborsNNon, neighborsDistCen, 
+                QuickSort.sortBy1stThen2nd(neighborsNNon, neighborsDistCen,
                     neighborsX, neighborsY, 0, count - 1);
             }
-            
+
             // add only the preferred to the edge and stack
-            
+
             int vIdx = img.getIndex(neighborsX[count - 1], neighborsY[count - 1]);
-                
-            processNeighbor(uX, uY, uIdx, neighborsX[count - 1], 
+
+            processNeighbor(uX, uY, uIdx, neighborsX[count - 1],
                 neighborsY[count - 1], vIdx, uNodeEdgeIdx, output);
-            
+
             stack.add(new PairInt(neighborsX[count - 1], neighborsY[count - 1]));
-            
+
+            added.add(uNode);
         }
-        
+
         log.fine(output.size() + " edges after DFS");
-        
+
         // count the number of points in edges
         long sum = countPixelsInEdges(output);
-        
-        log.log(Level.FINE, 
-            "==> {0} pixels are in edges out of {1} pixels > threshhold", 
-            new Object[]{Long.toString(sum), 
+
+        log.log(Level.FINE,
+            "==> {0} pixels are in edges out of {1} pixels > threshhold",
+            new Object[]{Long.toString(sum),
                 Long.toString(numberOfPixelsAboveThreshold)});
-        
-        log.log(Level.FINE, "there are {0} edges", 
+
+        log.log(Level.FINE, "there are {0} edges",
             Integer.toString(output.size()));
-        
+
         return output;
     }
-    
+
     protected void debugPrint(GreyscaleImage input, int xStart, int xStop,
         int yStart, int yStop) {
-        
+
         StringBuilder sb = new StringBuilder();
-                    
+
         for (int row = yStart; row <= yStop; row++) {
             sb.append(String.format("%3d: ", row));
             for (int col = xStart; col <= xStop; col++) {
@@ -504,7 +556,7 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
             sb.append(String.format("\n"));
         }
         log.info(sb.toString());
-        
+
         sb = new StringBuilder(String.format("     "));
         for (int col = xStart; col <= xStop; col++) {
             sb.append(String.format(" %3d ", col));
