@@ -12,8 +12,8 @@ Story: Determine scale w/ blob perimeters and corners
       (see the end of docs/contours.pdf)
 
     time estimate: 
-        minimum: 
-        maximum: 
+        minimum: 3 days
+        maximum: 2 weeks
 
     amount of time used: 
 
@@ -22,9 +22,13 @@ Story: Determine scale w/ blob perimeters and corners
     comments regarding state:
 
     comments:
-        refactoring code associated with the current calculations is
+        Rrefactoring of code associated with the current calculations is
         necessary before the new algorithm to assert that the 
         abstraction is correct.
+        Much of the logic needed is already known from the experience
+        of implementing the scale calculations with contour matching
+        so the more detailed specification for Task 3 and Task 4 
+        should not take long before implementation.
 
 ---------------------------------------------------------------------
 Task 1:
@@ -153,19 +157,26 @@ Task 3:
            (2) with a map of the top 2 best solutions for each curve1, find the
                best consistent answers among the solutions.
 
-       paused here... 
-          with the contours, was able to adjust all costs to same
-          reference frame, then use bipartite matching between the curve1, curve2 
-          pairings for the highest number of matchings for lowest cost.
-          then removed solutions that had rotation very different from best solution(s).
-          add the solutions with similar params to the best solution, making
-          the largest set possible of matched points.
-          this is then given to the class which pairs the points and solves
-          for euclidean transformation.
+               with the contours, was able to adjust all costs to same
+               reference frame (which was the largest sigm from contour peaks). 
+               Here, the cost is now distance from predicted points so should 
+               be in the same frame already to compare against other curve results.
 
-           (3)
+               Then the contour algorithm uses bipartite matching between the 
+               curve1, curve2 pairings for the highest number of matchings for lowest cost.
+           
+               Then the algorithm removes solutions that have rotation very different
+               from the best solution(s).
 
-    time estimate: 
+               Similar solutions to the best solution are then gathered to make the
+               largest set of matched points.
+               Those points are then given to the class which pairs the points and 
+               solves for euclidean transformation.
+
+        Tests are needed too.  First can use the real data while tuning the method.
+
+    time estimate: minimum 1 day, maximum 1 week, expecting ~2 days w/ minimum testing
+                   but another may be needed for changes coincident with matching algorithm.
   
     amount of time used: 
 
@@ -200,50 +211,56 @@ Task 4:
                 
                   X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
         k(t,o~) = -------------------------------------------------------------
-                                 (X_dot^2(t,o~) + Y_dotY^2(t,o~))^1.5
+                                 (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
 
-    needs to be edited here after cost decisions are made
 
-           (1) Determine the strongest reference point for curve1.
-               Find the best match to it in curve2 (O(N)).
-           (2) Choose the next strongest reference point at large
-               distance from the first point.
-               Find the best match to it in curve2 (O(N)).
-           (3) Estimate the euclidean transformation from the pairs
-               of points.
-           (4) Apply the transformation to the next strongest reference
-               point in curve1 and find the predicted point in curve2.
-               The cost should be calculated as the difference between
-               the predicted point in curve2 and the closest point.
-                   the characteristics to go into the cost should be
-                      the distance between predicted and found squared,
-                      and the SSD of the feature.
-                      (curvature is affected by skew, so cannot be used
-                      as a predicted value to be found on the other curve
-                      if skew or projection effects are a possibility).
-                     
-                      The closest match to predicted should be the smallest
-                      SSD within a tolerance of the predicted location x,y,
-                      where a match is only if the SSD is smaller than its
-                      error.
+           Then a search pattern is needed.  The following is for comparison
+           of one curve's corners in image 1 to another curve's corners in
+           image 2.
+
+           (1) Find the best match by feature descriptor SSD of each corner in
+               curve 1 to curve 2.
+               For the first corner in curve1, that search is O(N_curves2).
+               For all corner1 points, the runtime for this stage is then
+                  N_curves1 * O(N_curves2).
+
+               This is kept to use in the remaining search.
+
+           (2) Skipping ahead to define the cost:
+               When a corner in curve1 is predicted to be located at (x2, y2) in
+               image2, the smallest matching SSD within a tolerance, that
+               is radius of distance from (x2, y2) is the found match.
+                  The cost when there is such a point is the disance
+                     between the found and predicted.
+
+                  The cost when no point is found needs to be determined.
+                     If the point were in reality not truly matchable, then
+                     the cost affects all attempted matches similarly, so 
+                     the cost should be less than infinity (else all solutions
+                     would have infinite cost).
+                     The cost for non-matched cannot be 0, that is ignored,
+                     because that allows solutions with fewer or no matches
+                     to have better total costs.
+                     -> so the cost for a non-match should be at least as
+                        large as the error for the point.
+                        The cost may need to have an inverse relationship with
+                        that error, so that small errors produce larger costs
+                        for not finding a match.
+                        Also, the cost needs to be in the reference frame of 
+                        the distance.
+                        Therefore, the maximum error is the tolerance in distance.
+                        A normalized inverse of the SSD error could be used as
+                        a factor to increase the cost past the tolerance.
+                        ==> the cost for a non-matching point will be the tolerance
+                            radius.
+                            ---> a factor that includes inverse of SSD (statistically defined)
+                                 should be experimented with to see if it improves the results.
  
-                      The cost of the match is the distance from the 
-                      predicted (x,y).
+           (3) The min cost heap needs to be initialized with starter solutions
+               from pairs of matched points applied to one further point on the
+               curves (pairs of points are needed to determine the euclidean transformation).
 
-                      If there is no match, the cost should be high or infinite.
-                         If the 2 starter points solution were correct, but the
-                         chosen point to predict a point in curve2 were not
-                         present in curve2 at all (due to occlusion, etc),
-                         re-trying the solution on another point would be
-                         a good idea.
-                         However, the same correct solution would be possible
-                         from another set of points too.
-
-                      A node in the minCost heap is created for this
-                      solution starter which now has 3 matched points,
-                      transformation parameters, and a cost.
-
-               The pattern for trying pairs of points:
+               Considering patterns for trying pairs of points:
 
                If one knew that that best SSD match of a point in curve1 to
                point in curve2 were true for at least 2 points in the curves,
@@ -256,25 +273,25 @@ Task 4:
                              (pt2, pt3)  ""
                              (pt2, pt4)  ""
                              (pt3, pt4)  ""
-                             which is n!/(k!(n-k)!) where n=4 and k=2 is 6 solution starters
-                             since k is always 2, can rewrite as n*(n-1)/2.
+                             which is n!/(k!(n-k)!) since k is always 2, can rewrite as n*(n-1)/2.
+                                 for a curve with 4 corners, the heap would have 6 solution starter nodes
 
                 An improvement to the  n!/(k!(n-k)!) would be to try all matches just for
                 the first point in the two points needed in the solution.
                     The number of starter solutions would be  n*n*(n-1)/2 
-                    which would be 24 for an example of 4 corners in both curves.
                     The chances of finding the correct solution are much higher.
                     It requires that only one point in the corners common to both curves
                     be a true match for it's best SSD match in curve 2.
+                       for a curve with 4 corners, the heap would have 24 solution starter nodes
 
                 A more thorough pattern guaranteed to find the best solution
                 would try every possible combination of curve1[0] with curve2[i] and the
                 same for the 2nd point, trying all combinations of pairs.
                 That would be n^3*(n-1)/2 number of solutions which becomes large
                 very quickly even for a small number of points and has redundant solutions
-                among them.  It would be 96 for having 4 corners in both curves
+                among them.  
+                       for a curve with 4 corners, the heap would have 96 solution starter nodes
                
-
                 It looks like a limit decided by error and runtime should be chosen to
                 decide between the n*(n-1)/2. starter points and the n*n*(n-1)/2. starter points.
                       for n = 5  -->  10 vs 50
@@ -293,35 +310,31 @@ Task 4:
                 It looks like a good approach to the first draft would be to use the
                 n*(n-1)/2 starter pattern when both curves have number of corners > 10,
                 else if number of corners is <= 10, should use the n*n*(n-1)/2 pattern.
-   
-                     
-           (5) Using the pattern decided in (4), create all starter solutions and apply each to
-               a strong curvature point in curve 1 (preferably not near the starter points) 
-               to estimate the cost as mentioned above.
-                   This is the initialization of the min cost heap.
 
-           (6) The solution is continued by extracting the min cost node
-               until the current min cost node has no more matchable points.
-               
-               For each extract min cost node,
-                  the next strongest curvature point in its solution not yet included is
-                  chosen and the best match is found to it.
-                  The cost is calculated and the node is inserted into the heap.
+                Whichever pattern is used, the starter solution is then applied to a third
+                point in curve1 and the cost is determined.
+                The starter solution and the cost are used to create a node to be inserted into
+                the min cost heap.  for each solution, the corners thus far used and not used
+                are kept track of.
 
-            NOTE: need to consider and revise the cost, especially for no matches within a 
-                  tolerance of predicted location...
-                  the problem is unmatched points due to occlusion or noise, etc.
-                  Those points should probably be given a high cost when unmatched rather than
-                  infinite cost or ignored.  infinite cost would result in all solutions being
-                  lost.  ignored means that a total possible result for smaller number of
-                  matching points could be a better result than a larger number of correct 
-                  matching points.
-                  --> so the cost of unmatched has to be derived.
-                  --> and whether a penalty is needed for starting a solution with a corner 
-                      that is not the strongest corner in the curve.  I think the penalty is not
-                      needed here.
-               
-    time estimate: 
+           (4) Once the heap is initialized, the solution for successive extractions of
+               the min cost node are built up one corner at a time until the min cost
+               node drawn has no more untried points.
+
+               More specifically,
+                  the min cost node is extracted from the heap.
+                  that solution is applied to the next strongest corner not yet selected in
+                  the solution.
+                  the cost is determined for the found match and a new heap node is inserted
+                  back into the min cost heap.
+
+               At some point, the extracted min cost node will have no more available matches
+                  to evaluate, and that node is returned as the answer.
+
+            Note that like the contour matching code, the invoking code needs to handle reversing
+            the arguments when the scale is less than one.
+
+    time estimate: minimum one day, maximum 1 week.
   
     amount of time used: 
 
