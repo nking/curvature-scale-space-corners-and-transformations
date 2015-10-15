@@ -142,8 +142,27 @@ Task 3:
        Implement combining the blob perimeter corner matching results
         to find the best points that should be used for the euclidean
         transformation calculation.
-           (1)
-           (2)
+
+           (1) compare each from list of blob perimeters of image 1 
+               to those in image 2
+               -- if the number of corners in current curve1 is very different
+                  in the current curve2, log them and discard, do not try to match
+               -- use ClosedCurveCornerMatcher to match the points in curve1 w/ curve2.
+                  -- the results should be comparable to all other for the same
+                     curve1 to find the best 2 solutions for curve1
+           (2) with a map of the top 2 best solutions for each curve1, find the
+               best consistent answers among the solutions.
+
+       paused here... 
+          with the contours, was able to adjust all costs to same
+          reference frame, then use bipartite matching between the curve1, curve2 
+          pairings for the highest number of matchings for lowest cost.
+          then removed solutions that had rotation very different from best solution(s).
+          add the solutions with similar params to the best solution, making
+          the largest set possible of matched points.
+          this is then given to the class which pairs the points and solves
+          for euclidean transformation.
+
            (3)
 
     time estimate: 
@@ -183,7 +202,7 @@ Task 4:
         k(t,o~) = -------------------------------------------------------------
                                  (X_dot^2(t,o~) + Y_dotY^2(t,o~))^1.5
 
-    needs to be edited here after cost decision are made
+    needs to be edited here after cost decisions are made
 
            (1) Determine the strongest reference point for curve1.
                Find the best match to it in curve2 (O(N)).
@@ -250,7 +269,7 @@ Task 4:
 
                 A more thorough pattern guaranteed to find the best solution
                 would try every possible combination of curve1[0] with curve2[i] and the
-                same for the 2nd point, trying all cobinations of pairs.
+                same for the 2nd point, trying all combinations of pairs.
                 That would be n^3*(n-1)/2 number of solutions which becomes large
                 very quickly even for a small number of points and has redundant solutions
                 among them.  It would be 96 for having 4 corners in both curves
