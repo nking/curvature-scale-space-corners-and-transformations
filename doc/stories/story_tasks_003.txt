@@ -159,9 +159,9 @@ Task 4:
     goal: Implement the blob perimeter corner matching algorithm.
 
     details:  
-        Create new class CSSClosedCurveCornerMatcher.
+        Create new class ClosedCurveCornerMatcher.
 
-        The class will have an algorithm similar to the Mocktarian and
+        The class will have an algorithm similar to the Mokhtarian and
         Macworth min cost search for matching contour peaks, but 
         instead of scale space contours, it will use the closed
         curve's corners and feature descriptors.
@@ -182,6 +182,8 @@ Task 4:
                   X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
         k(t,o~) = -------------------------------------------------------------
                                  (X_dot^2(t,o~) + Y_dotY^2(t,o~))^1.5
+
+    needs to be edited here after cost decision are made
 
            (1) Determine the strongest reference point for curve1.
                Find the best match to it in curve2 (O(N)).
