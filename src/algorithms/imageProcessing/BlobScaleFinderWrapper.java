@@ -1,10 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -20,10 +18,17 @@ public class BlobScaleFinderWrapper {
     protected boolean debug = true;
 
     protected final int binnedImageMaxDimension = 300;
+    
+    /**
+     * use the curve's corners or CSS contour peaks (default will be corners
+     * soon.  This is a final setting but may be open to set a constructor
+     * if needed in the future).
+     */
+    protected final boolean useCorners = false;
 
-    protected final SegmentedImageHelper img1Helper;
+    protected final ISegmentedImageHelper img1Helper;
 
-    protected final SegmentedImageHelper img2Helper;
+    protected final ISegmentedImageHelper img2Helper;
 
     /**
      *
@@ -35,9 +40,18 @@ public class BlobScaleFinderWrapper {
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {
 
-        img1Helper = new SegmentedImageHelper(img1, "1");
+        if (useCorners) {
+            
+            img1Helper = new SegmentedImageBlobCornerHelper(img1, "1");
 
-        img2Helper = new SegmentedImageHelper(img2, "2");
+            img2Helper = new SegmentedImageBlobCornerHelper(img2, "2");
+            
+        } else {
+            
+            img1Helper = new SegmentedImageBlobContourHelper(img1, "1");
+
+            img2Helper = new SegmentedImageBlobContourHelper(img2, "2");
+        }
 
     }
 
@@ -95,18 +109,18 @@ public class BlobScaleFinderWrapper {
         */
         
         ImageStatistics statsR1 = ImageStatisticsHelper.examine(
-            img1Helper.img.r, true);
+            img1Helper.getImage().r, true);
         ImageStatistics statsB1 = ImageStatisticsHelper.examine(
-            img1Helper.img.b, true);
+            img1Helper.getImage().b, true);
         ImageStatistics statsG1 = ImageStatisticsHelper.examine(
-            img1Helper.img.g, true);
+            img1Helper.getImage().g, true);
         
         ImageStatistics statsR2 = ImageStatisticsHelper.examine(
-            img2Helper.img.r, true);
+            img2Helper.getImage().r, true);
         ImageStatistics statsB2 = ImageStatisticsHelper.examine(
-            img2Helper.img.b, true);
+            img2Helper.getImage().b, true);
         ImageStatistics statsG2 = ImageStatisticsHelper.examine(
-            img2Helper.img.g, true);
+            img2Helper.getImage().g, true);
         
         log.info("stats R1=" + statsR1.toString());
         log.info("stats G1=" + statsG1.toString());
@@ -183,11 +197,11 @@ public class BlobScaleFinderWrapper {
             
             img2Helper.applySegmentation(segmentationType2, useBinned2);
 
-            img1Helper.extractBlobsAndContours(segmentationType1, useBinned1);
+            img1Helper.generatePerimeterPointsOfInterest(segmentationType1, useBinned1);
 
-            img2Helper.extractBlobsAndContours(segmentationType2, useBinned2);
+            img2Helper.generatePerimeterPointsOfInterest(segmentationType2, useBinned2);
 
-            BlobScaleFinder bsFinder = new BlobScaleFinder();
+            BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
             float[] outputScaleRotTransXYStDev = new float[4];
             TransformationParameters params = bsFinder.solveForScale(
@@ -225,9 +239,9 @@ public class BlobScaleFinderWrapper {
             // if arrive here, have to decide to keep current segmentation and
             // binning or increment.  at least one index has to change
             
-            int nContours1 = sumContours(img1Helper, segmentationType1, useBinned1);
+            int nContours1 = img1Helper.sumPointsOfInterest(segmentationType1, useBinned1);
 
-            int nContours2 = sumContours(img2Helper, segmentationType2, useBinned2);
+            int nContours2 = img2Helper.sumPointsOfInterest(segmentationType2, useBinned2);
             
             log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1 
                 + " nContours1=" + nContours1);
@@ -358,11 +372,11 @@ public class BlobScaleFinderWrapper {
 
             img2Helper.applySegmentation(segmentationType2, useBinned2);
 
-            img1Helper.extractBlobsAndContours(segmentationType1, useBinned1);
+            img1Helper.generatePerimeterPointsOfInterest(segmentationType1, useBinned1);
 
-            img2Helper.extractBlobsAndContours(segmentationType2, useBinned2);
+            img2Helper.generatePerimeterPointsOfInterest(segmentationType2, useBinned2);
 
-            BlobScaleFinder bsFinder = new BlobScaleFinder();
+            BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
             float[] outputScaleRotTransXYStDev = new float[4];
             TransformationParameters params = bsFinder.solveForScale(
@@ -393,9 +407,9 @@ public class BlobScaleFinderWrapper {
             // if arrive here, have to decide to keep current segmentation and binning or increment.
             // at least one index has to change
             
-            int nContours1 = sumContours(img1Helper, segmentationType1, useBinned1);
+            int nContours1 = img1Helper.sumPointsOfInterest(segmentationType1, useBinned1);
 
-            int nContours2 = sumContours(img2Helper, segmentationType2, useBinned2);
+            int nContours2 = img2Helper.sumPointsOfInterest(segmentationType2, useBinned2);
             
             if (nContours1 > 10) {
                 if (nContours2 > 10) {
@@ -420,20 +434,6 @@ public class BlobScaleFinderWrapper {
         }
 
         return null;
-    }
-
-    private int sumContours(SegmentedImageHelper imgHelper, 
-        SegmentationType segmentationType, boolean useBinned) {
-        
-        BlobsAndContours bc = imgHelper.getBlobsAndContours(segmentationType, useBinned);
-        
-        int n = 0;
-        
-        for (List<CurvatureScaleSpaceContour> list : bc.getContours()) {
-            n += list.size();
-        }
-        
-        return n;
     }
 
     private class SegmentationOrder {

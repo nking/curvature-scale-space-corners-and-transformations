@@ -531,8 +531,6 @@ public final class CSSContourMatcher {
             return sigma;
         }
         /*
-        It's not clear whether the cost should include the scale free length
-        and sigma or just sigma.
         From Mokhatarian & Mackworth 1986, Section IV, middle of column 1:
         "The average distance between two contours is the average of the
         distances between the peaks, the right branches, and the left branches.

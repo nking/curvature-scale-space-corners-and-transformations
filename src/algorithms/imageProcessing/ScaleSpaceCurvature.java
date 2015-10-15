@@ -85,7 +85,7 @@ public class ScaleSpaceCurvature {
         /*
                   X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
         k(t,o~) = -------------------------------------------------------------
-                                     (X^2(t,o~) + Y^2(t,o~))^1.5
+                               (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
         */
  
         Kernel1DHelper kernel1DHelper = new Kernel1DHelper();

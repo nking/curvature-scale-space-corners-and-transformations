@@ -1,9 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
@@ -23,58 +21,44 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.logging.Logger;
-import thirdparty.HungarianAlgorithm;
 
 /**
  *
  * @author nichole
  */
-public class BlobScaleFinder {
+public class BlobContoursScaleFinder implements IBlobScaleFinder {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     protected boolean debug = false;
 
+    @Override
     public void setToDebug() {
         debug = true;
     }
 
-    /**
-     * sum the intensity of the points with an option to subtract the mean.
-     * @param img
-     * @param points
-     * @return
-     */
-    protected double sumIntensity(GreyscaleImage img, Set<PairInt> points) {
-        if (img == null) {
-            throw new IllegalStateException("img cannot be null");
-        }
-        if (points == null) {
-            throw new IllegalStateException("points cannot be null");
-        }
-        double sum = 0;
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            double v = img.getValue(x, y);
-            sum += v;
-        }
-        return sum;
-    }
-
+    @Override
     public TransformationParameters solveForScale(
-        SegmentedImageHelper img1Helper, SegmentationType type1,
+        ISegmentedImageHelper img1Helper, SegmentationType type1,
         boolean useBinned1,
-        SegmentedImageHelper img2Helper, SegmentationType type2,
+        ISegmentedImageHelper img2Helper, SegmentationType type2,
         boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
 
-        BlobsAndContours bc1 = img1Helper.getBlobsAndContours(type1, useBinned1);
-        GreyscaleImage img1 = img1Helper.getGreyscaleImage(useBinned1);
+        if (!(img1Helper instanceof SegmentedImageBlobContourHelper) ||
+            !(img2Helper instanceof SegmentedImageBlobContourHelper)) {
+            throw new IllegalArgumentException("img1Helper and img2Helper must"
+            + " be instances of SegmentedImageBlobContourHelper");
+        }
+        
+        BlobsAndContours bc1 = ((SegmentedImageBlobContourHelper)img1Helper)
+            .getBlobsAndContours(type1, useBinned1);
+        GreyscaleImage img1 = ((SegmentedImageBlobContourHelper)img1Helper)
+            .getGreyscaleImage(useBinned1);
 
-        BlobsAndContours bc2 = img2Helper.getBlobsAndContours(type2, useBinned2);
+        BlobsAndContours bc2 = ((SegmentedImageBlobContourHelper)img2Helper)
+            .getBlobsAndContours(type2, useBinned2);
         GreyscaleImage img2 = img2Helper.getGreyscaleImage(useBinned2);
 
         List<List<CurvatureScaleSpaceContour>> contours1List = bc1.getContours();
@@ -155,7 +139,7 @@ public class BlobScaleFinder {
                 
 double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
 log.info("index1=" + index1.toString() + " index2=" + index2.toString()
- + " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
++ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
 
 log.info(
 String.format("[%d](%d,%d) [%d](%d,%d)  nCurvePoints=%d, %d", 
@@ -301,8 +285,8 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
         }
 
         TransformationParameters params = calculateTransformation(
-            img1Helper, type1, useBinned1,
-            img2Helper, type2, useBinned2,
+            img1Helper.getBinFactor(useBinned1), type1, useBinned1,
+            img2Helper.getBinFactor(useBinned2), type2, useBinned2,
             bestOverall, outputScaleRotTransXYStDev);
 
         if (params == null) {
@@ -697,9 +681,9 @@ int z = 1;
     }
 
     protected TransformationParameters calculateTransformation(
-        SegmentedImageHelper img1Helper, SegmentationType type1,
+        int binFactor1, SegmentationType type1,
         boolean useBinned1,
-        SegmentedImageHelper img2Helper, SegmentationType type2,
+        int binFactor2, SegmentationType type2,
         boolean useBinned2,
         List<FeatureComparisonStat> compStats,
         float[] outputScaleRotTransXYStDev) {
@@ -707,11 +691,6 @@ int z = 1;
         assert(compStats.isEmpty() == false);
         
         removeIntensityOutliers(compStats);
-
-        int binFactor1 = img1Helper.getBinFactor(useBinned1);
-
-        int binFactor2 = img2Helper.getBinFactor(useBinned2);
-
 
         MatchedPointsTransformationCalculator tc = new
             MatchedPointsTransformationCalculator();

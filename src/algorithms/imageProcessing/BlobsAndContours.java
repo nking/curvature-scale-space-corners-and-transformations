@@ -1,7 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
+import algorithms.imageProcessing.SegmentationType;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -37,7 +37,7 @@ public class BlobsAndContours {
     
     private final int largestGroupLimit;
     
-    private final SegmentedImageHelper.SegmentationType type;
+    private final SegmentationType type;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -68,7 +68,7 @@ public class BlobsAndContours {
      */
     public BlobsAndContours(GreyscaleImage imgGrey, GreyscaleImage imgSeg,
         int smallestGroupLimit, int largestGroupLimit, 
-        SegmentedImageHelper.SegmentationType type, 
+        SegmentationType type, 
         boolean segmentedToLineDrawing) {
 
         blobs = new ArrayList<Set<PairInt>>();
@@ -109,7 +109,7 @@ public class BlobsAndContours {
      */
     public BlobsAndContours(GreyscaleImage imgGrey, GreyscaleImage imgSeg,
         int smallestGroupLimit, int largestGroupLimit, 
-        SegmentedImageHelper.SegmentationType type,
+        SegmentationType type,
         boolean segmentedToLineDrawing, String debugTag) {
 
         blobs = new ArrayList<Set<PairInt>>();
@@ -431,7 +431,7 @@ if ((Math.abs(xyCen[0] - 250) < 50) && (Math.abs(xyCen[1] - 50) < 50)) {
 
         boolean setToExtractWeakCurvesTooIfNeeded = false;
         
-        if (type.equals(SegmentedImageHelper.SegmentationType.BINARY)) {
+        if (type.equals(SegmentationType.BINARY)) {
             // might need to restrict this to the binned images
             setToExtractWeakCurvesTooIfNeeded = true;
         }

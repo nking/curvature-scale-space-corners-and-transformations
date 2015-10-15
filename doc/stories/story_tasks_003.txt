@@ -76,9 +76,9 @@ Task 1:
 
     time estimate: < half day
   
-    amount of time used: 
+    amount of time used: 2 hours
 
-    state of completion:
+    state of completion: complete
 
     comments:
        Later, could consider to implement the service provider interface for contour inflection
@@ -183,6 +183,8 @@ Task 3:
     state of completion:
 
     comments:
+        Further specification is needed before implementation.
+
         When have test images that have textures of different size, may need to provide
         a way to recognize that and process the results from each curve's
         ClosedCurveCornerMatcher use for that specific (rare?) use case.
@@ -347,5 +349,6 @@ Task 4:
     state of completion:
 
     comments:
+        Further specification is needed before implementation.
               
 ---------------------------------------------------------------------
