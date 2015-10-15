@@ -22,7 +22,7 @@ Story: Determine scale w/ blob perimeters and corners
     comments regarding state:
 
     comments:
-        Rrefactoring of code associated with the current calculations is
+        Refactoring of code associated with the current calculations is
         necessary before the new algorithm to assert that the 
         abstraction is correct.
         Much of the logic needed is already known from the experience
@@ -142,7 +142,7 @@ Task 3:
        BlobScaleFinderWrapper:
           should be changed to use contours by default
 
-       CSSClosedCurveCornerMatcher:    
+       ClosedCurveCornerMatcher:    
        Implement combining the blob perimeter corner matching results
         to find the best points that should be used for the euclidean
         transformation calculation.
@@ -183,6 +183,10 @@ Task 3:
     state of completion:
 
     comments:
+        When have test images that have textures of different size, may need to provide
+        a way to recognize that and process the results from each curve's
+        ClosedCurveCornerMatcher use for that specific (rare?) use case.
+          A new task should be made for that in the future.
               
 ---------------------------------------------------------------------
 Task 4:
@@ -258,7 +262,9 @@ Task 4:
  
            (3) The min cost heap needs to be initialized with starter solutions
                from pairs of matched points applied to one further point on the
-               curves (pairs of points are needed to determine the euclidean transformation).
+               curves 
+               (pairs of points are needed to determine the euclidean transformation and the
+               evaluation is use of that transformation on other points).
 
                Considering patterns for trying pairs of points:
 
