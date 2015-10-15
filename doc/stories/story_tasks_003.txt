@@ -17,7 +17,7 @@ Story: Determine scale w/ blob perimeters and corners
 
     amount of time used: 
 
-    state of completion: design phase
+    state of completion: in design phase
 
     comments regarding state:
 
@@ -28,25 +28,88 @@ Story: Determine scale w/ blob perimeters and corners
 
 ---------------------------------------------------------------------
 Task 1:
-    goal: 
-
+    goal: refactor the current BlobScaleFinder and associated classes
+       to make the current algorithm available as an alternative choice,
+       but the default will be the current choice.
+      
     details:  
 
-    time estimate: 
+       BlobScaleFinder:
+           should be abstracted to IBlobScaleFinder
+               public TransformationParameters solveForScale(
+                   ISegmentedImageHelper img1Helper, SegmentationType type1,
+                   boolean useBinned1,
+                   ISegmentedImageHelper img2Helper, SegmentationType type2,
+                   boolean useBinned2,
+                   float[] outputScaleRotTransXYStDev)
+               public void setToDebug()
+           with concrete implmentations:
+               BlobContoursScaleFinder
+                  is given all content from BlobScaleFinder
+               BlobCornersScaleFinder
+       
+       SegmentedImageHelper:
+          should be abstracted to an interface ISegmentedImageHelper, and AbstractSegmentedImageHelper
+          and the contour portion should be ...?
+               paused here
+              
+          ISegmentedImageHelper:
+              public void applySegmentation(SegmentationType type, boolean applyToBinnedImage) 
+                  throws IOException, NoSuchAlgorithmException;
+              public void generatePerimeterPointsOfInterest(
+                  SegmentationType type, boolean applyToBinnedImage)
+
+          AbstractSegmentedImageHelper:
+              should contain all except contour methods and members from existing SegmentedImageHelper
+
+          SegmentedImageBlobContourHelper
+          SegmentedImageBlobCornerHelper
+
+       BlobScaleFinderWrapper:
+          should be changed to use contours or corners.
+          if choice is contours, SegmentedImageBlobContourHelper is constructed and BlobContoursScaleFinder is
+              used, else the corner implementations.
+
+       Adapt tests to the changes.
+
+    time estimate: < half day
   
     amount of time used: 
 
     state of completion:
 
     comments:
+       Later, could consider to implement the service provider interface for contour inflection
+       points or corners as choices... It's not the goal of the overall project currently to 
+           always provide a choice.
+       see $JDK_HOME/docs/technotes/guides/jar/jar.html#Service_Provider 
               
 ---------------------------------------------------------------------
 Task 2:
-    goal: 
+    goal: Need ability to make corners given just a curve rather than  
+        an image.
 
     details:  
+       The existing class CurvatureScaleSpaceCornerDetector should
+           move the corner making portion to a separate class.
+           The content that needs to be encapsulated is all
+           within method 
+               Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
+                   findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
 
-    time estimate: 
+           changes in method:
+              member variables need to be passed in as arguments:
+                  enableJaggedLineCorrections
+                  doStoreCornerRegions
+                  edgeCornerRegionMap
+                  factorIncreaseForCurvatureMinimum
+
+           new class for moved method and member variable settings: 
+               CSSCornerMaker
+
+        Adapt tests to the changes.
+
+    time estimate:  minimum couple of hours, maximum 1 day.
   
     amount of time used: 
 
@@ -56,9 +119,20 @@ Task 2:
               
 ---------------------------------------------------------------------
 Task 3:
-    goal: 
+    goal: Implement the content for classes for corners specified in 
+        Task 1 and add new tests for them, excepting the corner
+        matching algorithm which has its own task 4.
 
     details:  
+        implement:
+
+
+        Implement combining the blob perimeter corner matching results
+        to find the best points that should be used for the euclidean
+        transformation calculation.
+           (1)
+           (2)
+           (3)
 
     time estimate: 
   
@@ -70,9 +144,12 @@ Task 3:
               
 ---------------------------------------------------------------------
 Task 4:
-    goal: 
+    goal: Implement the blob perimeter corner matching algorithm.
 
     details:  
+           (1)
+           (2)
+           (3)
 
     time estimate: 
   
