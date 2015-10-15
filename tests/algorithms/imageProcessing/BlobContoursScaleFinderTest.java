@@ -1,8 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -10,15 +8,17 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class BlobScaleFinderTest extends TestCase {
+public class BlobContoursScaleFinderTest extends TestCase {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     public void testFindScaleAdapMeans() throws Exception {
 
+        boolean rotate = true;
+        
         String fileName1, fileName2;
 
-        for (int i = 0; i < 3;/*3;*/ ++i) {
+        for (int i = 1; i < 2;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -41,6 +41,19 @@ public class BlobScaleFinderTest extends TestCase {
             ImageExt img1Orig = ImageIOHelper.readImageExt(filePath1);
             String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
             ImageExt img2Orig = ImageIOHelper.readImageExt(filePath2);
+            
+            if (rotate) {
+                TransformationParameters params90 = new TransformationParameters();
+                params90.setRotationInDegrees(90);
+                params90.setOriginX(0);
+                params90.setOriginY(0);
+                params90.setTranslationX(0);
+                params90.setTranslationY(img1Orig.getWidth() - 1);
+                Transformer transformer = new Transformer();
+                img1Orig = (ImageExt) transformer.applyTransformation(img1Orig, 
+                    params90, img1Orig.getHeight(), img1Orig.getWidth());
+                int z = 1;
+            }
 
             log.info("test for " + fileName1 + ", " + fileName2);
             
@@ -120,38 +133,4 @@ public class BlobScaleFinderTest extends TestCase {
         }
 
     }
-
-    public void estSumIntensity() throws Exception {
-
-        int width = 10;
-        int height = 10;
-        int xCenter = 10;
-        int yCenter = 10;
-        Set<PairInt> rectangle10 = DataForTests.getRectangle(width, height,
-            xCenter, yCenter);
-
-        boolean toggle = true;
-        GreyscaleImage img = new GreyscaleImage(xCenter*2, yCenter*2);
-        for (PairInt p : rectangle10) {
-            if (toggle) {
-                img.setValue(p.getX(), p.getY(), 100 + 3);
-            } else {
-                img.setValue(p.getX(), p.getY(), 100 - 3);
-            }
-            toggle = !toggle;
-        }
-        // average = 100,  each of 36 will be +3 or -3 so sum should be 0
-
-        BlobScaleFinder blobFinder = new BlobScaleFinder();
-
-        double result = blobFinder.sumIntensity(img, rectangle10);
-
-        int expected = rectangle10.size()*100;
-
-        log.info("expected=" + expected + " result=" + result);
-
-        assertTrue(Math.abs(result - expected) < 0.1);
-
-    }
-
 }

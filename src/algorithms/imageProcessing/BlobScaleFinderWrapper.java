@@ -224,7 +224,7 @@ public class BlobScaleFinderWrapper {
                 // TODO: consider returning the number of points used in the
                 // calculation
                 float f0 = (outputScaleRotTransXYStDev[0]/params.getScale());
-                float f1 = (float)(2.*Math.PI/params.getRotationInRadians());
+                float f1 = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);
                 
                 // consider comparing stdev in translations to a fraction of the image
                 float f2 = outputScaleRotTransXYStDev[2];

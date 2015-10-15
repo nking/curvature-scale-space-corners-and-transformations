@@ -550,6 +550,8 @@ redoStats = true;
         float theta1, float theta2,
         CSSContourMatcherWrapper matcher) {
 
+        log.info("redoFilterContourPointsByFeatures");
+        
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
         // for the redo, because the orientations are set rather than found,
@@ -640,8 +642,6 @@ int z = 1;
 } catch(IOException e) {
 }
 }
-
-        removeOutliersByLocation(compStats);
         
         //removeOutliers(compStats);
 
@@ -736,66 +736,8 @@ int z = 1;
             outputScaleRotTransXYStDev);
 
         return params;
-    }
-    
-    /**
-     * NOTE: this should only be used on a small area because it assumes that
-     * rotation is negligible within region compared here.  It's assumed that
-     * it's used on a blob of the size within min and max ranges passed
-     * from BlobScaleFinderWrapper.
-     * 
-     * @param compStats 
-     */
-    protected void removeOutliersByLocation(List<FeatureComparisonStat> compStats) {
-        
-        if (compStats.size() < 2) {
-            return;
-        }
-        
-        /* calculating avg dx and dy from the smallest intensities
-        
-        sorting by ascending SSD of intensity and keeping top half of them.
-        then calculating avg dx and dy from those.
-        */
-        
-        int n = compStats.size();
-        int nHalf = n/2;
-        if (nHalf == 0) {
-            nHalf = 1;
-        }
-        FixedSizeSortedVector<FeatureComparisonStat> sorted 
-            = new FixedSizeSortedVector<FeatureComparisonStat>(nHalf,
-            FeatureComparisonStat.class);    
-        for (int i = 0; i < n; ++i) {
-            sorted.add(compStats.get(i));
-        }
-        double avgDX = 0;
-        double avgDY = 0;
-        for (int i = 0; i < sorted.getNumberOfItems(); ++i) {
-            FeatureComparisonStat stat = sorted.getArray()[i];
-            int diffX = stat.getImg1Point().getX() - stat.getImg2Point().getX();
-            int diffY = stat.getImg1Point().getY() - stat.getImg2Point().getY();
-            avgDX += diffX;
-            avgDY += diffY;
-        }
-        avgDX /= (double)sorted.getNumberOfItems();
-        avgDY /= (double)sorted.getNumberOfItems();
-        
-        List<Integer> remove = new ArrayList<Integer>();
-        for (int i = 0; i < n; ++i) {
-            FeatureComparisonStat stat = compStats.get(i);
-            int diffX = stat.getImg1Point().getX() - stat.getImg2Point().getX();
-            int diffY = stat.getImg1Point().getY() - stat.getImg2Point().getY();
-            if ((Math.abs(diffX - avgDX) > 5) || (Math.abs(diffY - avgDY) > 5)) {
-                remove.add(Integer.valueOf(i));
-            }
-        }
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            int idx = remove.get(i).intValue();
-            compStats.remove(idx);
-        }
-    }
-
+    }        
+  
     protected void removeOutliers(List<FeatureComparisonStat> compStats) {
 
         if (compStats.size() < 2) {

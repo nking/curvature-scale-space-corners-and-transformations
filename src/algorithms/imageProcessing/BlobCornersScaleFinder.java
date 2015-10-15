@@ -1,10 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.IBlobScaleFinder;
-import algorithms.imageProcessing.ISegmentedImageHelper;
-import algorithms.imageProcessing.SegmentationType;
-import algorithms.imageProcessing.TransformationParameters;
-
 /**
  * class to invoke methods needed to solve for euclidean scale between
  * image1 and image2 using methods specific to corners on closed curves.

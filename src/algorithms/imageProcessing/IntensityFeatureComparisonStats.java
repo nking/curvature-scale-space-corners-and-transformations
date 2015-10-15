@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  *
@@ -43,7 +44,50 @@ public class IntensityFeatureComparisonStats implements
     @Override
     public int compareTo(IntensityFeatureComparisonStats other) {
         
+        /*
+        if the number of matches is high and the SSDs are low,
+        comparison should be by combined intensity stats.
+        
+        cost is dependent on number of matches so a flaw in current cost is 
+        that fewer matches can be lower cost but the matches are truly worse,
+        so use SSD when possible.
+        */
+        
+        int n = comparisonStats.size();
+        
+        int nOther = other.comparisonStats.size();
+        
+        if (n == nOther) {
+                        
+            int cc = compareByCost(other);
+            int ci = compareByCombinedIntStat(other);
+            if (ci != cc) {
+                Logger.getLogger(this.getClass().getName()).warning(
+                    "comparison by cost differs from comparison by intensity SSD"
+                    + " cc=" + cc + " ci=" + ci + 
+                    "this.stat=" + this.toString() +
+                    "other.stat=" + other.toString()
+                );
+            }
+            
+            return ci;
+        }
+        
         boolean compareByCost = decideByCost(other);
+
+        double avgSSD = calculateCombinedIntensityStat(comparisonStats);
+        
+        double avgSSDOther = other.calculateCombinedIntensityStat(
+            other.comparisonStats);
+        
+        if ((n > nOther) && (avgSSD < avgSSDOther)) {
+            
+            return compareByCombinedIntStat(other);
+            
+        } else if ((n < nOther) && (avgSSD > avgSSDOther)) {
+            
+            return compareByCombinedIntStat(other);
+        }
         
         if (compareByCost) {
             

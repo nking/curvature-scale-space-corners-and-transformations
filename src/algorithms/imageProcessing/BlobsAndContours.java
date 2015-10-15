@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.SegmentationType;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
