@@ -28,9 +28,9 @@ Story: Determine scale w/ blob perimeters and corners
 
 ---------------------------------------------------------------------
 Task 1:
-    goal: refactor the current BlobScaleFinder and associated classes
+    goal: Refactor the current BlobScaleFinder and associated classes
        to make the current algorithm available as an alternative choice,
-       but the default will be the current choice.
+       but the default will be the current algorithm when implemented.
       
     details:  
 
@@ -50,8 +50,6 @@ Task 1:
        
        SegmentedImageHelper:
           should be abstracted to an interface ISegmentedImageHelper, and AbstractSegmentedImageHelper
-          and the contour portion should be ...?
-               paused here
               
           ISegmentedImageHelper:
               public void applySegmentation(SegmentationType type, boolean applyToBinnedImage) 
@@ -124,10 +122,24 @@ Task 3:
         matching algorithm which has its own task 4.
 
     details:  
-        implement:
+        Implement:
+           BlobCornersScaleFinder
+               public TransformationParameters solveForScale(
+                   ISegmentedImageHelper img1Helper, SegmentationType type1,
+                   boolean useBinned1,
+                   ISegmentedImageHelper img2Helper, SegmentationType type2,
+                   boolean useBinned2,
+                   float[] outputScaleRotTransXYStDev)
 
+           SegmentedImageBlobCornerHelper
+               public void generatePerimeterPointsOfInterest(
+                   SegmentationType type, boolean applyToBinnedImage)
 
-        Implement combining the blob perimeter corner matching results
+       BlobScaleFinderWrapper:
+          should be changed to use contours by default
+
+       CSSClosedCurveCornerMatcher:    
+       Implement combining the blob perimeter corner matching results
         to find the best points that should be used for the euclidean
         transformation calculation.
            (1)
@@ -147,10 +159,147 @@ Task 4:
     goal: Implement the blob perimeter corner matching algorithm.
 
     details:  
-           (1)
-           (2)
-           (3)
+        Create new class CSSClosedCurveCornerMatcher.
 
+        The class will have an algorithm similar to the Mocktarian and
+        Macworth min cost search for matching contour peaks, but 
+        instead of scale space contours, it will use the closed
+        curve's corners and feature descriptors.
+
+        The cost and penalty have to be adjusted to using SSD of feature
+        instead of sigma of peak.
+
+        The contour algorithm used as a reference, the properties of
+        strongest peak in the contours of an edge.  That sigma was
+        used to calculate a penalty for matches of solutions that
+        start with smaller sigma contours.
+           For corners and feature descriptors, the equivalent should
+           be some measure of best matched singly or best matchable
+             -- considering the smallest error for a feature (where 
+                error is the descriptor's auto-correlation SSD).
+             -- considering the corner w/ the largest curvature magnitude.
+                
+                  X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+        k(t,o~) = -------------------------------------------------------------
+                                 (X_dot^2(t,o~) + Y_dotY^2(t,o~))^1.5
+
+           (1) Determine the strongest reference point for curve1.
+               Find the best match to it in curve2 (O(N)).
+           (2) Choose the next strongest reference point at large
+               distance from the first point.
+               Find the best match to it in curve2 (O(N)).
+           (3) Estimate the euclidean transformation from the pairs
+               of points.
+           (4) Apply the transformation to the next strongest reference
+               point in curve1 and find the predicted point in curve2.
+               The cost should be calculated as the difference between
+               the predicted point in curve2 and the closest point.
+                   the characteristics to go into the cost should be
+                      the distance between predicted and found squared,
+                      and the SSD of the feature.
+                      (curvature is affected by skew, so cannot be used
+                      as a predicted value to be found on the other curve
+                      if skew or projection effects are a possibility).
+                     
+                      The closest match to predicted should be the smallest
+                      SSD within a tolerance of the predicted location x,y,
+                      where a match is only if the SSD is smaller than its
+                      error.
+ 
+                      The cost of the match is the distance from the 
+                      predicted (x,y).
+
+                      If there is no match, the cost should be high or infinite.
+                         If the 2 starter points solution were correct, but the
+                         chosen point to predict a point in curve2 were not
+                         present in curve2 at all (due to occlusion, etc),
+                         re-trying the solution on another point would be
+                         a good idea.
+                         However, the same correct solution would be possible
+                         from another set of points too.
+
+                      A node in the minCost heap is created for this
+                      solution starter which now has 3 matched points,
+                      transformation parameters, and a cost.
+
+               The pattern for trying pairs of points:
+
+               If one knew that that best SSD match of a point in curve1 to
+               point in curve2 were true for at least 2 points in the curves,
+               then one could use a pattern of solution starter points of
+                  pt 1 = curve1[0] w/ best SSD match in curve2
+                  pt 2 = curve1[1] w/ best SSD match in curve2
+                  written as (pt1, pt2) for one solution starter
+                             (pt1, pt3) for another solution starter
+                             (pt1, pt4)  ""
+                             (pt2, pt3)  ""
+                             (pt2, pt4)  ""
+                             (pt3, pt4)  ""
+                             which is n!/(k!(n-k)!) where n=4 and k=2 is 6 solution starters
+                             since k is always 2, can rewrite as n*(n-1)/2.
+
+                An improvement to the  n!/(k!(n-k)!) would be to try all matches just for
+                the first point in the two points needed in the solution.
+                    The number of starter solutions would be  n*n*(n-1)/2 
+                    which would be 24 for an example of 4 corners in both curves.
+                    The chances of finding the correct solution are much higher.
+                    It requires that only one point in the corners common to both curves
+                    be a true match for it's best SSD match in curve 2.
+
+                A more thorough pattern guaranteed to find the best solution
+                would try every possible combination of curve1[0] with curve2[i] and the
+                same for the 2nd point, trying all cobinations of pairs.
+                That would be n^3*(n-1)/2 number of solutions which becomes large
+                very quickly even for a small number of points and has redundant solutions
+                among them.  It would be 96 for having 4 corners in both curves
+               
+
+                It looks like a limit decided by error and runtime should be chosen to
+                decide between the n*(n-1)/2. starter points and the n*n*(n-1)/2. starter points.
+                      for n = 5  -->  10 vs 50
+                      for n = 10 -->  45 vs 450
+                      for n = 15 -->  105 vs 1575
+                      for n = 25 -->  300 vs 7500
+                Since the corners are already high gradient in intensities, can expect that the
+                feature descriptors are somewhat unique so an assumption that the best match
+                is correct for at least 2 out of n is not bad for n > 10.
+       
+                Note, that if needed, an improvement on the minimum approach of n*(n-1)/2 would
+                be a set number of best SSD matches for a point, that is the top 2 SSD matches
+                are tried instead of the top 1.  The factor would be applied to both points in
+                the starter points, so for top 2, would have 4 times more, which is 2 * n*(n-1).
+
+                It looks like a good approach to the first draft would be to use the
+                n*(n-1)/2 starter pattern when both curves have number of corners > 10,
+                else if number of corners is <= 10, should use the n*n*(n-1)/2 pattern.
+   
+                     
+           (5) Using the pattern decided in (4), create all starter solutions and apply each to
+               a strong curvature point in curve 1 (preferably not near the starter points) 
+               to estimate the cost as mentioned above.
+                   This is the initialization of the min cost heap.
+
+           (6) The solution is continued by extracting the min cost node
+               until the current min cost node has no more matchable points.
+               
+               For each extract min cost node,
+                  the next strongest curvature point in its solution not yet included is
+                  chosen and the best match is found to it.
+                  The cost is calculated and the node is inserted into the heap.
+
+            NOTE: need to consider and revise the cost, especially for no matches within a 
+                  tolerance of predicted location...
+                  the problem is unmatched points due to occlusion or noise, etc.
+                  Those points should probably be given a high cost when unmatched rather than
+                  infinite cost or ignored.  infinite cost would result in all solutions being
+                  lost.  ignored means that a total possible result for smaller number of
+                  matching points could be a better result than a larger number of correct 
+                  matching points.
+                  --> so the cost of unmatched has to be derived.
+                  --> and whether a penalty is needed for starting a solution with a corner 
+                      that is not the strongest corner in the curve.  I think the penalty is not
+                      needed here.
+               
     time estimate: 
   
     amount of time used: 
