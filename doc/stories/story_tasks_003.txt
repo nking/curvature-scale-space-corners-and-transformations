@@ -17,7 +17,7 @@ Story: Determine scale w/ blob perimeters and corners
 
     amount of time used: 
 
-    state of completion: in design phase
+    state of completion: in implementation phase
 
     comments regarding state:
 
@@ -405,14 +405,19 @@ Task 5:
         the more detailed Task 4 algorithm upon a fail.
 
         Note that the quick try, to remain simple, might insist upon the
-        same number of corners in both curves.  This algorithm would be
+        same number of corners in both curves.  
+        A method preceding use could decide that the number of corners is close
+        and filter out the weakest corner in the larger number curve.
+
+        This algorithm would be
         good at evaluating the Venturi test images blob perimeters quickly, but
         would fail for Brown & Lee 2003 test images blob perimeters and 
         perhaps for the books test image blob perimeters.  The books test 
-        images are more like a moving camera's perspective (although already
-        rectified) in that illumination effects and projection effects from 
-        being close to the camera change the shape of the object result in 
-        different contours for objects in the 2 images.  NOTE however, that 
+        images are a moving camera's perspective with objects close to the
+        camera and illumination close to the objects too (the images
+        are already rectified) so the result is different contours for 
+        objects in the 2 images and sometimes different feature descriptors 
+        right outside of the contour because of projection.  NOTE however, that 
         the stable features in the books test images are the text and so 
         segmentation tailored to just the text followed by the use of this 
         algorithm would perform well, but those images are very high quality 
@@ -439,7 +444,7 @@ Task 5:
          The cost would be similar to Task 4, that is distance from
              predicted for each point in curve2.
 
-         The cost for not matched should be similar to Task 4's, that is,
+         The cost for "not matched" should be similar to Task 4's, that is,
              the tolerance.
 
          In summary, this algorithm isn't expected to succeed for all of
