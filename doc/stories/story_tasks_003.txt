@@ -284,7 +284,7 @@ Task 4:
                The ordering of points in a closed curve can only be used as a filter in
                this way once two reference points are made (because as stated in the story
                goal, do not want to depend upon both curves being same length in physical
-               space to use more than bounds, that is, their location t in index space
+               space to use more than bounds, that is, their location t in scale-free-length space
                because there are differences in the curve lengths due to noise and 
                occlusion and intensity levels etc).
                
