@@ -384,7 +384,7 @@ public class FeatureMatcher {
     public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
         BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) {
-        
+     
         final int x1 = region1.getX();
         final int y1 = region1.getY();
         int rot1 = Math.round(region1.getRelativeOrientationInDegrees());
@@ -392,6 +392,49 @@ public class FeatureMatcher {
         final int x2 = region2.getX();
         final int y2 = region2.getY();
         int rot2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rot1, x2, y2, rot2, dither);
+    }
+    
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        CornerRegion region1, CornerRegion region2, int dither) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rotD1, x2, y2, rotD2, dither);
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation. 
+     * @param features1
+     * @param x1
+     * @param y1
+     * @param features2
+     * @param rot1
+     * @param x2
+     * @param dither
+     * @param rot2
+     * @param y2
+     * @return
+     */
+    protected FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        final int x1, final int y1, final int rot1,
+        final int x2, final int y2, final int rot2,        
+        int dither) {
         
         FeatureComparisonStat best = null;
         
@@ -486,6 +529,50 @@ public class FeatureMatcher {
         final int x2 = region2.getX();
         final int y2 = region2.getY();
         int rot2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        return ditherForBestLocation(features1, features2,
+            x1, y1, rot1, x2, y2, rot2, dither);
+    }
+    
+    public FeatureComparisonStat ditherForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        CornerRegion region1, CornerRegion region2, int dither) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        return ditherForBestLocation(features1, features2,
+            x1, y1, rotD1, x2, y2, rotD2, dither);
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param x1
+     * @param y1
+     * @param rot1
+     * @param x2
+     * @param y2
+     * @param rot2
+     * @param dither
+     * @return
+     */
+    public FeatureComparisonStat ditherForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        final int x1, final int y1, final int rot1,
+        final int x2, final int y2, final int rot2,        
+        int dither) {
         
         FeatureComparisonStat best = null;
         
