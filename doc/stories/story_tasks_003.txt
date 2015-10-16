@@ -113,9 +113,9 @@ Task 2:
 
     time estimate:  minimum couple of hours, maximum 1 day.
   
-    amount of time used: 
+    amount of time used: 1 hour
 
-    state of completion:
+    state of completion: complete
 
     comments:
               
