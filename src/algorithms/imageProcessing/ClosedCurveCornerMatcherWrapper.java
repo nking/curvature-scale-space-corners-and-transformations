@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -58,7 +59,10 @@ public class ClosedCurveCornerMatcherWrapper {
 
         if (!cornersAreAlreadySorted) {
 
-            //TODO: sort by |k|
+            // sort by descending |k|
+            Collections.sort(c1, new DescendingKComparator());
+
+            Collections.sort(c2, new DescendingKComparator());
         }
 
         nMaxMatchable = Math.min(corners1.size(), corners2.size());

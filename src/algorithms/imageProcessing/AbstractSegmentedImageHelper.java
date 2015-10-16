@@ -164,6 +164,16 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         }
     }
 
+    public void generatePerimeterPointsOfInterest(SegmentationType type, 
+        boolean applyToBinnedImage) {
+        
+        if (applyToBinnedImage) {
+            generatePerimeterPointsOfInterestForBinned(type);
+        } else {
+            generatePerimeterPointsOfInterestForUnbinned(type);
+        }
+    }
+
     protected abstract void clearBinnedPointsOfInterestMaps();
 
     protected abstract void clearUnbinnedPointsOfInterestMaps();

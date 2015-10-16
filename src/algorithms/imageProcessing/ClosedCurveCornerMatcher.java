@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -71,12 +72,12 @@ public class ClosedCurveCornerMatcher {
         if (!cornersAreAlreadySorted) {
 
             // sort by descending |k|
-            //Collections.sort(c1, new DescendingAbsKComparator());
+            Collections.sort(c1, new DescendingKComparator());
 
-            //Collections.sort(c2, new DescendingAbsKComparator());
+            Collections.sort(c2, new DescendingKComparator());
         }
 
-        initializeHeapNodes();
+        //initializeHeapNodes();
     }
 
     public boolean matchCorners() {
@@ -94,10 +95,10 @@ public class ClosedCurveCornerMatcher {
      * @return
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
      */
-    protected FeatureComparisonStat[] getBestSSDC1ToC2() 
+    protected int[] getBestSSDC1ToC2() 
         throws CornerRegion.CornerRegionDegneracyException {
         
-        FeatureComparisonStat[] stats = new FeatureComparisonStat[c1.size()];
+        int[] indexes2 = new int[c1.size()];
         
         int dither = 1;
         
@@ -108,6 +109,7 @@ public class ClosedCurveCornerMatcher {
             CornerRegion region1 = c1.get(i);
             
             FeatureComparisonStat best = null;
+            int bestIdx2 = -1;
             
             for (int j = 0; j < c2.size(); ++j) {
                 
@@ -123,20 +125,22 @@ public class ClosedCurveCornerMatcher {
                 
                 if (best == null) {
                     best = compStat;
+                    bestIdx2 = j;
                     continue;
                 }
                 
                 if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
                     if (compStat.getSumIntensitySqDiff() < best.getSumIntensitySqDiff()) {
                         best = compStat;
+                        bestIdx2 = j;
                     }
                 }
             }
             
-            stats[i] = best;
+            indexes2[i] = bestIdx2;
         }
         
-        return stats;
+        return indexes2;
     }
 
     private void initializeVariables(List<CornerRegion> corners1, 
@@ -185,7 +189,7 @@ public class ClosedCurveCornerMatcher {
     /**
      * initialize the starter solution nodes for the heap
      */
-    private void initializeHeapNodes() {
+    private void initializeHeapNodes() throws CornerRegion.CornerRegionDegneracyException {
         
         /*
         using a limit decided by runtime to decide between 
@@ -213,22 +217,24 @@ public class ClosedCurveCornerMatcher {
      * with runtime O(n*(n-1)/2).
      * 
      */
-    private void initHeapNodes1() {
+    private void initHeapNodes1() throws CornerRegion.CornerRegionDegneracyException {
+        
+        int[] indexes2 = getBestSSDC1ToC2();
         
         /*
         If one knew that that best SSD match of a point in curve1 to
-               point in curve2 were true for at least 2 points in the curves,
-               then one could use a pattern of solution starter points of
-                  pt 1 = curve1[0] w/ best SSD match in curve2
-                  pt 2 = curve1[1] w/ best SSD match in curve2
-                  written as (pt1, pt2) for one solution starter
-                             (pt1, pt3) for another solution starter
-                             (pt1, pt4)  ""
-                             (pt2, pt3)  ""
-                             (pt2, pt4)  ""
-                             (pt3, pt4)  ""
-                             which is n!/(k!(n-k)!) since k is always 2, can rewrite as n*(n-1)/2.
-                                 for a curve with 4 corners, the heap would have 6 solution starter nodes
+        point in curve2 were true for at least 2 points in the curves,
+        then one could use a pattern of solution starter points of
+          pt 1 = curve1[0] w/ best SSD match in curve2
+          pt 2 = curve1[1] w/ best SSD match in curve2
+          written as (pt1, pt2) for one solution starter
+                     (pt1, pt3) for another solution starter
+                     (pt1, pt4)  ""
+                     (pt2, pt3)  ""
+                     (pt2, pt4)  ""
+                     (pt3, pt4)  ""
+                     which is n!/(k!(n-k)!) since k is always 2, can rewrite as n*(n-1)/2.
+                         for a curve with 4 corners, the heap would have 6 solution starter nodes
         */
     }
     
@@ -237,6 +243,7 @@ public class ClosedCurveCornerMatcher {
      * with runtime O(n*n*(n-1)/2).
      */
     private void initHeapNodes2() {
+        
         /*
         An improvement in completeness to initHeapNodes1() would be to try 
         all matches just for the first point in the two points needed in the solution.
@@ -246,6 +253,7 @@ public class ClosedCurveCornerMatcher {
                     be a true match for it's best SSD match in curve 2.
                        for a curve with 4 corners, the heap would have 24 solution starter nodes
         */
+        
     }
    
     protected CornerRegion findBestSSDWithinTolerance(CornerRegion corner1,

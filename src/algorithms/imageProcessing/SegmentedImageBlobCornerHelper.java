@@ -1,11 +1,21 @@
 package algorithms.imageProcessing;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  *
  * @author nichole
  */
 public class SegmentedImageBlobCornerHelper extends AbstractSegmentedImageHelper {
-
+    
+    protected Map<SegmentationType, BlobsAndCorners> imgBlobsAndCornersMap 
+        = new HashMap<SegmentationType, BlobsAndCorners>();
+    
+    protected Map<SegmentationType, BlobsAndCorners> imgBinnedBlobsAndCornersMap 
+        = new HashMap<SegmentationType, BlobsAndCorners>();
+    
     public SegmentedImageBlobCornerHelper(ImageExt img) {
         super(img);
     }
@@ -14,35 +24,130 @@ public class SegmentedImageBlobCornerHelper extends AbstractSegmentedImageHelper
         super(img, debugTag);
     }
 
-    @Override
     protected void clearBinnedPointsOfInterestMaps() {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        imgBinnedBlobsAndCornersMap.clear();
     }
 
-    @Override
     protected void clearUnbinnedPointsOfInterestMaps() {
-        throw new UnsupportedOperationException("Not supported yet."); 
-    }
-
-    @Override
-    public void generatePerimeterPointsOfInterest(SegmentationType type, 
-        boolean applyToBinnedImage) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        imgBlobsAndCornersMap.clear();
     }
 
     @Override
     protected void generatePerimeterPointsOfInterestForUnbinned(SegmentationType type) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        GreyscaleImage segImg = getSegmentationImage(type);
+        
+        if (segImg == null) {
+            //TODO: consider changing logic to perform this if needed
+            throw new IllegalArgumentException("segmented image hasn't been created yet.  error?");
+        }
+        
+        BlobsAndCorners blobsAndCorners = imgBlobsAndCornersMap.get(type);
+
+        if (blobsAndCorners != null) {
+            return;
+        }
+        
+        boolean segmentedToLineDrawing = false;
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT) ||
+            type.equals(SegmentationType.BINARY)) {
+            segmentedToLineDrawing = true;
+        }
+        
+        if (debug) {
+            blobsAndCorners = new BlobsAndCorners(getGreyscaleImage(),
+                segImg, smallestGroupLimit, largestGroupLimit, type, 
+                segmentedToLineDrawing, debugTag);
+        } else {
+            blobsAndCorners = new BlobsAndCorners(getGreyscaleImage(),
+                segImg, smallestGroupLimit, largestGroupLimit, type, 
+                segmentedToLineDrawing);
+        }
+        
+        imgBlobsAndCornersMap.put(type, blobsAndCorners); 
     }
 
     @Override
     protected void generatePerimeterPointsOfInterestForBinned(SegmentationType type) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+        
+        GreyscaleImage segImg = getBinnedSegmentationImage(type);
+        
+        if (segImg == null) {
+            //TODO: consider changing logic to perform this if needed
+            throw new IllegalArgumentException("segmented image hasn't been created yet.  error?");
+        }
+        
+        BlobsAndCorners blobsAndCorners = imgBinnedBlobsAndCornersMap.get(type);
+
+        if (blobsAndCorners != null) {
+            return;
+        }
+        
+        boolean segmentedToLineDrawing = false;
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT) ||
+            type.equals(SegmentationType.BINARY)) {
+            segmentedToLineDrawing = true;
+        }
+        
+        if (debug) {
+            blobsAndCorners = new BlobsAndCorners(getGreyscaleImageBinned(),
+                segImg, 
+                smallestGroupLimitBinned, largestGroupLimitBinned, type,
+                segmentedToLineDrawing, debugTag);
+        } else {
+            blobsAndCorners = new BlobsAndCorners(getGreyscaleImageBinned(),
+                segImg, 
+                smallestGroupLimitBinned, largestGroupLimitBinned, type,
+                segmentedToLineDrawing);
+        }
+        
+        imgBinnedBlobsAndCornersMap.put(type, blobsAndCorners);
     }
 
+    public BlobsAndCorners getBlobsAndCorners(SegmentationType type, 
+        boolean getTheBinned) {
+        
+        if (getTheBinned) {
+            return getBlobsAndCornersForBinned(type);
+        }
+               
+        return getBlobsAndCornersForUnbinned(type);
+    }
+    
+    private BlobsAndCorners getBlobsAndCornersForUnbinned(SegmentationType type) {
+        
+        if (type == null) {
+            throw new IllegalArgumentException("type cannot be null");
+        }
+        
+        BlobsAndCorners bc = imgBlobsAndCornersMap.get(type);
+       
+        return bc;
+    }
+    
+    private BlobsAndCorners getBlobsAndCornersForBinned(SegmentationType type) {
+        
+        if (type == null) {
+            throw new IllegalArgumentException("type cannot be null");
+        }
+        
+        BlobsAndCorners bc = imgBinnedBlobsAndCornersMap.get(type);
+       
+        return bc;
+    }
+    
     @Override
-    public int sumPointsOfInterest(SegmentationType segmentationType1, boolean useBinned1) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+    public int sumPointsOfInterest( 
+        SegmentationType segmentationType, boolean useBinned) {
+        
+        BlobsAndCorners bc = getBlobsAndCorners(segmentationType, useBinned);
+        
+        int n = 0;
+        
+        for (List<CornerRegion> list : bc.getCorners()) {
+            n += list.size();
+        }
+        
+        return n;
     }
 
 }

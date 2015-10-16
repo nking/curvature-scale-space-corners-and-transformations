@@ -34,16 +34,6 @@ public class SegmentedImageBlobContourHelper extends AbstractSegmentedImageHelpe
         super(img, debugTag);
     }
     
-    public void generatePerimeterPointsOfInterest(SegmentationType type, 
-        boolean applyToBinnedImage) {
-        
-        if (applyToBinnedImage) {
-            generatePerimeterPointsOfInterestForBinned(type);
-        } else {
-            generatePerimeterPointsOfInterestForUnbinned(type);
-        }
-    }
-
     protected void clearBinnedPointsOfInterestMaps() {
         imgBinnedBlobsAndContoursMap.clear();
     }
