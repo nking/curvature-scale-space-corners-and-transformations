@@ -147,6 +147,10 @@ Task 3:
         to find the best points that should be used for the euclidean
         transformation calculation.
 
+           (0) order the perimeters in same orientation.  contours are using
+               CCW order:
+                  MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                  boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);
            (1) compare each from list of blob perimeters of image 1 
                to those in image 2
                -- if the number of corners in current curve1 is very different
@@ -179,6 +183,7 @@ Task 3:
                    but another may be needed for changes coincident with matching algorithm.
   
     amount of time used: 
+          7pm - 
 
     state of completion:
 
@@ -201,6 +206,8 @@ Task 4:
         Macworth min cost search for matching contour peaks, but 
         instead of scale space contours, it will use the closed
         curve's corners and feature descriptors.
+        The algorithm here is using point location (x,y) instead of
+        scale-free length. 
 
         The cost and penalty have to be adjusted to using SSD of feature
         instead of sigma of peak.
@@ -223,6 +230,8 @@ Task 4:
            Then a search pattern is needed.  The following is for comparison
            of one curve's corners in image 1 to another curve's corners in
            image 2.
+
+   revising this to use point order
 
            (1) Find the best match by feature descriptor SSD of each corner in
                curve 1 to curve 2.
@@ -268,7 +277,18 @@ Task 4:
                (pairs of points are needed to determine the euclidean transformation and the
                evaluation is use of that transformation on other points).
 
-               Considering patterns for trying pairs of points:
+               Note, considering that because the curves are ordered and both are in the same
+               direction, can use the properties of that (curvature scale space) to rule
+               out the trial point once the first point and second point are chosen as
+               the trial point must lie between or outside of both points in both curves.
+               The ordering of points in a closed curve can only be used as a filter in
+               this way once two reference points are made (because as stated in the story
+               goal, do not want to depend upon both curves being same length in physical
+               space to use more than bounds, that is, their location t in index space
+               because there are differences in the curve lengths due to noise and 
+               occlusion and intensity levels etc).
+               
+               Back to the pattern of choosing the first two matching points:
 
                If one knew that that best SSD match of a point in curve1 to
                point in curve2 were true for at least 2 points in the curves,
@@ -345,6 +365,7 @@ Task 4:
     time estimate: minimum one day, maximum 1 week.
   
     amount of time used: 
+       2 hours
 
     state of completion:
 
