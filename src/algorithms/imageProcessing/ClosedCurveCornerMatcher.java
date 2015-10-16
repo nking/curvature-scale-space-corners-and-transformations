@@ -85,7 +85,8 @@ public class ClosedCurveCornerMatcher {
     }
     
     /**
-     * for each corner in c1, find the smallest matching SSD in c2.
+     * for each corner in c1, find the smallest matching SSD in c2 and return
+     * the indexes w.r.t. c2.
      * Note that the code does not attempt unique (bipartite matching) because
      * the results are not used as the final match, rather a part of combinations
      * tried towards a solution.

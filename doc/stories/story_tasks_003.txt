@@ -5,7 +5,7 @@ Story: Determine scale w/ blob perimeters and corners
       space image contours of the blob perimeters to find matching 
       points and hence scale, but it is vulnerable to differences in the 
       contours between images, for example, due to a large bump or 
-      occulusion.  An alternate method is needed to use the same blob 
+      occlusion.  An alternate method is needed to use the same blob 
       perimeters, but corners instead of inflection points and contours.  
       Both methods should be available for use after the changes, but 
       the new algorithm will be the default.
@@ -183,12 +183,11 @@ Task 3:
                    but another may be needed for changes coincident with matching algorithm.
   
     amount of time used: 
-          7pm - 
+         1 hr
 
     state of completion:
 
     comments:
-        Further specification is needed before implementation.
 
         When have test images that have textures of different size, may need to provide
         a way to recognize that and process the results from each curve's
@@ -374,7 +373,6 @@ Task 4:
     state of completion:
 
     comments:
-        Further specification is needed before implementation.
               
 ---------------------------------------------------------------------
 Task 5:
