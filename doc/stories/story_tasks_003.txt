@@ -287,6 +287,13 @@ Task 4:
                space to use more than bounds, that is, their location t in scale-free-length space
                because there are differences in the curve lengths due to noise and 
                occlusion and intensity levels etc).
+               (using scale space axis would be faster because the choices of point 2 and the trial
+               point are fewer in number and the choice does not involve several transendental
+               function operations to predict the location, but my existing tests of w/ 
+               scale calculations with contours has shown this is
+               not as robust for some of the strongest unique shapes in an image... might make a
+               separate light weight algorithm to do just this separately as a quick attempt
+               for an image, but expect that this euclidean approach is needed).
                
                Back to the pattern of choosing the first two matching points:
 
