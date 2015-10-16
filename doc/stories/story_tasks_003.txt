@@ -283,18 +283,12 @@ Task 4:
                the trial point must lie between or outside of both points in both curves.
                The ordering of points in a closed curve can only be used as a filter in
                this way once two reference points are made (because as stated in the story
-               goal, do not want to depend upon both curves being same length in physical
-               space to use more than bounds, that is, their location t in scale-free-length space
+               and the task goal, do not want to depend upon both curves being 
+               same length in physical space to use more than bounds, that is, 
+               their location t in scale-free-length space
                because there are differences in the curve lengths due to noise and 
-               occlusion and intensity levels etc).
-               (using scale space axis would be faster because the choices of point 2 and the trial
-               point are fewer in number and the choice does not involve several transendental
-               function operations to predict the location, but my existing tests of w/ 
-               scale calculations with contours has shown this is
-               not as robust for some of the strongest unique shapes in an image... might make a
-               separate light weight algorithm to do just this separately as a quick attempt
-               for an image, but expect that this approach below is needed...changing the design
-               now to add this css version as a separate algorithm as Task 5).
+               occlusion and intensity levels etc.  Task 5 addresses a solution
+               using scale-free length though.).
                
                Back to the pattern of choosing the first two matching points:
 
@@ -379,5 +373,86 @@ Task 4:
 
     comments:
         Further specification is needed before implementation.
+              
+---------------------------------------------------------------------
+Task 5:
+    goal: Implement a faster, but more likely to fail for less than ideal
+        curves (see end of docs/contours.pdf), blob perimeter corner 
+        matching algorithm that uses the properties of curvature scale 
+        space scale-free length to choose the combinations of curve1 and 
+        curve2 points in roughly O(N_corners) for a curve. It uses the
+        property that corners are ordered with respect to one another 
+        in both curves.
+
+    priority:
+        lower than other tasks of this story
+
+    details:  
+        ClosedCurveCornerMatcher has a couple of choices of methods to
+        initialize the min cost heap.
+        The 2 init heap methods in Task 4 are more complete curve1 and curve2
+        corner combination patterns that use (x,y) space to try to limit 
+        effects of differences in the closed curves due to noise or 
+        occlusion or intensity level etc.
+
+        This would instead, make an assumption about the curves being well 
+        formed and similar, hence the number of combinations for matching if 
+        they have the same number of corners is O(N_corners).
+
+        This is a quick try at a solution for ideal curves before using 
+        the more detailed Task 4 algorithm upon a fail.
+
+        Note that the quick try, to remain simple, might insist upon the
+        same number of corners in both curves.  This algorithm would be
+        good at evaluating the Venturi test images blob perimeters quickly, but
+        would fail for Brown & Lee 2003 test images blob perimeters and the
+        books test image blob perimeters.  The books test images are more
+        like a moving camera's perspective (although already rectified) in
+        that illumination effects and projection effects from being close to
+        the focus change the shape of the object result in different 
+        contours for objects in the 2 images.  NOTE however, that the stable 
+        features in the books test images are the text and so segmentation 
+        tailored to just the text followed by the use of this algorithm would 
+        perform well, but those images are very high quality and text in 
+        others is sometimes patchy so would not perform well).
+
+        The pattern of combinations would be:
+           corners1[0] paired with corners2[0] results in the remaining being
+           paired similarly corners1[1] paired with corners2[1] etc.
+
+        The second out of N patterns would be 
+           corners1[0] paired with corners2[1] results in the remaining being
+           paired similarly corners1[1] paired with corners2[2] etc.
+
+           ...
+
+         The euclidean solution and evaluation would be similar to 
+            MatchedPointsTransformationCalculator, but would use outlier
+            removal first:
+              -- remove points w/ feature descriptor SSD larger than error
+            Then during the pairings of points in  MatchedPointsTransformationCalculator,
+              -- remove deviant points in pairs with rotation larger
+                 than factor * standard deviation from other rotation.
+         The resulting transformation is then applied to each corner.
+         The cost would be similar to Task 4, that is distance from
+             predicted for each point in curve2.
+
+         The cost for not matched should be similar to Task 4's, that is,
+             the tolerance.
+
+         In summary, this algorithm isn't expected to succeed for most of
+         the existing test images in the project, but is worth implementing
+         for a fast success or fail.
+
+         The quality for valid solutions might need to be a little higher
+         than Task 4's.
+
+    time estimate: minimum one day, maximum 2 days.
+  
+    amount of time used: 
+
+    state of completion:
+
+    comments:
               
 ---------------------------------------------------------------------
