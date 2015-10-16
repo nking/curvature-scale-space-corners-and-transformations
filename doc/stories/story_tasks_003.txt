@@ -231,8 +231,6 @@ Task 4:
            of one curve's corners in image 1 to another curve's corners in
            image 2.
 
-   revising this to use point order
-
            (1) Find the best match by feature descriptor SSD of each corner in
                curve 1 to curve 2.
                For the first corner in curve1, that search is O(N_curves2).
@@ -357,6 +355,10 @@ Task 4:
                   the solution.
                   the cost is determined for the found match and a new heap node is inserted
                   back into the min cost heap.
+
+               Note that the choice of the next point should take into consideration
+                  whether it is consistently between the 2 starter points in 
+                  index space or outside of them in index space.
 
                At some point, the extracted min cost node will have no more available matches
                   to evaluate, and that node is returned as the answer.
