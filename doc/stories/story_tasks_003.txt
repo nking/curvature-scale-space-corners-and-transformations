@@ -407,16 +407,16 @@ Task 5:
         Note that the quick try, to remain simple, might insist upon the
         same number of corners in both curves.  This algorithm would be
         good at evaluating the Venturi test images blob perimeters quickly, but
-        would fail for Brown & Lee 2003 test images blob perimeters and the
-        books test image blob perimeters.  The books test images are more
-        like a moving camera's perspective (although already rectified) in
-        that illumination effects and projection effects from being close to
-        the focus change the shape of the object result in different 
-        contours for objects in the 2 images.  NOTE however, that the stable 
-        features in the books test images are the text and so segmentation 
-        tailored to just the text followed by the use of this algorithm would 
-        perform well, but those images are very high quality and text in 
-        others is sometimes patchy so would not perform well).
+        would fail for Brown & Lee 2003 test images blob perimeters and 
+        perhaps for the books test image blob perimeters.  The books test 
+        images are more like a moving camera's perspective (although already
+        rectified) in that illumination effects and projection effects from 
+        being close to the camera change the shape of the object result in 
+        different contours for objects in the 2 images.  NOTE however, that 
+        the stable features in the books test images are the text and so 
+        segmentation tailored to just the text followed by the use of this 
+        algorithm would perform well, but those images are very high quality 
+        and text in others is sometimes patchy so would not perform well).
 
         The pattern of combinations would be:
            corners1[0] paired with corners2[0] results in the remaining being
@@ -442,7 +442,7 @@ Task 5:
          The cost for not matched should be similar to Task 4's, that is,
              the tolerance.
 
-         In summary, this algorithm isn't expected to succeed for most of
+         In summary, this algorithm isn't expected to succeed for all of
          the existing test images in the project, but is worth implementing
          for a fast success or fail.
 
