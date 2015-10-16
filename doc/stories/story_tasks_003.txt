@@ -293,7 +293,8 @@ Task 4:
                scale calculations with contours has shown this is
                not as robust for some of the strongest unique shapes in an image... might make a
                separate light weight algorithm to do just this separately as a quick attempt
-               for an image, but expect that this euclidean approach is needed).
+               for an image, but expect that this approach below is needed...changing the design
+               now to add this css version as a separate algorithm as Task 5).
                
                Back to the pattern of choosing the first two matching points:
 
