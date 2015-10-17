@@ -177,38 +177,37 @@ public class ClosedCurveCornerMatcher0 {
         List<CornerRegion> bestCR1 = null;
         List<CornerRegion> bestCR2 = null;
         
-        for (int i = 0; i < c1.size(); ++i) {
+        int i = 0;
                                          
-            while (delta < c1.size()) {
-                           
-                // populate lists by ordered with point pairs having SSD < error
-                List<CornerRegion> cr1 = new ArrayList<CornerRegion>();
-                List<CornerRegion> cr2 = new ArrayList<CornerRegion>();
-                populateByStartingIndexes(cr1, cr2, i, i + delta);
-                
-                // the remaining points follow in order and are given to
-                // the transformation calculator
-                PairIntArray xy1 = new PairIntArray(); 
-                PairIntArray xy2 = new PairIntArray();
-                
-                //fill in xy1 and xy2 
-                populateWithCoordinates(xy1, xy2, cr1, cr2);
-                                
-                // consider weighing by k
-                float[] weights = new float[c1.size()];
-                Arrays.fill(weights, 1.f/(float)c1.size());
-                
-                TransformationParameters params = tc.calulateEuclidean(xy1, xy2,
-                    weights, 0, 0, outputScaleRotTransXYStDev);
-                
-                double cost = evaluateCost(cr1, cr2, params);
-                
-                if (cost < bestCost) {
-                    bestParams = params;
-                    bestCost = cost;
-                    bestCR1 = cr1;
-                    bestCR2 = cr2;
-                }
+        while (delta < c1.size()) {
+
+            // populate lists by ordered with point pairs having SSD < error
+            List<CornerRegion> cr1 = new ArrayList<CornerRegion>();
+            List<CornerRegion> cr2 = new ArrayList<CornerRegion>();
+            populateByStartingIndexes(cr1, cr2, i, i + delta);
+
+            // the remaining points follow in order and are given to
+            // the transformation calculator
+            PairIntArray xy1 = new PairIntArray(); 
+            PairIntArray xy2 = new PairIntArray();
+
+            //fill in xy1 and xy2 
+            populateWithCoordinates(xy1, xy2, cr1, cr2);
+
+            // consider weighing by k
+            float[] weights = new float[c1.size()];
+            Arrays.fill(weights, 1.f/(float)c1.size());
+
+            TransformationParameters params = tc.calulateEuclidean(xy1, xy2,
+                weights, 0, 0, outputScaleRotTransXYStDev);
+
+            double cost = evaluateCost(cr1, cr2, params);
+
+            if (cost < bestCost) {
+                bestParams = params;
+                bestCost = cost;
+                bestCR1 = cr1;
+                bestCR2 = cr2;
             }
         }
         
