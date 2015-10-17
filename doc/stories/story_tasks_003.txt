@@ -76,7 +76,7 @@ Task 1:
 
     time estimate: < half day
   
-    amount of time used: 2 hours
+    amount of time used: 3 hours
 
     state of completion: complete
 
@@ -85,6 +85,9 @@ Task 1:
        points or corners as choices... It's not the goal of the overall project currently to 
            always provide a choice.
        see $JDK_HOME/docs/technotes/guides/jar/jar.html#Service_Provider 
+
+       re-opened for additional tasks 5 and 6.
+          see class diagram in doc/stories/story_tasks_003/classes.txt
               
 ---------------------------------------------------------------------
 Task 2:
@@ -183,7 +186,7 @@ Task 3:
                    but another may be needed for changes coincident with matching algorithm.
   
     amount of time used: 
-         1 hr
+         2 hrs so far
 
     state of completion:
 
@@ -368,7 +371,7 @@ Task 4:
     time estimate: minimum one day, maximum 1 week.
   
     amount of time used: 
-       2 hours
+       4 hours so far
 
     state of completion:
 
@@ -455,6 +458,7 @@ Task 5:
     time estimate: minimum one day, maximum 2 days.
   
     amount of time used: 
+       2 hours so far
 
     state of completion:
 
@@ -530,9 +534,25 @@ Task 6:
          the existing test images in the project, but is worth implementing
          for a fast success or fail.
 
+         For the task, these classes are needed:
+             BlobContourHelper0
+             BlobsAndContours0 (specialized contour extraction)
+             BlobContoursScaleFinder0
+         And BlobScaleFinderWrapper needs to be changed so that one
+             algorithm can be attempted after another without needing to
+             re-do the segmentation, blobs, and perimeter extraction 
+             (by caching the SegmentedImageHelpers)
+             -- AbstractSegmentedImageHelper should be made concrete and should
+                 contain only the segmentation, blob extraction and perimeter 
+                 extraction and the classes inheriting it should be changed to use
+                 composition (have it as a member).
+                     SegmentedImageBlobCornerHelper should become BlobCornerHelper
+                     SegmentedImageBlobContourHelper should become BlobContourHelper
+
     time estimate: minimum one day, maximum 2 days.
   
     amount of time used: 
+        2 hours so far
 
     state of completion:
 

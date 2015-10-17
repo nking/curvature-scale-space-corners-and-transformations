@@ -201,8 +201,13 @@ public class BlobScaleFinderWrapper {
 
             img2Helper.generatePerimeterPointsOfInterest(segmentationType2, useBinned2);
 
-            BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
-
+            IBlobScaleFinder bsFinder = null;
+            if (useCorners) {
+                bsFinder = new BlobCornersScaleFinder();
+            } else {
+                bsFinder = new BlobContoursScaleFinder();
+            }
+            
             float[] outputScaleRotTransXYStDev = new float[4];
             TransformationParameters params = bsFinder.solveForScale(
                 img1Helper, segmentationType1, useBinned1,
@@ -306,133 +311,6 @@ public class BlobScaleFinderWrapper {
             }
         }
         
-        return null;
-    }
-
-    /**
-     * NOT READY FOR USE YET.
-     * From the given images, determine the scale between them and roughly
-     * estimate the rotation and translation too.  Note that image processing
-     * such as sky masks should be applied before using this method.
-     * Also note that it is expected that it will be followed by a more rigorous
-     * solver such as the FeatureMatcher for a correspondence list
-     * (and a better Euclidean transform) to be used in.
-
-     This method does not use adaptive mean thresholding and was originally 
-     created for use on images where background processing such as sky masking 
-     has already occurred.
-
-     * @return Euclidean scale to be applied to image1 to place it in the same
-     * scale reference frame as image2.  Rotation and transformation are also
-     * roughly solved for.
-     * @throws java.io.IOException
-     * @throws java.security.NoSuchAlgorithmException
-     */
-    public TransformationParameters calculateScale0() throws IOException,
-        NoSuchAlgorithmException {
-
-        SegmentationType[] orderOfSeg1 = new SegmentationType[]{
-            SegmentationType.COLOR_POLARCIEXY,
-            SegmentationType.COLOR_POLARCIEXY,
-            SegmentationType.GREYSCALE_KMPP, 
-            SegmentationType.GREYSCALE_KMPP, 
-            
-        };
-        boolean[] orderOfBinning1 = new boolean[] {true, false, true, false};
-        
-        boolean didApplyHistEq =
-            img1Helper.applyEqualizationIfNeededByComparison(img2Helper);
-        log.info("didApplyHistEq=" + didApplyHistEq);
-        
-        SegmentationType[] orderOfSeg2 = Arrays.copyOf(orderOfSeg1, orderOfSeg1.length);
-        boolean[] orderOfBinning2 = Arrays.copyOf(orderOfBinning1, orderOfBinning1.length);
-
-        int ordered1Idx = 0;
-        int ordered2Idx = 0;
-
-        while ((ordered1Idx < orderOfSeg1.length) && (ordered2Idx < orderOfSeg2.length)) {
-
-            boolean useBinned1 = orderOfBinning1[ordered1Idx];
-
-            boolean useBinned2 = orderOfBinning2[ordered2Idx];
-
-            SegmentationType segmentationType1 = orderOfSeg1[ordered1Idx];
-
-            SegmentationType segmentationType2 = orderOfSeg2[ordered2Idx];
-
-            if (useBinned1) {
-                img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-            }
-
-            if (useBinned2) {
-                img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-            }
-
-            img1Helper.applySegmentation(segmentationType1, useBinned1);
-
-            img2Helper.applySegmentation(segmentationType2, useBinned2);
-
-            img1Helper.generatePerimeterPointsOfInterest(segmentationType1, useBinned1);
-
-            img2Helper.generatePerimeterPointsOfInterest(segmentationType2, useBinned2);
-
-            BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
-
-            float[] outputScaleRotTransXYStDev = new float[4];
-            TransformationParameters params = bsFinder.solveForScale(
-                img1Helper, segmentationType1, useBinned1,
-                img2Helper, segmentationType2, useBinned2,
-                outputScaleRotTransXYStDev);
-
-            if (params != null) {
-
-                log.info("params for type"
-                    + " (" + segmentationType1.name() + ", binned=" + useBinned1 + ")"
-                    + " (" + segmentationType2.name() + ", binned=" + useBinned2 + ")"
-                    + " : " + params.toString());
-
-                log.info(String.format(
-                    "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
-                    outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
-                    outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
-
-                //TODO: review this limit
-                if (
-                    ((outputScaleRotTransXYStDev[0]/params.getScale()) < 0.2)
-                    ) {
-                    return params;
-                }
-            }
-
-            // if arrive here, have to decide to keep current segmentation and binning or increment.
-            // at least one index has to change
-            
-            int nContours1 = img1Helper.sumPointsOfInterest(segmentationType1, useBinned1);
-
-            int nContours2 = img2Helper.sumPointsOfInterest(segmentationType2, useBinned2);
-            
-            if (nContours1 > 10) {
-                if (nContours2 > 10) {
-                    if (nContours1 > nContours2) {
-                        ordered2Idx++;
-                    } else {
-                        ordered1Idx++;
-                    }
-                } else {
-                    ordered1Idx++;
-                }
-                continue;
-            }
-            
-            if (nContours2 > 10) {
-                ordered1Idx++;
-                continue;
-            }
-
-            ordered1Idx++;
-            ordered2Idx++;
-        }
-
         return null;
     }
 
