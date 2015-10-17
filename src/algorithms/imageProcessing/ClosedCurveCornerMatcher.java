@@ -97,7 +97,45 @@ public class ClosedCurveCornerMatcher {
 
     public boolean matchCorners() {
         
-        throw new UnsupportedOperationException("not yet implemented");
+        if (solverHasFinished) {
+            throw new IllegalStateException("matchContours cannot be invoked more than once");
+        }
+
+        if (heap.getNumberOfNodes() == 0) {
+            solverHasFinished = true;
+            return false;
+        }
+
+        solutionParameters = null;
+        solutionCost = Double.MAX_VALUE;
+
+        // use a specialization of A* algorithm to apply transformation to
+        // contours for best cost solutions (does not compute all possible
+        // solutions).
+        HeapNode minCost = solve();
+
+        if (minCost == null) {
+            return false;
+        }
+
+        TransformationPair2 transformationPair = (TransformationPair2)minCost.getData();
+
+        TransformationParameters params = transformationPair.getTransformationParameters();
+
+        solutionParameters = params;
+        solutionCost = ((double)minCost.getKey()/(double)heapKeyFactor);
+
+        NextCorner nc = transformationPair.getNextCorner();
+
+        solutionMatchedCorners1 = nc.getMatchedCorners1();
+
+        solutionMatchedCorners2 = nc.getMatchedCorners2();
+
+        solverHasFinished = true;
+
+        solutionHasSomeScalesSmallerThanOne = transformationPair.scaleIsPossiblyAmbiguous();
+
+        return true;        
     }
     
     /**
@@ -561,6 +599,47 @@ public class ClosedCurveCornerMatcher {
         }
  
         return best;
+    }
+
+    private HeapNode solve() {
+        
+        HeapNode u = heap.extractMin();
+
+        while (u != null) {
+
+            TransformationPair2 transformationPair = (TransformationPair2)u.getData();
+
+            NextCorner nc = transformationPair.getNextCorner();
+
+            CornerRegion corner1s = nc.findStrongestRemainingCorner();
+
+            if (corner1s == null) {
+                return u;
+            }
+
+            TransformationParameters params 
+                = transformationPair.getTransformationParameters();
+
+            // apply the transformation to it
+            double[] xyC2 = applyTransformation(corner1s, params);
+
+            // find the best matching SSD within tolerance of predicted
+            CornerRegion corner2s = findBestMatchWithinTolerance(corner1s, xyC2);
+
+            nc.addMatchedCorners(corner1s, corner2s);
+
+            double cost2 = calculateCost(corner2s, xyC2[0], xyC2[1]);
+          
+            u.setData(transformationPair);
+
+            u.setKey(u.getKey() + (long)(cost2 * heapKeyFactor));
+
+            heap.insert(u);
+
+            u = heap.extractMin();
+        }
+
+        return u;
     }
     
 }

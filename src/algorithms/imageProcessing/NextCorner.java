@@ -65,6 +65,10 @@ public class NextCorner {
         
         markAsVisited(corner1);
         
+        if (corner2 == null) {
+            return;
+        }
+        
         matchedCorners1.add(corner1);
         matchedCorners2.add(corner2);
 
