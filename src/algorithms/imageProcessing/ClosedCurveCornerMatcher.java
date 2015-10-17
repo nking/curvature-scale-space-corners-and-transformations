@@ -1,7 +1,9 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
+import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -9,6 +11,7 @@ import java.util.logging.Logger;
 
 /**
  *
+ * 
  * @author nichole
  */
 public class ClosedCurveCornerMatcher {
@@ -360,7 +363,7 @@ public class ClosedCurveCornerMatcher {
             }
         }
     }
-   
+    
     protected CornerRegion findBestSSDWithinTolerance(CornerRegion corner1,
         double predictedX2, double predictedY2) {
             
