@@ -461,3 +461,81 @@ Task 5:
     comments:
               
 ---------------------------------------------------------------------
+Task 6:
+    goal: Implement for contour matching, a quick method that will succeed 
+        or fail by using an O(N) runtime complexity pattern of
+        ordered pairings above a sigma limit for curvature scale space contour
+        peaks.  The current existing method in the project follows 
+        Mokhtarian & Macworth's algorithm.  This one would differ by not 
+        using the scale-free axis and sigma in cost (evaluation) and is
+        meant to succeed on scale space images such as seen on 
+        pg 32 of docs/contours.pdf.
+
+    priority:
+        high
+
+    details:  
+        Test images such as the books test images where the objects are
+        close to the camera and the light is close to the objects
+        sometimes have distinct objects useful for matching, but whose
+        immediate background (that is, the area of the image immediately
+        outside the curve enclosing the object) is changing because of
+        perspective so those exterior feature descriptors do not match.
+        For such cases, using the properties of curvature if the object's
+        closed curve is curvy, is a better characteristic for matching.
+ 
+        In the project, the existing curvature scale space matching follows
+        Mokhtarian & Macworth's algorithms, which work very well for many
+        objects, but for objects such as seen on pg 32 of docs/contours.pdf
+        a deviation like a bump introduced from differences in segmentation
+        can result in no solution if the bump is the strongest contour.
+        One can see in that image, that if the strengths of the contours
+        of the two largest left contours is not as important as their
+        centroids in scale space (or x,y space), that a solution would have
+        been found with the caveat that only an equal number of peaks above
+        a limit sigma be compared.
+
+        This algorithm is a quick attempt to solve for that case by using
+        ordered pairings above a sigma limit, but discarding the sigma 
+        after that.
+        The cost would be similar to that in Task 5, that is, the summed 
+        distances from expected (x,y) based upon the calculated transformation.
+        This O(N_contour_peaks) algorithm will succeed very quickly or
+        fail quickly.
+
+        The quality requirements for it should probably be higher
+        and a minimum number of matching points required for one curve's
+        best matching to be compared and combined with another curve's
+        best matching to produce a larger solution.
+
+        This algorithm is expected to work well if an image has objects that 
+        are convex and concave (producing strong and many contours).
+
+        Combining the results of each curve's best matchings is expected to
+        be similar to the other methods. 
+
+         The euclidean solution and evaluation would be similar to 
+            MatchedPointsTransformationCalculator, but would use outlier
+            removal first:
+              -- remove points w/ feature descriptor SSD larger than error
+            Then during the pairings of points in  MatchedPointsTransformationCalculator,
+              -- remove deviant points in pairs with rotation larger
+                 than factor * standard deviation from other rotation.
+         The resulting transformation is then applied to each corner.
+         
+         The cost for "not matched" should be similar to Task 4's, that is,
+             the tolerance, but this may change.
+
+         In summary, this algorithm isn't expected to succeed for all of
+         the existing test images in the project, but is worth implementing
+         for a fast success or fail.
+
+    time estimate: minimum one day, maximum 2 days.
+  
+    amount of time used: 
+
+    state of completion:
+
+    comments:
+              
+---------------------------------------------------------------------
