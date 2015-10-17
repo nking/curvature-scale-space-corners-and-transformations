@@ -38,6 +38,8 @@ public class ClosedCurveCornerMatcherWrapper {
     private final List<CornerRegion> solutionMatchedCorners1;
 
     private final List<CornerRegion> solutionMatchedCorners2;
+    
+    private final List<FeatureComparisonStat> solutionMatchedCompStats;
 
     private boolean solverHasFinished = false;
 
@@ -70,6 +72,8 @@ public class ClosedCurveCornerMatcherWrapper {
         solutionMatchedCorners1 = new ArrayList<CornerRegion>();
 
         solutionMatchedCorners2 = new ArrayList<CornerRegion>();
+        
+        solutionMatchedCompStats = new ArrayList<FeatureComparisonStat>();
     }
     
      /**
@@ -152,6 +156,8 @@ public class ClosedCurveCornerMatcherWrapper {
 
             this.solutionMatchedCorners1.addAll(mReverse.getSolutionMatchedCorners2());
             this.solutionMatchedCorners2.addAll(mReverse.getSolutionMatchedCorners1());
+            
+            this.solutionMatchedCompStats.addAll(mReverse.getSolutionMatchedCompStats());
 
             return true;
         }
@@ -180,6 +186,8 @@ public class ClosedCurveCornerMatcherWrapper {
             this.solutionMatchedCorners1.addAll(mReverse.getSolutionMatchedCorners2());
             this.solutionMatchedCorners2.addAll(mReverse.getSolutionMatchedCorners1());
 
+            this.solutionMatchedCompStats.addAll(mReverse.getSolutionMatchedCompStats());
+            
             return true;
         }
     }
@@ -188,11 +196,11 @@ public class ClosedCurveCornerMatcherWrapper {
         return nMaxMatchable;
     }
 
-    public List<CornerRegion> getSolutionMatchedContours1() {
+    public List<CornerRegion> getSolutionMatchedCorners1() {
         return solutionMatchedCorners1;
     }
 
-    public List<CornerRegion> getSolutionMatchedContours2() {
+    public List<CornerRegion> getSolutionMatchedCorners2() {
         return solutionMatchedCorners2;
     }
 
@@ -203,7 +211,7 @@ public class ClosedCurveCornerMatcherWrapper {
 
     /**
      * get the curvature scale space images shift between the
-     * first set of contours and the second set.
+     * first set of corners and the second set.
      * @return
      */
     public double getSolvedCost() {
@@ -221,5 +229,14 @@ public class ClosedCurveCornerMatcherWrapper {
 
         this.solutionMatchedCorners1.addAll(matcher.getSolutionMatchedCorners1());
         this.solutionMatchedCorners2.addAll(matcher.getSolutionMatchedCorners2());
+        
+        this.solutionMatchedCompStats.addAll(matcher.getSolutionMatchedCompStats());
+    }
+
+    /**
+     * @return the solutionMatchedCompStats
+     */
+    public List<FeatureComparisonStat> getSolutionMatchedCompStats() {
+        return solutionMatchedCompStats;
     }
 }

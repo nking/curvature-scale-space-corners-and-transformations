@@ -54,6 +54,31 @@ public class NearestPoints {
             return result;
         }
         
+        Set<Integer> indexes = findNeighborIndexes(xCenter, yCenter, radius);
+        
+        for (Integer index : indexes) {
+            int i = index.intValue();
+            result.add(new PairInt(x[i], y[i]));
+        }
+        
+        return result;
+    }
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points.
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    public Set<Integer> findNeighborIndexes(int xCenter, int yCenter, float radius) {
+        
+        Set<Integer> resultIndexes = new HashSet<Integer>();
+        
+        if (x.length == 0) {
+            return resultIndexes;
+        }
+        
         // O(lg2(N))
         int idx = Arrays.binarySearch(x, xCenter);
                     
@@ -92,10 +117,11 @@ public class NearestPoints {
             int diffY = y[i] - yCenter;
             double distSq = (diffX*diffX) + (diffY*diffY);
             if (distSq <= rSq) {
-                result.add(new PairInt(x[i], y[i]));
+                resultIndexes.add(Integer.valueOf(i));
             }
         }
         
-        return result;
+        return resultIndexes;
     }
+    
 }
