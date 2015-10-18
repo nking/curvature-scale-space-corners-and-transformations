@@ -71,18 +71,18 @@ public class BlobContourHelper {
     
     protected List<List<CurvatureScaleSpaceContour>> 
         generatePerimeterContoursUnbinned(SegmentationType type) {
-                
+            
+        List<List<CurvatureScaleSpaceContour>> contours = segContoursMap.get(type);
+
+        if (contours != null) {
+            return contours;
+        }
+        
         GreyscaleImage segImg = imgHelper.getSegmentationImage(type);
         
         if (segImg == null) {
             //TODO: consider changing logic to perform this if needed
             throw new IllegalArgumentException("segmented image hasn't been created yet.  error?");
-        }
-        
-        List<List<CurvatureScaleSpaceContour>> contours = segContoursMap.get(type);
-
-        if (contours != null) {
-            return contours;
         }
         
         boolean useBinned = false;
@@ -96,18 +96,18 @@ public class BlobContourHelper {
     
     protected List<List<CurvatureScaleSpaceContour>> 
         generatePerimeterContoursForBinned(SegmentationType type) {
-                
+            
+        List<List<CurvatureScaleSpaceContour>> contours = segBinnedContoursMap.get(type);
+
+        if (contours != null) {
+            return contours;
+        }
+            
         GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);
         
         if (segImg == null) {
             //TODO: consider changing logic to perform this if needed
             throw new IllegalArgumentException("segmented image hasn't been created yet.  error?");
-        }
-        
-        List<List<CurvatureScaleSpaceContour>> contours = segBinnedContoursMap.get(type);
-
-        if (contours != null) {
-            return contours;
         }
         
         boolean useBinned = true;

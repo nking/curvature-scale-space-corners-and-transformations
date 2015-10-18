@@ -18,11 +18,18 @@ public class BlobScaleFinderWrapper {
 
     protected final int binnedImageMaxDimension = 300;
     
-    /**
-     * use the curve's corners or CSS contour peaks (default will be corners
-     * soon.  This is a final setting but may be open to set a constructor
-     * if needed in the future).
-     */
+    /*
+    choices for solutions:
+    
+    (1) contours and curvature scale space matches followed by features to refine
+        and validate
+    (2) corners and feature matches w/ combinations
+    (3) corners and feature matches in simplest ordered pairings
+    (4) contours and curvature scale space matches using simplest ordered
+        pairings
+    
+    when finished, should try (3) and/or (4) first then (2)
+    */
     protected final boolean useCorners = false;
 
     protected final BlobPerimeterHelper img1Helper;

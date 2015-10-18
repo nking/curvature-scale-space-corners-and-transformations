@@ -11,7 +11,6 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.PixelColors;
 import algorithms.imageProcessing.ScaleSpaceCurveImage;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
@@ -40,7 +39,7 @@ public class MiscDebug {
     
     private static Logger log = Logger.getLogger(MiscDebug.class.getName());
     
-      public static void printJoinPoints(Map<PairInt, PairInt> joinPoints,
+    public static void printJoinPoints(Map<PairInt, PairInt> joinPoints,
         List<PairIntArray> edges) {
         
         StringBuilder sb = new StringBuilder("join points:\n");
@@ -59,7 +58,8 @@ public class MiscDebug {
             int x1 = edge1.getX(loc1.getY());
             int y1 = edge1.getY(loc1.getY());
             
-            sb.append(String.format("  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n",
+            sb.append(String.format(
+                "  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n",
                 x0, y0, x1, y1, loc0.getX(), loc1.getX(), 
                 loc0.getY(), edges.get(loc0.getX()).getN(),
                 loc1.getY(), edges.get(loc1.getX()).getN()
@@ -323,6 +323,36 @@ public class MiscDebug {
             Image img2 = ImageIOHelper.convertImage(img);
 
             ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
+            
+            if (!fileName.contains("\\.")) {
+                fileName = fileName + ".png";
+            }
+            String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
+            String sep = System.getProperty("file.separator");
+            ImageIOHelper.writeOutputImage(dirPath + sep + fileName, img2);
+            
+        } catch (IOException e) {
+            
+        }
+    }
+    
+    public static void writeEdgesAndCorners(List<PairIntArray> edges, 
+        List<List<CornerRegion>> corners, int nExtraForDot,
+        GreyscaleImage img, String fileName) {
+        try {
+            
+            Image img2 = ImageIOHelper.convertImage(img);
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
+
+            for (List<CornerRegion> list : corners) {
+                for (CornerRegion cr : list) {
+                    int x = cr.getX()[cr.getKMaxIdx()];
+                    int y = cr.getY()[cr.getKMaxIdx()];
+                    ImageIOHelper.addPointToImage(x, y, img2, nExtraForDot, 
+                        255, 0, 0);
+                }
+            }
             
             if (!fileName.contains("\\.")) {
                 fileName = fileName + ".png";

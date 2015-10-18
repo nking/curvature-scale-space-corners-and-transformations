@@ -238,4 +238,12 @@ public class BlobPerimeterHelper {
         
         return blobs;
     }
+    
+    public boolean isInDebugMode() {
+        return imgHelper.isInDebugMode();
+    }
+
+    public String getDebugTag() {
+        return imgHelper.getDebugTag();
+    }
 }

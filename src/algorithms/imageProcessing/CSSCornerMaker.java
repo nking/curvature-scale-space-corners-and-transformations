@@ -77,7 +77,7 @@ public class CSSCornerMaker {
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps
             = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
-       
+          
         // perform the analysis on the edgesScaleSpaceMaps
         for (int i = 0; i < theEdges.size(); i++) {
 
@@ -232,7 +232,7 @@ public class CSSCornerMaker {
             
             float x = scaleSpace.getX(idx);
             float y = scaleSpace.getY(idx);
-            
+
             if (storeCornerRegion) {
                 storeCornerRegion(edgeNumber, idx, k, scaleSpace);
             }
@@ -690,16 +690,41 @@ public class CSSCornerMaker {
         if (k[cornerIdx] < 0.2f) {
             return;
         }
+        
+        int n = scaleSpace.getSize();
+        
+        if (n < 3) {
+            return;
+        }
 
+        boolean isClosedCurve = scaleSpace.curveIsClosed();
+        
         int nCR = 0;
         int kMaxIdx = -1;
-
+                
+        int count = 0;
+        int nH = 2;
+        if (scaleSpace.getSize() < 5) {
+            nH = 1;
+        }
+        int[] pIdxs = new int[(2*nH) + 1];
+        for (int pIdx = (cornerIdx - nH); pIdx <= (cornerIdx + nH); ++pIdx) {
+            if ((pIdx < 0) && isClosedCurve) {
+                pIdxs[count] = n + pIdx;
+            } else if ((pIdx > (n - 1)) && isClosedCurve) {
+                pIdxs[count] = pIdx - n;
+            } else {
+                pIdxs[count] = pIdx;
+            }
+            count++;
+        }
+        
         //log.info("edgeIdx=" + edgeNumber + " corner idx=" + cornerIdx + " (" + 
         //    Math.round(scaleSpace.getX(cornerIdx)) + "," +
         //    Math.round(scaleSpace.getY(cornerIdx)) +")");
-        
-        for (int pIdx = (cornerIdx - 2); pIdx <= (cornerIdx + 2); ++pIdx) {
+        for (int pIdx : pIdxs) {
             if (pIdx < 0 || (pIdx > (k.length - 1))) {
+                // it's out of bounds only if it is not a closed curve
                 continue;
             }
             if (pIdx == cornerIdx) {
@@ -713,15 +738,19 @@ public class CSSCornerMaker {
         if (nCR < 3) {
             return;
         }
-        if (kMaxIdx == 0 || kMaxIdx == (nCR - 1)) {
-            return;
+                
+        if (!isClosedCurve) {
+            if (kMaxIdx == 0 || kMaxIdx == (nCR - 1)) {
+                return;
+            }
         }
         //log.info(" ==> kept");
-        
+    
         CornerRegion cr = new CornerRegion(edgeNumber, nCR, kMaxIdx);
         nCR = 0;
-        for (int pIdx = (cornerIdx - 2); pIdx <= (cornerIdx + 2); ++pIdx) {
+        for (int pIdx : pIdxs) {
             if (pIdx < 0 || (pIdx > (k.length - 1))) {
+                // it's out of bounds only if it is not a closed curve
                 continue;
             }
             cr.set(nCR, k[pIdx], 

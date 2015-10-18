@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,13 @@ public class BlobsAndCorners  {
         for (int i = (remove.size() - 1); i > -1; --i) {
             perimeterLists.remove(remove.get(i).intValue());
         }
+        
+        if (blobPerimeterHelper.isInDebugMode()) {
+            MiscDebug.writeEdgesAndCorners(perimeterLists, cornerLists,
+                1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
+                "blob_corners_" + blobPerimeterHelper.getDebugTag() + "_" 
+                + MiscDebug.getCurrentTimeFormatted());
+        }
 
         assert(perimeterLists.size() == cornerLists.size());
         
@@ -74,7 +82,7 @@ public class BlobsAndCorners  {
      * @return scale space maps for each edge
      */
     protected static Map<Integer, List<CornerRegion> >
-    findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
+        findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
         final boolean doUseOutdoorMode, final PairIntArray outputCorners,
         final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum) {
@@ -83,6 +91,8 @@ public class BlobsAndCorners  {
         
         if (enableJaggedLineCorrections) {
             cornerMaker.enableJaggedLineCorrections();
+        } else {
+            cornerMaker.disableJaggedLineCorrections();
         }
        
         cornerMaker.increaseFactorForCurvatureMinimum(

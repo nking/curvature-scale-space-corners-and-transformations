@@ -133,6 +133,8 @@ public class ClosedCurveCornerMatcher {
         solutionMatchedCorners1 = nc.getMatchedCorners1();
 
         solutionMatchedCorners2 = nc.getMatchedCorners2();
+        
+//solutionMatchedCompStats
 
         solverHasFinished = true;
 
@@ -265,6 +267,8 @@ public class ClosedCurveCornerMatcher {
         that the feature descriptors are somewhat unique so an assumption that 
         the best match is correct for at least 2 out of n is not bad for n > 10.
         */
+        
+        heap = new Heap();
         
         int n = Math.min(c1.size(), c2.size());
         

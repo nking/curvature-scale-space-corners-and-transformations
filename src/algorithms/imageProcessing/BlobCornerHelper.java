@@ -64,19 +64,19 @@ public class BlobCornerHelper {
     
     protected List<List<CornerRegion>> 
         generatePerimeterCornersUnbinned(SegmentationType type) {
-                
+        
+        List<List<CornerRegion>> contours = segCornersMap.get(type);
+
+        if (contours != null) {
+            return contours;
+        }
+        
         GreyscaleImage segImg = imgHelper.getSegmentationImage(type);
         
         if (segImg == null) {
             //TODO: consider changing logic to perform this if needed
             throw new IllegalArgumentException(
             "segmented image hasn't been created yet.  error?");
-        }
-        
-        List<List<CornerRegion>> contours = segCornersMap.get(type);
-
-        if (contours != null) {
-            return contours;
         }
         
         boolean useBinned = false;
@@ -98,8 +98,12 @@ public class BlobCornerHelper {
     
     protected List<List<CornerRegion>> 
         generatePerimeterCornersForBinned(SegmentationType type) {
-        
-        segBinnedCornersMap.clear();
+         
+        List<List<CornerRegion>> corners = segBinnedCornersMap.get(type);
+
+        if (corners != null) {
+            return corners;
+        }
         
         GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);
         
@@ -108,13 +112,7 @@ public class BlobCornerHelper {
             throw new IllegalArgumentException(
             "segmented image hasn't been created yet.  error?");
         }
-        
-        List<List<CornerRegion>> contours = segBinnedCornersMap.get(type);
-
-        if (contours != null) {
-            return contours;
-        }
-        
+       
         boolean useBinned = true;
         
         final boolean outdoorMode = false;
@@ -123,13 +121,13 @@ public class BlobCornerHelper {
         
         final float factorIncreaseForCurvatureMinimum = 1.f;
         
-        contours = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,
+        corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,
             outdoorMode, enableJaggedLineCorrections, 
             factorIncreaseForCurvatureMinimum);
         
-        segBinnedCornersMap.put(type, contours);
+        segBinnedCornersMap.put(type, corners);
         
-        return contours;        
+        return corners;        
     }
     
     public int sumPointsOfInterest(SegmentationType segmentationType, 
