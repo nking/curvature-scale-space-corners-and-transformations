@@ -23,131 +23,29 @@ import java.util.logging.Logger;
  */
 public class BlobsAndPerimeters {
     
-    protected final List<Set<PairInt>> blobs;
-    
-    protected final List<PairIntArray> blobOrderedPerimeters;
-    
-    protected final int smallestGroupLimit;
-    
-    protected final int largestGroupLimit;
-    
-    protected final SegmentationType type;
-    
-    protected Logger log = Logger.getLogger(this.getClass().getName());
-    
-    protected final boolean segmentedToLineDrawing;
-    
-    protected final GreyscaleImage imgGrey;
-    
-    protected final GreyscaleImage imgSeg;
-    
-    protected boolean modifyBlobs = true;
-    
-    protected boolean debug = false;
-    
-    protected String debugTag = "";
-
-    /**
-     * constructor, does all the work of extracting blobs, perimeter, and
-     * scale space image contours.
-     *
-     * @param imgGrey
-     * @param imgSeg
-     * @param smallestGroupLimit
-     * @param largestGroupLimit
-     * @param type
-     * @param segmentedToLineDrawing true if image contains mostly white
-     * pixels and black lines for object contours (this is the result of
-     * segmentation using adaptive mean thresholding, for example)
-     */
-    public BlobsAndPerimeters(GreyscaleImage imgGrey, GreyscaleImage 
-        imgSeg, int smallestGroupLimit, int largestGroupLimit, 
-        SegmentationType type, boolean segmentedToLineDrawing) {
+    protected static boolean modifyBlobs = true;
+          
+    public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
+        SegmentedImageHelper imgHelper, SegmentationType type, 
+        boolean useBinned) {
         
-        blobs = new ArrayList<Set<PairInt>>();
-
-        blobOrderedPerimeters = new ArrayList<PairIntArray>();
-
-        this.segmentedToLineDrawing = segmentedToLineDrawing;
+        List<Set<PairInt>> outputBlobs = new ArrayList<Set<PairInt>>();
         
-        this.smallestGroupLimit = smallestGroupLimit;
+        // have removed this segmentation type:
+        boolean segmentedToLineDrawing = false;
         
-        this.largestGroupLimit = largestGroupLimit;
+        int smallestGroupLimit = useBinned ? 
+            imgHelper.getSmallestGroupLimitBinned() : 
+            imgHelper.getSmallestGroupLimit();
         
-        this.type = type;
+        int largestGroupLimit = useBinned ? 
+            imgHelper.getLargestGroupLimitBinned() : 
+            imgHelper.getLargestGroupLimit();
         
-        this.imgGrey = imgGrey;
-        
-        this.imgSeg = imgSeg;
+        GreyscaleImage segImg = useBinned ?
+            imgHelper.getBinnedSegmentationImage(type) :
+            imgHelper.getSegmentationImage(type);
             
-        init();
-    }
-    
-    /**
-     * constructor for using in debug mode, does all the work of extracting
-     * blobs, perimeter, and scale space image contours.
-     *
-     * @param imgGrey
-     * @param imgSeg
-     * @param smallestGroupLimit
-     * @param largestGroupLimit
-     * segmentedToLineDrawing true if image contains mostly white
-     * pixels and black lines for object contours (this is the result of
-     * segmentation using adaptive mean thresholding, for example)
-     * @param type
-     * @param segmentedToLineDrawing
-     * @param debugTag
-     */
-    public BlobsAndPerimeters(GreyscaleImage imgGrey, GreyscaleImage imgSeg,
-        int smallestGroupLimit, int largestGroupLimit, 
-        SegmentationType type,
-        boolean segmentedToLineDrawing, String debugTag) {
-
-        blobs = new ArrayList<Set<PairInt>>();
-
-        blobOrderedPerimeters = new ArrayList<PairIntArray>();
-
-        this.segmentedToLineDrawing = segmentedToLineDrawing;
-        
-        this.type = type;
-        
-        debug = true;
-
-        this.debugTag = debugTag;
-
-        this.smallestGroupLimit = smallestGroupLimit;
-        
-        this.largestGroupLimit = largestGroupLimit;
-        
-        this.imgGrey = imgGrey;
-        
-        this.imgSeg = imgSeg;
-            
-        init();
-    }
-        
-    protected void init() {
-        
-        extractBlobsFromSegmentedImage(imgSeg, blobs, smallestGroupLimit, 
-            largestGroupLimit);
-        
-        boolean discardWhenCavityIsSmallerThanBorder = true;
-        
-        extractBoundsOfBlobs(imgGrey, imgSeg, blobs, blobOrderedPerimeters, 
-            discardWhenCavityIsSmallerThanBorder);
-               
-    }
-
-    /**
-     * @param segImg segmented image
-     * @param outputBlobs
-     * @param smallestGroupLimit
-     * @param largestGroupLimit
-     */
-    protected void extractBlobsFromSegmentedImage(GreyscaleImage segImg, 
-        List<Set<PairInt>> outputBlobs, int smallestGroupLimit, 
-        int largestGroupLimit) {
-        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(segImg);
@@ -215,7 +113,7 @@ public class BlobsAndPerimeters {
             */
         }
         
-        if (debug) {
+        if (imgHelper.isInDebugMode()) {
             Image img0 = ImageIOHelper.convertImage(segImg);
             int c = 0;
             for (int i = 0; i < outputBlobs.size(); ++i) {
@@ -229,24 +127,33 @@ public class BlobsAndPerimeters {
                 c++;
             }
             
-            MiscDebug.writeImageCopy(img0, "blobs_" + debugTag + "_" + 
-                MiscDebug.getCurrentTimeFormatted() + ".png");
+            MiscDebug.writeImageCopy(img0, "blobs_" + imgHelper.getDebugTag() 
+                + "_" + MiscDebug.getCurrentTimeFormatted() + ".png");
         }
+        
+        return outputBlobs;
     }
 
-    /**
-     * given the list of blob points, extract the ordered boundaries of them
-     * and remove any blobs for which the bounds were not extractable.
-     * @param greyImg
-     * @param segImg
-     * @param inOutBlobs
-     * @param outputBounds
-     * @param discardWhenCavityIsSmallerThanBorder
-     */
-    protected void extractBoundsOfBlobs(final GreyscaleImage greyImg, 
-        final GreyscaleImage segImg, final List<Set<PairInt>> inOutBlobs, 
-        final List<PairIntArray> outputBounds, 
+    public static List<PairIntArray> extractBoundsOfBlobs(
+        SegmentedImageHelper imgHelper, SegmentationType type, 
+        final List<Set<PairInt>> inOutBlobs,
+        boolean useBinned,
         boolean discardWhenCavityIsSmallerThanBorder) {
+        
+        // TODO: method arguments are vulnerable to not being consistently from
+        //   same origins, so refactor this (encapsulate) at some point
+        
+        final List<PairIntArray> outputBounds = new ArrayList<PairIntArray>();
+        
+        Logger log = Logger.getLogger(BlobsAndPerimeters.class.getName());
+        
+        GreyscaleImage segImg = useBinned ?
+            imgHelper.getBinnedSegmentationImage(type) :
+            imgHelper.getSegmentationImage(type);
+        
+        GreyscaleImage greyImg = useBinned ?
+            imgHelper.getGreyscaleImageBinned() :
+            imgHelper.getGreyscaleImage();
         
         int width = segImg.getWidth();
         int height = segImg.getHeight();
@@ -260,18 +167,6 @@ public class BlobsAndPerimeters {
             Set<PairInt> blob = inOutBlobs.get(i);
             
             EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
-            
-if (debug) {            
-double[] xyCen = curveHelper.calculateXYCentroids(blob);
-if ((Math.abs(xyCen[0] - 124) < 50) && (Math.abs(xyCen[1] - 24) < 50)) {
-    //extractor.setToDebug();
-    int z = 1;
-}
-if ((Math.abs(xyCen[0] - 250) < 50) && (Math.abs(xyCen[1] - 50) < 50)) {
-    //extractor.setToDebug();
-    int z = 1;
-}
-}
             
             PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(blob, 
                 width, height, discardWhenCavityIsSmallerThanBorder);
@@ -302,21 +197,6 @@ if ((Math.abs(xyCen[0] - 250) < 50) && (Math.abs(xyCen[1] - 50) < 50)) {
                         curveHelper.correctCheckeredSegments(closedEdge);
                     }
                 }
-                
-if (debug) {
-    Image img0 = ImageIOHelper.convertImage(segImg);
-    PairIntArray pa = closedEdge;
-    for (int j = 0; j < pa.getN(); ++j) {
-        int x = pa.getX(j);
-        int y = pa.getY(j);
-        ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
-    }
-    ImageIOHelper.addPointToImage(pa.getX(0), pa.getY(0), img0, 0, 255, 255, 0);
-    ImageIOHelper.addPointToImage(pa.getX(pa.getN() - 1), 
-        pa.getY(pa.getN() - 1), img0, 0, 255, 255, 0);
-    MiscDebug.writeImageCopy(img0, "closed_edge_" + debugTag + "_" 
-        + Integer.valueOf(i) + "_" + MiscDebug.getCurrentTimeFormatted() + ".png");
-}
 
                 outputBounds.add(closedEdge);
                 
@@ -360,8 +240,8 @@ if (debug) {
         
         log.info("nBlobs after filtered to top =" + inOutBlobs.size());
         
-        //TODO: put debug sections in AOP for special build after replace aspectj
-if (debug) {
+//TODO: put debug sections in AOP for special build after replace aspectj
+if (imgHelper.isInDebugMode()) {
     Image img0 = ImageIOHelper.convertImage(segImg);
     for (int i = 0; i < outputBounds.size(); ++i) {
         PairIntArray pa = outputBounds.get(i);
@@ -382,41 +262,15 @@ if (debug) {
         }
     }
     long ts = MiscDebug.getCurrentTimeFormatted();
-    MiscDebug.writeImageCopy(segImg, "segmentation_" + debugTag + "_" + ts + ".png");
-    MiscDebug.writeImageCopy(img0, "blob_perimeters_" + debugTag + "_" + ts + ".png");
+    MiscDebug.writeImageCopy(segImg, "segmentation_" + imgHelper.getDebugTag() + "_" + ts + ".png");
+    MiscDebug.writeImageCopy(img0, "blob_perimeters_" + imgHelper.getDebugTag() + "_" + ts + ".png");
 }
-    }
 
-    /**
-     * @return the blobs
-     */
-    public List<Set<PairInt>> getBlobs() {
-        return blobs;
-    }
-
-    /**
-     * @return the blobOrderedPerimeters
-     */
-    public List<PairIntArray> getBlobOrderedPerimeters() {
-        return blobOrderedPerimeters;
-    }
-
-    /**
-     * @return the debugTag
-     */
-    public String getDebugTag() {
-        return debugTag;
-    }
-
-    /**
-     * @return the debug
-     */
-    public boolean isDebug() {
-        return debug;
+         return outputBounds;
     }
 
     // worse case runtime is O(N_blob^2) to compare centroids and dimensions.
-    protected void removeRedundantBlobs(List<Set<PairInt>> outputBlobs) {
+    protected static void removeRedundantBlobs(List<Set<PairInt>> outputBlobs) {
         
         // for line drawings, there may be a blob due to an objects
         // line and to it's interior points, so we want to remove the
@@ -544,7 +398,7 @@ if (debug) {
         }
     }
 
-    protected boolean blobIsDarkerThanExterior(Set<PairInt> blob, 
+    protected static boolean blobIsDarkerThanExterior(Set<PairInt> blob, 
         PairIntArray closedEdge, GreyscaleImage greyImg) {
         
         int w = greyImg.getWidth();
@@ -604,7 +458,7 @@ if (debug) {
      * @param w
      * @param h
      */
-    protected void growRadius(Set<PairInt> blob, int w, int h) {
+    protected static void growRadius(Set<PairInt> blob, int w, int h) {
         
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
@@ -656,7 +510,8 @@ if (debug) {
         blob.addAll(tmp);
     }
 
-    protected Set<PairInt> redoContiguous(Set<PairInt> points, int w, int h) {
+    /*
+    protected static Set<PairInt> redoContiguous(Set<PairInt> points, int w, int h) {
         
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
         
@@ -691,9 +546,5 @@ if (debug) {
         
         return finder.getXY(groupIdx);
     }
-
-    public SegmentationType getSegmentationType() {
-        return type;
-    }
-    
+    */
 }

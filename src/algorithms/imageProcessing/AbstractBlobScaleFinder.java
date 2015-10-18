@@ -16,22 +16,15 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public abstract class AbstractBlobScaleFinder implements IBlobScaleFinder {
+public abstract class AbstractBlobScaleFinder {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     protected boolean debug = false;
 
-    @Override
     public void setToDebug() {
         debug = true;
     }
-
-    @Override
-    public abstract TransformationParameters solveForScale(ISegmentedImageHelper 
-        img1Helper, SegmentationType type1, boolean useBinned1, 
-        ISegmentedImageHelper img2Helper, SegmentationType type2, 
-        boolean useBinned2, float[] outputScaleRotTransXYStDev);
 
     /**
      * extract the local points surrounding (x, y) on the

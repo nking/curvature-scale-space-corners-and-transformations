@@ -76,7 +76,7 @@ Task 1:
 
     time estimate: < half day
   
-    amount of time used: 3 hours
+    amount of time used: 5 hours
 
     state of completion: complete
 

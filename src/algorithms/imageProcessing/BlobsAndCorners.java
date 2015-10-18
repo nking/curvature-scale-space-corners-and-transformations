@@ -1,11 +1,9 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * holds the blobs, their ordered perimeters, and the scale space image
@@ -14,78 +12,25 @@ import java.util.Set;
  * @author nichole
  */
 public class BlobsAndCorners  {
+    
+    public static List<List<CornerRegion>> populateCorners(
+        final BlobPerimeterHelper blobPerimeterHelper,
+        SegmentationType type, boolean useBinnedImage,
+        final boolean outdoorMode,
+        final boolean enableJaggedLineCorrections,
+        final float factorIncreaseForCurvatureMinimum) {
 
-    protected final BlobsAndPerimeters blobsAndPerimeters;
-    
-    private final List<List<CornerRegion>> cornerLists = 
-        new ArrayList<List<CornerRegion>>();
-
-    protected boolean enableJaggedLineCorrections = true;
-    
-    protected float factorIncreaseForCurvatureMinimum = 1.f;
-            
-    private boolean outdoorMode = false;
-    
-    /**
-     * constructor, does all the work of extracting blobs, perimeter, and
-     * scale space image corners.
-     *
-     * @param imgGrey
-     * @param imgSeg
-     * @param smallestGroupLimit
-     * @param largestGroupLimit
-     * @param type
-     * @param segmentedToLineDrawing true if image contains mostly white
-     * pixels and black lines for object contours (this is the result of
-     * segmentation using adaptive mean thresholding, for example)
-     */
-    public BlobsAndCorners(GreyscaleImage imgGrey, GreyscaleImage imgSeg,
-        int smallestGroupLimit, int largestGroupLimit, 
-        SegmentationType type, boolean segmentedToLineDrawing) {
+        List<List<CornerRegion>> cornerLists = 
+            new ArrayList<List<CornerRegion>>();
         
-        blobsAndPerimeters = new BlobsAndPerimeters(imgGrey, imgSeg, 
-            smallestGroupLimit, largestGroupLimit, type, 
-            segmentedToLineDrawing);
-        
-        populateCorners();
-    }
-    
-    /**
-     * constructor for using in debug mode, does all the work of extracting
-     * blobs, perimeter, and scale space image corners.
-     *
-     * @param imgGrey
-     * @param imgSeg
-     * @param smallestGroupLimit
-     * @param largestGroupLimit
-     * segmentedToLineDrawing true if image contains mostly white
-     * pixels and black lines for object contours (this is the result of
-     * segmentation using adaptive mean thresholding, for example)
-     * @param type
-     * @param segmentedToLineDrawing
-     * @param debugTag
-     */
-    public BlobsAndCorners(GreyscaleImage imgGrey, GreyscaleImage imgSeg,
-        int smallestGroupLimit, int largestGroupLimit, SegmentationType type,
-        boolean segmentedToLineDrawing, String debugTag) {
-
-        blobsAndPerimeters = new BlobsAndPerimeters(imgGrey, imgSeg, 
-            smallestGroupLimit, largestGroupLimit, type, 
-            segmentedToLineDrawing, debugTag);
-        
-        populateCorners();
-    }
-
-    protected void populateCorners() {
-
-        cornerLists.clear();
-
-        List<PairIntArray> perimeterLists = blobsAndPerimeters.getBlobOrderedPerimeters();
+        List<PairIntArray> perimeterLists = blobPerimeterHelper.getBlobPerimeters(
+            type, useBinnedImage);
         
         PairIntArray allCorners = new PairIntArray();
         
         Map<Integer, List<CornerRegion> > indexCornerRegionMap = 
-            findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners);
+            findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners,
+            enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum);
         
         List<Integer> remove = new ArrayList<Integer>();
         
@@ -103,6 +48,8 @@ public class BlobsAndCorners  {
         }
 
         assert(perimeterLists.size() == cornerLists.size());
+        
+        return cornerLists;
     }
 
     /**
@@ -122,11 +69,15 @@ public class BlobsAndCorners  {
      * @param theEdges
      * @param doUseOutdoorMode
      * @param outputCorners
+     * @param enableJaggedLineCorrections
+     * @param factorIncreaseForCurvatureMinimum
      * @return scale space maps for each edge
      */
-    protected Map<Integer, List<CornerRegion> >
+    protected static Map<Integer, List<CornerRegion> >
     findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
-        final boolean doUseOutdoorMode, final PairIntArray outputCorners) {
+        final boolean doUseOutdoorMode, final PairIntArray outputCorners,
+        final boolean enableJaggedLineCorrections,
+        final float factorIncreaseForCurvatureMinimum) {
 
         CSSCornerMaker cornerMaker = new CSSCornerMaker();
         
@@ -144,33 +95,4 @@ public class BlobsAndCorners  {
         return cornerMaker.getEdgeCornerRegionMap();        
     }
 
-    /**
-     * @return the corners
-     */
-    public List<List<CornerRegion>> getCorners() {
-        return cornerLists;
-    }
-
-    public List<Set<PairInt>> getBlobs() {
-        return blobsAndPerimeters.getBlobs();
-    }
-
-    public List<PairIntArray> getBlobOrderedPerimeters() {
-        return blobsAndPerimeters.getBlobOrderedPerimeters();
-    }
-    
-    public void enableJaggedLineCorrections() {
-        enableJaggedLineCorrections = true;
-    }
-    public void disableJaggedLineCorrections() {
-        enableJaggedLineCorrections = false;
-    }
-    
-    public void increaseFactorForCurvatureMinimum(float factor) {
-        factorIncreaseForCurvatureMinimum = factor;
-    }
-    
-    public void resetFactorForCurvatureMinimum() {
-        factorIncreaseForCurvatureMinimum = 1.f;
-    }
 }

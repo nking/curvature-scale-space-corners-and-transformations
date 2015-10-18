@@ -17,37 +17,25 @@ import java.util.Set;
  */
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
-    @Override
-    public TransformationParameters solveForScale(
-        ISegmentedImageHelper img1Helper, SegmentationType type1,
-        boolean useBinned1,
-        ISegmentedImageHelper img2Helper, SegmentationType type2,
-        boolean useBinned2,
+    public TransformationParameters solveForScale(BlobCornerHelper img1Helper, 
+        SegmentationType type1, boolean useBinned1, BlobCornerHelper img2Helper, 
+        SegmentationType type2, boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
-        
-        if (!(img1Helper instanceof SegmentedImageBlobContourHelper) ||
-            !(img2Helper instanceof SegmentedImageBlobContourHelper)) {
-            throw new IllegalArgumentException("img1Helper and img2Helper must"
-            + " be instances of SegmentedImageBlobContourHelper");
-        }
-        
-        BlobsAndCorners bc1 = ((SegmentedImageBlobCornerHelper)img1Helper)
-            .getBlobsAndCorners(type1, useBinned1);
-        
-        GreyscaleImage img1 = ((SegmentedImageBlobCornerHelper)img1Helper)
-            .getGreyscaleImage(useBinned1);
 
-        BlobsAndCorners bc2 = ((SegmentedImageBlobCornerHelper)img2Helper)
-            .getBlobsAndCorners(type2, useBinned2);
+        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
+            
+        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
         
-        GreyscaleImage img2 = img2Helper.getGreyscaleImage(useBinned2);
-        
-        List<List<CornerRegion>> corners1List = bc1.getCorners();
-        List<List<CornerRegion>> corners2List = bc2.getCorners();
-        List<Set<PairInt>> blobs1 = bc1.getBlobs();
-        List<Set<PairInt>> blobs2 = bc2.getBlobs();
-        List<PairIntArray> perimeters1 = bc1.getBlobOrderedPerimeters();
-        List<PairIntArray> perimeters2 = bc2.getBlobOrderedPerimeters();
+        List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
+            type1, useBinned1);
+        List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
+            type2, useBinned2);
+        List<Set<PairInt>> blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);
+        List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
+        List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(
+            type1, useBinned1);
+        List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(
+            type2, useBinned2);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
@@ -168,8 +156,8 @@ curve1.getN(), curve2.getN()));
         }
 
         TransformationParameters params = calculateTransformation(
-            img1Helper.getBinFactor(useBinned1), type1, useBinned1,
-            img2Helper.getBinFactor(useBinned2), type2, useBinned2,
+            img1Helper.imgHelper.getBinFactor(useBinned1), type1, useBinned1,
+            img2Helper.imgHelper.getBinFactor(useBinned2), type2, useBinned2,
             bestOverall, outputScaleRotTransXYStDev);
 
         if (params == null) {

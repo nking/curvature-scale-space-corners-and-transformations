@@ -11,7 +11,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHelper {
+public class SegmentedImageHelper {
 
     protected int smallestGroupLimit = 100;
     
@@ -49,7 +49,7 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
     
     protected String debugTag = "";
 
-    public AbstractSegmentedImageHelper(final ImageExt img) {
+    public SegmentedImageHelper(final ImageExt img) {
 
         this.img = img;
 
@@ -64,7 +64,7 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
      * @param img
      * @param debugTag
      */
-    public AbstractSegmentedImageHelper(final ImageExt img, final String debugTag) {
+    public SegmentedImageHelper(final ImageExt img, final String debugTag) {
 
         this.img = img;
 
@@ -77,7 +77,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         this.debugTag = debugTag;
     }
 
-    @Override
     public void createBinnedGreyscaleImage(int maxDimension) {
         
         if (imgGreyBinned != null) {
@@ -101,8 +100,7 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         imgGreyBinned = imageProcessor.binImage(imgGrey, binFactor);
     }
 
-    @Override
-    public boolean applyEqualizationIfNeededByComparison(ISegmentedImageHelper 
+    public boolean applyEqualizationIfNeededByComparison(SegmentedImageHelper 
         otherImgHelper) {
         
         // doing this automatically for now, but can use the stats instead to
@@ -153,7 +151,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    @Override
     public void applySegmentation(SegmentationType type, 
         boolean applyToBinnedImage) throws IOException, NoSuchAlgorithmException {
         
@@ -164,23 +161,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         }
     }
 
-    public void generatePerimeterPointsOfInterest(SegmentationType type, 
-        boolean applyToBinnedImage) {
-        
-        if (applyToBinnedImage) {
-            generatePerimeterPointsOfInterestForBinned(type);
-        } else {
-            generatePerimeterPointsOfInterestForUnbinned(type);
-        }
-    }
-
-    protected abstract void clearBinnedPointsOfInterestMaps();
-
-    protected abstract void clearUnbinnedPointsOfInterestMaps();
-
-    public abstract int sumPointsOfInterest(SegmentationType segmentationType1, 
-        boolean useBinned1);
-    
     /**
      * apply segmentation type type to the greyscale or color binned image
      * depending upon the segmentation type.
@@ -191,10 +171,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
      */
     protected void applySegmentationToBinned(SegmentationType type) throws
         IOException, NoSuchAlgorithmException {
-
-        imgBinnedSegmentedMap.clear();
-
-        clearBinnedPointsOfInterestMaps();
 
         if (type.equals(SegmentationType.BINARY)) {
             applySegmentationToBinned(type, 2);
@@ -217,10 +193,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
      */
     protected void applySegmentation(SegmentationType type) throws IOException,
         NoSuchAlgorithmException {
-
-        imgSegmentedMap.clear();
-
-        clearUnbinnedPointsOfInterestMaps();
 
         if (type.equals(SegmentationType.BINARY)) {
             applySegmentation(type, 2);
@@ -373,13 +345,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         }
     }
 
-    protected abstract void generatePerimeterPointsOfInterestForUnbinned(
-        SegmentationType type);
-
-    protected abstract void generatePerimeterPointsOfInterestForBinned(
-        SegmentationType type);
-
-    @Override
     public GreyscaleImage getSegmentationImage(SegmentationType type) {
         if (type == null) {
             throw new IllegalArgumentException("type cannot be null");
@@ -388,7 +353,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         return segImg;
     }
 
-    @Override
     public GreyscaleImage getBinnedSegmentationImage(SegmentationType type) {
         
         if (type == null) {
@@ -400,7 +364,6 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         return segImg;
     }
 
-    @Override
     public GreyscaleImage getGreyscaleImage(boolean getTheBinned) {
         
         if (getTheBinned) {
@@ -410,17 +373,14 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         }
     }
 
-    @Override
     public GreyscaleImage getGreyscaleImage() {
         return imgGrey;
     }
     
-     @Override
     public ImageExt getImage() {
         return img;
     }
 
-    @Override
     public GreyscaleImage getGreyscaleImageBinned() {
         
         //TODO: may want to return the unbinned image
@@ -433,22 +393,18 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
         return imgGreyBinned;
     }
 
-    @Override
     public int getSmallestGroupLimit() {
         return smallestGroupLimit;
     }
 
-    @Override
     public int getLargestGroupLimit() {
         return largestGroupLimit;
     }
 
-    @Override
     public int getSmallestGroupLimitBinned() {
         return smallestGroupLimitBinned;
     }
 
-    @Override
     public int getLargestGroupLimitBinned() {
         return largestGroupLimitBinned;
     }
@@ -464,9 +420,15 @@ public abstract class AbstractSegmentedImageHelper implements ISegmentedImageHel
      * @param getForBinned
      * @return
      */
-    @Override
     public int getBinFactor(boolean getForBinned) {
         return getForBinned ? binFactor : 1;
     }
 
+    public boolean isInDebugMode() {
+        return debug;
+    }
+    
+    public String getDebugTag() {
+        return debugTag;
+    }
 }

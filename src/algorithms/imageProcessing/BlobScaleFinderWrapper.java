@@ -2,11 +2,10 @@ package algorithms.imageProcessing;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
- * determine scale between 2 images using blob contours.
+ * determine scale between 2 images using blob contours or corners.
  * NOT READY FOR USE YET.
  *
  * @author nichole
@@ -26,10 +25,16 @@ public class BlobScaleFinderWrapper {
      */
     protected final boolean useCorners = false;
 
-    protected final ISegmentedImageHelper img1Helper;
+    protected final BlobPerimeterHelper img1Helper;
 
-    protected final ISegmentedImageHelper img2Helper;
+    protected final BlobPerimeterHelper img2Helper;
 
+    protected BlobCornerHelper blobCornerHelper1 = null;
+    protected BlobCornerHelper blobCornerHelper2 = null;
+    
+    protected BlobContourHelper blobContourHelper1 = null;
+    protected BlobContourHelper blobContourHelper2 = null;
+    
     /**
      *
      * @param img1 the first image holding objects for which a Euclidean
@@ -40,19 +45,9 @@ public class BlobScaleFinderWrapper {
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {
 
-        if (useCorners) {
-            
-            img1Helper = new SegmentedImageBlobCornerHelper(img1, "1");
-
-            img2Helper = new SegmentedImageBlobCornerHelper(img2, "2");
-            
-        } else {
-            
-            img1Helper = new SegmentedImageBlobContourHelper(img1, "1");
-
-            img2Helper = new SegmentedImageBlobContourHelper(img2, "2");
-        }
-
+        img1Helper = new BlobPerimeterHelper(img1, "1");
+        
+        img2Helper = new BlobPerimeterHelper(img2, "2");
     }
 
     public void setToDebug() {
@@ -196,23 +191,56 @@ public class BlobScaleFinderWrapper {
             img1Helper.applySegmentation(segmentationType1, useBinned1);
             
             img2Helper.applySegmentation(segmentationType2, useBinned2);
-
-            img1Helper.generatePerimeterPointsOfInterest(segmentationType1, useBinned1);
-
-            img2Helper.generatePerimeterPointsOfInterest(segmentationType2, useBinned2);
-
-            IBlobScaleFinder bsFinder = null;
-            if (useCorners) {
-                bsFinder = new BlobCornersScaleFinder();
-            } else {
-                bsFinder = new BlobContoursScaleFinder();
-            }
             
             float[] outputScaleRotTransXYStDev = new float[4];
-            TransformationParameters params = bsFinder.solveForScale(
-                img1Helper, segmentationType1, useBinned1,
-                img2Helper, segmentationType2, useBinned2,
-                outputScaleRotTransXYStDev);
+            
+            TransformationParameters params = null;
+            
+            int n1;
+            int n2;
+            
+            if (useCorners) {
+                
+                if (blobCornerHelper1 == null) {
+                    blobCornerHelper1 = new BlobCornerHelper(img1Helper);
+                    blobCornerHelper2 = new BlobCornerHelper(img2Helper);                    
+                }
+                
+                blobCornerHelper1.generatePerimeterCorners(
+                    segmentationType1, useBinned1);
+                blobCornerHelper2.generatePerimeterCorners(
+                    segmentationType2, useBinned2);
+                
+                BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
+                
+                params = bsFinder.solveForScale(blobCornerHelper1,
+                    segmentationType1, useBinned1, blobCornerHelper2,
+                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+
+                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
+                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
+                
+            } else {
+                
+                if (blobContourHelper1 == null) {
+                    blobContourHelper1 = new BlobContourHelper(img1Helper);
+                    blobContourHelper2 = new BlobContourHelper(img2Helper);                    
+                }
+                
+                blobContourHelper1.generatePerimeterContours(
+                    segmentationType1, useBinned1);
+                blobContourHelper2.generatePerimeterContours(
+                    segmentationType2, useBinned2);
+                                
+                BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
+                
+                params = bsFinder.solveForScale(blobContourHelper1,
+                    segmentationType1, useBinned1, blobContourHelper2,
+                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+
+                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
+                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
+            }
 
             if (params != null) {
 
@@ -244,14 +272,10 @@ public class BlobScaleFinderWrapper {
             // if arrive here, have to decide to keep current segmentation and
             // binning or increment.  at least one index has to change
             
-            int nContours1 = img1Helper.sumPointsOfInterest(segmentationType1, useBinned1);
-
-            int nContours2 = img2Helper.sumPointsOfInterest(segmentationType2, useBinned2);
-            
             log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1 
-                + " nContours1=" + nContours1);
+                + " nC1=" + n1);
             log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2
-                + " nContours2=" + nContours2);
+                + " nC2=" + n2);
             
             if (useSameSegmentation) {
                 /*if (
@@ -277,9 +301,9 @@ public class BlobScaleFinderWrapper {
                 continue;
             }
                         
-            if (nContours1 > 10) {
-                if (nContours2 > 10) {
-                    if (nContours1 > nContours2) {
+            if (n1 > 10) {
+                if (n2 > 10) {
+                    if (n1 > n2) {
                         if (!seg2[ordered2Idx].incrementAndHasNext()) {
                             ordered2Idx++;
                         }
@@ -296,7 +320,7 @@ public class BlobScaleFinderWrapper {
                 continue;
             }
             
-            if (nContours2 > 10) {
+            if (n2 > 10) {
                 if (!seg1[ordered1Idx].incrementAndHasNext()) {
                     ordered1Idx++;
                 }

@@ -137,3 +137,5 @@ Task 6 needs:
     BlobContourHelper0
     BlobsAndContours0 (specializaed contour extraction)
     BlobContoursScaleFinder0
+
+---
