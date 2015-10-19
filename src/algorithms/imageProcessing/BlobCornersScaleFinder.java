@@ -2,11 +2,13 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -23,10 +25,6 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         BlobCornerHelper img2Helper, IntensityFeatures features2,
         SegmentationType type2, boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
-
-        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
-            
-        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
         
         List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
             type1, useBinned1);
@@ -40,10 +38,12 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             type2, useBinned2);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-    
-        Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
-            index1BestMap = new HashMap<Integer, 
-            FixedSizeSortedVector<IntensityFeatureComparisonStats>>();
+         
+        Map<Integer, IntensityFeatureComparisonStats> 
+            index1BestMap = new HashMap<Integer, IntensityFeatureComparisonStats>();
+        
+        Map<Integer, TransformationParameters> 
+            index1BestParamsMap = new HashMap<Integer, TransformationParameters>();
 
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
@@ -62,12 +62,9 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
             double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
 
-            // keeping the top '1' for each index1.  comparison is by cost.
-            // choosing more than one because later bipartite matching attempts
-            // to match best for all index1 matchings
-            FixedSizeSortedVector<IntensityFeatureComparisonStats> bestStats 
-                = new FixedSizeSortedVector<IntensityFeatureComparisonStats>(1, 
-                IntensityFeatureComparisonStats.class);
+            IntensityFeatureComparisonStats bestStats = null;
+            
+            TransformationParameters bestParams = null;
             
             for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
 
@@ -83,7 +80,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 
                 List<CornerRegion> corners2 = corners2List.get(idx2);
                 Collections.sort(corners2, new DescendingKComparator());
-                
+
 double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
 log.info("index1=" + index1.toString() + " index2=" + index2.toString()
 + " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
@@ -126,28 +123,32 @@ curve1.getN(), curve2.getN()));
                 
                 stats.addAll(compStats);
                 
-                // bestStats keeps the top '1' smallest cost solutions added to it
-                // (though combinedStats are used when nMatched is 2 or less)
-                boolean added = bestStats.add(stats);
-                
-                if (added) {
+                int comp = -1;
+                if (bestStats != null) {
+                    comp = stats.compareTo(bestStats);
+                }
+                if (comp == -1) {
+                    bestStats = stats;
+                    bestParams = params;                
                     log.info("  added to best for [" + index1.toString() + "] ["
                         + index2.toString() + "] cost=" + stats.getCost()
                         + " with n=" + stats.getComparisonStats().size());
                 }
             }
             
-            if (bestStats.getNumberOfItems() == 0) {
+            if (bestStats == null) {
                 continue;
             }
             
             index1BestMap.put(index1, bestStats);
+            
+            index1BestParamsMap.put(index1, bestParams);
         }
 
         List<FeatureComparisonStat> bestOverall = null;
         if (!index1BestMap.isEmpty()) {
-            bestOverall = filterToBestConsistent(index1BestMap, corners1List,
-                corners2List);
+            bestOverall = filterToBestConsistent(index1BestMap, 
+                index1BestParamsMap, corners1List, corners2List);
         }
 
         if (bestOverall == null) {
@@ -167,11 +168,28 @@ curve1.getN(), curve2.getN()));
     }
 
     private List<FeatureComparisonStat> filterToBestConsistent(
-        Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
-        index1BestMap, List<List<CornerRegion>> corners1List, 
+        Map<Integer, IntensityFeatureComparisonStats> index1BestMap, 
+        Map<Integer, TransformationParameters> index1BestParamsMap, 
+        List<List<CornerRegion>> corners1List, 
         List<List<CornerRegion>> corners2List) {
         
-        throw new UnsupportedOperationException("not yet implemented");
+        List<FeatureComparisonStat> compStats = 
+            new ArrayList<FeatureComparisonStat>();
+        
+        for (Entry<Integer, IntensityFeatureComparisonStats> entry : 
+            index1BestMap.entrySet()) {
+            
+            TransformationParameters params = index1BestParamsMap.get(entry.getKey());
+            
+            IntensityFeatureComparisonStats ifs = entry.getValue();
+            List<FeatureComparisonStat> stats = ifs.getComparisonStats();
+            
+            int z = 1;
+        }
+        
+        removeDiscrepantThetaDiff(compStats);
+        
+        return compStats;
     }
     
 }

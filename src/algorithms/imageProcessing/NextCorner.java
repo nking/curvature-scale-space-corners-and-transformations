@@ -30,11 +30,12 @@ public class NextCorner {
     protected final List<CornerRegion> matchedCorners1;
     protected final List<CornerRegion> matchedCorners2;
     
+    protected final List<FeatureComparisonStat> matchedStats;
+    
     protected int matchedEdgeNumber1 = -1;
     protected int matchedEdgeNumber2 = -1;
     
-    public NextCorner(final List<CornerRegion> corners,
-        List<CornerRegion> alreadyVisited) {
+    public NextCorner(final List<CornerRegion> corners) {
                 
         origCorners = new TreeSet<CornerRegion>(
             new DescendingKComparator());
@@ -43,15 +44,13 @@ public class NextCorner {
         remainingCorners = new TreeSet<CornerRegion>(
             new DescendingKComparator());
         
+        matchedStats = new ArrayList<FeatureComparisonStat>();
+        
         for (int i = 0; i < corners.size(); i++) {
             
             CornerRegion corner = corners.get(i);
             
             origCorners.add(corner);
-            
-            if (alreadyVisited.contains(corner)) {
-                continue;
-            }
             
             remainingCorners.add(corner);
         }
@@ -61,7 +60,8 @@ public class NextCorner {
         matchedCorners2 = new ArrayList<CornerRegion>();
     }
     
-    public void addMatchedCorners(CornerRegion corner1, CornerRegion corner2) {
+    public void addMatchedCorners(CornerRegion corner1, CornerRegion corner2,
+        FeatureComparisonStat stat) {
         
         markAsVisited(corner1);
         
@@ -71,6 +71,7 @@ public class NextCorner {
         
         matchedCorners1.add(corner1);
         matchedCorners2.add(corner2);
+        matchedStats.add(stat);
 
         if (matchedEdgeNumber1 == -1) {
             matchedEdgeNumber1 = corner1.getEdgeIdx();
@@ -86,9 +87,8 @@ public class NextCorner {
     }
     
     /**
-     * find the largest sigma peak within the remaining un-searched contours.  
-     * Note that the method has the 
-     * side-effect of removing the returned contour from the look-up data
+     * find the largest remaining corner within the list of unvisited.
+     * side-effect of removing the returned corner index from the look-up data
      * structures.
      * 
      * @return 
@@ -159,5 +159,9 @@ public class NextCorner {
     
     public List<CornerRegion> getMatchedCorners2() {
         return matchedCorners2;
+    }
+    
+    public List<FeatureComparisonStat> getMatchedFeatureComparisonStats() {
+        return matchedStats;
     }
 }

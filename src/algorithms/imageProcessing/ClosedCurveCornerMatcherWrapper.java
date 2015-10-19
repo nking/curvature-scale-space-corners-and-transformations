@@ -106,11 +106,9 @@ public class ClosedCurveCornerMatcherWrapper {
             (mDefault.getSolvedParameters() != null);
 
         log.info("default order: solved=" + solved + " ambig=" + 
-            mDefault.scaleIsPossiblyAmbiguous() + " possibly scl < 1=" + 
-            mDefault.strongestPeaksImplyScaleSmallerThanOne());
+            mDefault.scaleIsPossiblyAmbiguous());
         
-        if (solved && !mDefault.scaleIsPossiblyAmbiguous()
-            && !mDefault.strongestPeaksImplyScaleSmallerThanOne()) {
+        if (solved && !mDefault.scaleIsPossiblyAmbiguous()) {
 
             setSolutionToDefault(mDefault);
 
@@ -126,8 +124,7 @@ public class ClosedCurveCornerMatcherWrapper {
             (mReverse.getSolvedParameters() != null);
 
         log.info("reverse order: solved=" + solvedReverse + " ambig=" + 
-            mReverse.scaleIsPossiblyAmbiguous() + " possibly scl < 1=" + 
-            mReverse.strongestPeaksImplyScaleSmallerThanOne());
+            mReverse.scaleIsPossiblyAmbiguous());
         
         if (!solvedReverse && solved) {
 
@@ -225,6 +222,7 @@ public class ClosedCurveCornerMatcherWrapper {
         }
 
         this.solutionCost = matcher.getSolvedCost();
+        
         this.solutionParameters = matcher.getSolvedParameters();
 
         this.solutionMatchedCorners1.addAll(matcher.getSolutionMatchedCorners1());

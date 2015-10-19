@@ -6,10 +6,10 @@ package algorithms.imageProcessing;
  */
 public class TransformationPair2 {
     
-    private final int corner1Curve1Index;
-    private final int corner1Curve2Index;
-    private final int corner2Curve1Index;
-    private final int corner2Curve2Index;
+    private final CornerRegion corner1Curve1;
+    private final CornerRegion corner1Curve2;
+    private final CornerRegion corner2Curve1;
+    private final CornerRegion corner2Curve2;
     
     private TransformationParameters params;
     
@@ -20,17 +20,17 @@ public class TransformationPair2 {
      */
     private NextCorner nextCorner;
    
-    public TransformationPair2(int indexForCorner1Curve1, 
-        int indexForCorner1Curve2, int indexForCorner2Curve1, 
-        int indexForCorner2Curve2) {
+    public TransformationPair2(CornerRegion corner1Curve1, 
+        CornerRegion corner1Curve2, CornerRegion corner2Curve1, 
+        CornerRegion corner2Curve2) {
         
-        this.corner1Curve1Index = indexForCorner1Curve1;
+        this.corner1Curve1 = corner1Curve1;
         
-        this.corner1Curve2Index = indexForCorner1Curve2;
+        this.corner1Curve2 = corner1Curve2;
         
-        this.corner2Curve1Index = indexForCorner2Curve1;
+        this.corner2Curve1 = corner2Curve1;
         
-        this.corner2Curve2Index = indexForCorner2Curve2;
+        this.corner2Curve2 = corner2Curve2;
     }
     
     /**
