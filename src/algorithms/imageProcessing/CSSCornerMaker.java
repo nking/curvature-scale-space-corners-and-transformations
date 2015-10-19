@@ -696,7 +696,7 @@ public class CSSCornerMaker {
         ScaleSpaceCurve scaleSpace) {
         
         //for 2 neighboring points on each side, min k is 0.2
-        if (k[cornerIdx] < 0.2f) {
+        if (k[cornerIdx] < 0.14f) {//0.18
             return;
         }
         
@@ -828,6 +828,8 @@ public class CSSCornerMaker {
 if (doUseOutdoorMode) {
     factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;
 }
+        log.fine("using factorAboveMin=" + factorAboveMin);
+        
         //to limit k to curvature that shows a rise in 1 pixel over a run of 3,
         // use 0.2 for a lower limit.
         // TODO: it's not clear that kLowerLimit is a good idea.  the relative change
