@@ -355,7 +355,7 @@ for (int i = 0; i < indexes2.length; ++i) {
                 if (cr2C2.equals(cr1C2)) {
                     continue;
                 }
-                  
+                
                 insertNode(tc, indexes2[i], cr1C1, cr1C2, indexes2[j], cr2C1, 
                     cr2C2);  
             }
@@ -592,10 +592,10 @@ for (int i = 0; i < indexes2.length; ++i) {
 
         // apply the transformation to it
         double[] xy3C2 = applyTransformation(c3C1, params);
-//(254,17)(203,251)   (265,9)(210,259)
+
         // find the best matching SSD within tolerance of predicted
         CornersAndFeatureStat cfs = findBestMatchWithinTolerance(c3C1, xy3C2);
-
+        
         CornerRegion c3C2 = null;
 
         if (cfs != null) {

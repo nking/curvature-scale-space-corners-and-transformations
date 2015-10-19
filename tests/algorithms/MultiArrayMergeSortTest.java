@@ -530,6 +530,25 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(a4[5] == 100);
     }
     
+    public void testSortBy1stArgThen2nd_2() throws Exception {
+        
+        int[] a = new int[]{6, 5, 4, 3, 2, 1};
+    	int[] b = new int[]{0, 1, 2, 3, 4, 5};
+        int[] c = new int[]{0, 1, 2, 3, 4, 5};
+
+    	MultiArrayMergeSort.sortBy1stArgThen2nd(a, b, c);
+    	assertTrue(a.length == b.length);
+        assertTrue(a.length == c.length);
+
+    	int[] expectedA = new int[]{1, 2, 3, 4, 5, 6};
+        int[] expectedB = new int[]{5, 4, 3, 2, 1, 0};
+        int[] expectedC = new int[]{5, 4, 3, 2, 1, 0};
+        
+        assertTrue(Arrays.equals(expectedA, a));
+        assertTrue(Arrays.equals(expectedB, b));
+        assertTrue(Arrays.equals(expectedC, c));
+    }
+    
     /**
      * Test suite
      * @return static Test

@@ -19,6 +19,7 @@ public class NearestPoints {
     
     private final int[] x;
     private final int[] y;
+    private final int[] originalIndexes;
     
     public NearestPoints(int[] xPoints, int[] yPoints) {
         
@@ -33,10 +34,18 @@ public class NearestPoints {
             "xPoints and yPoints must be the same length");
         }
         
-        x = Arrays.copyOf(xPoints, xPoints.length);
-        y = Arrays.copyOf(yPoints, yPoints.length);
+        int n = xPoints.length;
+        x = new int[n];
+        y = new int[n];
+        originalIndexes = new int[n];
         
-        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);
+        for (int i = 0; i < n; ++i) {
+            x[i] = xPoints[i];
+            y[i] = yPoints[i];
+            originalIndexes[i] = i;
+        }
+        
+        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y, originalIndexes);
     }
     
     /**
@@ -54,7 +63,7 @@ public class NearestPoints {
             return result;
         }
         
-        Set<Integer> indexes = findNeighborIndexes(xCenter, yCenter, radius);
+        Set<Integer> indexes = findNeighborIndexesR(xCenter, yCenter, radius);
         
         for (Integer index : indexes) {
             int i = index.intValue();
@@ -72,6 +81,32 @@ public class NearestPoints {
      * @return 
      */
     public Set<Integer> findNeighborIndexes(int xCenter, int yCenter, float radius) {
+        
+        Set<Integer> result = new HashSet<Integer>();
+        
+        if (x.length == 0) {
+            return result;
+        }
+        
+        Set<Integer> indexes = findNeighborIndexesR(xCenter, yCenter, radius);
+        
+        for (Integer index : indexes) {
+            int i = index.intValue();
+            result.add(originalIndexes[i]);
+        }
+        
+        return result;
+    }
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points
+     * and return the indexes relative to the x,y arrays
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    private Set<Integer> findNeighborIndexesR(int xCenter, int yCenter, float radius) {
         
         Set<Integer> resultIndexes = new HashSet<Integer>();
         
