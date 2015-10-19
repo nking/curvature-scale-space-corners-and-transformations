@@ -1020,41 +1020,41 @@ int z1 = 1;
     */
     public static int[] getNextRGB(int count) {
         
+        int n = 26;
+        
         if (count < 0) {
             count = 0;
         } else {
-            count = count % 28;
+            count = count % n;
         }
         
-        int[][] c = new int[28][];
+        int[][] c = new int[n][];
         c[0] = new int[]{255,0,0};
         c[1] = new int[]{228,228,0};
         c[2] = new int[]{0,255,0};
         c[3] = new int[]{0,255,255}; 
         c[4] = new int[]{176,176,255};
         c[5] = new int[]{255,0,255};
-        c[6] = new int[]{228,228,228};
-        c[7] = new int[]{176,0,0}; 
-        c[8] = new int[]{186,186,0};
-        c[9] = new int[]{0,176,0}; 
-        c[10] = new int[]{0,176,176}; 
-        c[11] = new int[]{132,132,255}; 
-        c[12] = new int[]{176,0,176}; 
-        c[13] = new int[]{186,186,186}; 
-        c[14] = new int[]{135,0,0};
-        c[15] = new int[]{135,135,0}; 
-        c[16] = new int[]{0,135,0}; 
-        c[17] = new int[]{0,135,135}; 
-        c[18] = new int[]{73,73,255}; 
-        c[19] = new int[]{135,0,135}; 
-        c[20] = new int[]{135,135,135}; 
-        c[21] = new int[]{85,0,0};
-        c[22] = new int[]{84,84,0}; 
-        c[23] = new int[]{0,85,0};
-        c[24] = new int[]{0,85,85};
-        c[25] = new int[]{0,0,255};
-        c[26] = new int[]{85,0,85};
-        c[27] = new int[]{84,84,84};
+        c[6] = new int[]{176,0,0}; 
+        c[7] = new int[]{186,186,0};
+        c[8] = new int[]{0,176,0}; 
+        c[9] = new int[]{0,176,176}; 
+        c[10] = new int[]{132,132,255}; 
+        c[11] = new int[]{176,0,176}; 
+        c[12] = new int[]{186,186,186}; 
+        c[13] = new int[]{135,0,0};
+        c[14] = new int[]{135,135,0}; 
+        c[15] = new int[]{0,135,0}; 
+        c[16] = new int[]{0,135,135}; 
+        c[17] = new int[]{73,73,255}; 
+        c[18] = new int[]{135,0,135}; 
+        c[19] = new int[]{135,135,135}; 
+        c[20] = new int[]{85,0,0};
+        c[21] = new int[]{84,84,0}; 
+        c[22] = new int[]{0,85,0};
+        c[23] = new int[]{0,85,85};
+        c[24] = new int[]{0,0,255};
+        c[25] = new int[]{85,0,85};
         
         return c[count];
     }
