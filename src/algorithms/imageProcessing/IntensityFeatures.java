@@ -71,7 +71,9 @@ public class IntensityFeatures {
      * (xCenter, yCenter)
      * @return
      */
-    public IntensityDescriptor extractIntensity(final int xCenter, final int yCenter, final int rotation) {
+    public IntensityDescriptor extractIntensity(final int xCenter, 
+        final int yCenter, final int rotation) {
+        
         checkBounds(xCenter, yCenter);
         
         PairInt p = new PairInt(xCenter, yCenter);

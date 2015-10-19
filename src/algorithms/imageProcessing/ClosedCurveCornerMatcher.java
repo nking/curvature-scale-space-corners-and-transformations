@@ -1,9 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
-import algorithms.util.PairIntArray;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -154,6 +152,7 @@ public class ClosedCurveCornerMatcher {
      */
     protected int[] getBestSSDC1ToC2() {
         
+        // if no match, contains a '-1'
         int[] indexes2 = new int[c1.size()];
         
         int dither = 1;
@@ -286,6 +285,7 @@ public class ClosedCurveCornerMatcher {
      */
     private void initHeapNodes1() {
         
+        // if no match, contains a '-1'
         int[] indexes2 = getBestSSDC1ToC2();
         
         /*
@@ -312,11 +312,19 @@ public class ClosedCurveCornerMatcher {
                         
             CornerRegion cr1C1 = this.c1.get(i);
             
+            if (indexes2[i] < 0) {
+                continue;
+            }
+            
             CornerRegion cr1C2 = this.c2.get(indexes2[i]);
             
             for (int j = (i + 1); j < c1.size(); ++j) {
                 
                 CornerRegion cr2C1 = this.c1.get(j);
+                
+                if (indexes2[j] < 0) {
+                    continue;
+                }
                 
                 CornerRegion cr2C2 = this.c2.get(indexes2[j]);
                 
@@ -332,6 +340,7 @@ public class ClosedCurveCornerMatcher {
      */
     private void initHeapNodes2() {
         
+        // if no match, has a '-1'
         int[] indexes2 = getBestSSDC1ToC2();
         
         /*
@@ -358,8 +367,14 @@ public class ClosedCurveCornerMatcher {
                 for (int idx2C1 = (idx1C1 + 1); idx2C1 < c1.size(); ++idx2C1) {
                 
                     CornerRegion cr2C1 = this.c1.get(idx2C1);
+                    
+                    int idx2 = indexes2[idx2C1];
+                    
+                    if (idx2 < 0) {
+                        continue;
+                    }
                 
-                    CornerRegion cr2C2 = this.c2.get(indexes2[idx2C1]);
+                    CornerRegion cr2C2 = this.c2.get(idx2);
                     
                     insertNode(tc, idx1C1, idx1C2, cr1C1, cr1C2, 
                         idx2C1, indexes2[idx2C1], cr2C1, cr2C2);

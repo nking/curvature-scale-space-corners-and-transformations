@@ -262,7 +262,8 @@ public class CurvatureScaleSpaceCornerDetector extends
     findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
         final boolean doUseOutdoorMode, final PairIntArray outputCorners) {
 
-        CSSCornerMaker cornerMaker = new CSSCornerMaker();
+        CSSCornerMaker cornerMaker = new CSSCornerMaker(this.img.getWidth(),
+            this.img.getHeight());
         
         if (enableJaggedLineCorrections) {
             cornerMaker.enableJaggedLineCorrections();

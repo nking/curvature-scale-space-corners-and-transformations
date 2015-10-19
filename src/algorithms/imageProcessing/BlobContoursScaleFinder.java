@@ -26,10 +26,10 @@ import java.util.TreeMap;
 public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
 
     public TransformationParameters solveForScale(
-        BlobContourHelper img1Helper, SegmentationType type1,
-        boolean useBinned1,
-        BlobContourHelper img2Helper, SegmentationType type2,
-        boolean useBinned2,
+        BlobContourHelper img1Helper, IntensityFeatures features1,
+        SegmentationType type1, boolean useBinned1,
+        BlobContourHelper img2Helper, IntensityFeatures features2,
+        SegmentationType type2, boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
 
         GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
@@ -51,9 +51,6 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             new HashMap<PairInt,  CSSContourMatcherWrapper>();
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
 
         /*
         Note that the matching contours are improved and filtered by using 

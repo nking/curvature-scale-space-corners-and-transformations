@@ -38,10 +38,15 @@ public class BlobScaleFinderWrapper {
 
     protected BlobCornerHelper blobCornerHelper1 = null;
     protected BlobCornerHelper blobCornerHelper2 = null;
-    
+
     protected BlobContourHelper blobContourHelper1 = null;
     protected BlobContourHelper blobContourHelper2 = null;
-    
+
+    protected final IntensityFeatures features1;
+    protected final IntensityFeatures featuresBinned1;
+    protected final IntensityFeatures features2;
+    protected final IntensityFeatures featuresBinned2;
+
     /**
      *
      * @param img1 the first image holding objects for which a Euclidean
@@ -53,8 +58,22 @@ public class BlobScaleFinderWrapper {
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {
 
         img1Helper = new BlobPerimeterHelper(img1, "1");
-        
+
         img2Helper = new BlobPerimeterHelper(img2, "2");
+
+        img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+
+        img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+
+        features1 = new IntensityFeatures(img1, 5, true);
+
+        featuresBinned1 = new IntensityFeatures(
+            img1Helper.getGreyscaleImageBinned(), 5, true);
+
+        features2 = new IntensityFeatures(img2, 5, true);
+
+        featuresBinned2 = new IntensityFeatures(
+            img2Helper.getGreyscaleImageBinned(), 5, true);
     }
 
     public void setToDebug() {
@@ -109,29 +128,29 @@ public class BlobScaleFinderWrapper {
             log.info(stats2.toString());
         }
         */
-        
+
         ImageStatistics statsR1 = ImageStatisticsHelper.examine(
             img1Helper.getImage().r, true);
         ImageStatistics statsB1 = ImageStatisticsHelper.examine(
             img1Helper.getImage().b, true);
         ImageStatistics statsG1 = ImageStatisticsHelper.examine(
             img1Helper.getImage().g, true);
-        
+
         ImageStatistics statsR2 = ImageStatisticsHelper.examine(
             img2Helper.getImage().r, true);
         ImageStatistics statsB2 = ImageStatisticsHelper.examine(
             img2Helper.getImage().b, true);
         ImageStatistics statsG2 = ImageStatisticsHelper.examine(
             img2Helper.getImage().g, true);
-        
+
         log.info("stats R1=" + statsR1.toString());
         log.info("stats G1=" + statsG1.toString());
         log.info("stats B1=" + statsB1.toString());
-        
+
         log.info("stats R2=" + statsR2.toString());
         log.info("stats G2=" + statsG2.toString());
         log.info("stats B2=" + statsB2.toString());
-        
+
         int limit = 20;
         boolean useSameSegmentation = false;
         if ((Math.abs(statsR1.getMode() - statsR2.getMode()) < limit) &&
@@ -142,13 +161,13 @@ public class BlobScaleFinderWrapper {
             (Math.abs(statsB1.getMedian() - statsB2.getMedian()) < limit)) {
             useSameSegmentation = true;
         }
-        
+
         /*
         depending on image statistics, different combinations of segmentation
         and binning are tried.
-        
+
         If a segmentation type involves using random, the method might be
-        tried again if specified.  
+        tried again if specified.
         A different algorithm for the clustering may be needed.
         */
 
@@ -156,7 +175,7 @@ public class BlobScaleFinderWrapper {
         SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
             int numExtraUnbinnedAllowed)
         */
-        
+
         SegmentationOrder[] seg1 = new SegmentationOrder[]{
             new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
             new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 0, 0),
@@ -167,7 +186,7 @@ public class BlobScaleFinderWrapper {
             new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 0, 0),
             //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
         };
-                
+
         int ordered1Idx = 0;
         int ordered2Idx = 0;
 
@@ -180,69 +199,78 @@ public class BlobScaleFinderWrapper {
             SegmentationType segmentationType1 = seg1[ordered1Idx].geSegmentationType();
 
             SegmentationType segmentationType2 = seg2[ordered2Idx].geSegmentationType();
-            
-            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1 
-                + " useSameSegmentation=" + useSameSegmentation 
+
+            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1
+                + " useSameSegmentation=" + useSameSegmentation
                 + " ordered1Idx=" + ordered1Idx);
             log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2
                 + " ordered2Idx=" + ordered2Idx);
 
+            IntensityFeatures f1;
+            IntensityFeatures f2;
+
             if (useBinned1) {
                 img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+                f1 = featuresBinned1;
+            } else {
+                f1 = features1;
             }
 
             if (useBinned2) {
                 img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+                f2 = featuresBinned2;
+            } else {
+                f2 = features2;
             }
 
             img1Helper.applySegmentation(segmentationType1, useBinned1);
-            
+
             img2Helper.applySegmentation(segmentationType2, useBinned2);
-            
+
             float[] outputScaleRotTransXYStDev = new float[4];
-            
+
             TransformationParameters params = null;
-            
+
             int n1;
             int n2;
-            
+
             if (useCorners) {
-                
+
                 if (blobCornerHelper1 == null) {
                     blobCornerHelper1 = new BlobCornerHelper(img1Helper);
-                    blobCornerHelper2 = new BlobCornerHelper(img2Helper);                    
+                    blobCornerHelper2 = new BlobCornerHelper(img2Helper);
                 }
-                
+
                 blobCornerHelper1.generatePerimeterCorners(
                     segmentationType1, useBinned1);
                 blobCornerHelper2.generatePerimeterCorners(
                     segmentationType2, useBinned2);
-                
+
                 BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
-                
-                params = bsFinder.solveForScale(blobCornerHelper1,
-                    segmentationType1, useBinned1, blobCornerHelper2,
+
+                params = bsFinder.solveForScale(blobCornerHelper1, f1,
+                    segmentationType1, useBinned1, blobCornerHelper2, f2,
                     segmentationType2, useBinned2, outputScaleRotTransXYStDev);
 
                 n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
-                
+
             } else {
-                
+
                 if (blobContourHelper1 == null) {
                     blobContourHelper1 = new BlobContourHelper(img1Helper);
-                    blobContourHelper2 = new BlobContourHelper(img2Helper);                    
+                    blobContourHelper2 = new BlobContourHelper(img2Helper);
                 }
-                
+
                 blobContourHelper1.generatePerimeterContours(
                     segmentationType1, useBinned1);
                 blobContourHelper2.generatePerimeterContours(
                     segmentationType2, useBinned2);
-                                
+
                 BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
-                
-                params = bsFinder.solveForScale(blobContourHelper1,
-                    segmentationType1, useBinned1, blobContourHelper2,
+
+                params = bsFinder.solveForScale(blobContourHelper1, f1,
+                    segmentationType1, useBinned1, blobContourHelper2, f2,
                     segmentationType2, useBinned2, outputScaleRotTransXYStDev);
 
                 n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
@@ -263,27 +291,29 @@ public class BlobScaleFinderWrapper {
 
                 // TODO: consider returning the number of points used in the
                 // calculation
-                float f0 = (outputScaleRotTransXYStDev[0]/params.getScale());
-                float f1 = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);
-                
+                float factor0 = (outputScaleRotTransXYStDev[0]/params.getScale());
+                float factor1 = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);
+
                 // consider comparing stdev in translations to a fraction of the image
-                float f2 = outputScaleRotTransXYStDev[2];
-                float f3 = outputScaleRotTransXYStDev[3];
+                float factor2 = outputScaleRotTransXYStDev[2];
+                float factor3 = outputScaleRotTransXYStDev[3];
 
                 //TODO: review these limits
-                if ((f0 < 0.2) && (f1 >= 18.) && (f2 < 100) && (f3 < 100)) {
+                if ((factor0 < 0.2) && (factor1 >= 18.) && (factor2 < 100)
+                    && (factor3 < 100)) {
+
                     return params;
                 }
             }
 
             // if arrive here, have to decide to keep current segmentation and
             // binning or increment.  at least one index has to change
-            
-            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1 
+
+            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1
                 + " nC1=" + n1);
             log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2
                 + " nC2=" + n2);
-            
+
             if (useSameSegmentation) {
                 /*if (
                     ((useBinned1 && (nContours1 < 3)) && (useBinned2 && (nContours2 < 10))) ||
@@ -307,7 +337,7 @@ public class BlobScaleFinderWrapper {
                 }
                 continue;
             }
-                        
+
             if (n1 > 10) {
                 if (n2 > 10) {
                     if (n1 > n2) {
@@ -326,7 +356,7 @@ public class BlobScaleFinderWrapper {
                 }
                 continue;
             }
-            
+
             if (n2 > 10) {
                 if (!seg1[ordered1Idx].incrementAndHasNext()) {
                     ordered1Idx++;
@@ -341,7 +371,7 @@ public class BlobScaleFinderWrapper {
                 ordered2Idx++;
             }
         }
-        
+
         return null;
     }
 
@@ -352,18 +382,18 @@ public class BlobScaleFinderWrapper {
         private final int numExtraBinnedAllowed;
         private final int numExtraUnbinnedAllowed;
         private boolean currentIsBinned = true;
-        
+
         /** flag to use when a quick binned attempt shows that this segmentation
         is not the best choice for image and the full segmentation should be skipped*/
         private boolean skip = false;
-        
+
         public SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
             int numExtraUnbinnedAllowed) {
             this.type = sType;
             this.numExtraBinnedAllowed = numExtraBinnedAllowed;
             this.numExtraUnbinnedAllowed = numExtraUnbinnedAllowed;
         }
-        
+
         public boolean incrementAndHasNext() {
             if (skip) {
                 return false;
@@ -381,18 +411,18 @@ public class BlobScaleFinderWrapper {
             }
             return false;
         }
-        
+
         public void setToSkip() {
             skip = true;
         }
-        
+
         public boolean currentIsBinned() {
             return currentIsBinned;
         }
-        
+
         public SegmentationType geSegmentationType() {
             return type;
         }
     }
-    
+
 }

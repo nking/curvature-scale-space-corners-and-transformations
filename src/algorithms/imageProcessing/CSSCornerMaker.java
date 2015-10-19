@@ -47,10 +47,19 @@ public class CSSCornerMaker {
     
     protected boolean doStoreCornerRegions = true;
     
+    protected final int width;
+    
+    protected final int height;
+    
     private Map<Integer, List<CornerRegion>> edgeCornerRegionMap = new
         HashMap<Integer, List<CornerRegion>>();
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
+    
+    public CSSCornerMaker(int imageWidth, int imageHeight) {
+        width = imageWidth;
+        height = imageHeight;
+    }
     
     public void enableJaggedLineCorrections() {
         enableJaggedLineCorrections = true;
@@ -718,12 +727,12 @@ public class CSSCornerMaker {
             }
             count++;
         }
-        
+       
         //log.info("edgeIdx=" + edgeNumber + " corner idx=" + cornerIdx + " (" + 
         //    Math.round(scaleSpace.getX(cornerIdx)) + "," +
         //    Math.round(scaleSpace.getY(cornerIdx)) +")");
         for (int pIdx : pIdxs) {
-            if (pIdx < 0 || (pIdx > (k.length - 1))) {
+            if (pIdx < 0 || (pIdx > (n - 1))) {
                 // it's out of bounds only if it is not a closed curve
                 continue;
             }
@@ -749,13 +758,20 @@ public class CSSCornerMaker {
         CornerRegion cr = new CornerRegion(edgeNumber, nCR, kMaxIdx);
         nCR = 0;
         for (int pIdx : pIdxs) {
-            if (pIdx < 0 || (pIdx > (k.length - 1))) {
+            if (pIdx < 0 || (pIdx > (n - 1))) {
                 // it's out of bounds only if it is not a closed curve
                 continue;
             }
-            cr.set(nCR, k[pIdx], 
-                Math.round(scaleSpace.getX(pIdx)),
-                Math.round(scaleSpace.getY(pIdx)));
+          
+            int x = Math.round(scaleSpace.getX(pIdx));
+            int y = Math.round(scaleSpace.getY(pIdx));
+            
+            // discard if out of bounds
+            if ((x < 0) || (y < 0) || (x > (width - 1)) || (y > (height - 1))) {
+                return;
+            }
+            
+            cr.set(nCR, k[pIdx], x, y);
             nCR++; 
         }
         Integer key = Integer.valueOf(edgeNumber);

@@ -17,8 +17,10 @@ import java.util.Set;
  */
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
-    public TransformationParameters solveForScale(BlobCornerHelper img1Helper, 
-        SegmentationType type1, boolean useBinned1, BlobCornerHelper img2Helper, 
+    public TransformationParameters solveForScale(
+        BlobCornerHelper img1Helper, IntensityFeatures features1,
+        SegmentationType type1, boolean useBinned1, 
+        BlobCornerHelper img2Helper, IntensityFeatures features2,
         SegmentationType type2, boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
 
@@ -38,17 +40,14 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             type2, useBinned2);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
-        
+    
         Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
             index1BestMap = new HashMap<Integer, 
             FixedSizeSortedVector<IntensityFeatureComparisonStats>>();
 
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
-            if (corners1List.get(idx1).isEmpty()) {
+            if (corners1List.get(idx1).size() < 3) {
                 continue;
             }
 
@@ -72,7 +71,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             
             for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
 
-                if (corners2List.get(idx2).isEmpty()) {
+                if (corners2List.get(idx2).size() < 3) {
                     continue;
                 }
 
@@ -82,7 +81,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
                 Set<PairInt> blob2 = blobs2.get(idx2);
                 
-                List<CornerRegion> corners2 = corners1List.get(idx2);
+                List<CornerRegion> corners2 = corners2List.get(idx2);
                 Collections.sort(corners2, new DescendingKComparator());
                 
 double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);

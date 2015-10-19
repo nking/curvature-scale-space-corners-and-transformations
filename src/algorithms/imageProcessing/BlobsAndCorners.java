@@ -29,9 +29,18 @@ public class BlobsAndCorners  {
         
         PairIntArray allCorners = new PairIntArray();
         
+        int width = useBinnedImage ? 
+            blobPerimeterHelper.getGreyscaleImageBinned().getWidth() :
+            blobPerimeterHelper.getGreyscaleImage().getWidth();
+        
+        int height = useBinnedImage ? 
+            blobPerimeterHelper.getGreyscaleImageBinned().getHeight() :
+            blobPerimeterHelper.getGreyscaleImage().getHeight();
+        
         Map<Integer, List<CornerRegion> > indexCornerRegionMap = 
             findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners,
-            enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum);
+            enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
+            width, height);
         
         List<Integer> remove = new ArrayList<Integer>();
         
@@ -79,15 +88,18 @@ public class BlobsAndCorners  {
      * @param outputCorners
      * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
+     * @param imageWidth
+     * @param imageHeight
      * @return scale space maps for each edge
      */
     protected static Map<Integer, List<CornerRegion> >
         findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
         final boolean doUseOutdoorMode, final PairIntArray outputCorners,
         final boolean enableJaggedLineCorrections,
-        final float factorIncreaseForCurvatureMinimum) {
+        final float factorIncreaseForCurvatureMinimum, int imageWidth,
+        int imageHeight) {
 
-        CSSCornerMaker cornerMaker = new CSSCornerMaker();
+        CSSCornerMaker cornerMaker = new CSSCornerMaker(imageWidth, imageHeight);
         
         if (enableJaggedLineCorrections) {
             cornerMaker.enableJaggedLineCorrections();
