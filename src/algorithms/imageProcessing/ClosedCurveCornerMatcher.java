@@ -302,6 +302,16 @@ public class ClosedCurveCornerMatcher {
         // if no match, contains a null
         CornersAndFeatureStat[] indexes2 = getBestSSDC1ToC2();
         
+log.info("getBestSSDC1ToC2: ");
+for (int i = 0; i < indexes2.length; ++i) {
+    CornersAndFeatureStat cfs = indexes2[i];
+    if (cfs == null) {
+        continue;
+    }
+    log.info("pre-search: SSD match of " + cfs.stat.getImg1Point().toString() + " to " +
+        cfs.stat.getImg2Point());
+}
+        
         /*
         If one knew that that best SSD match of a point in curve1 to
         point in curve2 were true for at least 2 points in the curves,
@@ -321,7 +331,7 @@ public class ClosedCurveCornerMatcher {
         
         MatchedPointsTransformationCalculator 
             tc = new MatchedPointsTransformationCalculator();
-                
+
         for (int i = 0; i < indexes2.length; ++i) {
                         
             CornerRegion cr1C1 = this.c1.get(i);
@@ -342,6 +352,10 @@ public class ClosedCurveCornerMatcher {
                 
                 CornerRegion cr2C2 = indexes2[j].cr2;
                 
+                if (cr2C2.equals(cr1C2)) {
+                    continue;
+                }
+                  
                 insertNode(tc, indexes2[i], cr1C1, cr1C2, indexes2[j], cr2C1, 
                     cr2C2);  
             }
@@ -410,6 +424,10 @@ public class ClosedCurveCornerMatcher {
                     }
                 
                     CornerRegion cr2C2 = indexes2[idx2C1].cr2;
+                    
+                    if (cr2C2.equals(cr1C2)) {
+                        continue;
+                    }                    
                     
                     insertNode(tc, cfs1, cr1C1, cr1C2, indexes2[idx2C1], 
                         cr2C1, cr2C2);
@@ -555,7 +573,8 @@ public class ClosedCurveCornerMatcher {
                 
         // with 2 points in both image, calc transformation
         TransformationParameters params = tc.calulateEuclidean(
-            x1C1, y1C1, x1C2, y1C2, x2C1, y2C1, x2C2, y2C2, 0, 0);
+            x1C1, y1C1, x2C1, y2C1, 
+            x1C2, y1C2, x2C2, y2C2, 0, 0);
 
         TransformationPair2 transformationPair = 
             new TransformationPair2(cr1C1, cr1C2, cr2C1, cr2C2);
@@ -573,7 +592,7 @@ public class ClosedCurveCornerMatcher {
 
         // apply the transformation to it
         double[] xy3C2 = applyTransformation(c3C1, params);
-        
+//(254,17)(203,251)   (265,9)(210,259)
         // find the best matching SSD within tolerance of predicted
         CornersAndFeatureStat cfs = findBestMatchWithinTolerance(c3C1, xy3C2);
 

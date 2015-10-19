@@ -12,6 +12,39 @@ public class MatchedPointsTransformationCalculatorTest extends TestCase {
     public MatchedPointsTransformationCalculatorTest() {
     }
     
+    public void testCalulateEuclidean0() {
+
+        int pt1Img1X = 254;
+        int pt1Img1Y = 17;
+        int pt1Img2X = 203;
+        int pt1Img2Y = 251;
+
+        int pt2Img1X = 265;
+        int pt2Img1Y = 9;
+        int pt2Img2X = 210;
+        int pt2Img2Y = 259;
+
+        double centroidX1 = 0.0;
+        double centroidY1 = 0.0;
+        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+
+        TransformationParameters result = tc.calulateEuclidean(
+            pt1Img1X, pt1Img1Y, pt2Img1X, pt2Img1Y,
+            pt1Img2X, pt1Img2Y, pt2Img2X, pt2Img2Y,
+            centroidX1, centroidY1);
+
+        float diffRotDeg = AngleUtil.getAngleDifference(
+           result.getRotationInDegrees(), 360 - 90);
+        float diffScale = Math.abs(result.getScale() - 1);
+        float diffTransX = Math.abs(result.getTranslationX() - 10);
+        float diffTransY = Math.abs(result.getTranslationY() - 0);
+
+        assertTrue(diffRotDeg < 10);
+        //assertTrue(diffScale == 0);
+        //assertTrue(diffTransX == 0);
+        //assertTrue(diffTransY == 0);
+    }
+    
     public void testCalulateEuclidean() {
 
         int set1X1 = 1;

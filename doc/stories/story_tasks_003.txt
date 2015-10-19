@@ -74,9 +74,9 @@ Task 1:
 
        Adapt tests to the changes.
 
-    time estimate: < half day
+    time estimate: 1 day (after adding Task 5 and Task 6)
   
-    amount of time used: 5 hours
+    amount of time used: 7 hours
 
     state of completion: complete
 
@@ -186,7 +186,7 @@ Task 3:
                    but another may be needed for changes coincident with matching algorithm.
   
     amount of time used: 
-         2 hrs so far
+         4 hrs so far
 
     state of completion:
 
@@ -371,7 +371,7 @@ Task 4:
     time estimate: minimum one day, maximum 1 week.
   
     amount of time used: 
-       4 hours so far
+       5 hours so far
 
     state of completion:
 

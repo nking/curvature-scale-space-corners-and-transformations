@@ -176,6 +176,26 @@ curve1.getN(), curve2.getN()));
         List<FeatureComparisonStat> compStats = 
             new ArrayList<FeatureComparisonStat>();
         
+        for (int i = 0; i < corners1List.size(); ++i) {
+            
+            Integer key = Integer.valueOf(i);
+        
+            TransformationParameters params = index1BestParamsMap.get(key);
+            
+            IntensityFeatureComparisonStats ifs = index1BestMap.get(key);
+            
+            log.info("params=" + params.toString() 
+                + " cost=" + ifs.getCost());
+            
+            List<FeatureComparisonStat> stats = ifs.getComparisonStats();
+            
+            for (FeatureComparisonStat stat : stats) {
+                log.info("   stat=" + stat.toString());
+            }
+        }
+        
+        int z = 1;
+        
         for (Entry<Integer, IntensityFeatureComparisonStats> entry : 
             index1BestMap.entrySet()) {
             
