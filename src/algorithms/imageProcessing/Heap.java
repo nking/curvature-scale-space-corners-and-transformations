@@ -424,6 +424,9 @@ public class Heap {
         if (minimumNode != null) {
             c = minimumNode.toString().toCharArray();
             writer.write(c, 0, c.length);
+            if (minimumNode.getData() != null) {
+                writer.write(minimumNode.getData().toString());
+            }
         }
         c = ";  heap=\n".toCharArray();
         writer.write(c, 0, c.length);
@@ -464,7 +467,13 @@ public class Heap {
                     }
                 }
 
-                sb.append(" ").append("[").append(currentLevel).append("] key=");
+                sb.append(" ").append("[").append(currentLevel);
+                if (currentLevel==0) {
+                    if (node.getData() != null) {
+                        writer.write(node.getData().toString());
+                    }
+                }
+                sb.append("] key=");
                 if (node.getKey() == Long.MAX_VALUE) {
                     sb.append("M");
                 } else {

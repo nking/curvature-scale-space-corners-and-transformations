@@ -11,9 +11,13 @@ public class TransformationPair2 {
     private final CornerRegion corner2Curve1;
     private final CornerRegion corner2Curve2;
     
-    private TransformationParameters params;
+    private TransformationParameters params = null;
     
     private boolean someScaleAreSmallerThanOne = false;
+    
+    private double costAsSSD = 0;
+    
+    private double costAsDist = 0;
     
     /**
      * object used to track visits and help choose the next contour.
@@ -38,6 +42,22 @@ public class TransformationPair2 {
      */
     public TransformationParameters getTransformationParameters() {
         return params;
+    }
+    
+    public void addToCostAsSSD(double cost) {
+        costAsSSD += cost;
+    }
+    
+    public void addToCostAsDistance(double cost) {
+        costAsDist += cost;
+    }
+    
+    public double getCostAsSSD() {
+        return costAsSSD;
+    }
+    
+    public double getCostAsDistance() {
+        return costAsDist;
     }
 
     /**
@@ -67,6 +87,24 @@ public class TransformationPair2 {
     
     public boolean scaleIsPossiblyAmbiguous() {
         return someScaleAreSmallerThanOne;
+    }
+
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("costAsSSD=").append(Double.toString(costAsSSD))
+            .append(" costAsDist=").append(Double.toString(costAsDist)).append(" ");
+        
+        if (params != null) {
+            sb.append(params.toString());
+        }
+        if (nextCorner != null) {
+            int n = nextCorner.getMatchedCorners1().size();
+            sb.append(" nMatches=").append(Integer.toString(n)).append(" ");
+        }
+        
+        return sb.toString();
     }
 
 }

@@ -198,6 +198,12 @@ public class BlobsAndPerimeters {
                     }
                 }
 
+                // making counter-clockwise to be consistent with contours
+                boolean isCW = curveHelper.curveIsOrderedClockwise(closedEdge);
+                if (isCW) {
+                    closedEdge.reverse();
+                }
+
                 outputBounds.add(closedEdge);
                 
             } else {

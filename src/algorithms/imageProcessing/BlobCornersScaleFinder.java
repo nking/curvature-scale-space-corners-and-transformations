@@ -94,9 +94,9 @@ curve1.getN(), curve2.getN()));
                 ClosedCurveCornerMatcherWrapper mapper =
                     new ClosedCurveCornerMatcherWrapper(features1, features2, 
                     corners1, corners2, true);
-                                
-                boolean matched = mapper.matchCorners();
                 
+                boolean matched = mapper.matchCorners();
+                               
                 if (!matched) {
                     continue;
                 }
@@ -108,13 +108,15 @@ curve1.getN(), curve2.getN()));
                 }
                 
                 List<FeatureComparisonStat> compStats = mapper.getSolutionMatchedCompStats();
-                                
-                removeDiscrepantThetaDiff(compStats);
-
+                                                    
                 log.info("theta diff filtered: " + printToString(compStats) 
                     + " combinedStat=" + calculateCombinedIntensityStat(compStats));
             
                 removeIntensityOutliers(compStats);
+                
+                if (compStats.size() < 3) {
+                    continue;
+                }
                 
                 IntensityFeatureComparisonStats stats = new 
                     IntensityFeatureComparisonStats(index1.intValue(), 
@@ -125,6 +127,7 @@ curve1.getN(), curve2.getN()));
                 
                 int comp = -1;
                 if (bestStats != null) {
+//TODO: revise the comparison
                     comp = stats.compareTo(bestStats);
                 }
                 if (comp == -1) {
@@ -203,8 +206,6 @@ curve1.getN(), curve2.getN()));
             
             IntensityFeatureComparisonStats ifs = entry.getValue();
             List<FeatureComparisonStat> stats = ifs.getComparisonStats();
-            
-            int z = 1;
         }
         
         removeDiscrepantThetaDiff(compStats);
