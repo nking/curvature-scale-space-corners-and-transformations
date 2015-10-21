@@ -186,9 +186,10 @@ Task 3:
                    but another may be needed for changes coincident with matching algorithm.
   
     amount of time used: 
-         4 hrs so far
+         1.5 days so far
 
     state of completion:
+         rough draft complete, needs more testing
 
     comments:
 
@@ -371,9 +372,10 @@ Task 4:
     time estimate: minimum one day, maximum 1 week.
   
     amount of time used: 
-       5 hours so far
+       2.5 days so far
 
     state of completion:
+       rough draft is complete, needs more testing
 
     comments:
               
