@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,9 +36,9 @@ public class ClosedCurveCornerMatcherWrapper {
 
     private double solutionCost = Double.MAX_VALUE;
 
-    private final List<CornerRegion> solutionMatchedCorners1;
+    private final List<Integer> solutionMatchedCornerIndexes1;
 
-    private final List<CornerRegion> solutionMatchedCorners2;
+    private final List<Integer> solutionMatchedCornerIndexes2;
     
     private final List<FeatureComparisonStat> solutionMatchedCompStats;
 
@@ -69,9 +70,9 @@ public class ClosedCurveCornerMatcherWrapper {
 
         nMaxMatchable = Math.min(corners1.size(), corners2.size());
 
-        solutionMatchedCorners1 = new ArrayList<CornerRegion>();
+        solutionMatchedCornerIndexes1 = new ArrayList<Integer>();
 
-        solutionMatchedCorners2 = new ArrayList<CornerRegion>();
+        solutionMatchedCornerIndexes2 = new ArrayList<Integer>();
         
         solutionMatchedCompStats = new ArrayList<FeatureComparisonStat>();
     }
@@ -89,9 +90,9 @@ public class ClosedCurveCornerMatcherWrapper {
             "matchCorners cannot be invoked more than once");
         }
 
-        assert(this.solutionMatchedCorners1.isEmpty());
+        assert(this.solutionMatchedCornerIndexes1.isEmpty());
 
-        assert(this.solutionMatchedCorners2.isEmpty());
+        assert(this.solutionMatchedCornerIndexes2.isEmpty());
 
         solverHasFinished = true;
 
@@ -151,10 +152,17 @@ public class ClosedCurveCornerMatcherWrapper {
             this.solutionCost = mReverse.getSolvedCost();
             this.solutionParameters = solutionParametersRevRev;
 
-            this.solutionMatchedCorners1.addAll(mReverse.getSolutionMatchedCorners2());
-            this.solutionMatchedCorners2.addAll(mReverse.getSolutionMatchedCorners1());
-            
-            this.solutionMatchedCompStats.addAll(mReverse.getSolutionMatchedCompStats());
+            this.solutionMatchedCornerIndexes1.addAll(mReverse.getSolutionMatchedCornerIndexes2());
+            this.solutionMatchedCornerIndexes2.addAll(mReverse.getSolutionMatchedCornerIndexes1());
+        
+            List<FeatureComparisonStat> list = mReverse.getSolutionMatchedCompStats();
+            for (int i = 0; i < list.size(); ++i) {
+                FeatureComparisonStat stat = list.get(i);
+                PairInt swap = stat.getImg1Point();
+                stat.setImg1Point(stat.getImg2Point());
+                stat.setImg2Point(swap);
+            }
+            this.solutionMatchedCompStats.addAll(list);
 
             return true;
         }
@@ -180,10 +188,17 @@ public class ClosedCurveCornerMatcherWrapper {
             this.solutionCost = mReverse.getSolvedCost();
             this.solutionParameters = solutionParametersRevRev;
 
-            this.solutionMatchedCorners1.addAll(mReverse.getSolutionMatchedCorners2());
-            this.solutionMatchedCorners2.addAll(mReverse.getSolutionMatchedCorners1());
+            this.solutionMatchedCornerIndexes1.addAll(mReverse.getSolutionMatchedCornerIndexes2());
+            this.solutionMatchedCornerIndexes2.addAll(mReverse.getSolutionMatchedCornerIndexes1());
 
-            this.solutionMatchedCompStats.addAll(mReverse.getSolutionMatchedCompStats());
+            List<FeatureComparisonStat> list = mReverse.getSolutionMatchedCompStats();
+            for (int i = 0; i < list.size(); ++i) {
+                FeatureComparisonStat stat = list.get(i);
+                PairInt swap = stat.getImg1Point();
+                stat.setImg1Point(stat.getImg2Point());
+                stat.setImg2Point(swap);
+            }
+            this.solutionMatchedCompStats.addAll(list);
             
             return true;
         }
@@ -193,12 +208,12 @@ public class ClosedCurveCornerMatcherWrapper {
         return nMaxMatchable;
     }
 
-    public List<CornerRegion> getSolutionMatchedCorners1() {
-        return solutionMatchedCorners1;
+    public List<Integer> getSolutionMatchedCornerIndexes1() {
+        return solutionMatchedCornerIndexes1;
     }
 
-    public List<CornerRegion> getSolutionMatchedCorners2() {
-        return solutionMatchedCorners2;
+    public List<Integer> getSolutionMatchedCornerIndexes2() {
+        return solutionMatchedCornerIndexes2;
     }
 
     
@@ -225,8 +240,8 @@ public class ClosedCurveCornerMatcherWrapper {
         
         this.solutionParameters = matcher.getSolvedParameters();
 
-        this.solutionMatchedCorners1.addAll(matcher.getSolutionMatchedCorners1());
-        this.solutionMatchedCorners2.addAll(matcher.getSolutionMatchedCorners2());
+        this.solutionMatchedCornerIndexes1.addAll(matcher.getSolutionMatchedCornerIndexes1());
+        this.solutionMatchedCornerIndexes2.addAll(matcher.getSolutionMatchedCornerIndexes2());
         
         this.solutionMatchedCompStats.addAll(matcher.getSolutionMatchedCompStats());
     }

@@ -22,13 +22,13 @@ public class NextCorner {
      * A list of indexes to origCorners carrying corner regions from the curve, 
      * that is, closed curve edge, given to the corner matcher.
      * 
-     * Note that the lists are ordered by descending peak sigma.   Note also that the 
-     * List<Integer> indexes are referred to as corner indexes.
+     * Note that the lists are ordered by descending peak sigma.   Note also 
+     * that the List<Integer> indexes are referred to as corner indexes.
      */
     protected final TreeSet<CornerRegion> remainingCorners;
     
-    protected final List<CornerRegion> matchedCorners1;
-    protected final List<CornerRegion> matchedCorners2;
+    protected final List<Integer> matchedCornerIndexes1;
+    protected final List<Integer> matchedCornerIndexes2;
     
     protected final List<FeatureComparisonStat> matchedStats;
     
@@ -55,13 +55,14 @@ public class NextCorner {
             remainingCorners.add(corner);
         }
 
-        matchedCorners1 = new ArrayList<CornerRegion>();
+        matchedCornerIndexes1 = new ArrayList<Integer>();
         
-        matchedCorners2 = new ArrayList<CornerRegion>();
+        matchedCornerIndexes2 = new ArrayList<Integer>();
     }
     
-    public void addMatchedCorners(CornerRegion corner1, CornerRegion corner2,
-        FeatureComparisonStat stat) {
+    public void addMatchedCorners(CornerRegion corner1, 
+        CornerRegion corner2, Integer cornerIndex1, 
+        Integer cornerIndex2, FeatureComparisonStat stat) {
         
         markAsVisited(corner1);
         
@@ -69,8 +70,8 @@ public class NextCorner {
             return;
         }
         
-        matchedCorners1.add(corner1);
-        matchedCorners2.add(corner2);
+        matchedCornerIndexes1.add(cornerIndex1);
+        matchedCornerIndexes2.add(cornerIndex2);
         matchedStats.add(stat);
 
         if (matchedEdgeNumber1 == -1) {
@@ -108,8 +109,7 @@ public class NextCorner {
         return corner;
     }
     
-    public void markAsVisited(CornerRegion corner) {
-        
+    public void markAsVisited(CornerRegion corner) {        
         remainingCorners.remove(corner);
     }
     
@@ -153,12 +153,12 @@ public class NextCorner {
         return null;
     }
     
-    public List<CornerRegion> getMatchedCorners1() {
-        return matchedCorners1;
+    public List<Integer> getMatchedCornerIndexes1() {
+        return matchedCornerIndexes1;
     }
     
-    public List<CornerRegion> getMatchedCorners2() {
-        return matchedCorners2;
+    public List<Integer> getMatchedCornerIndexes2() {
+        return matchedCornerIndexes2;
     }
     
     public List<FeatureComparisonStat> getMatchedFeatureComparisonStats() {

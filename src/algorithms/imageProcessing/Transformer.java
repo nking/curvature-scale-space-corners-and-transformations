@@ -777,5 +777,36 @@ public class Transformer {
         outputY[outputIndex] = (float)yr;
         
     }
+
+    public void transformToOrigin(int originX, int originY, 
+        TransformationParameters params) {
+        
+        double ox = params.getOriginX();
+        double oy = params.getOriginY();
+        
+        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+        TransformationParameters revParams = tc.swapReferenceFrames(params);
+
+        double tx = revParams.getTranslationX();
+        double ty = revParams.getTranslationY();
+        
+        double cosine = Math.cos(revParams.getRotationInRadians());
+        double sine = Math.sin(revParams.getRotationInRadians());
+        double scale = revParams.getScale();
+        
+        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);
+        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);
+        
+        double txP = revParams.getTranslationX() - deltaX;
+        double tyP = revParams.getTranslationY() - deltaY;
+        
+        double[] xyT2 = applyTransformation(params, txP, tyP);
+      
+        params.setOriginX(originX);
+        params.setOriginY(originY);
+        params.setTranslationX((float)xyT2[0]);
+        params.setTranslationY((float)xyT2[1]);
+        
+    }
     
 }

@@ -94,9 +94,9 @@ curve1.getN(), curve2.getN()));
                 ClosedCurveCornerMatcherWrapper mapper =
                     new ClosedCurveCornerMatcherWrapper(features1, features2, 
                     corners1, corners2, true);
-                
+  
                 boolean matched = mapper.matchCorners();
-                               
+             
                 if (!matched) {
                     continue;
                 }
@@ -108,7 +108,7 @@ curve1.getN(), curve2.getN()));
                 }
                 
                 List<FeatureComparisonStat> compStats = mapper.getSolutionMatchedCompStats();
-                                                    
+                    
                 log.info("theta diff filtered: " + printToString(compStats) 
                     + " combinedStat=" + calculateCombinedIntensityStat(compStats));
             
@@ -176,9 +176,9 @@ curve1.getN(), curve2.getN()));
         List<List<CornerRegion>> corners1List, 
         List<List<CornerRegion>> corners2List) {
         
-        List<FeatureComparisonStat> compStats = 
-            new ArrayList<FeatureComparisonStat>();
-        
+        int bestCostIdx = -1;
+        double bestCost = Double.MAX_VALUE;
+               
         for (int i = 0; i < corners1List.size(); ++i) {
             
             Integer key = Integer.valueOf(i);
@@ -187,25 +187,64 @@ curve1.getN(), curve2.getN()));
             
             IntensityFeatureComparisonStats ifs = index1BestMap.get(key);
             
-            log.info("params=" + params.toString() 
-                + " cost=" + ifs.getCost());
+            log.info("params=" + params.toString() + " cost=" + ifs.getCost());
             
-            List<FeatureComparisonStat> stats = ifs.getComparisonStats();
-            
-            for (FeatureComparisonStat stat : stats) {
-                log.info("   stat=" + stat.toString());
+            if (ifs.getCost() < bestCost) {
+                bestCostIdx = i;
+                bestCost = ifs.getCost();
             }
         }
+        List<FeatureComparisonStat> compStats = new ArrayList<FeatureComparisonStat>();
+        if (bestCostIdx == -1) {
+            return compStats;
+        }
         
-        int z = 1;
+        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
         
-        for (Entry<Integer, IntensityFeatureComparisonStats> entry : 
-            index1BestMap.entrySet()) {
+        Transformer transformer = new Transformer();
+        
+        /*
+        params similar (by rot, scale, tx and ty) to the bestCost params can be 
+        aggregated
+        */
+        TransformationParameters bestCostParams 
+            = index1BestParamsMap.get(Integer.valueOf(bestCostIdx));
+        IntensityFeatureComparisonStats bestIFS 
+            = index1BestMap.get(Integer.valueOf(bestCostIdx));
+        
+        compStats.addAll(bestIFS.getComparisonStats());
+        
+        if (bestCostParams.getOriginX() != 0 || bestCostParams.getOriginY() != 0) {
+            transformer.transformToOrigin(0, 0, bestCostParams);
+        }
+        
+        for (int i = 0; i < corners1List.size(); ++i) {
             
-            TransformationParameters params = index1BestParamsMap.get(entry.getKey());
+            if (bestCostIdx == i) {
+                continue;
+            }
             
-            IntensityFeatureComparisonStats ifs = entry.getValue();
-            List<FeatureComparisonStat> stats = ifs.getComparisonStats();
+            Integer key = Integer.valueOf(i);
+        
+            TransformationParameters params = index1BestParamsMap.get(key);
+            
+            if (!tc.areSimilarByScaleAndRotation(bestCostParams, params)) {
+                continue;
+            }
+            
+            IntensityFeatureComparisonStats ifs = index1BestMap.get(key);
+            
+            if (params.getOriginX() != 0 || params.getOriginY() != 0) {
+                transformer.transformToOrigin(0, 0, params);
+            }
+            
+            // if transX and transY are similar, add, else check difference with transformed
+            boolean areSimilar = (Math.abs(bestCostParams.getTranslationX() - params.getTranslationX()) < 10)
+                && (Math.abs(bestCostParams.getTranslationY() - params.getTranslationY()) < 10);
+            
+            if (areSimilar) {
+                compStats.addAll(ifs.getComparisonStats());
+            }            
         }
         
         removeDiscrepantThetaDiff(compStats);

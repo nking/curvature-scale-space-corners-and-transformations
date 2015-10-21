@@ -100,7 +100,7 @@ public class TransformationPair2 {
             sb.append(params.toString());
         }
         if (nextCorner != null) {
-            int n = nextCorner.getMatchedCorners1().size();
+            int n = nextCorner.getMatchedCornerIndexes1().size();
             sb.append(" nMatches=").append(Integer.toString(n)).append(" ");
         }
         

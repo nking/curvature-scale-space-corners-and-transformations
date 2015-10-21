@@ -1,11 +1,9 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -744,8 +742,8 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         // transform the new origin, then the new translation is what is needed for it to equal the params origin
         Transformer transformer = new Transformer();
 
-        double[] revTransformedXYOrigin = transformer.applyTransformation(paramsRev,
-            transformedXC, transformedYC);
+        double[] revTransformedXYOrigin = transformer.applyTransformation(
+            paramsRev, transformedXC, transformedYC);
 
         double revTransX = params.getOriginX() - revTransformedXYOrigin[0];
         double revTransY = params.getOriginY() - revTransformedXYOrigin[1];
@@ -754,5 +752,99 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         paramsRev.setTranslationY((float)revTransY);
 
         return paramsRev;
+    }
+    
+    public boolean areSimilarByScaleAndRotation(TransformationParameters
+        params1, TransformationParameters params2) {
+        
+        float scale = params1.getScale();
+        float rotation = params1.getRotationInDegrees();
+
+        float scale2 = params2.getScale();
+        float rotation2 = params2.getRotationInDegrees();
+
+        // scale similar within 10%?
+        float scaleAvg = (scale + scale2) / 2.f;
+        float scaleTol = 0.1f * scaleAvg;
+
+        if (Math.abs(scale - scaleAvg) > scaleTol) {
+            return false;
+        }
+        if (Math.abs(scale2 - scaleAvg) > scaleTol) {
+            return false;
+        }
+
+        float diffR = AngleUtil.getAngleDifference(rotation, rotation2);
+        if (Math.abs(diffR) > 20) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    public Map<Integer, Set<Integer>> findSimilarByScaleAndRotation(
+        List<TransformationParameters> params) {
+        
+        Map<Integer, Set<Integer>> sMap = new HashMap<Integer, Set<Integer>>();
+        
+        if (params.isEmpty()) {
+            return sMap;
+        }
+        
+        for (int i = 0; i < params.size(); ++i) {
+            
+            TransformationParameters param = params.get(i);
+                       
+            Set<Integer> sim = null;
+            
+            for (int j = (i + 1); j < params.size(); ++j) {
+                
+                TransformationParameters param2 = params.get(j);
+                
+                if (!areSimilarByScaleAndRotation(param, param2)) {
+                    continue;
+                }
+                
+                if ((param.getOriginX() != param2.getOriginX() )
+                    || (param.getOriginY() != param2.getOriginY())) {
+
+                    throw new IllegalArgumentException(
+                    "params must all be with respect to same origin (x,y)");
+                }
+        
+                if (sim == null) {
+                    sim = new HashSet<Integer>();
+                    sim.add(Integer.valueOf(i));
+                }
+                sim.add(Integer.valueOf(j));
+            }
+            
+            if (sim != null) {
+                sMap.put(Integer.valueOf(i), sim);
+            }
+        }
+        
+        // remove similar solutions
+        for (int i = 0; i < params.size(); ++i) {
+            
+            Integer key = Integer.valueOf(i);
+            Set<Integer> sim = sMap.get(key);
+            if (sim == null) {
+                continue;
+            }
+            
+            for (int j = (i + 1); j < params.size(); ++j) {
+                Integer key2 = Integer.valueOf(j);
+                Set<Integer> sim2 = sMap.get(key2);
+                if (sim2 == null) {
+                    continue;
+                }
+                if (sim.equals(sim2)) {
+                    sMap.remove(key2);
+                }
+            }
+        }
+        
+        return sMap;
     }
 }
