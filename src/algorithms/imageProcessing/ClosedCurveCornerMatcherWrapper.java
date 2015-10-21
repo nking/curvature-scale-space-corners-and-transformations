@@ -97,11 +97,9 @@ public class ClosedCurveCornerMatcherWrapper {
         solverHasFinished = true;
 
         boolean cornersAreAlreadySorted = true;
-
+        
         ClosedCurveCornerMatcher mDefault = new ClosedCurveCornerMatcher(
             features1, features2, corners1, corners2, cornersAreAlreadySorted);
-
-        // ------- invoke reverse if needed and analyze all results -----
 
         boolean solved = mDefault.matchCorners() &&
             (mDefault.getSolvedParameters() != null);
@@ -116,92 +114,7 @@ public class ClosedCurveCornerMatcherWrapper {
             return true;
         }
 
-        // ----- possibly ambiguous default solution or no default solution ----
-
-        ClosedCurveCornerMatcher mReverse = new ClosedCurveCornerMatcher(
-            features2, features1, corners2, corners1, cornersAreAlreadySorted);
-
-        boolean solvedReverse = mReverse.matchCorners() &&
-            (mReverse.getSolvedParameters() != null);
-
-        log.info("reverse order: solved=" + solvedReverse + " ambig=" + 
-            mReverse.scaleIsPossiblyAmbiguous());
-        
-        if (!solvedReverse && solved) {
-
-            // take the possibly ambiguous default solution
-            setSolutionToDefault(mDefault);
-
-            return true;
-
-        } else if (!solvedReverse) {
-
-            return false;
-        }
-
-        MatchedPointsTransformationCalculator tc = new
-            MatchedPointsTransformationCalculator();
-        
-        TransformationParameters solutionParametersRevRev = 
-            (mReverse.getSolvedParameters() == null) ? null :
-            tc.swapReferenceFrames(mReverse.getSolvedParameters().copy());
-            
-        if (!solved) {
-
-            // reversed is solution
-            this.solutionCost = mReverse.getSolvedCost();
-            this.solutionParameters = solutionParametersRevRev;
-
-            this.solutionMatchedCornerIndexes1.addAll(mReverse.getSolutionMatchedCornerIndexes2());
-            this.solutionMatchedCornerIndexes2.addAll(mReverse.getSolutionMatchedCornerIndexes1());
-        
-            List<FeatureComparisonStat> list = mReverse.getSolutionMatchedCompStats();
-            for (int i = 0; i < list.size(); ++i) {
-                FeatureComparisonStat stat = list.get(i);
-                PairInt swap = stat.getImg1Point();
-                stat.setImg1Point(stat.getImg2Point());
-                stat.setImg2Point(swap);
-            }
-            this.solutionMatchedCompStats.addAll(list);
-
-            return true;
-        }
-
-        // ----- compare default solution to reversed solution ---------
-
-        //TODO: normalize by some factor to prefer more matches?
-
-        double costDefault = mDefault.getSolvedCost();
-
-        double costReversed = mReverse.getSolvedCost();
-
-        if (costDefault < costReversed) {
-            // default is solution
-
-            setSolutionToDefault(mDefault);
-
-            return true;
-
-        } else {
-            // reversed is solution
-
-            this.solutionCost = mReverse.getSolvedCost();
-            this.solutionParameters = solutionParametersRevRev;
-
-            this.solutionMatchedCornerIndexes1.addAll(mReverse.getSolutionMatchedCornerIndexes2());
-            this.solutionMatchedCornerIndexes2.addAll(mReverse.getSolutionMatchedCornerIndexes1());
-
-            List<FeatureComparisonStat> list = mReverse.getSolutionMatchedCompStats();
-            for (int i = 0; i < list.size(); ++i) {
-                FeatureComparisonStat stat = list.get(i);
-                PairInt swap = stat.getImg1Point();
-                stat.setImg1Point(stat.getImg2Point());
-                stat.setImg2Point(swap);
-            }
-            this.solutionMatchedCompStats.addAll(list);
-            
-            return true;
-        }
+        return false;
     }
 
     public int getNMaxMatchable() {

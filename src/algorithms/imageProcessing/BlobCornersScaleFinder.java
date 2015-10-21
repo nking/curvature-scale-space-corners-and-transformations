@@ -185,6 +185,10 @@ curve1.getN(), curve2.getN()));
         
             TransformationParameters params = index1BestParamsMap.get(key);
             
+            if (params == null) {
+                continue;
+            }
+            
             IntensityFeatureComparisonStats ifs = index1BestMap.get(key);
             
             log.info("params=" + params.toString() + " cost=" + ifs.getCost());
@@ -227,6 +231,10 @@ curve1.getN(), curve2.getN()));
             Integer key = Integer.valueOf(i);
         
             TransformationParameters params = index1BestParamsMap.get(key);
+            
+            if (params == null) {
+                continue;
+            }
             
             if (!tc.areSimilarByScaleAndRotation(bestCostParams, params)) {
                 continue;
