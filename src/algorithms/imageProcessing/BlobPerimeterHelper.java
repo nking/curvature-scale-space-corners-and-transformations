@@ -159,7 +159,10 @@ public class BlobPerimeterHelper {
             discardWhenCavityIsSmallerThanBorder);
         
         segBlobPerimetersMap.put(type, blobPerimeters);
-       
+        
+        // blobs may have been removed, so re-put them
+        segBlobsMap.put(type, blobs);
+        
         return blobPerimeters;
     }
 
@@ -190,7 +193,10 @@ public class BlobPerimeterHelper {
             discardWhenCavityIsSmallerThanBorder);
         
         segBinnedBlobPerimetersMap.put(type, blobPerimeters);
-       
+        
+        // blobs may have been removed, so re-put them
+        segBinnedBlobsMap.put(type, blobs);
+            
         return blobPerimeters;        
     }
     

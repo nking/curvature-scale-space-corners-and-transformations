@@ -158,6 +158,10 @@ public abstract class AbstractBlobScaleFinder {
         
         removeIntensityOutliers(compStats);
         
+        if (compStats.size() < 2) {
+            return null;
+        }
+        
         MatchedPointsTransformationCalculator tc = 
             new MatchedPointsTransformationCalculator();
         
@@ -201,7 +205,7 @@ public abstract class AbstractBlobScaleFinder {
             tot += div;
         }
         
-        assert (Math.abs(tot - 1.) < 0.03);
+        assert(Math.abs(tot - 1.) < 0.03);
         
         TransformationParameters params = tc.calulateEuclidean(matchedXY1, 
             matchedXY2, weights, centroidX1, centroidY1, 

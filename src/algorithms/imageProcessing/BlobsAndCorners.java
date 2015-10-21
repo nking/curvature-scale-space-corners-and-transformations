@@ -41,20 +41,15 @@ public class BlobsAndCorners  {
             findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners,
             enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
             width, height);
-        
-        List<Integer> remove = new ArrayList<Integer>();
-        
+                
         for (int i = 0; i < perimeterLists.size(); ++i) {
             List<CornerRegion> list = indexCornerRegionMap.get(Integer.valueOf(i));
             if (list == null) {
-                remove.add(i);
+                // have to keep ordered, parallel indexes
+                cornerLists.add(new ArrayList<CornerRegion>());
             } else {
                 cornerLists.add(list);
             }
-        }
-        
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            perimeterLists.remove(remove.get(i).intValue());
         }
         
         if (blobPerimeterHelper.isInDebugMode()) {

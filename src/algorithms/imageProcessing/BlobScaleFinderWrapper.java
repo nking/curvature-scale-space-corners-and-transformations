@@ -17,20 +17,23 @@ public class BlobScaleFinderWrapper {
     protected boolean debug = true;
 
     protected final int binnedImageMaxDimension = 300;
-    
+
     /*
     choices for solutions:
-    
+
     (1) contours and curvature scale space matches followed by features to refine
         and validate
     (2) corners and feature matches w/ combinations
     (3) corners and feature matches in simplest ordered pairings
     (4) contours and curvature scale space matches using simplest ordered
         pairings
-    
+
     when finished, should try (3) and/or (4) first then (2)
     */
-    protected final boolean useCorners = false;
+    private enum AlgType {
+        CORNERS_UNORDERED, CONTOURS_UNORDERED
+    }
+    protected AlgType algType = AlgType.CORNERS_UNORDERED;
 
     protected final BlobPerimeterHelper img1Helper;
 
@@ -46,6 +49,8 @@ public class BlobScaleFinderWrapper {
     protected final IntensityFeatures featuresBinned1;
     protected final IntensityFeatures features2;
     protected final IntensityFeatures featuresBinned2;
+    
+    private boolean useSameSegmentation = false;
 
     /**
      *
@@ -152,7 +157,7 @@ public class BlobScaleFinderWrapper {
         log.info("stats B2=" + statsB2.toString());
 
         int limit = 20;
-        boolean useSameSegmentation = false;
+        useSameSegmentation = false;
         if ((Math.abs(statsR1.getMode() - statsR2.getMode()) < limit) &&
             (Math.abs(statsG1.getMode() - statsG2.getMode()) < limit) &&
             (Math.abs(statsB1.getMode() - statsB2.getMode()) < limit) &&
@@ -161,7 +166,22 @@ public class BlobScaleFinderWrapper {
             (Math.abs(statsB1.getMedian() - statsB2.getMedian()) < limit)) {
             useSameSegmentation = true;
         }
+        
+        TransformationParameters params = null;
+        
+        params = calculateScaleImpl();
+        
+        if (params == null) {
+            algType = AlgType.CONTOURS_UNORDERED;
+            params = calculateScaleImpl();
+        }
+        
+        return params;
+    }
 
+    private TransformationParameters calculateScaleImpl() throws IOException,
+        NoSuchAlgorithmException {
+        
         /*
         depending on image statistics, different combinations of segmentation
         and binning are tried.
@@ -187,6 +207,10 @@ public class BlobScaleFinderWrapper {
             //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
         };
 
+        //TODO: currently caching segmentation, but because of the random
+        // portion of some of the methods, need ability to redo segmentation
+        // sometimes
+        
         int ordered1Idx = 0;
         int ordered2Idx = 0;
 
@@ -231,10 +255,10 @@ public class BlobScaleFinderWrapper {
 
             TransformationParameters params = null;
 
-            int n1;
-            int n2;
+            int n1 = 0;
+            int n2 = 0;
 
-            if (useCorners) {
+            if (algType.equals(AlgType.CORNERS_UNORDERED)) {
 
                 if (blobCornerHelper1 == null) {
                     blobCornerHelper1 = new BlobCornerHelper(img1Helper);
@@ -255,7 +279,7 @@ public class BlobScaleFinderWrapper {
                 n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
 
-            } else {
+            } else if (algType.equals(AlgType.CONTOURS_UNORDERED)) {
 
                 if (blobContourHelper1 == null) {
                     blobContourHelper1 = new BlobContourHelper(img1Helper);

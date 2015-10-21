@@ -36,6 +36,9 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(
             type2, useBinned2);
+                
+        assert(blobs1.size() == perimeters1.size());
+        assert(blobs1.size() == corners1List.size());
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
          
@@ -94,9 +97,9 @@ curve1.getN(), curve2.getN()));
                 ClosedCurveCornerMatcherWrapper mapper =
                     new ClosedCurveCornerMatcherWrapper(features1, features2, 
                     corners1, corners2, true);
-  
+                
                 boolean matched = mapper.matchCorners();
-             
+              
                 if (!matched) {
                     continue;
                 }

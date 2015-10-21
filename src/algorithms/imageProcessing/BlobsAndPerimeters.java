@@ -244,6 +244,8 @@ public class BlobsAndPerimeters {
         inOutBlobs.addAll(blobs2);
         outputBounds.addAll(curves);
         
+        assert (inOutBlobs.size() == outputBounds.size());
+        
         log.info("nBlobs after filtered to top =" + inOutBlobs.size());
         
 //TODO: put debug sections in AOP for special build after replace aspectj

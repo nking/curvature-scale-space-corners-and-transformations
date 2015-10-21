@@ -18,7 +18,7 @@ public class BlobContoursScaleFinderTest extends TestCase {
         
         String fileName1, fileName2;
 
-        for (int i = 1; i < 3;/*3;*/ ++i) {
+        for (int i = 0; i < 3;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -55,7 +55,7 @@ public class BlobContoursScaleFinderTest extends TestCase {
                 int z = 1;
             }
 
-            log.info("test for " + fileName1 + ", " + fileName2);
+            log.info("fileName=" + fileName1 + ", " + fileName2);
             
             BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
                 img1Orig, img2Orig);
@@ -68,7 +68,7 @@ public class BlobContoursScaleFinderTest extends TestCase {
             
             log.info("FINAL PARAMS for " + fileName1 + " " + params.toString());
 
-            assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+            assertTrue(Math.abs(params.getScale() - 1) < 0.12);
         }
     }
     

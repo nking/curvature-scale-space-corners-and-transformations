@@ -218,7 +218,7 @@ public class ClosedCurveCornerMatcher {
             for (Integer topIndex : minCostIndexes) {
                 TransformationPair2 tPair = (TransformationPair2)top.get(topIndex.intValue()).getData();
                 TransformationParameters params2 = tPair.getTransformationParameters();
-                rotationsInDegrees[count] = (int)Math.round(params2.getRotationInDegrees());
+                rotationsInDegrees[count] = Math.round(params2.getRotationInDegrees());
                 count++;
             }
             float avgRotDegrees = AngleUtil.calculateAverageWithQuadrantCorrections(
