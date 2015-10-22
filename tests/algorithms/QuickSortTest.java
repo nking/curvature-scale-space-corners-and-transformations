@@ -105,6 +105,26 @@ public class QuickSortTest extends TestCase {
         assertEquals(b[3], "7");
     }
     
+    public void testSortByFirstArgument_2() {
+        
+        float[] a = new float[]{3, 7, 1, 5};
+        int[] b = new int[]{0, 1, 2, 3};
+        
+        QuickSort.sortBy1stArg(a, b);
+        
+        assertTrue(a[0] == 1);
+        assertTrue(b[0] == 2);
+        
+        assertTrue(a[1] == 3);
+        assertTrue(b[1] == 0);
+        
+        assertTrue(a[2] == 5);
+        assertTrue(b[2] == 3);
+        
+        assertTrue(a[3] == 7);
+        assertTrue(b[3] == 1);
+    }
+    
     public void testSortByFirstArgument2() {
         
         SecureRandom sr = new SecureRandom();

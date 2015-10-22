@@ -4,6 +4,8 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import algorithms.util.ScatterPointPlotterPNG;
+import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.awt.Color;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
@@ -13,6 +15,7 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -549,6 +552,101 @@ public class ImageIOHelper {
         String dirPath = ResourceFinder.findDirectory("bin");
        
         ImageIOHelper.writeOutputImage(dirPath + "/" + fileName, input);
+    }
+    
+    public static void addContoursToImage(List<CurvatureScaleSpaceContour> result, 
+        ImageExt img, int xOffset, int yOffset,
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (result.isEmpty()) {
+            return;
+        }
+        
+        for (int i = 0; i < result.size(); i++) {
+            
+            CurvatureScaleSpaceContour cssC = result.get(i);
+            
+            addContoursToImage(cssC, img, xOffset, yOffset, nExtraForDot, 
+                rClr, gClr, bClr);
+        }
+    }
+    
+    public static void addContoursToImage(CurvatureScaleSpaceContour contour, 
+        ImageExt img, int xOffset, int yOffset,
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (contour == null) {
+            return;
+        }
+                    
+        CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();
+
+        for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {
+            int x = peakDetail.getXCoord() + xOffset;
+            int y = peakDetail.getYCoord() + yOffset;
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                float xx = x + dx;
+                if ((xx > -1) && (xx < (img.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                        dy++) {
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (img.getHeight() - 1))) {
+                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }            
+    }
+
+    public static void writeLabeledContours(PairIntArray perimeter, 
+        List<CurvatureScaleSpaceContour> contours, int xOffset, int yOffset,
+        String fileName) throws IOException {
+        
+        PairFloatArray xy = getXYOfContourPeaks(contours, xOffset, yOffset);
+        
+        ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+                
+        float[] x = Arrays.copyOf(xy.getX(), xy.getN());
+        float[] y = Arrays.copyOf(xy.getY(), xy.getN());
+        
+        float xmn = MiscMath.findMin(x);
+        float xmx = MiscMath.findMax(x);
+        float ymn = MiscMath.findMin(y);
+        float ymx = MiscMath.findMax(y);
+        
+        float xRange = xmx - xmn;
+        float yRange = ymx - ymn;
+        xmn -= 0.1*xRange;
+        xmx += 0.1*xRange;
+        ymn -= 0.1*yRange;
+        ymx += 0.1*yRange;
+        
+        plotter.plotLabeledPoints(xmn, xmx, ymn, ymx, x, y, "infl pts", 
+            "X", "Y");
+    
+        plotter.writeToFile(fileName);
+    }
+    
+    private static PairFloatArray getXYOfContourPeaks(
+        List<CurvatureScaleSpaceContour> contours, int xOffset, int yOffset) {
+        
+        PairFloatArray xy = new PairFloatArray();
+        
+        for (int i = 0; i < contours.size(); ++i) {
+            
+            CurvatureScaleSpaceContour contour = contours.get(i);
+            
+            CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();
+            
+            for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {
+                int x = peakDetail.getXCoord() + xOffset;
+                int y = peakDetail.getYCoord() + yOffset;
+                xy.add(x, y);
+            }
+        }
+        
+        return xy;
     }
     
     /**
@@ -1414,5 +1512,31 @@ int z1 = 1;
         }
         
         return img;
+    }
+
+    public static void addAlternatingColorContoursToImage(
+        List<CurvatureScaleSpaceContour> contours, ImageExt img, 
+        int xOffset, int yOffset, int nExtraForDot) {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        for (int i = 0; i < contours.size(); i++) {
+            
+            CurvatureScaleSpaceContour cssC = contours.get(i);
+            
+            sb.append("[").append(Integer.toString(i))
+                .append("] t=")
+                .append(Float.toString(cssC.getPeakScaleFreeLength()))
+                .append(", s=")
+                .append(Float.toString(cssC.getPeakSigma()))
+                .append(" ");
+            
+            int[] c = getNextRGB(i);
+            
+            addContoursToImage(cssC, img, xOffset, yOffset, nExtraForDot, 
+                c[0], c[1], c[2]);
+        }
+        
+        Logger.getLogger(ImageIOHelper.class.getName()).info(sb.toString());
     }
 }

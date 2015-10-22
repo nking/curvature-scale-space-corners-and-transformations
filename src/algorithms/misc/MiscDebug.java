@@ -1018,29 +1018,8 @@ public class MiscDebug {
         int gClr = 0;
         int bClr = 0;
         
-        for (int i = 0; i < result.size(); i++) {
-            
-            CurvatureScaleSpaceContour cssC = result.get(i);
-            
-            CurvatureScaleSpaceImagePoint[] peakDetails = cssC.getPeakDetails();
-            
-            for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {
-                int x = peakDetail.getXCoord() + xOffset;
-                int y = peakDetail.getYCoord() + yOffset;
-                for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                    float xx = x + dx;
-                    if ((xx > -1) && (xx < (img.getWidth() - 1))) {
-                        for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                            dy++) {
-                            float yy = y + dy;
-                            if ((yy > -1) && (yy < (img.getHeight() - 1))) {
-                                img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                            }
-                        }
-                    }
-                }
-            }            
-        }
+        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, 
+            nExtraForDot, rClr, gClr, bClr);
         
         try {
             
@@ -1054,6 +1033,17 @@ public class MiscDebug {
 
     public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
         String fileSuffix) throws IOException {
+               
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        
+        plotScaleSpaceCurve(plotter, scaleSpaceImage, 
+            "t vs. sigma for inflection points");
+        
+        plotter.writeFile(fileSuffix);
+    }
+    
+    public static void plotScaleSpaceCurve(PolygonAndPointPlotter plotter, 
+        ScaleSpaceCurveImage scaleSpaceImage, String label) throws IOException {
         
         float[] sigmas = scaleSpaceImage.getImageSigmas();
         
@@ -1080,14 +1070,9 @@ public class MiscDebug {
         float xMax = 1.f;
         float yMin = 0;
         float yMax = 1.1f * algorithms.misc.MiscMath.findMax(y);
-            
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        
+                    
         plotter.addPlot(xMin, xMax, yMin, yMax,
-            x, y, null, null, 
-            "t vs. sigma for inflection points");
-        
-        plotter.writeFile(fileSuffix);
+            x, y, null, null, label);        
     }
     
     public static void writeImage(PairIntArray[] edges,

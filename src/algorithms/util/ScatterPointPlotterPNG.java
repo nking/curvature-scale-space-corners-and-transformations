@@ -47,7 +47,7 @@ public class ScatterPointPlotterPNG {
     BufferedImage imgToWrite = null;
     
     public ScatterPointPlotterPNG(float minX, float maxX, float minY, 
-        float maxY) throws FileNotFoundException, IOException {
+        float maxY) {
 
         this.minX = minX;
         this.maxX = maxX;
@@ -55,7 +55,7 @@ public class ScatterPointPlotterPNG {
         this.maxY = maxY;
     }
 
-    public ScatterPointPlotterPNG() throws FileNotFoundException, IOException {
+    public ScatterPointPlotterPNG() {
 
     }
 
@@ -374,7 +374,7 @@ public class ScatterPointPlotterPNG {
             "points" + num.toString() +".png");
     }
 
-    protected String writeToFile(String fileName) throws IOException {
+    public String writeToFile(String fileName) throws IOException {
 
         if (imgToWrite == null) {
             throw new IllegalStateException("must add plot data first");
