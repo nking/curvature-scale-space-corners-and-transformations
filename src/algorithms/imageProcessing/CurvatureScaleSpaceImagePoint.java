@@ -74,6 +74,14 @@ public class CurvatureScaleSpaceImagePoint {
         this.scaleFreeLength = scaleFreeLength;
     }
     
+    public CurvatureScaleSpaceImagePoint copy() {
+        
+        CurvatureScaleSpaceImagePoint c = new CurvatureScaleSpaceImagePoint(
+            sigma, scaleFreeLength, xCoord, yCoord, coordIdx);
+        
+        return c;
+    }
+    
     @Override
     public String toString() {
         

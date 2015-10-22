@@ -1,23 +1,13 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 
 /**
  *
@@ -25,24 +15,34 @@ import java.util.TreeMap;
  */
 public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
 
-    protected List<List<CurvatureScaleSpaceContour>> filteredToSameNumber(
-        List<CurvatureScaleSpaceContour> contour1,
-        List<CurvatureScaleSpaceContour> contour2) {
+    protected void filterToSameNumberIfPossible(
+        PairIntArray curve1, List<CurvatureScaleSpaceContour> contours1, 
+        PairIntArray curve2, List<CurvatureScaleSpaceContour> contours2) {
         
-        /*
-        NOTE: this processing can happen at a higher level to cache
-        for all contours.
+        //TODO: this may change to improve results for different resolution
+        // data for example... may need to have increasing tolerances
+        // that are different for contours1 than contours2
         
-        averaging very close points by scale-free length (and x,y):
-        -- average to one point if in t-space their locations are within 
-           delta t=0.025 of each other (and close in x,y space, dist ~5 or 6)
-        */
+        // the curves have already had tolT=0.04 and tolD=6 applied to them
+        float tolT = 0.055f; 
+        float tolD = 9.5f;
         
-        List<List<CurvatureScaleSpaceContour>> filtered = 
-            new ArrayList<List<CurvatureScaleSpaceContour>>(2);
+        BlobsAndContours.combineOverlappingPeaks(tolT, tolD, curve1, contours1);
         
-        throw new UnsupportedOperationException("not yet implemented");
-        //return filtered;
+        BlobsAndContours.combineOverlappingPeaks(tolT, tolD, curve2, contours2);
+       
+    }
+    
+    protected List<CurvatureScaleSpaceContour> copyContours(
+        List<CurvatureScaleSpaceContour> contours) {
+        
+        List<CurvatureScaleSpaceContour> c = new ArrayList<CurvatureScaleSpaceContour>();
+        
+        for (int i = 0; i < contours.size(); ++i) {
+            c.add(contours.get(i).copy());
+        }
+        
+        return c;
     }
     
     public TransformationParameters solveForScale(
@@ -83,7 +83,7 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         List<CurvatureScaleSpaceContour> contours1 = contours1List.get(idx1);
         double[] xyCen1 = curveHelper.calculateXYCentroids(perimeter1);
         
-        int idx2 = 5;
+        int idx2 = 3;
         Integer index2 = Integer.valueOf(idx2);
         PairIntArray perimeter2 = perimeters2.get(idx2);
         Set<PairInt> blob2 = blobs2.get(idx2);
@@ -117,16 +117,51 @@ ImageIOHelper.writeLabeledContours(perimeter1, contours1, 0, 0,
 ImageIOHelper.writeLabeledContours(perimeter2, contours2, 0, 0,
     "/debug_labeled_contours_2.png");
 
-int z = 1;
+int z = 1;//1,3 in contours2 should be averaged?
 } catch(IOException e) {
 }
-
-        /* this just needs to use the O(N) pattern of matching
-         0 with 0, 0 with 1, etc
-        and use the MatchedPointsTransformationCalculator method for
-        matched points to remove outliers make pairs of the matched points 
-        and solve the transformation
-        */
+       
+        int n1 = contours1List.size();
+        int n2 = contours2List.size();
+        
+        for (int i = 0; i < n1; ++i) {
+            
+            List<CurvatureScaleSpaceContour> contour1 = contours1List.get(i);
+            int nc1 = contour1.size();
+            if (nc1 < 3) {
+                continue;
+            }
+            
+            for (int j = 0; j < n2; ++j) {
+                
+                List<CurvatureScaleSpaceContour> contour2 = contours2List.get(j);
+                int nc2 = contour2.size();
+                if (nc2 < 3) {
+                    continue;
+                }
+                
+                if (Math.abs(nc1 - nc2) > 2) {
+                    continue;
+                }
+                List<CurvatureScaleSpaceContour> c1;
+                List<CurvatureScaleSpaceContour> c2;
+                if (nc1 == nc2) {
+                    c1 = contour1;
+                    c2 = contour2;
+                } else {
+                    c1 = copyContours(contour1);
+                    c2 = copyContours(contour2);
+                    filterToSameNumberIfPossible(perimeters1.get(i), c1, 
+                        perimeters2.get(j), c2);
+                    
+                    if (c1.size() != c2.size()) {
+                        continue;
+                    }
+                }
+                
+                //matching algorithm here for c1 and 
+            }
+        }
 
         throw new UnsupportedOperationException("not yet implemented");
 

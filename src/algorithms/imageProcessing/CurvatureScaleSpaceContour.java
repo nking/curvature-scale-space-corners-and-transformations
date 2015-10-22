@@ -61,6 +61,30 @@ public class CurvatureScaleSpaceContour {
     public CurvatureScaleSpaceImagePoint[] getPeakDetails() {
         return this.peakDetailPoints;
     }
+    
+    public CurvatureScaleSpaceContour copy() {
+        
+        CurvatureScaleSpaceContour c = 
+            new CurvatureScaleSpaceContour(peak.getX(), peak.getY());
+        
+        c.setEdgeNumber(edgeNumber);
+        
+        CurvatureScaleSpaceImagePoint[] peakDetails = 
+            new CurvatureScaleSpaceImagePoint[peakDetailPoints.length];
+        
+        for (int i = 0; i < peakDetailPoints.length; ++i) {
+            
+            CurvatureScaleSpaceImagePoint cssip = peakDetailPoints[i];
+            
+            CurvatureScaleSpaceImagePoint cssipCopy = cssip.copy();
+            
+            peakDetails[i] = cssipCopy;
+        }
+        
+        c.setPeakDetails(peakDetails);
+        
+        return c;
+    }
 
     @Override
     public String toString() {

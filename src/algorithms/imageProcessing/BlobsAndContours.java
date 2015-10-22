@@ -115,8 +115,8 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
         }
 
         assert(blobOrderedPerimeters.size() == contours.size());
-
-        combineOverlappingPeaks(scaleSpaceImages, blobOrderedPerimeters, contours);
+        
+        combineOverlappingPeaks(0.04f, 6.f, blobOrderedPerimeters, contours);
 
         if (debug) {
             plot(scaleSpaceImages, "debug_after_contours_" + debugTag);
@@ -157,106 +157,22 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
      * contour peaks that overlap on the scale-free axis of the scale space
      * images are combined if they are close in (x, y) space too.
      *
-     * @param scaleSpaceImages
+     * @param tolT
+     * @param tolD
      * @param blobOrderedPerimeters
      * @param contoursList
      */
-    protected static void combineOverlappingPeaks(List<ScaleSpaceCurveImage>
-        scaleSpaceImages, List<PairIntArray> blobOrderedPerimeters,
+    protected static void combineOverlappingPeaks(final float tolT, 
+        final float tolD, List<PairIntArray> blobOrderedPerimeters,
         List<List<CurvatureScaleSpaceContour>> contoursList) {
 
-        float tolT = 0.025f;
-        
-        float tolD = 6f;
-        
         for (int listIdx = 0; listIdx < contoursList.size(); ++listIdx) {
 
-            // presumably these are all closed curves, but verify that:
-            boolean isClosedCurve = false;
             PairIntArray curve = blobOrderedPerimeters.get(listIdx);
-            if ((curve instanceof PairIntArrayWithColor) &&
-                (((PairIntArrayWithColor)curve).getColor() == 1)) {
-                isClosedCurve = true;
-            }
-
-            // these are ordered by sigma
+            
             List<CurvatureScaleSpaceContour> contours = contoursList.get(listIdx);
 
-            /*
-            -- make an index array sorted by scale free length
-            -- then traverse the sorted peak to find those withing 0.025 of
-               one another on scale free axis and within distance of 5 or so in
-               (x,y) space and replace them with the average.  the strongest
-               sigma is retained for the average.
-            */
-            int n = contours.size();
-            float[] x = new float[n];
-            float[] y = new float[n];
-            float[] t = new float[n];
-            int[] idxs = new int[n];
-            for (int i = 0; i < contours.size(); ++i) {
-
-                CurvatureScaleSpaceContour contour = contours.get(i);
-
-                CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();
-
-                assert (peakDetails.length == 1);
-
-                CurvatureScaleSpaceImagePoint peakDetail = peakDetails[0];
-                x[i] = peakDetail.getXCoord();
-                y[i] = peakDetail.getYCoord();
-                t[i] = peakDetail.getScaleFreeLength();
-                idxs[i] = i;
-            }
-            QuickSort.sortBy1stArg(t, idxs, 0, n - 1);
-            
-            List<Set<Integer>> combineIndexes = findOverlappingPeaks(t, tolT,
-                idxs, x, y, tolD, isClosedCurve);
-            
-            if (combineIndexes.isEmpty()) {
-                continue;
-            }
-            
-            List<Integer> remove = new ArrayList<Integer>();
-            
-            for (Set<Integer> combineSet : combineIndexes) {
-                //keep the one with largest sigma
-                float sigmaMax = Float.MIN_VALUE;
-                int sigmaMaxIdx = -1;
-                float xAvg = 0;
-                float yAvg = 0;
-                float tAvg = 0;
-                for (Integer index : combineSet) {
-                    int idx0 = idxs[index.intValue()];
-                    tAvg += t[index.intValue()];
-                    xAvg += x[idx0];
-                    yAvg += y[idx0];
-                    CurvatureScaleSpaceImagePoint[] peakDetails = contours.get(idx0).getPeakDetails();
-                    float sigma = peakDetails[0].getSigma();
-                    if (sigma > sigmaMax) {
-                        sigmaMax = sigma;
-                        sigmaMaxIdx = idx0;
-                    }
-                }
-                xAvg /= (float)combineSet.size();
-                yAvg /= (float)combineSet.size();
-                tAvg /= (float)combineSet.size();
-                for (Integer index : combineSet) {
-                    int idx0 = idxs[index.intValue()];
-                    if (idx0 != sigmaMaxIdx) {
-                        remove.add(Integer.valueOf(idx0));
-                    }
-                }
-                CurvatureScaleSpaceImagePoint[] peakDetails = contours.get(sigmaMaxIdx).getPeakDetails();
-                peakDetails[0] = new CurvatureScaleSpaceImagePoint(sigmaMax, 
-                    tAvg, Math.round(xAvg), Math.round(yAvg), peakDetails[0].getCoordIdx());
-            }
-            
-            Collections.sort(remove);
-            for (int i = (remove.size() - 1); i > -1; --i) {
-                int idx = remove.get(i).intValue();
-                contours.remove(idx);
-            }
+            combineOverlappingPeaks(tolT, tolD, curve, contours);
         }
     }
     
@@ -317,6 +233,93 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
         }
         
         return combineIndexes;
+    }
+
+    public static void combineOverlappingPeaks(float tolT, float tolD, 
+        PairIntArray curve, List<CurvatureScaleSpaceContour> contours) {
+        
+        // presumably these are all closed curves, but verify that:
+        boolean isClosedCurve = false;
+        if ((curve instanceof PairIntArrayWithColor) &&
+            (((PairIntArrayWithColor)curve).getColor() == 1)) {
+            isClosedCurve = true;
+        }
+
+        /*
+        -- make an index array sorted by scale free length
+        -- then traverse the sorted peak to find those withing 0.025 of
+           one another on scale free axis and within distance of 5 or so in
+           (x,y) space and replace them with the average.  the strongest
+           sigma is retained for the average.
+        */
+        int n = contours.size();
+        float[] x = new float[n];
+        float[] y = new float[n];
+        float[] t = new float[n];
+        int[] idxs = new int[n];
+        for (int i = 0; i < contours.size(); ++i) {
+
+            CurvatureScaleSpaceContour contour = contours.get(i);
+
+            CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();
+
+            assert (peakDetails.length == 1);
+
+            CurvatureScaleSpaceImagePoint peakDetail = peakDetails[0];
+            x[i] = peakDetail.getXCoord();
+            y[i] = peakDetail.getYCoord();
+            t[i] = peakDetail.getScaleFreeLength();
+            idxs[i] = i;
+        }
+        QuickSort.sortBy1stArg(t, idxs, 0, n - 1);
+            
+        List<Set<Integer>> combineIndexes = findOverlappingPeaks(t, tolT, idxs, 
+            x, y, tolD, isClosedCurve);
+
+        if (combineIndexes.isEmpty()) {
+            return;
+        }
+
+        List<Integer> remove = new ArrayList<Integer>();
+            
+        for (Set<Integer> combineSet : combineIndexes) {
+            //keep the one with largest sigma
+            float sigmaMax = Float.MIN_VALUE;
+            int sigmaMaxIdx = -1;
+            float xAvg = 0;
+            float yAvg = 0;
+            float tAvg = 0;
+            for (Integer index : combineSet) {
+                int idx0 = idxs[index.intValue()];
+                tAvg += t[index.intValue()];
+                xAvg += x[idx0];
+                yAvg += y[idx0];
+                CurvatureScaleSpaceImagePoint[] peakDetails = contours.get(idx0).getPeakDetails();
+                float sigma = peakDetails[0].getSigma();
+                if (sigma > sigmaMax) {
+                    sigmaMax = sigma;
+                    sigmaMaxIdx = idx0;
+                }
+            }
+            xAvg /= (float)combineSet.size();
+            yAvg /= (float)combineSet.size();
+            tAvg /= (float)combineSet.size();
+            for (Integer index : combineSet) {
+                int idx0 = idxs[index.intValue()];
+                if (idx0 != sigmaMaxIdx) {
+                    remove.add(Integer.valueOf(idx0));
+                }
+            }
+            CurvatureScaleSpaceImagePoint[] peakDetails = contours.get(sigmaMaxIdx).getPeakDetails();
+            peakDetails[0] = new CurvatureScaleSpaceImagePoint(sigmaMax, 
+                tAvg, Math.round(xAvg), Math.round(yAvg), peakDetails[0].getCoordIdx());
+        }
+
+        Collections.sort(remove);
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i).intValue();
+            contours.remove(idx);
+        }
     }
 
 }
