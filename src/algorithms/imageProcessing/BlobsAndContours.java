@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
