@@ -2,10 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +10,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- *
+ * class to attempt to find Euclidean scale transformation between image1
+ * and image2 using curvature scale space contours and an assumption of
+ * ordered matching between the peaks.
+ * The method is fast, but needs blobs with concave and convex boundaries
+ * to produce strong inflection points.
+ * 
  * @author nichole
  */
 public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
