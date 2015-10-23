@@ -108,7 +108,10 @@ MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeForma
     
     /**
      * given the set of contiguous points, find the perimeter of them and order
-     * the points into a closed single pixel width curve.
+     * the points into a closed single pixel width curve.  For closed curves,
+     * the points are ordered in counter clock-wise manner too (note, in
+     * image frame where Y is 0 is upper left corner, CCW appears as CW
+     * in image).
      * (Note, still testing this, but for structures without many junctions,
      * the results looks good so far.)
      * @param contiguousPoints
@@ -444,6 +447,13 @@ int z = 1;
 }                    
 
                 }
+            }
+        }
+        
+        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+            boolean isCW = curveHelper.curveIsOrderedClockwise(out);
+            if (isCW) {
+                out.reverse();
             }
         }
         

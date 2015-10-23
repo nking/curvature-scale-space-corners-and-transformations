@@ -772,6 +772,11 @@ public class CSSCornerMaker {
             }
             
             cr.set(nCR, k[pIdx], x, y);
+            
+            if (kMaxIdx == nCR) {
+                cr.setIndexWithinCurve(pIdx);
+            }
+            
             nCR++; 
         }
         Integer key = Integer.valueOf(edgeNumber);

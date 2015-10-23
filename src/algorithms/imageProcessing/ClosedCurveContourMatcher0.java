@@ -102,14 +102,11 @@ public class ClosedCurveContourMatcher0 {
             points.add(bpr.getX(), bpr.getY());
         }
         
-        //TODO: should not need to check orientation if change the perimeter
-        //   construction to order them all when extracted.
-        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         // making clockwise to be consistent with contours
-        boolean isCCW = curveHelper.curveIsOrderedClockwise(points);
-        if (isCCW) {
+        boolean isCW = curveHelper.curveIsOrderedClockwise(points);
+        if (isCW) {
             int n = points.getN();
             if (n < 2) {
                 return;

@@ -554,7 +554,7 @@ Task 6:
     time estimate: minimum one day, maximum 2 days.
   
     amount of time used: 
-        1.5 days
+        2 days
 
     state of completion:
         rough draft is completed

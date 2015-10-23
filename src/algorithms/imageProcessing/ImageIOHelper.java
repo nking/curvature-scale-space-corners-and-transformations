@@ -633,6 +633,21 @@ public class ImageIOHelper {
         
     }
     
+    public static void writeLabeledCornerRegions(
+        List<CornerRegion> regions, int xOffset, int yOffset,
+        String fileName) throws IOException {
+        
+        PairFloatArray xy = new PairFloatArray(regions.size());
+        
+        for (int i = 0; i < regions.size(); ++i) {
+            CornerRegion bpr = regions.get(i);
+            xy.add(bpr.getX()[bpr.getKMaxIdx()], bpr.getY()[bpr.getKMaxIdx()]);
+        }
+        
+        writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
+        
+    }
+    
     public static void writeLabeledPoints(PairFloatArray xy, int xOffset, 
         int yOffset, String label, String fileName) throws IOException {
                 
@@ -1595,5 +1610,23 @@ int z1 = 1;
         }
         
         //Logger.getLogger(ImageIOHelper.class.getName()).info(sb.toString());
+    }
+
+    public static void addAlternatingColorCornerRegionsToImage(
+        List<CornerRegion> regions, ImageExt img, 
+        int xOffset, int yOffset, int nExtraForDot) {
+        
+        for (int i = 0; i < regions.size(); i++) {
+            
+            CornerRegion br = regions.get(i);
+            
+            int[] c = getNextRGB(i);
+
+            int x = br.getX()[br.getKMaxIdx()];
+            int y = br.getY()[br.getKMaxIdx()];
+            
+            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 
+                c[0], c[1], c[2]);
+        }
     }
 }

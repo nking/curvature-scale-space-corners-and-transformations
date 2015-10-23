@@ -17,8 +17,10 @@ import java.util.Arrays;
  */
 public class CornerRegion {
 
-    protected final int edgeIdx;
+    protected final int edgeListIdx;
 
+    private int idxWithinCurve = -1;
+    
     protected final int kMaxIdx;
 
     protected final float[] k;
@@ -72,7 +74,7 @@ public class CornerRegion {
      */
     public CornerRegion(int theEdgeIndex, int nPoints, int maxCurvatureIndex) {
 
-        this.edgeIdx = theEdgeIndex;
+        this.edgeListIdx = theEdgeIndex;
 
         if (nPoints < 0) {
             throw new IllegalArgumentException("nPoints must be 0 or larger");
@@ -121,7 +123,7 @@ public class CornerRegion {
         return y;
     }
     public int getEdgeIdx() {
-        return edgeIdx;
+        return edgeListIdx;
     }
     public int getKMaxIdx() {
         return kMaxIdx;
@@ -309,11 +311,20 @@ public class CornerRegion {
 
         return perp;
     }
+    
+    public void setIndexWithinCurve(int theIndex) {
+        idxWithinCurve = theIndex;
+    }
+    
+    public int getIndexWithinCurve() {
+        return idxWithinCurve;
+    }
 
     public CornerRegion copy() {
         
-        CornerRegion cr = new CornerRegion(edgeIdx, x.length, kMaxIdx);
+        CornerRegion cr = new CornerRegion(edgeListIdx, x.length, kMaxIdx);
         cr.orientation = orientation;
+        cr.idxWithinCurve = idxWithinCurve;
         System.arraycopy(k, 0, cr.getK(), 0, k.length);
         System.arraycopy(x, 0, cr.getX(), 0, x.length);
         System.arraycopy(y, 0, cr.getY(), 0, y.length);
@@ -326,8 +337,8 @@ public class CornerRegion {
         StringBuilder sb = new StringBuilder();
         
         for (int i = 0; i < x.length; ++i) {
-            sb.append(String.format("k[%d]=%.2f  x,y=(%d, %d)\n", i, k[i],
-                x[i], y[i]));
+            sb.append(String.format("k[%d]=%.2f  x,y=(%d, %d)  idx=%d\n", i, k[i],
+                x[i], y[i], idxWithinCurve));
         }
         
         return sb.toString();
@@ -377,7 +388,7 @@ public class CornerRegion {
 
         int sum = fnv321aInit;
 
-        sum = includeInHashSum(sum, edgeIdx);
+        sum = includeInHashSum(sum, edgeListIdx);
         
         sum = includeInHashSum(sum, kMaxIdx);
 
