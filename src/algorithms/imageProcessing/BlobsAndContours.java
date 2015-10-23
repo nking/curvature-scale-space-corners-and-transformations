@@ -235,7 +235,18 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
         return combineIndexes;
     }
 
-    public static void combineOverlappingPeaks(float tolT, float tolD, 
+    /**
+     * combine peaks which overlap in the scale free length axis and
+     * are close within tolerance in (x, y) space too and return the
+     * indexes that were deleted with respect to the given contours
+     * list.
+     * @param tolT
+     * @param tolD
+     * @param curve
+     * @param contours
+     * @return 
+     */
+    public static List<Integer> combineOverlappingPeaks(float tolT, float tolD, 
         PairIntArray curve, List<CurvatureScaleSpaceContour> contours) {
         
         // presumably these are all closed curves, but verify that:
@@ -277,7 +288,7 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
             x, y, tolD, isClosedCurve);
 
         if (combineIndexes.isEmpty()) {
-            return;
+            return null;
         }
 
         List<Integer> remove = new ArrayList<Integer>();
@@ -320,6 +331,8 @@ double[] xycen = curveHelper.calculateXYCentroids(edge);
             int idx = remove.get(i).intValue();
             contours.remove(idx);
         }
+        
+        return remove;
     }
 
 }

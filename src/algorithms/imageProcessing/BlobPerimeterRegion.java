@@ -182,4 +182,15 @@ public class BlobPerimeterRegion {
         return nextY;
     }
 
+    public BlobPerimeterRegion copy() {
+        
+        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeIdx, prevX, prevY,
+            x, y, nextX, nextY, blob);
+        
+        if (orientation != Double.MIN_VALUE) {
+            c.orientation = orientation;
+        }
+        
+        return c;
+    }
 }

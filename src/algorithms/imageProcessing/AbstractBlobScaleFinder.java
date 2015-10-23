@@ -25,6 +25,27 @@ public abstract class AbstractBlobScaleFinder {
     public void setToDebug() {
         debug = true;
     }
+    
+    protected List<BlobPerimeterRegion> extractBlobPerimeterRegions(int theEdgeIndex,
+        List<CurvatureScaleSpaceContour> contours,
+        PairIntArray closedCurve, Set<PairInt> blob) {
+        
+        List<BlobPerimeterRegion> bprList = new ArrayList<BlobPerimeterRegion>();
+        
+        for (int i = 0; i < contours.size(); ++i) {
+            
+            CurvatureScaleSpaceContour c = contours.get(i);
+            
+            assert(c.getPeakDetails().length == 1);
+            
+            BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, 
+                c.getPeakDetails()[0], closedCurve, blob);
+            
+            bprList.add(bpr);
+        }
+        
+        return bprList;
+    }
 
     /**
      * extract the local points surrounding (x, y) on the

@@ -6,7 +6,9 @@ import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -17,7 +19,9 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
 
     protected void filterToSameNumberIfPossible(
         PairIntArray curve1, List<CurvatureScaleSpaceContour> contours1, 
-        PairIntArray curve2, List<CurvatureScaleSpaceContour> contours2) {
+        List<BlobPerimeterRegion> regions1,
+        PairIntArray curve2, List<CurvatureScaleSpaceContour> contours2,
+        List<BlobPerimeterRegion> regions2) {
         
         //TODO: this may change to improve results for different resolution
         // data for example... may need to have increasing tolerances
@@ -27,10 +31,23 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         float tolT = 0.055f; 
         float tolD = 9.5f;
         
-        BlobsAndContours.combineOverlappingPeaks(tolT, tolD, curve1, contours1);
+        List<Integer> rmIndexes = BlobsAndContours.combineOverlappingPeaks(
+            tolT, tolD, curve1, contours1);
         
-        BlobsAndContours.combineOverlappingPeaks(tolT, tolD, curve2, contours2);
+        if (rmIndexes != null && !rmIndexes.isEmpty()) {
+            for (int i = (rmIndexes.size() - 1); i > -1; --i) {
+                regions1.remove(rmIndexes.get(i).intValue());
+            }
+        }
+        
+        rmIndexes = BlobsAndContours.combineOverlappingPeaks(tolT, tolD, curve2, 
+            contours2);
        
+        if (rmIndexes != null && !rmIndexes.isEmpty()) {
+            for (int i = (rmIndexes.size() - 1); i > -1; --i) {
+                regions2.remove(rmIndexes.get(i).intValue());
+            }
+        }
     }
     
     protected List<CurvatureScaleSpaceContour> copyContours(
@@ -66,7 +83,12 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
         List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);
+        
+        Map<Integer, List<BlobPerimeterRegion>> contours1PointMaps = 
+            new HashMap<Integer, List<BlobPerimeterRegion>>();
 
+        Map<Integer, List<BlobPerimeterRegion>> contours2PointMaps = 
+            new HashMap<Integer, List<BlobPerimeterRegion>>();
        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
@@ -132,6 +154,13 @@ int z = 1;//1,3 in contours2 should be averaged?
                 continue;
             }
             
+            List<BlobPerimeterRegion> contour1Points = contours1PointMaps.get(Integer.valueOf(i));
+            if (contour1Points == null) {
+                contour1Points = extractBlobPerimeterRegions(i, contour1,
+                    perimeters1.get(i), blobs1.get(i));
+                contours1PointMaps.put(Integer.valueOf(i), contour1Points);
+            }
+            
             for (int j = 0; j < n2; ++j) {
                 
                 List<CurvatureScaleSpaceContour> contour2 = contours2List.get(j);
@@ -143,28 +172,60 @@ int z = 1;//1,3 in contours2 should be averaged?
                 if (Math.abs(nc1 - nc2) > 2) {
                     continue;
                 }
+                
+                List<BlobPerimeterRegion> contour2Points = contours2PointMaps.get(Integer.valueOf(j));
+                if (contour2Points == null) {
+                    contour2Points = extractBlobPerimeterRegions(j, contour2,
+                        perimeters2.get(j), blobs2.get(j));
+                    contours2PointMaps.put(Integer.valueOf(j), contour2Points);
+                }
+            
                 List<CurvatureScaleSpaceContour> c1;
                 List<CurvatureScaleSpaceContour> c2;
+                List<BlobPerimeterRegion> c1p;
+                List<BlobPerimeterRegion> c2p;
+                
                 if (nc1 == nc2) {
                     c1 = contour1;
                     c2 = contour2;
+                    c1p = contour1Points;
+                    c2p = contour2Points;
                 } else {
                     c1 = copyContours(contour1);
                     c2 = copyContours(contour2);
-                    filterToSameNumberIfPossible(perimeters1.get(i), c1, 
-                        perimeters2.get(j), c2);
+                    c1p = copyRegions(contour1Points);
+                    c2p = copyRegions(contour2Points);                  
+                    filterToSameNumberIfPossible(perimeters1.get(i), c1, c1p,
+                        perimeters2.get(j), c2, c2p);
                     
                     if (c1.size() != c2.size()) {
                         continue;
                     }
                 }
                 
-                //matching algorithm here for c1 and 
+                //matching algorithm here for c1p and c2p
+                ClosedCurveContourMatcher0 matcher 
+                    = new ClosedCurveContourMatcher0(features1, features2, 
+                    c1, c2, c1p, c2p);
+                
+                boolean solved = matcher.matchCorners();
             }
         }
 
         throw new UnsupportedOperationException("not yet implemented");
 
+    }
+
+    private List<BlobPerimeterRegion> copyRegions(List<BlobPerimeterRegion> 
+        contourPoints) {
+        
+        List<BlobPerimeterRegion> copy = new ArrayList<BlobPerimeterRegion>();
+        
+        for (int i = 0; i < contourPoints.size(); ++i) {
+            copy.add(contourPoints.get(i).copy());
+        }
+        
+        return copy;
     }
 
 }
