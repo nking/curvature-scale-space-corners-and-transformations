@@ -31,7 +31,7 @@ public class BlobScaleFinderWrapper {
     when finished, should try (3) and/or (4) first then (2)
     */
     private enum AlgType {
-        CONTOURS_ORDERED,
+        CONTOURS_ORDERED, CORNERS_ORDERED,
         CORNERS_UNORDERED, CONTOURS_UNORDERED
     }
     protected AlgType algType = AlgType.CONTOURS_ORDERED;
@@ -171,6 +171,11 @@ public class BlobScaleFinderWrapper {
         TransformationParameters params = null;
         
         params = calculateScaleImpl();
+        
+        /*if (params == null) {
+            algType = AlgType.CONTOURS_ORDERED;
+            params = calculateScaleImpl();
+        }*/
         
         if (params == null) {
             algType = AlgType.CORNERS_UNORDERED;

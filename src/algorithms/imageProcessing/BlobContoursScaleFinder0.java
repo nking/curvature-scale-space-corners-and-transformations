@@ -202,7 +202,7 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
             }
         }
         
-/*        
+ /*       
  MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
   
 int idx1 = 0;
@@ -242,7 +242,7 @@ ImageIOHelper.writeLabeledRegions(cr2, 0, 0, "/debug_labeled_contours_2.png");
 
 int z = 1;//1,3 in contours2 should be averaged?
 } catch(IOException e) {
-}*/        
+} */       
         if (trMap.isEmpty()) {
             return null;
         }

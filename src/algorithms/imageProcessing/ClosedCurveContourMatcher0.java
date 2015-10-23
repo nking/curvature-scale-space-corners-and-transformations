@@ -41,7 +41,9 @@ public class ClosedCurveContourMatcher0 {
 
     protected final IntensityFeatures features2;
 
-    protected final int dither = 5;//3;
+    protected final int dither = 6;//3
+    
+    protected final int degreeIntervals = 20;
 
     protected final int rotationTolerance = 20;
 
@@ -100,6 +102,9 @@ public class ClosedCurveContourMatcher0 {
             points.add(bpr.getX(), bpr.getY());
         }
         
+        //TODO: should not need to check orientation if change the perimeter
+        //   construction to order them all when extracted.
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         // making clockwise to be consistent with contours
@@ -151,7 +156,7 @@ public class ClosedCurveContourMatcher0 {
                
                 FeatureComparisonStat compStat = 
                     featureMatcher.ditherAndRotateForBestLocation(
-                    features1, features2, region1, region2, dither);
+                    features1, features2, region1, region2, dither, degreeIntervals);
                
                 if (compStat != null) {
                     if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {

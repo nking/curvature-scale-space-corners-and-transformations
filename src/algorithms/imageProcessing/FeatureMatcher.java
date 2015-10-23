@@ -418,6 +418,87 @@ public class FeatureMatcher {
     }
     
     /**
+     * note that a degreeIntervals > 20 is not recommended
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @param degreeIntervals
+     * @return
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
+     */
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        CornerRegion region1, CornerRegion region2, int dither, 
+        int degreeIntervals) throws CornerRegion.CornerRegionDegneracyException {
+        
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
+
+        int n = 360/degreeIntervals;
+        int[] rotations = new int[n];
+        int i = 0;
+        for (int rot1 = 0; rot1 < 360; rot1 += degreeIntervals) {
+            rotations[i] = rot1 + rotD1;
+            if (rotations[i] > 359) {
+                rotations[i] -= 360;
+            }
+            i++;
+        }
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rotations, x2, y2, rotD2, dither);
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @param degreeIntervals a value > 20 is not recommended
+     * @return
+     */
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither,
+        int degreeIntervals) {
+     
+        final int x1 = region1.getX();
+        final int y1 = region1.getY();
+        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
+        
+        final int x2 = region2.getX();
+        final int y2 = region2.getY();
+        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        int n = 360/degreeIntervals;
+        int[] rotations = new int[n];
+        int i = 0;
+        for (int rot1 = 0; rot1 < 360; rot1 += degreeIntervals) {
+            rotations[i] = rot1 + rotD1;
+            if (rotations[i] > 359) {
+                rotations[i] -= 360;
+            }
+            i++;
+        }
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rotations, x2, y2, rotD2, dither);
+    }
+    
+    /**
      * comparison of descriptors to tune the center of cornerRegion1 and the
      * orientation. 
      * @param features1
@@ -437,18 +518,6 @@ public class FeatureMatcher {
         final int x2, final int y2, final int rot2,        
         int dither) {
         
-        FeatureComparisonStat best = null;
-        
-        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);
-        
-        if (desc2 == null) {
-            return null;
-        }
-        
-        /*
-        NOTE: best distinguisher for improved rotation angle is usually 
-        the gradient images because these are on edges.
-        */
         
         int[] rotations = new int[10];
         int i = 0;
@@ -462,6 +531,43 @@ public class FeatureMatcher {
         i++;
         rotations[i] = rot1 + 270;
         i++;
+        
+        return ditherAndRotateForBestLocation(features1, features2, x1, y1, 
+            rotations, x2, y2, rot2, dither);
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation. 
+     * @param features1
+     * @param x1
+     * @param y1
+     * @param features2
+     * @param rotations
+     * @param x2
+     * @param dither
+     * @param rot2
+     * @param y2
+     * @return
+     */
+    protected FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        final int x1, final int y1, final int[] rotations,
+        final int x2, final int y2, final int rot2,        
+        int dither) {
+        
+        FeatureComparisonStat best = null;
+        
+        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);
+        
+        if (desc2 == null) {
+            return null;
+        }
+        
+        /*
+        NOTE: best distinguisher for improved rotation angle is usually 
+        the gradient images because these are on edges.
+        */
         
         for (int rotD1 : rotations) {
             if (rotD1 > 359) {
