@@ -5,6 +5,7 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1015,4 +1016,85 @@ public class FeatureMatcher {
         
         return comparisonMap;
     }
+
+    public static float[] calculateThetaDiff(List<FeatureComparisonStat> compStats) {
+        
+        if (compStats == null || compStats.isEmpty()) {
+            return null;
+        }
+        
+        float[] values = new float[compStats.size()];
+        
+        for (int i = 0; i < compStats.size(); ++i) {
+            
+            FeatureComparisonStat stat = compStats.get(i);
+            
+            float diff = AngleUtil.getAngleDifference(
+                stat.getImg1PointRotInDegrees(), stat.getImg2PointRotInDegrees());
+            
+            values[i] = diff;
+        }
+        
+        return values;
+    }
+
+    public static List<Integer> removeDiscrepantThetaDiff(
+        List<FeatureComparisonStat> compStats) {
+        
+        if (compStats == null || compStats.isEmpty()) {
+            return null;
+        }
+        
+        float[] values = calculateThetaDiff(compStats);
+        
+        // 20 degree wide bins
+        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, 
+            Errors.populateYErrorsBySqrt(values));
+        
+        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+        float thetaDiff;
+        if (yMaxIdx == -1) {
+            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);
+            thetaDiff = thetaDiffMeanStDev[0];
+        } else {
+            thetaDiff = hist.getXHist()[yMaxIdx];
+        }
+        
+        //TODO: consider a bin larger than 20 degrees... 25
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int i = 0; i < values.length; ++i) {
+            float diffRot = Math.abs(values[i] - thetaDiff);
+            if (diffRot > 20) {
+                remove.add(Integer.valueOf(i));
+            }
+        }
+        
+        for (int i = remove.size() - 1; i > -1; --i) {
+            int idx = remove.get(i);
+            compStats.remove(idx);
+        }
+        
+        return remove;
+    }
+    
+    public static float calculateDiffThetaMean(List<FeatureComparisonStat> 
+        comparisonStats) {
+        
+        float[] values = calculateThetaDiff(comparisonStats);
+        
+        if (values == null || values.length == 0) {
+            return Float.POSITIVE_INFINITY;
+        }
+        
+        double sum = 0;
+        
+        for (int i = 0; i < values.length; ++i) {
+            sum += values[i];
+        }
+        
+        return (float) (sum / ((float) values.length));
+    }
+
 }

@@ -161,8 +161,8 @@ curve1.getN(), curve2.getN()));
         }
 
         TransformationParameters params = calculateTransformation(
-            img1Helper.imgHelper.getBinFactor(useBinned1), type1, useBinned1,
-            img2Helper.imgHelper.getBinFactor(useBinned2), type2, useBinned2,
+            img1Helper.imgHelper.getBinFactor(useBinned1),
+            img2Helper.imgHelper.getBinFactor(useBinned2),
             bestOverall, outputScaleRotTransXYStDev);
 
         if (params == null) {

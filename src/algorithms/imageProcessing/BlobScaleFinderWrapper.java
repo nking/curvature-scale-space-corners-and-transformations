@@ -34,8 +34,7 @@ public class BlobScaleFinderWrapper {
         CONTOURS_ORDERED,
         CORNERS_UNORDERED, CONTOURS_UNORDERED
     }
-    protected AlgType algType = AlgType.CORNERS_UNORDERED;
-        //= AlgType.CONTOURS_ORDERED;//AlgType.CORNERS_UNORDERED;
+    protected AlgType algType = AlgType.CONTOURS_ORDERED;
 
     protected final BlobPerimeterHelper img1Helper;
 
@@ -173,10 +172,10 @@ public class BlobScaleFinderWrapper {
         
         params = calculateScaleImpl();
         
-        /*if (params == null) {
+        if (params == null) {
             algType = AlgType.CORNERS_UNORDERED;
             params = calculateScaleImpl();
-        }*/
+        }
         
         if (params == null) {
             algType = AlgType.CONTOURS_UNORDERED;
@@ -226,9 +225,6 @@ public class BlobScaleFinderWrapper {
             boolean useBinned1 = seg1[ordered1Idx].currentIsBinned();
 
             boolean useBinned2 = seg2[ordered2Idx].currentIsBinned();
-
-useBinned1 = false;
-useBinned2 = false;
 
             SegmentationType segmentationType1 = seg1[ordered1Idx].geSegmentationType();
 

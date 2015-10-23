@@ -261,8 +261,8 @@ idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
         }
 
         TransformationParameters params = calculateTransformation(
-            img1Helper.imgHelper.getBinFactor(useBinned1), type1, useBinned1,
-            img2Helper.imgHelper.getBinFactor(useBinned2), type2, useBinned2,
+            img1Helper.imgHelper.getBinFactor(useBinned1),
+            img2Helper.imgHelper.getBinFactor(useBinned2),
             bestOverall, outputScaleRotTransXYStDev);
 
         if (params == null) {

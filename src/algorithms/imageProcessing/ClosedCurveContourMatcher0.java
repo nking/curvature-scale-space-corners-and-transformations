@@ -50,23 +50,13 @@ public class ClosedCurveContourMatcher0 {
     //TODO: tune this
     private int tolerance = 2;
 
-    private TransformationParameters solutionParameters = null;
-
-    private double solutionCost = Double.MAX_VALUE;
-
-    private List<BlobPerimeterRegion> solutionMatchedContourRegions1 = null;
-
-    private List<BlobPerimeterRegion> solutionMatchedContourRegions2 = null;
-
-    private List<FeatureComparisonStat> solutionMatchedCompStats = null;
+    private TransformationPair3 solutionTransformationPair = null;
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean solverHasFinished = false;
 
     private boolean hasBeenInitialized = false;
-
-    private boolean solutionHasSomeScalesSmallerThanOne = false;
 
     public ClosedCurveContourMatcher0(final IntensityFeatures features1,
         final IntensityFeatures features2, 
@@ -87,8 +77,6 @@ public class ClosedCurveContourMatcher0 {
         
         cr2 = new ArrayList<BlobPerimeterRegion>(regions2.size());
 
-        solutionMatchedCompStats = new ArrayList<FeatureComparisonStat>();
-
         this.features1 = features1;
 
         this.features2 = features2;
@@ -107,15 +95,12 @@ public class ClosedCurveContourMatcher0 {
             throw new IllegalStateException(
             "matchContours cannot be invoked more than once");
         }
-
-        solutionParameters = null;
-        solutionCost = Double.MAX_VALUE;
         
         int deltaIdx = 0;
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
         
-        List<TransformationPair3> trList = new ArrayList<TransformationPair3>();
+        List<TransformationPair3> trList = new ArrayList<TransformationPair3>();        
         
         while (deltaIdx < c1.size()) {
             
@@ -136,9 +121,11 @@ public class ClosedCurveContourMatcher0 {
                 FeatureComparisonStat compStat = 
                     featureMatcher.ditherAndRotateForBestLocation(
                     features1, features2, region1, region2, dither);
-                
+               
                 if (compStat != null) {
-                    transformationPair.addMatched(region1, region2, compStat);
+                    if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
+                        transformationPair.addMatched(region1, region2, compStat);
+                    }
                 }                
             }
             
@@ -151,32 +138,67 @@ public class ClosedCurveContourMatcher0 {
         }
         
         // chose best solution if there are more than 1
+        int nMaxMatched = Integer.MIN_VALUE;
+        double minCost = Double.MAX_VALUE;
+        int minCostIdx = -1;
+        for (int i = 0; i < trList.size(); ++i) {
+            
+            TransformationPair3 transP = trList.get(i);
+            
+            List<Integer> removedIndexes = 
+                FeatureMatcher.removeDiscrepantThetaDiff(
+                    transP.getMatchedCompStats());
+            
+            if (!removedIndexes.isEmpty()) {
+                for (int ii = removedIndexes.size() - 1; ii > -1; --ii) {
+                    int idx = removedIndexes.get(ii);
+                    transP.getMatchedContourRegions1().remove(idx);
+                    transP.getMatchedContourRegions2().remove(idx);
+                }
+            }
+            
+            if (transP.getMatchedCompStats().size() < 3) {
+                continue;
+            }
+            
+            double cost = calculateCombinedIntensityStat(transP.getMatchedCompStats());
+            transP.setCost(cost);
+            
+            if (((transP.getMatchedContourRegions1().size() >= nMaxMatched) &&
+                (cost < minCost)) ||
+                ((cost == minCost) 
+                && (transP.getMatchedContourRegions1().size() > nMaxMatched))) {
+                
+                minCost = cost;
+                minCostIdx = i;
+                nMaxMatched = transP.getMatchedContourRegions1().size();
+            }
+        }
         
-        /*
-        set instance vars with best solution if any
+        solverHasFinished = true;
         
-        TransformationParameters solutionParameters = null;
-        double solutionCost = Double.MAX_VALUE;
-        List<BlobPerimeterRegion> solutionMatchedContourRegions1 = null;
-        List<BlobPerimeterRegion> solutionMatchedContourRegions2 = null;
-        List<FeatureComparisonStat> solutionMatchedCompStats = null;
-        */
+        if (minCostIdx > -1) {
+            
+            solutionTransformationPair = trList.get(minCostIdx);
+            
+            return true;
+        }
         
-        return true;
+        return false;
     }
-
-    private double distance(double x1, double y1, double x2, double y2) {
-
-        double diffX = x1 - x2;
-        double diffY = y1 - y2;
-
-        double dist = Math.sqrt(diffX*diffX + diffY*diffY);
-
-        return dist;
-    }
-
-    public TransformationParameters getSolvedParameters() {
-        return solutionParameters;
+    
+    protected double calculateCombinedIntensityStat(List<FeatureComparisonStat> 
+        compStats) {
+        
+        double sum = 0;
+        
+        for (FeatureComparisonStat compStat : compStats) {
+            sum += compStat.getSumIntensitySqDiff();
+        }
+        
+        sum /= (double) compStats.size();
+        
+        return sum;
     }
 
     /**
@@ -184,16 +206,8 @@ public class ClosedCurveContourMatcher0 {
      * first set of contours and the second set.
      * @return
      */
-    public double getSolvedCost() {
-        return solutionCost;
-    }
-
-    public boolean scaleIsPossiblyAmbiguous() {
-        return solutionHasSomeScalesSmallerThanOne;
-    }
-
-    public List<FeatureComparisonStat> getSolutionMatchedCompStats() {
-        return solutionMatchedCompStats;
+    public TransformationPair3 getTransformationPair3() {
+        return solutionTransformationPair;
     }
 
 }

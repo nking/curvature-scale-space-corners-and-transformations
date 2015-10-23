@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -89,15 +90,10 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
 
         Map<Integer, List<BlobPerimeterRegion>> contours2PointMaps = 
             new HashMap<Integer, List<BlobPerimeterRegion>>();
-       
+        
+ /*
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        // plot the contours
-        // or specific contours to look at how best to filter to common
-        // number of members
-        
-        //exploring first before further specification
-        
+  
         int idx1 = 0;
         Integer index1 = Integer.valueOf(idx1);
         PairIntArray perimeter1 = perimeters1.get(idx1);
@@ -142,9 +138,11 @@ ImageIOHelper.writeLabeledContours(perimeter2, contours2, 0, 0,
 int z = 1;//1,3 in contours2 should be averaged?
 } catch(IOException e) {
 }
-       
+*/       
         int n1 = contours1List.size();
         int n2 = contours2List.size();
+        
+        Map<Integer, TransformationPair3> trMap = new HashMap<Integer, TransformationPair3>();
         
         for (int i = 0; i < n1; ++i) {
             
@@ -160,6 +158,8 @@ int z = 1;//1,3 in contours2 should be averaged?
                     perimeters1.get(i), blobs1.get(i));
                 contours1PointMaps.put(Integer.valueOf(i), contour1Points);
             }
+            
+            TransformationPair3 bestMatches = null;
             
             for (int j = 0; j < n2; ++j) {
                 
@@ -209,11 +209,94 @@ int z = 1;//1,3 in contours2 should be averaged?
                     c1, c2, c1p, c2p);
                 
                 boolean solved = matcher.matchCorners();
+                
+                if (solved) {
+                    
+                    if (bestMatches == null) {
+                        
+                        bestMatches = matcher.getTransformationPair3();
+                        bestMatches.setContourIndex1(i);
+                        bestMatches.setContourIndex2(j);
+                        
+                    } else {
+                        
+                        TransformationPair3 tr = matcher.getTransformationPair3();
+                        tr.setContourIndex1(i);
+                        tr.setContourIndex2(j);
+                        
+                        int bN = bestMatches.getMatchedContourRegions1().size();
+                        int cN = tr.getMatchedContourRegions1().size();
+                        
+                        if (((cN >= bN) && (tr.getCost() < bestMatches.getCost()))
+                            || ((tr.getCost() == bestMatches.getCost()) && (cN > bN))) {
+                            
+                            bestMatches = tr;
+                        }
+                    }
+                }
+            }
+            
+            if (bestMatches != null) {
+                trMap.put(Integer.valueOf(i), bestMatches);
             }
         }
-
-        throw new UnsupportedOperationException("not yet implemented");
-
+        
+        if (trMap.isEmpty()) {
+            return null;
+        }
+        
+        // find best (lowest cost) and combine others with it if similar
+        double minCost = Double.MAX_VALUE;
+        Integer minCostKey = null;
+        
+        for (Entry<Integer, TransformationPair3> entry : trMap.entrySet()) {
+            TransformationPair3 tr = entry.getValue();
+            if (tr.getCost() < minCost) {
+                minCost = tr.getCost();
+                minCostKey = entry.getKey();
+            }
+        }
+        
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        
+        TransformationPair3 minCostTR = trMap.remove(minCostKey);
+                
+        TransformationParameters minCostParams = calculateTransformation(
+            binFactor1, binFactor2, minCostTR.getMatchedCompStats(), 
+            outputScaleRotTransXYStDev);
+        
+        List<FeatureComparisonStat> combine = new ArrayList<FeatureComparisonStat>();
+        
+        for (Entry<Integer, TransformationPair3> entry : trMap.entrySet()) {
+            
+            TransformationPair3 tr = entry.getValue();
+            
+            if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {
+                
+                float[] outputScaleRotTransXYStDev00 = new float[4];
+                TransformationParameters params = calculateTransformation(
+                    binFactor1, binFactor2, tr.getMatchedCompStats(), 
+                    outputScaleRotTransXYStDev00);
+                
+                if (params != null) {
+                    if (areSimilar(minCostParams, params, 25)) {
+                        combine.addAll(tr.getMatchedCompStats());
+                    }
+                }
+            }
+        }
+        
+        if (combine.isEmpty()) {
+            return minCostParams;
+        }
+        
+        combine.addAll(minCostTR.getMatchedCompStats());
+        
+        TransformationParameters combinedParams = calculateTransformation(
+            binFactor1, binFactor2, combine, outputScaleRotTransXYStDev);
+        
+        return combinedParams;
     }
 
     private List<BlobPerimeterRegion> copyRegions(List<BlobPerimeterRegion> 

@@ -170,9 +170,7 @@ public abstract class AbstractBlobScaleFinder {
     }
 
     protected TransformationParameters calculateTransformation(int binFactor1, 
-        SegmentationType type1, boolean useBinned1, int binFactor2, 
-        SegmentationType type2, boolean useBinned2, 
-        List<FeatureComparisonStat> compStats, 
+        int binFactor2, List<FeatureComparisonStat> compStats, 
         float[] outputScaleRotTransXYStDev) {
         
         assert (compStats.isEmpty() == false);
@@ -434,4 +432,56 @@ public abstract class AbstractBlobScaleFinder {
         return (float) (sum / ((float) values.length));
     }
     
+    protected boolean rotationIsConsistent(TransformationParameters params, 
+        List<FeatureComparisonStat> comparisonStats, float tolerance) {
+        
+        float[] values = calculateThetaDiff(comparisonStats);
+        
+        if (values == null || values.length == 0) {
+            return false;
+        }
+        
+        float rotationInDegrees = params.getRotationInDegrees();
+        
+        for (float theta : values) {
+            
+            if (theta < 0) {
+                theta = 360 + theta;
+            }
+            
+            float diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);
+            
+            if (Math.abs(diff) > tolerance) {
+                return false;
+            }
+        }
+            
+        return true;
+    }
+    
+    public boolean areSimilar(TransformationParameters params0, 
+        TransformationParameters params1, float toleranceTranslation) {
+        
+        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+        
+        if (tc.areSimilarByScaleAndRotation(params0, params1)) {
+            
+            assert(params0.getOriginX() == params1.getOriginX());
+            assert(params0.getOriginY() == params1.getOriginY());
+            
+            float diffX = params0.getTranslationX() - params1.getTranslationX();
+            if (Math.abs(diffX) > toleranceTranslation) {
+                return false;
+            }
+            float diffY = params0.getTranslationY() - params1.getTranslationY();
+            if (Math.abs(diffY) > toleranceTranslation) {
+                return false;
+            }
+
+            return true;
+        }
+        
+        return false;
+    }
+
 }
