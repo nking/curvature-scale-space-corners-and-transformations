@@ -2387,7 +2387,7 @@ public class ImageSegmentation {
         }
     }
 
-    public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
+    public static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
 
         int pixIdx;
 

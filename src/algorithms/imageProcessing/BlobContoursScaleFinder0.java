@@ -202,7 +202,7 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
             }
         }
         
- /*       
+ /*
  MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
   
 int idx1 = 0;

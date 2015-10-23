@@ -54,6 +54,26 @@ public class FixedDistanceGroupFinder {
     public int[] getGroupNumbers() {
         return groupNumber;
     }
+    
+    public int getNumberOfGroups() {
+        return groupList.size();
+    }
+    
+    /**
+     * get a list of the x,y indexes in the given group number
+     * @param groupNumber
+     * @return
+     */
+    public Set<Integer> getGroupIndexes(final int groupNumber) {
+        
+        if (groupNumber < 0 || groupNumber > (groupList.size() - 1)) {
+            throw new IllegalArgumentException("groupNumber is out of bounds");
+        }
+        
+        Set<Integer> set = groupList.get(groupNumber);
+        
+        return set;
+    }
 
     /**
      * get a list of the x,y indexes in each group in a list sorted by 
@@ -94,9 +114,7 @@ public class FixedDistanceGroupFinder {
             
             float uX = x[uIdx];
             float uY = y[uIdx];
-            
-            //(1 + frac)*O(N) where frac is the fraction added back to stack
-            
+                        
             for (int vIdx = 0; vIdx < x.length; ++vIdx) {
                 
                 if (visited[uIdx][vIdx]) {

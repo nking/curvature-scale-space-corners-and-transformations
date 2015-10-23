@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -15,64 +16,100 @@ import java.util.Set;
 
 /**
  * class to attempt to find Euclidean scale transformation between image1
- * and image2 using curvature scale space contours and an assumption of
- * ordered matching between the peaks.
- * The method is fast, but needs blobs with concave and convex boundaries
- * to produce strong inflection points.
+ * and image2 using corners of a blob and an assumption of
+ * ordered matching between them.
+ * The method is fast, but cannot be used to compare the same object boundaries
+ * if the boundaries have different numbers of corners.
  * 
  * @author nichole
  */
-public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
+public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
 
     protected void filterToSameNumberIfPossible(
-        PairIntArray curve1, List<CurvatureScaleSpaceContour> contours1, 
-        List<BlobPerimeterRegion> regions1,
-        PairIntArray curve2, List<CurvatureScaleSpaceContour> contours2,
-        List<BlobPerimeterRegion> regions2) {
+        PairIntArray curve1, List<CornerRegion> regions1,
+        PairIntArray curve2, List<CornerRegion> regions2) {
         
-        //TODO: this may change to improve results for different resolution
-        // data for example... may need to have increasing tolerances
-        // that are different for contours1 than contours2
+        int dist = 2;
         
-        // the curves have already had tolT=0.04 and tolD=6 applied to them
-        float tolT = 0.055f; 
-        float tolD = 9.5f;
+        if (regions1.size() != regions2.size()) {
+            filterCorners(curve1, regions1, dist);
+            filterCorners(curve2, regions2, dist);
+        }
+    }
+    
+    protected void filterCorners(PairIntArray curve, 
+        List<CornerRegion> regions, int dist) {
         
-        List<Integer> rmIndexes = BlobsAndContours.combineOverlappingPeaks(
-            tolT, tolD, curve1, contours1);
+        /*
+        if there are more than 1 corner within dist of 2 or so of on another,
+        remove all except strongest corner.
+        */
+        List<Set<Integer>> closeCornerIndexes = findCloseCorners(dist, regions);
         
-        if (rmIndexes != null && !rmIndexes.isEmpty()) {
-            for (int i = (rmIndexes.size() - 1); i > -1; --i) {
-                regions1.remove(rmIndexes.get(i).intValue());
+        if (closeCornerIndexes.isEmpty()) {
+            return;
+        }
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        for (Set<Integer> set : closeCornerIndexes) {
+            float maxK = Float.MIN_VALUE;
+            Integer maxKIndex = null;
+            for (Integer index : set) {
+                CornerRegion cr = regions.get(index.intValue());
+                float k = cr.getK()[cr.getKMaxIdx()];
+                if (k > maxK) {
+                    maxK = k;
+                    maxKIndex = index;
+                }
+            }
+            for (Integer index : set) {
+                if (!index.equals(maxKIndex)) {
+                    remove.add(index);
+                }
             }
         }
         
-        rmIndexes = BlobsAndContours.combineOverlappingPeaks(tolT, tolD, curve2, 
-            contours2);
+        if (remove.size() > 1) {
+            Collections.sort(remove);
+        }
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            regions.remove(remove.get(i).intValue());
+        }
+    }
+    
+    private static List<Set<Integer>> findCloseCorners(int tolD, 
+        List<CornerRegion> regions) {
        
-        if (rmIndexes != null && !rmIndexes.isEmpty()) {
-            for (int i = (rmIndexes.size() - 1); i > -1; --i) {
-                regions2.remove(rmIndexes.get(i).intValue());
+        float[] x = new float[regions.size()];
+        float[] y = new float[regions.size()];
+        for (int i = 0; i < regions.size(); ++i) {
+            CornerRegion cr = regions.get(i);            
+            x[i] = cr.getX()[cr.getKMaxIdx()];
+            y[i] = cr.getY()[cr.getKMaxIdx()];
+        }
+        
+        List<Set<Integer>> close = new ArrayList<Set<Integer>>();
+        
+        FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(x, y);
+
+        groupFinder.findGroupsOfPoints(tolD);
+        
+        int nGroups = groupFinder.getNumberOfGroups();
+        
+        for (int i = 0; i < nGroups; ++i) {
+            Set<Integer> group = groupFinder.getGroupIndexes(i);
+            if (group.size() > 1) {
+                close.add(group);
             }
         }
+        
+        return close;
     }
-    
-    protected List<CurvatureScaleSpaceContour> copyContours(
-        List<CurvatureScaleSpaceContour> contours) {
-        
-        List<CurvatureScaleSpaceContour> c = new ArrayList<CurvatureScaleSpaceContour>();
-        
-        for (int i = 0; i < contours.size(); ++i) {
-            c.add(contours.get(i).copy());
-        }
-        
-        return c;
-    }
-    
+  
     public TransformationParameters solveForScale(
-        BlobContourHelper img1Helper, IntensityFeatures features1,
+        BlobCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
-        BlobContourHelper img2Helper, IntensityFeatures features2,
+        BlobCornerHelper img2Helper, IntensityFeatures features2,
         SegmentationType type2, boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
 
@@ -80,49 +117,76 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
             
         GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
 
-        List<List<CurvatureScaleSpaceContour>> contours1List = 
-            img1Helper.getPerimeterContours(type1, useBinned1);
+        List<List<CornerRegion>> corners1List = 
+            img1Helper.getPerimeterCorners(type1, useBinned1);
         
-        List<List<CurvatureScaleSpaceContour>> contours2List = 
-            img2Helper.getPerimeterContours(type2, useBinned2);
+        List<List<CornerRegion>> corners2List = 
+            img2Helper.getPerimeterCorners(type2, useBinned2);
         
         List<Set<PairInt>> blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);
         List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
         List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);
         
-        Map<Integer, List<BlobPerimeterRegion>> contours1PointMaps = 
-            new HashMap<Integer, List<BlobPerimeterRegion>>();
-
-        Map<Integer, List<BlobPerimeterRegion>> contours2PointMaps = 
-            new HashMap<Integer, List<BlobPerimeterRegion>>();
-         
-        int n1 = contours1List.size();
-        int n2 = contours2List.size();
+        int n1 = corners1List.size();
+        int n2 = corners2List.size();
         
+/*
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+  
+int idx1 = 14;
+Integer index1 = Integer.valueOf(idx1);
+Set<PairInt> blob1 = blobs1.get(idx1);
+double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
+List<CornerRegion> cr1 = new ArrayList<CornerRegion>(
+    corners1List.get(Integer.valueOf(index1)));                
+        
+int idx2 = 13;
+Integer index2 = Integer.valueOf(idx2);
+Set<PairInt> blob2 = blobs2.get(idx2);
+double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
+List<CornerRegion> cr2 = new ArrayList<CornerRegion>(
+    corners2List.get(Integer.valueOf(index2))); 
+
+log.info("index1=" + index1.toString() + " index2=" + index2.toString()
++ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
+
+try {
+ImageExt img1C = img1.createColorGreyscaleExt();
+ImageExt img2C = img2.createColorGreyscaleExt();
+//ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
+ImageIOHelper.addAlternatingColorCornerRegionsToImage(cr1, img1C, 0, 0, 1);
+           
+//ImageIOHelper.addCurveToImage(perimeter2, img2C, 1, 0, 0, 255);
+ImageIOHelper.addAlternatingColorCornerRegionsToImage(cr2, img2C, 0, 0, 1);
+
+String bin = ResourceFinder.findDirectory("bin");
+ImageIOHelper.writeOutputImage(bin + "/debug_corners_1.png", img1C);
+ImageIOHelper.writeOutputImage(bin + "/debug_corners_2.png", img2C);
+
+ImageIOHelper.writeLabeledCornerRegions(cr1, 0, 0, "/debug_labeled_corners_1.png");
+ImageIOHelper.writeLabeledCornerRegions(cr2, 0, 0, "/debug_labeled_corners_2.png");
+
+int z = 1;//1,3 in contours2 should be averaged?
+} catch(IOException e) {
+}
+*/
         Map<Integer, TransformationPair3> trMap = new HashMap<Integer, TransformationPair3>();
         
         for (int i = 0; i < n1; ++i) {
             
-            List<CurvatureScaleSpaceContour> contour1 = contours1List.get(i);
-            int nc1 = contour1.size();
+            List<CornerRegion> corners1 = corners1List.get(i);
+            int nc1 = corners1.size();
             if (nc1 < 3) {
                 continue;
-            }
-            
-            List<BlobPerimeterRegion> contour1Points = contours1PointMaps.get(Integer.valueOf(i));
-            if (contour1Points == null) {
-                contour1Points = extractBlobPerimeterRegions(i, contour1,
-                    perimeters1.get(i), blobs1.get(i));
-                contours1PointMaps.put(Integer.valueOf(i), contour1Points);
             }
             
             TransformationPair3 bestMatches = null;
             
             for (int j = 0; j < n2; ++j) {
                 
-                List<CurvatureScaleSpaceContour> contour2 = contours2List.get(j);
-                int nc2 = contour2.size();
+                List<CornerRegion> corners2 = corners2List.get(j);
+                int nc2 = corners2.size();
                 if (nc2 < 3) {
                     continue;
                 }
@@ -134,40 +198,26 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                     continue;
                 }
                 
-                List<BlobPerimeterRegion> contour2Points = contours2PointMaps.get(Integer.valueOf(j));
-                if (contour2Points == null) {
-                    contour2Points = extractBlobPerimeterRegions(j, contour2,
-                        perimeters2.get(j), blobs2.get(j));
-                    contours2PointMaps.put(Integer.valueOf(j), contour2Points);
-                }
-            
-                List<CurvatureScaleSpaceContour> c1;
-                List<CurvatureScaleSpaceContour> c2;
-                List<BlobPerimeterRegion> c1p;
-                List<BlobPerimeterRegion> c2p;
+                List<CornerRegion> c1;
+                List<CornerRegion> c2;
                 
                 if (nc1 == nc2) {
-                    c1 = contour1;
-                    c2 = contour2;
-                    c1p = contour1Points;
-                    c2p = contour2Points;
+                    c1 = corners1;
+                    c2 = corners2;
                 } else {
-                    c1 = copyContours(contour1);
-                    c2 = copyContours(contour2);
-                    c1p = copyRegions(contour1Points);
-                    c2p = copyRegions(contour2Points);                  
-                    filterToSameNumberIfPossible(perimeters1.get(i), c1, c1p,
-                        perimeters2.get(j), c2, c2p);
+                    c1 = new ArrayList<CornerRegion>(corners1);
+                    c2 = new ArrayList<CornerRegion>(corners2);                  
+                    filterToSameNumberIfPossible(perimeters1.get(i), c1,
+                        perimeters2.get(j), c2);
                     
                     if (c1.size() != c2.size()) {
                         continue;
                     }
                 }
-                
+                /*
                 //matching algorithm here for c1p and c2p
-                ClosedCurveContourMatcher0 matcher 
-                    = new ClosedCurveContourMatcher0(features1, features2, 
-                    c1p, c2p);
+                ClosedCurveCornerMatcher0 matcher 
+                    = new ClosedCurveCornerMatcher0(features1, features2, c1, c2);
                 
                 boolean solved = matcher.matchCorners();
                 
@@ -194,55 +244,14 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                             bestMatches = tr;
                         }
                     }
-                }
+                }*/
             }
             
             if (bestMatches != null) {
                 trMap.put(Integer.valueOf(i), bestMatches);
             }
         }
-        
- /*       
- MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-  
-int idx1 = 0;
-Integer index1 = Integer.valueOf(idx1);
-Set<PairInt> blob1 = blobs1.get(idx1);
-double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
-List<BlobPerimeterRegion> cr1 = new ArrayList<BlobPerimeterRegion>(
-    contours1PointMaps.get(Integer.valueOf(index1)));                
-ClosedCurveContourMatcher0.sortRegion(cr1);
-        
-int idx2 = 5;
-Integer index2 = Integer.valueOf(idx2);
-Set<PairInt> blob2 = blobs2.get(idx2);
-double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
-List<BlobPerimeterRegion> cr2 = new ArrayList<BlobPerimeterRegion>(
-    contours2PointMaps.get(Integer.valueOf(index2)));                
-ClosedCurveContourMatcher0.sortRegion(cr2);
-
-log.info("index1=" + index1.toString() + " index2=" + index2.toString()
-+ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
-
-try {
-ImageExt img1C = img1.createColorGreyscaleExt();
-ImageExt img2C = img2.createColorGreyscaleExt();
-//ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
-ImageIOHelper.addAlternatingColorRegionsToImage(cr1, img1C, 0, 0, 1);
-           
-//ImageIOHelper.addCurveToImage(perimeter2, img2C, 1, 0, 0, 255);
-ImageIOHelper.addAlternatingColorRegionsToImage(cr2, img2C, 0, 0, 1);
-
-String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/debug_contours_1.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/debug_contours_2.png", img2C);
-
-ImageIOHelper.writeLabeledRegions(cr1, 0, 0, "/debug_labeled_contours_1.png");
-ImageIOHelper.writeLabeledRegions(cr2, 0, 0, "/debug_labeled_contours_2.png");
-
-int z = 1;//1,3 in contours2 should be averaged?
-} catch(IOException e) {
-} */       
+              
         if (trMap.isEmpty()) {
             return null;
         }
