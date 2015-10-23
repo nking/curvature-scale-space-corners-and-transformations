@@ -30,7 +30,7 @@ public class QuickSort {
     }
     
     /**
-     * sort a by descending values and perform the same swap operation on b.
+     * sort a by ascending values and perform the same swap operation on b.
      * @param a
      * @param b 
      */
@@ -125,7 +125,7 @@ public class QuickSort {
     }
     
     /**
-     * sort a from index idxLo to idxHi, inclusive, by descending values and
+     * sort a from index idxLo to idxHi, inclusive, by ascending values and
      * perform the same operations on b.  Uses the optimized
      * qsort3 from the book "Programming in Pearls" by Jon Bentley.
      * @param a

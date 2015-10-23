@@ -36,8 +36,8 @@ public class MiscellaneousCurveHelper {
         new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
 
     /**
-     * determine whether the closed curve points are ordered in a clockwise
-     * manner.
+     * determine whether the closed curve points are ordered in a counter clockwise
+     * manner (NOTE: need to update the method name)
      * calculating the cross product between adjacent edges in sequence around
      * the polygon to determine if there are fewer that are positive (CCW)
      * than negative (CW).

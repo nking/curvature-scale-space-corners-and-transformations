@@ -1046,12 +1046,22 @@ public class FeatureMatcher {
         }
         
         float[] values = calculateThetaDiff(compStats);
+        for (int i = 0; i < values.length; ++i) {
+            if (values[i] < 0) {
+                values[i] += 360;
+            }
+        }
         
         // 20 degree wide bins
         HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, 
             Errors.populateYErrorsBySqrt(values));
         
         int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        if ((yMaxIdx > -1) && (hist.getYHist()[yMaxIdx] == 1)) {
+            hist = Histogram.createSimpleHistogram(40.f, values, 
+                Errors.populateYErrorsBySqrt(values));
+            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        }
         
         float thetaDiff;
         if (yMaxIdx == -1) {
@@ -1065,7 +1075,7 @@ public class FeatureMatcher {
         List<Integer> remove = new ArrayList<Integer>();
         
         for (int i = 0; i < values.length; ++i) {
-            float diffRot = Math.abs(values[i] - thetaDiff);
+            float diffRot = AngleUtil.getAngleDifference(values[i], thetaDiff);
             if (diffRot > 20) {
                 remove.add(Integer.valueOf(i));
             }

@@ -2,7 +2,11 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,55 +96,7 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
 
         Map<Integer, List<BlobPerimeterRegion>> contours2PointMaps = 
             new HashMap<Integer, List<BlobPerimeterRegion>>();
-        
- /*
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-  
-        int idx1 = 0;
-        Integer index1 = Integer.valueOf(idx1);
-        PairIntArray perimeter1 = perimeters1.get(idx1);
-        Set<PairInt> blob1 = blobs1.get(idx1);
-        List<CurvatureScaleSpaceContour> contours1 = contours1List.get(idx1);
-        double[] xyCen1 = curveHelper.calculateXYCentroids(perimeter1);
-        
-        int idx2 = 3;
-        Integer index2 = Integer.valueOf(idx2);
-        PairIntArray perimeter2 = perimeters2.get(idx2);
-        Set<PairInt> blob2 = blobs2.get(idx2);
-        List<CurvatureScaleSpaceContour> contours2 = contours2List.get(idx2);
-        double[] xyCen2 = curveHelper.calculateXYCentroids(perimeter2);
-        
-log.info("index1=" + index1.toString() + " index2=" + index2.toString()
-+ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
-
-log.info(
-String.format("[%d](%d,%d) [%d](%d,%d)  nCurvePoints=%d, %d", 
-idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-perimeter1.getN(), perimeter2.getN()));               
-
-try {
-ImageExt img1C = img1.createColorGreyscaleExt();
-ImageExt img2C = img2.createColorGreyscaleExt();
-//ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
-ImageIOHelper.addAlternatingColorContoursToImage(contours1, img1C, 0, 0, 1);
-           
-//ImageIOHelper.addCurveToImage(perimeter2, img2C, 1, 0, 0, 255);
-ImageIOHelper.addAlternatingColorContoursToImage(contours2, img2C, 0, 0, 1);
-
-String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/debug_contours_1.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/debug_contours_2.png", img2C);
-
-ImageIOHelper.writeLabeledContours(perimeter1, contours1, 0, 0, 
-    "/debug_labeled_contours_1.png");
-ImageIOHelper.writeLabeledContours(perimeter2, contours2, 0, 0,
-    "/debug_labeled_contours_2.png");
-
-int z = 1;//1,3 in contours2 should be averaged?
-} catch(IOException e) {
-}
-*/       
+         
         int n1 = contours1List.size();
         int n2 = contours2List.size();
         
@@ -171,7 +127,10 @@ int z = 1;//1,3 in contours2 should be averaged?
                     continue;
                 }
                 
-                if (Math.abs(nc1 - nc2) > 2) {
+                int minN = Math.min(nc1, nc2);
+                int diffNC = Math.abs(nc1 - nc2);
+                
+                if (((minN > 10) && (diffNC > 3)) || ((minN <= 10) && (diffNC > 2))){
                     continue;
                 }
                 
@@ -208,7 +167,7 @@ int z = 1;//1,3 in contours2 should be averaged?
                 //matching algorithm here for c1p and c2p
                 ClosedCurveContourMatcher0 matcher 
                     = new ClosedCurveContourMatcher0(features1, features2, 
-                    c1, c2, c1p, c2p);
+                    c1p, c2p);
                 
                 boolean solved = matcher.matchCorners();
                 
@@ -243,6 +202,47 @@ int z = 1;//1,3 in contours2 should be averaged?
             }
         }
         
+/*        
+ MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+  
+int idx1 = 0;
+Integer index1 = Integer.valueOf(idx1);
+Set<PairInt> blob1 = blobs1.get(idx1);
+double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
+List<BlobPerimeterRegion> cr1 = new ArrayList<BlobPerimeterRegion>(
+    contours1PointMaps.get(Integer.valueOf(index1)));                
+ClosedCurveContourMatcher0.sortRegion(cr1);
+        
+int idx2 = 5;
+Integer index2 = Integer.valueOf(idx2);
+Set<PairInt> blob2 = blobs2.get(idx2);
+double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
+List<BlobPerimeterRegion> cr2 = new ArrayList<BlobPerimeterRegion>(
+    contours2PointMaps.get(Integer.valueOf(index2)));                
+ClosedCurveContourMatcher0.sortRegion(cr2);
+
+log.info("index1=" + index1.toString() + " index2=" + index2.toString()
++ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
+
+try {
+ImageExt img1C = img1.createColorGreyscaleExt();
+ImageExt img2C = img2.createColorGreyscaleExt();
+//ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
+ImageIOHelper.addAlternatingColorRegionsToImage(cr1, img1C, 0, 0, 1);
+           
+//ImageIOHelper.addCurveToImage(perimeter2, img2C, 1, 0, 0, 255);
+ImageIOHelper.addAlternatingColorRegionsToImage(cr2, img2C, 0, 0, 1);
+
+String bin = ResourceFinder.findDirectory("bin");
+ImageIOHelper.writeOutputImage(bin + "/debug_contours_1.png", img1C);
+ImageIOHelper.writeOutputImage(bin + "/debug_contours_2.png", img2C);
+
+ImageIOHelper.writeLabeledRegions(cr1, 0, 0, "/debug_labeled_contours_1.png");
+ImageIOHelper.writeLabeledRegions(cr2, 0, 0, "/debug_labeled_contours_2.png");
+
+int z = 1;//1,3 in contours2 should be averaged?
+} catch(IOException e) {
+}*/        
         if (trMap.isEmpty()) {
             return null;
         }

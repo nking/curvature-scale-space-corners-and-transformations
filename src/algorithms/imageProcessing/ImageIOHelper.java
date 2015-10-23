@@ -582,29 +582,60 @@ public class ImageIOHelper {
         CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();
 
         for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {
+            
             int x = peakDetail.getXCoord() + xOffset;
             int y = peakDetail.getYCoord() + yOffset;
-            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                float xx = x + dx;
-                if ((xx > -1) && (xx < (img.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
-                        dy++) {
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (img.getHeight() - 1))) {
-                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
+            
+            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 
+                rClr, gClr, bClr);
+        }            
+    }
+    
+    public static void addPointToImage(final int x, final int y, 
+        ImageExt img, int xOffset, int yOffset,
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+            float xx = x + dx;
+            if ((xx > -1) && (xx < (img.getWidth() - 1))) {
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                    dy++) {
+                    float yy = y + dy;
+                    if ((yy > -1) && (yy < (img.getHeight() - 1))) {
+                        img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
                     }
                 }
             }
-        }            
+        }
     }
 
-    public static void writeLabeledContours(PairIntArray perimeter, 
+    public static void writeLabeledContours(
         List<CurvatureScaleSpaceContour> contours, int xOffset, int yOffset,
         String fileName) throws IOException {
         
         PairFloatArray xy = getXYOfContourPeaks(contours, xOffset, yOffset);
         
+        writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
+    }
+    
+    public static void writeLabeledRegions(
+        List<BlobPerimeterRegion> regions, int xOffset, int yOffset,
+        String fileName) throws IOException {
+        
+        PairFloatArray xy = new PairFloatArray(regions.size());
+        
+        for (int i = 0; i < regions.size(); ++i) {
+            BlobPerimeterRegion bpr = regions.get(i);
+            xy.add(bpr.getX(), bpr.getY());
+        }
+        
+        writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
+        
+    }
+    
+    public static void writeLabeledPoints(PairFloatArray xy, int xOffset, 
+        int yOffset, String label, String fileName) throws IOException {
+                
         ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
                 
         float[] x = Arrays.copyOf(xy.getX(), xy.getN());
@@ -622,8 +653,7 @@ public class ImageIOHelper {
         ymn -= 0.1*yRange;
         ymx += 0.1*yRange;
         
-        plotter.plotLabeledPoints(xmn, xmx, ymn, ymx, x, y, "infl pts", 
-            "X", "Y");
+        plotter.plotLabeledPoints(xmn, xmx, ymn, ymx, x, y, label, "X", "Y");
     
         plotter.writeToFile(fileName);
     }
@@ -1518,18 +1548,18 @@ int z1 = 1;
         List<CurvatureScaleSpaceContour> contours, ImageExt img, 
         int xOffset, int yOffset, int nExtraForDot) {
         
-        StringBuilder sb = new StringBuilder();
+        //StringBuilder sb = new StringBuilder();
         
         for (int i = 0; i < contours.size(); i++) {
             
             CurvatureScaleSpaceContour cssC = contours.get(i);
             
-            sb.append("[").append(Integer.toString(i))
+            /*sb.append("[").append(Integer.toString(i))
                 .append("] t=")
                 .append(Float.toString(cssC.getPeakScaleFreeLength()))
                 .append(", s=")
                 .append(Float.toString(cssC.getPeakSigma()))
-                .append(" ");
+                .append(" ");*/
             
             int[] c = getNextRGB(i);
             
@@ -1537,6 +1567,33 @@ int z1 = 1;
                 c[0], c[1], c[2]);
         }
         
-        Logger.getLogger(ImageIOHelper.class.getName()).info(sb.toString());
+        //Logger.getLogger(ImageIOHelper.class.getName()).info(sb.toString());
+    }
+
+    public static void addAlternatingColorRegionsToImage(
+        List<BlobPerimeterRegion> regions, ImageExt img, 
+        int xOffset, int yOffset, int nExtraForDot) {
+        
+        //StringBuilder sb = new StringBuilder();
+        
+        for (int i = 0; i < regions.size(); i++) {
+            
+            BlobPerimeterRegion br = regions.get(i);
+            
+            /*sb.append("[").append(Integer.toString(i))
+                .append("] idx=")
+                .append(Integer.toString(br.getIndexWithinCurve()))
+                .append(" ");*/
+            
+            int[] c = getNextRGB(i);
+
+            int x = br.getX();
+            int y = br.getY();
+            
+            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 
+                c[0], c[1], c[2]);
+        }
+        
+        //Logger.getLogger(ImageIOHelper.class.getName()).info(sb.toString());
     }
 }

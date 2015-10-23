@@ -1,7 +1,9 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.logging.Logger;
 
 /**
@@ -31,10 +33,6 @@ public class ClosedCurveContourMatcher0 {
        the euclidean transformation with.
     */
     
-    protected final List<CurvatureScaleSpaceContour> c1;
-
-    protected final List<CurvatureScaleSpaceContour> c2;
-    
     protected final List<BlobPerimeterRegion> cr1;
     
     protected final List<BlobPerimeterRegion> cr2;
@@ -43,7 +41,7 @@ public class ClosedCurveContourMatcher0 {
 
     protected final IntensityFeatures features2;
 
-    protected final int dither = 3;
+    protected final int dither = 5;//3;
 
     protected final int rotationTolerance = 20;
 
@@ -56,23 +54,15 @@ public class ClosedCurveContourMatcher0 {
 
     private boolean solverHasFinished = false;
 
-    private boolean hasBeenInitialized = false;
-
     public ClosedCurveContourMatcher0(final IntensityFeatures features1,
         final IntensityFeatures features2, 
-        final List<CurvatureScaleSpaceContour> contours1,
-        final List<CurvatureScaleSpaceContour> contours2,
         final List<BlobPerimeterRegion> regions1,
         final List<BlobPerimeterRegion> regions2) {
         
-        if (contours1.size() != contours2.size()) {
-            throw new IllegalArgumentException("contours must be same size");
+        if (regions1.size() != regions2.size()) {
+            throw new IllegalArgumentException("region lists must be same size");
         }
 
-        c1 = new ArrayList<CurvatureScaleSpaceContour>(contours1.size());
-
-        c2 = new ArrayList<CurvatureScaleSpaceContour>(contours2.size());
-        
         cr1 = new ArrayList<BlobPerimeterRegion>(regions1.size());
         
         cr2 = new ArrayList<BlobPerimeterRegion>(regions2.size());
@@ -81,14 +71,55 @@ public class ClosedCurveContourMatcher0 {
 
         this.features2 = features2;
 
-        c1.addAll(contours1);
-        c2.addAll(contours2);
         cr1.addAll(regions1);
+        
         cr2.addAll(regions2);
-
-        hasBeenInitialized = true;
+        
+        sortRegions();
     }
 
+    private void sortRegions() {
+        
+        // sort regions by ascending indexes, idx and order CW
+        sortRegion(cr1);
+        
+        sortRegion(cr2);
+    }
+    
+    public static void sortRegion(List<BlobPerimeterRegion> regions) {
+    
+        if (regions.size() < 2) {
+            return;
+        }
+        
+        Collections.sort(regions, new AsscendingIndexComparator());
+
+        PairIntArray points = new PairIntArray(regions.size());
+        
+        for (BlobPerimeterRegion bpr : regions) {
+            points.add(bpr.getX(), bpr.getY());
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        // making clockwise to be consistent with contours
+        boolean isCCW = curveHelper.curveIsOrderedClockwise(points);
+        if (isCCW) {
+            int n = points.getN();
+            if (n < 2) {
+                return;
+            }
+            int end = n >> 1;
+            // 0 1 2 3 4
+            for (int i = 0; i < end; i++) {
+                int idx2 = n - i - 1;
+                BlobPerimeterRegion swap = regions.get(i);
+                regions.set(i, regions.get(idx2));
+                regions.set(idx2, swap);
+            }
+        }
+    }
+    
     public boolean matchCorners() {
 
         if (solverHasFinished) {
@@ -102,17 +133,17 @@ public class ClosedCurveContourMatcher0 {
         
         List<TransformationPair3> trList = new ArrayList<TransformationPair3>();        
         
-        while (deltaIdx < c1.size()) {
+        while (deltaIdx < cr1.size()) {
             
             TransformationPair3 transformationPair 
-                = new TransformationPair3(0, deltaIdx, c1.size());
+                = new TransformationPair3(0, deltaIdx, cr1.size());
             
             // store matched and cost
-            for (int i = 0; i < c1.size(); ++i) {
+            for (int i = 0; i < cr1.size(); ++i) {
                 
                 int j = i + deltaIdx;
-                if (j > (c2.size() - 1)) {
-                    j = j - c2.size();
+                if (j > (cr2.size() - 1)) {
+                    j = j - cr2.size();
                 }
                 
                 BlobPerimeterRegion region1 = cr1.get(i);

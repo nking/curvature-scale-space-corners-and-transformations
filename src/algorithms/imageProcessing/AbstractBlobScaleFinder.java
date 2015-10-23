@@ -31,7 +31,7 @@ public abstract class AbstractBlobScaleFinder {
         PairIntArray closedCurve, Set<PairInt> blob) {
         
         List<BlobPerimeterRegion> bprList = new ArrayList<BlobPerimeterRegion>();
-        
+                
         for (int i = 0; i < contours.size(); ++i) {
             
             CurvatureScaleSpaceContour c = contours.get(i);
@@ -40,7 +40,7 @@ public abstract class AbstractBlobScaleFinder {
             
             BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, 
                 c.getPeakDetails()[0], closedCurve, blob);
-            
+                        
             bprList.add(bpr);
         }
         
@@ -132,7 +132,9 @@ public abstract class AbstractBlobScaleFinder {
         
         BlobPerimeterRegion region = new BlobPerimeterRegion(theEdgeIndex, 
             xPrev, yPrev, xm, ym, xNext, yNext, blob);
-        
+       
+        region.setIndexWithinCurve(detailIdx);
+
         return region;
     }
 

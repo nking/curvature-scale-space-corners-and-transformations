@@ -11,7 +11,9 @@ import java.util.Set;
  */
 public class BlobPerimeterRegion {
     
-    protected final int edgeIdx;
+    protected final int edgeListIdx;
+    
+    private int idxWithinCurve = -1;
 
     private final int prevX;
     
@@ -34,7 +36,7 @@ public class BlobPerimeterRegion {
         final int nextXCoord, final int nextYCoord,
         Set<PairInt> theBlob) {
         
-        edgeIdx = theEdgeIndex;
+        edgeListIdx = theEdgeIndex;
         
         prevX = prevXCoord;
         
@@ -181,15 +183,25 @@ public class BlobPerimeterRegion {
     public int getNextY() {
         return nextY;
     }
+    
+    public void setIndexWithinCurve(int theIndex) {
+        idxWithinCurve = theIndex;
+    }
+    
+    public int getIndexWithinCurve() {
+        return idxWithinCurve;
+    }
 
     public BlobPerimeterRegion copy() {
         
-        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeIdx, prevX, prevY,
-            x, y, nextX, nextY, blob);
+        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, 
+            prevY, x, y, nextX, nextY, blob);
         
         if (orientation != Double.MIN_VALUE) {
             c.orientation = orientation;
         }
+        
+        c.setIndexWithinCurve(idxWithinCurve);
         
         return c;
     }
