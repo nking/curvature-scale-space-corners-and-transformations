@@ -172,6 +172,9 @@ public class BlobScaleFinderWrapper {
         
         params = calculateScaleImpl();
         
+        //TODO: consider rewriting to use full images not binned when algorithm
+        // type is _ORDERED
+        
         /*if (params == null) {
             algType = AlgType.CONTOURS_ORDERED;
             params = calculateScaleImpl();

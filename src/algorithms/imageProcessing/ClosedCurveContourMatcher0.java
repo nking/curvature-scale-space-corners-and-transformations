@@ -154,6 +154,9 @@ public class ClosedCurveContourMatcher0 {
                 BlobPerimeterRegion region1 = cr1.get(i);
                 BlobPerimeterRegion region2 = cr2.get(j);
                
+                //TODO: if create blob edges with a canny edge detector instead of perimeters,
+                // may have better defined perimeters and angles so can reduce
+                // the number of rotation tries here (use the default instead of 20)
                 FeatureComparisonStat compStat = 
                     featureMatcher.ditherAndRotateForBestLocation(
                     features1, features2, region1, region2, dither, degreeIntervals);
