@@ -28,7 +28,7 @@ public class BlobScaleFinderWrapper {
     (4) contours and curvature scale space matches using simplest ordered
         pairings
 
-    when finished, should try (3) and/or (4) first then (2)
+    should try (3) and/or (4) first then (2) and (1)
     */
     private enum AlgType {
         CONTOURS_ORDERED, CORNERS_ORDERED,
@@ -50,7 +50,11 @@ public class BlobScaleFinderWrapper {
     protected final IntensityFeatures featuresBinned1;
     protected final IntensityFeatures features2;
     protected final IntensityFeatures featuresBinned2;
-    
+
+    private final boolean skipBinnedImages;
+    private boolean useBinned1 = false;
+    private boolean useBinned2 = false;
+
     private boolean useSameSegmentation = false;
 
     /**
@@ -67,19 +71,63 @@ public class BlobScaleFinderWrapper {
 
         img2Helper = new BlobPerimeterHelper(img2, "2");
 
-        img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-
-        img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-
         features1 = new IntensityFeatures(img1, 5, true);
-
-        featuresBinned1 = new IntensityFeatures(
-            img1Helper.getGreyscaleImageBinned(), 5, true);
 
         features2 = new IntensityFeatures(img2, 5, true);
 
-        featuresBinned2 = new IntensityFeatures(
-            img2Helper.getGreyscaleImageBinned(), 5, true);
+        skipBinnedImages = true;
+        useBinned1= false;
+        useBinned2 = false;
+
+        featuresBinned1 = null;
+        featuresBinned2 = null;
+    }
+    
+    /**
+     *
+     * @param img1 the first image holding objects for which a Euclidean
+     * transformation is found that can be applied to put it in
+     * the same scale reference frame as image2.
+     * @param img2 the second image representing the reference frame that
+     * image1 is transformed to using the resulting parameters,
+     */
+    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
+        startWithBinnedImages) {
+
+        img1Helper = new BlobPerimeterHelper(img1, "1");
+
+        img2Helper = new BlobPerimeterHelper(img2, "2");
+
+        if (startWithBinnedImages) {
+         
+            skipBinnedImages = true;
+            useBinned1 = false;
+            useBinned2 = false;
+        
+            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+
+            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            
+            featuresBinned1 = new IntensityFeatures(
+                img1Helper.getGreyscaleImageBinned(), 5, true);
+            
+            featuresBinned2 = new IntensityFeatures(
+                img2Helper.getGreyscaleImageBinned(), 5, true);
+            
+        } else {
+            
+            skipBinnedImages = true;
+            useBinned1 = false;
+            useBinned2 = false;
+            featuresBinned1 = null;
+            featuresBinned2 = null;
+            
+        }
+
+        features1 = new IntensityFeatures(img1, 5, true);
+
+        features2 = new IntensityFeatures(img2, 5, true);
+
     }
 
     public void setToDebug() {
@@ -170,24 +218,33 @@ public class BlobScaleFinderWrapper {
         
         TransformationParameters params = null;
         
-        params = calculateScaleImpl();
+        boolean[] useBinned = skipBinnedImages ? 
+            new boolean[]{false} : new boolean[]{true, false};
         
-        //TODO: consider rewriting to use full images not binned when algorithm
-        // type is _ORDERED
+        for (boolean ub : useBinned) {
+            
+            useBinned1 = ub;
+            useBinned2 = ub;
         
-        if (params == null) {
-            algType = AlgType.CONTOURS_ORDERED;
-            params = calculateScaleImpl();
-        }
-        
-        if (params == null) {
-            algType = AlgType.CORNERS_UNORDERED;
-            params = calculateScaleImpl();
-        }
-        
-        if (params == null) {
-            algType = AlgType.CONTOURS_UNORDERED;
-            params = calculateScaleImpl();
+            if (params == null) {
+                algType = AlgType.CORNERS_ORDERED;
+                params = calculateScaleImpl();
+            }
+            
+            if (params == null) {
+                algType = AlgType.CONTOURS_ORDERED;
+                params = calculateScaleImpl();
+            }
+
+            if (params == null) {
+                algType = AlgType.CORNERS_UNORDERED;
+                params = calculateScaleImpl();
+            }
+
+            if (params == null) {
+                algType = AlgType.CONTOURS_UNORDERED;
+                params = calculateScaleImpl();
+            }
         }
         
         return params;
@@ -199,26 +256,17 @@ public class BlobScaleFinderWrapper {
         /*
         depending on image statistics, different combinations of segmentation
         and binning are tried.
-
-        If a segmentation type involves using random, the method might be
-        tried again if specified.
-        A different algorithm for the clustering may be needed.
         */
 
-        /*
-        SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
-            int numExtraUnbinnedAllowed)
-        */
-
-        SegmentationOrder[] seg1 = new SegmentationOrder[]{
-            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
-            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 0, 0),
-            //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
+        SegmentationType[] seg1 = new SegmentationType[]{
+            SegmentationType.COLOR_POLARCIEXY,
+            SegmentationType.GREYSCALE_KMPP,
+            //SegmentationType.BINARY
         };
-        SegmentationOrder[] seg2 = new SegmentationOrder[]{
-            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
-            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 0, 0),
-            //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
+        SegmentationType[] seg2 = new SegmentationType[]{
+            SegmentationType.COLOR_POLARCIEXY,
+            SegmentationType.GREYSCALE_KMPP,
+            //SegmentationType.BINARY
         };
 
         //TODO: currently caching segmentation, but because of the random
@@ -230,13 +278,9 @@ public class BlobScaleFinderWrapper {
 
         while ((ordered1Idx < seg1.length) && (ordered2Idx < seg2.length)) {
 
-            boolean useBinned1 = seg1[ordered1Idx].currentIsBinned();
+            SegmentationType segmentationType1 = seg1[ordered1Idx];
 
-            boolean useBinned2 = seg2[ordered2Idx].currentIsBinned();
-
-            SegmentationType segmentationType1 = seg1[ordered1Idx].geSegmentationType();
-
-            SegmentationType segmentationType2 = seg2[ordered2Idx].geSegmentationType();
+            SegmentationType segmentationType2 = seg2[ordered2Idx];
 
             log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1
                 + " useSameSegmentation=" + useSameSegmentation
@@ -384,114 +428,33 @@ public class BlobScaleFinderWrapper {
                 + " nC2=" + n2);
 
             if (useSameSegmentation) {
-                /*if (
-                    ((useBinned1 && (nContours1 < 3)) && (useBinned2 && (nContours2 < 10))) ||
-                    ((useBinned1 && (nContours1 < 10)) && (useBinned2 && (nContours2 < 3)))
-                    ) {
-                    // if this is the last segmentation to try, do not skip...
-                    // TODO: improve segmentation types
-                    if (ordered1Idx < (seg1.length - 1)) {
-                        seg1[ordered1Idx].setToSkip();
-                        seg2[ordered2Idx].setToSkip();
-                        ordered1Idx++;
-                        ordered2Idx++;
-                        continue;
-                    }
-                }*/
-                boolean incr1 = !seg1[ordered1Idx].incrementAndHasNext();
-                boolean incr2 = !seg2[ordered2Idx].incrementAndHasNext();
-                if (incr1 || incr2) {
-                    ordered1Idx++;
-                    ordered2Idx++;
-                }
+                ordered1Idx++;
+                ordered2Idx++;
                 continue;
             }
 
             if (n1 > 10) {
                 if (n2 > 10) {
                     if (n1 > n2) {
-                        if (!seg2[ordered2Idx].incrementAndHasNext()) {
-                            ordered2Idx++;
-                        }
+                        ordered2Idx++;
                     } else {
-                        if (!seg1[ordered1Idx].incrementAndHasNext()) {
-                            ordered1Idx++;
-                        }
-                    }
-                } else {
-                    if (!seg1[ordered1Idx].incrementAndHasNext()) {
                         ordered1Idx++;
                     }
-                }
-                continue;
-            }
-
-            if (n2 > 10) {
-                if (!seg1[ordered1Idx].incrementAndHasNext()) {
+                } else {
                     ordered1Idx++;
                 }
                 continue;
             }
 
-            if (!seg1[ordered1Idx].incrementAndHasNext()) {
+            if (n2 > 10) {
                 ordered1Idx++;
+                continue;
             }
-            if (!seg2[ordered2Idx].incrementAndHasNext()) {
-                ordered2Idx++;
-            }
+
+            ordered1Idx++;
+            ordered2Idx++;
         }
 
         return null;
     }
-
-    private class SegmentationOrder {
-        private final SegmentationType type;
-        private int numBinnedAttempts = 0;
-        private int numUnbinnedAttempts = 0;
-        private final int numExtraBinnedAllowed;
-        private final int numExtraUnbinnedAllowed;
-        private boolean currentIsBinned = true;
-
-        /** flag to use when a quick binned attempt shows that this segmentation
-        is not the best choice for image and the full segmentation should be skipped*/
-        private boolean skip = false;
-
-        public SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
-            int numExtraUnbinnedAllowed) {
-            this.type = sType;
-            this.numExtraBinnedAllowed = numExtraBinnedAllowed;
-            this.numExtraUnbinnedAllowed = numExtraUnbinnedAllowed;
-        }
-
-        public boolean incrementAndHasNext() {
-            if (skip) {
-                return false;
-            }
-            if (currentIsBinned && (numBinnedAttempts < numExtraBinnedAllowed)) {
-                numBinnedAttempts++;
-                return true;
-            } else if (currentIsBinned) {
-                numBinnedAttempts++;
-                currentIsBinned = false;
-                return true;
-            } else if (!currentIsBinned && (numUnbinnedAttempts < numExtraUnbinnedAllowed)) {
-                numUnbinnedAttempts++;
-                return true;
-            }
-            return false;
-        }
-
-        public void setToSkip() {
-            skip = true;
-        }
-
-        public boolean currentIsBinned() {
-            return currentIsBinned;
-        }
-
-        public SegmentationType geSegmentationType() {
-            return type;
-        }
-    }
-
 }

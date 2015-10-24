@@ -20,6 +20,7 @@ Story: Determine scale w/ blob perimeters and corners
     state of completion: in implementation phase
 
     comments regarding state:
+        rough drafts are complete, and tests w/ coverage reports are next
 
     comments:
         Refactoring of code associated with the current calculations is
@@ -460,9 +461,10 @@ Task 5:
     time estimate: minimum one day, maximum 2 days.
   
     amount of time used: 
-       2 hours so far
+       < 1.5 days
 
     state of completion:
+        rough draft is complete
 
     comments:
               

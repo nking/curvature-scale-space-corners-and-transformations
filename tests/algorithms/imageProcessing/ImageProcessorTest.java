@@ -1008,17 +1008,28 @@ public class ImageProcessorTest extends TestCase {
     
     public void testApplyAdaptiveMeanThresholding() throws Exception {
         
-        String fileName = "books_illum3_v0_695x555.png";
+        String[] fileNames = new String[]{"books_illum3_v0_695x555.png",
+            "books_illum3_v6_695x555.png"};
         
-        String filePath = ResourceFinder.findFileInTestResources(fileName);
-        Image img = ImageIOHelper.readImageAsGrayScale(filePath);
-        GreyscaleImage img0 = img.copyToGreyscale();
+        for (String fileName : fileNames) {
         
-        ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.applyAdaptiveMeanThresholding(img0);
-        
-        String bin = ResourceFinder.findDirectory("bin");
-        ImageIOHelper.writeOutputImage(bin + "/books_thresh.png", img0);
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+            Image img = ImageIOHelper.readImageAsGrayScale(filePath);
+            GreyscaleImage img0 = img.copyToGreyscale();
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+            //imageProcessor.applyAdaptiveMeanThresholding(img0);
+            imageProcessor.applyAdaptiveMeanThresholding(img0, 11);
+
+            String bin = ResourceFinder.findDirectory("bin");
+            if (fileName.contains("v6")) {
+                ImageIOHelper.writeOutputImage(bin + "/books_thresh_v6.png", 
+                    img0);
+            } else {
+                ImageIOHelper.writeOutputImage(bin + "/books_thresh_v0.png", 
+                    img0);
+            }
+        }
     }
     
 }

@@ -320,6 +320,7 @@ public class SegmentedImageHelper {
             segImg = imgGrey.copyImage();
             // expecting k=2
             imageSegmentation.applyUsingKMPP(segImg, k);
+                        
             imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
