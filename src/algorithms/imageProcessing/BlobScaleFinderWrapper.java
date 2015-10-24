@@ -90,6 +90,8 @@ public class BlobScaleFinderWrapper {
      * the same scale reference frame as image2.
      * @param img2 the second image representing the reference frame that
      * image1 is transformed to using the resulting parameters,
+     * @param startWithBinnedImages if true, starts the image processing
+     * with images binned to 300 pixels or less per dimension.
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
         startWithBinnedImages) {
@@ -268,10 +270,6 @@ public class BlobScaleFinderWrapper {
             SegmentationType.GREYSCALE_KMPP,
             //SegmentationType.BINARY
         };
-
-        //TODO: currently caching segmentation, but because of the random
-        // portion of some of the methods, need ability to redo segmentation
-        // sometimes
         
         int ordered1Idx = 0;
         int ordered2Idx = 0;

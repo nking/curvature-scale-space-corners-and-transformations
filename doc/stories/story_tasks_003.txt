@@ -21,6 +21,7 @@ Story: Determine scale w/ blob perimeters and corners
 
     comments regarding state:
         rough drafts are complete, and tests w/ coverage reports are next
+        along with reducing the logging and debugging
 
     comments:
         Refactoring of code associated with the current calculations is
