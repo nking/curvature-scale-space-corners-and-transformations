@@ -1,10 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.NearestPoints;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -24,44 +21,35 @@ public class ClosedCurveCornerMatcher0 {
     protected final List<CornerRegion> c1;
 
     protected final List<CornerRegion> c2;
-    
-    protected final NearestPoints np;
-    
+        
     protected final IntensityFeatures features1;
     
     protected final IntensityFeatures features2;
-
-    private float kMin1;
-    private float kMax1;
-    private float kMin2;
-    private float kMax2;
-
-    private TransformationParameters solutionParameters = null;
-
-    private double solutionCost = Double.MAX_VALUE;
-
-    private List<CornerRegion> solutionMatchedCorners1 = null;
-
-    private List<CornerRegion> solutionMatchedCorners2 = null;
-    
-    private List<FeatureComparisonStat> solutionMatchedCompStats = null;
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean solverHasFinished = false;
 
-    private boolean hasBeenInitialized = false;
-
-    private boolean solutionHasSomeScalesSmallerThanOne = false;
+    protected final int dither = 3;//6
     
-    private boolean strongestPeaksImplyScaleSmallerThanOne = false;
-    
-    //TODO: tune this
-    private int tolerance = 10;
+    //protected final int degreeIntervals = 20;
 
+    //protected final int rotationTolerance = 20;
+
+    private TransformationPair4 solutionTransformationPair = null;
+    
+    /**
+     * 
+     * @param features1
+     * @param features2
+     * @param corners1
+     * @param corners2
+     * @param cornersAreAlreadyCCW corners should already be in counter
+     * clockwise order
+     */
     public ClosedCurveCornerMatcher0(final IntensityFeatures features1,
         final IntensityFeatures features2, final List<CornerRegion> corners1, 
-        final List<CornerRegion> corners2, boolean cornersAreAlreadySorted) {
+        final List<CornerRegion> corners2, boolean cornersAreAlreadyCCW) {
         
         c1 = new ArrayList<CornerRegion>(corners1.size());
 
@@ -75,24 +63,13 @@ public class ClosedCurveCornerMatcher0 {
         
         this.features2 = features2;
         
-        initializeVariables(corners1, corners2);
+        c1.addAll(corners1);
+        c2.addAll(corners2);
 
-        if (!cornersAreAlreadySorted) {
-
-            // sort by descending |k|
-            Collections.sort(c1, new DescendingKComparator());
-
-            Collections.sort(c2, new DescendingKComparator());
-        }
-        
-        int[] xC2 = new int[c2.size()];
-        int[] yC2 = new int[c2.size()];
-        for (int i = 0; i < c2.size(); ++i) {
-            CornerRegion cr = c2.get(i);
-            xC2[i] = cr.getX()[cr.getKMaxIdx()];
-            yC2[i] = cr.getY()[cr.getKMaxIdx()];
-        }
-        np = new NearestPoints(xC2, yC2);
+        if (!cornersAreAlreadyCCW) {
+            sortCornersToCCW(c2);
+            sortCornersToCCW(c2);
+        }       
     }
 
     public boolean matchCorners() {
@@ -102,55 +79,9 @@ public class ClosedCurveCornerMatcher0 {
             "matchContours cannot be invoked more than once");
         }
 
-        solutionParameters = null;
-        solutionCost = Double.MAX_VALUE;
-
         boolean solved = solve();
 
         return solved;        
-    }
-
-    private void initializeVariables(List<CornerRegion> corners1, 
-        List<CornerRegion> corners2) {
-        
-        if (hasBeenInitialized) {
-            return;
-        }
-
-        c1.addAll(corners1);
-        c2.addAll(corners2);
-
-        float minK = Float.MAX_VALUE;
-        float maxK = Float.MIN_VALUE;
-        for (int i = 0; i < c1.size(); i++) {
-            CornerRegion cr = c1.get(i);
-            float k = Math.abs(cr.k[cr.getKMaxIdx()]);
-            if (k < minK) {
-                minK = k;
-            }
-            if (k > maxK) {
-                maxK = k;
-            }
-        }
-        kMin1 = minK;
-        kMax1 = maxK;
-
-        minK = Float.MAX_VALUE;
-        maxK = Float.MIN_VALUE;
-        for (int i = 0; i < c2.size(); i++) {
-            CornerRegion cr = c2.get(i);
-            float k = Math.abs(cr.k[cr.getKMaxIdx()]);
-            if (k < minK) {
-                minK = k;
-            }
-            if (k > maxK) {
-                maxK = k;
-            }
-        }
-        kMin2 = minK;
-        kMax2 = maxK;
-
-        hasBeenInitialized = true;
     }
      
     /**
@@ -165,94 +96,113 @@ public class ClosedCurveCornerMatcher0 {
             throw new IllegalStateException("c1 and c2 must be same size");
         }
         
-        float[] outputScaleRotTransXYStDev = new float[4];
+        int deltaIdx = 0;
         
-        MatchedPointsTransformationCalculator 
-            tc = new MatchedPointsTransformationCalculator();
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+        
+        List<TransformationPair4> trList = new ArrayList<TransformationPair4>();        
+        
+        while (deltaIdx < c1.size()) {
+            
+            TransformationPair4 transformationPair 
+                = new TransformationPair4(0, deltaIdx, c1.size());
+            
+            // store matched and cost
+            for (int i = 0; i < c1.size(); ++i) {
                 
-        int delta = 0;
+                int j = i + deltaIdx;
+                if (j > (c2.size() - 1)) {
+                    j = j - c2.size();
+                }
+                
+                CornerRegion region1 = c1.get(i);
+                CornerRegion region2 = c2.get(j);
+                
+                FeatureComparisonStat compStat = null;
+                try {
+                    compStat = featureMatcher.ditherAndRotateForBestLocation(
+                        features1, features2, region1, region2, dither);
+                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                    log.severe(ex.getMessage());
+                }
+               
+                if (compStat != null) {
+                    if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
+                        transformationPair.addMatched(region1, region2, compStat);
+                    }
+                }                
+            }
+            
+            // need at least 3 point for a cost evaluation
+            if (transformationPair.getMatchedCornerRegions1().size() > 2) {
+                trList.add(transformationPair);
+            }
+            
+            deltaIdx++;
+        }
         
-        TransformationParameters bestParams = null;
-        double bestCost = Double.MAX_VALUE;
-        List<CornerRegion> bestCR1 = null;
-        List<CornerRegion> bestCR2 = null;
-        
-        int i = 0;
-                                         
-        while (delta < c1.size()) {
-
-            // populate lists by ordered with point pairs having SSD < error
-            List<CornerRegion> cr1 = new ArrayList<CornerRegion>();
-            List<CornerRegion> cr2 = new ArrayList<CornerRegion>();
-            populateByStartingIndexes(cr1, cr2, i, i + delta);
-
-            // the remaining points follow in order and are given to
-            // the transformation calculator
-            PairIntArray xy1 = new PairIntArray(); 
-            PairIntArray xy2 = new PairIntArray();
-
-            //fill in xy1 and xy2 
-            populateWithCoordinates(xy1, xy2, cr1, cr2);
-
-            // consider weighing by k
-            float[] weights = new float[c1.size()];
-            Arrays.fill(weights, 1.f/(float)c1.size());
-
-            TransformationParameters params = tc.calulateEuclidean(xy1, xy2,
-                weights, 0, 0, outputScaleRotTransXYStDev);
-
-            double cost = evaluateCost(cr1, cr2, params);
-
-            if (cost < bestCost) {
-                bestParams = params;
-                bestCost = cost;
-                bestCR1 = cr1;
-                bestCR2 = cr2;
+        // chose best solution if there are more than 1
+        int nMaxMatched = Integer.MIN_VALUE;
+        double minCost = Double.MAX_VALUE;
+        int minCostIdx = -1;
+        for (int i = 0; i < trList.size(); ++i) {
+            
+            TransformationPair4 transP = trList.get(i);
+            
+            List<Integer> removedIndexes = 
+                FeatureMatcher.removeDiscrepantThetaDiff(
+                    transP.getMatchedCompStats());
+            
+            if (!removedIndexes.isEmpty()) {
+                for (int ii = removedIndexes.size() - 1; ii > -1; --ii) {
+                    int idx = removedIndexes.get(ii);
+                    transP.getMatchedCornerRegions1().remove(idx);
+                    transP.getMatchedCornerRegions2().remove(idx);
+                }
+            }
+            
+            if (transP.getMatchedCompStats().size() < 3) {
+                continue;
+            }
+            
+            double cost = calculateCombinedIntensityStat(transP.getMatchedCompStats());
+            transP.setCost(cost);
+            
+            if (((transP.getMatchedCornerRegions1().size() >= nMaxMatched) &&
+                (cost < minCost)) ||
+                ((cost == minCost) 
+                && (transP.getMatchedCornerRegions1().size() > nMaxMatched))) {
+                
+                minCost = cost;
+                minCostIdx = i;
+                nMaxMatched = transP.getMatchedCornerRegions1().size();
             }
         }
         
         solverHasFinished = true;
         
-        if (bestCost == Double.MAX_VALUE) {
-            return false;
+        if (minCostIdx > -1) {
+            
+            solutionTransformationPair = trList.get(minCostIdx);
+            
+            return true;
         }
         
-        solutionParameters = bestParams;
-        
-        solutionCost = bestCost;
-
-        solutionMatchedCorners1 = bestCR1;
-
-        solutionMatchedCorners2 = bestCR2;
-        
-        return true;
+        return false;
     }
 
-    private double calculateCost(CornerRegion cornerRegion,
-        double x2, double y2) {
-
-        if (cornerRegion == null) {
-            return tolerance;
+    protected double calculateCombinedIntensityStat(List<FeatureComparisonStat> 
+        compStats) {
+        
+        double sum = 0;
+        
+        for (FeatureComparisonStat compStat : compStats) {
+            sum += compStat.getSumIntensitySqDiff();
         }
         
-        double dist = distance(cornerRegion.x[cornerRegion.getKMaxIdx()], 
-            cornerRegion.y[cornerRegion.getKMaxIdx()], x2, y2);
-                
-        return dist;
-    }
-
-    private double distance(double x1, double y1, double x2, double y2) {
+        sum /= (double) compStats.size();
         
-        double diffX = x1 - x2;
-        double diffY = y1 - y2;
-        
-        double dist = Math.sqrt(diffX*diffX + diffY*diffY);
-        
-        return dist;
-    }
-        
-    public TransformationParameters getSolvedParameters() {
-        return solutionParameters;
+        return sum;
     }
 
     /**
@@ -260,74 +210,32 @@ public class ClosedCurveCornerMatcher0 {
      * first set of contours and the second set.
      * @return
      */
-    public double getSolvedCost() {
-        return solutionCost;
-    }
-
-    public boolean scaleIsPossiblyAmbiguous() {
-        return solutionHasSomeScalesSmallerThanOne;
-    }
-    public boolean strongestPeaksImplyScaleSmallerThanOne() {
-        return strongestPeaksImplyScaleSmallerThanOne;
-    }
-
-    public List<CornerRegion> getSolutionMatchedCorners1() {
-        return solutionMatchedCorners1;
-    }
-
-    public List<CornerRegion> getSolutionMatchedCorners2() {
-        return solutionMatchedCorners2;
+    public TransformationPair4 getTransformationPair() {
+        return solutionTransformationPair;
     }
     
-    public List<FeatureComparisonStat> getSolutionMatchedCompStats() {
-        return solutionMatchedCompStats;
-    }
-
-    protected double[] applyTransformation(CornerRegion corner, 
-        TransformationParameters params) {
+    private void sortCornersToCCW(List<CornerRegion> corners) {
         
-        int x0 = corner.getX()[corner.getKMaxIdx()];
-        
-        int y0 = corner.getY()[corner.getKMaxIdx()];
-        
-        Transformer transformer = new Transformer();
-        
-        double[] xyT = transformer.applyTransformation(params, x0, y0);
-        
-        return xyT;
-    }
-
-    /**
-     * populate lists by starting indexes, but only with pairs whose
-     * SSD < error
-     * @param cr1
-     * @param cr2
-     * @param i
-     * @param i0 
-     */
-    private void populateByStartingIndexes(List<CornerRegion> cr1, 
-        List<CornerRegion> cr2, int startingIndexCurve1, int startingIndexCurve2) {
-        throw new UnsupportedOperationException("Not supported yet."); 
-    }
-
-    private void populateWithCoordinates(PairIntArray xy1, PairIntArray xy2, 
-        List<CornerRegion> cr1, List<CornerRegion> cr2) {
-        throw new UnsupportedOperationException("Not supported yet."); 
-    }
-
-    /**
-     * evaluate cost, including amounts for unmatched points
-     * @param cr1
-     * @param cr2
-     * @param params
-     * @return 
-     */
-    private double evaluateCost(List<CornerRegion> cr1, List<CornerRegion> cr2, 
-        TransformationParameters params) {
-        
-        double unmatchedCost = (c1.size() - cr1.size()) * tolerance;
-        
-        throw new UnsupportedOperationException("Not supported yet."); 
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        PairIntArray cornerXY = new PairIntArray();
+        for (int ii = 0; ii < corners.size(); ++ii) {
+            CornerRegion cr = corners.get(ii);
+            cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
+        }
+        boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);
+        if (isCW) {
+            int n = corners.size();
+            if (n > 1) {
+                int end = n >> 1;
+                // 0 1 2 3 4
+                for (int ii = 0; ii < end; ii++) {
+                    int idx2 = n - ii - 1;
+                    CornerRegion swap = corners.get(ii);
+                    corners.set(ii, corners.get(idx2));
+                    corners.set(idx2, swap);
+                }
+            }
+        }
     }
     
 }

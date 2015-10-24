@@ -52,15 +52,24 @@ public class BlobsAndCorners  {
                 // detailed check for ordering the perimeters.
                 // TODO: consider corrections to this for perimeter also at higher level
                 // then it's not needed here
+                PairIntArray curve = perimeterLists.get(i);
                 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
                 PairIntArray cornerXY = new PairIntArray();
                 for (int ii = 0; ii < list.size(); ++ii) {
                     CornerRegion cr = list.get(ii);
+                    if (ii == 0 && cr.getIndexWithinCurve() != 0) {
+                        int idx = cr.getIndexWithinCurve()/2;
+                        cornerXY.add(curve.getX(idx), curve.getY(idx));
+                    }
                     cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
+                }
+                if (list.get(list.size() - 1).getIndexWithinCurve() < (curve.getN() - 1)) {
+                    int idx = curve.getN() - 1;
+                    cornerXY.add(curve.getX(idx), curve.getY(idx));
                 }
                 boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);
                 if (isCW) {
-                    int n = cornerXY.getN();
+                    int n = list.size();
                     if (n > 1) {
                         int end = n >> 1;
                         // 0 1 2 3 4

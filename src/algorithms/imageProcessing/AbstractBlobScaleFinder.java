@@ -319,7 +319,8 @@ public abstract class AbstractBlobScaleFinder {
         for (int i = 0; i < compStats.size(); ++i) {
             
             FeatureComparisonStat stat = compStats.get(i);
-            
+        
+            //NOTE: it's possible that the diff should be (360-d1)+d2 when d1>d2
             float diff = AngleUtil.getAngleDifference(
                 stat.getImg1PointRotInDegrees(), stat.getImg2PointRotInDegrees());
             
@@ -436,25 +437,48 @@ public abstract class AbstractBlobScaleFinder {
     
     protected boolean rotationIsConsistent(TransformationParameters params, 
         List<FeatureComparisonStat> comparisonStats, float tolerance) {
-        
-        float[] values = calculateThetaDiff(comparisonStats);
-        
-        if (values == null || values.length == 0) {
+                
+        if (comparisonStats == null || comparisonStats.isEmpty()) {
             return false;
         }
         
         float rotationInDegrees = params.getRotationInDegrees();
         
-        for (float theta : values) {
+        for (FeatureComparisonStat stat : comparisonStats) {
             
+            float a1 = stat.getImg1PointRotInDegrees();
+            
+            float a2 = stat.getImg2PointRotInDegrees();
+            
+            float theta = AngleUtil.getAngleDifference(a1, a2);
             if (theta < 0) {
-                theta = 360 + theta;
+                theta += 360;
             }
             
             float diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);
             
             if (Math.abs(diff) > tolerance) {
-                return false;
+                
+                if (a1 > a2) {
+                    
+                    theta = (360.f - a1) + a2;
+                    
+                    diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);
+                    
+                    if (Math.abs(diff) > tolerance) {
+                        return false;
+                    }
+                    
+                } else if (a1 < a2) {
+                    
+                    theta = a2 - a1;
+                    
+                    diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);
+                    
+                    if (Math.abs(diff) > tolerance) {
+                        return false;
+                    } 
+                }
             }
         }
             

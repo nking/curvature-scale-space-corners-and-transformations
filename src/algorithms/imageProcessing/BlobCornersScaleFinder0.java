@@ -171,7 +171,7 @@ int z = 1;//1,3 in contours2 should be averaged?
 } catch(IOException e) {
 }
 */
-        Map<Integer, TransformationPair3> trMap = new HashMap<Integer, TransformationPair3>();
+        Map<Integer, TransformationPair4> trMap = new HashMap<Integer, TransformationPair4>();
         
         for (int i = 0; i < n1; ++i) {
             
@@ -181,7 +181,7 @@ int z = 1;//1,3 in contours2 should be averaged?
                 continue;
             }
             
-            TransformationPair3 bestMatches = null;
+            TransformationPair4 bestMatches = null;
             
             for (int j = 0; j < n2; ++j) {
                 
@@ -214,10 +214,10 @@ int z = 1;//1,3 in contours2 should be averaged?
                         continue;
                     }
                 }
-                /*
-                //matching algorithm here for c1p and c2p
+                
                 ClosedCurveCornerMatcher0 matcher 
-                    = new ClosedCurveCornerMatcher0(features1, features2, c1, c2);
+                    = new ClosedCurveCornerMatcher0(features1, features2, c1, 
+                        c2, true);
                 
                 boolean solved = matcher.matchCorners();
                 
@@ -225,18 +225,18 @@ int z = 1;//1,3 in contours2 should be averaged?
                     
                     if (bestMatches == null) {
                         
-                        bestMatches = matcher.getTransformationPair3();
-                        bestMatches.setContourIndex1(i);
-                        bestMatches.setContourIndex2(j);
+                        bestMatches = matcher.getTransformationPair();
+                        bestMatches.setCornerListIndex1(i);
+                        bestMatches.setCornerListIndex2(j);
                         
                     } else {
                         
-                        TransformationPair3 tr = matcher.getTransformationPair3();
-                        tr.setContourIndex1(i);
-                        tr.setContourIndex2(j);
+                        TransformationPair4 tr = matcher.getTransformationPair();
+                        tr.setCornerListIndex1(i);
+                        tr.setCornerListIndex2(j);
                         
-                        int bN = bestMatches.getMatchedContourRegions1().size();
-                        int cN = tr.getMatchedContourRegions1().size();
+                        int bN = bestMatches.getMatchedCornerRegions1().size();
+                        int cN = tr.getMatchedCornerRegions1().size();
                         
                         if (((cN >= bN) && (tr.getCost() < bestMatches.getCost()))
                             || ((tr.getCost() == bestMatches.getCost()) && (cN > bN))) {
@@ -244,7 +244,7 @@ int z = 1;//1,3 in contours2 should be averaged?
                             bestMatches = tr;
                         }
                     }
-                }*/
+                }
             }
             
             if (bestMatches != null) {
@@ -256,22 +256,22 @@ int z = 1;//1,3 in contours2 should be averaged?
             return null;
         }
         
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        
         // find best (lowest cost) and combine others with it if similar
         double minCost = Double.MAX_VALUE;
         Integer minCostKey = null;
         
-        for (Entry<Integer, TransformationPair3> entry : trMap.entrySet()) {
-            TransformationPair3 tr = entry.getValue();
+        for (Entry<Integer, TransformationPair4> entry : trMap.entrySet()) {
+            TransformationPair4 tr = entry.getValue();
             if (tr.getCost() < minCost) {
                 minCost = tr.getCost();
                 minCostKey = entry.getKey();
             }
         }
         
-        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
-        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
-        
-        TransformationPair3 minCostTR = trMap.remove(minCostKey);
+        TransformationPair4 minCostTR = trMap.remove(minCostKey);
                 
         TransformationParameters minCostParams = calculateTransformation(
             binFactor1, binFactor2, minCostTR.getMatchedCompStats(), 
@@ -279,9 +279,9 @@ int z = 1;//1,3 in contours2 should be averaged?
         
         List<FeatureComparisonStat> combine = new ArrayList<FeatureComparisonStat>();
         
-        for (Entry<Integer, TransformationPair3> entry : trMap.entrySet()) {
+        for (Entry<Integer, TransformationPair4> entry : trMap.entrySet()) {
             
-            TransformationPair3 tr = entry.getValue();
+            TransformationPair4 tr = entry.getValue();
             
             if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {
                 
@@ -308,18 +308,6 @@ int z = 1;//1,3 in contours2 should be averaged?
             binFactor1, binFactor2, combine, outputScaleRotTransXYStDev);
         
         return combinedParams;
-    }
-
-    private List<BlobPerimeterRegion> copyRegions(List<BlobPerimeterRegion> 
-        contourPoints) {
-        
-        List<BlobPerimeterRegion> copy = new ArrayList<BlobPerimeterRegion>();
-        
-        for (int i = 0; i < contourPoints.size(); ++i) {
-            copy.add(contourPoints.get(i).copy());
-        }
-        
-        return copy;
     }
 
 }

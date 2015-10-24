@@ -107,7 +107,7 @@ public class ClosedCurveContourMatcher0 {
         // making clockwise to be consistent with contours
         boolean isCW = curveHelper.curveIsOrderedClockwise(points);
         if (isCW) {
-            int n = points.getN();
+            int n = regions.size();
             if (n < 2) {
                 return;
             }

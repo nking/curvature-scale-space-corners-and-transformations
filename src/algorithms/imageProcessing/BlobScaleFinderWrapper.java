@@ -34,7 +34,7 @@ public class BlobScaleFinderWrapper {
         CONTOURS_ORDERED, CORNERS_ORDERED,
         CORNERS_UNORDERED, CONTOURS_UNORDERED
     }
-    protected AlgType algType = AlgType.CONTOURS_ORDERED;
+    protected AlgType algType = AlgType.CORNERS_ORDERED;
 
     protected final BlobPerimeterHelper img1Helper;
 
@@ -175,10 +175,10 @@ public class BlobScaleFinderWrapper {
         //TODO: consider rewriting to use full images not binned when algorithm
         // type is _ORDERED
         
-        /*if (params == null) {
+        if (params == null) {
             algType = AlgType.CONTOURS_ORDERED;
             params = calculateScaleImpl();
-        }*/
+        }
         
         if (params == null) {
             algType = AlgType.CORNERS_UNORDERED;
