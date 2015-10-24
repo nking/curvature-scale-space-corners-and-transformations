@@ -32,7 +32,7 @@ public class BlobScaleFinderWrapper {
     */
     private enum AlgType {
         CONTOURS_ORDERED, CORNERS_ORDERED,
-        CORNERS_UNORDERED, CONTOURS_UNORDERED
+        CORNERS_COMBINATIONS, CONTOURS_COMBINATIONS
     }
     protected AlgType algType = AlgType.CORNERS_ORDERED;
 
@@ -239,12 +239,12 @@ public class BlobScaleFinderWrapper {
             }
 
             if (params == null) {
-                algType = AlgType.CORNERS_UNORDERED;
+                algType = AlgType.CORNERS_COMBINATIONS;
                 params = calculateScaleImpl();
             }
 
             if (params == null) {
-                algType = AlgType.CONTOURS_UNORDERED;
+                algType = AlgType.CONTOURS_COMBINATIONS;
                 params = calculateScaleImpl();
             }
         }
@@ -315,7 +315,7 @@ public class BlobScaleFinderWrapper {
             int n2 = 0;
 
             if (algType.equals(AlgType.CONTOURS_ORDERED) || 
-                algType.equals(AlgType.CONTOURS_UNORDERED)) {
+                algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
                 
                 if (blobContourHelper1 == null) {
                     blobContourHelper1 = new BlobContourHelper(img1Helper);
@@ -328,7 +328,7 @@ public class BlobScaleFinderWrapper {
                     segmentationType2, useBinned2);
                 
             } else if (algType.equals(AlgType.CORNERS_ORDERED) || 
-                algType.equals(AlgType.CORNERS_UNORDERED)) {
+                algType.equals(AlgType.CORNERS_COMBINATIONS)) {
 
                 if (blobCornerHelper1 == null) {
                     blobCornerHelper1 = new BlobCornerHelper(img1Helper);
@@ -364,7 +364,7 @@ public class BlobScaleFinderWrapper {
                 n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
                 
-            } else if (algType.equals(AlgType.CORNERS_UNORDERED)) {
+            } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
                 
                 BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
@@ -375,7 +375,7 @@ public class BlobScaleFinderWrapper {
                 n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
 
-            } else if (algType.equals(AlgType.CONTOURS_UNORDERED)) {
+            } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
 
                 BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
