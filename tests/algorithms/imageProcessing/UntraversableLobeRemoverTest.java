@@ -50,9 +50,22 @@ public class UntraversableLobeRemoverTest extends TestCase {
         int nBefore = closedCurve.size();
         
         Set<PairInt> exclude = new HashSet<PairInt>();
+
+        GreyscaleImage img1 = new GreyscaleImage(w, h);
+        for (PairInt p : closedCurve) {
+            img1.setValue(p.getX(), p.getY(), 255);
+        }
+        MiscDebug.writeImage(img1, "blob_junction_before.png");
         
         UntraversableLobeRemover rm = new UntraversableLobeRemover();
-        rm.applyFilter(closedCurve, exclude, w, h);
+        boolean changed = rm.applyFilter(closedCurve, exclude, w, h);
+        assertTrue(changed);
+        
+        GreyscaleImage img2 = new GreyscaleImage(w, h);
+        for (PairInt p : closedCurve) {
+            img2.setValue(p.getX(), p.getY(), 255);
+        }
+        MiscDebug.writeImage(img2, "blob_junction.png");
         
         int nAfter = closedCurve.size();
         // TODO: assert size removed
@@ -60,11 +73,6 @@ public class UntraversableLobeRemoverTest extends TestCase {
         assertTrue(nBefore - nAfter >= 9);
         assertTrue(nAfter > 100);
                
-        GreyscaleImage img2 = new GreyscaleImage(w, h);
-        for (PairInt p : closedCurve) {
-            img2.setValue(p.getX(), p.getY(), 255);
-        }
-        MiscDebug.writeImage(img2, "blob_junction.png");
     }
     
     public void testApplyFilter2() throws Exception {
