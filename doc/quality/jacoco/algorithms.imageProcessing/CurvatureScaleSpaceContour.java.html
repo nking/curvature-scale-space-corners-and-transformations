@@ -61,22 +61,46 @@ public class CurvatureScaleSpaceContour {
     public CurvatureScaleSpaceImagePoint[] getPeakDetails() {
 <span class="fc" id="L62">        return this.peakDetailPoints;</span>
     }
+    
+    public CurvatureScaleSpaceContour copy() {
+        
+<span class="fc" id="L67">        CurvatureScaleSpaceContour c = </span>
+<span class="fc" id="L68">            new CurvatureScaleSpaceContour(peak.getX(), peak.getY());</span>
+        
+<span class="fc" id="L70">        c.setEdgeNumber(edgeNumber);</span>
+        
+<span class="fc" id="L72">        CurvatureScaleSpaceImagePoint[] peakDetails = </span>
+            new CurvatureScaleSpaceImagePoint[peakDetailPoints.length];
+        
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; peakDetailPoints.length; ++i) {</span>
+            
+<span class="fc" id="L77">            CurvatureScaleSpaceImagePoint cssip = peakDetailPoints[i];</span>
+            
+<span class="fc" id="L79">            CurvatureScaleSpaceImagePoint cssipCopy = cssip.copy();</span>
+            
+<span class="fc" id="L81">            peakDetails[i] = cssipCopy;</span>
+        }
+        
+<span class="fc" id="L84">        c.setPeakDetails(peakDetails);</span>
+        
+<span class="fc" id="L86">        return c;</span>
+    }
 
     @Override
     public String toString() {
         
-<span class="fc" id="L68">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L92">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L70">        sb.append(&quot;edgeNumber=&quot;).append(edgeNumber);</span>
+<span class="fc" id="L94">        sb.append(&quot;edgeNumber=&quot;).append(edgeNumber);</span>
         
-<span class="fc" id="L72">        sb.append(&quot; sigma=&quot;).append(getPeakSigma()).append(&quot; scaleFreeLength=&quot;)</span>
-<span class="fc" id="L73">            .append(getPeakScaleFreeLength());</span>
+<span class="fc" id="L96">        sb.append(&quot; sigma=&quot;).append(getPeakSigma()).append(&quot; scaleFreeLength=&quot;)</span>
+<span class="fc" id="L97">            .append(getPeakScaleFreeLength());</span>
         
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; peakDetailPoints.length; i++) {</span>
-<span class="fc" id="L76">            sb.append(&quot;[&quot;).append(peakDetailPoints[i].toString()).append(&quot;] &quot;);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 0; i &lt; peakDetailPoints.length; i++) {</span>
+<span class="fc" id="L100">            sb.append(&quot;[&quot;).append(peakDetailPoints[i].toString()).append(&quot;] &quot;);</span>
         }
         
-<span class="fc" id="L79">        return sb.toString();</span>
+<span class="fc" id="L103">        return sb.toString();</span>
     }
     
 }

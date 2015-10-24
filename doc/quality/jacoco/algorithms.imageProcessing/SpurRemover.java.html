@@ -35,7 +35,7 @@ import java.util.Set;
 <span class="fc" id="L35">        int nMaxIter = 10;</span>
 <span class="fc" id="L36">        int nIter = 0;</span>
 
-<span class="fc bfc" id="L38" title="All 6 branches covered.">        while ((nIter == 0) || ((nChanged &gt; 0) &amp;&amp; (nIter &lt; nMaxIter))) {</span>
+<span class="pc bpc" id="L38" title="1 of 6 branches missed.">        while ((nIter == 0) || ((nChanged &gt; 0) &amp;&amp; (nIter &lt; nMaxIter))) {</span>
         
 <span class="fc bfc" id="L40" title="All 2 branches covered.">if (debug) {        </span>
 <span class="fc" id="L41">Image img3 = new Image(imageWidth, imageHeight);</span>
@@ -161,8 +161,8 @@ import java.util.Set;
 <span class="fc" id="L161">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
 <span class="fc" id="L162">            imageWidth, imageHeight, getPattern7());</span>
         
-<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (hasPattern) {</span>
-<span class="fc" id="L165">            return true;</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L165">            return true;</span>
         }
             
 <span class="fc" id="L168">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
@@ -189,8 +189,8 @@ import java.util.Set;
 <span class="fc" id="L189">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
 <span class="fc" id="L190">            imageWidth, imageHeight, getPattern11());</span>
         
-<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (hasPattern) {</span>
-<span class="nc" id="L193">            return true;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (hasPattern) {</span>
+<span class="fc" id="L193">            return true;</span>
         }
         
 <span class="fc" id="L196">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
@@ -805,8 +805,8 @@ import java.util.Set;
 <span class="fc bfc" id="L805" title="All 2 branches covered.">        for (PairInt p : points) {</span>
             
 <span class="fc" id="L807">            boolean isNotPresent = tmpPointsRemoved.contains(p);</span>
-<span class="fc bfc" id="L808" title="All 2 branches covered.">            if (isNotPresent) {</span>
-<span class="fc" id="L809">                continue;</span>
+<span class="pc bpc" id="L808" title="1 of 2 branches missed.">            if (isNotPresent) {</span>
+<span class="nc" id="L809">                continue;</span>
             }
             
 <span class="fc" id="L812">            int col = p.getX();</span>
@@ -817,7 +817,7 @@ import java.util.Set;
 <span class="fc bfc" id="L817" title="All 2 branches covered.">            for (PairInt p2 : pr.zeroes) {</span>
 <span class="fc" id="L818">                int x = col + p2.getX();</span>
 <span class="fc" id="L819">                int y = row + p2.getY();</span>
-<span class="pc bpc" id="L820" title="1 of 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="fc bfc" id="L820" title="All 8 branches covered.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
                     //TODO: revisit this
 <span class="fc" id="L822">                    foundPattern = false;</span>
 <span class="fc" id="L823">                    break;</span>

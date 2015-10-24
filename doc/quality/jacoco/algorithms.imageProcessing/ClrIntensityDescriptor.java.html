@@ -12,15 +12,15 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     //TODO: use more compact data structures after the general logic
     // is working and tested
     
-<span class="nc" id="L15">    public static int sentinel = Integer.MIN_VALUE;</span>
+<span class="fc" id="L15">    public static int sentinel = Integer.MIN_VALUE;</span>
     
     protected final int[] red;
     protected final int[] green;
     protected final int[] blue;
     
-<span class="nc" id="L21">    protected float sumSquaredError = Float.NaN;</span>
+<span class="fc" id="L21">    protected float sumSquaredError = Float.NaN;</span>
     
-<span class="nc" id="L23">    protected boolean hasBeenNormalized = false;</span>
+<span class="fc" id="L23">    protected boolean hasBeenNormalized = false;</span>
     
     /**
      * the index within arrays red, green and blue that the central pixel
@@ -28,24 +28,24 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
      */
     protected final int centralIndex;
     
-<span class="nc" id="L31">    public ClrIntensityDescriptor(int[] r, int[] g, int[] b, int centralPixelIndex) {</span>
-<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (r == null) {</span>
+<span class="fc" id="L31">    public ClrIntensityDescriptor(int[] r, int[] g, int[] b, int centralPixelIndex) {</span>
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        if (r == null) {</span>
 <span class="nc" id="L33">            throw new IllegalArgumentException(&quot;r cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L35" title="All 2 branches missed.">        if (g == null) {</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (g == null) {</span>
 <span class="nc" id="L36">            throw new IllegalArgumentException(&quot;g cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (b == null) {</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (b == null) {</span>
 <span class="nc" id="L39">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L41" title="All 4 branches missed.">        if (r.length != g.length || r.length != b.length) {</span>
+<span class="pc bpc" id="L41" title="2 of 4 branches missed.">        if (r.length != g.length || r.length != b.length) {</span>
 <span class="nc" id="L42">            throw new IllegalArgumentException(&quot;r, g, and b must be same length&quot;);</span>
         }
-<span class="nc" id="L44">        this.red = r;</span>
-<span class="nc" id="L45">        this.green = g;</span>
-<span class="nc" id="L46">        this.blue = b;</span>
-<span class="nc" id="L47">        this.centralIndex = centralPixelIndex;</span>
-<span class="nc" id="L48">    }</span>
+<span class="fc" id="L44">        this.red = r;</span>
+<span class="fc" id="L45">        this.green = g;</span>
+<span class="fc" id="L46">        this.blue = b;</span>
+<span class="fc" id="L47">        this.centralIndex = centralPixelIndex;</span>
+<span class="fc" id="L48">    }</span>
     
     /**
      * NOT IMPLEMENTED
@@ -54,7 +54,7 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     @Override
     public void applyNormalization() {
         
-<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (hasBeenNormalized) {</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (hasBeenNormalized) {</span>
 <span class="nc" id="L58">            return;</span>
         }
         
@@ -69,25 +69,25 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
         source...
         */
        
-<span class="nc" id="L72">        float[] meanAndStDevR = MiscMath.getAvgAndStDevIgnoreForSentinel(red, </span>
+<span class="fc" id="L72">        float[] meanAndStDevR = MiscMath.getAvgAndStDevIgnoreForSentinel(red, </span>
             red.length, sentinel);
-<span class="nc" id="L74">        float[] meanAndStDevG = MiscMath.getAvgAndStDevIgnoreForSentinel(green, </span>
+<span class="fc" id="L74">        float[] meanAndStDevG = MiscMath.getAvgAndStDevIgnoreForSentinel(green, </span>
             green.length, sentinel);
-<span class="nc" id="L76">        float[] meanAndStDevB = MiscMath.getAvgAndStDevIgnoreForSentinel(blue, </span>
+<span class="fc" id="L76">        float[] meanAndStDevB = MiscMath.getAvgAndStDevIgnoreForSentinel(blue, </span>
             blue.length, sentinel);        
         
-<span class="nc bnc" id="L79" title="All 2 branches missed.">        for (int i = 0; i &lt; red.length; ++i) {</span>
-<span class="nc" id="L80">            red[i]-= meanAndStDevR[0];</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (int i = 0; i &lt; red.length; ++i) {</span>
+<span class="fc" id="L80">            red[i]-= meanAndStDevR[0];</span>
         }
-<span class="nc bnc" id="L82" title="All 2 branches missed.">        for (int i = 0; i &lt; green.length; ++i) {</span>
-<span class="nc" id="L83">            green[i] -= meanAndStDevG[0];</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int i = 0; i &lt; green.length; ++i) {</span>
+<span class="fc" id="L83">            green[i] -= meanAndStDevG[0];</span>
         }
-<span class="nc bnc" id="L85" title="All 2 branches missed.">        for (int i = 0; i &lt; blue.length; ++i) {</span>
-<span class="nc" id="L86">            blue[i] -= meanAndStDevB[0];</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; blue.length; ++i) {</span>
+<span class="fc" id="L86">            blue[i] -= meanAndStDevB[0];</span>
         }
         
-<span class="nc" id="L89">        hasBeenNormalized = true;</span>
-<span class="nc" id="L90">    }</span>
+<span class="fc" id="L89">        hasBeenNormalized = true;</span>
+<span class="fc" id="L90">    }</span>
 
     @Override
     public boolean isNormalized() {
@@ -97,29 +97,29 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     @Override
     public float calculateSSD(IDescriptor otherDesc) {
         
-<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (otherDesc == null) {</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (otherDesc == null) {</span>
 <span class="nc" id="L101">            throw new IllegalArgumentException(&quot;otherDesc cannot be null&quot;);</span>
         }
         
-<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (!(otherDesc instanceof ClrIntensityDescriptor)) {</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (!(otherDesc instanceof ClrIntensityDescriptor)) {</span>
 <span class="nc" id="L105">            throw new IllegalArgumentException(</span>
             &quot;otherDesc has to be type ClrIntensityDescriptor&quot;);
         }
         
-<span class="nc" id="L109">        ClrIntensityDescriptor other = (ClrIntensityDescriptor)otherDesc;</span>
+<span class="fc" id="L109">        ClrIntensityDescriptor other = (ClrIntensityDescriptor)otherDesc;</span>
         
-<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (this.red.length != other.red.length) {</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (this.red.length != other.red.length) {</span>
 <span class="nc" id="L112">            throw new IllegalArgumentException(</span>
             &quot;this and other arrays must have the same lengths&quot;);
         }
                 
-<span class="nc" id="L116">        float ssdR = MiscMath.calculateSSD(red, other.red, sentinel);</span>
-<span class="nc" id="L117">        float ssdG = MiscMath.calculateSSD(green, other.green, sentinel);</span>
-<span class="nc" id="L118">        float ssdB = MiscMath.calculateSSD(blue, other.blue, sentinel);</span>
+<span class="fc" id="L116">        float ssdR = MiscMath.calculateSSD(red, other.red, sentinel);</span>
+<span class="fc" id="L117">        float ssdG = MiscMath.calculateSSD(green, other.green, sentinel);</span>
+<span class="fc" id="L118">        float ssdB = MiscMath.calculateSSD(blue, other.blue, sentinel);</span>
            
-<span class="nc" id="L120">        float avg = (ssdR + ssdG + ssdB)/3.f;</span>
+<span class="fc" id="L120">        float avg = (ssdR + ssdG + ssdB)/3.f;</span>
         
-<span class="nc" id="L122">        return avg;</span>
+<span class="fc" id="L122">        return avg;</span>
     }
     
     /**
@@ -134,28 +134,28 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
     @Override
     public float sumSquaredError() {
         
-<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (!Float.isNaN(sumSquaredError)) {</span>
-<span class="nc" id="L138">            return sumSquaredError;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (!Float.isNaN(sumSquaredError)) {</span>
+<span class="fc" id="L138">            return sumSquaredError;</span>
         }
                 
-<span class="nc" id="L141">        int rVC = red[centralIndex];</span>
-<span class="nc" id="L142">        int gVC = green[centralIndex];</span>
-<span class="nc" id="L143">        int bVC = blue[centralIndex];</span>
+<span class="fc" id="L141">        int rVC = red[centralIndex];</span>
+<span class="fc" id="L142">        int gVC = green[centralIndex];</span>
+<span class="fc" id="L143">        int bVC = blue[centralIndex];</span>
         
-<span class="nc bnc" id="L145" title="All 6 branches missed.">        if (rVC == sentinel || gVC == sentinel || bVC == sentinel) {</span>
+<span class="pc bpc" id="L145" title="3 of 6 branches missed.">        if (rVC == sentinel || gVC == sentinel || bVC == sentinel) {</span>
 <span class="nc" id="L146">            throw new IllegalStateException(</span>
             &quot;ERROR: the central values for the array are somehow sentinels&quot;);
         }
         
-<span class="nc" id="L150">        float sqErrR = MiscMath.sumSquaredError(red, sentinel, centralIndex);</span>
-<span class="nc" id="L151">        float sqErrG = MiscMath.sumSquaredError(green, sentinel, centralIndex);</span>
-<span class="nc" id="L152">        float sqErrB = MiscMath.sumSquaredError(blue, sentinel, centralIndex);</span>
+<span class="fc" id="L150">        float sqErrR = MiscMath.sumSquaredError(red, sentinel, centralIndex);</span>
+<span class="fc" id="L151">        float sqErrG = MiscMath.sumSquaredError(green, sentinel, centralIndex);</span>
+<span class="fc" id="L152">        float sqErrB = MiscMath.sumSquaredError(blue, sentinel, centralIndex);</span>
         
-<span class="nc" id="L154">        float avg = (sqErrR + sqErrG + sqErrB)/3.f;</span>
+<span class="fc" id="L154">        float avg = (sqErrR + sqErrG + sqErrB)/3.f;</span>
         
-<span class="nc" id="L156">        this.sumSquaredError = avg;</span>
+<span class="fc" id="L156">        this.sumSquaredError = avg;</span>
         
-<span class="nc" id="L158">        return sumSquaredError;</span>
+<span class="fc" id="L158">        return sumSquaredError;</span>
     }
 
     @Override

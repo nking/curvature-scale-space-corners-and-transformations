@@ -196,8 +196,8 @@ public class PairIntArray {
     
     public void reverse() {
         
-<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (n &lt; 2) {</span>
-<span class="fc" id="L200">            return;</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">        if (n &lt; 2) {</span>
+<span class="nc" id="L200">            return;</span>
         }
                 
 <span class="fc" id="L203">        int end = n &gt;&gt; 1;</span>
@@ -336,12 +336,13 @@ public class PairIntArray {
 <span class="fc" id="L336">        return out;</span>
     }
     
+    @Override
     public String toString() {
-<span class="fc" id="L340">        StringBuilder sb = new StringBuilder();</span>
-<span class="fc bfc" id="L341" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L342">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
+<span class="fc" id="L341">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L343">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
         }
-<span class="fc" id="L344">        return sb.toString();</span>
+<span class="fc" id="L345">        return sb.toString();</span>
     }
 
 }

@@ -71,74 +71,76 @@ public class IntensityFeatures {
      * (xCenter, yCenter)
      * @return
      */
-    public IntensityDescriptor extractIntensity(final int xCenter, final int yCenter, final int rotation) {
-<span class="fc" id="L75">        checkBounds(xCenter, yCenter);</span>
+    public IntensityDescriptor extractIntensity(final int xCenter, 
+        final int yCenter, final int rotation) {
         
-<span class="fc" id="L77">        PairInt p = new PairInt(xCenter, yCenter);</span>
+<span class="fc" id="L77">        checkBounds(xCenter, yCenter);</span>
         
-<span class="fc" id="L79">        Integer rotationKey = Integer.valueOf(rotation);</span>
+<span class="fc" id="L79">        PairInt p = new PairInt(xCenter, yCenter);</span>
         
-<span class="fc" id="L81">        Map&lt;Integer, IntensityDescriptor&gt; descriptors = intensityBlocks.get(p);</span>
+<span class="fc" id="L81">        Integer rotationKey = Integer.valueOf(rotation);</span>
         
-<span class="fc" id="L83">        IntensityDescriptor descriptor = null;</span>
+<span class="fc" id="L83">        Map&lt;Integer, IntensityDescriptor&gt; descriptors = intensityBlocks.get(p);</span>
         
-<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (descriptors != null) {</span>
-<span class="fc" id="L86">            descriptor = descriptors.get(rotationKey);</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (descriptor != null) {</span>
-<span class="fc" id="L88">                return descriptor;</span>
+<span class="fc" id="L85">        IntensityDescriptor descriptor = null;</span>
+        
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (descriptors != null) {</span>
+<span class="fc" id="L88">            descriptor = descriptors.get(rotationKey);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (descriptor != null) {</span>
+<span class="fc" id="L90">                return descriptor;</span>
             }
         } else {
-<span class="fc" id="L91">            descriptors = new HashMap&lt;Integer, IntensityDescriptor&gt;();</span>
-<span class="fc" id="L92">            intensityBlocks.put(p, descriptors);</span>
+<span class="fc" id="L93">            descriptors = new HashMap&lt;Integer, IntensityDescriptor&gt;();</span>
+<span class="fc" id="L94">            intensityBlocks.put(p, descriptors);</span>
         }
         
         if (useBinnedCellIntensities) {
-<span class="fc" id="L96">            descriptor = extractIntensityForCells(xCenter, yCenter, rotation);</span>
+<span class="fc" id="L98">            descriptor = extractIntensityForCells(xCenter, yCenter, rotation);</span>
         } else {
             descriptor = extractIntensityForBlock(xCenter, yCenter, rotation);
         }
         
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (descriptor != null) {</span>
-<span class="fc" id="L102">            descriptors.put(rotationKey, descriptor);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (descriptor != null) {</span>
+<span class="fc" id="L104">            descriptors.put(rotationKey, descriptor);</span>
         }
         
-<span class="fc" id="L105">        return descriptor;</span>
+<span class="fc" id="L107">        return descriptor;</span>
     }
 
     protected IntensityDescriptor extractIntensityForBlock(int xCenter, int yCenter, int rotation) {
-<span class="nc" id="L109">        Transformer transformer = new Transformer();</span>
+<span class="nc" id="L111">        Transformer transformer = new Transformer();</span>
         
-<span class="nc" id="L111">        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);</span>
+<span class="nc" id="L113">        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);</span>
         
         IntensityDescriptor descriptor;
         
-<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (gsImg != null) {</span>
-<span class="nc" id="L116">            descriptor = extractGsIntensityForBlock(xCenter, yCenter, frameOffsets);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (gsImg != null) {</span>
+<span class="nc" id="L118">            descriptor = extractGsIntensityForBlock(xCenter, yCenter, frameOffsets);</span>
         } else {
-<span class="nc" id="L118">            descriptor = extractClrIntensityForBlock(xCenter, yCenter, frameOffsets);</span>
+<span class="nc" id="L120">            descriptor = extractClrIntensityForBlock(xCenter, yCenter, frameOffsets);</span>
         }
         
-<span class="nc bnc" id="L121" title="All 4 branches missed.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
-<span class="nc" id="L122">            descriptor.applyNormalization();</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
+<span class="nc" id="L124">            descriptor.applyNormalization();</span>
         }
         
-<span class="nc" id="L125">        return descriptor;</span>
+<span class="nc" id="L127">        return descriptor;</span>
     }
 
     protected IntensityDescriptor extractIntensityForCells(int xCenter, int yCenter, int rotation) {
         IntensityDescriptor descriptor;
         
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (gsImg != null) {</span>
-<span class="fc" id="L132">            descriptor = extractGsIntensityForCells(xCenter, yCenter, rotation);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (gsImg != null) {</span>
+<span class="fc" id="L134">            descriptor = extractGsIntensityForCells(xCenter, yCenter, rotation);</span>
         } else {
-<span class="nc" id="L134">            descriptor = extractClrIntensityForCells(xCenter, yCenter, rotation);</span>
+<span class="fc" id="L136">            descriptor = extractClrIntensityForCells(xCenter, yCenter, rotation);</span>
         }
         
-<span class="pc bpc" id="L137" title="1 of 4 branches missed.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
-<span class="fc" id="L138">            descriptor.applyNormalization();</span>
+<span class="fc bfc" id="L139" title="All 4 branches covered.">        if (useNormalizedIntensities &amp;&amp; (descriptor != null)) {</span>
+<span class="fc" id="L140">            descriptor.applyNormalization();</span>
         }
         
-<span class="fc" id="L141">        return descriptor;</span>
+<span class="fc" id="L143">        return descriptor;</span>
     }
     
     /**
@@ -157,64 +159,64 @@ public class IntensityFeatures {
     public static FeatureComparisonStat calculateIntensityStat(IDescriptor desc1, 
         final int x1, final int y1, IDescriptor desc2, final int x2, final int y2) {
         
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (desc1 == null) {</span>
-<span class="nc" id="L161">            throw new IllegalArgumentException(&quot;desc1 cannot be null&quot;);</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (desc1 == null) {</span>
+<span class="nc" id="L163">            throw new IllegalArgumentException(&quot;desc1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (desc2 == null) {</span>
-<span class="nc" id="L164">            throw new IllegalArgumentException(&quot;desc2 cannot be null&quot;);</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (desc2 == null) {</span>
+<span class="nc" id="L166">            throw new IllegalArgumentException(&quot;desc2 cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L167">        float err2Sq = desc2.sumSquaredError();</span>
-<span class="fc" id="L168">        float ssd = desc1.calculateSSD(desc2);</span>
+<span class="fc" id="L169">        float err2Sq = desc2.sumSquaredError();</span>
+<span class="fc" id="L170">        float ssd = desc1.calculateSSD(desc2);</span>
         
-<span class="fc" id="L170">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
-<span class="fc" id="L171">        stat.setImg1Point(new PairInt(x1, y1));</span>
-<span class="fc" id="L172">        stat.setImg2Point(new PairInt(x2, y2));</span>
-<span class="fc" id="L173">        stat.setSumIntensitySqDiff(ssd);</span>
-<span class="fc" id="L174">        stat.setImg2PointIntensityErr(err2Sq);</span>
+<span class="fc" id="L172">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="fc" id="L173">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="fc" id="L174">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="fc" id="L175">        stat.setSumIntensitySqDiff(ssd);</span>
+<span class="fc" id="L176">        stat.setImg2PointIntensityErr(err2Sq);</span>
         
-<span class="fc" id="L176">        return stat;</span>
+<span class="fc" id="L178">        return stat;</span>
     }
     
     protected void checkBounds(int x, int y) {
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (!isWithinXBounds(x)) {</span>
-<span class="nc" id="L181">            throw new IllegalArgumentException(&quot;x is out of bounds of image&quot;);</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (!isWithinXBounds(x)) {</span>
+<span class="nc" id="L183">            throw new IllegalArgumentException(&quot;x is out of bounds of image&quot;);</span>
         }
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (!isWithinYBounds(y)) {</span>
-<span class="nc" id="L184">            throw new IllegalArgumentException(&quot;y is out of bounds of image&quot;);</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        if (!isWithinYBounds(y)) {</span>
+<span class="nc" id="L186">            throw new IllegalArgumentException(&quot;y is out of bounds of image&quot;);</span>
         }
-<span class="fc" id="L186">    }</span>
+<span class="fc" id="L188">    }</span>
 
     public boolean isWithinXBounds(int x) {
-<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (x &lt; 0) {</span>
-<span class="fc" id="L190">            return false;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (x &lt; 0) {</span>
+<span class="fc" id="L192">            return false;</span>
         }
-<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (gsImg != null) {</span>
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            if (x &gt; (gsImg.getWidth() - 1)) {</span>
-<span class="nc" id="L194">                return false;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (gsImg != null) {</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">            if (x &gt; (gsImg.getWidth() - 1)) {</span>
+<span class="nc" id="L196">                return false;</span>
             }
         } else {
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">            if (x &gt; (clrImg.getWidth() - 1)) {</span>
-<span class="nc" id="L198">                return false;</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">            if (x &gt; (clrImg.getWidth() - 1)) {</span>
+<span class="nc" id="L200">                return false;</span>
             }
         }
-<span class="fc" id="L201">        return true;</span>
+<span class="fc" id="L203">        return true;</span>
     }
 
     public boolean isWithinYBounds(int y) {
-<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (y &lt; 0) {</span>
-<span class="fc" id="L206">            return false;</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (y &lt; 0) {</span>
+<span class="fc" id="L208">            return false;</span>
         }
-<span class="fc bfc" id="L208" title="All 2 branches covered.">        if (gsImg != null) {</span>
-<span class="pc bpc" id="L209" title="1 of 2 branches missed.">            if (y &gt; (gsImg.getHeight() - 1)) {</span>
-<span class="nc" id="L210">                return false;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        if (gsImg != null) {</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">            if (y &gt; (gsImg.getHeight() - 1)) {</span>
+<span class="fc" id="L212">                return false;</span>
             }
         } else {
-<span class="pc bpc" id="L213" title="1 of 2 branches missed.">            if (y &gt; (clrImg.getHeight() - 1)) {</span>
-<span class="nc" id="L214">                return false;</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">            if (y &gt; (clrImg.getHeight() - 1)) {</span>
+<span class="nc" id="L216">                return false;</span>
             }
         }
-<span class="fc" id="L217">        return true;</span>
+<span class="fc" id="L219">        return true;</span>
     }
 
     /**
@@ -227,36 +229,36 @@ public class IntensityFeatures {
      */
     protected IntensityDescriptor extractGsIntensityForBlock(int xCenter, int yCenter, float[][] offsets) {
         
-<span class="nc" id="L230">        float[] output = new float[offsets.length];</span>
+<span class="nc" id="L232">        float[] output = new float[offsets.length];</span>
         
-<span class="nc" id="L232">        float sentinel = GsIntensityDescriptor.sentinel;</span>
+<span class="nc" id="L234">        float sentinel = GsIntensityDescriptor.sentinel;</span>
         
-<span class="nc" id="L234">        int count = 0;</span>
+<span class="nc" id="L236">        int count = 0;</span>
         
-<span class="nc bnc" id="L236" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
             
-<span class="nc" id="L238">            float x1P = xCenter + offsets[i][0];</span>
+<span class="nc" id="L240">            float x1P = xCenter + offsets[i][0];</span>
             
-<span class="nc" id="L240">            float y1P = yCenter + offsets[i][1];</span>
+<span class="nc" id="L242">            float y1P = yCenter + offsets[i][1];</span>
             
-<span class="nc bnc" id="L242" title="All 6 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (gsImg.getWidth() - 1)) || </span>
-<span class="nc bnc" id="L243" title="All 2 branches missed.">                (y1P &lt; 0) || (Math.ceil(y1P) &gt; (gsImg.getHeight() - 1))) {</span>
-<span class="nc" id="L244">                output[count] = sentinel;</span>
+<span class="nc bnc" id="L244" title="All 6 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (gsImg.getWidth() - 1)) || </span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">                (y1P &lt; 0) || (Math.ceil(y1P) &gt; (gsImg.getHeight() - 1))) {</span>
+<span class="nc" id="L246">                output[count] = sentinel;</span>
             } else {
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 // bilinear:
                 //double v = imageProcessor.biLinearInterpolation(gsImg, x1P, y1P);
                 // nearest neighbor
-<span class="nc" id="L250">                double v = gsImg.getValue(Math.round(x1P), Math.round(y1P));</span>
-<span class="nc" id="L251">                output[count] = (int) Math.round(v);</span>
+<span class="nc" id="L252">                double v = gsImg.getValue(Math.round(x1P), Math.round(y1P));</span>
+<span class="nc" id="L253">                output[count] = (int) Math.round(v);</span>
             }
             
-<span class="nc" id="L254">            count++;</span>
+<span class="nc" id="L256">            count++;</span>
         }
         
-<span class="nc" id="L257">        IntensityDescriptor desc = new GsIntensityDescriptor(output, offsets.length &gt;&gt; 1);</span>
+<span class="nc" id="L259">        IntensityDescriptor desc = new GsIntensityDescriptor(output, offsets.length &gt;&gt; 1);</span>
         
-<span class="nc" id="L259">        return desc;</span>
+<span class="nc" id="L261">        return desc;</span>
     }
 
     /**
@@ -291,55 +293,55 @@ public class IntensityFeatures {
          -4  0     4     8     12
             -4 -3 -2 -1  0  1  2  3
         */
-<span class="fc" id="L294">        float sentinel = GsIntensityDescriptor.sentinel;</span>
-<span class="fc" id="L295">        int cellDim = 2;</span>
-<span class="fc" id="L296">        int nCellsAcross = 6;</span>
-<span class="fc" id="L297">        int range0 = (int) (cellDim * ((float) nCellsAcross / 2.f));</span>
-<span class="fc" id="L298">        int nColsHalf = nCellsAcross / 2;</span>
-<span class="fc" id="L299">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
-<span class="fc" id="L300">        float[] output = new float[nCellsAcross * nCellsAcross];</span>
-<span class="fc" id="L301">        float[] xT = new float[cellDim * cellDim];</span>
-<span class="fc" id="L302">        float[] yT = new float[xT.length];</span>
+<span class="fc" id="L296">        float sentinel = GsIntensityDescriptor.sentinel;</span>
+<span class="fc" id="L297">        int cellDim = 2;</span>
+<span class="fc" id="L298">        int nCellsAcross = 6;</span>
+<span class="fc" id="L299">        int range0 = (int) (cellDim * ((float) nCellsAcross / 2.f));</span>
+<span class="fc" id="L300">        int nColsHalf = nCellsAcross / 2;</span>
+<span class="fc" id="L301">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+<span class="fc" id="L302">        float[] output = new float[nCellsAcross * nCellsAcross];</span>
+<span class="fc" id="L303">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="fc" id="L304">        float[] yT = new float[xT.length];</span>
         
-<span class="fc" id="L304">        int count = 0;</span>
+<span class="fc" id="L306">        int count = 0;</span>
         
-<span class="fc bfc" id="L306" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx += cellDim) {</span>
-<span class="fc bfc" id="L307" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy += cellDim) {</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx += cellDim) {</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy += cellDim) {</span>
                 
                 // --- calculate values for the cell ---
-<span class="fc" id="L310">                boolean withinBounds = transformCellCoordinates(rotation, </span>
-<span class="fc" id="L311">                    xCenter, yCenter, dx, dy, cellDim, gsImg.getWidth(), </span>
-<span class="fc" id="L312">                    gsImg.getHeight(), xT, yT);</span>
+<span class="fc" id="L312">                boolean withinBounds = transformCellCoordinates(rotation, </span>
+<span class="fc" id="L313">                    xCenter, yCenter, dx, dy, cellDim, gsImg.getWidth(), </span>
+<span class="fc" id="L314">                    gsImg.getHeight(), xT, yT);</span>
                 
-<span class="fc bfc" id="L314" title="All 2 branches covered.">                if (!withinBounds) {</span>
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">                    if (count == centralPixelIndex) {</span>
-<span class="nc" id="L316">                        return null;</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">                if (!withinBounds) {</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">                    if (count == centralPixelIndex) {</span>
+<span class="nc" id="L318">                        return null;</span>
                     }
-<span class="fc" id="L318">                    output[count] = sentinel;</span>
-<span class="fc" id="L319">                    count++;</span>
-<span class="fc" id="L320">                    continue;</span>
+<span class="fc" id="L320">                    output[count] = sentinel;</span>
+<span class="fc" id="L321">                    count++;</span>
+<span class="fc" id="L322">                    continue;</span>
                 }
-<span class="fc" id="L322">                int cCount = 0;</span>
-<span class="fc" id="L323">                int v = 0;</span>
-<span class="fc bfc" id="L324" title="All 2 branches covered.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
-<span class="fc" id="L325">                    int x = Math.round(xT[i]);</span>
-<span class="fc" id="L326">                    int y = Math.round(yT[i]);</span>
-<span class="fc" id="L327">                    int v0 = gsImg.getValue(x, y);</span>
-<span class="fc" id="L328">                    v += v0;</span>
-<span class="fc" id="L329">                    cCount++; // img changed?  w=480,h=640</span>
+<span class="fc" id="L324">                int cCount = 0;</span>
+<span class="fc" id="L325">                int v = 0;</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="fc" id="L327">                    int x = Math.round(xT[i]);</span>
+<span class="fc" id="L328">                    int y = Math.round(yT[i]);</span>
+<span class="fc" id="L329">                    int v0 = gsImg.getValue(x, y);</span>
+<span class="fc" id="L330">                    v += v0;</span>
+<span class="fc" id="L331">                    cCount++; // img changed?  w=480,h=640</span>
                 }
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">                if (cCount == 0) {</span>
-<span class="nc" id="L332">                    output[count] = sentinel;</span>
-<span class="nc" id="L333">                    count++;</span>
-<span class="nc" id="L334">                    continue;</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">                if (cCount == 0) {</span>
+<span class="nc" id="L334">                    output[count] = sentinel;</span>
+<span class="nc" id="L335">                    count++;</span>
+<span class="nc" id="L336">                    continue;</span>
                 }
-<span class="fc" id="L336">                v /= (float) cCount;</span>
-<span class="fc" id="L337">                output[count] = v;</span>
-<span class="fc" id="L338">                count++;</span>
+<span class="fc" id="L338">                v /= (float) cCount;</span>
+<span class="fc" id="L339">                output[count] = v;</span>
+<span class="fc" id="L340">                count++;</span>
             }
         }
-<span class="fc" id="L341">        IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);</span>
-<span class="fc" id="L342">        return desc;</span>
+<span class="fc" id="L343">        IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);</span>
+<span class="fc" id="L344">        return desc;</span>
     }
 
     /**
@@ -374,72 +376,72 @@ public class IntensityFeatures {
          -4  0     4     8     12
             -4 -3 -2 -1  0  1  2  3
         */
-<span class="nc" id="L377">        int sentinel = ClrIntensityDescriptor.sentinel;</span>
-<span class="nc" id="L378">        int cellDim = 2;</span>
-<span class="nc" id="L379">        int nCellsAcross = 6;</span>
-<span class="nc" id="L380">        int range0 = (int) (cellDim * ((float) nCellsAcross / 2.f));</span>
-<span class="nc" id="L381">        int nColsHalf = nCellsAcross / 2;</span>
-<span class="nc" id="L382">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
+<span class="fc" id="L379">        int sentinel = ClrIntensityDescriptor.sentinel;</span>
+<span class="fc" id="L380">        int cellDim = 2;</span>
+<span class="fc" id="L381">        int nCellsAcross = 6;</span>
+<span class="fc" id="L382">        int range0 = (int) (cellDim * ((float) nCellsAcross / 2.f));</span>
+<span class="fc" id="L383">        int nColsHalf = nCellsAcross / 2;</span>
+<span class="fc" id="L384">        int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;</span>
         
-<span class="nc" id="L384">        int[] red = new int[nCellsAcross * nCellsAcross];</span>
-<span class="nc" id="L385">        int[] green = new int[red.length];</span>
-<span class="nc" id="L386">        int[] blue = new int[red.length];</span>
+<span class="fc" id="L386">        int[] red = new int[nCellsAcross * nCellsAcross];</span>
+<span class="fc" id="L387">        int[] green = new int[red.length];</span>
+<span class="fc" id="L388">        int[] blue = new int[red.length];</span>
         
-<span class="nc" id="L388">        float[] xT = new float[cellDim * cellDim];</span>
-<span class="nc" id="L389">        float[] yT = new float[xT.length];</span>
+<span class="fc" id="L390">        float[] xT = new float[cellDim * cellDim];</span>
+<span class="fc" id="L391">        float[] yT = new float[xT.length];</span>
         
-<span class="nc" id="L391">        int count = 0;</span>
+<span class="fc" id="L393">        int count = 0;</span>
         
-<span class="nc bnc" id="L393" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx += cellDim) {</span>
-<span class="nc bnc" id="L394" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy += cellDim) {</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx += cellDim) {</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy += cellDim) {</span>
                 // --- calculate values for the cell ---
-<span class="nc" id="L396">                boolean withinBounds = transformCellCoordinates(rotation, </span>
-<span class="nc" id="L397">                    xCenter, yCenter, dx, dy, cellDim, clrImg.getWidth(), </span>
-<span class="nc" id="L398">                    clrImg.getHeight(), xT, yT);</span>
+<span class="fc" id="L398">                boolean withinBounds = transformCellCoordinates(rotation, </span>
+<span class="fc" id="L399">                    xCenter, yCenter, dx, dy, cellDim, clrImg.getWidth(), </span>
+<span class="fc" id="L400">                    clrImg.getHeight(), xT, yT);</span>
                 
-<span class="nc bnc" id="L400" title="All 2 branches missed.">                if (!withinBounds) {</span>
-<span class="nc bnc" id="L401" title="All 2 branches missed.">                    if (count == centralPixelIndex) {</span>
-<span class="nc" id="L402">                        return null;</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">                if (!withinBounds) {</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">                    if (count == centralPixelIndex) {</span>
+<span class="fc" id="L404">                        return null;</span>
                     }
-<span class="nc" id="L404">                    red[count] = sentinel;</span>
-<span class="nc" id="L405">                    green[count] = sentinel;</span>
-<span class="nc" id="L406">                    blue[count] = sentinel;</span>
-<span class="nc" id="L407">                    count++;</span>
-<span class="nc" id="L408">                    continue;</span>
+<span class="fc" id="L406">                    red[count] = sentinel;</span>
+<span class="fc" id="L407">                    green[count] = sentinel;</span>
+<span class="fc" id="L408">                    blue[count] = sentinel;</span>
+<span class="fc" id="L409">                    count++;</span>
+<span class="fc" id="L410">                    continue;</span>
                 }
-<span class="nc" id="L410">                int cCount = 0;</span>
-<span class="nc" id="L411">                int r = 0;</span>
-<span class="nc" id="L412">                int g = 0;</span>
-<span class="nc" id="L413">                int b = 0;</span>
-<span class="nc bnc" id="L414" title="All 2 branches missed.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
-<span class="nc" id="L415">                    int x = Math.round(xT[i]);</span>
-<span class="nc" id="L416">                    int y = Math.round(yT[i]);</span>
-<span class="nc" id="L417">                    r += clrImg.getR(x, y);</span>
-<span class="nc" id="L418">                    g += clrImg.getG(x, y);</span>
-<span class="nc" id="L419">                    b += clrImg.getB(x, y);</span>
-<span class="nc" id="L420">                    cCount++;</span>
+<span class="fc" id="L412">                int cCount = 0;</span>
+<span class="fc" id="L413">                int r = 0;</span>
+<span class="fc" id="L414">                int g = 0;</span>
+<span class="fc" id="L415">                int b = 0;</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">                for (int i = 0; i &lt; xT.length; ++i) {</span>
+<span class="fc" id="L417">                    int x = Math.round(xT[i]);</span>
+<span class="fc" id="L418">                    int y = Math.round(yT[i]);</span>
+<span class="fc" id="L419">                    r += clrImg.getR(x, y);</span>
+<span class="fc" id="L420">                    g += clrImg.getG(x, y);</span>
+<span class="fc" id="L421">                    b += clrImg.getB(x, y);</span>
+<span class="fc" id="L422">                    cCount++;</span>
                 }
-<span class="nc bnc" id="L422" title="All 2 branches missed.">                if (cCount == 0) {</span>
-<span class="nc" id="L423">                    red[count] = sentinel;</span>
-<span class="nc" id="L424">                    green[count] = sentinel;</span>
-<span class="nc" id="L425">                    blue[count] = sentinel;</span>
-<span class="nc" id="L426">                    count++;</span>
-<span class="nc" id="L427">                    continue;</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">                if (cCount == 0) {</span>
+<span class="nc" id="L425">                    red[count] = sentinel;</span>
+<span class="nc" id="L426">                    green[count] = sentinel;</span>
+<span class="nc" id="L427">                    blue[count] = sentinel;</span>
+<span class="nc" id="L428">                    count++;</span>
+<span class="nc" id="L429">                    continue;</span>
                 }
-<span class="nc" id="L429">                r /= (float) cCount;</span>
-<span class="nc" id="L430">                g /= (float) cCount;</span>
-<span class="nc" id="L431">                b /= (float) cCount;</span>
-<span class="nc" id="L432">                red[count] = r;</span>
-<span class="nc" id="L433">                green[count] = g;</span>
-<span class="nc" id="L434">                blue[count] = b;</span>
-<span class="nc" id="L435">                count++;</span>
+<span class="fc" id="L431">                r /= (float) cCount;</span>
+<span class="fc" id="L432">                g /= (float) cCount;</span>
+<span class="fc" id="L433">                b /= (float) cCount;</span>
+<span class="fc" id="L434">                red[count] = r;</span>
+<span class="fc" id="L435">                green[count] = g;</span>
+<span class="fc" id="L436">                blue[count] = b;</span>
+<span class="fc" id="L437">                count++;</span>
             }
         }
         
-<span class="nc" id="L439">        IntensityDescriptor desc = new ClrIntensityDescriptor(red, green, blue, </span>
+<span class="fc" id="L441">        IntensityDescriptor desc = new ClrIntensityDescriptor(red, green, blue, </span>
             centralPixelIndex);
         
-<span class="nc" id="L442">        return desc;</span>
+<span class="fc" id="L444">        return desc;</span>
     }
 
     /**
@@ -452,65 +454,65 @@ public class IntensityFeatures {
      * @return
      */
     protected IntensityDescriptor extractClrIntensityForBlock(int xCenter, int yCenter, float[][] offsets) {
-<span class="nc" id="L455">        int sentinel = ClrIntensityDescriptor.sentinel;</span>
-<span class="nc" id="L456">        int[] outputR = new int[offsets.length];</span>
-<span class="nc" id="L457">        int[] outputG = new int[outputR.length];</span>
-<span class="nc" id="L458">        int[] outputB = new int[outputR.length];</span>
-<span class="nc" id="L459">        int count = 0;</span>
-<span class="nc bnc" id="L460" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
-<span class="nc" id="L461">            float x1P = xCenter + offsets[i][0];</span>
-<span class="nc" id="L462">            float y1P = yCenter + offsets[i][1];</span>
-<span class="nc bnc" id="L463" title="All 8 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (clrImg.getWidth() - 1)) || (y1P &lt; 0) || (Math.ceil(y1P) &gt; (clrImg.getHeight() - 1))) {</span>
-<span class="nc" id="L464">                outputR[count] = sentinel;</span>
-<span class="nc" id="L465">                outputG[count] = sentinel;</span>
-<span class="nc" id="L466">                outputB[count] = sentinel;</span>
+<span class="nc" id="L457">        int sentinel = ClrIntensityDescriptor.sentinel;</span>
+<span class="nc" id="L458">        int[] outputR = new int[offsets.length];</span>
+<span class="nc" id="L459">        int[] outputG = new int[outputR.length];</span>
+<span class="nc" id="L460">        int[] outputB = new int[outputR.length];</span>
+<span class="nc" id="L461">        int count = 0;</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">        for (int i = 0; i &lt; offsets.length; ++i) {</span>
+<span class="nc" id="L463">            float x1P = xCenter + offsets[i][0];</span>
+<span class="nc" id="L464">            float y1P = yCenter + offsets[i][1];</span>
+<span class="nc bnc" id="L465" title="All 8 branches missed.">            if ((x1P &lt; 0) || (Math.ceil(x1P) &gt; (clrImg.getWidth() - 1)) || (y1P &lt; 0) || (Math.ceil(y1P) &gt; (clrImg.getHeight() - 1))) {</span>
+<span class="nc" id="L466">                outputR[count] = sentinel;</span>
+<span class="nc" id="L467">                outputG[count] = sentinel;</span>
+<span class="nc" id="L468">                outputB[count] = sentinel;</span>
             } else {
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 // bilinear:
                 //double[] v = imageProcessor.biLinearInterpolation(clrImg, x1P, y1P);
                 // nearest neighbor
-<span class="nc" id="L472">                int r = clrImg.getR(Math.round(x1P), Math.round(y1P));</span>
-<span class="nc" id="L473">                int g = clrImg.getG(Math.round(x1P), Math.round(y1P));</span>
-<span class="nc" id="L474">                int b = clrImg.getB(Math.round(x1P), Math.round(y1P));</span>
-<span class="nc" id="L475">                outputR[count] = r;</span>
-<span class="nc" id="L476">                outputG[count] = g;</span>
-<span class="nc" id="L477">                outputB[count] = b;</span>
+<span class="nc" id="L474">                int r = clrImg.getR(Math.round(x1P), Math.round(y1P));</span>
+<span class="nc" id="L475">                int g = clrImg.getG(Math.round(x1P), Math.round(y1P));</span>
+<span class="nc" id="L476">                int b = clrImg.getB(Math.round(x1P), Math.round(y1P));</span>
+<span class="nc" id="L477">                outputR[count] = r;</span>
+<span class="nc" id="L478">                outputG[count] = g;</span>
+<span class="nc" id="L479">                outputB[count] = b;</span>
             }
-<span class="nc" id="L479">            count++;</span>
+<span class="nc" id="L481">            count++;</span>
         }
-<span class="nc" id="L481">        IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG, outputB, offsets.length);</span>
-<span class="nc" id="L482">        return desc;</span>
+<span class="nc" id="L483">        IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG, outputB, offsets.length);</span>
+<span class="nc" id="L484">        return desc;</span>
     }
 
     protected boolean transformCellCoordinates(int rotation, int x0, int y0, 
         int dx, int dy, int cellDim, int imageWidth, int imageHeight, 
         float[] outputX, float[] outputY) {
         
-<span class="fc" id="L489">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L491">        Transformer transformer = new Transformer();</span>
         
-<span class="fc" id="L491">        int cCount = 0;</span>
+<span class="fc" id="L493">        int cCount = 0;</span>
         
-<span class="fc bfc" id="L493" title="All 2 branches covered.">        for (int dxc = 0; dxc &lt; cellDim; ++dxc) {</span>
-<span class="fc bfc" id="L494" title="All 2 branches covered.">            for (int dyc = 0; dyc &lt; cellDim; ++dyc) {</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">        for (int dxc = 0; dxc &lt; cellDim; ++dxc) {</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">            for (int dyc = 0; dyc &lt; cellDim; ++dyc) {</span>
                 
-<span class="fc" id="L496">                transformer.rotate(rotation, dx + dxc, dy + dyc, outputX, </span>
+<span class="fc" id="L498">                transformer.rotate(rotation, dx + dxc, dy + dyc, outputX, </span>
                     outputY, cCount);
                 
-<span class="fc" id="L499">                outputX[cCount] += x0;</span>
-<span class="fc" id="L500">                outputY[cCount] += y0;</span>
+<span class="fc" id="L501">                outputX[cCount] += x0;</span>
+<span class="fc" id="L502">                outputY[cCount] += y0;</span>
                 
-<span class="fc bfc" id="L502" title="All 2 branches covered.">                if ((outputX[cCount] &lt; 0) || </span>
-<span class="fc bfc" id="L503" title="All 4 branches covered.">                    (Math.ceil(outputX[cCount]) &gt; (imageWidth - 1)) || </span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">                if ((outputX[cCount] &lt; 0) || </span>
+<span class="fc bfc" id="L505" title="All 4 branches covered.">                    (Math.ceil(outputX[cCount]) &gt; (imageWidth - 1)) || </span>
                     (outputY[cCount] &lt; 0) || 
-<span class="fc bfc" id="L505" title="All 2 branches covered.">                    (Math.ceil(outputY[cCount]) &gt; (imageHeight - 1))) {</span>
+<span class="fc bfc" id="L507" title="All 2 branches covered.">                    (Math.ceil(outputY[cCount]) &gt; (imageHeight - 1))) {</span>
                     
-<span class="fc" id="L507">                    return false;</span>
+<span class="fc" id="L509">                    return false;</span>
                 }
                 
-<span class="fc" id="L510">                cCount++;</span>
+<span class="fc" id="L512">                cCount++;</span>
             }
         }
-<span class="fc" id="L513">        return true;</span>
+<span class="fc" id="L515">        return true;</span>
     }
     
     /**
@@ -531,30 +533,30 @@ public class IntensityFeatures {
         IntensityDescriptor descIntensity1, final int x1, final int y1,
         IntensityDescriptor descIntensity2, final int x2, final int y2) {
 
-<span class="pc bpc" id="L534" title="1 of 2 branches missed.">        if (descIntensity1 == null) {</span>
-<span class="nc" id="L535">            throw new IllegalArgumentException(&quot;descIntensity1 cannot be null&quot;);</span>
+<span class="pc bpc" id="L536" title="1 of 2 branches missed.">        if (descIntensity1 == null) {</span>
+<span class="nc" id="L537">            throw new IllegalArgumentException(&quot;descIntensity1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L537" title="1 of 2 branches missed.">        if (descIntensity2 == null) {</span>
-<span class="nc" id="L538">            throw new IllegalArgumentException(&quot;descIntensity2 cannot be null&quot;);</span>
+<span class="pc bpc" id="L539" title="1 of 2 branches missed.">        if (descIntensity2 == null) {</span>
+<span class="nc" id="L540">            throw new IllegalArgumentException(&quot;descIntensity2 cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L541">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
+<span class="fc" id="L543">        float err2SqIntensity = descIntensity2.sumSquaredError();</span>
 
-<span class="fc" id="L543">        float err1SqIntensity = descIntensity1.sumSquaredError();</span>
+<span class="fc" id="L545">        float err1SqIntensity = descIntensity1.sumSquaredError();</span>
         
         //TODO: revisit this:
         //float errSqIntensity = (err2SqIntensity &gt; err1SqIntensity) ?
         //    err2SqIntensity : err1SqIntensity;
 
-<span class="fc" id="L549">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
+<span class="fc" id="L551">        float ssdIntensity = descIntensity1.calculateSSD(descIntensity2);</span>
 
-<span class="fc" id="L551">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
-<span class="fc" id="L552">        stat.setImg1Point(new PairInt(x1, y1));</span>
-<span class="fc" id="L553">        stat.setImg2Point(new PairInt(x2, y2));</span>
-<span class="fc" id="L554">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
-<span class="fc" id="L555">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
+<span class="fc" id="L553">        FeatureComparisonStat stat = new FeatureComparisonStat();</span>
+<span class="fc" id="L554">        stat.setImg1Point(new PairInt(x1, y1));</span>
+<span class="fc" id="L555">        stat.setImg2Point(new PairInt(x2, y2));</span>
+<span class="fc" id="L556">        stat.setSumIntensitySqDiff(ssdIntensity);</span>
+<span class="fc" id="L557">        stat.setImg2PointIntensityErr(err2SqIntensity);</span>
 
-<span class="fc" id="L557">        return stat;</span>
+<span class="fc" id="L559">        return stat;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -11,7 +11,6 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.PixelColors;
 import algorithms.imageProcessing.ScaleSpaceCurveImage;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
@@ -36,30 +35,31 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">public class MiscDebug {</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">public class MiscDebug {</span>
     
-<span class="fc" id="L41">    private static Logger log = Logger.getLogger(MiscDebug.class.getName());</span>
+<span class="fc" id="L40">    private static Logger log = Logger.getLogger(MiscDebug.class.getName());</span>
     
-      public static void printJoinPoints(Map&lt;PairInt, PairInt&gt; joinPoints,
+    public static void printJoinPoints(Map&lt;PairInt, PairInt&gt; joinPoints,
         List&lt;PairIntArray&gt; edges) {
         
-<span class="nc" id="L46">        StringBuilder sb = new StringBuilder(&quot;join points:\n&quot;);</span>
+<span class="nc" id="L45">        StringBuilder sb = new StringBuilder(&quot;join points:\n&quot;);</span>
         
-<span class="nc bnc" id="L48" title="All 2 branches missed.">        for (Map.Entry&lt;PairInt, PairInt&gt; entry : joinPoints.entrySet()) {</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        for (Map.Entry&lt;PairInt, PairInt&gt; entry : joinPoints.entrySet()) {</span>
             
-<span class="nc" id="L50">            PairInt loc0 = entry.getKey();</span>
+<span class="nc" id="L49">            PairInt loc0 = entry.getKey();</span>
             
-<span class="nc" id="L52">            PairInt loc1 = entry.getValue();</span>
+<span class="nc" id="L51">            PairInt loc1 = entry.getValue();</span>
             
-<span class="nc" id="L54">            PairIntArray edge0 = edges.get(loc0.getX());</span>
-<span class="nc" id="L55">            int x0 = edge0.getX(loc0.getY());</span>
-<span class="nc" id="L56">            int y0 = edge0.getY(loc0.getY());</span>
+<span class="nc" id="L53">            PairIntArray edge0 = edges.get(loc0.getX());</span>
+<span class="nc" id="L54">            int x0 = edge0.getX(loc0.getY());</span>
+<span class="nc" id="L55">            int y0 = edge0.getY(loc0.getY());</span>
             
-<span class="nc" id="L58">            PairIntArray edge1 = edges.get(loc1.getX());</span>
-<span class="nc" id="L59">            int x1 = edge1.getX(loc1.getY());</span>
-<span class="nc" id="L60">            int y1 = edge1.getY(loc1.getY());</span>
+<span class="nc" id="L57">            PairIntArray edge1 = edges.get(loc1.getX());</span>
+<span class="nc" id="L58">            int x1 = edge1.getX(loc1.getY());</span>
+<span class="nc" id="L59">            int y1 = edge1.getY(loc1.getY());</span>
             
-<span class="nc" id="L62">            sb.append(String.format(&quot;  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n&quot;,</span>
+<span class="nc" id="L61">            sb.append(String.format(</span>
+                &quot;  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n&quot;,
 <span class="nc" id="L63">                x0, y0, x1, y1, loc0.getX(), loc1.getX(), </span>
 <span class="nc" id="L64">                loc0.getY(), edges.get(loc0.getX()).getN(),</span>
 <span class="nc" id="L65">                loc1.getY(), edges.get(loc1.getX()).getN()</span>
@@ -292,15 +292,15 @@ import java.util.logging.Logger;
 <span class="pc bpc" id="L292" title="3 of 4 branches missed.">                assert(contains);</span>
 <span class="fc" id="L293">            }</span>
 <span class="fc" id="L294">        }</span>
-<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        for (Map.Entry&lt;Integer, Set&lt;PointPairInt&gt;&gt; entry : edgeLastEndPointMap.entrySet()) {</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Set&lt;PointPairInt&gt;&gt; entry : edgeLastEndPointMap.entrySet()) {</span>
             //assert(entry.getValue().size() &lt; 2);
-<span class="nc bnc" id="L297" title="All 2 branches missed.">            for (PointPairInt joinPoint : entry.getValue()) {</span>
-<span class="nc" id="L298">                PairInt loc0 = joinPoint.getKey();</span>
-<span class="nc" id="L299">                PairInt loc1 = joinPoint.getValue();</span>
-<span class="nc bnc" id="L300" title="All 4 branches missed.">                assert(loc0 != null);</span>
-<span class="nc bnc" id="L301" title="All 4 branches missed.">                assert(loc1 != null);</span>
-<span class="nc" id="L302">                boolean contains = theJoinPoints.contains(joinPoint);                   </span>
-<span class="nc bnc" id="L303" title="All 2 branches missed.">                if (!contains) {</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">            for (PointPairInt joinPoint : entry.getValue()) {</span>
+<span class="fc" id="L298">                PairInt loc0 = joinPoint.getKey();</span>
+<span class="fc" id="L299">                PairInt loc1 = joinPoint.getValue();</span>
+<span class="pc bpc" id="L300" title="3 of 4 branches missed.">                assert(loc0 != null);</span>
+<span class="pc bpc" id="L301" title="3 of 4 branches missed.">                assert(loc1 != null);</span>
+<span class="fc" id="L302">                boolean contains = theJoinPoints.contains(joinPoint);                   </span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">                if (!contains) {</span>
 <span class="nc" id="L304">                    int hash = joinPoint.hashCode();</span>
 <span class="nc bnc" id="L305" title="All 2 branches missed.">                    for (PointPairInt entry2 : theJoinPoints) {</span>
                         //log.info(&quot;   hash=&quot; + entry2.hashCode());
@@ -312,8 +312,8 @@ import java.util.logging.Logger;
                 }
                 //TODO: follow where data becomes inconsistent:
                 //assert(contains);
-<span class="nc" id="L315">            }</span>
-<span class="nc" id="L316">        }</span>
+<span class="fc" id="L315">            }</span>
+<span class="fc" id="L316">        }</span>
 <span class="fc" id="L317">    }</span>
 
     public static void writeEdges(List&lt;PairIntArray&gt; edges, GreyscaleImage img,
@@ -336,216 +336,246 @@ import java.util.logging.Logger;
 <span class="fc" id="L336">        }</span>
 <span class="fc" id="L337">    }</span>
     
+    public static void writeEdgesAndCorners(List&lt;PairIntArray&gt; edges, 
+        List&lt;List&lt;CornerRegion&gt;&gt; corners, int nExtraForDot,
+        GreyscaleImage img, String fileName) {
+        try {
+            
+<span class="fc" id="L344">            Image img2 = ImageIOHelper.convertImage(img);</span>
+
+<span class="fc" id="L346">            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);</span>
+
+<span class="fc bfc" id="L348" title="All 2 branches covered.">            for (List&lt;CornerRegion&gt; list : corners) {</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">                for (CornerRegion cr : list) {</span>
+<span class="fc" id="L350">                    int x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L351">                    int y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L352">                    ImageIOHelper.addPointToImage(x, y, img2, nExtraForDot, </span>
+                        255, 0, 0);
+<span class="fc" id="L354">                }</span>
+<span class="fc" id="L355">            }</span>
+            
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">            if (!fileName.contains(&quot;\\.&quot;)) {</span>
+<span class="fc" id="L358">                fileName = fileName + &quot;.png&quot;;</span>
+            }
+<span class="fc" id="L360">            String dirPath = algorithms.util.ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L361">            String sep = System.getProperty(&quot;file.separator&quot;);</span>
+<span class="fc" id="L362">            ImageIOHelper.writeOutputImage(dirPath + sep + fileName, img2);</span>
+            
+<span class="nc" id="L364">        } catch (IOException e) {</span>
+            
+<span class="fc" id="L366">        }</span>
+<span class="fc" id="L367">    }</span>
+    
     public static void writeJoinPointsImage(Map&lt;PairInt, PairInt&gt; theJoinPointMap, 
         List&lt;PairIntArray&gt; edges, GreyscaleImage img) {
         
         try {
             
-<span class="nc" id="L344">            Image img2 = img.copyImageToGreen();</span>
+<span class="nc" id="L374">            Image img2 = img.copyImageToGreen();</span>
 
-<span class="nc" id="L346">            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);</span>
-<span class="nc" id="L347">            int nExtraForDot = 1;</span>
-<span class="nc" id="L348">            int rClr = 255;</span>
-<span class="nc" id="L349">            int gClr = 0;</span>
-<span class="nc" id="L350">            int bClr = 100;</span>
-<span class="nc bnc" id="L351" title="All 2 branches missed.">            for (Map.Entry&lt;PairInt, PairInt&gt; entry : theJoinPointMap.entrySet()) {</span>
-<span class="nc" id="L352">                PairInt loc0 = entry.getKey();</span>
-<span class="nc" id="L353">                PairInt loc1 = entry.getValue();</span>
-<span class="nc bnc" id="L354" title="All 4 branches missed.">                assert(!loc0.equals(loc1));</span>
+<span class="nc" id="L376">            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);</span>
+<span class="nc" id="L377">            int nExtraForDot = 1;</span>
+<span class="nc" id="L378">            int rClr = 255;</span>
+<span class="nc" id="L379">            int gClr = 0;</span>
+<span class="nc" id="L380">            int bClr = 100;</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">            for (Map.Entry&lt;PairInt, PairInt&gt; entry : theJoinPointMap.entrySet()) {</span>
+<span class="nc" id="L382">                PairInt loc0 = entry.getKey();</span>
+<span class="nc" id="L383">                PairInt loc1 = entry.getValue();</span>
+<span class="nc bnc" id="L384" title="All 4 branches missed.">                assert(!loc0.equals(loc1));</span>
 
-<span class="nc" id="L356">                PairIntArray edge0 = edges.get(loc0.getX());</span>
-<span class="nc" id="L357">                PairIntArray edge1 = edges.get(loc1.getX());</span>
+<span class="nc" id="L386">                PairIntArray edge0 = edges.get(loc0.getX());</span>
+<span class="nc" id="L387">                PairIntArray edge1 = edges.get(loc1.getX());</span>
             
-<span class="nc" id="L359">                ImageIOHelper.addPointToImage(</span>
-<span class="nc" id="L360">                    edge0.getX(loc0.getY()), edge0.getY(loc0.getY()), </span>
+<span class="nc" id="L389">                ImageIOHelper.addPointToImage(</span>
+<span class="nc" id="L390">                    edge0.getX(loc0.getY()), edge0.getY(loc0.getY()), </span>
                     img2, nExtraForDot,
                     rClr, gClr, bClr);
                 
-<span class="nc" id="L364">                ImageIOHelper.addPointToImage(</span>
-<span class="nc" id="L365">                    edge1.getX(loc1.getY()), edge1.getY(loc1.getY()), </span>
+<span class="nc" id="L394">                ImageIOHelper.addPointToImage(</span>
+<span class="nc" id="L395">                    edge1.getX(loc1.getY()), edge1.getY(loc1.getY()), </span>
                     img2, nExtraForDot,
                     rClr, gClr, bClr);
-<span class="nc" id="L368">            }</span>
+<span class="nc" id="L398">            }</span>
 
-<span class="nc" id="L370">            String dirPath = algorithms.util.ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="nc" id="L371">            String sep = System.getProperty(&quot;file.separator&quot;);</span>
-<span class="nc" id="L372">            ImageIOHelper.writeOutputImage(dirPath + sep + &quot;joinpoints.png&quot;, img2);</span>
+<span class="nc" id="L400">            String dirPath = algorithms.util.ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L401">            String sep = System.getProperty(&quot;file.separator&quot;);</span>
+<span class="nc" id="L402">            ImageIOHelper.writeOutputImage(dirPath + sep + &quot;joinpoints.png&quot;, img2);</span>
             
-<span class="nc" id="L374">        } catch (IOException e) {</span>
+<span class="nc" id="L404">        } catch (IOException e) {</span>
             
-<span class="nc" id="L376">        }</span>
-<span class="nc" id="L377">    }</span>
+<span class="nc" id="L406">        }</span>
+<span class="nc" id="L407">    }</span>
 
     public static void writeImageCopy(Image img, String outfileName) {
-<span class="fc" id="L380">        Image img2 = img.copyImage();</span>
+<span class="fc" id="L410">        Image img2 = img.copyImage();</span>
         try {
-<span class="fc" id="L382">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L383">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + outfileName, img2);</span>
-<span class="nc" id="L384">        } catch (IOException ex) {</span>
-<span class="nc" id="L385">            System.err.println(ex.getMessage());</span>
-<span class="fc" id="L386">        }</span>
-<span class="fc" id="L387">    }</span>
+<span class="fc" id="L412">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L413">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + outfileName, img2);</span>
+<span class="nc" id="L414">        } catch (IOException ex) {</span>
+<span class="nc" id="L415">            System.err.println(ex.getMessage());</span>
+<span class="fc" id="L416">        }</span>
+<span class="fc" id="L417">    }</span>
     
     public static void writeImageCopy(GreyscaleImage img, String outfileName) {
-<span class="fc" id="L390">        GreyscaleImage img2 = img.copyImage();</span>
+<span class="fc" id="L420">        GreyscaleImage img2 = img.copyImage();</span>
         try {
-<span class="fc" id="L392">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L393">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + outfileName, img2);</span>
-<span class="nc" id="L394">        } catch (IOException ex) {</span>
-<span class="nc" id="L395">            System.err.println(ex.getMessage());</span>
-<span class="fc" id="L396">        }</span>
-<span class="fc" id="L397">    }</span>
+<span class="fc" id="L422">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L423">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + outfileName, img2);</span>
+<span class="nc" id="L424">        } catch (IOException ex) {</span>
+<span class="nc" id="L425">            System.err.println(ex.getMessage());</span>
+<span class="fc" id="L426">        }</span>
+<span class="fc" id="L427">    }</span>
     
     public static int findEdgeContainingPoint(List&lt;PairIntArray&gt; edges, 
         int startX, int stopX, int startY, int stopY) {
         
-<span class="nc bnc" id="L402" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); ++i) {</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); ++i) {</span>
             
-<span class="nc" id="L404">            PairIntArray edge = edges.get(i);</span>
+<span class="nc" id="L434">            PairIntArray edge = edges.get(i);</span>
             
-<span class="nc bnc" id="L406" title="All 2 branches missed.">            for (int eIdx = 0; eIdx &lt; edge.getN(); ++eIdx) {</span>
-<span class="nc" id="L407">                int x = edge.getX(eIdx);</span>
-<span class="nc" id="L408">                int y = edge.getY(eIdx);</span>
-<span class="nc bnc" id="L409" title="All 8 branches missed.">                if ((x &gt;= startX) &amp;&amp; (x &lt;= stopX) &amp;&amp; (y &gt;= startY) &amp;&amp; (y &lt;= stopY)) {</span>
-<span class="nc" id="L410">                    return i;</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">            for (int eIdx = 0; eIdx &lt; edge.getN(); ++eIdx) {</span>
+<span class="nc" id="L437">                int x = edge.getX(eIdx);</span>
+<span class="nc" id="L438">                int y = edge.getY(eIdx);</span>
+<span class="nc bnc" id="L439" title="All 8 branches missed.">                if ((x &gt;= startX) &amp;&amp; (x &lt;= stopX) &amp;&amp; (y &gt;= startY) &amp;&amp; (y &lt;= stopY)) {</span>
+<span class="nc" id="L440">                    return i;</span>
                 }
             }
         }
-<span class="nc" id="L414">        return -1;</span>
+<span class="nc" id="L444">        return -1;</span>
     }
     
     public static String getInvokingMethodName() {
         
-<span class="fc" id="L419">        StackTraceElement[] ste = Thread.currentThread().getStackTrace();</span>
+<span class="fc" id="L449">        StackTraceElement[] ste = Thread.currentThread().getStackTrace();</span>
         
-<span class="pc bpc" id="L421" title="2 of 4 branches missed.">        if (ste == null || ste.length == 0) {</span>
+<span class="pc bpc" id="L451" title="2 of 4 branches missed.">        if (ste == null || ste.length == 0) {</span>
             // should not happen. if the thread is not started can return null,
             // but would have had to start already to reach here.
-<span class="nc" id="L424">            return &quot;&quot;;</span>
+<span class="nc" id="L454">            return &quot;&quot;;</span>
         }
                 
-<span class="fc" id="L427">        return ste[2].getMethodName();</span>
+<span class="fc" id="L457">        return ste[2].getMethodName();</span>
     }
     
     public static void debugPrint(GreyscaleImage input, int xStart, int xStop,
         int yStart, int yStop) {
         
-<span class="nc" id="L433">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L463">        StringBuilder sb = new StringBuilder();</span>
                     
-<span class="nc bnc" id="L435" title="All 2 branches missed.">        for (int row = yStart; row &lt;= yStop; row++) {</span>
-<span class="nc" id="L436">            sb.append(String.format(&quot;%3d: &quot;, row));</span>
-<span class="nc bnc" id="L437" title="All 2 branches missed.">            for (int col = xStart; col &lt;= xStop; col++) {</span>
-<span class="nc" id="L438">                sb.append(String.format(&quot; %3d &quot;, input.getValue(col, row)));</span>
+<span class="nc bnc" id="L465" title="All 2 branches missed.">        for (int row = yStart; row &lt;= yStop; row++) {</span>
+<span class="nc" id="L466">            sb.append(String.format(&quot;%3d: &quot;, row));</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">            for (int col = xStart; col &lt;= xStop; col++) {</span>
+<span class="nc" id="L468">                sb.append(String.format(&quot; %3d &quot;, input.getValue(col, row)));</span>
             }
-<span class="nc" id="L440">            sb.append(String.format(&quot;\n&quot;));</span>
+<span class="nc" id="L470">            sb.append(String.format(&quot;\n&quot;));</span>
         }
         
-<span class="nc" id="L443">        System.out.println(sb.toString());</span>
-<span class="nc" id="L444">    }</span>
+<span class="nc" id="L473">        System.out.println(sb.toString());</span>
+<span class="nc" id="L474">    }</span>
     
     public static void debugPrint(Set&lt;PairInt&gt; points, 
         Set&lt;PairInt&gt; addedPoints, Set&lt;PairInt&gt; removedPoints,
         int xStart, int xStop,
         int yStart, int yStop) {
         
-<span class="nc bnc" id="L451" title="All 2 branches missed.">        for (int row = yStop; row &gt;= yStart; row--) {</span>
-<span class="nc" id="L452">            StringBuilder sb = new StringBuilder(String.format(&quot;row %4d:  &quot;, row));</span>
-<span class="nc bnc" id="L453" title="All 2 branches missed.">            for (int col = xStart; col &lt;= xStop; col++) {</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">        for (int row = yStop; row &gt;= yStart; row--) {</span>
+<span class="nc" id="L482">            StringBuilder sb = new StringBuilder(String.format(&quot;row %4d:  &quot;, row));</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">            for (int col = xStart; col &lt;= xStop; col++) {</span>
                 
-<span class="nc" id="L455">                PairInt p = new PairInt(col, row);</span>
+<span class="nc" id="L485">                PairInt p = new PairInt(col, row);</span>
                 
-<span class="nc" id="L457">                int v = 0;</span>
-<span class="nc bnc" id="L458" title="All 2 branches missed.">                if (!removedPoints.contains(p) </span>
-<span class="nc bnc" id="L459" title="All 4 branches missed.">                    &amp;&amp; (addedPoints.contains(p) || points.contains(p))) {</span>
-<span class="nc" id="L460">                    v = 1;</span>
+<span class="nc" id="L487">                int v = 0;</span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">                if (!removedPoints.contains(p) </span>
+<span class="nc bnc" id="L489" title="All 4 branches missed.">                    &amp;&amp; (addedPoints.contains(p) || points.contains(p))) {</span>
+<span class="nc" id="L490">                    v = 1;</span>
                 }
-<span class="nc bnc" id="L462" title="All 2 branches missed.">                String str = (v == 0) ? String.format(&quot;     &quot;) : String.format(&quot;%4d &quot;, v);</span>
-<span class="nc" id="L463">                sb.append(str);</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">                String str = (v == 0) ? String.format(&quot;     &quot;) : String.format(&quot;%4d &quot;, v);</span>
+<span class="nc" id="L493">                sb.append(str);</span>
             }
-<span class="nc" id="L465">            System.out.println(sb.toString());</span>
+<span class="nc" id="L495">            System.out.println(sb.toString());</span>
         }
-<span class="nc" id="L467">        StringBuilder sb = new StringBuilder(String.format(&quot;        &quot;));</span>
-<span class="nc bnc" id="L468" title="All 2 branches missed.">        for (int col = xStart; col &lt;= xStop; col++) {</span>
-<span class="nc" id="L469">            sb.append(String.format(&quot;%4d &quot;, col));</span>
+<span class="nc" id="L497">        StringBuilder sb = new StringBuilder(String.format(&quot;        &quot;));</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">        for (int col = xStart; col &lt;= xStop; col++) {</span>
+<span class="nc" id="L499">            sb.append(String.format(&quot;%4d &quot;, col));</span>
         }
-<span class="nc" id="L471">        System.out.println(sb.toString());</span>
-<span class="nc" id="L472">        System.out.println(&quot;\n&quot;);</span>
-<span class="nc" id="L473">    }</span>
+<span class="nc" id="L501">        System.out.println(sb.toString());</span>
+<span class="nc" id="L502">        System.out.println(&quot;\n&quot;);</span>
+<span class="nc" id="L503">    }</span>
 
     public static String printJunctionsToString(Map&lt;Integer, Set&lt;Integer&gt;&gt; jMap, 
         List&lt;PairIntArray&gt; edges, GreyscaleImage img) {
 
-<span class="nc" id="L478">        StringBuilder sb = new StringBuilder(&quot;junctions:\n&quot;);</span>
+<span class="nc" id="L508">        StringBuilder sb = new StringBuilder(&quot;junctions:\n&quot;);</span>
         
-<span class="nc bnc" id="L480" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : jMap.entrySet()) {</span>
-<span class="nc" id="L481">            int pixIdx = entry.getKey().intValue();</span>
-<span class="nc" id="L482">            int col = img.getCol(pixIdx);</span>
-<span class="nc" id="L483">            int row = img.getRow(pixIdx);</span>
-<span class="nc" id="L484">            sb.append(String.format(&quot;%d (%d,%d)\n&quot;, pixIdx, col, row));</span>
-<span class="nc" id="L485">        }</span>
+<span class="nc bnc" id="L510" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : jMap.entrySet()) {</span>
+<span class="nc" id="L511">            int pixIdx = entry.getKey().intValue();</span>
+<span class="nc" id="L512">            int col = img.getCol(pixIdx);</span>
+<span class="nc" id="L513">            int row = img.getRow(pixIdx);</span>
+<span class="nc" id="L514">            sb.append(String.format(&quot;%d (%d,%d)\n&quot;, pixIdx, col, row));</span>
+<span class="nc" id="L515">        }</span>
         
-<span class="nc" id="L487">        return sb.toString();</span>
+<span class="nc" id="L517">        return sb.toString();</span>
     }
     
     public static String printJunctionsToString(
         Map&lt;Integer, PairInt&gt; jLocationMap, Map&lt;Integer, Set&lt;Integer&gt;&gt; jMap, 
         List&lt;PairIntArray&gt; edges, GreyscaleImage img) {
 
-<span class="nc" id="L494">        StringBuilder sb = new StringBuilder(&quot;junctions:\n&quot;);</span>
+<span class="nc" id="L524">        StringBuilder sb = new StringBuilder(&quot;junctions:\n&quot;);</span>
         
-<span class="nc bnc" id="L496" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : jMap.entrySet()) {</span>
-<span class="nc" id="L497">            int pixIdx = entry.getKey().intValue();</span>
-<span class="nc" id="L498">            int col = img.getCol(pixIdx);</span>
-<span class="nc" id="L499">            int row = img.getRow(pixIdx);</span>
-<span class="nc" id="L500">            sb.append(String.format(&quot;%d (%d,%d)\n&quot;, pixIdx, col, row));</span>
-<span class="nc" id="L501">        }</span>
+<span class="nc bnc" id="L526" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : jMap.entrySet()) {</span>
+<span class="nc" id="L527">            int pixIdx = entry.getKey().intValue();</span>
+<span class="nc" id="L528">            int col = img.getCol(pixIdx);</span>
+<span class="nc" id="L529">            int row = img.getRow(pixIdx);</span>
+<span class="nc" id="L530">            sb.append(String.format(&quot;%d (%d,%d)\n&quot;, pixIdx, col, row));</span>
+<span class="nc" id="L531">        }</span>
         
-<span class="nc" id="L503">        sb.append(&quot;junction locations:\n&quot;);</span>
-<span class="nc bnc" id="L504" title="All 2 branches missed.">        for (Entry&lt;Integer, PairInt&gt; entry : jLocationMap.entrySet()) {</span>
-<span class="nc" id="L505">            Integer pixelIndex = entry.getKey();</span>
-<span class="nc" id="L506">            PairInt loc = entry.getValue();</span>
-<span class="nc" id="L507">            int edgeIdx = loc.getX();</span>
-<span class="nc" id="L508">            int indexWithinEdge = loc.getY();</span>
-<span class="nc" id="L509">            int edgeN = edges.get(edgeIdx).getN();</span>
-<span class="nc" id="L510">            int x = edges.get(edgeIdx).getX(indexWithinEdge);</span>
-<span class="nc" id="L511">            int y = edges.get(edgeIdx).getY(indexWithinEdge);</span>
-<span class="nc" id="L512">            sb.append(String.format(&quot;edge=%d idx=%d (out of %d) pixIdx=%d (%d,%d)\n&quot;, </span>
-<span class="nc" id="L513">                edgeIdx, indexWithinEdge, edgeN, pixelIndex.intValue(), x, y));</span>
-<span class="nc" id="L514">        }</span>
+<span class="nc" id="L533">        sb.append(&quot;junction locations:\n&quot;);</span>
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        for (Entry&lt;Integer, PairInt&gt; entry : jLocationMap.entrySet()) {</span>
+<span class="nc" id="L535">            Integer pixelIndex = entry.getKey();</span>
+<span class="nc" id="L536">            PairInt loc = entry.getValue();</span>
+<span class="nc" id="L537">            int edgeIdx = loc.getX();</span>
+<span class="nc" id="L538">            int indexWithinEdge = loc.getY();</span>
+<span class="nc" id="L539">            int edgeN = edges.get(edgeIdx).getN();</span>
+<span class="nc" id="L540">            int x = edges.get(edgeIdx).getX(indexWithinEdge);</span>
+<span class="nc" id="L541">            int y = edges.get(edgeIdx).getY(indexWithinEdge);</span>
+<span class="nc" id="L542">            sb.append(String.format(&quot;edge=%d idx=%d (out of %d) pixIdx=%d (%d,%d)\n&quot;, </span>
+<span class="nc" id="L543">                edgeIdx, indexWithinEdge, edgeN, pixelIndex.intValue(), x, y));</span>
+<span class="nc" id="L544">        }</span>
         
-<span class="nc" id="L516">        return sb.toString();</span>
+<span class="nc" id="L546">        return sb.toString();</span>
     }
 
     public static void assertAllRowsPopulated(
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges, int[] rowMinMax, 
         int imageMaxColumn, int imageMaxRow) {
         
-<span class="fc bfc" id="L523" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
+<span class="fc bfc" id="L553" title="All 2 branches covered.">        for (int row = rowMinMax[0]; row &lt;= rowMinMax[1]; row++) {</span>
             
-<span class="fc" id="L525">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
+<span class="fc" id="L555">            List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(row));</span>
             
-<span class="pc bpc" id="L527" title="2 of 4 branches missed.">            boolean empty = (colRanges == null) || colRanges.isEmpty();</span>
+<span class="pc bpc" id="L557" title="2 of 4 branches missed.">            boolean empty = (colRanges == null) || colRanges.isEmpty();</span>
             
-<span class="pc bpc" id="L529" title="3 of 4 branches missed.">            assert(!empty);</span>
+<span class="pc bpc" id="L559" title="3 of 4 branches missed.">            assert(!empty);</span>
         }        
-<span class="fc" id="L531">    }</span>
+<span class="fc" id="L561">    }</span>
 
     public static int[] findEdgeLocationOfPoint(List&lt;PairIntArray&gt; edges, 
         int x, int y) {
         
-<span class="nc bnc" id="L536" title="All 2 branches missed.">        for (int eIdx = 0; eIdx &lt; edges.size(); ++eIdx) {</span>
+<span class="nc bnc" id="L566" title="All 2 branches missed.">        for (int eIdx = 0; eIdx &lt; edges.size(); ++eIdx) {</span>
             
-<span class="nc" id="L538">            PairIntArray edge = edges.get(eIdx);</span>
+<span class="nc" id="L568">            PairIntArray edge = edges.get(eIdx);</span>
             
-<span class="nc bnc" id="L540" title="All 2 branches missed.">            for (int idx = 0; idx &lt; edge.getN(); ++idx) {</span>
-<span class="nc bnc" id="L541" title="All 4 branches missed.">                if (edge.getX(idx) == x &amp;&amp; edge.getY(idx) == y) {</span>
-<span class="nc" id="L542">                    return new int[]{eIdx, idx};</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">            for (int idx = 0; idx &lt; edge.getN(); ++idx) {</span>
+<span class="nc bnc" id="L571" title="All 4 branches missed.">                if (edge.getX(idx) == x &amp;&amp; edge.getY(idx) == y) {</span>
+<span class="nc" id="L572">                    return new int[]{eIdx, idx};</span>
                 }
             }
             
         }
         
-<span class="nc" id="L548">        return null;</span>
+<span class="nc" id="L578">        return null;</span>
     }
 
     /**
@@ -560,540 +590,525 @@ import java.util.logging.Logger;
     public static void plotSkyColor(Set&lt;PairInt&gt; points, ImageExt colorImg, 
         int xOffset, int yOffset) {
 
-<span class="nc" id="L563">        int n = points.size();</span>
+<span class="nc" id="L593">        int n = points.size();</span>
         
-<span class="nc" id="L565">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L595">        CIEChromaticity cieC = new CIEChromaticity();</span>
         
-<span class="nc" id="L567">        float[] cieX = new float[n];</span>
-<span class="nc" id="L568">        float[] cieY = new float[n];</span>
-<span class="nc" id="L569">        float[] hue = new float[n];</span>
-<span class="nc" id="L570">        float[] saturation = new float[n];</span>
-<span class="nc" id="L571">        float[] brightness = new float[n];</span>
-<span class="nc" id="L572">        float[] r = new float[n];</span>
-<span class="nc" id="L573">        float[] g = new float[n];</span>
-<span class="nc" id="L574">        float[] b = new float[n];</span>
+<span class="nc" id="L597">        float[] cieX = new float[n];</span>
+<span class="nc" id="L598">        float[] cieY = new float[n];</span>
+<span class="nc" id="L599">        float[] hue = new float[n];</span>
+<span class="nc" id="L600">        float[] saturation = new float[n];</span>
+<span class="nc" id="L601">        float[] brightness = new float[n];</span>
+<span class="nc" id="L602">        float[] r = new float[n];</span>
+<span class="nc" id="L603">        float[] g = new float[n];</span>
+<span class="nc" id="L604">        float[] b = new float[n];</span>
         
-<span class="nc" id="L576">        int i = 0;</span>
-<span class="nc bnc" id="L577" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L578">            int x = p.getX() + xOffset;</span>
-<span class="nc" id="L579">            int y = p.getY() + yOffset;</span>
+<span class="nc" id="L606">        int i = 0;</span>
+<span class="nc bnc" id="L607" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L608">            int x = p.getX() + xOffset;</span>
+<span class="nc" id="L609">            int y = p.getY() + yOffset;</span>
             
-<span class="nc" id="L581">            int idx = colorImg.getInternalIndex(x, y);</span>
+<span class="nc" id="L611">            int idx = colorImg.getInternalIndex(x, y);</span>
 
-<span class="nc" id="L583">            int rr = colorImg.getR(idx);</span>
-<span class="nc" id="L584">            int gg = colorImg.getG(idx);</span>
-<span class="nc" id="L585">            int bb = colorImg.getB(idx);</span>
+<span class="nc" id="L613">            int rr = colorImg.getR(idx);</span>
+<span class="nc" id="L614">            int gg = colorImg.getG(idx);</span>
+<span class="nc" id="L615">            int bb = colorImg.getB(idx);</span>
                         
-<span class="nc" id="L587">            r[i] = rr;</span>
-<span class="nc" id="L588">            g[i] = gg;</span>
-<span class="nc" id="L589">            b[i] = bb;</span>
+<span class="nc" id="L617">            r[i] = rr;</span>
+<span class="nc" id="L618">            g[i] = gg;</span>
+<span class="nc" id="L619">            b[i] = bb;</span>
             
-<span class="nc" id="L591">            float[] cieXY = cieC.rgbToXYChromaticity(rr, gg, bb);</span>
-<span class="nc" id="L592">            cieX[i] = cieXY[0];</span>
-<span class="nc" id="L593">            cieY[i] = cieXY[1];</span>
+<span class="nc" id="L621">            float[] cieXY = cieC.rgbToXYChromaticity(rr, gg, bb);</span>
+<span class="nc" id="L622">            cieX[i] = cieXY[0];</span>
+<span class="nc" id="L623">            cieY[i] = cieXY[1];</span>
             
-<span class="nc" id="L595">            float[] hsb = new float[3];</span>
-<span class="nc" id="L596">            Color.RGBtoHSB(rr, gg, bb, hsb);</span>
-<span class="nc" id="L597">            hue[i] = hsb[0];</span>
-<span class="nc" id="L598">            saturation[i] = hsb[1];</span>
-<span class="nc" id="L599">            brightness[i] = hsb[2];</span>
+<span class="nc" id="L625">            float[] hsb = new float[3];</span>
+<span class="nc" id="L626">            Color.RGBtoHSB(rr, gg, bb, hsb);</span>
+<span class="nc" id="L627">            hue[i] = hsb[0];</span>
+<span class="nc" id="L628">            saturation[i] = hsb[1];</span>
+<span class="nc" id="L629">            brightness[i] = hsb[2];</span>
             
-<span class="nc" id="L601">            i++;</span>
-<span class="nc" id="L602">        }</span>
+<span class="nc" id="L631">            i++;</span>
+<span class="nc" id="L632">        }</span>
         
-<span class="nc" id="L604">        int plotNumber = getCurrentTimeFormatted();</span>
+<span class="nc" id="L634">        int plotNumber = getCurrentTimeFormatted();</span>
         
         try {
-<span class="nc" id="L607">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L637">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
             
-<span class="nc" id="L609">            plotter.plot(0.2f, 0.6f, 0.2f, 0.6f, </span>
+<span class="nc" id="L639">            plotter.plot(0.2f, 0.6f, 0.2f, 0.6f, </span>
                 cieX, cieY, &quot;CIE X vs Y&quot;, &quot;CIEX&quot;, &quot;CIEY&quot;);
-<span class="nc" id="L611">            plotter.writeFile(Integer.valueOf(plotNumber));</span>
+<span class="nc" id="L641">            plotter.writeFile(Integer.valueOf(plotNumber));</span>
             
-<span class="nc" id="L613">            plotter = new ScatterPointPlotterPNG();</span>
-<span class="nc" id="L614">            plotter.plot(0.0f, 256f, 0.0f, 1.1f, </span>
+<span class="nc" id="L643">            plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L644">            plotter.plot(0.0f, 256f, 0.0f, 1.1f, </span>
                 b, brightness, &quot;B vs brightness&quot;, &quot;B&quot;, &quot;brightness&quot;);
-<span class="nc" id="L616">            plotter.writeFile(Integer.valueOf(plotNumber + 1));</span>
+<span class="nc" id="L646">            plotter.writeFile(Integer.valueOf(plotNumber + 1));</span>
             
-<span class="nc" id="L618">            plotter = new ScatterPointPlotterPNG();</span>
-<span class="nc" id="L619">            plotter.plot(0.0f, 256f, 0.0f, 1.1f, </span>
+<span class="nc" id="L648">            plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L649">            plotter.plot(0.0f, 256f, 0.0f, 1.1f, </span>
                 r, brightness, &quot;R vs brightness&quot;, &quot;R&quot;, &quot;brightness&quot;);
-<span class="nc" id="L621">            plotter.writeFile(Integer.valueOf(plotNumber + 2));</span>
+<span class="nc" id="L651">            plotter.writeFile(Integer.valueOf(plotNumber + 2));</span>
             
-<span class="nc" id="L623">            plotter = new ScatterPointPlotterPNG();</span>
-<span class="nc" id="L624">            plotter.plot(0.0f, 256f, 0.0f, 256f, </span>
+<span class="nc" id="L653">            plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L654">            plotter.plot(0.0f, 256f, 0.0f, 256f, </span>
                 b, r, &quot;B vs R&quot;, &quot;B&quot;, &quot;R&quot;);
-<span class="nc" id="L626">            plotter.writeFile(Integer.valueOf(plotNumber + 3));</span>
+<span class="nc" id="L656">            plotter.writeFile(Integer.valueOf(plotNumber + 3));</span>
             
-<span class="nc" id="L628">            plotter = new ScatterPointPlotterPNG();</span>
-<span class="nc" id="L629">            plotter.plot(0.0f, 1.1f, 0.0f, 1.1f, </span>
+<span class="nc" id="L658">            plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L659">            plotter.plot(0.0f, 1.1f, 0.0f, 1.1f, </span>
                 hue, saturation, &quot;hue vs saturation&quot;, &quot;hue&quot;, &quot;saturation&quot;);
-<span class="nc" id="L631">            plotter.writeFile(Integer.valueOf(plotNumber + 4));</span>
+<span class="nc" id="L661">            plotter.writeFile(Integer.valueOf(plotNumber + 4));</span>
             
-<span class="nc" id="L633">            plotter = new ScatterPointPlotterPNG();</span>
-<span class="nc" id="L634">            plotter.plot(0.0f, 0.8f, 0.0f, 1.1f, </span>
+<span class="nc" id="L663">            plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L664">            plotter.plot(0.0f, 0.8f, 0.0f, 1.1f, </span>
                 cieX, brightness, &quot;CIE X vs brightness&quot;, &quot;CIEX&quot;, &quot;brightness&quot;);
-<span class="nc" id="L636">            plotter.writeFile(Integer.valueOf(plotNumber + 5));</span>
+<span class="nc" id="L666">            plotter.writeFile(Integer.valueOf(plotNumber + 5));</span>
             
-<span class="nc" id="L638">            plotter = new ScatterPointPlotterPNG();</span>
-<span class="nc" id="L639">            plotter.plot(0.0f, 0.9f, 0.0f, 1.1f, </span>
+<span class="nc" id="L668">            plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L669">            plotter.plot(0.0f, 0.9f, 0.0f, 1.1f, </span>
                 cieY, brightness, &quot;CIE Y vs brightness&quot;, &quot;CIEY&quot;, &quot;brightness&quot;);
-<span class="nc" id="L641">            plotter.writeFile(Integer.valueOf(plotNumber + 6));</span>
+<span class="nc" id="L671">            plotter.writeFile(Integer.valueOf(plotNumber + 6));</span>
                         
             // for hue histograms, because it's space is formed in 0 to 360 degrees,
             // need to wrap around the bins.
             // for that reason, will look for an empty bin and cut and merge
             // the wrap
             
-<span class="nc" id="L648">            HistogramHolder hueHist = Histogram.createSimpleHistogram(</span>
-<span class="nc" id="L649">                0.f, 1.0f, 10, hue, Errors.populateYErrorsBySqrt(hue));</span>
+<span class="nc" id="L678">            HistogramHolder hueHist = Histogram.createSimpleHistogram(</span>
+<span class="nc" id="L679">                0.f, 1.0f, 10, hue, Errors.populateYErrorsBySqrt(hue));</span>
                         
-<span class="nc" id="L651">            int[] yh = Arrays.copyOf(hueHist.getYHist(), hueHist.getYHist().length);</span>
-<span class="nc" id="L652">            int zeroBinIdx = -1;</span>
-<span class="nc bnc" id="L653" title="All 2 branches missed.">            for (int ii = 0; ii &lt; yh.length; ii++) {</span>
-<span class="nc bnc" id="L654" title="All 2 branches missed.">                if (yh[ii] == 0) {</span>
-<span class="nc" id="L655">                    zeroBinIdx = ii;</span>
-<span class="nc" id="L656">                    break;</span>
+<span class="nc" id="L681">            int[] yh = Arrays.copyOf(hueHist.getYHist(), hueHist.getYHist().length);</span>
+<span class="nc" id="L682">            int zeroBinIdx = -1;</span>
+<span class="nc bnc" id="L683" title="All 2 branches missed.">            for (int ii = 0; ii &lt; yh.length; ii++) {</span>
+<span class="nc bnc" id="L684" title="All 2 branches missed.">                if (yh[ii] == 0) {</span>
+<span class="nc" id="L685">                    zeroBinIdx = ii;</span>
+<span class="nc" id="L686">                    break;</span>
                 }
             }
-<span class="nc bnc" id="L659" title="All 2 branches missed.">            if (zeroBinIdx &gt; -1) {</span>
-<span class="nc" id="L660">                int[] yShifted = new int[yh.length];</span>
-<span class="nc" id="L661">                float[] yShiftedF = new float[yh.length];</span>
-<span class="nc" id="L662">                int count = 0;</span>
-<span class="nc bnc" id="L663" title="All 2 branches missed.">                for (int ii = (zeroBinIdx + 1); ii &lt; yh.length; ii++) {</span>
-<span class="nc" id="L664">                    yShifted[count] = yh[ii];</span>
-<span class="nc" id="L665">                    yShiftedF[count] = yh[ii];</span>
-<span class="nc" id="L666">                    count++;</span>
+<span class="nc bnc" id="L689" title="All 2 branches missed.">            if (zeroBinIdx &gt; -1) {</span>
+<span class="nc" id="L690">                int[] yShifted = new int[yh.length];</span>
+<span class="nc" id="L691">                float[] yShiftedF = new float[yh.length];</span>
+<span class="nc" id="L692">                int count = 0;</span>
+<span class="nc bnc" id="L693" title="All 2 branches missed.">                for (int ii = (zeroBinIdx + 1); ii &lt; yh.length; ii++) {</span>
+<span class="nc" id="L694">                    yShifted[count] = yh[ii];</span>
+<span class="nc" id="L695">                    yShiftedF[count] = yh[ii];</span>
+<span class="nc" id="L696">                    count++;</span>
                 }
-<span class="nc bnc" id="L668" title="All 2 branches missed.">                for (int ii = 0; ii &lt;= zeroBinIdx; ii++) {</span>
-<span class="nc" id="L669">                    yShifted[count] = yh[ii];</span>
-<span class="nc" id="L670">                    yShiftedF[count] = yh[ii];</span>
-<span class="nc" id="L671">                    count++;</span>
+<span class="nc bnc" id="L698" title="All 2 branches missed.">                for (int ii = 0; ii &lt;= zeroBinIdx; ii++) {</span>
+<span class="nc" id="L699">                    yShifted[count] = yh[ii];</span>
+<span class="nc" id="L700">                    yShiftedF[count] = yh[ii];</span>
+<span class="nc" id="L701">                    count++;</span>
                 }
-<span class="nc" id="L673">                hueHist.setYHist(yShifted);</span>
-<span class="nc" id="L674">                hueHist.setYHistFloat(yShiftedF);</span>
+<span class="nc" id="L703">                hueHist.setYHist(yShifted);</span>
+<span class="nc" id="L704">                hueHist.setYHistFloat(yShiftedF);</span>
             }
             
-<span class="nc" id="L677">            float fwhmHue = Histogram.measureFWHMOfStrongestPeak(hueHist);</span>
+<span class="nc" id="L707">            float fwhmHue = Histogram.measureFWHMOfStrongestPeak(hueHist);</span>
             
-<span class="nc" id="L679">            hueHist.plotHistogram(&quot;hue shifted by &quot; + (zeroBinIdx + 0) + &quot; bins&quot;,</span>
+<span class="nc" id="L709">            hueHist.plotHistogram(&quot;hue shifted by &quot; + (zeroBinIdx + 0) + &quot; bins&quot;,</span>
                 plotNumber);
             
-<span class="nc" id="L682">            log.info(&quot;fwhm hue=&quot; + fwhmHue);</span>
+<span class="nc" id="L712">            log.info(&quot;fwhm hue=&quot; + fwhmHue);</span>
 
-<span class="nc" id="L684">            HistogramHolder saturationHist = Histogram.createSimpleHistogram(</span>
+<span class="nc" id="L714">            HistogramHolder saturationHist = Histogram.createSimpleHistogram(</span>
                 0.f, 1.0f, 10, 
-<span class="nc" id="L686">                saturation, Errors.populateYErrorsBySqrt(saturation));</span>
+<span class="nc" id="L716">                saturation, Errors.populateYErrorsBySqrt(saturation));</span>
             
-<span class="nc" id="L688">            saturationHist.plotHistogram(&quot;saturation&quot;, plotNumber + 1);</span>
+<span class="nc" id="L718">            saturationHist.plotHistogram(&quot;saturation&quot;, plotNumber + 1);</span>
             
-<span class="nc" id="L690">            float[] fwhmSaturation = Histogram.measureFWHMOfAllPeaks(</span>
+<span class="nc" id="L720">            float[] fwhmSaturation = Histogram.measureFWHMOfAllPeaks(</span>
                 saturationHist, 0.1f);
             
-<span class="nc" id="L693">            log.info(&quot;fwhm saturation=&quot; + Arrays.toString(fwhmSaturation));</span>
+<span class="nc" id="L723">            log.info(&quot;fwhm saturation=&quot; + Arrays.toString(fwhmSaturation));</span>
             
-<span class="nc" id="L695">        } catch (IOException e) {</span>
+<span class="nc" id="L725">        } catch (IOException e) {</span>
             
-<span class="nc" id="L697">            log.severe(e.getMessage());</span>
-<span class="nc" id="L698">        }</span>
-<span class="nc" id="L699">    }</span>
+<span class="nc" id="L727">            log.severe(e.getMessage());</span>
+<span class="nc" id="L728">        }</span>
+<span class="nc" id="L729">    }</span>
     
     public static void plotPointSets(PairFloatArray set1, PairIntArray set2, 
         int imageWidth1, int imageHeight1, int imageWidth2, int imageHeight2, 
         int fileNumber) {
         
-<span class="nc" id="L705">        float[] x1 = new float[set1.getN()];</span>
-<span class="nc" id="L706">        float[] y1 = new float[x1.length];</span>
-<span class="nc bnc" id="L707" title="All 2 branches missed.">        for (int i = 0; i &lt; set1.getN(); ++i) {</span>
-<span class="nc" id="L708">            x1[i] = set1.getX(i);</span>
-<span class="nc" id="L709">            y1[i] = set1.getY(i);</span>
+<span class="nc" id="L735">        float[] x1 = new float[set1.getN()];</span>
+<span class="nc" id="L736">        float[] y1 = new float[x1.length];</span>
+<span class="nc bnc" id="L737" title="All 2 branches missed.">        for (int i = 0; i &lt; set1.getN(); ++i) {</span>
+<span class="nc" id="L738">            x1[i] = set1.getX(i);</span>
+<span class="nc" id="L739">            y1[i] = set1.getY(i);</span>
         }
         
-<span class="nc" id="L712">        float[] x2 = new float[set2.getN()];</span>
-<span class="nc" id="L713">        float[] y2 = new float[x2.length];</span>
-<span class="nc bnc" id="L714" title="All 2 branches missed.">        for (int i = 0; i &lt; set2.getN(); ++i) {</span>
-<span class="nc" id="L715">            x2[i] = set2.getX(i);</span>
-<span class="nc" id="L716">            y2[i] = set2.getY(i);</span>
+<span class="nc" id="L742">        float[] x2 = new float[set2.getN()];</span>
+<span class="nc" id="L743">        float[] y2 = new float[x2.length];</span>
+<span class="nc bnc" id="L744" title="All 2 branches missed.">        for (int i = 0; i &lt; set2.getN(); ++i) {</span>
+<span class="nc" id="L745">            x2[i] = set2.getX(i);</span>
+<span class="nc" id="L746">            y2[i] = set2.getY(i);</span>
         }
         
         try {
-<span class="nc" id="L720">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L750">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
             
-<span class="nc" id="L722">            plotter.plot(0, imageWidth1, 0, imageHeight1, </span>
+<span class="nc" id="L752">            plotter.plot(0, imageWidth1, 0, imageHeight1, </span>
                 x1, y1, &quot;set1&quot;, &quot;X&quot;, &quot;Y&quot;);
-<span class="nc" id="L724">            plotter.writeFile(Integer.valueOf(fileNumber));</span>
+<span class="nc" id="L754">            plotter.writeFile(Integer.valueOf(fileNumber));</span>
             
-<span class="nc" id="L726">            plotter.plot(0, imageWidth2, 0, imageHeight2, </span>
+<span class="nc" id="L756">            plotter.plot(0, imageWidth2, 0, imageHeight2, </span>
                 x2, y2, &quot;set2&quot;, &quot;X&quot;, &quot;Y&quot;);
-<span class="nc" id="L728">            plotter.writeFile(Integer.valueOf(fileNumber + 1));</span>
+<span class="nc" id="L758">            plotter.writeFile(Integer.valueOf(fileNumber + 1));</span>
            
-<span class="nc" id="L730">        } catch (IOException e) {</span>
+<span class="nc" id="L760">        } catch (IOException e) {</span>
             
-<span class="nc" id="L732">            log.severe(e.getMessage());</span>
-<span class="nc" id="L733">        }</span>
-<span class="nc" id="L734">    }</span>
+<span class="nc" id="L762">            log.severe(e.getMessage());</span>
+<span class="nc" id="L763">        }</span>
+<span class="nc" id="L764">    }</span>
     
     public static void plotPoints(Set&lt;PairInt&gt; set,
         int imageWidth, int imageHeight, int fileNumber) {
         
-<span class="fc" id="L739">        float[] x1 = new float[set.size()];</span>
-<span class="fc" id="L740">        float[] y1 = new float[x1.length];</span>
-<span class="fc" id="L741">        int i = 0;</span>
-<span class="fc bfc" id="L742" title="All 2 branches covered.">        for (PairInt p : set) {</span>
-<span class="fc" id="L743">            x1[i] = p.getX();</span>
-<span class="fc" id="L744">            y1[i] = p.getY();</span>
-<span class="fc" id="L745">            i++;</span>
-<span class="fc" id="L746">        }</span>
+<span class="fc" id="L769">        float[] x1 = new float[set.size()];</span>
+<span class="fc" id="L770">        float[] y1 = new float[x1.length];</span>
+<span class="fc" id="L771">        int i = 0;</span>
+<span class="fc bfc" id="L772" title="All 2 branches covered.">        for (PairInt p : set) {</span>
+<span class="fc" id="L773">            x1[i] = p.getX();</span>
+<span class="fc" id="L774">            y1[i] = p.getY();</span>
+<span class="fc" id="L775">            i++;</span>
+<span class="fc" id="L776">        }</span>
         
         try {
-<span class="fc" id="L749">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
+<span class="fc" id="L779">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
             
-<span class="fc" id="L751">            plotter.plot(0, imageWidth, 0, imageHeight, </span>
+<span class="fc" id="L781">            plotter.plot(0, imageWidth, 0, imageHeight, </span>
                 x1, y1, &quot;points&quot;, &quot;X&quot;, &quot;Y&quot;);
-<span class="fc" id="L753">            plotter.writeFile(Integer.valueOf(fileNumber));</span>
+<span class="fc" id="L783">            plotter.writeFile(Integer.valueOf(fileNumber));</span>
             
-<span class="nc" id="L755">        } catch (IOException e) {</span>
+<span class="nc" id="L785">        } catch (IOException e) {</span>
             
-<span class="nc" id="L757">            log.severe(e.getMessage());</span>
-<span class="fc" id="L758">        }</span>
-<span class="fc" id="L759">    }</span>
+<span class="nc" id="L787">            log.severe(e.getMessage());</span>
+<span class="fc" id="L788">        }</span>
+<span class="fc" id="L789">    }</span>
 
     public static void plotPoints(PairIntArray points,
         int imageWidth, int imageHeight, int fileNumber) {
         
-<span class="nc" id="L764">        float[] x1 = new float[points.getN()];</span>
-<span class="nc" id="L765">        float[] y1 = new float[x1.length];</span>
-<span class="nc bnc" id="L766" title="All 2 branches missed.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
-<span class="nc" id="L767">            x1[i] = points.getX(i);</span>
-<span class="nc" id="L768">            y1[i] = points.getY(i);</span>
-<span class="nc" id="L769">            i++;</span>
+<span class="nc" id="L794">        float[] x1 = new float[points.getN()];</span>
+<span class="nc" id="L795">        float[] y1 = new float[x1.length];</span>
+<span class="nc bnc" id="L796" title="All 2 branches missed.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
+<span class="nc" id="L797">            x1[i] = points.getX(i);</span>
+<span class="nc" id="L798">            y1[i] = points.getY(i);</span>
+<span class="nc" id="L799">            i++;</span>
         }
         
         try {
-<span class="nc" id="L773">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
+<span class="nc" id="L803">            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();</span>
             
-<span class="nc" id="L775">            plotter.plot(0, imageWidth, 0, imageHeight, </span>
+<span class="nc" id="L805">            plotter.plot(0, imageWidth, 0, imageHeight, </span>
                 x1, y1, &quot;points&quot;, &quot;X&quot;, &quot;Y&quot;);
-<span class="nc" id="L777">            plotter.writeFile(Integer.valueOf(fileNumber));</span>
+<span class="nc" id="L807">            plotter.writeFile(Integer.valueOf(fileNumber));</span>
             
-<span class="nc" id="L779">        } catch (IOException e) {</span>
+<span class="nc" id="L809">        } catch (IOException e) {</span>
             
-<span class="nc" id="L781">            log.severe(e.getMessage());</span>
-<span class="nc" id="L782">        }</span>
-<span class="nc" id="L783">    }</span>
+<span class="nc" id="L811">            log.severe(e.getMessage());</span>
+<span class="nc" id="L812">        }</span>
+<span class="nc" id="L813">    }</span>
 
     public static int getCurrentTimeFormatted() {
-<span class="fc" id="L786">        double t0 = System.currentTimeMillis();</span>
-<span class="fc" id="L787">        double t = t0 - ((int)(t0/1.E9)) * 1E9;</span>
-<span class="fc" id="L788">        return (int)t;</span>
+<span class="fc" id="L816">        double t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L817">        double t = t0 - ((int)(t0/1.E9)) * 1E9;</span>
+<span class="fc" id="L818">        return (int)t;</span>
     }
 
     public static void writeHullImages(GreyscaleImage imgGrey, 
         Map&lt;Integer, List&lt;GrahamScan&gt;&gt; hulls, String fileNameSuffix) {
         
-<span class="fc" id="L794">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
+<span class="fc" id="L824">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
         
-<span class="fc" id="L796">        int c = 0;</span>
-<span class="fc bfc" id="L797" title="All 2 branches covered.">        for (Entry&lt;Integer, List&lt;GrahamScan&gt;&gt; entry : hulls.entrySet()) {</span>
-<span class="fc" id="L798">            List&lt;GrahamScan&gt; hullList = entry.getValue();</span>
-<span class="fc bfc" id="L799" title="All 2 branches covered.">            for (GrahamScan hull : hullList) {</span>
-<span class="fc" id="L800">                int[] x = new int[hull.getXHull().length];</span>
-<span class="fc" id="L801">                int[] y = new int[x.length];</span>
-<span class="fc bfc" id="L802" title="All 2 branches covered.">                for (int i = 0; i &lt; x.length; ++i) {</span>
-<span class="fc" id="L803">                    x[i] = Math.round(hull.getXHull()[i]);</span>
-<span class="fc" id="L804">                    y[i] = Math.round(hull.getYHull()[i]);                   </span>
+<span class="fc" id="L826">        int c = 0;</span>
+<span class="fc bfc" id="L827" title="All 2 branches covered.">        for (Entry&lt;Integer, List&lt;GrahamScan&gt;&gt; entry : hulls.entrySet()) {</span>
+<span class="fc" id="L828">            List&lt;GrahamScan&gt; hullList = entry.getValue();</span>
+<span class="fc bfc" id="L829" title="All 2 branches covered.">            for (GrahamScan hull : hullList) {</span>
+<span class="fc" id="L830">                int[] x = new int[hull.getXHull().length];</span>
+<span class="fc" id="L831">                int[] y = new int[x.length];</span>
+<span class="fc bfc" id="L832" title="All 2 branches covered.">                for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="fc" id="L833">                    x[i] = Math.round(hull.getXHull()[i]);</span>
+<span class="fc" id="L834">                    y[i] = Math.round(hull.getYHull()[i]);                   </span>
                 }
-<span class="fc bfc" id="L806" title="All 2 branches covered.">                if (c == 0) {</span>
-<span class="fc" id="L807">                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 255, 0, 0);</span>
-<span class="pc bpc" id="L808" title="1 of 2 branches missed.">                } else if (c == 1) {</span>
-<span class="fc" id="L809">                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 0, 255, 0);</span>
+<span class="fc bfc" id="L836" title="All 2 branches covered.">                if (c == 0) {</span>
+<span class="fc" id="L837">                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 255, 0, 0);</span>
+<span class="pc bpc" id="L838" title="1 of 2 branches missed.">                } else if (c == 1) {</span>
+<span class="fc" id="L839">                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 0, 255, 0);</span>
                 } else {
-<span class="nc" id="L811">                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 0, 0, 255);</span>
+<span class="nc" id="L841">                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 0, 0, 255);</span>
                 }
-<span class="fc" id="L813">            }</span>
-<span class="fc" id="L814">            c++;</span>
-<span class="fc" id="L815">        }</span>
+<span class="fc" id="L843">            }</span>
+<span class="fc" id="L844">            c++;</span>
+<span class="fc" id="L845">        }</span>
        
         try {
-<span class="fc" id="L818">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L819">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
+<span class="fc" id="L848">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L849">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
                 + &quot;.png&quot;, imgW);
            
-<span class="nc" id="L822">        } catch (Exception e) {</span>
-<span class="nc" id="L823">             e.printStackTrace();</span>
-<span class="nc" id="L824">            log.severe(e.getMessage());</span>
-<span class="fc" id="L825">        }</span>
-<span class="fc" id="L826">    }</span>
+<span class="nc" id="L852">        } catch (Exception e) {</span>
+<span class="nc" id="L853">             e.printStackTrace();</span>
+<span class="nc" id="L854">            log.severe(e.getMessage());</span>
+<span class="fc" id="L855">        }</span>
+<span class="fc" id="L856">    }</span>
 
     public static void writeImage(int[][] img, String fileName) {
         
-<span class="nc" id="L830">        GreyscaleImage imgL = new GreyscaleImage(img.length, img[0].length);</span>
-<span class="nc bnc" id="L831" title="All 2 branches missed.">        for (int i = 0; i &lt; img.length; ++i) {</span>
-<span class="nc bnc" id="L832" title="All 2 branches missed.">            for (int j = 0; j &lt; img[0].length; ++j) {</span>
-<span class="nc" id="L833">                int v = img[i][j];</span>
-<span class="nc" id="L834">                imgL.setValue(i, j, v);</span>
+<span class="nc" id="L860">        GreyscaleImage imgL = new GreyscaleImage(img.length, img[0].length);</span>
+<span class="nc bnc" id="L861" title="All 2 branches missed.">        for (int i = 0; i &lt; img.length; ++i) {</span>
+<span class="nc bnc" id="L862" title="All 2 branches missed.">            for (int j = 0; j &lt; img[0].length; ++j) {</span>
+<span class="nc" id="L863">                int v = img[i][j];</span>
+<span class="nc" id="L864">                imgL.setValue(i, j, v);</span>
             }
         }
         try {
-<span class="nc" id="L838">            String bin = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="nc" id="L839">            ImageIOHelper.writeOutputImage(bin + &quot;/&quot; + fileName, imgL);</span>
-<span class="nc" id="L840">        } catch (Exception e) {</span>
-<span class="nc" id="L841">             e.printStackTrace();</span>
-<span class="nc" id="L842">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="nc" id="L843">        }</span>
-<span class="nc" id="L844">    }</span>
+<span class="nc" id="L868">            String bin = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L869">            ImageIOHelper.writeOutputImage(bin + &quot;/&quot; + fileName, imgL);</span>
+<span class="nc" id="L870">        } catch (Exception e) {</span>
+<span class="nc" id="L871">             e.printStackTrace();</span>
+<span class="nc" id="L872">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="nc" id="L873">        }</span>
+<span class="nc" id="L874">    }</span>
     
     public static void writeImage(ImageExt img, String fileNameSuffix) {
         
         try {
-<span class="fc" id="L849">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L850">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
+<span class="fc" id="L879">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L880">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
                 + &quot;.png&quot;, img);
-<span class="nc" id="L852">        } catch (Exception e) {</span>
-<span class="nc" id="L853">             e.printStackTrace();</span>
-<span class="nc" id="L854">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="fc" id="L855">        }</span>
-<span class="fc" id="L856">    }</span>
+<span class="nc" id="L882">        } catch (Exception e) {</span>
+<span class="nc" id="L883">             e.printStackTrace();</span>
+<span class="nc" id="L884">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="fc" id="L885">        }</span>
+<span class="fc" id="L886">    }</span>
     
     public static void writeImage(GreyscaleImage img, String fileNameSuffix) {
         
         try {
-<span class="fc" id="L861">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L862">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
-                + &quot;.png&quot;, img);
-<span class="nc" id="L864">        } catch (Exception e) {</span>
-<span class="nc" id="L865">             e.printStackTrace();</span>
-<span class="nc" id="L866">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="fc" id="L867">        }</span>
-<span class="fc" id="L868">    }</span>
-
-    public static void plotCorners(GreyscaleImage imgGrey, PairIntArray corners, 
-        String fileNameSuffix) {
-        
-<span class="fc" id="L873">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
-<span class="fc" id="L874">        ImageIOHelper.addCurveToImage(corners, imgW, 1, 255, 0, 0);</span>
-        try {
-<span class="fc" id="L876">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L877">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
-                + &quot;.png&quot;, imgW);
-<span class="nc" id="L879">        } catch (Exception e) {</span>
-<span class="nc" id="L880">             e.printStackTrace();</span>
-<span class="nc" id="L881">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="fc" id="L882">        }</span>
-<span class="fc" id="L883">    }</span>
-    
-    public static void plotCorners(GreyscaleImage imgGrey, 
-        Collection&lt;PairInt&gt; points, String fileNameSuffix, int pointSize) {
-        
-<span class="fc" id="L888">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
-<span class="fc" id="L889">        ImageIOHelper.addCurveToImage(points, imgW, pointSize, 255, 0, 0);</span>
-        try {
 <span class="fc" id="L891">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
 <span class="fc" id="L892">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
-                + &quot;.png&quot;, imgW);
+                + &quot;.png&quot;, img);
 <span class="nc" id="L894">        } catch (Exception e) {</span>
 <span class="nc" id="L895">             e.printStackTrace();</span>
 <span class="nc" id="L896">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
 <span class="fc" id="L897">        }</span>
 <span class="fc" id="L898">    }</span>
 
+    public static void plotCorners(GreyscaleImage imgGrey, PairIntArray corners, 
+        String fileNameSuffix) {
+        
+<span class="fc" id="L903">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
+<span class="fc" id="L904">        ImageIOHelper.addCurveToImage(corners, imgW, 1, 255, 0, 0);</span>
+        try {
+<span class="fc" id="L906">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L907">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
+                + &quot;.png&quot;, imgW);
+<span class="nc" id="L909">        } catch (Exception e) {</span>
+<span class="nc" id="L910">             e.printStackTrace();</span>
+<span class="nc" id="L911">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="fc" id="L912">        }</span>
+<span class="fc" id="L913">    }</span>
+    
+    public static void plotCorners(GreyscaleImage imgGrey, 
+        Collection&lt;PairInt&gt; points, String fileNameSuffix, int pointSize) {
+        
+<span class="fc" id="L918">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
+<span class="fc" id="L919">        ImageIOHelper.addCurveToImage(points, imgW, pointSize, 255, 0, 0);</span>
+        try {
+<span class="fc" id="L921">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L922">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
+                + &quot;.png&quot;, imgW);
+<span class="nc" id="L924">        } catch (Exception e) {</span>
+<span class="nc" id="L925">             e.printStackTrace();</span>
+<span class="nc" id="L926">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
+<span class="fc" id="L927">        }</span>
+<span class="fc" id="L928">    }</span>
+
     public static void printCornerRegion(CornerRegion[] cr) {
-<span class="nc" id="L901">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L902" title="All 2 branches missed.">        for (int i = 0; i &lt; cr.length; ++i) {</span>
-<span class="nc bnc" id="L903" title="All 2 branches missed.">            if (cr[i] == null) {</span>
-<span class="nc" id="L904">                continue;</span>
+<span class="nc" id="L931">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L932" title="All 2 branches missed.">        for (int i = 0; i &lt; cr.length; ++i) {</span>
+<span class="nc bnc" id="L933" title="All 2 branches missed.">            if (cr[i] == null) {</span>
+<span class="nc" id="L934">                continue;</span>
             }
-<span class="nc" id="L906">            sb.append(Integer.valueOf(i)).append(&quot;) &quot;).append(cr[i].toString());</span>
+<span class="nc" id="L936">            sb.append(Integer.valueOf(i)).append(&quot;) &quot;).append(cr[i].toString());</span>
         }
         
-<span class="nc" id="L909">        log.info(sb.toString());</span>
-<span class="nc" id="L910">    }</span>
+<span class="nc" id="L939">        log.info(sb.toString());</span>
+<span class="nc" id="L940">    }</span>
 
     public static void display(CornerRegion cornerRegion1, 
         CornerRegion cornerRegion2, GreyscaleImage img1Grey, 
         GreyscaleImage img2Grey, String index, int halfWidthOfDisplay) 
         throws CornerRegion.CornerRegionDegneracyException, IOException {
         
-<span class="nc" id="L917">        int sWidth = 2*halfWidthOfDisplay;</span>
-<span class="nc" id="L918">        int sHeight = 2*halfWidthOfDisplay;</span>
+<span class="nc" id="L947">        int sWidth = 2*halfWidthOfDisplay;</span>
+<span class="nc" id="L948">        int sHeight = 2*halfWidthOfDisplay;</span>
         
-<span class="nc" id="L920">        int kMaxIdx = cornerRegion1.getKMaxIdx();</span>
-<span class="nc" id="L921">        int x1 = cornerRegion1.getX()[kMaxIdx];</span>
-<span class="nc" id="L922">        int y1 = cornerRegion1.getY()[kMaxIdx];</span>
-<span class="nc" id="L923">        float orientation1 = cornerRegion1.getRelativeOrientationInDegrees();</span>
-<span class="nc" id="L924">        String label1 = String.format(&quot;[%s] (%d,%d) %.1f degrees&quot;, index, x1, y1, </span>
-<span class="nc" id="L925">            orientation1);</span>
+<span class="nc" id="L950">        int kMaxIdx = cornerRegion1.getKMaxIdx();</span>
+<span class="nc" id="L951">        int x1 = cornerRegion1.getX()[kMaxIdx];</span>
+<span class="nc" id="L952">        int y1 = cornerRegion1.getY()[kMaxIdx];</span>
+<span class="nc" id="L953">        float orientation1 = cornerRegion1.getRelativeOrientationInDegrees();</span>
+<span class="nc" id="L954">        String label1 = String.format(&quot;[%s] (%d,%d) %.1f degrees&quot;, index, x1, y1, </span>
+<span class="nc" id="L955">            orientation1);</span>
         
-<span class="nc" id="L927">        GreyscaleImage sImg1 = img1Grey.subImage(x1, y1, sWidth, sHeight);</span>
+<span class="nc" id="L957">        GreyscaleImage sImg1 = img1Grey.subImage(x1, y1, sWidth, sHeight);</span>
         
-<span class="nc" id="L929">        kMaxIdx = cornerRegion2.getKMaxIdx();</span>
-<span class="nc" id="L930">        int x2 = cornerRegion2.getX()[kMaxIdx];</span>
-<span class="nc" id="L931">        int y2 = cornerRegion2.getY()[kMaxIdx];</span>
-<span class="nc" id="L932">        float orientation2 = cornerRegion2.getRelativeOrientationInDegrees();</span>
-<span class="nc" id="L933">        String label2 = String.format(&quot;[%s] (%d,%d) %.1f degrees&quot;, index, x2, y2, </span>
-<span class="nc" id="L934">            orientation2);</span>
+<span class="nc" id="L959">        kMaxIdx = cornerRegion2.getKMaxIdx();</span>
+<span class="nc" id="L960">        int x2 = cornerRegion2.getX()[kMaxIdx];</span>
+<span class="nc" id="L961">        int y2 = cornerRegion2.getY()[kMaxIdx];</span>
+<span class="nc" id="L962">        float orientation2 = cornerRegion2.getRelativeOrientationInDegrees();</span>
+<span class="nc" id="L963">        String label2 = String.format(&quot;[%s] (%d,%d) %.1f degrees&quot;, index, x2, y2, </span>
+<span class="nc" id="L964">            orientation2);</span>
         
-<span class="nc" id="L936">        GreyscaleImage sImg2 = img2Grey.subImage(x2, y2, sWidth, sHeight);</span>
+<span class="nc" id="L966">        GreyscaleImage sImg2 = img2Grey.subImage(x2, y2, sWidth, sHeight);</span>
         
-<span class="nc" id="L938">        ImageDisplayer.displayImage(label1, sImg1);</span>
-<span class="nc" id="L939">        ImageDisplayer.displayImage(label2, sImg2);</span>
+<span class="nc" id="L968">        ImageDisplayer.displayImage(label1, sImg1);</span>
+<span class="nc" id="L969">        ImageDisplayer.displayImage(label2, sImg2);</span>
         
-<span class="nc" id="L941">        int z = 1;</span>
-<span class="nc" id="L942">    }</span>
+<span class="nc" id="L971">        int z = 1;</span>
+<span class="nc" id="L972">    }</span>
     
     public static void writeImage(Set&lt;CornerRegion&gt; cornerRegions, 
         Image img, String fileSuffix) throws IOException {
        
-<span class="fc" id="L947">        int rClr = 255;</span>
-<span class="fc" id="L948">        int gClr = 0;</span>
-<span class="fc" id="L949">        int bClr = 0;</span>
+<span class="fc" id="L977">        int rClr = 255;</span>
+<span class="fc" id="L978">        int gClr = 0;</span>
+<span class="fc" id="L979">        int bClr = 0;</span>
         
-<span class="fc bfc" id="L951" title="All 2 branches covered.">        for (CornerRegion cr : cornerRegions) {</span>
-<span class="fc" id="L952">            int kMaxIdx = cr.getKMaxIdx();</span>
-<span class="fc" id="L953">            int x = cr.getX()[kMaxIdx];</span>
-<span class="fc" id="L954">            int y = cr.getY()[kMaxIdx];</span>
-<span class="fc" id="L955">            float k = cr.getK()[kMaxIdx];</span>
-<span class="fc" id="L956">            int pointSize = 1 + Math.round((k - 0.1f)/0.1f);</span>
-<span class="pc bpc" id="L957" title="1 of 2 branches missed.">            if (pointSize &lt; 0) {</span>
-<span class="nc" id="L958">                pointSize = 1;</span>
+<span class="fc bfc" id="L981" title="All 2 branches covered.">        for (CornerRegion cr : cornerRegions) {</span>
+<span class="fc" id="L982">            int kMaxIdx = cr.getKMaxIdx();</span>
+<span class="fc" id="L983">            int x = cr.getX()[kMaxIdx];</span>
+<span class="fc" id="L984">            int y = cr.getY()[kMaxIdx];</span>
+<span class="fc" id="L985">            float k = cr.getK()[kMaxIdx];</span>
+<span class="fc" id="L986">            int pointSize = 1 + Math.round((k - 0.1f)/0.1f);</span>
+<span class="pc bpc" id="L987" title="1 of 2 branches missed.">            if (pointSize &lt; 0) {</span>
+<span class="nc" id="L988">                pointSize = 1;</span>
             }
             
-<span class="fc bfc" id="L961" title="All 2 branches covered.">            for (int dx = (-1*pointSize); dx &lt; (pointSize + 1); dx++) {</span>
-<span class="fc" id="L962">                float xx = x + dx;</span>
-<span class="fc bfc" id="L963" title="All 4 branches covered.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
-<span class="fc bfc" id="L964" title="All 2 branches covered.">                    for (int dy = (-1*pointSize); dy &lt; (pointSize + 1); dy++) {</span>
-<span class="fc" id="L965">                        float yy = y + dy;</span>
-<span class="fc bfc" id="L966" title="All 4 branches covered.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
-<span class="fc" id="L967">                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+<span class="fc bfc" id="L991" title="All 2 branches covered.">            for (int dx = (-1*pointSize); dx &lt; (pointSize + 1); dx++) {</span>
+<span class="fc" id="L992">                float xx = x + dx;</span>
+<span class="fc bfc" id="L993" title="All 4 branches covered.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
+<span class="fc bfc" id="L994" title="All 2 branches covered.">                    for (int dy = (-1*pointSize); dy &lt; (pointSize + 1); dy++) {</span>
+<span class="fc" id="L995">                        float yy = y + dy;</span>
+<span class="fc bfc" id="L996" title="All 4 branches covered.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
+<span class="fc" id="L997">                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                         }
                     }
                 }
             }
-<span class="fc" id="L972">        }</span>
+<span class="fc" id="L1002">        }</span>
         
-<span class="fc" id="L974">        String dirPath = algorithms.util.ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L975">        String sep = System.getProperty(&quot;file.separator&quot;);</span>
-<span class="fc" id="L976">        ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + &quot;.png&quot;, img);</span>
-<span class="fc" id="L977">    }</span>
+<span class="fc" id="L1004">        String dirPath = algorithms.util.ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L1005">        String sep = System.getProperty(&quot;file.separator&quot;);</span>
+<span class="fc" id="L1006">        ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + &quot;.png&quot;, img);</span>
+<span class="fc" id="L1007">    }</span>
 
     public static void debugPlot(List&lt;CurvatureScaleSpaceContour&gt; result, ImageExt 
         img, int xOffset, int yOffset, String fileSuffix) {
         
-<span class="pc bpc" id="L982" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
-<span class="nc" id="L983">            return;</span>
+<span class="nc bnc" id="L1012" title="All 2 branches missed.">        if (result.isEmpty()) {</span>
+<span class="nc" id="L1013">            return;</span>
         }
         
-<span class="fc" id="L986">        int nExtraForDot = 1;</span>
-<span class="fc" id="L987">        int rClr = 255;</span>
-<span class="fc" id="L988">        int gClr = 0;</span>
-<span class="fc" id="L989">        int bClr = 0;</span>
+<span class="nc" id="L1016">        int nExtraForDot = 1;</span>
+<span class="nc" id="L1017">        int rClr = 255;</span>
+<span class="nc" id="L1018">        int gClr = 0;</span>
+<span class="nc" id="L1019">        int bClr = 0;</span>
         
-<span class="fc bfc" id="L991" title="All 2 branches covered.">        for (int i = 0; i &lt; result.size(); i++) {</span>
-            
-<span class="fc" id="L993">            CurvatureScaleSpaceContour cssC = result.get(i);</span>
-            
-<span class="fc" id="L995">            CurvatureScaleSpaceImagePoint[] peakDetails = cssC.getPeakDetails();</span>
-            
-<span class="fc bfc" id="L997" title="All 2 branches covered.">            for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {</span>
-<span class="fc" id="L998">                int x = peakDetail.getXCoord() + xOffset;</span>
-<span class="fc" id="L999">                int y = peakDetail.getYCoord() + yOffset;</span>
-<span class="fc bfc" id="L1000" title="All 2 branches covered.">                for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="fc" id="L1001">                    float xx = x + dx;</span>
-<span class="pc bpc" id="L1002" title="2 of 4 branches missed.">                    if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
-<span class="fc bfc" id="L1003" title="All 2 branches covered.">                        for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
-<span class="fc" id="L1004">                            dy++) {</span>
-<span class="fc" id="L1005">                            float yy = y + dy;</span>
-<span class="pc bpc" id="L1006" title="2 of 4 branches missed.">                            if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
-<span class="fc" id="L1007">                                img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
-                            }
-                        }
-                    }
-                }
-            }            
-        }
+<span class="nc" id="L1021">        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, </span>
+            nExtraForDot, rClr, gClr, bClr);
         
         try {
             
-<span class="fc" id="L1017">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L1026">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
 
-<span class="fc" id="L1019">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
+<span class="nc" id="L1028">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
                 + fileSuffix + &quot;.png&quot;, img);
         
-<span class="pc" id="L1022">        } catch (IOException e) {}</span>
-<span class="fc" id="L1023">    }</span>
+<span class="nc" id="L1031">        } catch (IOException e) {}</span>
+<span class="nc" id="L1032">    }</span>
 
     public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
         String fileSuffix) throws IOException {
+               
+<span class="fc" id="L1037">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
         
-<span class="fc" id="L1028">        float[] sigmas = scaleSpaceImage.getImageSigmas();</span>
+<span class="fc" id="L1039">        plotScaleSpaceCurve(plotter, scaleSpaceImage, </span>
+            &quot;t vs. sigma for inflection points&quot;);
         
-<span class="fc" id="L1030">        float[][] tVsSigma = scaleSpaceImage.getScaleSpaceImage();</span>
+<span class="fc" id="L1042">        plotter.writeFile(fileSuffix);</span>
+<span class="fc" id="L1043">    }</span>
+    
+    public static void plotScaleSpaceCurve(PolygonAndPointPlotter plotter, 
+        ScaleSpaceCurveImage scaleSpaceImage, String label) throws IOException {
         
-<span class="fc" id="L1032">        int n = 0;</span>
-<span class="fc bfc" id="L1033" title="All 2 branches covered.">        for (int col = 0; col &lt; tVsSigma.length; col++) {</span>
-<span class="fc" id="L1034">            n += tVsSigma[col].length;</span>
+<span class="fc" id="L1048">        float[] sigmas = scaleSpaceImage.getImageSigmas();</span>
+        
+<span class="fc" id="L1050">        float[][] tVsSigma = scaleSpaceImage.getScaleSpaceImage();</span>
+        
+<span class="fc" id="L1052">        int n = 0;</span>
+<span class="fc bfc" id="L1053" title="All 2 branches covered.">        for (int col = 0; col &lt; tVsSigma.length; col++) {</span>
+<span class="fc" id="L1054">            n += tVsSigma[col].length;</span>
         }
         
-<span class="fc" id="L1037">        float[] x = new float[n];</span>
-<span class="fc" id="L1038">        float[] y = new float[n];</span>
-<span class="fc" id="L1039">        n = 0;</span>
-<span class="fc bfc" id="L1040" title="All 2 branches covered.">        for (int col = 0; col &lt; tVsSigma.length; col++) {</span>
-<span class="fc" id="L1041">            float sigma = sigmas[col];</span>
-<span class="fc bfc" id="L1042" title="All 2 branches covered.">            for (int row = 0; row &lt; tVsSigma[col].length; row++) {</span>
-<span class="fc" id="L1043">                y[n] = sigma;</span>
-<span class="fc" id="L1044">                x[n] = tVsSigma[col][row];</span>
-<span class="fc" id="L1045">                n++;</span>
+<span class="fc" id="L1057">        float[] x = new float[n];</span>
+<span class="fc" id="L1058">        float[] y = new float[n];</span>
+<span class="fc" id="L1059">        n = 0;</span>
+<span class="fc bfc" id="L1060" title="All 2 branches covered.">        for (int col = 0; col &lt; tVsSigma.length; col++) {</span>
+<span class="fc" id="L1061">            float sigma = sigmas[col];</span>
+<span class="fc bfc" id="L1062" title="All 2 branches covered.">            for (int row = 0; row &lt; tVsSigma[col].length; row++) {</span>
+<span class="fc" id="L1063">                y[n] = sigma;</span>
+<span class="fc" id="L1064">                x[n] = tVsSigma[col][row];</span>
+<span class="fc" id="L1065">                n++;</span>
             }
         }
         
-<span class="fc" id="L1049">        float xMin = 0;</span>
-<span class="fc" id="L1050">        float xMax = 1.f;</span>
-<span class="fc" id="L1051">        float yMin = 0;</span>
-<span class="fc" id="L1052">        float yMax = 1.1f * algorithms.misc.MiscMath.findMax(y);</span>
-            
-<span class="fc" id="L1054">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-        
-<span class="fc" id="L1056">        plotter.addPlot(xMin, xMax, yMin, yMax,</span>
-            x, y, null, null, 
-            &quot;t vs. sigma for inflection points&quot;);
-        
-<span class="fc" id="L1060">        plotter.writeFile(fileSuffix);</span>
-<span class="fc" id="L1061">    }</span>
+<span class="fc" id="L1069">        float xMin = 0;</span>
+<span class="fc" id="L1070">        float xMax = 1.f;</span>
+<span class="fc" id="L1071">        float yMin = 0;</span>
+<span class="fc" id="L1072">        float yMax = 1.1f * algorithms.misc.MiscMath.findMax(y);</span>
+                    
+<span class="fc" id="L1074">        plotter.addPlot(xMin, xMax, yMin, yMax,</span>
+            x, y, null, null, label);        
+<span class="fc" id="L1076">    }</span>
     
     public static void writeImage(PairIntArray[] edges,
         Image img, String suffix) throws IOException {
         
-<span class="fc bfc" id="L1066" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.length; i++) {</span>
-<span class="fc" id="L1067">            PairIntArray edge = edges[i];</span>
-<span class="fc" id="L1068">            ImageIOHelper.addCurveToImage(edge, img, 0, 255, 0, 0);</span>
+<span class="fc bfc" id="L1081" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.length; i++) {</span>
+<span class="fc" id="L1082">            PairIntArray edge = edges[i];</span>
+<span class="fc" id="L1083">            ImageIOHelper.addCurveToImage(edge, img, 0, 255, 0, 0);</span>
         }     
         
-<span class="fc" id="L1071">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L1086">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
         
-<span class="fc" id="L1073">        ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L1088">        ImageIOHelper.writeOutputImage(</span>
             dirPath + &quot;/&quot; + suffix + &quot;.png&quot;, img);
-<span class="fc" id="L1075">    }</span>
+<span class="fc" id="L1090">    }</span>
     
     public static void writeImage(PairIntArray edge,
         Image img, String suffix) throws IOException {
         
-<span class="nc" id="L1080">        ImageIOHelper.addCurveToImage(edge, img, 1, 255, 0, 0);</span>
+<span class="nc" id="L1095">        ImageIOHelper.addCurveToImage(edge, img, 1, 255, 0, 0);</span>
         
-<span class="nc" id="L1082">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L1097">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
         
-<span class="nc" id="L1084">        ImageIOHelper.writeOutputImage(</span>
+<span class="nc" id="L1099">        ImageIOHelper.writeOutputImage(</span>
             dirPath + &quot;/&quot; + suffix + &quot;.png&quot;, img);
-<span class="nc" id="L1086">    }</span>
+<span class="nc" id="L1101">    }</span>
     
     public static void writeImage(PairIntArray edge,
         Image img, int nExtraDot, String suffix) throws IOException {
         
-<span class="fc" id="L1091">        ImageIOHelper.addCurveToImage(edge, img, nExtraDot, 255, 0, 0);</span>
+<span class="fc" id="L1106">        ImageIOHelper.addCurveToImage(edge, img, nExtraDot, 255, 0, 0);</span>
         
-<span class="fc" id="L1093">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L1108">        String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
         
-<span class="fc" id="L1095">        ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L1110">        ImageIOHelper.writeOutputImage(</span>
             dirPath + &quot;/&quot; + suffix + &quot;.png&quot;, img);
-<span class="fc" id="L1097">    }</span>
+<span class="fc" id="L1112">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -248,8 +248,8 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L249">                boolean didMatch = matcher.matchContours();</span>
 
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">                if (!didMatch) {</span>
-<span class="nc" id="L252">                    continue;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                if (!didMatch) {</span>
+<span class="fc" id="L252">                    continue;</span>
                 }
 
 <span class="fc" id="L255">                List&lt;CurvatureScaleSpaceContour&gt; m1 = matcher.getSolutionMatchedContours1();</span>
@@ -293,7 +293,7 @@ int z = 1;
 }
 */
 
-<span class="pc bpc" id="L296" title="1 of 8 branches missed.">                if ((cost &lt; minCost) || ((bestM1 != null) &amp;&amp; (m1.size() &gt; 2) &amp;&amp; (bestM1.size() &lt; 3))) {</span>
+<span class="pc bpc" id="L296" title="2 of 8 branches missed.">                if ((cost &lt; minCost) || ((bestM1 != null) &amp;&amp; (m1.size() &gt; 2) &amp;&amp; (bestM1.size() &lt; 3))) {</span>
 
                     // if i2 is already matched to the best of i1 and the
                     // cost there is smaller, cannot set to best here
@@ -481,8 +481,8 @@ try {
 <span class="fc" id="L481">            }</span>
 <span class="fc" id="L482">        }</span>
 
-<span class="fc bfc" id="L484" title="All 2 branches covered.">        if (count == 0) {</span>
-<span class="fc" id="L485">            return;</span>
+<span class="pc bpc" id="L484" title="1 of 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L485">            return;</span>
         }
         
 <span class="fc" id="L488">        nSimilarSummary = Arrays.copyOf(nSimilarSummary, count);</span>
@@ -661,8 +661,8 @@ try {
 <span class="nc" id="L661">            throw new IllegalArgumentException(&quot;contours cannot be null&quot;);</span>
         }
 
-<span class="pc bpc" id="L664" title="1 of 2 branches missed.">        if (contours.isEmpty()) {</span>
-<span class="nc" id="L665">            return;</span>
+<span class="fc bfc" id="L664" title="All 2 branches covered.">        if (contours.isEmpty()) {</span>
+<span class="fc" id="L665">            return;</span>
         }
 
         // the contours extracted from scale space images using a factor of

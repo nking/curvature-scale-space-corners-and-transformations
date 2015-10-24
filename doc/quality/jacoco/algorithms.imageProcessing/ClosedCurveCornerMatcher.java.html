@@ -1,0 +1,1054 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ClosedCurveCornerMatcher.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ClosedCurveCornerMatcher.java</span></div><h1>ClosedCurveCornerMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.compGeometry.NearestPoints;
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.logging.Logger;
+import thirdparty.HungarianAlgorithm;
+
+/**
+ *
+ *
+ * @author nichole
+ */
+<span class="nc bnc" id="L24" title="All 2 branches missed.">public class ClosedCurveCornerMatcher {</span>
+
+<span class="nc" id="L26">    protected Heap heap = null;</span>
+
+    /**
+     * the costs calculated here are small fractions, so they need to be
+     * multiplied by a large constant for use with the Fibonacci heap
+     * which uses type long for its key (key is where cost is stored).
+     * using 1E12 here
+     */
+    protected final static long heapKeyFactor = 1000000000000l;
+
+    protected final List&lt;CornerRegion&gt; c1;
+
+    protected final List&lt;CornerRegion&gt; c2;
+
+    protected final NearestPoints np;
+
+    protected final IntensityFeatures features1;
+
+    protected final IntensityFeatures features2;
+
+<span class="nc" id="L46">    protected final int dither = 3;</span>
+
+<span class="nc" id="L48">    protected final int rotationTolerance = 20;</span>
+
+    //TODO: tune this
+<span class="nc" id="L51">    private int tolerance = 2;</span>
+
+    private float kMin1;
+    private float kMax1;
+    private float kMin2;
+    private float kMax2;
+
+<span class="nc" id="L58">    private TransformationParameters solutionParameters = null;</span>
+
+<span class="nc" id="L60">    private double solutionCost = Double.MAX_VALUE;</span>
+
+<span class="nc" id="L62">    private List&lt;Integer&gt; solutionMatchedCornerIndexes1 = null;</span>
+
+<span class="nc" id="L64">    private List&lt;Integer&gt; solutionMatchedCornerIndexes2 = null;</span>
+
+<span class="nc" id="L66">    private List&lt;FeatureComparisonStat&gt; solutionMatchedCompStats = null;</span>
+
+<span class="nc" id="L68">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+<span class="nc" id="L70">    private boolean solverHasFinished = false;</span>
+
+<span class="nc" id="L72">    private boolean hasBeenInitialized = false;</span>
+
+<span class="nc" id="L74">    private boolean solutionHasSomeScalesSmallerThanOne = false;</span>
+
+    public ClosedCurveCornerMatcher(final IntensityFeatures features1,
+        final IntensityFeatures features2, final List&lt;CornerRegion&gt; corners1,
+<span class="nc" id="L78">        final List&lt;CornerRegion&gt; corners2, boolean cornersAreAlreadySorted) {</span>
+
+<span class="nc" id="L80">        c1 = new ArrayList&lt;CornerRegion&gt;(corners1.size());</span>
+
+<span class="nc" id="L82">        c2 = new ArrayList&lt;CornerRegion&gt;(corners2.size());</span>
+
+<span class="nc" id="L84">        solutionMatchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+
+<span class="nc" id="L86">        this.features1 = features1;</span>
+
+<span class="nc" id="L88">        this.features2 = features2;</span>
+
+<span class="nc" id="L90">        initializeVariables(corners1, corners2);</span>
+
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (!cornersAreAlreadySorted) {</span>
+
+            // sort by descending |k|
+<span class="nc" id="L95">            Collections.sort(c1, new DescendingKComparator());</span>
+
+<span class="nc" id="L97">            Collections.sort(c2, new DescendingKComparator());</span>
+        }
+
+<span class="nc" id="L100">        int[] xC2 = new int[c2.size()];</span>
+<span class="nc" id="L101">        int[] yC2 = new int[c2.size()];</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        for (int i = 0; i &lt; c2.size(); ++i) {</span>
+<span class="nc" id="L103">            CornerRegion cr = c2.get(i);</span>
+<span class="nc" id="L104">            xC2[i] = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="nc" id="L105">            yC2[i] = cr.getY()[cr.getKMaxIdx()];</span>
+        }
+<span class="nc" id="L107">        np = new NearestPoints(xC2, yC2);</span>
+
+<span class="nc" id="L109">        initializeHeapNodes();</span>
+<span class="nc" id="L110">    }</span>
+
+    public boolean matchCorners() {
+
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="nc" id="L115">            throw new IllegalStateException(</span>
+            &quot;matchContours cannot be invoked more than once&quot;);
+        }
+
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (heap.getNumberOfNodes() == 0) {</span>
+<span class="nc" id="L120">            solverHasFinished = true;</span>
+<span class="nc" id="L121">            return false;</span>
+        }
+
+<span class="nc" id="L124">        solutionParameters = null;</span>
+<span class="nc" id="L125">        solutionCost = Double.MAX_VALUE;</span>
+        
+        //TODO: this may need revision as more tests are added.
+        //      the method is not expected to be used as much as the alternatives
+        //      so the revision is not highest priority
+        // The next statements are looking at the top 10 results, combining
+        // them and finding the best averge SSD among the combined.
+        
+        //temporary look at evaluating entire solutions:
+<span class="nc" id="L134">        HeapNode minCost = heap.extractMin();//solve();</span>
+
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (minCost == null) {</span>
+<span class="nc" id="L137">            return false;</span>
+        }
+
+        // ========= begin combining results ==========
+<span class="nc" id="L141">        List&lt;TransformationParameters&gt; topParams</span>
+            = new ArrayList&lt;TransformationParameters&gt;();
+
+<span class="nc" id="L144">        List&lt;HeapNode&gt; top = new ArrayList&lt;HeapNode&gt;();</span>
+<span class="nc" id="L145">        top.add(minCost);</span>
+<span class="nc" id="L146">        topParams.add(((TransformationPair2)minCost.getData())</span>
+<span class="nc" id="L147">            .getTransformationParameters());</span>
+<span class="nc" id="L148">        HeapNode node = heap.extractMin();</span>
+<span class="nc bnc" id="L149" title="All 4 branches missed.">        while ((node != null) &amp;&amp; (top.size() &lt; 11)) {</span>
+<span class="nc" id="L150">            TransformationPair2 tPair = (TransformationPair2)node.getData();</span>
+<span class="nc" id="L151">            int n = tPair.getNextCorner().getMatchedCornerIndexes1().size();</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            if (n &gt; 2) {</span>
+<span class="nc" id="L153">                top.add(node);</span>
+<span class="nc" id="L154">                topParams.add(tPair.getTransformationParameters());</span>
+            }
+<span class="nc" id="L156">            node = heap.extractMin();</span>
+<span class="nc" id="L157">        }</span>
+
+        // combine similar results
+        // for example, in one test dataset can see the correct solution is
+        // at top[1] and top[2]
+<span class="nc" id="L162">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
+<span class="nc" id="L163">        Map&lt;Integer, Set&lt;Integer&gt;&gt; similarParams = tc.findSimilarByScaleAndRotation(</span>
+            topParams);
+        
+        // aggregate the points and calculate the total SSD/nPoints
+<span class="nc" id="L167">        List&lt;Set&lt;PairInt&gt;&gt; topMatchedCornerIndexes = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="nc" id="L168">        List&lt;Set&lt;Integer&gt;&gt; topMatchedIndexes = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+<span class="nc" id="L169">        List&lt;Double&gt; topMatchedSSD = new ArrayList&lt;Double&gt;();</span>
+<span class="nc" id="L170">        List&lt;Map&lt;PairInt, FeatureComparisonStat&gt;&gt; topMatchedList </span>
+            = new ArrayList&lt;Map&lt;PairInt, FeatureComparisonStat&gt;&gt;();
+<span class="nc" id="L172">        double bestSSD = Double.MAX_VALUE;</span>
+<span class="nc" id="L173">        int bestSSDIdx = -1;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : similarParams.entrySet()) {</span>
+<span class="nc" id="L175">            Set&lt;Integer&gt; index1Added = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L176">            Set&lt;Integer&gt; index2Added = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L177">            Set&lt;PairInt&gt; combined = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L178">            Map&lt;PairInt, FeatureComparisonStat&gt; fcsMap = new HashMap&lt;PairInt, FeatureComparisonStat&gt;();</span>
+<span class="nc" id="L179">            double ssdSum = 0;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            for (Integer index : entry.getValue()) {</span>
+<span class="nc" id="L181">                TransformationPair2 tPair = (TransformationPair2)top.get(index.intValue()).getData();</span>
+<span class="nc" id="L182">                List&lt;Integer&gt; indexes1 = tPair.getNextCorner().getMatchedCornerIndexes1();</span>
+<span class="nc" id="L183">                List&lt;Integer&gt; indexes2 = tPair.getNextCorner().getMatchedCornerIndexes2();</span>
+<span class="nc" id="L184">                List&lt;FeatureComparisonStat&gt; stats = tPair.getNextCorner().getMatchedFeatureComparisonStats();</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                for (int i = 0; i &lt; indexes1.size(); ++i) {</span>
+<span class="nc" id="L186">                    Integer index1 = indexes1.get(i);</span>
+<span class="nc" id="L187">                    Integer index2 = indexes2.get(i);</span>
+<span class="nc" id="L188">                    PairInt p = new PairInt(index1.intValue(), index2.intValue());</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                    if (!combined.contains(p)) {</span>
+<span class="nc bnc" id="L190" title="All 4 branches missed.">                        if (!index1Added.contains(index1) &amp;&amp; !index2Added.contains(index2)) {</span>
+<span class="nc" id="L191">                            combined.add(p);</span>
+<span class="nc" id="L192">                            index1Added.add(index1);</span>
+<span class="nc" id="L193">                            index2Added.add(index2);</span>
+<span class="nc" id="L194">                            fcsMap.put(p, stats.get(i));</span>
+<span class="nc" id="L195">                            ssdSum += stats.get(i).getSumIntensitySqDiff();</span>
+                        }
+                    }
+                }
+<span class="nc" id="L199">            }</span>
+<span class="nc" id="L200">            topMatchedCornerIndexes.add(combined);</span>
+<span class="nc" id="L201">            topMatchedIndexes.add(entry.getValue());</span>
+<span class="nc" id="L202">            topMatchedList.add(fcsMap);</span>
+<span class="nc" id="L203">            ssdSum /= (double)combined.size();</span>
+<span class="nc" id="L204">            topMatchedSSD.add(Double.valueOf(ssdSum));</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            if (ssdSum &lt; bestSSD) {</span>
+<span class="nc" id="L206">                bestSSD = ssdSum;</span>
+<span class="nc" id="L207">                bestSSDIdx = topMatchedCornerIndexes.size() - 1;</span>
+            }
+<span class="nc" id="L209">        }</span>
+        
+<span class="nc bnc" id="L211" title="All 4 branches missed.">        if (!similarParams.isEmpty() &amp;&amp; (topMatchedCornerIndexes.get(bestSSDIdx).size() &gt; 2)) {</span>
+        
+            // TODO: consider re-calculating the TransformationParameter instead of
+            // averaging knowing that the origins (x,y) are the same
+<span class="nc" id="L215">            Set&lt;Integer&gt; minCostIndexes = topMatchedIndexes.get(bestSSDIdx);</span>
+<span class="nc" id="L216">            int[] rotationsInDegrees = new int[minCostIndexes.size()];</span>
+<span class="nc" id="L217">            int count = 0;</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            for (Integer topIndex : minCostIndexes) {</span>
+<span class="nc" id="L219">                TransformationPair2 tPair = (TransformationPair2)top.get(topIndex.intValue()).getData();</span>
+<span class="nc" id="L220">                TransformationParameters params2 = tPair.getTransformationParameters();</span>
+<span class="nc" id="L221">                rotationsInDegrees[count] = Math.round(params2.getRotationInDegrees());</span>
+<span class="nc" id="L222">                count++;</span>
+<span class="nc" id="L223">            }</span>
+<span class="nc" id="L224">            float avgRotDegrees = AngleUtil.calculateAverageWithQuadrantCorrections(</span>
+                rotationsInDegrees, rotationsInDegrees.length - 1);
+
+<span class="nc" id="L227">            float tXSum = 0;</span>
+<span class="nc" id="L228">            float tYSum = 0;</span>
+<span class="nc" id="L229">            float scaleSum = 0;</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            for (Integer topIndex : minCostIndexes) {</span>
+<span class="nc" id="L231">                TransformationPair2 tPair = (TransformationPair2)top.get(topIndex.intValue()).getData();</span>
+<span class="nc" id="L232">                TransformationParameters params2 = tPair.getTransformationParameters();</span>
+<span class="nc" id="L233">                tXSum += params2.getTranslationX();</span>
+<span class="nc" id="L234">                tYSum += params2.getTranslationY();</span>
+<span class="nc" id="L235">                scaleSum += params2.getScale();</span>
+<span class="nc" id="L236">            }</span>
+<span class="nc" id="L237">            tXSum /= (float)minCostIndexes.size();</span>
+<span class="nc" id="L238">            tYSum /= (float)minCostIndexes.size();</span>
+<span class="nc" id="L239">            scaleSum /= (float)minCostIndexes.size();</span>
+<span class="nc" id="L240">            TransformationParameters params = new TransformationParameters();</span>
+<span class="nc" id="L241">            params.setOriginX(0);</span>
+<span class="nc" id="L242">            params.setOriginY(0);</span>
+<span class="nc" id="L243">            params.setRotationInDegrees(avgRotDegrees);</span>
+<span class="nc" id="L244">            params.setScale(scaleSum);</span>
+<span class="nc" id="L245">            params.setTranslationX(tXSum);</span>
+<span class="nc" id="L246">            params.setTranslationY(tYSum);</span>
+
+<span class="nc" id="L248">            List&lt;Integer&gt; combinedIndexes1 = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L249">            List&lt;Integer&gt; combinedIndexes2 = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L250">            List&lt;FeatureComparisonStat&gt; fcsList = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            for (PairInt p : topMatchedCornerIndexes.get(bestSSDIdx)) {</span>
+<span class="nc" id="L252">                combinedIndexes1.add(Integer.valueOf(p.getX()));</span>
+<span class="nc" id="L253">                combinedIndexes2.add(Integer.valueOf(p.getY()));</span>
+<span class="nc" id="L254">                fcsList.add(topMatchedList.get(bestSSDIdx).get(p));</span>
+<span class="nc" id="L255">            }</span>
+
+<span class="nc" id="L257">            TransformationPair2 transformationPair = new TransformationPair2(</span>
+<span class="nc" id="L258">                c1.get(combinedIndexes1.get(0).intValue()),</span>
+<span class="nc" id="L259">                c2.get(combinedIndexes2.get(0).intValue()),</span>
+<span class="nc" id="L260">                c1.get(combinedIndexes1.get(1).intValue()),</span>
+<span class="nc" id="L261">                c2.get(combinedIndexes2.get(1).intValue()));</span>
+
+<span class="nc" id="L263">            transformationPair.setTransformationParameters(params);</span>
+
+<span class="nc" id="L265">            NextCorner nc = new NextCorner(c1);</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">            for (int i = 2; i &lt; combinedIndexes1.size(); ++i) {</span>
+<span class="nc" id="L267">                int idx1 = combinedIndexes1.get(i).intValue();</span>
+<span class="nc" id="L268">                int idx2 = combinedIndexes2.get(i).intValue();</span>
+<span class="nc" id="L269">                FeatureComparisonStat stat = fcsList.get(i);</span>
+<span class="nc" id="L270">                nc.addMatchedCorners(c1.get(idx1), c2.get(idx2), idx1, idx2, stat);</span>
+            }
+<span class="nc" id="L272">            transformationPair.setNextCorner(nc);</span>
+            
+<span class="nc" id="L274">            long costL = (long)(bestSSD * heapKeyFactor);</span>
+<span class="nc" id="L275">            minCost = new HeapNode(costL);</span>
+<span class="nc" id="L276">            minCost.setData(transformationPair);</span>
+
+            // ========= end combining results ==========
+            
+        } else {
+            // keep previous minCost node
+        }
+        
+<span class="nc" id="L284">        TransformationPair2 transformationPair = (TransformationPair2)minCost.getData();</span>
+<span class="nc" id="L285">        NextCorner nc = transformationPair.getNextCorner();</span>
+        
+<span class="nc" id="L287">        TransformationParameters params = transformationPair.getTransformationParameters();</span>
+
+<span class="nc" id="L289">        solutionParameters = params;</span>
+<span class="nc" id="L290">        solutionCost = ((double)minCost.getKey()/(double)heapKeyFactor);</span>
+
+<span class="nc" id="L292">        solutionMatchedCornerIndexes1 = nc.getMatchedCornerIndexes1();</span>
+
+<span class="nc" id="L294">        solutionMatchedCornerIndexes2 = nc.getMatchedCornerIndexes2();</span>
+
+<span class="nc" id="L296">        solutionMatchedCompStats = nc.getMatchedFeatureComparisonStats();</span>
+
+<span class="nc" id="L298">        solverHasFinished = true;</span>
+
+<span class="nc" id="L300">        solutionHasSomeScalesSmallerThanOne = transformationPair.scaleIsPossiblyAmbiguous();</span>
+
+<span class="nc" id="L302">        return true;</span>
+    }
+
+    private CornersAndFeatureStat findBestMatchWithinTolerance(
+        int corner1Idx, CornerRegion cornerCurve1, double[] predictedXYCurve2,
+        int rotationInDegrees, int rotationTolerance) {
+
+<span class="nc" id="L309">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+
+<span class="nc" id="L311">        FeatureComparisonStat bestStat = null;</span>
+
+<span class="nc" id="L313">        int bestIdx2 = -1;</span>
+
+<span class="nc" id="L315">        Set&lt;Integer&gt; c2Indexes = np.findNeighborIndexes(</span>
+<span class="nc" id="L316">            (int) Math.round(predictedXYCurve2[0]),</span>
+<span class="nc" id="L317">            (int) Math.round(predictedXYCurve2[1]), tolerance);</span>
+
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        for (Integer index : c2Indexes) {</span>
+
+<span class="nc" id="L321">            int idx2 = index.intValue();</span>
+
+<span class="nc" id="L323">            CornerRegion corner2 = c2.get(idx2);</span>
+
+<span class="nc" id="L325">            FeatureComparisonStat compStat = null;</span>
+
+            try {
+
+<span class="nc" id="L329">                compStat = featureMatcher.ditherAndRotateForBestLocation(</span>
+                    features1, features2, cornerCurve1, corner2, dither,
+                    rotationInDegrees, rotationTolerance);
+
+<span class="nc" id="L333">            } catch (CornerRegion.CornerRegionDegneracyException ex) {</span>
+<span class="nc" id="L334">                log.severe(ex.getMessage());</span>
+<span class="nc" id="L335">            }</span>
+
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            if (compStat == null) {</span>
+<span class="nc" id="L338">                continue;</span>
+            }
+
+<span class="nc bnc" id="L341" title="All 2 branches missed.">            if (bestStat == null) {</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">                if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
+<span class="nc" id="L343">                    bestStat = compStat;</span>
+<span class="nc" id="L344">                    bestIdx2 = idx2;</span>
+                }
+                continue;
+            }
+
+<span class="nc bnc" id="L349" title="All 2 branches missed.">            if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">                if (compStat.getSumIntensitySqDiff() &lt; bestStat.getSumIntensitySqDiff()) {</span>
+<span class="nc" id="L351">                    bestStat = compStat;</span>
+<span class="nc" id="L352">                    bestIdx2 = idx2;</span>
+                }
+            }
+<span class="nc" id="L355">        }</span>
+
+<span class="nc bnc" id="L357" title="All 2 branches missed.">        if (bestIdx2 &gt; -1) {</span>
+            
+<span class="nc" id="L359">            CornersAndFeatureStat cfs = new CornersAndFeatureStat(cornerCurve1,</span>
+<span class="nc" id="L360">                c2.get(bestIdx2), bestStat);</span>
+<span class="nc" id="L361">            cfs.idx1 = corner1Idx;</span>
+<span class="nc" id="L362">            cfs.idx2 = bestIdx2;</span>
+            
+<span class="nc" id="L364">            return cfs;</span>
+            
+        } else {
+            
+<span class="nc" id="L368">            return null;</span>
+        }
+    }
+
+    private static class CornersAndFeatureStat {
+        private final CornerRegion cr1;
+        private final CornerRegion cr2;
+        private int idx1 = -1;
+        private int idx2 = -1;
+        private final FeatureComparisonStat stat;
+        public CornersAndFeatureStat(CornerRegion cornerRegion1,
+            CornerRegion cornerRegion2, FeatureComparisonStat compStat) {
+            cr1 = cornerRegion1;
+            cr2 = cornerRegion2;
+            stat = compStat;
+        }
+    }
+
+    /**
+     * for each corner in c1, find the smallest matching SSD in c2 and return
+     * the indexes w.r.t. c2.
+     * Note that the code does not attempt unique (bipartite matching) because
+     * the results are not used as the final match, rather a part of combinations
+     * tried towards a solution.
+     * runtime complexity is O(N_c1 * N_c2)
+     * @return
+     */
+    protected CornersAndFeatureStat[] getBestSSDC1ToC2() {
+
+        // if no match, contains a null
+<span class="nc" id="L398">        CornersAndFeatureStat[] indexes2 = new CornersAndFeatureStat[c1.size()];</span>
+
+<span class="nc" id="L400">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        for (int i = 0; i &lt; c1.size(); ++i) {</span>
+
+<span class="nc" id="L404">            CornerRegion region1 = c1.get(i);</span>
+
+<span class="nc" id="L406">            FeatureComparisonStat best = null;</span>
+
+<span class="nc" id="L408">            int bestIdx2 = -1;</span>
+
+<span class="nc bnc" id="L410" title="All 2 branches missed.">            for (int j = 0; j &lt; c2.size(); ++j) {</span>
+
+<span class="nc" id="L412">                CornerRegion region2 = c2.get(j);</span>
+
+<span class="nc" id="L414">                FeatureComparisonStat compStat = null;</span>
+
+                try {
+
+<span class="nc" id="L418">                    compStat = featureMatcher.ditherAndRotateForBestLocation(</span>
+                        features1, features2, region1, region2, dither);
+
+<span class="nc" id="L421">                } catch (CornerRegion.CornerRegionDegneracyException ex) {</span>
+<span class="nc" id="L422">                    log.severe(&quot;**CONSIDER using more points in corner region&quot;);</span>
+<span class="nc" id="L423">                }</span>
+
+<span class="nc bnc" id="L425" title="All 2 branches missed.">                if (compStat == null) {</span>
+<span class="nc" id="L426">                    continue;</span>
+                }
+
+<span class="nc bnc" id="L429" title="All 2 branches missed.">                if (best == null) {</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">                    if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
+<span class="nc" id="L431">                        best = compStat;</span>
+<span class="nc" id="L432">                        bestIdx2 = j;</span>
+                    }
+                    continue;
+                }
+
+<span class="nc bnc" id="L437" title="All 2 branches missed.">                if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">                    if (compStat.getSumIntensitySqDiff() &lt; best.getSumIntensitySqDiff()) {</span>
+<span class="nc" id="L439">                        best = compStat;</span>
+<span class="nc" id="L440">                        bestIdx2 = j;</span>
+                    }
+                }
+            }
+
+<span class="nc bnc" id="L445" title="All 2 branches missed.">            if (bestIdx2 &gt; -1) {</span>
+<span class="nc" id="L446">                indexes2[i] = new CornersAndFeatureStat(c1.get(i),</span>
+<span class="nc" id="L447">                    c2.get(bestIdx2), best);</span>
+<span class="nc" id="L448">                indexes2[i].idx1 = i;</span>
+<span class="nc" id="L449">                indexes2[i].idx2 = bestIdx2;</span>
+            }
+        }
+
+<span class="nc" id="L453">        return indexes2;</span>
+    }
+
+    private void initializeVariables(List&lt;CornerRegion&gt; corners1,
+        List&lt;CornerRegion&gt; corners2) {
+
+<span class="nc bnc" id="L459" title="All 2 branches missed.">        if (hasBeenInitialized) {</span>
+<span class="nc" id="L460">            return;</span>
+        }
+
+<span class="nc" id="L463">        c1.addAll(corners1);</span>
+<span class="nc" id="L464">        c2.addAll(corners2);</span>
+
+<span class="nc" id="L466">        float minK = Float.MAX_VALUE;</span>
+<span class="nc" id="L467">        float maxK = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">        for (int i = 0; i &lt; c1.size(); i++) {</span>
+<span class="nc" id="L469">            CornerRegion cr = c1.get(i);</span>
+<span class="nc" id="L470">            float k = Math.abs(cr.k[cr.getKMaxIdx()]);</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">            if (k &lt; minK) {</span>
+<span class="nc" id="L472">                minK = k;</span>
+            }
+<span class="nc bnc" id="L474" title="All 2 branches missed.">            if (k &gt; maxK) {</span>
+<span class="nc" id="L475">                maxK = k;</span>
+            }
+        }
+<span class="nc" id="L478">        kMin1 = minK;</span>
+<span class="nc" id="L479">        kMax1 = maxK;</span>
+
+<span class="nc" id="L481">        minK = Float.MAX_VALUE;</span>
+<span class="nc" id="L482">        maxK = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">        for (int i = 0; i &lt; c2.size(); i++) {</span>
+<span class="nc" id="L484">            CornerRegion cr = c2.get(i);</span>
+<span class="nc" id="L485">            float k = Math.abs(cr.k[cr.getKMaxIdx()]);</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">            if (k &lt; minK) {</span>
+<span class="nc" id="L487">                minK = k;</span>
+            }
+<span class="nc bnc" id="L489" title="All 2 branches missed.">            if (k &gt; maxK) {</span>
+<span class="nc" id="L490">                maxK = k;</span>
+            }
+        }
+<span class="nc" id="L493">        kMin2 = minK;</span>
+<span class="nc" id="L494">        kMax2 = maxK;</span>
+
+<span class="nc" id="L496">        hasBeenInitialized = true;</span>
+<span class="nc" id="L497">    }</span>
+
+    /**
+     * initialize the starter solution nodes for the heap
+     */
+    private void initializeHeapNodes() {
+
+        /*
+        using a limit decided by runtime to decide between
+        the n*(n-1)/2  starter points and the n*n*(n-1)/2 starter points.
+              for n = 5  --&gt;  10 vs 50
+              for n = 10 --&gt;  45 vs 450
+              for n = 15 --&gt;  105 vs 1575
+              for n = 25 --&gt;  300 vs 7500
+        Since the corners are already high gradient in intensities, can expect
+        that the feature descriptors are somewhat unique so an assumption that
+        the best match is correct for at least 2 out of n is not bad for n &gt; 10.
+        */
+
+<span class="nc" id="L516">        heap = new Heap();</span>
+
+<span class="nc" id="L518">        int n = Math.min(c1.size(), c2.size());</span>
+
+        /*if (n &lt; 10) {
+            initHeapNodes2();
+        } else {*/
+<span class="nc" id="L523">            initHeapNodes1();</span>
+        //}
+<span class="nc" id="L525">    }</span>
+
+    /**
+     * create starter solution nodes for the heap using a pattern of combinations
+     * with runtime O(n*(n-1)/2).
+     *
+     */
+    private void initHeapNodes1() {
+
+        // if no match, contains a null
+<span class="nc" id="L535">        CornersAndFeatureStat[] indexes2 = getBestSSDC1ToC2();</span>
+
+<span class="nc" id="L537">log.info(&quot;getBestSSDC1ToC2: &quot;);</span>
+<span class="nc bnc" id="L538" title="All 2 branches missed.">for (int i = 0; i &lt; indexes2.length; ++i) {</span>
+<span class="nc" id="L539">    CornersAndFeatureStat cfs = indexes2[i];</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">    if (cfs == null) {</span>
+<span class="nc" id="L541">        continue;</span>
+    }
+<span class="nc" id="L543">    log.info(&quot;pre-search: SSD match of &quot; + cfs.stat.getImg1Point().toString()</span>
+<span class="nc" id="L544">        + &quot; to &quot; + cfs.stat.getImg2Point());</span>
+}
+
+        /*
+        If one knew that that best SSD match of a point in curve1 to
+        point in curve2 were true for at least 2 points in the curves,
+        then one could use a pattern of solution starter points of
+          pt 1 = curve1[0] w/ best SSD match in curve2
+          pt 2 = curve1[1] w/ best SSD match in curve2
+          written as (pt1, pt2) for one solution starter
+                     (pt1, pt3) for another solution starter
+                     (pt1, pt4)  &quot;&quot;
+                     (pt2, pt3)  &quot;&quot;
+                     (pt2, pt4)  &quot;&quot;
+                     (pt3, pt4)  &quot;&quot;
+                     which is n!/(k!(n-k)!)
+                     since k is always 2, can rewrite it as n*(n-1)/2.
+        for a curve with 4 corners, the heap would have 6 solution starter nodes
+        */
+
+        MatchedPointsTransformationCalculator
+<span class="nc" id="L565">            tc = new MatchedPointsTransformationCalculator();</span>
+
+<span class="nc bnc" id="L567" title="All 2 branches missed.">        for (int i = 0; i &lt; indexes2.length; ++i) {</span>
+
+<span class="nc" id="L569">            CornerRegion cr1C1 = this.c1.get(i);</span>
+
+<span class="nc bnc" id="L571" title="All 2 branches missed.">            if (indexes2[i] == null) {</span>
+<span class="nc" id="L572">                continue;</span>
+            }
+
+<span class="nc" id="L575">            CornerRegion cr1C2 = indexes2[i].cr2;</span>
+
+<span class="nc bnc" id="L577" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; c1.size(); ++j) {</span>
+
+<span class="nc" id="L579">                CornerRegion cr2C1 = this.c1.get(j);</span>
+
+<span class="nc bnc" id="L581" title="All 2 branches missed.">                if (indexes2[j] == null) {</span>
+<span class="nc" id="L582">                    continue;</span>
+                }
+
+<span class="nc" id="L585">                CornerRegion cr2C2 = indexes2[j].cr2;</span>
+
+<span class="nc bnc" id="L587" title="All 2 branches missed.">                if (cr2C2.equals(cr1C2)) {</span>
+<span class="nc" id="L588">                    continue;</span>
+                }
+
+                // temporarily, evaluating all corners for each starter solution:
+<span class="nc" id="L592">                insertNodeTMP(tc, indexes2[i], cr1C1, cr1C2, indexes2[j], cr2C1,</span>
+                    cr2C2);
+            }
+        }
+<span class="nc" id="L596">    }</span>
+
+    /**
+     * create starter solution nodes for the heap using a pattern of combinations
+     * with runtime O(n*n*(n-1)/2).
+     */
+    private void initHeapNodes2() {
+
+        // if no match, has a null
+<span class="nc" id="L605">        CornersAndFeatureStat[] indexes2 = getBestSSDC1ToC2();</span>
+
+        /*
+        An improvement in completeness to initHeapNodes1() would be to try
+        all matches just for the first point in the two points needed in the solution.
+            The number of starter solutions would be  n*n*(n-1)/2
+            The chances of finding the correct solution are much higher.
+            It requires that only one point in the corners common to both curves
+            be a true match for it's best SSD match in curve 2.
+       for a curve with 4 corners, the heap would have 24 solution starter nodes
+        */
+
+<span class="nc" id="L617">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+
+        MatchedPointsTransformationCalculator
+<span class="nc" id="L620">            tc = new MatchedPointsTransformationCalculator();</span>
+
+<span class="nc bnc" id="L622" title="All 2 branches missed.">        for (int idx1C1 = 0; idx1C1 &lt; c1.size(); ++idx1C1) {</span>
+
+<span class="nc" id="L624">            CornerRegion cr1C1 = this.c1.get(idx1C1);</span>
+
+<span class="nc bnc" id="L626" title="All 2 branches missed.">            for (int idx1C2 = 0; idx1C2 &lt; c2.size(); ++idx1C2) {</span>
+
+<span class="nc" id="L628">                CornerRegion cr1C2 = this.c2.get(idx1C2);</span>
+
+<span class="nc" id="L630">                FeatureComparisonStat compStat1 = null;</span>
+                try {
+<span class="nc" id="L632">                    compStat1 = featureMatcher.ditherAndRotateForBestLocation(</span>
+                        features1, features2, cr1C1, cr1C2, dither);
+<span class="nc" id="L634">                } catch (CornerRegion.CornerRegionDegneracyException ex) {</span>
+<span class="nc" id="L635">                    log.severe(ex.getMessage());</span>
+<span class="nc" id="L636">                }</span>
+
+<span class="nc bnc" id="L638" title="All 2 branches missed.">                if (compStat1 == null) {</span>
+<span class="nc" id="L639">                    continue;</span>
+                }
+
+<span class="nc bnc" id="L642" title="All 2 branches missed.">                if (compStat1.getSumIntensitySqDiff() &gt;= compStat1.getImg2PointIntensityErr()) {</span>
+<span class="nc" id="L643">                    continue;</span>
+                }
+
+<span class="nc" id="L646">                CornersAndFeatureStat cfs1 = new CornersAndFeatureStat(cr1C1,</span>
+                    cr1C2, compStat1);
+<span class="nc" id="L648">                cfs1.idx1 = idx1C1;</span>
+<span class="nc" id="L649">                cfs1.idx2 = idx1C2;</span>
+
+<span class="nc bnc" id="L651" title="All 2 branches missed.">                for (int idx2C1 = (idx1C1 + 1); idx2C1 &lt; c1.size(); ++idx2C1) {</span>
+
+<span class="nc" id="L653">                    CornerRegion cr2C1 = this.c1.get(idx2C1);</span>
+
+<span class="nc bnc" id="L655" title="All 2 branches missed.">                    if (indexes2[idx2C1] == null) {</span>
+<span class="nc" id="L656">                        continue;</span>
+                    }
+
+<span class="nc" id="L659">                    CornerRegion cr2C2 = indexes2[idx2C1].cr2;</span>
+
+<span class="nc bnc" id="L661" title="All 2 branches missed.">                    if (cr2C2.equals(cr1C2)) {</span>
+<span class="nc" id="L662">                        continue;</span>
+                    }
+
+<span class="nc" id="L665">                    insertNode(tc, cfs1, cr1C1, cr1C2, indexes2[idx2C1],</span>
+                        cr2C1, cr2C2);
+                }
+            }
+        }
+<span class="nc" id="L670">    }</span>
+
+    private double calculateCost(CornerRegion cornerRegion, double x2, double y2) {
+
+<span class="nc bnc" id="L674" title="All 2 branches missed.">        if (cornerRegion == null) {</span>
+
+<span class="nc" id="L676">            return calculateUnMatchedCost();</span>
+        }
+
+<span class="nc" id="L679">        double dist = distance(cornerRegion.x[cornerRegion.getKMaxIdx()],</span>
+<span class="nc" id="L680">            cornerRegion.y[cornerRegion.getKMaxIdx()], x2, y2);</span>
+
+<span class="nc" id="L682">        return dist;</span>
+    }
+
+    private double calculateCost(PairInt cornerPoint, double x2, double y2) {
+
+<span class="nc bnc" id="L687" title="All 2 branches missed.">        if (cornerPoint == null) {</span>
+
+<span class="nc" id="L689">            return calculateUnMatchedCost();</span>
+        }
+
+<span class="nc" id="L692">        double dist = distance(cornerPoint.getX(), cornerPoint.getY(),</span>
+            x2, y2);
+
+<span class="nc" id="L695">        return dist;</span>
+    }
+
+    private double calculateUnMatchedCost() {
+        //TODO: refine this.  needs to be a large number but &lt; infinity
+
+<span class="nc" id="L701">        int n = Math.max(c1.size(), c2.size());</span>
+
+<span class="nc" id="L703">        return tolerance*n;</span>
+    }
+
+    private double distance(double x1, double y1, double x2, double y2) {
+
+<span class="nc" id="L708">        double diffX = x1 - x2;</span>
+<span class="nc" id="L709">        double diffY = y1 - y2;</span>
+
+<span class="nc" id="L711">        double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+
+<span class="nc" id="L713">        return dist;</span>
+    }
+
+    public TransformationParameters getSolvedParameters() {
+<span class="nc" id="L717">        return solutionParameters;</span>
+    }
+
+    /**
+     * get the curvature scale space images shift between the
+     * first set of contours and the second set.
+     * @return
+     */
+    public double getSolvedCost() {
+<span class="nc" id="L726">        return solutionCost;</span>
+    }
+
+    public boolean scaleIsPossiblyAmbiguous() {
+<span class="nc" id="L730">        return solutionHasSomeScalesSmallerThanOne;</span>
+    }
+
+    public List&lt;Integer&gt; getSolutionMatchedCornerIndexes1() {
+<span class="nc" id="L734">        return solutionMatchedCornerIndexes1;</span>
+    }
+
+    public List&lt;Integer&gt; getSolutionMatchedCornerIndexes2() {
+<span class="nc" id="L738">        return solutionMatchedCornerIndexes2;</span>
+    }
+
+    public List&lt;FeatureComparisonStat&gt; getSolutionMatchedCompStats() {
+<span class="nc" id="L742">        return solutionMatchedCompStats;</span>
+    }
+
+    private void insertNode(MatchedPointsTransformationCalculator tc,
+        CornersAndFeatureStat stat1, CornerRegion cr1C1, CornerRegion cr1C2,
+        CornersAndFeatureStat stat2, CornerRegion cr2C1, CornerRegion cr2C2) {
+
+        // use dither corrected locations:
+<span class="nc" id="L750">        final int x1C1 = stat1.stat.getImg1Point().getX();</span>
+<span class="nc" id="L751">        final int y1C1 = stat1.stat.getImg1Point().getY();</span>
+<span class="nc" id="L752">        final int x1C2 = stat1.stat.getImg2Point().getX();</span>
+<span class="nc" id="L753">        final int y1C2 = stat1.stat.getImg2Point().getY();</span>
+
+<span class="nc" id="L755">        final int x2C1 = stat2.stat.getImg1Point().getX();</span>
+<span class="nc" id="L756">        final int y2C1 = stat2.stat.getImg1Point().getY();</span>
+<span class="nc" id="L757">        final int x2C2 = stat2.stat.getImg2Point().getX();</span>
+<span class="nc" id="L758">        final int y2C2 = stat2.stat.getImg2Point().getY();</span>
+
+        // with 2 points in both image, calc transformation
+<span class="nc" id="L761">        TransformationParameters params = tc.calulateEuclidean(</span>
+            x1C1, y1C1, x2C1, y2C1,
+            x1C2, y1C2, x2C2, y2C2, 0, 0);
+
+<span class="nc" id="L765">        TransformationPair2 transformationPair =</span>
+            new TransformationPair2(cr1C1, cr1C2, cr2C1, cr2C2);
+
+<span class="nc" id="L768">        transformationPair.setTransformationParameters(params);</span>
+
+<span class="nc" id="L770">        NextCorner nc = new NextCorner(c1);</span>
+<span class="nc" id="L771">        nc.addMatchedCorners(cr1C1, cr1C2, stat1.idx1, stat1.idx2, stat1.stat);</span>
+<span class="nc" id="L772">        nc.addMatchedCorners(cr2C1, cr2C2, stat2.idx1, stat2.idx2, stat2.stat);</span>
+
+<span class="nc" id="L774">        transformationPair.setNextCorner(nc);</span>
+
+        // choose a third point in c1
+<span class="nc" id="L777">        CornerRegion c3C1 = nc.findStrongestRemainingCorner();</span>
+        
+        //TODO: improve srch here w/ different data structure:
+<span class="nc" id="L780">        int c3C1Idx = c1.indexOf(c3C1);</span>
+
+        // apply the transformation to it
+<span class="nc" id="L783">        double[] xy3C2 = applyTransformation(c3C1, params);</span>
+
+        // find the best matching SSD within tolerance of predicted, and
+        // restrict to existing rotation
+<span class="nc" id="L787">        CornersAndFeatureStat cfs = findBestMatchWithinTolerance(</span>
+            c3C1Idx, c3C1, xy3C2,
+<span class="nc" id="L789">            Math.round(params.getRotationInDegrees()), rotationTolerance);</span>
+
+        double cost;
+        double costSSD;
+
+<span class="nc bnc" id="L794" title="All 2 branches missed.">        if (cfs != null) {</span>
+
+<span class="nc" id="L796">            nc.addMatchedCorners(c3C1, cfs.cr2, cfs.idx1, cfs.idx2, cfs.stat);</span>
+
+<span class="nc" id="L798">            cost = calculateCost(cfs.stat.getImg2Point(), xy3C2[0], xy3C2[1]);</span>
+
+            // TODO: may need to add cost as SSD in quadrature
+<span class="nc" id="L801">            costSSD = cfs.stat.getSumIntensitySqDiff();</span>
+
+<span class="nc" id="L803">            transformationPair.addToCostAsDistance(cost);</span>
+
+<span class="nc" id="L805">            transformationPair.addToCostAsSSD(costSSD);</span>
+
+        } else {
+
+<span class="nc" id="L809">            cost = calculateUnMatchedCost();</span>
+
+<span class="nc" id="L811">            costSSD = 10000;</span>
+        }
+
+        // put node in heap
+<span class="nc" id="L815">        long costL = (long)(costSSD * heapKeyFactor);</span>
+
+<span class="nc" id="L817">        HeapNode node = new HeapNode(costL);</span>
+
+<span class="nc" id="L819">        node.setData(transformationPair);</span>
+
+<span class="nc" id="L821">        heap.insert(node);</span>
+<span class="nc" id="L822">    }</span>
+
+    private void insertNodeTMP(MatchedPointsTransformationCalculator tc,
+        CornersAndFeatureStat stat1, CornerRegion cr1C1, CornerRegion cr1C2,
+        CornersAndFeatureStat stat2, CornerRegion cr2C1, CornerRegion cr2C2) {
+
+        // use dither corrected locations:
+<span class="nc" id="L829">        final int x1C1 = stat1.stat.getImg1Point().getX();</span>
+<span class="nc" id="L830">        final int y1C1 = stat1.stat.getImg1Point().getY();</span>
+<span class="nc" id="L831">        final int x1C2 = stat1.stat.getImg2Point().getX();</span>
+<span class="nc" id="L832">        final int y1C2 = stat1.stat.getImg2Point().getY();</span>
+
+<span class="nc" id="L834">        final int x2C1 = stat2.stat.getImg1Point().getX();</span>
+<span class="nc" id="L835">        final int y2C1 = stat2.stat.getImg1Point().getY();</span>
+<span class="nc" id="L836">        final int x2C2 = stat2.stat.getImg2Point().getX();</span>
+<span class="nc" id="L837">        final int y2C2 = stat2.stat.getImg2Point().getY();</span>
+
+        // with 2 points in both image, calc transformation
+<span class="nc" id="L840">        TransformationParameters params = tc.calulateEuclidean(</span>
+            x1C1, y1C1, x2C1, y2C1,
+            x1C2, y1C2, x2C2, y2C2, 0, 0);
+
+<span class="nc" id="L844">        TransformationPair2 transformationPair =</span>
+            new TransformationPair2(cr1C1, cr1C2, cr2C1, cr2C2);
+
+<span class="nc" id="L847">        transformationPair.setTransformationParameters(params);</span>
+
+<span class="nc" id="L849">        NextCorner nc = new NextCorner(c1);</span>
+<span class="nc" id="L850">        nc.addMatchedCorners(cr1C1, cr1C2, stat1.idx1, stat1.idx2, stat1.stat);</span>
+<span class="nc" id="L851">        nc.addMatchedCorners(cr2C1, cr2C2, stat2.idx1, stat2.idx2, stat2.stat);</span>
+
+<span class="nc" id="L853">        transformationPair.setNextCorner(nc);</span>
+
+<span class="nc" id="L855">        Map&lt;PairInt, CornersAndFeatureStat&gt; indexesCFSMap = new</span>
+            HashMap&lt;PairInt, CornersAndFeatureStat&gt;();
+
+<span class="nc" id="L858">        Map&lt;PairInt, Double&gt; indexesDistMap = new HashMap&lt;PairInt, Double&gt;();</span>
+
+<span class="nc" id="L860">        float[][] cost = new float[c1.size()][c2.size()];</span>
+
+        // use bipartite matching on the remaining points.
+
+<span class="nc bnc" id="L864" title="All 2 branches missed.">        for (int i = 0; i &lt; c1.size(); ++i) {</span>
+
+<span class="nc" id="L866">            cost[i] = new float[c2.size()];</span>
+<span class="nc" id="L867">            Arrays.fill(cost[i], Float.MAX_VALUE);</span>
+
+<span class="nc" id="L869">            CornerRegion c3C1 = c1.get(i);</span>
+<span class="nc bnc" id="L870" title="All 4 branches missed.">            if (c3C1.equals(cr1C1) || c3C1.equals(cr2C1)) {</span>
+<span class="nc" id="L871">                continue;</span>
+            }
+
+<span class="nc" id="L874">            double[] xy3C2 = applyTransformation(c3C1, params);</span>
+<span class="nc" id="L875">            CornersAndFeatureStat cfs = findBestMatchWithinTolerance(i, c3C1, </span>
+<span class="nc" id="L876">                xy3C2, Math.round(params.getRotationInDegrees()), </span>
+                rotationTolerance);
+   //TODO: consider discarding already chosen in findBestMatchWithinTolerance
+<span class="nc bnc" id="L879" title="All 6 branches missed.">            if ((cfs == null) || cfs.cr2.equals(cr1C2) || cfs.cr2.equals(cr2C2)) {</span>
+<span class="nc" id="L880">                continue;</span>
+            }
+<span class="nc" id="L882">            cfs.idx1 = i;</span>
+
+<span class="nc bnc" id="L884" title="All 4 branches missed.">            assert(cfs.idx2 != -1);</span>
+
+<span class="nc" id="L886">            double dist = distance(cfs.stat.getImg2Point().getX(),</span>
+<span class="nc" id="L887">                cfs.stat.getImg2Point().getY(), xy3C2[0], xy3C2[1]);</span>
+
+<span class="nc" id="L889">            cost[i][cfs.idx2] = (float)dist;</span>
+
+<span class="nc" id="L891">            PairInt pI = new PairInt(i, cfs.idx2);</span>
+<span class="nc" id="L892">            indexesCFSMap.put(pI, cfs);</span>
+<span class="nc" id="L893">            indexesDistMap.put(pI, Double.valueOf(dist));</span>
+        }
+
+<span class="nc bnc" id="L896" title="All 2 branches missed.">        if (indexesCFSMap.isEmpty()) {</span>
+<span class="nc" id="L897">            return;</span>
+        }
+
+<span class="nc bnc" id="L900" title="All 2 branches missed.">        if (indexesCFSMap.size() == 1) {</span>
+            // TODO: handle without Hungarian method
+        }
+
+<span class="nc" id="L904">        boolean transposed = false;</span>
+<span class="nc bnc" id="L905" title="All 2 branches missed.">        if (c1.size() &gt; c2.size()) {</span>
+<span class="nc" id="L906">            cost = MatrixUtil.transpose(cost);</span>
+<span class="nc" id="L907">            transposed = true;</span>
+        }
+
+<span class="nc" id="L910">        HungarianAlgorithm b = new HungarianAlgorithm();</span>
+<span class="nc" id="L911">        int[][] match = b.computeAssignments(cost);</span>
+
+<span class="nc" id="L913">        int nC = 0;</span>
+<span class="nc bnc" id="L914" title="All 2 branches missed.">        for (int i = 0; i &lt; match.length; i++) {</span>
+<span class="nc" id="L915">            int idx1 = match[i][0];</span>
+<span class="nc" id="L916">            int idx2 = match[i][1];</span>
+<span class="nc bnc" id="L917" title="All 4 branches missed.">            if (idx1 == -1 || idx2 == -1) {</span>
+<span class="nc" id="L918">                continue;</span>
+            }
+            // points not in map were matched with another max cost, so not matched
+<span class="nc bnc" id="L921" title="All 2 branches missed.">            if (indexesCFSMap.containsKey(new PairInt(idx1, idx2))) {</span>
+<span class="nc" id="L922">                 nC++;</span>
+            }
+        }
+<span class="nc bnc" id="L925" title="All 2 branches missed.">        if (nC == 0) {</span>
+<span class="nc" id="L926">            return;</span>
+        }
+
+<span class="nc bnc" id="L929" title="All 2 branches missed.">        for (int i = 0; i &lt; match.length; i++) {</span>
+
+<span class="nc" id="L931">            int idx1 = match[i][0];</span>
+<span class="nc" id="L932">            int idx2 = match[i][1];</span>
+<span class="nc bnc" id="L933" title="All 4 branches missed.">            if (idx1 == -1 || idx2 == -1) {</span>
+<span class="nc" id="L934">                continue;</span>
+            }
+
+<span class="nc bnc" id="L937" title="All 2 branches missed.">            if (transposed) {</span>
+<span class="nc" id="L938">                int swap = idx1;</span>
+<span class="nc" id="L939">                idx1 = idx2;</span>
+<span class="nc" id="L940">                idx2 = swap;</span>
+            }
+
+<span class="nc" id="L943">            PairInt pI = new PairInt(idx1, idx2);</span>
+
+<span class="nc" id="L945">            CornersAndFeatureStat cfs = indexesCFSMap.get(pI);</span>
+<span class="nc bnc" id="L946" title="All 2 branches missed.">            if (cfs == null) {</span>
+<span class="nc" id="L947">                continue;</span>
+            }
+<span class="nc" id="L949">            nc.addMatchedCorners(cfs.cr1, cfs.cr2, Integer.valueOf(cfs.idx1),</span>
+<span class="nc" id="L950">                Integer.valueOf(cfs.idx2), cfs.stat);</span>
+
+<span class="nc" id="L952">            double costAsDist = indexesDistMap.get(pI).doubleValue();</span>
+
+<span class="nc" id="L954">            transformationPair.addToCostAsDistance(costAsDist);</span>
+
+<span class="nc" id="L956">            transformationPair.addToCostAsSSD(cfs.stat.getSumIntensitySqDiff());</span>
+        }
+
+<span class="nc" id="L959">        double costSSD = transformationPair.getCostAsSSD();</span>
+
+        // put node in heap
+<span class="nc" id="L962">        long costL = (long)(costSSD * heapKeyFactor);</span>
+
+<span class="nc" id="L964">        HeapNode node = new HeapNode(costL);</span>
+
+<span class="nc" id="L966">        node.setData(transformationPair);</span>
+
+<span class="nc" id="L968">        heap.insert(node);</span>
+<span class="nc" id="L969">    }</span>
+
+    protected double[] applyTransformation(CornerRegion corner,
+        TransformationParameters params) {
+
+<span class="nc" id="L974">        int x0 = corner.getX()[corner.getKMaxIdx()];</span>
+
+<span class="nc" id="L976">        int y0 = corner.getY()[corner.getKMaxIdx()];</span>
+
+<span class="nc" id="L978">        Transformer transformer = new Transformer();</span>
+
+<span class="nc" id="L980">        double[] xyT = transformer.applyTransformation(params, x0, y0);</span>
+
+<span class="nc" id="L982">        return xyT;</span>
+    }
+
+    private HeapNode solve() {
+
+<span class="nc" id="L987">        HeapNode u = heap.extractMin();</span>
+
+<span class="nc bnc" id="L989" title="All 2 branches missed.">        while (u != null) {</span>
+
+<span class="nc" id="L991">            TransformationPair2 transformationPair = (TransformationPair2)u.getData();</span>
+
+<span class="nc" id="L993">            NextCorner nc = transformationPair.getNextCorner();</span>
+
+<span class="nc" id="L995">            CornerRegion corner1s = nc.findStrongestRemainingCorner();</span>
+
+<span class="nc bnc" id="L997" title="All 2 branches missed.">            if (corner1s == null) {</span>
+<span class="nc" id="L998">                return u;</span>
+            }
+            
+            //TODO: improve srch here w/ different data structure:
+<span class="nc" id="L1002">            int corner1sIdx = c1.indexOf(corner1s);</span>
+
+<span class="nc" id="L1004">            TransformationParameters params</span>
+<span class="nc" id="L1005">                = transformationPair.getTransformationParameters();</span>
+
+            // apply the transformation to it
+<span class="nc" id="L1008">            double[] xyC2 = applyTransformation(corner1s, params);</span>
+
+            // find the best matching SSD within tolerance of predicted
+<span class="nc" id="L1011">            CornersAndFeatureStat cfs = findBestMatchWithinTolerance(</span>
+                corner1sIdx, corner1s, xyC2, 
+<span class="nc" id="L1013">                Math.round(params.getRotationInDegrees()), rotationTolerance);</span>
+
+            double cost2;
+            double cost2SSD;
+
+<span class="nc bnc" id="L1018" title="All 2 branches missed.">            if (cfs != null) {</span>
+
+<span class="nc" id="L1020">                nc.addMatchedCorners(corner1s, cfs.cr2,</span>
+<span class="nc" id="L1021">                    Integer.valueOf(cfs.idx1), Integer.valueOf(cfs.idx2),</span>
+<span class="nc" id="L1022">                    cfs.stat);</span>
+
+<span class="nc" id="L1024">                cost2 = calculateCost(cfs.stat.getImg2Point(), xyC2[0], xyC2[1]);</span>
+
+<span class="nc" id="L1026">                cost2SSD = cfs.stat.getSumIntensitySqDiff();</span>
+
+                // TODO: revise SSD as cost... may need to be added in quadrature
+
+<span class="nc" id="L1030">                transformationPair.addToCostAsDistance(cost2);</span>
+
+<span class="nc" id="L1032">                transformationPair.addToCostAsSSD(cost2SSD);</span>
+
+            } else {
+
+<span class="nc" id="L1036">                cost2 = calculateUnMatchedCost();</span>
+
+<span class="nc" id="L1038">                cost2SSD = 10000;</span>
+            }
+
+<span class="nc" id="L1041">            u.setData(transformationPair);</span>
+
+<span class="nc" id="L1043">            u.setKey(u.getKey() + (long)(cost2SSD * heapKeyFactor));</span>
+
+<span class="nc" id="L1045">            heap.insert(u);</span>
+
+<span class="nc" id="L1047">            u = heap.extractMin();</span>
+<span class="nc" id="L1048">        }</span>
+
+<span class="nc" id="L1050">        return u;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

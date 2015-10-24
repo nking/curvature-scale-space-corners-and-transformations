@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ClosedCurveCornerMatcher0.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ClosedCurveCornerMatcher0.java</span></div><h1>ClosedCurveCornerMatcher0.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+ * A quick algorithm for matching points around ideal closed curves in
+ * two images.  The algorithm uses point ordering around the curve and
+ * needs the same number of corners in both curves.
+ * 
+ * The runtime complexity is O(N_corners).
+ * 
+ * It can be used and followed by ClosedCurveCornerMatcher if it fails.
+ * 
+ * @author nichole
+ */
+public class ClosedCurveCornerMatcher0 {
+    
+    protected final List&lt;CornerRegion&gt; c1;
+
+    protected final List&lt;CornerRegion&gt; c2;
+        
+    protected final IntensityFeatures features1;
+    
+    protected final IntensityFeatures features2;
+
+<span class="fc" id="L29">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+<span class="fc" id="L31">    private boolean solverHasFinished = false;</span>
+
+<span class="fc" id="L33">    protected final int dither = 3;//6</span>
+    
+    //protected final int degreeIntervals = 20;
+
+    //protected final int rotationTolerance = 20;
+
+<span class="fc" id="L39">    private TransformationPair4 solutionTransformationPair = null;</span>
+    
+    /**
+     * 
+     * @param features1
+     * @param features2
+     * @param corners1
+     * @param corners2
+     * @param cornersAreAlreadyCCW corners should already be in counter
+     * clockwise order
+     */
+    public ClosedCurveCornerMatcher0(final IntensityFeatures features1,
+        final IntensityFeatures features2, final List&lt;CornerRegion&gt; corners1, 
+<span class="fc" id="L52">        final List&lt;CornerRegion&gt; corners2, boolean cornersAreAlreadyCCW) {</span>
+        
+<span class="fc" id="L54">        c1 = new ArrayList&lt;CornerRegion&gt;(corners1.size());</span>
+
+<span class="fc" id="L56">        c2 = new ArrayList&lt;CornerRegion&gt;(corners2.size());</span>
+        
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (c1.size() != c2.size()) {</span>
+<span class="nc" id="L59">            throw new IllegalArgumentException(&quot;c1 and c2 must be same size&quot;);</span>
+        }
+        
+<span class="fc" id="L62">        this.features1 = features1;</span>
+        
+<span class="fc" id="L64">        this.features2 = features2;</span>
+        
+<span class="fc" id="L66">        c1.addAll(corners1);</span>
+<span class="fc" id="L67">        c2.addAll(corners2);</span>
+
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (!cornersAreAlreadyCCW) {</span>
+<span class="nc" id="L70">            sortCornersToCCW(c2);</span>
+<span class="nc" id="L71">            sortCornersToCCW(c2);</span>
+        }       
+<span class="fc" id="L73">    }</span>
+
+    public boolean matchCorners() {
+        
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="nc" id="L78">            throw new IllegalStateException(</span>
+            &quot;matchContours cannot be invoked more than once&quot;);
+        }
+
+<span class="fc" id="L82">        boolean solved = solve();</span>
+
+<span class="fc" id="L84">        return solved;        </span>
+    }
+     
+    /**
+     * find solution using corners paired by curve order.
+     * The algorithm requires c1.size() == c2.size().
+     * with runtime O(n).
+     * 
+     */
+    private boolean solve() {
+        
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (c1.size() != c2.size()) {</span>
+<span class="nc" id="L96">            throw new IllegalStateException(&quot;c1 and c2 must be same size&quot;);</span>
+        }
+        
+<span class="fc" id="L99">        int deltaIdx = 0;</span>
+        
+<span class="fc" id="L101">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+        
+<span class="fc" id="L103">        List&lt;TransformationPair4&gt; trList = new ArrayList&lt;TransformationPair4&gt;();        </span>
+        
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        while (deltaIdx &lt; c1.size()) {</span>
+            
+<span class="fc" id="L107">            TransformationPair4 transformationPair </span>
+<span class="fc" id="L108">                = new TransformationPair4(0, deltaIdx, c1.size());</span>
+            
+            // store matched and cost
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            for (int i = 0; i &lt; c1.size(); ++i) {</span>
+                
+<span class="fc" id="L113">                int j = i + deltaIdx;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                if (j &gt; (c2.size() - 1)) {</span>
+<span class="fc" id="L115">                    j = j - c2.size();</span>
+                }
+                
+<span class="fc" id="L118">                CornerRegion region1 = c1.get(i);</span>
+<span class="fc" id="L119">                CornerRegion region2 = c2.get(j);</span>
+                
+<span class="fc" id="L121">                FeatureComparisonStat compStat = null;</span>
+                try {
+<span class="fc" id="L123">                    compStat = featureMatcher.ditherAndRotateForBestLocation(</span>
+                        features1, features2, region1, region2, dither);
+<span class="fc" id="L125">                } catch (CornerRegion.CornerRegionDegneracyException ex) {</span>
+<span class="fc" id="L126">                    log.severe(ex.getMessage());</span>
+<span class="fc" id="L127">                }</span>
+               
+<span class="fc bfc" id="L129" title="All 2 branches covered.">                if (compStat != null) {</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">                    if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
+<span class="fc" id="L131">                        transformationPair.addMatched(region1, region2, compStat);</span>
+                    }
+                }                
+            }
+            
+            // need at least 3 point for a cost evaluation
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (transformationPair.getMatchedCornerRegions1().size() &gt; 2) {</span>
+<span class="fc" id="L138">                trList.add(transformationPair);</span>
+            }
+            
+<span class="fc" id="L141">            deltaIdx++;</span>
+<span class="fc" id="L142">        }</span>
+        
+        // chose best solution if there are more than 1
+<span class="fc" id="L145">        int nMaxMatched = Integer.MIN_VALUE;</span>
+<span class="fc" id="L146">        double minCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L147">        int minCostIdx = -1;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int i = 0; i &lt; trList.size(); ++i) {</span>
+            
+<span class="fc" id="L150">            TransformationPair4 transP = trList.get(i);</span>
+            
+<span class="fc" id="L152">            List&lt;Integer&gt; removedIndexes = </span>
+<span class="fc" id="L153">                FeatureMatcher.removeDiscrepantThetaDiff(</span>
+<span class="fc" id="L154">                    transP.getMatchedCompStats());</span>
+            
+<span class="fc bfc" id="L156" title="All 2 branches covered.">            if (!removedIndexes.isEmpty()) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                for (int ii = removedIndexes.size() - 1; ii &gt; -1; --ii) {</span>
+<span class="fc" id="L158">                    int idx = removedIndexes.get(ii);</span>
+<span class="fc" id="L159">                    transP.getMatchedCornerRegions1().remove(idx);</span>
+<span class="fc" id="L160">                    transP.getMatchedCornerRegions2().remove(idx);</span>
+                }
+            }
+            
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            if (transP.getMatchedCompStats().size() &lt; 3) {</span>
+<span class="fc" id="L165">                continue;</span>
+            }
+            
+<span class="fc" id="L168">            double cost = calculateCombinedIntensityStat(transP.getMatchedCompStats());</span>
+<span class="fc" id="L169">            transP.setCost(cost);</span>
+            
+<span class="pc bpc" id="L171" title="1 of 6 branches missed.">            if (((transP.getMatchedCornerRegions1().size() &gt;= nMaxMatched) &amp;&amp;</span>
+                (cost &lt; minCost)) ||
+                ((cost == minCost) 
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                &amp;&amp; (transP.getMatchedCornerRegions1().size() &gt; nMaxMatched))) {</span>
+                
+<span class="fc" id="L176">                minCost = cost;</span>
+<span class="fc" id="L177">                minCostIdx = i;</span>
+<span class="fc" id="L178">                nMaxMatched = transP.getMatchedCornerRegions1().size();</span>
+            }
+        }
+        
+<span class="fc" id="L182">        solverHasFinished = true;</span>
+        
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        if (minCostIdx &gt; -1) {</span>
+            
+<span class="fc" id="L186">            solutionTransformationPair = trList.get(minCostIdx);</span>
+            
+<span class="fc" id="L188">            return true;</span>
+        }
+        
+<span class="fc" id="L191">        return false;</span>
+    }
+
+    protected double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; 
+        compStats) {
+        
+<span class="fc" id="L197">        double sum = 0;</span>
+        
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="fc" id="L200">            sum += compStat.getSumIntensitySqDiff();</span>
+<span class="fc" id="L201">        }</span>
+        
+<span class="fc" id="L203">        sum /= (double) compStats.size();</span>
+        
+<span class="fc" id="L205">        return sum;</span>
+    }
+
+    /**
+     * get the curvature scale space images shift between the
+     * first set of contours and the second set.
+     * @return
+     */
+    public TransformationPair4 getTransformationPair() {
+<span class="fc" id="L214">        return solutionTransformationPair;</span>
+    }
+    
+    private void sortCornersToCCW(List&lt;CornerRegion&gt; corners) {
+        
+<span class="nc" id="L219">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L220">        PairIntArray cornerXY = new PairIntArray();</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        for (int ii = 0; ii &lt; corners.size(); ++ii) {</span>
+<span class="nc" id="L222">            CornerRegion cr = corners.get(ii);</span>
+<span class="nc" id="L223">            cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);</span>
+        }
+<span class="nc" id="L225">        boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (isCW) {</span>
+<span class="nc" id="L227">            int n = corners.size();</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (n &gt; 1) {</span>
+<span class="nc" id="L229">                int end = n &gt;&gt; 1;</span>
+                // 0 1 2 3 4
+<span class="nc bnc" id="L231" title="All 2 branches missed.">                for (int ii = 0; ii &lt; end; ii++) {</span>
+<span class="nc" id="L232">                    int idx2 = n - ii - 1;</span>
+<span class="nc" id="L233">                    CornerRegion swap = corners.get(ii);</span>
+<span class="nc" id="L234">                    corners.set(ii, corners.get(idx2));</span>
+<span class="nc" id="L235">                    corners.set(idx2, swap);</span>
+                }
+            }
+        }
+<span class="nc" id="L239">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

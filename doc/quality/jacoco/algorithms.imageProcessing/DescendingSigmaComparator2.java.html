@@ -19,12 +19,12 @@ import java.util.List;
     public int compare(List&lt;CurvatureScaleSpaceContour&gt; list1, 
         List&lt;CurvatureScaleSpaceContour&gt; list2) {
         
-<span class="pc bpc" id="L22" title="2 of 4 branches missed.">        if (!list1.isEmpty() &amp;&amp; list2.isEmpty()) {</span>
+<span class="pc bpc" id="L22" title="1 of 4 branches missed.">        if (!list1.isEmpty() &amp;&amp; list2.isEmpty()) {</span>
 <span class="nc" id="L23">            return -1;</span>
-<span class="pc bpc" id="L24" title="3 of 4 branches missed.">        } else if (list1.isEmpty() &amp;&amp; !list2.isEmpty()) {</span>
-<span class="nc" id="L25">            return 1;</span>
-<span class="pc bpc" id="L26" title="3 of 4 branches missed.">        } else if (list1.isEmpty() &amp;&amp; list2.isEmpty()) {</span>
-<span class="nc" id="L27">            return 0;</span>
+<span class="fc bfc" id="L24" title="All 4 branches covered.">        } else if (list1.isEmpty() &amp;&amp; !list2.isEmpty()) {</span>
+<span class="fc" id="L25">            return 1;</span>
+<span class="pc bpc" id="L26" title="1 of 4 branches missed.">        } else if (list1.isEmpty() &amp;&amp; list2.isEmpty()) {</span>
+<span class="fc" id="L27">            return 0;</span>
         }
         
 <span class="fc" id="L30">        CurvatureScaleSpaceContour o1 = list1.get(0);</span>

@@ -1315,7 +1315,7 @@ import java.util.logging.Logger;
     public List&lt;Set&lt;PairInt&gt;&gt; calculateUsingPolarCIEXYAndFrequency(ImageExt input,
         float fracFreqLimit, boolean useBlur) {
 
-<span class="fc bfc" id="L1318" title="All 2 branches covered.">        if (useBlur) {</span>
+<span class="pc bpc" id="L1318" title="1 of 2 branches missed.">        if (useBlur) {</span>
 <span class="fc" id="L1319">            ImageProcessor imageProcessor = new ImageProcessor();</span>
 <span class="fc" id="L1320">            imageProcessor.blur(input, 1.0f);</span>
         }
@@ -1513,10 +1513,10 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1513" title="All 2 branches covered.">                    } else if (diffP == diffN) {</span>
 <span class="fc" id="L1514">                        int freqP = peaks.getY(currentPeakIdx);</span>
 <span class="fc" id="L1515">                        int freqN = peaks.getY(currentPeakIdx + 1);</span>
-<span class="fc bfc" id="L1516" title="All 2 branches covered.">                        if (freqP &lt; freqN) {</span>
+<span class="pc bpc" id="L1516" title="1 of 2 branches missed.">                        if (freqP &lt; freqN) {</span>
 <span class="fc" id="L1517">                            idx = currentPeakIdx;</span>
                         } else {
-<span class="fc" id="L1519">                            idx = currentPeakIdx + 1;</span>
+<span class="nc" id="L1519">                            idx = currentPeakIdx + 1;</span>
                         }
 <span class="fc" id="L1521">                    } else {</span>
 <span class="fc" id="L1522">                        idx = currentPeakIdx + 1;</span>
@@ -2021,10 +2021,10 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L2021" title="All 2 branches covered.">                    } else if (diffP == diffN) {</span>
 <span class="fc" id="L2022">                        int freqP = peaks.getY(currentPeakIdx);</span>
 <span class="fc" id="L2023">                        int freqN = peaks.getY(currentPeakIdx + 1);</span>
-<span class="fc bfc" id="L2024" title="All 2 branches covered.">                        if (freqP &lt; freqN) {</span>
+<span class="pc bpc" id="L2024" title="1 of 2 branches missed.">                        if (freqP &lt; freqN) {</span>
 <span class="fc" id="L2025">                            idx = currentPeakIdx;</span>
                         } else {
-<span class="fc" id="L2027">                            idx = currentPeakIdx + 1;</span>
+<span class="nc" id="L2027">                            idx = currentPeakIdx + 1;</span>
                         }
 <span class="fc" id="L2029">                    } else {</span>
 <span class="fc" id="L2030">                        idx = currentPeakIdx + 1;</span>
@@ -2387,7 +2387,7 @@ import java.util.logging.Logger;
         }
 <span class="nc" id="L2388">    }</span>
 
-<span class="fc" id="L2390">    public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {</span>
+<span class="fc" id="L2390">    public static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {</span>
 
         int pixIdx;
 

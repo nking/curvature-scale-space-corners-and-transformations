@@ -210,8 +210,8 @@ import java.util.Set;
     }
 
     public static int findYMaxIndex(int[] a) {
-<span class="pc bpc" id="L213" title="1 of 4 branches missed.">        if (a == null || a.length == 0) {</span>
-<span class="fc" id="L214">            return -1;</span>
+<span class="pc bpc" id="L213" title="2 of 4 branches missed.">        if (a == null || a.length == 0) {</span>
+<span class="nc" id="L214">            return -1;</span>
         }
 <span class="fc" id="L216">        int max = Integer.MIN_VALUE;</span>
 <span class="fc" id="L217">        int index = 0;</span>
@@ -470,30 +470,30 @@ import java.util.Set;
     public static float[] getAvgAndStDevIgnoreForSentinel(int[] x, int length, 
         final int sentinel) {
         
-<span class="nc" id="L473">        int n = length;</span>
-<span class="nc" id="L474">        double sumX = 0;</span>
-<span class="nc" id="L475">        int count = 0;</span>
-<span class="nc bnc" id="L476" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc bnc" id="L477" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
-<span class="nc" id="L478">                continue;</span>
+<span class="fc" id="L473">        int n = length;</span>
+<span class="fc" id="L474">        double sumX = 0;</span>
+<span class="fc" id="L475">        int count = 0;</span>
+<span class="fc bfc" id="L476" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">            if (x[i] == sentinel) {</span>
+<span class="fc" id="L478">                continue;</span>
             }
-<span class="nc" id="L480">            sumX += x[i];</span>
-<span class="nc" id="L481">            count++;</span>
+<span class="fc" id="L480">            sumX += x[i];</span>
+<span class="fc" id="L481">            count++;</span>
         }
         
-<span class="nc" id="L484">        float avgX = (float)(sumX/(float)count);</span>
+<span class="fc" id="L484">        float avgX = (float)(sumX/(float)count);</span>
         
-<span class="nc" id="L486">        sumX = 0;</span>
-<span class="nc bnc" id="L487" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc bnc" id="L488" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
-<span class="nc" id="L489">                continue;</span>
+<span class="fc" id="L486">        sumX = 0;</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">            if (x[i] == sentinel) {</span>
+<span class="fc" id="L489">                continue;</span>
             }
-<span class="nc" id="L491">            double diffX = x[i] - avgX;</span>
-<span class="nc" id="L492">            sumX += (diffX * diffX);</span>
+<span class="fc" id="L491">            double diffX = x[i] - avgX;</span>
+<span class="fc" id="L492">            sumX += (diffX * diffX);</span>
         }
-<span class="nc" id="L494">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
+<span class="fc" id="L494">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
         
-<span class="nc" id="L496">        return new float[]{avgX, stdDevX};</span>
+<span class="fc" id="L496">        return new float[]{avgX, stdDevX};</span>
     }
     
     /**

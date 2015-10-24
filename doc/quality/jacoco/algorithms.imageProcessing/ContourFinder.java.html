@@ -31,10 +31,10 @@ public class ContourFinder {
 <span class="fc" id="L31">    }</span>
 
     public void overrideTheLowSigmaLimit(float lowSigmaLimit) {
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (lowSigmaLimit &gt; 1) {</span>
-<span class="fc" id="L35">            overrideLimit = lowSigmaLimit;</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        if (lowSigmaLimit &gt; 1) {</span>
+<span class="nc" id="L35">            overrideLimit = lowSigmaLimit;</span>
         }
-<span class="fc" id="L37">    }</span>
+<span class="nc" id="L37">    }</span>
 
     /**
      * find contours in this scale space map for an edge of given edgeNumber.
@@ -51,8 +51,8 @@ public class ContourFinder {
 <span class="fc" id="L51">        List&lt;CurvatureScaleSpaceContour&gt; contours = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
 
 <span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if ((scaleSpaceImage == null)</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">            || (scaleSpaceImage.getImageSigmas().length == 0)) {</span>
-<span class="fc" id="L55">            return contours;</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">            || (scaleSpaceImage.getImageSigmas().length == 0)) {</span>
+<span class="nc" id="L55">            return contours;</span>
         }
 
 <span class="fc" id="L58">        ScaleSpaceCurveImage space = scaleSpaceImage.copy();</span>
@@ -69,9 +69,9 @@ public class ContourFinder {
 
 <span class="fc" id="L70">            float sigma = space.getImageSigmas()[i];</span>
 
-<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (overrideLimit &gt; -1) {</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">                if (sigma &lt; overrideLimit) {</span>
-<span class="fc" id="L74">                    break;</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            if (overrideLimit &gt; -1) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">                if (sigma &lt; overrideLimit) {</span>
+<span class="nc" id="L74">                    break;</span>
                 }
 <span class="fc bfc" id="L76" title="All 2 branches covered.">            } else if (sigma &lt; lowLimit) {</span>
 <span class="fc" id="L77">                break;</span>
@@ -288,7 +288,7 @@ public class ContourFinder {
 <span class="fc" id="L288">                float tNext</span>
 <span class="fc" id="L289">                    = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];</span>
 
-<span class="fc bfc" id="L291" title="All 4 branches covered.">                isASinglePeak = (t[rightIndexBelow] &lt; tNext) || (tNext &lt; 0);</span>
+<span class="pc bpc" id="L291" title="1 of 4 branches missed.">                isASinglePeak = (t[rightIndexBelow] &lt; tNext) || (tNext &lt; 0);</span>
             }
         }
 
@@ -505,7 +505,7 @@ public class ContourFinder {
 
             // TODO: improve correction for wrap around.
             // Also, this only includes peaks found at end, not beginning.
-<span class="fc bfc" id="L508" title="All 8 branches covered.">            if ((leftIndex &gt; -1) &amp;&amp; (leftIndex == (t.length - 1))</span>
+<span class="pc bpc" id="L508" title="1 of 8 branches missed.">            if ((leftIndex &gt; -1) &amp;&amp; (leftIndex == (t.length - 1))</span>
                 &amp;&amp; (t[leftIndex] &gt;= 0.9)
                 &amp;&amp; (t[0] &lt; 0.1)) {
 <span class="fc" id="L511">                rightIndex = 0;</span>
@@ -598,50 +598,50 @@ public class ContourFinder {
 
 <span class="fc" id="L599">                contours.remove(right);</span>
 <span class="fc" id="L600">                resort = true;</span>
-<span class="fc bfc" id="L601" title="All 4 branches covered.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L601" title="1 of 4 branches missed.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
 
 <span class="fc" id="L603">                contours.remove(left);</span>
 <span class="fc" id="L604">                resort = true;</span>
             } else {
 
-<span class="fc bfc" id="L607" title="All 4 branches covered.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L607" title="2 of 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
                     // left has 1 peak
 <span class="fc" id="L609">                    contours.remove(right);</span>
 <span class="fc" id="L610">                    resort = true;</span>
-<span class="fc bfc" id="L611" title="All 4 branches covered.">                } else if (rightIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
+<span class="nc bnc" id="L611" title="All 4 branches missed.">                } else if (rightIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
                     // right has 1 peak
-<span class="fc" id="L613">                    contours.remove(left);</span>
-<span class="fc" id="L614">                    resort = true;</span>
-<span class="pc bpc" id="L615" title="1 of 4 branches missed.">                } else if (!rightIsTaller &amp;&amp; !leftIsTaller</span>
+<span class="nc" id="L613">                    contours.remove(left);</span>
+<span class="nc" id="L614">                    resort = true;</span>
+<span class="nc bnc" id="L615" title="All 4 branches missed.">                } else if (!rightIsTaller &amp;&amp; !leftIsTaller</span>
 <span class="nc bnc" id="L616" title="All 2 branches missed.">                    &amp;&amp; (right.getPeakDetails().length == 2)</span>
 <span class="nc bnc" id="L617" title="All 2 branches missed.">                    &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
                     // do nothing, both should remain
                 } else {
                     // both have a single peak, so avg in sigma and t
-<span class="fc" id="L621">                    float sigma = (left.getPeakSigma()</span>
-<span class="fc" id="L622">                        + right.getPeakSigma()) / 2.f;</span>
-<span class="fc" id="L623">                    float scaleFreeLength = (left.getPeakScaleFreeLength()</span>
-<span class="fc" id="L624">                        + right.getPeakScaleFreeLength()) / 2.f;</span>
+<span class="nc" id="L621">                    float sigma = (left.getPeakSigma()</span>
+<span class="nc" id="L622">                        + right.getPeakSigma()) / 2.f;</span>
+<span class="nc" id="L623">                    float scaleFreeLength = (left.getPeakScaleFreeLength()</span>
+<span class="nc" id="L624">                        + right.getPeakScaleFreeLength()) / 2.f;</span>
 
-<span class="fc" id="L626">                    CurvatureScaleSpaceContour contour</span>
+<span class="nc" id="L626">                    CurvatureScaleSpaceContour contour</span>
                         = new CurvatureScaleSpaceContour(sigma, scaleFreeLength);
 
-<span class="fc" id="L629">                    contour.setEdgeNumber(left.getEdgeNumber());</span>
+<span class="nc" id="L629">                    contour.setEdgeNumber(left.getEdgeNumber());</span>
 
-<span class="fc" id="L631">                    CurvatureScaleSpaceImagePoint[] peakPoints</span>
+<span class="nc" id="L631">                    CurvatureScaleSpaceImagePoint[] peakPoints</span>
                         = new CurvatureScaleSpaceImagePoint[]{
-<span class="fc" id="L633">                            left.getPeakDetails()[0],</span>
-<span class="fc" id="L634">                            right.getPeakDetails()[0]};</span>
+<span class="nc" id="L633">                            left.getPeakDetails()[0],</span>
+<span class="nc" id="L634">                            right.getPeakDetails()[0]};</span>
 
-<span class="fc" id="L636">                    contour.setPeakDetails(peakPoints);</span>
+<span class="nc" id="L636">                    contour.setPeakDetails(peakPoints);</span>
 
-<span class="fc" id="L638">                    contours.set(idxLeft, contour);</span>
+<span class="nc" id="L638">                    contours.set(idxLeft, contour);</span>
 
-<span class="fc" id="L640">                    contours.remove(left);</span>
+<span class="nc" id="L640">                    contours.remove(left);</span>
 
-<span class="fc" id="L642">                    contours.remove(right);</span>
+<span class="nc" id="L642">                    contours.remove(right);</span>
 
-<span class="fc" id="L644">                    resort = true;</span>
+<span class="nc" id="L644">                    resort = true;</span>
                 }
             }
             //}
@@ -698,8 +698,8 @@ public class ContourFinder {
     public boolean reverseIfClockwise(List&lt;CurvatureScaleSpaceContour&gt; result,
         PairIntArray edge) {
 
-<span class="pc bpc" id="L701" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
-<span class="nc" id="L702">            return false;</span>
+<span class="fc bfc" id="L701" title="All 2 branches covered.">        if (result.isEmpty()) {</span>
+<span class="fc" id="L702">            return false;</span>
         }
 
 <span class="pc bpc" id="L705" title="1 of 2 branches missed.">        if (edge == null) {</span>

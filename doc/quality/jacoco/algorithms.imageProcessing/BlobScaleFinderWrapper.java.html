@@ -1,29 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BlobScaleFinderWrapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">BlobScaleFinderWrapper.java</span></div><h1>BlobScaleFinderWrapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.SegmentedImageHelper.SegmentationType;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * determine scale between 2 images using blob contours.
+ * determine scale between 2 images using blob contours or corners.
  * NOT READY FOR USE YET.
  *
  * @author nichole
  */
 public class BlobScaleFinderWrapper {
 
-<span class="fc" id="L18">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="pc" id="L15">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="fc" id="L20">    protected boolean debug = true;</span>
+<span class="pc" id="L17">    protected boolean debug = true;</span>
 
-<span class="fc" id="L22">    protected final int binnedImageMaxDimension = 300;</span>
+<span class="pc" id="L19">    protected final int binnedImageMaxDimension = 300;</span>
 
-    protected final SegmentedImageHelper img1Helper;
+    /*
+    choices for solutions:
 
-    protected final SegmentedImageHelper img2Helper;
+    (1) contours and curvature scale space matches followed by features to refine
+        and validate
+    (2) corners and feature matches w/ combinations
+    (3) corners and feature matches in simplest ordered pairings
+    (4) contours and curvature scale space matches using simplest ordered
+        pairings
+
+    should try (3) and/or (4) first then (2) and (1)
+    */
+    private enum AlgType {
+        CONTOURS_ORDERED, CORNERS_ORDERED,
+        CORNERS_COMBINATIONS, CONTOURS_COMBINATIONS
+    }
+<span class="pc" id="L37">    protected AlgType algType = AlgType.CORNERS_ORDERED;</span>
+
+    protected final BlobPerimeterHelper img1Helper;
+    protected final BlobPerimeterHelper img2Helper;
+
+<span class="pc" id="L42">    protected BlobCornerHelper blobCornerHelper1 = null;</span>
+<span class="pc" id="L43">    protected BlobCornerHelper blobCornerHelper2 = null;</span>
+
+<span class="pc" id="L45">    protected BlobContourHelper blobContourHelper1 = null;</span>
+<span class="pc" id="L46">    protected BlobContourHelper blobContourHelper2 = null;</span>
+
+    protected final IntensityFeatures features1;
+    protected final IntensityFeatures featuresBinned1;
+    protected final IntensityFeatures features2;
+    protected final IntensityFeatures featuresBinned2;
+
+    private final boolean skipBinnedImages;
+<span class="pc" id="L54">    private boolean useBinned1 = false;</span>
+<span class="pc" id="L55">    private boolean useBinned2 = false;</span>
+
+<span class="pc" id="L57">    private boolean useSameSegmentation = false;</span>
 
     /**
      *
@@ -33,17 +64,76 @@ public class BlobScaleFinderWrapper {
      * @param img2 the second image representing the reference frame that
      * image1 is transformed to using the resulting parameters,
      */
-<span class="fc" id="L36">    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {</span>
+<span class="fc" id="L67">    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {</span>
 
-<span class="fc" id="L38">        img1Helper = new SegmentedImageHelper(img1, &quot;1&quot;);</span>
+<span class="fc" id="L69">        img1Helper = new BlobPerimeterHelper(img1, &quot;1&quot;);</span>
 
-<span class="fc" id="L40">        img2Helper = new SegmentedImageHelper(img2, &quot;2&quot;);</span>
+<span class="fc" id="L71">        img2Helper = new BlobPerimeterHelper(img2, &quot;2&quot;);</span>
 
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L73">        features1 = new IntensityFeatures(img1, 5, true);</span>
+
+<span class="fc" id="L75">        features2 = new IntensityFeatures(img2, 5, true);</span>
+
+<span class="fc" id="L77">        skipBinnedImages = true;</span>
+<span class="fc" id="L78">        useBinned1= false;</span>
+<span class="fc" id="L79">        useBinned2 = false;</span>
+
+<span class="fc" id="L81">        featuresBinned1 = null;</span>
+<span class="fc" id="L82">        featuresBinned2 = null;</span>
+<span class="fc" id="L83">    }</span>
+    
+    /**
+     *
+     * @param img1 the first image holding objects for which a Euclidean
+     * transformation is found that can be applied to put it in
+     * the same scale reference frame as image2.
+     * @param img2 the second image representing the reference frame that
+     * image1 is transformed to using the resulting parameters,
+     * @param startWithBinnedImages if true, starts the image processing
+     * with images binned to 300 pixels or less per dimension.
+     */
+    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
+<span class="nc" id="L96">        startWithBinnedImages) {</span>
+
+<span class="nc" id="L98">        img1Helper = new BlobPerimeterHelper(img1, &quot;1&quot;);</span>
+
+<span class="nc" id="L100">        img2Helper = new BlobPerimeterHelper(img2, &quot;2&quot;);</span>
+
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (startWithBinnedImages) {</span>
+         
+<span class="nc" id="L104">            skipBinnedImages = true;</span>
+<span class="nc" id="L105">            useBinned1 = false;</span>
+<span class="nc" id="L106">            useBinned2 = false;</span>
+        
+<span class="nc" id="L108">            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+
+<span class="nc" id="L110">            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+            
+<span class="nc" id="L112">            featuresBinned1 = new IntensityFeatures(</span>
+<span class="nc" id="L113">                img1Helper.getGreyscaleImageBinned(), 5, true);</span>
+            
+<span class="nc" id="L115">            featuresBinned2 = new IntensityFeatures(</span>
+<span class="nc" id="L116">                img2Helper.getGreyscaleImageBinned(), 5, true);</span>
+            
+        } else {
+            
+<span class="nc" id="L120">            skipBinnedImages = true;</span>
+<span class="nc" id="L121">            useBinned1 = false;</span>
+<span class="nc" id="L122">            useBinned2 = false;</span>
+<span class="nc" id="L123">            featuresBinned1 = null;</span>
+<span class="nc" id="L124">            featuresBinned2 = null;</span>
+            
+        }
+
+<span class="nc" id="L128">        features1 = new IntensityFeatures(img1, 5, true);</span>
+
+<span class="nc" id="L130">        features2 = new IntensityFeatures(img2, 5, true);</span>
+
+<span class="nc" id="L132">    }</span>
 
     public void setToDebug() {
-<span class="fc" id="L45">        debug = true;</span>
-<span class="fc" id="L46">    }</span>
+<span class="fc" id="L135">        debug = true;</span>
+<span class="fc" id="L136">    }</span>
 
     /**
      * NOT READY FOR USE YET.
@@ -93,389 +183,276 @@ public class BlobScaleFinderWrapper {
             log.info(stats2.toString());
         }
         */
-        
-<span class="fc" id="L97">        ImageStatistics statsR1 = ImageStatisticsHelper.examine(</span>
-            img1Helper.img.r, true);
-<span class="fc" id="L99">        ImageStatistics statsB1 = ImageStatisticsHelper.examine(</span>
-            img1Helper.img.b, true);
-<span class="fc" id="L101">        ImageStatistics statsG1 = ImageStatisticsHelper.examine(</span>
-            img1Helper.img.g, true);
-        
-<span class="fc" id="L104">        ImageStatistics statsR2 = ImageStatisticsHelper.examine(</span>
-            img2Helper.img.r, true);
-<span class="fc" id="L106">        ImageStatistics statsB2 = ImageStatisticsHelper.examine(</span>
-            img2Helper.img.b, true);
-<span class="fc" id="L108">        ImageStatistics statsG2 = ImageStatisticsHelper.examine(</span>
-            img2Helper.img.g, true);
-        
-<span class="fc" id="L111">        log.info(&quot;stats R1=&quot; + statsR1.toString());</span>
-<span class="fc" id="L112">        log.info(&quot;stats G1=&quot; + statsG1.toString());</span>
-<span class="fc" id="L113">        log.info(&quot;stats B1=&quot; + statsB1.toString());</span>
-        
-<span class="fc" id="L115">        log.info(&quot;stats R2=&quot; + statsR2.toString());</span>
-<span class="fc" id="L116">        log.info(&quot;stats G2=&quot; + statsG2.toString());</span>
-<span class="fc" id="L117">        log.info(&quot;stats B2=&quot; + statsB2.toString());</span>
-        
-<span class="fc" id="L119">        int limit = 20;</span>
-<span class="fc" id="L120">        boolean useSameSegmentation = false;</span>
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if ((Math.abs(statsR1.getMode() - statsR2.getMode()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMode() - statsG2.getMode()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMode() - statsB2.getMode()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">            (Math.abs(statsR1.getMedian() - statsR2.getMedian()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMedian() - statsG2.getMedian()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMedian() - statsB2.getMedian()) &lt; limit)) {</span>
-<span class="fc" id="L127">            useSameSegmentation = true;</span>
+
+<span class="fc" id="L187">        ImageStatistics statsR1 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L188">            img1Helper.getImage().r, true);</span>
+<span class="fc" id="L189">        ImageStatistics statsB1 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L190">            img1Helper.getImage().b, true);</span>
+<span class="fc" id="L191">        ImageStatistics statsG1 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L192">            img1Helper.getImage().g, true);</span>
+
+<span class="fc" id="L194">        ImageStatistics statsR2 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L195">            img2Helper.getImage().r, true);</span>
+<span class="fc" id="L196">        ImageStatistics statsB2 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L197">            img2Helper.getImage().b, true);</span>
+<span class="fc" id="L198">        ImageStatistics statsG2 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L199">            img2Helper.getImage().g, true);</span>
+
+<span class="fc" id="L201">        log.info(&quot;stats R1=&quot; + statsR1.toString());</span>
+<span class="fc" id="L202">        log.info(&quot;stats G1=&quot; + statsG1.toString());</span>
+<span class="fc" id="L203">        log.info(&quot;stats B1=&quot; + statsB1.toString());</span>
+
+<span class="fc" id="L205">        log.info(&quot;stats R2=&quot; + statsR2.toString());</span>
+<span class="fc" id="L206">        log.info(&quot;stats G2=&quot; + statsG2.toString());</span>
+<span class="fc" id="L207">        log.info(&quot;stats B2=&quot; + statsB2.toString());</span>
+
+<span class="fc" id="L209">        int limit = 20;</span>
+<span class="fc" id="L210">        useSameSegmentation = false;</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if ((Math.abs(statsR1.getMode() - statsR2.getMode()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMode() - statsG2.getMode()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMode() - statsB2.getMode()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">            (Math.abs(statsR1.getMedian() - statsR2.getMedian()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMedian() - statsG2.getMedian()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMedian() - statsB2.getMedian()) &lt; limit)) {</span>
+<span class="fc" id="L217">            useSameSegmentation = true;</span>
         }
+        
+<span class="fc" id="L220">        TransformationParameters params = null;</span>
+        
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        boolean[] useBinned = skipBinnedImages ? </span>
+            new boolean[]{false} : new boolean[]{true, false};
+        
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        for (boolean ub : useBinned) {</span>
+            
+<span class="fc" id="L227">            useBinned1 = ub;</span>
+<span class="fc" id="L228">            useBinned2 = ub;</span>
+        
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="fc" id="L231">                algType = AlgType.CORNERS_ORDERED;</span>
+<span class="fc" id="L232">                params = calculateScaleImpl();</span>
+            }
+            
+<span class="fc bfc" id="L235" title="All 2 branches covered.">            if (params == null) {</span>
+<span class="fc" id="L236">                algType = AlgType.CONTOURS_ORDERED;</span>
+<span class="fc" id="L237">                params = calculateScaleImpl();</span>
+            }
+
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="nc" id="L241">                algType = AlgType.CORNERS_COMBINATIONS;</span>
+<span class="nc" id="L242">                params = calculateScaleImpl();</span>
+            }
+
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="nc" id="L246">                algType = AlgType.CONTOURS_COMBINATIONS;</span>
+<span class="nc" id="L247">                params = calculateScaleImpl();</span>
+            }
+        }
+        
+<span class="fc" id="L251">        return params;</span>
+    }
+
+    private TransformationParameters calculateScaleImpl() throws IOException,
+        NoSuchAlgorithmException {
         
         /*
         depending on image statistics, different combinations of segmentation
         and binning are tried.
-        
-        If a segmentation type involves using random, the method might be
-        tried again if specified.  
-        A different algorithm for the clustering may be needed.
         */
 
-        /*
-        SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
-            int numExtraUnbinnedAllowed)
-        */
+<span class="fc" id="L262">        SegmentationType[] seg1 = new SegmentationType[]{</span>
+            SegmentationType.COLOR_POLARCIEXY,
+            SegmentationType.GREYSCALE_KMPP,
+            //SegmentationType.BINARY
+        };
+<span class="fc" id="L267">        SegmentationType[] seg2 = new SegmentationType[]{</span>
+            SegmentationType.COLOR_POLARCIEXY,
+            SegmentationType.GREYSCALE_KMPP,
+            //SegmentationType.BINARY
+        };
         
-<span class="fc" id="L144">        SegmentationOrder[] seg1 = new SegmentationOrder[]{</span>
-            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
-            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 1, 1),
-            //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
-        };
-<span class="fc" id="L149">        SegmentationOrder[] seg2 = new SegmentationOrder[]{</span>
-            new SegmentationOrder(SegmentationType.COLOR_POLARCIEXY, 0, 0),
-            new SegmentationOrder(SegmentationType.GREYSCALE_KMPP, 1, 1),
-            //new SegmentationOrder(SegmentationType.BINARY, 1, 1)
-        };
-                
-<span class="fc" id="L155">        int ordered1Idx = 0;</span>
-<span class="fc" id="L156">        int ordered2Idx = 0;</span>
+<span class="fc" id="L273">        int ordered1Idx = 0;</span>
+<span class="fc" id="L274">        int ordered2Idx = 0;</span>
 
-<span class="pc bpc" id="L158" title="2 of 4 branches missed.">        while ((ordered1Idx &lt; seg1.length) &amp;&amp; (ordered2Idx &lt; seg2.length)) {</span>
+<span class="pc bpc" id="L276" title="1 of 4 branches missed.">        while ((ordered1Idx &lt; seg1.length) &amp;&amp; (ordered2Idx &lt; seg2.length)) {</span>
 
-<span class="fc" id="L160">            boolean useBinned1 = seg1[ordered1Idx].currentIsBinned();</span>
+<span class="fc" id="L278">            SegmentationType segmentationType1 = seg1[ordered1Idx];</span>
 
-<span class="fc" id="L162">            boolean useBinned2 = seg2[ordered2Idx].currentIsBinned();</span>
+<span class="fc" id="L280">            SegmentationType segmentationType2 = seg2[ordered2Idx];</span>
 
-<span class="fc" id="L164">            SegmentationType segmentationType1 = seg1[ordered1Idx].geSegmentationType();</span>
-
-<span class="fc" id="L166">            SegmentationType segmentationType2 = seg2[ordered2Idx].geSegmentationType();</span>
-            
-<span class="fc" id="L168">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; binned=&quot; + useBinned1 </span>
-                + &quot; useSameSegmentation=&quot; + useSameSegmentation 
+<span class="fc" id="L282">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; binned=&quot; + useBinned1</span>
+                + &quot; useSameSegmentation=&quot; + useSameSegmentation
                 + &quot; ordered1Idx=&quot; + ordered1Idx);
-<span class="fc" id="L171">            log.info(&quot;for 2: &quot; + segmentationType2.name() + &quot; binned=&quot; + useBinned2</span>
+<span class="fc" id="L285">            log.info(&quot;for 2: &quot; + segmentationType2.name() + &quot; binned=&quot; + useBinned2</span>
                 + &quot; ordered2Idx=&quot; + ordered2Idx);
 
-<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (useBinned1) {</span>
-<span class="fc" id="L175">                img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+            IntensityFeatures f1;
+            IntensityFeatures f2;
+
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">            if (useBinned1) {</span>
+<span class="nc" id="L292">                img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+<span class="nc" id="L293">                f1 = featuresBinned1;</span>
+            } else {
+<span class="fc" id="L295">                f1 = features1;</span>
             }
 
-<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (useBinned2) {</span>
-<span class="fc" id="L179">                img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">            if (useBinned2) {</span>
+<span class="nc" id="L299">                img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+<span class="nc" id="L300">                f2 = featuresBinned2;</span>
+            } else {
+<span class="fc" id="L302">                f2 = features2;</span>
             }
 
-<span class="fc" id="L182">            img1Helper.applySegmentation(segmentationType1, useBinned1);</span>
+<span class="fc" id="L305">            img1Helper.applySegmentation(segmentationType1, useBinned1);</span>
+
+<span class="fc" id="L307">            img2Helper.applySegmentation(segmentationType2, useBinned2);</span>
+
+<span class="fc" id="L309">            float[] outputScaleRotTransXYStDev = new float[4];</span>
+
+<span class="fc" id="L311">            TransformationParameters params = null;</span>
+
+<span class="fc" id="L313">            int n1 = 0;</span>
+<span class="fc" id="L314">            int n2 = 0;</span>
+
+<span class="fc bfc" id="L316" title="All 2 branches covered.">            if (algType.equals(AlgType.CONTOURS_ORDERED) || </span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">                algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
+                
+<span class="fc bfc" id="L319" title="All 2 branches covered.">                if (blobContourHelper1 == null) {</span>
+<span class="fc" id="L320">                    blobContourHelper1 = new BlobContourHelper(img1Helper);</span>
+<span class="fc" id="L321">                    blobContourHelper2 = new BlobContourHelper(img2Helper);</span>
+                }
+
+<span class="fc" id="L324">                blobContourHelper1.generatePerimeterContours(</span>
+                    segmentationType1, useBinned1);
+<span class="fc" id="L326">                blobContourHelper2.generatePerimeterContours(</span>
+                    segmentationType2, useBinned2);
+                
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_ORDERED) || </span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">                algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
+
+<span class="fc bfc" id="L332" title="All 2 branches covered.">                if (blobCornerHelper1 == null) {</span>
+<span class="fc" id="L333">                    blobCornerHelper1 = new BlobCornerHelper(img1Helper);</span>
+<span class="fc" id="L334">                    blobCornerHelper2 = new BlobCornerHelper(img2Helper);</span>
+                }
+
+<span class="fc" id="L337">                blobCornerHelper1.generatePerimeterCorners(</span>
+                    segmentationType1, useBinned1);
+<span class="fc" id="L339">                blobCornerHelper2.generatePerimeterCorners(</span>
+                    segmentationType2, useBinned2);
+
+            }
             
-<span class="fc" id="L184">            img2Helper.applySegmentation(segmentationType2, useBinned2);</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            if (algType.equals(AlgType.CORNERS_ORDERED)) {</span>
+                
+<span class="fc" id="L346">                BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();</span>
 
-<span class="fc" id="L186">            img1Helper.extractBlobsAndContours(segmentationType1, useBinned1);</span>
+<span class="fc" id="L348">                params = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
+                    segmentationType1, useBinned1, blobCornerHelper2, f2,
+                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
 
-<span class="fc" id="L188">            img2Helper.extractBlobsAndContours(segmentationType2, useBinned2);</span>
+<span class="fc" id="L352">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="fc" id="L353">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+                
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_ORDERED)) {</span>
+                
+<span class="fc" id="L357">                BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();</span>
 
-<span class="fc" id="L190">            BlobScaleFinder bsFinder = new BlobScaleFinder();</span>
+<span class="fc" id="L359">                params = bsFinder.solveForScale(blobContourHelper1, f1,</span>
+                    segmentationType1, useBinned1, blobContourHelper2, f2,
+                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
 
-<span class="fc" id="L192">            float[] outputScaleRotTransXYStDev = new float[4];</span>
-<span class="fc" id="L193">            TransformationParameters params = bsFinder.solveForScale(</span>
-                img1Helper, segmentationType1, useBinned1,
-                img2Helper, segmentationType2, useBinned2,
-                outputScaleRotTransXYStDev);
+<span class="fc" id="L363">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="fc" id="L364">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+                
+<span class="pc bnc" id="L366" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
+                
+<span class="nc" id="L368">                BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();</span>
 
-<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (params != null) {</span>
+<span class="nc" id="L370">                params = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
+                    segmentationType1, useBinned1, blobCornerHelper2, f2,
+                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
 
-<span class="fc" id="L200">                log.info(&quot;params for type&quot;</span>
-<span class="fc" id="L201">                    + &quot; (&quot; + segmentationType1.name() + &quot;, binned=&quot; + useBinned1 + &quot;)&quot;</span>
-<span class="fc" id="L202">                    + &quot; (&quot; + segmentationType2.name() + &quot;, binned=&quot; + useBinned2 + &quot;)&quot;</span>
-<span class="fc" id="L203">                    + &quot; : &quot; + params.toString());</span>
+<span class="nc" id="L374">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="nc" id="L375">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
 
-<span class="fc" id="L205">                log.info(String.format(</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
+
+<span class="nc" id="L379">                BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();</span>
+
+<span class="nc" id="L381">                params = bsFinder.solveForScale(blobContourHelper1, f1,</span>
+                    segmentationType1, useBinned1, blobContourHelper2, f2,
+                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+
+<span class="nc" id="L385">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="nc" id="L386">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+                
+            }
+
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">            if (params != null) {</span>
+
+<span class="fc" id="L392">                log.info(&quot;params for type&quot;</span>
+<span class="fc" id="L393">                    + &quot; (&quot; + segmentationType1.name() + &quot;, binned=&quot; + useBinned1 + &quot;)&quot;</span>
+<span class="fc" id="L394">                    + &quot; (&quot; + segmentationType2.name() + &quot;, binned=&quot; + useBinned2 + &quot;)&quot;</span>
+<span class="fc" id="L395">                    + &quot; : &quot; + params.toString());</span>
+
+<span class="fc" id="L397">                log.info(String.format(</span>
                     &quot;stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f&quot;,
-<span class="fc" id="L207">                    outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],</span>
-<span class="fc" id="L208">                    outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));</span>
+<span class="fc" id="L399">                    outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],</span>
+<span class="fc" id="L400">                    outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));</span>
 
-                //TODO: review this limit
-<span class="fc bfc" id="L211" title="All 2 branches covered.">                if (((outputScaleRotTransXYStDev[0]/params.getScale()) &lt; 0.2)) {</span>
-<span class="fc" id="L212">                    return params;</span>
+                // TODO: consider returning the number of points used in the
+                // calculation
+<span class="fc" id="L404">                float factor0 = (outputScaleRotTransXYStDev[0]/params.getScale());</span>
+<span class="fc" id="L405">                float factor1 = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);</span>
+
+                // consider comparing stdev in translations to a fraction of the image
+<span class="fc" id="L408">                float factor2 = outputScaleRotTransXYStDev[2];</span>
+<span class="fc" id="L409">                float factor3 = outputScaleRotTransXYStDev[3];</span>
+
+                //TODO: review these limits
+<span class="pc bpc" id="L412" title="3 of 8 branches missed.">                if ((factor0 &lt; 0.2) &amp;&amp; (factor1 &gt;= 18.) &amp;&amp; (factor2 &lt; 100)</span>
+                    &amp;&amp; (factor3 &lt; 100)) {
+
+<span class="fc" id="L415">                    return params;</span>
                 }
             }
 
             // if arrive here, have to decide to keep current segmentation and
             // binning or increment.  at least one index has to change
-            
-<span class="fc" id="L219">            int nContours1 = sumContours(img1Helper, segmentationType1, useBinned1);</span>
 
-<span class="fc" id="L221">            int nContours2 = sumContours(img2Helper, segmentationType2, useBinned2);</span>
-            
-<span class="fc" id="L223">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; binned=&quot; + useBinned1 </span>
-                + &quot; nContours1=&quot; + nContours1);
-<span class="fc" id="L225">            log.info(&quot;for 2: &quot; + segmentationType2.name() + &quot; binned=&quot; + useBinned2</span>
-                + &quot; nContours2=&quot; + nContours2);
-            
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">            if (useSameSegmentation) {</span>
-                /*if (
-                    ((useBinned1 &amp;&amp; (nContours1 &lt; 3)) &amp;&amp; (useBinned2 &amp;&amp; (nContours2 &lt; 10))) ||
-                    ((useBinned1 &amp;&amp; (nContours1 &lt; 10)) &amp;&amp; (useBinned2 &amp;&amp; (nContours2 &lt; 3)))
-                    ) {
-                    // if this is the last segmentation to try, do not skip...
-                    // TODO: improve segmentation types
-                    if (ordered1Idx &lt; (seg1.length - 1)) {
-                        seg1[ordered1Idx].setToSkip();
-                        seg2[ordered2Idx].setToSkip();
-                        ordered1Idx++;
-                        ordered2Idx++;
-                        continue;
-                    }
-                }*/
-<span class="fc bfc" id="L243" title="All 2 branches covered.">                boolean incr1 = !seg1[ordered1Idx].incrementAndHasNext();</span>
-<span class="fc bfc" id="L244" title="All 2 branches covered.">                boolean incr2 = !seg2[ordered2Idx].incrementAndHasNext();</span>
-<span class="pc bpc" id="L245" title="1 of 4 branches missed.">                if (incr1 || incr2) {</span>
-<span class="fc" id="L246">                    ordered1Idx++;</span>
-<span class="fc" id="L247">                    ordered2Idx++;</span>
-                }
-                continue;
+<span class="fc" id="L422">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; binned=&quot; + useBinned1</span>
+                + &quot; nC1=&quot; + n1);
+<span class="fc" id="L424">            log.info(&quot;for 2: &quot; + segmentationType2.name() + &quot; binned=&quot; + useBinned2</span>
+                + &quot; nC2=&quot; + n2);
+
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">            if (useSameSegmentation) {</span>
+<span class="fc" id="L428">                ordered1Idx++;</span>
+<span class="fc" id="L429">                ordered2Idx++;</span>
+<span class="fc" id="L430">                continue;</span>
             }
-                        
-<span class="nc bnc" id="L252" title="All 2 branches missed.">            if (nContours1 &gt; 10) {</span>
-<span class="nc bnc" id="L253" title="All 2 branches missed.">                if (nContours2 &gt; 10) {</span>
-<span class="nc bnc" id="L254" title="All 2 branches missed.">                    if (nContours1 &gt; nContours2) {</span>
-<span class="nc bnc" id="L255" title="All 2 branches missed.">                        if (!seg2[ordered2Idx].incrementAndHasNext()) {</span>
-<span class="nc" id="L256">                            ordered2Idx++;</span>
-                        }
+
+<span class="nc bnc" id="L433" title="All 2 branches missed.">            if (n1 &gt; 10) {</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">                if (n2 &gt; 10) {</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">                    if (n1 &gt; n2) {</span>
+<span class="nc" id="L436">                        ordered2Idx++;</span>
                     } else {
-<span class="nc bnc" id="L259" title="All 2 branches missed.">                        if (!seg1[ordered1Idx].incrementAndHasNext()) {</span>
-<span class="nc" id="L260">                            ordered1Idx++;</span>
-                        }
+<span class="nc" id="L438">                        ordered1Idx++;</span>
                     }
                 } else {
-<span class="nc bnc" id="L264" title="All 2 branches missed.">                    if (!seg1[ordered1Idx].incrementAndHasNext()) {</span>
-<span class="nc" id="L265">                        ordered1Idx++;</span>
-                    }
+<span class="nc" id="L441">                    ordered1Idx++;</span>
                 }
-                continue;
-            }
-            
-<span class="nc bnc" id="L271" title="All 2 branches missed.">            if (nContours2 &gt; 10) {</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">                if (!seg1[ordered1Idx].incrementAndHasNext()) {</span>
-<span class="nc" id="L273">                    ordered1Idx++;</span>
-                }
-                continue;
+<span class="nc" id="L443">                continue;</span>
             }
 
-<span class="nc bnc" id="L278" title="All 2 branches missed.">            if (!seg1[ordered1Idx].incrementAndHasNext()) {</span>
-<span class="nc" id="L279">                ordered1Idx++;</span>
+<span class="nc bnc" id="L446" title="All 2 branches missed.">            if (n2 &gt; 10) {</span>
+<span class="nc" id="L447">                ordered1Idx++;</span>
+<span class="nc" id="L448">                continue;</span>
             }
-<span class="nc bnc" id="L281" title="All 2 branches missed.">            if (!seg2[ordered2Idx].incrementAndHasNext()) {</span>
-<span class="nc" id="L282">                ordered2Idx++;</span>
-            }
-<span class="nc" id="L284">        }</span>
-        
-<span class="nc" id="L286">        return null;</span>
+
+<span class="nc" id="L451">            ordered1Idx++;</span>
+<span class="nc" id="L452">            ordered2Idx++;</span>
+<span class="nc" id="L453">        }</span>
+
+<span class="fc" id="L455">        return null;</span>
     }
-
-    /**
-     * NOT READY FOR USE YET.
-     * From the given images, determine the scale between them and roughly
-     * estimate the rotation and translation too.  Note that image processing
-     * such as sky masks should be applied before using this method.
-     * Also note that it is expected that it will be followed by a more rigorous
-     * solver such as the FeatureMatcher for a correspondence list
-     * (and a better Euclidean transform) to be used in.
-
-     This method does not use adaptive mean thresholding and was originally 
-     created for use on images where background processing such as sky masking 
-     has already occurred.
-
-     * @return Euclidean scale to be applied to image1 to place it in the same
-     * scale reference frame as image2.  Rotation and transformation are also
-     * roughly solved for.
-     * @throws java.io.IOException
-     * @throws java.security.NoSuchAlgorithmException
-     */
-    public TransformationParameters calculateScale0() throws IOException,
-        NoSuchAlgorithmException {
-
-<span class="nc" id="L311">        SegmentationType[] orderOfSeg1 = new SegmentationType[]{</span>
-            SegmentationType.COLOR_POLARCIEXY,
-            SegmentationType.COLOR_POLARCIEXY,
-            SegmentationType.GREYSCALE_KMPP, 
-            SegmentationType.GREYSCALE_KMPP, 
-            
-        };
-<span class="nc" id="L318">        boolean[] orderOfBinning1 = new boolean[] {true, false, true, false};</span>
-        
-<span class="nc" id="L320">        boolean didApplyHistEq =</span>
-<span class="nc" id="L321">            img1Helper.applyEqualizationIfNeededByComparison(img2Helper);</span>
-<span class="nc" id="L322">        log.info(&quot;didApplyHistEq=&quot; + didApplyHistEq);</span>
-        
-<span class="nc" id="L324">        SegmentationType[] orderOfSeg2 = Arrays.copyOf(orderOfSeg1, orderOfSeg1.length);</span>
-<span class="nc" id="L325">        boolean[] orderOfBinning2 = Arrays.copyOf(orderOfBinning1, orderOfBinning1.length);</span>
-
-<span class="nc" id="L327">        int ordered1Idx = 0;</span>
-<span class="nc" id="L328">        int ordered2Idx = 0;</span>
-
-<span class="nc bnc" id="L330" title="All 4 branches missed.">        while ((ordered1Idx &lt; orderOfSeg1.length) &amp;&amp; (ordered2Idx &lt; orderOfSeg2.length)) {</span>
-
-<span class="nc" id="L332">            boolean useBinned1 = orderOfBinning1[ordered1Idx];</span>
-
-<span class="nc" id="L334">            boolean useBinned2 = orderOfBinning2[ordered2Idx];</span>
-
-<span class="nc" id="L336">            SegmentationType segmentationType1 = orderOfSeg1[ordered1Idx];</span>
-
-<span class="nc" id="L338">            SegmentationType segmentationType2 = orderOfSeg2[ordered2Idx];</span>
-
-<span class="nc bnc" id="L340" title="All 2 branches missed.">            if (useBinned1) {</span>
-<span class="nc" id="L341">                img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
-            }
-
-<span class="nc bnc" id="L344" title="All 2 branches missed.">            if (useBinned2) {</span>
-<span class="nc" id="L345">                img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
-            }
-
-<span class="nc" id="L348">            img1Helper.applySegmentation(segmentationType1, useBinned1);</span>
-
-<span class="nc" id="L350">            img2Helper.applySegmentation(segmentationType2, useBinned2);</span>
-
-<span class="nc" id="L352">            img1Helper.extractBlobsAndContours(segmentationType1, useBinned1);</span>
-
-<span class="nc" id="L354">            img2Helper.extractBlobsAndContours(segmentationType2, useBinned2);</span>
-
-<span class="nc" id="L356">            BlobScaleFinder bsFinder = new BlobScaleFinder();</span>
-
-<span class="nc" id="L358">            float[] outputScaleRotTransXYStDev = new float[4];</span>
-<span class="nc" id="L359">            TransformationParameters params = bsFinder.solveForScale(</span>
-                img1Helper, segmentationType1, useBinned1,
-                img2Helper, segmentationType2, useBinned2,
-                outputScaleRotTransXYStDev);
-
-<span class="nc bnc" id="L364" title="All 2 branches missed.">            if (params != null) {</span>
-
-<span class="nc" id="L366">                log.info(&quot;params for type&quot;</span>
-<span class="nc" id="L367">                    + &quot; (&quot; + segmentationType1.name() + &quot;, binned=&quot; + useBinned1 + &quot;)&quot;</span>
-<span class="nc" id="L368">                    + &quot; (&quot; + segmentationType2.name() + &quot;, binned=&quot; + useBinned2 + &quot;)&quot;</span>
-<span class="nc" id="L369">                    + &quot; : &quot; + params.toString());</span>
-
-<span class="nc" id="L371">                log.info(String.format(</span>
-                    &quot;stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f&quot;,
-<span class="nc" id="L373">                    outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],</span>
-<span class="nc" id="L374">                    outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));</span>
-
-                //TODO: review this limit
-<span class="nc" id="L377">                if (</span>
-<span class="nc bnc" id="L378" title="All 2 branches missed.">                    ((outputScaleRotTransXYStDev[0]/params.getScale()) &lt; 0.2)</span>
-                    ) {
-<span class="nc" id="L380">                    return params;</span>
-                }
-            }
-
-            // if arrive here, have to decide to keep current segmentation and binning or increment.
-            // at least one index has to change
-            
-<span class="nc" id="L387">            int nContours1 = sumContours(img1Helper, segmentationType1, useBinned1);</span>
-
-<span class="nc" id="L389">            int nContours2 = sumContours(img2Helper, segmentationType2, useBinned2);</span>
-            
-<span class="nc bnc" id="L391" title="All 2 branches missed.">            if (nContours1 &gt; 10) {</span>
-<span class="nc bnc" id="L392" title="All 2 branches missed.">                if (nContours2 &gt; 10) {</span>
-<span class="nc bnc" id="L393" title="All 2 branches missed.">                    if (nContours1 &gt; nContours2) {</span>
-<span class="nc" id="L394">                        ordered2Idx++;</span>
-                    } else {
-<span class="nc" id="L396">                        ordered1Idx++;</span>
-                    }
-                } else {
-<span class="nc" id="L399">                    ordered1Idx++;</span>
-                }
-<span class="nc" id="L401">                continue;</span>
-            }
-            
-<span class="nc bnc" id="L404" title="All 2 branches missed.">            if (nContours2 &gt; 10) {</span>
-<span class="nc" id="L405">                ordered1Idx++;</span>
-<span class="nc" id="L406">                continue;</span>
-            }
-
-<span class="nc" id="L409">            ordered1Idx++;</span>
-<span class="nc" id="L410">            ordered2Idx++;</span>
-<span class="nc" id="L411">        }</span>
-
-<span class="nc" id="L413">        return null;</span>
-    }
-
-    private int sumContours(SegmentedImageHelper imgHelper, 
-        SegmentationType segmentationType, boolean useBinned) {
-        
-<span class="fc" id="L419">        BlobsAndContours bc = imgHelper.getBlobsAndContours(segmentationType, useBinned);</span>
-        
-<span class="fc" id="L421">        int n = 0;</span>
-        
-<span class="fc bfc" id="L423" title="All 2 branches covered.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : bc.getContours()) {</span>
-<span class="fc" id="L424">            n += list.size();</span>
-<span class="fc" id="L425">        }</span>
-        
-<span class="fc" id="L427">        return n;</span>
-    }
-
-    private class SegmentationOrder {
-        private final SegmentationType type;
-        private int numBinnedAttempts = 0;
-        private int numUnbinnedAttempts = 0;
-        private final int numExtraBinnedAllowed;
-        private final int numExtraUnbinnedAllowed;
-        private boolean currentIsBinned = true;
-        
-        /** flag to use when a quick binned attempt shows that this segmentation
-        is not the best choice for image and the full segmentation should be skipped*/
-        private boolean skip = false;
-        
-        public SegmentationOrder(SegmentationType sType, int numExtraBinnedAllowed,
-            int numExtraUnbinnedAllowed) {
-            this.type = sType;
-            this.numExtraBinnedAllowed = numExtraBinnedAllowed;
-            this.numExtraUnbinnedAllowed = numExtraUnbinnedAllowed;
-        }
-        
-        public boolean incrementAndHasNext() {
-            if (skip) {
-                return false;
-            }
-            if (currentIsBinned &amp;&amp; (numBinnedAttempts &lt; numExtraBinnedAllowed)) {
-                numBinnedAttempts++;
-                return true;
-            } else if (currentIsBinned) {
-                numBinnedAttempts++;
-                currentIsBinned = false;
-                return true;
-            } else if (!currentIsBinned &amp;&amp; (numUnbinnedAttempts &lt; numExtraUnbinnedAllowed)) {
-                numUnbinnedAttempts++;
-                return true;
-            }
-            return false;
-        }
-        
-        public void setToSkip() {
-            skip = true;
-        }
-        
-        public boolean currentIsBinned() {
-            return currentIsBinned;
-        }
-        
-        public SegmentationType geSegmentationType() {
-            return type;
-        }
-    }
-    
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

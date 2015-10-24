@@ -777,6 +777,37 @@ import java.util.logging.Logger;
 <span class="fc" id="L777">        outputY[outputIndex] = (float)yr;</span>
         
 <span class="fc" id="L779">    }</span>
+
+    public void transformToOrigin(int originX, int originY, 
+        TransformationParameters params) {
+        
+<span class="nc" id="L784">        double ox = params.getOriginX();</span>
+<span class="nc" id="L785">        double oy = params.getOriginY();</span>
+        
+<span class="nc" id="L787">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
+<span class="nc" id="L788">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
+
+<span class="nc" id="L790">        double tx = revParams.getTranslationX();</span>
+<span class="nc" id="L791">        double ty = revParams.getTranslationY();</span>
+        
+<span class="nc" id="L793">        double cosine = Math.cos(revParams.getRotationInRadians());</span>
+<span class="nc" id="L794">        double sine = Math.sin(revParams.getRotationInRadians());</span>
+<span class="nc" id="L795">        double scale = revParams.getScale();</span>
+        
+<span class="nc" id="L797">        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);</span>
+<span class="nc" id="L798">        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);</span>
+        
+<span class="nc" id="L800">        double txP = revParams.getTranslationX() - deltaX;</span>
+<span class="nc" id="L801">        double tyP = revParams.getTranslationY() - deltaY;</span>
+        
+<span class="nc" id="L803">        double[] xyT2 = applyTransformation(params, txP, tyP);</span>
+      
+<span class="nc" id="L805">        params.setOriginX(originX);</span>
+<span class="nc" id="L806">        params.setOriginY(originY);</span>
+<span class="nc" id="L807">        params.setTranslationX((float)xyT2[0]);</span>
+<span class="nc" id="L808">        params.setTranslationY((float)xyT2[1]);</span>
+        
+<span class="nc" id="L810">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

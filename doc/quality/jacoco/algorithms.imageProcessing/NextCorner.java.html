@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NextCorner.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">NextCorner.java</span></div><h1>NextCorner.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
+
+/**
+ * A class to serve the purpose of an adjacency matrix (via rules to choose
+ * the &quot;neighbor corner&quot;) and the state of &quot;un-visited&quot; for the search
+ * algorithm.
+ * 
+ * @author nichole
+ */
+<span class="nc bnc" id="L14" title="All 2 branches missed.">public class NextCorner {</span>
+    
+    /**
+     * a list of corners extracted from a closed curve in a digital image
+     */
+    protected final TreeSet&lt;CornerRegion&gt; origCorners;
+    
+    /**
+     * A list of indexes to origCorners carrying corner regions from the curve, 
+     * that is, closed curve edge, given to the corner matcher.
+     * 
+     * Note that the lists are ordered by descending peak sigma.   Note also 
+     * that the List&lt;Integer&gt; indexes are referred to as corner indexes.
+     */
+    protected final TreeSet&lt;CornerRegion&gt; remainingCorners;
+    
+    protected final List&lt;Integer&gt; matchedCornerIndexes1;
+    protected final List&lt;Integer&gt; matchedCornerIndexes2;
+    
+    protected final List&lt;FeatureComparisonStat&gt; matchedStats;
+    
+<span class="nc" id="L35">    protected int matchedEdgeNumber1 = -1;</span>
+<span class="nc" id="L36">    protected int matchedEdgeNumber2 = -1;</span>
+    
+<span class="nc" id="L38">    public NextCorner(final List&lt;CornerRegion&gt; corners) {</span>
+                
+<span class="nc" id="L40">        origCorners = new TreeSet&lt;CornerRegion&gt;(</span>
+            new DescendingKComparator());
+                        
+        // populate with contours that haven't been visited
+<span class="nc" id="L44">        remainingCorners = new TreeSet&lt;CornerRegion&gt;(</span>
+            new DescendingKComparator());
+        
+<span class="nc" id="L47">        matchedStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+        
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (int i = 0; i &lt; corners.size(); i++) {</span>
+            
+<span class="nc" id="L51">            CornerRegion corner = corners.get(i);</span>
+            
+<span class="nc" id="L53">            origCorners.add(corner);</span>
+            
+<span class="nc" id="L55">            remainingCorners.add(corner);</span>
+        }
+
+<span class="nc" id="L58">        matchedCornerIndexes1 = new ArrayList&lt;Integer&gt;();</span>
+        
+<span class="nc" id="L60">        matchedCornerIndexes2 = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L61">    }</span>
+    
+    public void addMatchedCorners(CornerRegion corner1, 
+        CornerRegion corner2, Integer cornerIndex1, 
+        Integer cornerIndex2, FeatureComparisonStat stat) {
+        
+<span class="nc" id="L67">        markAsVisited(corner1);</span>
+        
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (corner2 == null) {</span>
+<span class="nc" id="L70">            return;</span>
+        }
+        
+<span class="nc" id="L73">        matchedCornerIndexes1.add(cornerIndex1);</span>
+<span class="nc" id="L74">        matchedCornerIndexes2.add(cornerIndex2);</span>
+<span class="nc" id="L75">        matchedStats.add(stat);</span>
+
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (matchedEdgeNumber1 == -1) {</span>
+<span class="nc" id="L78">            matchedEdgeNumber1 = corner1.getEdgeIdx();</span>
+        } else {
+<span class="nc bnc" id="L80" title="All 4 branches missed.">            assert(matchedEdgeNumber1 == corner1.getEdgeIdx());</span>
+        }
+        
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (matchedEdgeNumber2 == -1) {</span>
+<span class="nc" id="L84">            matchedEdgeNumber2 = corner2.getEdgeIdx();</span>
+        } else {
+<span class="nc bnc" id="L86" title="All 4 branches missed.">            assert(matchedEdgeNumber2 == corner2.getEdgeIdx());</span>
+        }    
+<span class="nc" id="L88">    }</span>
+    
+    /**
+     * find the largest remaining corner within the list of unvisited.
+     * side-effect of removing the returned corner index from the look-up data
+     * structures.
+     * 
+     * @return 
+     */
+    public CornerRegion findStrongestRemainingCorner() {
+        
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (remainingCorners.isEmpty()) {</span>
+<span class="nc" id="L100">            return null;</span>
+        }
+        
+<span class="nc" id="L103">        CornerRegion corner = remainingCorners.first();</span>
+        
+<span class="nc" id="L105">        boolean removed = remainingCorners.remove(corner);</span>
+                
+<span class="nc bnc" id="L107" title="All 4 branches missed.">        assert(removed == true);</span>
+        
+<span class="nc" id="L109">        return corner;</span>
+    }
+    
+    public void markAsVisited(CornerRegion corner) {        
+<span class="nc" id="L113">        remainingCorners.remove(corner);</span>
+<span class="nc" id="L114">    }</span>
+    
+    public int getMatchedEdgeNumber2() {
+<span class="nc" id="L117">        return matchedEdgeNumber2;</span>
+    }
+    public int getMatchedEdgeNumber1() {
+<span class="nc" id="L120">        return matchedEdgeNumber1;</span>
+    }
+    
+    /**
+     * find the next smallest sigma peak out of all contours. Note that
+     * this method has the side effect of removing the returned contour
+     * from the internal look-up data structures.
+     * 
+     * @param target the contour or which to find the next smallest contour
+     * 
+     * @return 
+     */
+    public CornerRegion findTheNextSmallestUnvisitedSibling(CornerRegion target) { 
+
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (target == null) {</span>
+<span class="nc" id="L135">            return null;</span>
+        }
+        
+<span class="nc" id="L138">        CornerRegion nextLower = origCorners.higher(target);</span>
+        
+<span class="nc bnc" id="L140" title="All 4 branches missed.">        while ((nextLower != null) &amp;&amp; !remainingCorners.contains(nextLower)) {</span>
+<span class="nc" id="L141">            nextLower = origCorners.higher(nextLower);</span>
+        }
+                
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (nextLower != null) {</span>
+            
+<span class="nc" id="L146">            boolean removed = remainingCorners.remove(nextLower);</span>
+            
+<span class="nc bnc" id="L148" title="All 4 branches missed.">            assert(removed);</span>
+            
+<span class="nc" id="L150">            return nextLower;</span>
+        }
+        
+<span class="nc" id="L153">        return null;</span>
+    }
+    
+    public List&lt;Integer&gt; getMatchedCornerIndexes1() {
+<span class="nc" id="L157">        return matchedCornerIndexes1;</span>
+    }
+    
+    public List&lt;Integer&gt; getMatchedCornerIndexes2() {
+<span class="nc" id="L161">        return matchedCornerIndexes2;</span>
+    }
+    
+    public List&lt;FeatureComparisonStat&gt; getMatchedFeatureComparisonStats() {
+<span class="nc" id="L165">        return matchedStats;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -141,13 +141,13 @@ public class DFSConnectedGroupsFinder {
             
 <span class="fc" id="L142">            pointToGroupMap.put(vPoint, groupId);</span>
                         
-<span class="pc bpc" id="L144" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vPoint) != null)) {</span>
+<span class="fc bfc" id="L144" title="All 4 branches covered.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vPoint) != null)) {</span>
 
-<span class="nc" id="L146">            groupId = pointToGroupMap.get(vPoint);</span>
+<span class="fc" id="L146">            groupId = pointToGroupMap.get(vPoint);</span>
 
-<span class="nc" id="L148">            groupMembership.get(groupId).add(uPoint);</span>
+<span class="fc" id="L148">            groupMembership.get(groupId).add(uPoint);</span>
             
-<span class="nc" id="L150">            pointToGroupMap.put(uPoint, groupId);</span>
+<span class="fc" id="L150">            pointToGroupMap.put(uPoint, groupId);</span>
             
 <span class="pc bpc" id="L152" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vPoint) == null)) {</span>
                         

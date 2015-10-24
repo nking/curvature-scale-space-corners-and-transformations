@@ -17,11 +17,11 @@ public class DoubleLinkedCircularList {
     //appears between head and tail
     private final HeapNode sentinel;
     
-    public final static int sentinelKey = Integer.MIN_VALUE;
-    public final static int noValue = Integer.MIN_VALUE + 1;
-    public final static int minValue = Integer.MIN_VALUE + 2;
+    public final static long sentinelKey = Long.MIN_VALUE;
+    public final static long noValue = Long.MIN_VALUE + 1;
+    public final static long minValue = Long.MIN_VALUE + 2;
 
-<span class="fc" id="L24">    protected int number = 0;</span>
+<span class="fc" id="L24">    protected long number = 0;</span>
     
 <span class="fc" id="L26">    public DoubleLinkedCircularList() {</span>
 <span class="fc" id="L27">        sentinel = new HeapNode(sentinelKey);</span>
@@ -73,7 +73,7 @@ public class DoubleLinkedCircularList {
 <span class="fc" id="L73">        return node;</span>
     }
 
-    public boolean remove(int key) {
+    public boolean remove(long key) {
 <span class="fc" id="L77">        HeapNode cn = search(key);</span>
 <span class="fc" id="L78">        remove(cn);</span>
 <span class="pc bpc" id="L79" title="1 of 2 branches missed.">        return (cn != null);</span>
@@ -101,7 +101,7 @@ public class DoubleLinkedCircularList {
 <span class="fc" id="L101">        number--;</span>
 <span class="fc" id="L102">    }</span>
    
-    public HeapNode search(int key) {
+    public HeapNode search(long key) {
         
 <span class="fc" id="L106">        HeapNode cn = sentinel.getRight();</span>
         

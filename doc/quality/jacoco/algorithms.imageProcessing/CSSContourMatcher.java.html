@@ -371,7 +371,7 @@ public final class CSSContourMatcher {
 <span class="nc" id="L371">            throw new IllegalStateException(&quot;matchContours cannot be invoked more than once&quot;);</span>
         }
 
-<span class="fc bfc" id="L374" title="All 2 branches covered.">        if (heap.n == 0) {</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">        if (heap.getNumberOfNodes() == 0) {</span>
 <span class="fc" id="L375">            solverHasFinished = true;</span>
 <span class="fc" id="L376">            return false;</span>
         }
@@ -531,8 +531,6 @@ public final class CSSContourMatcher {
 <span class="fc" id="L531">            return sigma;</span>
         }
         /*
-        It's not clear whether the cost should include the scale free length
-        and sigma or just sigma.
         From Mokhatarian &amp; Mackworth 1986, Section IV, middle of column 1:
         &quot;The average distance between two contours is the average of the
         distances between the peaks, the right branches, and the left branches.
@@ -540,12 +538,12 @@ public final class CSSContourMatcher {
         distance between them after one of them has been transformed.&quot;
         */
 
-<span class="fc" id="L543">        double ds = sigma - contour.getPeakSigma();</span>
+<span class="fc" id="L541">        double ds = sigma - contour.getPeakSigma();</span>
 
-<span class="fc" id="L545">        double dt = scaleFreeLength - contour.getPeakScaleFreeLength();</span>
-<span class="fc" id="L546">        double len = Math.sqrt(ds*ds + dt*dt);</span>
+<span class="fc" id="L543">        double dt = scaleFreeLength - contour.getPeakScaleFreeLength();</span>
+<span class="fc" id="L544">        double len = Math.sqrt(ds*ds + dt*dt);</span>
 
-<span class="fc" id="L548">        return len;</span>
+<span class="fc" id="L546">        return len;</span>
     }
 
     private CurvatureScaleSpaceContour findMatchingC2(final double sigma,
@@ -556,103 +554,103 @@ public final class CSSContourMatcher {
         // the closest index to sigma, then small nearby search
         // for the closest scaleFreeLength
 
-<span class="fc" id="L559">        List&lt;CurvatureScaleSpaceContour&gt; exclude = nc.getMatchedContours2();</span>
+<span class="fc" id="L557">        List&lt;CurvatureScaleSpaceContour&gt; exclude = nc.getMatchedContours2();</span>
 
         //TODO: use 0.1*sigma? current sigma factor peak center error
-<span class="fc" id="L562">        double tolSigma = 0.04*sigma;</span>
-<span class="pc bpc" id="L563" title="1 of 2 branches missed.">        if (tolSigma &lt; 1E-2) {</span>
-<span class="nc" id="L564">            tolSigma = 0.1;</span>
+<span class="fc" id="L560">        double tolSigma = 0.04*sigma;</span>
+<span class="pc bpc" id="L561" title="1 of 2 branches missed.">        if (tolSigma &lt; 1E-2) {</span>
+<span class="nc" id="L562">            tolSigma = 0.1;</span>
         }
 
         // consider wrap around searches too, for scaleFreeLength &gt; 0.5 or
         // scaleFreeLength &lt; 0.5
-<span class="fc bfc" id="L569" title="All 2 branches covered.">        double wrapScaleFreeLength = (scaleFreeLength &gt; 0.5) ?</span>
+<span class="fc bfc" id="L567" title="All 2 branches covered.">        double wrapScaleFreeLength = (scaleFreeLength &gt; 0.5) ?</span>
             scaleFreeLength - 1 : 1 + scaleFreeLength;
 
-<span class="fc" id="L572">        double minDiffS = Double.MAX_VALUE;</span>
-<span class="fc" id="L573">        double minDiffT = Double.MAX_VALUE;</span>
-<span class="fc" id="L574">        int idx = -1;</span>
+<span class="fc" id="L570">        double minDiffS = Double.MAX_VALUE;</span>
+<span class="fc" id="L571">        double minDiffT = Double.MAX_VALUE;</span>
+<span class="fc" id="L572">        int idx = -1;</span>
 
-<span class="fc" id="L576">        double minDiff2T = Double.MAX_VALUE;</span>
-<span class="fc" id="L577">        int minDiff2TIdx = -1;</span>
+<span class="fc" id="L574">        double minDiff2T = Double.MAX_VALUE;</span>
+<span class="fc" id="L575">        int minDiff2TIdx = -1;</span>
 
-<span class="fc" id="L579">        double minDiffLen = Double.MAX_VALUE;</span>
-<span class="fc" id="L580">        int minDiffLenIdx = -1;</span>
+<span class="fc" id="L577">        double minDiffLen = Double.MAX_VALUE;</span>
+<span class="fc" id="L578">        int minDiffLenIdx = -1;</span>
 
-<span class="fc bfc" id="L582" title="All 2 branches covered.">        for (int i = 0; i &lt; c2.size(); ++i) {</span>
+<span class="fc bfc" id="L580" title="All 2 branches covered.">        for (int i = 0; i &lt; c2.size(); ++i) {</span>
 
-<span class="fc" id="L584">            CurvatureScaleSpaceContour c = c2.get(i);</span>
+<span class="fc" id="L582">            CurvatureScaleSpaceContour c = c2.get(i);</span>
 
-<span class="fc bfc" id="L586" title="All 2 branches covered.">            if (exclude.contains(c)) {</span>
-<span class="fc" id="L587">                continue;</span>
+<span class="fc bfc" id="L584" title="All 2 branches covered.">            if (exclude.contains(c)) {</span>
+<span class="fc" id="L585">                continue;</span>
             }
 
-<span class="fc" id="L590">            double diffS = Math.abs(c.getPeakSigma() - sigma);</span>
-<span class="fc" id="L591">            double diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
+<span class="fc" id="L588">            double diffS = Math.abs(c.getPeakSigma() - sigma);</span>
+<span class="fc" id="L589">            double diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
                 scaleFreeLength);
 
-<span class="fc" id="L594">            double len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
-<span class="fc bfc" id="L595" title="All 2 branches covered.">            if (len &lt; minDiffLen) {</span>
-<span class="fc" id="L596">                minDiffLen = len;</span>
-<span class="fc" id="L597">                minDiffLenIdx = i;</span>
+<span class="fc" id="L592">            double len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
+<span class="fc bfc" id="L593" title="All 2 branches covered.">            if (len &lt; minDiffLen) {</span>
+<span class="fc" id="L594">                minDiffLen = len;</span>
+<span class="fc" id="L595">                minDiffLenIdx = i;</span>
             }
 
-<span class="fc bfc" id="L600" title="All 4 branches covered.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
-<span class="fc" id="L601">                minDiffS = diffS;</span>
-<span class="fc" id="L602">                minDiffT = diffT;</span>
-<span class="fc" id="L603">                idx = i;</span>
-<span class="fc bfc" id="L604" title="All 4 branches covered.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
+<span class="fc bfc" id="L598" title="All 4 branches covered.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
+<span class="fc" id="L599">                minDiffS = diffS;</span>
+<span class="fc" id="L600">                minDiffT = diffT;</span>
+<span class="fc" id="L601">                idx = i;</span>
+<span class="fc bfc" id="L602" title="All 4 branches covered.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
                 ) {
-<span class="fc" id="L606">                minDiff2T = diffT;</span>
-<span class="fc" id="L607">                minDiff2TIdx = i;</span>
+<span class="fc" id="L604">                minDiff2T = diffT;</span>
+<span class="fc" id="L605">                minDiff2TIdx = i;</span>
             }
 
-<span class="fc" id="L610">            diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
+<span class="fc" id="L608">            diffT = Math.abs(c.getPeakScaleFreeLength() -</span>
                 wrapScaleFreeLength);
 
-<span class="fc" id="L613">            len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
-<span class="fc bfc" id="L614" title="All 2 branches covered.">            if (len &lt; minDiffLen) {</span>
-<span class="fc" id="L615">                minDiffLen = len;</span>
-<span class="fc" id="L616">                minDiffLenIdx = i;</span>
+<span class="fc" id="L611">            len = Math.sqrt(diffS * diffS + diffT * diffT);</span>
+<span class="fc bfc" id="L612" title="All 2 branches covered.">            if (len &lt; minDiffLen) {</span>
+<span class="fc" id="L613">                minDiffLen = len;</span>
+<span class="fc" id="L614">                minDiffLenIdx = i;</span>
             }
 
-<span class="fc bfc" id="L619" title="All 4 branches covered.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
-<span class="fc" id="L620">                minDiffS = diffS;</span>
-<span class="fc" id="L621">                minDiffT = diffT;</span>
-<span class="fc" id="L622">                idx = i;</span>
-<span class="fc bfc" id="L623" title="All 4 branches covered.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
+<span class="fc bfc" id="L617" title="All 4 branches covered.">            if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
+<span class="fc" id="L618">                minDiffS = diffS;</span>
+<span class="fc" id="L619">                minDiffT = diffT;</span>
+<span class="fc" id="L620">                idx = i;</span>
+<span class="fc bfc" id="L621" title="All 4 branches covered.">            } else if ((diffT &lt; minDiff2T) &amp;&amp; (diffS &lt;= (minDiffS + 3*tolSigma))</span>
                 ) {
-<span class="fc" id="L625">                minDiff2T = diffT;</span>
-<span class="fc" id="L626">                minDiff2TIdx = i;</span>
+<span class="fc" id="L623">                minDiff2T = diffT;</span>
+<span class="fc" id="L624">                minDiff2TIdx = i;</span>
             }
         }
 
-<span class="fc bfc" id="L630" title="All 2 branches covered.">        if (minDiffS &gt; 0.2*sigma) {</span>
-<span class="fc bfc" id="L631" title="All 2 branches covered.">            if (minDiffLenIdx == -1) {</span>
-<span class="fc" id="L632">                return null;</span>
+<span class="fc bfc" id="L628" title="All 2 branches covered.">        if (minDiffS &gt; 0.2*sigma) {</span>
+<span class="fc bfc" id="L629" title="All 2 branches covered.">            if (minDiffLenIdx == -1) {</span>
+<span class="fc" id="L630">                return null;</span>
             }
-<span class="fc" id="L634">            return c2.get(minDiffLenIdx);</span>
+<span class="fc" id="L632">            return c2.get(minDiffLenIdx);</span>
         }
 
-<span class="fc bfc" id="L637" title="All 2 branches covered.">        if (minDiffT &lt;= minDiff2T) {</span>
-<span class="pc bpc" id="L638" title="1 of 2 branches missed.">            if (idx == -1) {</span>
-<span class="nc" id="L639">                return null;</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">        if (minDiffT &lt;= minDiff2T) {</span>
+<span class="pc bpc" id="L636" title="1 of 2 branches missed.">            if (idx == -1) {</span>
+<span class="nc" id="L637">                return null;</span>
             }
-<span class="fc" id="L641">            return c2.get(idx);</span>
+<span class="fc" id="L639">            return c2.get(idx);</span>
         }
 
-<span class="pc bpc" id="L644" title="1 of 2 branches missed.">        if (minDiff2TIdx == -1) {</span>
-<span class="nc" id="L645">            return null;</span>
+<span class="pc bpc" id="L642" title="1 of 2 branches missed.">        if (minDiff2TIdx == -1) {</span>
+<span class="nc" id="L643">            return null;</span>
         }
 
-<span class="fc" id="L648">        return c2.get(minDiff2TIdx);</span>
+<span class="fc" id="L646">        return c2.get(minDiff2TIdx);</span>
     }
 
     public boolean scaleIsPossiblyAmbiguous() {
-<span class="fc" id="L652">        return solutionHasSomeScalesSmallerThanOne;</span>
+<span class="fc" id="L650">        return solutionHasSomeScalesSmallerThanOne;</span>
     }
     public boolean strongestPeaksImplyScaleSmallerThanOne() {
-<span class="fc" id="L655">        return strongestPeaksImplyScaleSmallerThanOne;</span>
+<span class="fc" id="L653">        return strongestPeaksImplyScaleSmallerThanOne;</span>
     }
 
     /*

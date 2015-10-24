@@ -37,7 +37,6 @@ public class BlobScaleFinderWrapper {
     protected AlgType algType = AlgType.CORNERS_ORDERED;
 
     protected final BlobPerimeterHelper img1Helper;
-
     protected final BlobPerimeterHelper img2Helper;
 
     protected BlobCornerHelper blobCornerHelper1 = null;

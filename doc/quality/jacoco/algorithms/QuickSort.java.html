@@ -29,35 +29,55 @@
 <span class="fc" id="L29">        sortBy1stArg(a, b, 0, a.length - 1);</span>
 <span class="fc" id="L30">    }</span>
     
+    /**
+     * sort a by ascending values and perform the same swap operation on b.
+     * @param a
+     * @param b 
+     */
+    public static void sortBy1stArg(float[] a, int[] b) {
+        
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L40">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L43">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L46">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
+        }
+        
+<span class="fc" id="L49">        sortBy1stArg(a, b, 0, a.length - 1);</span>
+<span class="fc" id="L50">    }</span>
+    
     public static void sortBy1stArg(int[] a, Object[] b) {
         
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L35">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L55">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L38">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L58">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L41">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L61">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
         }
         
-<span class="fc" id="L44">        sortBy1stArg(a, b, 0, a.length - 1);</span>
-<span class="fc" id="L45">    }</span>
+<span class="fc" id="L64">        sortBy1stArg(a, b, 0, a.length - 1);</span>
+<span class="fc" id="L65">    }</span>
     
     public static void sortBy1stArg(float[] a, Object[] b) {
         
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L50">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L70">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L53">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L73">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L56">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L76">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
         }
         
-<span class="fc" id="L59">        sortBy1stArg(a, b, 0, a.length - 1);</span>
-<span class="fc" id="L60">    }</span>
+<span class="fc" id="L79">        sortBy1stArg(a, b, 0, a.length - 1);</span>
+<span class="fc" id="L80">    }</span>
     
     /**
      * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
@@ -68,41 +88,94 @@
      */
     public static void sort(float[] a, int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L72">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
-<span class="nc" id="L75">            return;</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L95">            return;</span>
         }
-<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L79">            float x = a[idxLo];</span>
-<span class="fc" id="L80">            int store = idxLo;</span>
-<span class="fc" id="L81">            int idxMid = idxHi + 1;</span>
+<span class="fc" id="L99">            float x = a[idxLo];</span>
+<span class="fc" id="L100">            int store = idxLo;</span>
+<span class="fc" id="L101">            int idxMid = idxHi + 1;</span>
 
             while (true) {
                 do {
-<span class="fc" id="L85">                    store++;     </span>
-<span class="fc bfc" id="L86" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
+<span class="fc" id="L105">                    store++;     </span>
+<span class="fc bfc" id="L106" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
                 do {
-<span class="fc" id="L88">                    idxMid--;</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
-<span class="fc" id="L91">                    break;</span>
+<span class="fc" id="L108">                    idxMid--;</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
+<span class="fc" id="L111">                    break;</span>
                 }
-<span class="fc" id="L93">                float swap = a[store];</span>
-<span class="fc" id="L94">                a[store] = a[idxMid];</span>
-<span class="fc" id="L95">                a[idxMid] = swap;</span>
-<span class="fc" id="L96">            }</span>
-<span class="fc" id="L97">            float swap = a[idxLo];</span>
-<span class="fc" id="L98">            a[idxLo] = a[idxMid];</span>
-<span class="fc" id="L99">            a[idxMid] = swap;</span>
+<span class="fc" id="L113">                float swap = a[store];</span>
+<span class="fc" id="L114">                a[store] = a[idxMid];</span>
+<span class="fc" id="L115">                a[idxMid] = swap;</span>
+<span class="fc" id="L116">            }</span>
+<span class="fc" id="L117">            float swap = a[idxLo];</span>
+<span class="fc" id="L118">            a[idxLo] = a[idxMid];</span>
+<span class="fc" id="L119">            a[idxMid] = swap;</span>
          
-<span class="fc" id="L101">            sort(a, idxLo, idxMid - 1);</span>
+<span class="fc" id="L121">            sort(a, idxLo, idxMid - 1);</span>
 
-<span class="fc" id="L103">            sort(a, idxMid + 1, idxHi);</span>
+<span class="fc" id="L123">            sort(a, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L105">    }</span>
+<span class="fc" id="L125">    }</span>
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive, by ascending values and
+     * perform the same operations on b.  Uses the optimized
+     * qsort3 from the book &quot;Programming in Pearls&quot; by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stArg(float[] a, int[] b, int idxLo, int idxHi) {
+        
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L139">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        if (a.length &lt; 2) {</span>
+<span class="fc" id="L142">            return;</span>
+        }
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L146">            float x = a[idxLo];</span>
+<span class="fc" id="L147">            int store = idxLo;</span>
+<span class="fc" id="L148">            int idxMid = idxHi + 1;</span>
+
+            while (true) {
+                do {
+<span class="fc" id="L152">                    store++;     </span>
+<span class="fc bfc" id="L153" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
+                do {
+<span class="fc" id="L155">                    idxMid--;</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
+<span class="fc" id="L158">                    break;</span>
+                }
+<span class="fc" id="L160">                float swap = a[store];</span>
+<span class="fc" id="L161">                a[store] = a[idxMid];</span>
+<span class="fc" id="L162">                a[idxMid] = swap;</span>
+<span class="fc" id="L163">                int swap2 = b[store];</span>
+<span class="fc" id="L164">                b[store] = b[idxMid];</span>
+<span class="fc" id="L165">                b[idxMid] = swap2;</span>
+<span class="fc" id="L166">            }</span>
+<span class="fc" id="L167">            float swap = a[idxLo];</span>
+<span class="fc" id="L168">            a[idxLo] = a[idxMid];</span>
+<span class="fc" id="L169">            a[idxMid] = swap;</span>
+<span class="fc" id="L170">            int swap2 = b[idxLo];</span>
+<span class="fc" id="L171">            b[idxLo] = b[idxMid];</span>
+<span class="fc" id="L172">            b[idxMid] = swap2;</span>
+         
+<span class="fc" id="L174">            sortBy1stArg(a, b, idxLo, idxMid - 1);</span>
+
+<span class="fc" id="L176">            sortBy1stArg(a, b, idxMid + 1, idxHi);</span>
+        }
+<span class="fc" id="L178">    }</span>
     
     /**
      * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
@@ -114,57 +187,57 @@
      */
     public static void sortBy1stArg(int[] a, Object[][] b, int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L118">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L191">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L121">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L194">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L124">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
-        }
-        
-<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (a.length &lt; 2) {</span>
-<span class="fc" id="L128">            return;</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L197">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
         }
         
-<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (a.length &lt; 2) {</span>
+<span class="fc" id="L201">            return;</span>
+        }
+        
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L133">            int x = a[idxLo];</span>
-<span class="fc" id="L134">            int store = idxLo;</span>
-<span class="fc" id="L135">            int idxMid = idxHi + 1;</span>
+<span class="fc" id="L206">            int x = a[idxLo];</span>
+<span class="fc" id="L207">            int store = idxLo;</span>
+<span class="fc" id="L208">            int idxMid = idxHi + 1;</span>
 
             while (true) {
                 do {
-<span class="fc" id="L139">                    store++;     </span>
-<span class="fc bfc" id="L140" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
+<span class="fc" id="L212">                    store++;     </span>
+<span class="fc bfc" id="L213" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
                 do {
-<span class="fc" id="L142">                    idxMid--;</span>
-<span class="fc bfc" id="L143" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
-<span class="fc" id="L145">                    break;</span>
+<span class="fc" id="L215">                    idxMid--;</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
+<span class="fc" id="L218">                    break;</span>
                 }
-<span class="fc" id="L147">                int swap = a[store];</span>
-<span class="fc" id="L148">                a[store] = a[idxMid];</span>
-<span class="fc" id="L149">                a[idxMid] = swap;</span>
+<span class="fc" id="L220">                int swap = a[store];</span>
+<span class="fc" id="L221">                a[store] = a[idxMid];</span>
+<span class="fc" id="L222">                a[idxMid] = swap;</span>
                 
-<span class="fc" id="L151">                Object[] bSwap = b[store];</span>
-<span class="fc" id="L152">                b[store] = b[idxMid];</span>
-<span class="fc" id="L153">                b[idxMid] = bSwap;</span>
-<span class="fc" id="L154">            }</span>
-<span class="fc" id="L155">            int swap = a[idxLo];</span>
-<span class="fc" id="L156">            a[idxLo] = a[idxMid];</span>
-<span class="fc" id="L157">            a[idxMid] = swap;</span>
+<span class="fc" id="L224">                Object[] bSwap = b[store];</span>
+<span class="fc" id="L225">                b[store] = b[idxMid];</span>
+<span class="fc" id="L226">                b[idxMid] = bSwap;</span>
+<span class="fc" id="L227">            }</span>
+<span class="fc" id="L228">            int swap = a[idxLo];</span>
+<span class="fc" id="L229">            a[idxLo] = a[idxMid];</span>
+<span class="fc" id="L230">            a[idxMid] = swap;</span>
             
-<span class="fc" id="L159">            Object[] bSwap = b[idxLo];</span>
-<span class="fc" id="L160">            b[idxLo] = b[idxMid];</span>
-<span class="fc" id="L161">            b[idxMid] = bSwap;</span>
+<span class="fc" id="L232">            Object[] bSwap = b[idxLo];</span>
+<span class="fc" id="L233">            b[idxLo] = b[idxMid];</span>
+<span class="fc" id="L234">            b[idxMid] = bSwap;</span>
          
-<span class="fc" id="L163">            sortBy1stArg(a, b, idxLo, idxMid - 1);</span>
+<span class="fc" id="L236">            sortBy1stArg(a, b, idxLo, idxMid - 1);</span>
 
-<span class="fc" id="L165">            sortBy1stArg(a, b, idxMid + 1, idxHi);</span>
+<span class="fc" id="L238">            sortBy1stArg(a, b, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L167">    }</span>
+<span class="fc" id="L240">    }</span>
     
     /**
      * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
@@ -176,57 +249,57 @@
      */
     public static void sortBy1stArg(int[] a, Object[] b, int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L180">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L253">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L183">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L256">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L186">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
-        }
-        
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
-<span class="nc" id="L190">            return;</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L259">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
         }
         
-<span class="fc bfc" id="L193" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L263">            return;</span>
+        }
+        
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L195">            int x = a[idxLo];</span>
-<span class="fc" id="L196">            int store = idxLo;</span>
-<span class="fc" id="L197">            int idxMid = idxHi + 1;</span>
+<span class="fc" id="L268">            int x = a[idxLo];</span>
+<span class="fc" id="L269">            int store = idxLo;</span>
+<span class="fc" id="L270">            int idxMid = idxHi + 1;</span>
 
             while (true) {
                 do {
-<span class="fc" id="L201">                    store++;     </span>
-<span class="fc bfc" id="L202" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
+<span class="fc" id="L274">                    store++;     </span>
+<span class="fc bfc" id="L275" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
                 do {
-<span class="fc" id="L204">                    idxMid--;</span>
-<span class="fc bfc" id="L205" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
-<span class="fc bfc" id="L206" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
-<span class="fc" id="L207">                    break;</span>
+<span class="fc" id="L277">                    idxMid--;</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
+<span class="fc" id="L280">                    break;</span>
                 }
-<span class="fc" id="L209">                int swap = a[store];</span>
-<span class="fc" id="L210">                a[store] = a[idxMid];</span>
-<span class="fc" id="L211">                a[idxMid] = swap;</span>
+<span class="fc" id="L282">                int swap = a[store];</span>
+<span class="fc" id="L283">                a[store] = a[idxMid];</span>
+<span class="fc" id="L284">                a[idxMid] = swap;</span>
                 
-<span class="fc" id="L213">                Object bSwap = b[store];</span>
-<span class="fc" id="L214">                b[store] = b[idxMid];</span>
-<span class="fc" id="L215">                b[idxMid] = bSwap;</span>
-<span class="fc" id="L216">            }</span>
-<span class="fc" id="L217">            int swap = a[idxLo];</span>
-<span class="fc" id="L218">            a[idxLo] = a[idxMid];</span>
-<span class="fc" id="L219">            a[idxMid] = swap;</span>
+<span class="fc" id="L286">                Object bSwap = b[store];</span>
+<span class="fc" id="L287">                b[store] = b[idxMid];</span>
+<span class="fc" id="L288">                b[idxMid] = bSwap;</span>
+<span class="fc" id="L289">            }</span>
+<span class="fc" id="L290">            int swap = a[idxLo];</span>
+<span class="fc" id="L291">            a[idxLo] = a[idxMid];</span>
+<span class="fc" id="L292">            a[idxMid] = swap;</span>
             
-<span class="fc" id="L221">            Object bSwap = b[idxLo];</span>
-<span class="fc" id="L222">            b[idxLo] = b[idxMid];</span>
-<span class="fc" id="L223">            b[idxMid] = bSwap;</span>
+<span class="fc" id="L294">            Object bSwap = b[idxLo];</span>
+<span class="fc" id="L295">            b[idxLo] = b[idxMid];</span>
+<span class="fc" id="L296">            b[idxMid] = bSwap;</span>
          
-<span class="fc" id="L225">            sortBy1stArg(a, b, idxLo, idxMid - 1);</span>
+<span class="fc" id="L298">            sortBy1stArg(a, b, idxLo, idxMid - 1);</span>
 
-<span class="fc" id="L227">            sortBy1stArg(a, b, idxMid + 1, idxHi);</span>
+<span class="fc" id="L300">            sortBy1stArg(a, b, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L229">    }</span>
+<span class="fc" id="L302">    }</span>
     
     /**
      * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
@@ -238,57 +311,57 @@
      */
     public static void sortBy1stArg(float[] a, Object[] b, int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L242">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L315">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L245">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L318">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L248">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
-        }
-        
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
-<span class="nc" id="L252">            return;</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L321">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
         }
         
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L325">            return;</span>
+        }
+        
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L257">            float x = a[idxLo];</span>
-<span class="fc" id="L258">            int store = idxLo;</span>
-<span class="fc" id="L259">            int idxMid = idxHi + 1;</span>
+<span class="fc" id="L330">            float x = a[idxLo];</span>
+<span class="fc" id="L331">            int store = idxLo;</span>
+<span class="fc" id="L332">            int idxMid = idxHi + 1;</span>
 
             while (true) {
                 do {
-<span class="fc" id="L263">                    store++;     </span>
-<span class="fc bfc" id="L264" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
+<span class="fc" id="L336">                    store++;     </span>
+<span class="fc bfc" id="L337" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
                 do {
-<span class="fc" id="L266">                    idxMid--;</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
-<span class="fc bfc" id="L268" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
-<span class="fc" id="L269">                    break;</span>
+<span class="fc" id="L339">                    idxMid--;</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
+<span class="fc" id="L342">                    break;</span>
                 }
-<span class="fc" id="L271">                float swap = a[store];</span>
-<span class="fc" id="L272">                a[store] = a[idxMid];</span>
-<span class="fc" id="L273">                a[idxMid] = swap;</span>
+<span class="fc" id="L344">                float swap = a[store];</span>
+<span class="fc" id="L345">                a[store] = a[idxMid];</span>
+<span class="fc" id="L346">                a[idxMid] = swap;</span>
                 
-<span class="fc" id="L275">                Object bSwap = b[store];</span>
-<span class="fc" id="L276">                b[store] = b[idxMid];</span>
-<span class="fc" id="L277">                b[idxMid] = bSwap;</span>
-<span class="fc" id="L278">            }</span>
-<span class="fc" id="L279">            float swap = a[idxLo];</span>
-<span class="fc" id="L280">            a[idxLo] = a[idxMid];</span>
-<span class="fc" id="L281">            a[idxMid] = swap;</span>
+<span class="fc" id="L348">                Object bSwap = b[store];</span>
+<span class="fc" id="L349">                b[store] = b[idxMid];</span>
+<span class="fc" id="L350">                b[idxMid] = bSwap;</span>
+<span class="fc" id="L351">            }</span>
+<span class="fc" id="L352">            float swap = a[idxLo];</span>
+<span class="fc" id="L353">            a[idxLo] = a[idxMid];</span>
+<span class="fc" id="L354">            a[idxMid] = swap;</span>
             
-<span class="fc" id="L283">            Object bSwap = b[idxLo];</span>
-<span class="fc" id="L284">            b[idxLo] = b[idxMid];</span>
-<span class="fc" id="L285">            b[idxMid] = bSwap;</span>
+<span class="fc" id="L356">            Object bSwap = b[idxLo];</span>
+<span class="fc" id="L357">            b[idxLo] = b[idxMid];</span>
+<span class="fc" id="L358">            b[idxMid] = bSwap;</span>
          
-<span class="fc" id="L287">            sortBy1stArg(a, b, idxLo, idxMid - 1);</span>
+<span class="fc" id="L360">            sortBy1stArg(a, b, idxLo, idxMid - 1);</span>
 
-<span class="fc" id="L289">            sortBy1stArg(a, b, idxMid + 1, idxHi);</span>
+<span class="fc" id="L362">            sortBy1stArg(a, b, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L291">    }</span>
+<span class="fc" id="L364">    }</span>
     
     /**
      * sort a from index idxLo to idxHi, inclusive.
@@ -304,60 +377,60 @@
      */
     public static void sort(float[] a, int[] b, int[] c, int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L307" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L308">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L381">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L310" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L311">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L384">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">        if (c == null) {</span>
-<span class="nc" id="L314">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">        if (c == null) {</span>
+<span class="nc" id="L387">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L316" title="2 of 4 branches missed.">        if ((a.length != b.length) || (a.length != c.length)) {</span>
-<span class="nc" id="L317">            throw new IllegalArgumentException(&quot;array lengths must be the same&quot;);</span>
+<span class="pc bpc" id="L389" title="2 of 4 branches missed.">        if ((a.length != b.length) || (a.length != c.length)) {</span>
+<span class="nc" id="L390">            throw new IllegalArgumentException(&quot;array lengths must be the same&quot;);</span>
         }
         
-<span class="fc bfc" id="L320" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L322">            float x = a[idxLo];</span>
-<span class="fc" id="L323">            int store = idxLo;</span>
-<span class="fc" id="L324">            int idxMid = idxHi + 1;</span>
+<span class="fc" id="L395">            float x = a[idxLo];</span>
+<span class="fc" id="L396">            int store = idxLo;</span>
+<span class="fc" id="L397">            int idxMid = idxHi + 1;</span>
 
             while (true) {
                 do {
-<span class="fc" id="L328">                    store++;     </span>
-<span class="fc bfc" id="L329" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
+<span class="fc" id="L401">                    store++;     </span>
+<span class="fc bfc" id="L402" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
                 do {
-<span class="fc" id="L331">                    idxMid--;</span>
-<span class="fc bfc" id="L332" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
-<span class="fc bfc" id="L333" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
-<span class="fc" id="L334">                    break;</span>
+<span class="fc" id="L404">                    idxMid--;</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
+<span class="fc" id="L407">                    break;</span>
                 }
-<span class="fc" id="L336">                float swap = a[store];</span>
-<span class="fc" id="L337">                a[store] = a[idxMid];</span>
-<span class="fc" id="L338">                a[idxMid] = swap;</span>
-<span class="fc" id="L339">                int swap2 = b[store];</span>
-<span class="fc" id="L340">                b[store] = b[idxMid];</span>
-<span class="fc" id="L341">                b[idxMid] = swap2;</span>
-<span class="fc" id="L342">                swap2 = c[store];</span>
-<span class="fc" id="L343">                c[store] = c[idxMid];</span>
-<span class="fc" id="L344">                c[idxMid] = swap2;</span>
-<span class="fc" id="L345">            }</span>
-<span class="fc" id="L346">            float swap = a[idxLo];</span>
-<span class="fc" id="L347">            a[idxLo] = a[idxMid];</span>
-<span class="fc" id="L348">            a[idxMid] = swap;</span>
-<span class="fc" id="L349">            int swap2 = b[idxLo];</span>
-<span class="fc" id="L350">            b[idxLo] = b[idxMid];</span>
-<span class="fc" id="L351">            b[idxMid] = swap2;</span>
-<span class="fc" id="L352">            swap2 = c[idxLo];</span>
-<span class="fc" id="L353">            c[idxLo] = c[idxMid];</span>
-<span class="fc" id="L354">            c[idxMid] = swap2;</span>
+<span class="fc" id="L409">                float swap = a[store];</span>
+<span class="fc" id="L410">                a[store] = a[idxMid];</span>
+<span class="fc" id="L411">                a[idxMid] = swap;</span>
+<span class="fc" id="L412">                int swap2 = b[store];</span>
+<span class="fc" id="L413">                b[store] = b[idxMid];</span>
+<span class="fc" id="L414">                b[idxMid] = swap2;</span>
+<span class="fc" id="L415">                swap2 = c[store];</span>
+<span class="fc" id="L416">                c[store] = c[idxMid];</span>
+<span class="fc" id="L417">                c[idxMid] = swap2;</span>
+<span class="fc" id="L418">            }</span>
+<span class="fc" id="L419">            float swap = a[idxLo];</span>
+<span class="fc" id="L420">            a[idxLo] = a[idxMid];</span>
+<span class="fc" id="L421">            a[idxMid] = swap;</span>
+<span class="fc" id="L422">            int swap2 = b[idxLo];</span>
+<span class="fc" id="L423">            b[idxLo] = b[idxMid];</span>
+<span class="fc" id="L424">            b[idxMid] = swap2;</span>
+<span class="fc" id="L425">            swap2 = c[idxLo];</span>
+<span class="fc" id="L426">            c[idxLo] = c[idxMid];</span>
+<span class="fc" id="L427">            c[idxMid] = swap2;</span>
                      
-<span class="fc" id="L356">            sort(a, b, c, idxLo, idxMid - 1);</span>
+<span class="fc" id="L429">            sort(a, b, c, idxLo, idxMid - 1);</span>
 
-<span class="fc" id="L358">            sort(a, b, c, idxMid + 1, idxHi);</span>
+<span class="fc" id="L431">            sort(a, b, c, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L360">    }</span>
+<span class="fc" id="L433">    }</span>
     
     /**
      * sort a from index idxLo to idxHi, inclusive, with next sorting by b and c
@@ -373,30 +446,30 @@
     public static void sortBy1stThen2ndThen3rd(float[] a, float[] b, float[] c, 
         int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L376" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L377">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L450">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L379" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
-<span class="nc" id="L380">            return;</span>
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L453">            return;</span>
         }
-<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L383">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L456">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (c == null) {</span>
-<span class="nc" id="L386">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">        if (c == null) {</span>
+<span class="nc" id="L459">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L389">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L462">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
         }
-<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (a.length != c.length) {</span>
-<span class="nc" id="L392">            throw new IllegalArgumentException(&quot;a and c must be same length&quot;);</span>
+<span class="pc bpc" id="L464" title="1 of 2 branches missed.">        if (a.length != c.length) {</span>
+<span class="nc" id="L465">            throw new IllegalArgumentException(&quot;a and c must be same length&quot;);</span>
         }
-<span class="fc bfc" id="L394" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
-<span class="fc" id="L395">            int idxMid = partitionBy1stThen2ndThen3rd(a, b, c, idxLo, idxHi);</span>
-<span class="fc" id="L396">            sortBy1stThen2ndThen3rd(a, b, c, idxLo, idxMid - 1);</span>
-<span class="fc" id="L397">            sortBy1stThen2ndThen3rd(a, b, c, idxMid + 1, idxHi);</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc" id="L468">            int idxMid = partitionBy1stThen2ndThen3rd(a, b, c, idxLo, idxHi);</span>
+<span class="fc" id="L469">            sortBy1stThen2ndThen3rd(a, b, c, idxLo, idxMid - 1);</span>
+<span class="fc" id="L470">            sortBy1stThen2ndThen3rd(a, b, c, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L399">    }</span>
+<span class="fc" id="L472">    }</span>
     
     /**
      * sort a from index idxLo to idxHi, inclusive, with ties sorted by b
@@ -414,170 +487,170 @@
     public static void sortBy1stThen2nd(double[] a, double[] b, int[] c, int[] d, 
         int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L417" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L418">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L491">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L420" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
-<span class="nc" id="L421">            return;</span>
+<span class="pc bpc" id="L493" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L494">            return;</span>
         }
-<span class="pc bpc" id="L423" title="1 of 2 branches missed.">        if (b == null) {</span>
-<span class="nc" id="L424">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc" id="L497">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">        if (c == null) {</span>
-<span class="nc" id="L427">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">        if (c == null) {</span>
+<span class="nc" id="L500">            throw new IllegalArgumentException(&quot;c cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L429" title="1 of 2 branches missed.">        if (d == null) {</span>
-<span class="nc" id="L430">            throw new IllegalArgumentException(&quot;d cannot be null&quot;);</span>
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">        if (d == null) {</span>
+<span class="nc" id="L503">            throw new IllegalArgumentException(&quot;d cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L432" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L433">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
+<span class="pc bpc" id="L505" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L506">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
         }
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">        if (a.length != c.length) {</span>
-<span class="nc" id="L436">            throw new IllegalArgumentException(&quot;a and c must be same length&quot;);</span>
+<span class="pc bpc" id="L508" title="1 of 2 branches missed.">        if (a.length != c.length) {</span>
+<span class="nc" id="L509">            throw new IllegalArgumentException(&quot;a and c must be same length&quot;);</span>
         }
-<span class="pc bpc" id="L438" title="1 of 2 branches missed.">        if (a.length != d.length) {</span>
-<span class="nc" id="L439">            throw new IllegalArgumentException(&quot;a and d must be same length&quot;);</span>
+<span class="pc bpc" id="L511" title="1 of 2 branches missed.">        if (a.length != d.length) {</span>
+<span class="nc" id="L512">            throw new IllegalArgumentException(&quot;a and d must be same length&quot;);</span>
         }
-<span class="fc bfc" id="L441" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
-<span class="fc" id="L442">            int idxMid = partitionBy1stThen2nd(a, b, c, d, idxLo, idxHi);</span>
-<span class="fc" id="L443">            sortBy1stThen2nd(a, b, c, d, idxLo, idxMid - 1);</span>
-<span class="fc" id="L444">            sortBy1stThen2nd(a, b, c, d, idxMid + 1, idxHi);</span>
+<span class="fc bfc" id="L514" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc" id="L515">            int idxMid = partitionBy1stThen2nd(a, b, c, d, idxLo, idxHi);</span>
+<span class="fc" id="L516">            sortBy1stThen2nd(a, b, c, d, idxLo, idxMid - 1);</span>
+<span class="fc" id="L517">            sortBy1stThen2nd(a, b, c, d, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L446">    }</span>
+<span class="fc" id="L519">    }</span>
     
     public static void sort(float[] a, float[] b, float[] c, int idxLo, 
         int idxHi) {
         
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
-<span class="fc" id="L452">            int idxMid = partition(a, b, c, idxLo, idxHi);</span>
-<span class="fc" id="L453">            sort(a, b, c, idxLo, idxMid - 1);</span>
-<span class="fc" id="L454">            sort(a, b, c, idxMid + 1, idxHi);</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc" id="L525">            int idxMid = partition(a, b, c, idxLo, idxHi);</span>
+<span class="fc" id="L526">            sort(a, b, c, idxLo, idxMid - 1);</span>
+<span class="fc" id="L527">            sort(a, b, c, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L456">    }</span>
+<span class="fc" id="L529">    }</span>
 
     private static int partition(float[] a, float[] b, float[] c, int idxLo, 
         int idxHi) {
         
-<span class="fc" id="L461">        float x = a[idxHi];</span>
-<span class="fc" id="L462">        int store = idxLo - 1;</span>
+<span class="fc" id="L534">        float x = a[idxHi];</span>
+<span class="fc" id="L535">        int store = idxLo - 1;</span>
         
-<span class="fc bfc" id="L464" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
-<span class="fc bfc" id="L465" title="All 2 branches covered.">            if (a[i] &lt;= x) {</span>
-<span class="fc" id="L466">                store++;</span>
-<span class="fc" id="L467">                float swap = a[store];</span>
-<span class="fc" id="L468">                a[store] = a[i];</span>
-<span class="fc" id="L469">                a[i] = swap;</span>
-<span class="fc" id="L470">                float swap2 = b[store];</span>
-<span class="fc" id="L471">                b[store] = b[i];</span>
-<span class="fc" id="L472">                b[i] = swap2;</span>
-<span class="fc" id="L473">                swap2 = c[store];</span>
-<span class="fc" id="L474">                c[store] = c[i];</span>
-<span class="fc" id="L475">                c[i] = swap2;</span>
+<span class="fc bfc" id="L537" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">            if (a[i] &lt;= x) {</span>
+<span class="fc" id="L539">                store++;</span>
+<span class="fc" id="L540">                float swap = a[store];</span>
+<span class="fc" id="L541">                a[store] = a[i];</span>
+<span class="fc" id="L542">                a[i] = swap;</span>
+<span class="fc" id="L543">                float swap2 = b[store];</span>
+<span class="fc" id="L544">                b[store] = b[i];</span>
+<span class="fc" id="L545">                b[i] = swap2;</span>
+<span class="fc" id="L546">                swap2 = c[store];</span>
+<span class="fc" id="L547">                c[store] = c[i];</span>
+<span class="fc" id="L548">                c[i] = swap2;</span>
             }
         }
-<span class="fc" id="L478">        store++;</span>
-<span class="fc" id="L479">        float swap = a[store];</span>
-<span class="fc" id="L480">        a[store] = a[idxHi];</span>
-<span class="fc" id="L481">        a[idxHi] = swap;</span>
-<span class="fc" id="L482">        float swap2 = b[store];</span>
-<span class="fc" id="L483">        b[store] = b[idxHi];</span>
-<span class="fc" id="L484">        b[idxHi] = swap2;</span>
-<span class="fc" id="L485">        swap2 = c[store];</span>
-<span class="fc" id="L486">        c[store] = c[idxHi];</span>
-<span class="fc" id="L487">        c[idxHi] = swap2;</span>
-<span class="fc" id="L488">        return store;</span>
+<span class="fc" id="L551">        store++;</span>
+<span class="fc" id="L552">        float swap = a[store];</span>
+<span class="fc" id="L553">        a[store] = a[idxHi];</span>
+<span class="fc" id="L554">        a[idxHi] = swap;</span>
+<span class="fc" id="L555">        float swap2 = b[store];</span>
+<span class="fc" id="L556">        b[store] = b[idxHi];</span>
+<span class="fc" id="L557">        b[idxHi] = swap2;</span>
+<span class="fc" id="L558">        swap2 = c[store];</span>
+<span class="fc" id="L559">        c[store] = c[idxHi];</span>
+<span class="fc" id="L560">        c[idxHi] = swap2;</span>
+<span class="fc" id="L561">        return store;</span>
     }
 
     private static int partitionBy1stThen2ndThen3rd(float[] a, float[] b, 
         float[] c, int idxLo, int idxHi) {
         
-<span class="fc" id="L494">        float x = a[idxHi];</span>
-<span class="fc" id="L495">        int store = idxLo - 1;</span>
+<span class="fc" id="L567">        float x = a[idxHi];</span>
+<span class="fc" id="L568">        int store = idxLo - 1;</span>
         
-<span class="fc bfc" id="L497" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
-<span class="fc" id="L498">            boolean doSwap = false;</span>
-<span class="pc bpc" id="L499" title="1 of 2 branches missed.">            if (a[i] &lt; x) {</span>
-<span class="nc" id="L500">                doSwap = true;</span>
-<span class="fc bfc" id="L501" title="All 2 branches covered.">            } else if (a[i] == x) {</span>
-<span class="fc bfc" id="L502" title="All 2 branches covered.">                if (b[i] &lt; b[idxHi]) {</span>
-<span class="fc" id="L503">                    doSwap = true;</span>
-<span class="pc bpc" id="L504" title="1 of 2 branches missed.">                } else if (b[i] == b[idxHi]) {</span>
-<span class="nc bnc" id="L505" title="All 2 branches missed.">                    if (c[i] &lt;= c[idxHi]) {</span>
-<span class="nc" id="L506">                        doSwap = true;</span>
+<span class="fc bfc" id="L570" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
+<span class="fc" id="L571">            boolean doSwap = false;</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">            if (a[i] &lt; x) {</span>
+<span class="nc" id="L573">                doSwap = true;</span>
+<span class="fc bfc" id="L574" title="All 2 branches covered.">            } else if (a[i] == x) {</span>
+<span class="fc bfc" id="L575" title="All 2 branches covered.">                if (b[i] &lt; b[idxHi]) {</span>
+<span class="fc" id="L576">                    doSwap = true;</span>
+<span class="pc bpc" id="L577" title="1 of 2 branches missed.">                } else if (b[i] == b[idxHi]) {</span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">                    if (c[i] &lt;= c[idxHi]) {</span>
+<span class="nc" id="L579">                        doSwap = true;</span>
                     }
                 }
             }
-<span class="fc bfc" id="L510" title="All 2 branches covered.">            if (doSwap) {</span>
-<span class="fc" id="L511">                store++;</span>
-<span class="fc" id="L512">                float swap = a[store];</span>
-<span class="fc" id="L513">                a[store] = a[i];</span>
-<span class="fc" id="L514">                a[i] = swap;</span>
-<span class="fc" id="L515">                float swap2 = b[store];</span>
-<span class="fc" id="L516">                b[store] = b[i];</span>
-<span class="fc" id="L517">                b[i] = swap2;</span>
-<span class="fc" id="L518">                swap2 = c[store];</span>
-<span class="fc" id="L519">                c[store] = c[i];</span>
-<span class="fc" id="L520">                c[i] = swap2;</span>
+<span class="fc bfc" id="L583" title="All 2 branches covered.">            if (doSwap) {</span>
+<span class="fc" id="L584">                store++;</span>
+<span class="fc" id="L585">                float swap = a[store];</span>
+<span class="fc" id="L586">                a[store] = a[i];</span>
+<span class="fc" id="L587">                a[i] = swap;</span>
+<span class="fc" id="L588">                float swap2 = b[store];</span>
+<span class="fc" id="L589">                b[store] = b[i];</span>
+<span class="fc" id="L590">                b[i] = swap2;</span>
+<span class="fc" id="L591">                swap2 = c[store];</span>
+<span class="fc" id="L592">                c[store] = c[i];</span>
+<span class="fc" id="L593">                c[i] = swap2;</span>
             }
         }
-<span class="fc" id="L523">        store++;</span>
-<span class="fc" id="L524">        float swap = a[store];</span>
-<span class="fc" id="L525">        a[store] = a[idxHi];</span>
-<span class="fc" id="L526">        a[idxHi] = swap;</span>
-<span class="fc" id="L527">        float swap2 = b[store];</span>
-<span class="fc" id="L528">        b[store] = b[idxHi];</span>
-<span class="fc" id="L529">        b[idxHi] = swap2;</span>
-<span class="fc" id="L530">        swap2 = c[store];</span>
-<span class="fc" id="L531">        c[store] = c[idxHi];</span>
-<span class="fc" id="L532">        c[idxHi] = swap2;</span>
-<span class="fc" id="L533">        return store;</span>
+<span class="fc" id="L596">        store++;</span>
+<span class="fc" id="L597">        float swap = a[store];</span>
+<span class="fc" id="L598">        a[store] = a[idxHi];</span>
+<span class="fc" id="L599">        a[idxHi] = swap;</span>
+<span class="fc" id="L600">        float swap2 = b[store];</span>
+<span class="fc" id="L601">        b[store] = b[idxHi];</span>
+<span class="fc" id="L602">        b[idxHi] = swap2;</span>
+<span class="fc" id="L603">        swap2 = c[store];</span>
+<span class="fc" id="L604">        c[store] = c[idxHi];</span>
+<span class="fc" id="L605">        c[idxHi] = swap2;</span>
+<span class="fc" id="L606">        return store;</span>
     }
     
     private static int partitionBy1stThen2nd(double[] a, double[] b, int[] c,
         int[] d, int idxLo, int idxHi) {
         
-<span class="fc" id="L539">        double x = a[idxHi];</span>
-<span class="fc" id="L540">        int store = idxLo - 1;</span>
+<span class="fc" id="L612">        double x = a[idxHi];</span>
+<span class="fc" id="L613">        int store = idxLo - 1;</span>
         
-<span class="fc bfc" id="L542" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
-<span class="fc" id="L543">            boolean doSwap = false;</span>
-<span class="fc bfc" id="L544" title="All 2 branches covered.">            if (a[i] &lt; x) {</span>
-<span class="fc" id="L545">                doSwap = true;</span>
-<span class="fc bfc" id="L546" title="All 2 branches covered.">            } else if (a[i] == x) {</span>
-<span class="fc bfc" id="L547" title="All 2 branches covered.">                if (b[i] &lt; b[idxHi]) {</span>
-<span class="fc" id="L548">                    doSwap = true;</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
+<span class="fc" id="L616">            boolean doSwap = false;</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">            if (a[i] &lt; x) {</span>
+<span class="fc" id="L618">                doSwap = true;</span>
+<span class="fc bfc" id="L619" title="All 2 branches covered.">            } else if (a[i] == x) {</span>
+<span class="fc bfc" id="L620" title="All 2 branches covered.">                if (b[i] &lt; b[idxHi]) {</span>
+<span class="fc" id="L621">                    doSwap = true;</span>
                 }
             }
-<span class="fc bfc" id="L551" title="All 2 branches covered.">            if (doSwap) {</span>
-<span class="fc" id="L552">                store++;</span>
-<span class="fc" id="L553">                double swap = a[store];</span>
-<span class="fc" id="L554">                a[store] = a[i];</span>
-<span class="fc" id="L555">                a[i] = swap;</span>
-<span class="fc" id="L556">                swap = b[store];</span>
-<span class="fc" id="L557">                b[store] = b[i];</span>
-<span class="fc" id="L558">                b[i] = swap;</span>
-<span class="fc" id="L559">                int swap2 = c[store];</span>
-<span class="fc" id="L560">                c[store] = c[i];</span>
-<span class="fc" id="L561">                c[i] = swap2;</span>
-<span class="fc" id="L562">                swap2 = d[store];</span>
-<span class="fc" id="L563">                d[store] = d[i];</span>
-<span class="fc" id="L564">                d[i] = swap2;</span>
+<span class="fc bfc" id="L624" title="All 2 branches covered.">            if (doSwap) {</span>
+<span class="fc" id="L625">                store++;</span>
+<span class="fc" id="L626">                double swap = a[store];</span>
+<span class="fc" id="L627">                a[store] = a[i];</span>
+<span class="fc" id="L628">                a[i] = swap;</span>
+<span class="fc" id="L629">                swap = b[store];</span>
+<span class="fc" id="L630">                b[store] = b[i];</span>
+<span class="fc" id="L631">                b[i] = swap;</span>
+<span class="fc" id="L632">                int swap2 = c[store];</span>
+<span class="fc" id="L633">                c[store] = c[i];</span>
+<span class="fc" id="L634">                c[i] = swap2;</span>
+<span class="fc" id="L635">                swap2 = d[store];</span>
+<span class="fc" id="L636">                d[store] = d[i];</span>
+<span class="fc" id="L637">                d[i] = swap2;</span>
             }
         }
-<span class="fc" id="L567">        store++;</span>
-<span class="fc" id="L568">        double swap = a[store];</span>
-<span class="fc" id="L569">        a[store] = a[idxHi];</span>
-<span class="fc" id="L570">        a[idxHi] = swap;</span>
-<span class="fc" id="L571">        swap = b[store];</span>
-<span class="fc" id="L572">        b[store] = b[idxHi];</span>
-<span class="fc" id="L573">        b[idxHi] = swap;</span>
-<span class="fc" id="L574">        int swap2 = c[store];</span>
-<span class="fc" id="L575">        c[store] = c[idxHi];</span>
-<span class="fc" id="L576">        c[idxHi] = swap2;</span>
-<span class="fc" id="L577">        swap2 = d[store];</span>
-<span class="fc" id="L578">        d[store] = d[idxHi];</span>
-<span class="fc" id="L579">        d[idxHi] = swap2;        </span>
-<span class="fc" id="L580">        return store;</span>
+<span class="fc" id="L640">        store++;</span>
+<span class="fc" id="L641">        double swap = a[store];</span>
+<span class="fc" id="L642">        a[store] = a[idxHi];</span>
+<span class="fc" id="L643">        a[idxHi] = swap;</span>
+<span class="fc" id="L644">        swap = b[store];</span>
+<span class="fc" id="L645">        b[store] = b[idxHi];</span>
+<span class="fc" id="L646">        b[idxHi] = swap;</span>
+<span class="fc" id="L647">        int swap2 = c[store];</span>
+<span class="fc" id="L648">        c[store] = c[idxHi];</span>
+<span class="fc" id="L649">        c[idxHi] = swap2;</span>
+<span class="fc" id="L650">        swap2 = d[store];</span>
+<span class="fc" id="L651">        d[store] = d[idxHi];</span>
+<span class="fc" id="L652">        d[idxHi] = swap2;        </span>
+<span class="fc" id="L653">        return store;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

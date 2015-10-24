@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TransformationPair2.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TransformationPair2.java</span></div><h1>TransformationPair2.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+public class TransformationPair2 {
+    
+    private final CornerRegion corner1Curve1;
+    private final CornerRegion corner1Curve2;
+    private final CornerRegion corner2Curve1;
+    private final CornerRegion corner2Curve2;
+    
+<span class="nc" id="L14">    private TransformationParameters params = null;</span>
+    
+<span class="nc" id="L16">    private boolean someScaleAreSmallerThanOne = false;</span>
+    
+<span class="nc" id="L18">    private double costAsSSD = 0;</span>
+    
+<span class="nc" id="L20">    private double costAsDist = 0;</span>
+    
+    /**
+     * object used to track visits and help choose the next contour.
+     */
+    private NextCorner nextCorner;
+   
+    public TransformationPair2(CornerRegion corner1Curve1, 
+        CornerRegion corner1Curve2, CornerRegion corner2Curve1, 
+<span class="nc" id="L29">        CornerRegion corner2Curve2) {</span>
+        
+<span class="nc" id="L31">        this.corner1Curve1 = corner1Curve1;</span>
+        
+<span class="nc" id="L33">        this.corner1Curve2 = corner1Curve2;</span>
+        
+<span class="nc" id="L35">        this.corner2Curve1 = corner2Curve1;</span>
+        
+<span class="nc" id="L37">        this.corner2Curve2 = corner2Curve2;</span>
+<span class="nc" id="L38">    }</span>
+    
+    /**
+     * @return the params
+     */
+    public TransformationParameters getTransformationParameters() {
+<span class="nc" id="L44">        return params;</span>
+    }
+    
+    public void addToCostAsSSD(double cost) {
+<span class="nc" id="L48">        costAsSSD += cost;</span>
+<span class="nc" id="L49">    }</span>
+    
+    public void addToCostAsDistance(double cost) {
+<span class="nc" id="L52">        costAsDist += cost;</span>
+<span class="nc" id="L53">    }</span>
+    
+    public double getCostAsSSD() {
+<span class="nc" id="L56">        return costAsSSD;</span>
+    }
+    
+    public double getCostAsDistance() {
+<span class="nc" id="L60">        return costAsDist;</span>
+    }
+
+    /**
+     * @param theParameters
+     */
+    public void setTransformationParameters(TransformationParameters theParameters) {
+<span class="nc" id="L67">        this.params = theParameters;</span>
+<span class="nc" id="L68">    }</span>
+
+    /**
+     * @return the nextContour
+     */
+    public NextCorner getNextCorner() {
+<span class="nc" id="L74">        return nextCorner;</span>
+    }
+
+    /**
+     * @param theNextCorner the theNextCorner to set
+     */
+    public void setNextCorner(NextCorner theNextCorner) {
+<span class="nc" id="L81">        this.nextCorner = theNextCorner;</span>
+<span class="nc" id="L82">    }</span>
+
+    public void setSomeScaleAreSmallerThanOne() {
+<span class="nc" id="L85">        someScaleAreSmallerThanOne = true;</span>
+<span class="nc" id="L86">    }</span>
+    
+    public boolean scaleIsPossiblyAmbiguous() {
+<span class="nc" id="L89">        return someScaleAreSmallerThanOne;</span>
+    }
+
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L95">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L96">        sb.append(&quot;costAsSSD=&quot;).append(Double.toString(costAsSSD))</span>
+<span class="nc" id="L97">            .append(&quot; costAsDist=&quot;).append(Double.toString(costAsDist)).append(&quot; &quot;);</span>
+        
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (params != null) {</span>
+<span class="nc" id="L100">            sb.append(params.toString());</span>
+        }
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (nextCorner != null) {</span>
+<span class="nc" id="L103">            int n = nextCorner.getMatchedCornerIndexes1().size();</span>
+<span class="nc" id="L104">            sb.append(&quot; nMatches=&quot;).append(Integer.toString(n)).append(&quot; &quot;);</span>
+        }
+        
+<span class="nc" id="L107">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

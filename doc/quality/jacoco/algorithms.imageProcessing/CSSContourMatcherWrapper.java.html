@@ -149,23 +149,23 @@ import java.util.logging.Logger;
 <span class="fc" id="L149">        CSSContourMatcher mReverse = new CSSContourMatcher(contours2, contours1,</span>
             contoursAreAlreadySorted);
 
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        boolean solvedReverse = mReverse.matchContours() &amp;&amp;</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        boolean solvedReverse = mReverse.matchContours() &amp;&amp;</span>
 <span class="pc bpc" id="L153" title="1 of 2 branches missed.">            (mReverse.getSolvedScale() &lt; Double.MAX_VALUE);</span>
 
 <span class="fc" id="L155">        log.info(&quot;reverse order: solved=&quot; + solvedReverse + &quot; ambig=&quot; + </span>
 <span class="fc" id="L156">            mReverse.scaleIsPossiblyAmbiguous() + &quot; possibly scl &lt; 1=&quot; + </span>
 <span class="fc" id="L157">            mReverse.strongestPeaksImplyScaleSmallerThanOne());</span>
         
-<span class="pc bpc" id="L159" title="3 of 4 branches missed.">        if (!solvedReverse &amp;&amp; solved) {</span>
+<span class="pc bpc" id="L159" title="1 of 4 branches missed.">        if (!solvedReverse &amp;&amp; solved) {</span>
 
             // take the possibly ambiguous default solution
 <span class="nc" id="L162">            setSolutionToDefault(mDefault);</span>
 
 <span class="nc" id="L164">            return true;</span>
 
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        } else if (!solvedReverse) {</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        } else if (!solvedReverse) {</span>
 
-<span class="nc" id="L168">            return false;</span>
+<span class="fc" id="L168">            return false;</span>
         }
 
 <span class="fc" id="L171">        double solutionScaleRevRev = 1. / mReverse.getSolvedScale();</span>
@@ -214,7 +214,7 @@ import java.util.logging.Logger;
     }
 
     public int getNMaxMatchable() {
-<span class="fc" id="L217">        return nMaxMatchable;</span>
+<span class="nc" id="L217">        return nMaxMatchable;</span>
     }
 
     public List&lt;CurvatureScaleSpaceContour&gt; getSolutionMatchedContours1() {

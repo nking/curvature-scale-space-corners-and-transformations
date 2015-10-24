@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ClosedCurveCornerMatcherWrapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ClosedCurveCornerMatcherWrapper.java</span></div><h1>ClosedCurveCornerMatcherWrapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+ * wrapper for ClosedCurveCornerMatcher that invokes ClosedCurveCornerMatcher
+ * and handles cases such as scales smaller than one.
+ * 
+ * @author nichole
+ */
+<span class="nc bnc" id="L14" title="All 2 branches missed.">public class ClosedCurveCornerMatcherWrapper {</span>
+    
+<span class="nc" id="L16">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    /**
+     * the original list of corner regions given to instance, sorted if not already.
+     */
+    private final List&lt;CornerRegion&gt; corners1;
+
+    /**
+     * the original list corner regions given to instance, sorted if not already.
+     */
+    private final List&lt;CornerRegion&gt; corners2;
+    
+    private final IntensityFeatures features1;
+    
+    private final IntensityFeatures features2;
+
+    private final int nMaxMatchable;
+
+<span class="nc" id="L34">    private TransformationParameters solutionParameters = null;</span>
+
+<span class="nc" id="L36">    private double solutionCost = Double.MAX_VALUE;</span>
+
+    private final List&lt;Integer&gt; solutionMatchedCornerIndexes1;
+
+    private final List&lt;Integer&gt; solutionMatchedCornerIndexes2;
+    
+    private final List&lt;FeatureComparisonStat&gt; solutionMatchedCompStats;
+
+<span class="nc" id="L44">    private boolean solverHasFinished = false;</span>
+
+<span class="nc" id="L46">    private boolean debug = true;</span>
+    
+    public ClosedCurveCornerMatcherWrapper(
+        final IntensityFeatures features1,
+        final IntensityFeatures features2,
+        final List&lt;CornerRegion&gt; c1, final List&lt;CornerRegion&gt; c2,
+<span class="nc" id="L52">        boolean cornersAreAlreadySorted) {</span>
+
+<span class="nc" id="L54">        this.corners1 = new ArrayList&lt;CornerRegion&gt;(c1);</span>
+
+<span class="nc" id="L56">        this.corners2 = new ArrayList&lt;CornerRegion&gt;(c2);</span>
+        
+<span class="nc" id="L58">        this.features1 = features1;</span>
+        
+<span class="nc" id="L60">        this.features2 = features2;</span>
+
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (!cornersAreAlreadySorted) {</span>
+
+            // sort by descending |k|
+<span class="nc" id="L65">            Collections.sort(c1, new DescendingKComparator());</span>
+
+<span class="nc" id="L67">            Collections.sort(c2, new DescendingKComparator());</span>
+        }
+
+<span class="nc" id="L70">        nMaxMatchable = Math.min(corners1.size(), corners2.size());</span>
+
+<span class="nc" id="L72">        solutionMatchedCornerIndexes1 = new ArrayList&lt;Integer&gt;();</span>
+
+<span class="nc" id="L74">        solutionMatchedCornerIndexes2 = new ArrayList&lt;Integer&gt;();</span>
+        
+<span class="nc" id="L76">        solutionMatchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="nc" id="L77">    }</span>
+    
+     /**
+     * match corners from the first list to the second.  the best scale can
+     * be retrieved with getSolutionParameters().  if a solution was found, 
+     * returns true, else returns false.
+     * @return
+     */
+    public boolean matchCorners() {
+
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="nc" id="L88">            throw new IllegalArgumentException(</span>
+            &quot;matchCorners cannot be invoked more than once&quot;);
+        }
+
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        assert(this.solutionMatchedCornerIndexes1.isEmpty());</span>
+
+<span class="nc bnc" id="L94" title="All 4 branches missed.">        assert(this.solutionMatchedCornerIndexes2.isEmpty());</span>
+
+<span class="nc" id="L96">        solverHasFinished = true;</span>
+
+<span class="nc" id="L98">        boolean cornersAreAlreadySorted = true;</span>
+        
+<span class="nc" id="L100">        ClosedCurveCornerMatcher mDefault = new ClosedCurveCornerMatcher(</span>
+            features1, features2, corners1, corners2, cornersAreAlreadySorted);
+
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        boolean solved = mDefault.matchCorners() &amp;&amp;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            (mDefault.getSolvedParameters() != null);</span>
+
+<span class="nc" id="L106">        log.info(&quot;default order: solved=&quot; + solved + &quot; ambig=&quot; + </span>
+<span class="nc" id="L107">            mDefault.scaleIsPossiblyAmbiguous());</span>
+        
+<span class="nc bnc" id="L109" title="All 4 branches missed.">        if (solved &amp;&amp; !mDefault.scaleIsPossiblyAmbiguous()) {</span>
+
+<span class="nc" id="L111">            setSolutionToDefault(mDefault);</span>
+
+<span class="nc" id="L113">            return true;</span>
+        }
+
+<span class="nc" id="L116">        return false;</span>
+    }
+
+    public int getNMaxMatchable() {
+<span class="nc" id="L120">        return nMaxMatchable;</span>
+    }
+
+    public List&lt;Integer&gt; getSolutionMatchedCornerIndexes1() {
+<span class="nc" id="L124">        return solutionMatchedCornerIndexes1;</span>
+    }
+
+    public List&lt;Integer&gt; getSolutionMatchedCornerIndexes2() {
+<span class="nc" id="L128">        return solutionMatchedCornerIndexes2;</span>
+    }
+
+    
+    public TransformationParameters getSolvedParameters() {
+<span class="nc" id="L133">        return solutionParameters;</span>
+    }
+
+    /**
+     * get the curvature scale space images shift between the
+     * first set of corners and the second set.
+     * @return
+     */
+    public double getSolvedCost() {
+<span class="nc" id="L142">        return solutionCost;</span>
+    }
+
+    private void setSolutionToDefault(ClosedCurveCornerMatcher matcher) {
+
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (matcher == null) {</span>
+<span class="nc" id="L148">            return;</span>
+        }
+
+<span class="nc" id="L151">        this.solutionCost = matcher.getSolvedCost();</span>
+        
+<span class="nc" id="L153">        this.solutionParameters = matcher.getSolvedParameters();</span>
+
+<span class="nc" id="L155">        this.solutionMatchedCornerIndexes1.addAll(matcher.getSolutionMatchedCornerIndexes1());</span>
+<span class="nc" id="L156">        this.solutionMatchedCornerIndexes2.addAll(matcher.getSolutionMatchedCornerIndexes2());</span>
+        
+<span class="nc" id="L158">        this.solutionMatchedCompStats.addAll(matcher.getSolutionMatchedCompStats());</span>
+<span class="nc" id="L159">    }</span>
+
+    /**
+     * @return the solutionMatchedCompStats
+     */
+    public List&lt;FeatureComparisonStat&gt; getSolutionMatchedCompStats() {
+<span class="nc" id="L165">        return solutionMatchedCompStats;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
