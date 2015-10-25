@@ -165,8 +165,8 @@ import algorithms.MultiArrayMergeSort;
 <span class="fc bfc" id="L165" title="All 2 branches covered.">        double theta = (x == 0) ? Math.PI/2. : Math.atan(y/x);</span>
         
 <span class="fc bfc" id="L167" title="All 2 branches covered.">        if (x == 0) {</span>
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            if (y == 0) {</span>
-<span class="nc" id="L169">                theta = 0;</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            if (y == 0) {</span>
+<span class="fc" id="L169">                theta = 0;</span>
 <span class="fc bfc" id="L170" title="All 2 branches covered.">            } else if (y &gt; 0) {</span>
 <span class="fc" id="L171">                theta = 3*Math.PI/2.;</span>
             }
@@ -348,8 +348,8 @@ import algorithms.MultiArrayMergeSort;
           II  |  I
         */
         
-<span class="pc bpc" id="L351" title="1 of 2 branches missed.">        if (rotation &gt;= 2*Math.PI) {</span>
-<span class="nc" id="L352">            rotation = rotation % (2.*Math.PI);</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        if (rotation &gt;= 2*Math.PI) {</span>
+<span class="fc" id="L352">            rotation = rotation % (2.*Math.PI);</span>
 <span class="pc bpc" id="L353" title="1 of 2 branches missed.">        } else if (rotation &lt; 0) {</span>
 <span class="nc bnc" id="L354" title="All 2 branches missed.">            while (rotation &lt; 0) {</span>
 <span class="nc" id="L355">                rotation += 2.*Math.PI;</span>
@@ -497,7 +497,7 @@ import algorithms.MultiArrayMergeSort;
 <span class="fc" id="L497">        double angleSum = (rot0 + rot1);</span>
         
         // add back any of the cycles in original values if larger than 360
-<span class="pc bpc" id="L500" title="3 of 4 branches missed.">        if ((rot0 &gt; twoPI) &amp;&amp; (rot0 &lt; rot0Orig)) {</span>
+<span class="pc bpc" id="L500" title="1 of 4 branches missed.">        if ((rot0 &gt; twoPI) &amp;&amp; (rot0 &lt; rot0Orig)) {</span>
 <span class="nc" id="L501">            double diff = (rot0Orig - rot0);</span>
 <span class="nc" id="L502">            angleSum += diff;</span>
 <span class="nc" id="L503">            outputQuadrantCorrected[0] += diff;</span>
@@ -610,11 +610,11 @@ import algorithms.MultiArrayMergeSort;
 <span class="fc" id="L610">                double r1 = avg;</span>
 <span class="fc" id="L611">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
                 
-<span class="pc bpc" id="L613" title="1 of 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
+<span class="fc bfc" id="L613" title="All 2 branches covered.">                if (quadrantCorrected[0] != r1) {</span>
                     // TODO: this branch might not occur...revisit logic
-<span class="nc" id="L615">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
+<span class="fc" id="L615">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
                 }
-<span class="pc bpc" id="L617" title="1 of 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">                if (quadrantCorrected[1] != v) {</span>
 <span class="fc" id="L618">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
                 }
             }
@@ -740,9 +740,9 @@ import algorithms.MultiArrayMergeSort;
         
 <span class="fc" id="L741">        int q = 1;</span>
 <span class="fc bfc" id="L742" title="All 2 branches covered.">        if (xCoord == 0) {</span>
-<span class="pc bpc" id="L743" title="1 of 2 branches missed.">            if (yCoord == 0) {</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">            if (yCoord == 0) {</span>
                 //TODO: might be more consistent for origin to be in 4
-<span class="nc" id="L745">                q = 1;</span>
+<span class="fc" id="L745">                q = 1;</span>
 <span class="fc bfc" id="L746" title="All 2 branches covered.">            } else if (yCoord &gt; 0) {</span>
 <span class="fc" id="L747">                q = 4;</span>
             } else {

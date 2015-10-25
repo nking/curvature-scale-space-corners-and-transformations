@@ -1009,27 +1009,27 @@ import java.util.logging.Logger;
     public static void debugPlot(List&lt;CurvatureScaleSpaceContour&gt; result, ImageExt 
         img, int xOffset, int yOffset, String fileSuffix) {
         
-<span class="nc bnc" id="L1012" title="All 2 branches missed.">        if (result.isEmpty()) {</span>
+<span class="pc bpc" id="L1012" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
 <span class="nc" id="L1013">            return;</span>
         }
         
-<span class="nc" id="L1016">        int nExtraForDot = 1;</span>
-<span class="nc" id="L1017">        int rClr = 255;</span>
-<span class="nc" id="L1018">        int gClr = 0;</span>
-<span class="nc" id="L1019">        int bClr = 0;</span>
+<span class="fc" id="L1016">        int nExtraForDot = 1;</span>
+<span class="fc" id="L1017">        int rClr = 255;</span>
+<span class="fc" id="L1018">        int gClr = 0;</span>
+<span class="fc" id="L1019">        int bClr = 0;</span>
         
-<span class="nc" id="L1021">        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, </span>
+<span class="fc" id="L1021">        ImageIOHelper.addContoursToImage(result, img, xOffset, yOffset, </span>
             nExtraForDot, rClr, gClr, bClr);
         
         try {
             
-<span class="nc" id="L1026">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L1026">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
 
-<span class="nc" id="L1028">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
+<span class="fc" id="L1028">            ImageIOHelper.writeOutputImage(dirPath + &quot;/contours_&quot; </span>
                 + fileSuffix + &quot;.png&quot;, img);
         
-<span class="nc" id="L1031">        } catch (IOException e) {}</span>
-<span class="nc" id="L1032">    }</span>
+<span class="pc" id="L1031">        } catch (IOException e) {}</span>
+<span class="fc" id="L1032">    }</span>
 
     public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
         String fileSuffix) throws IOException {

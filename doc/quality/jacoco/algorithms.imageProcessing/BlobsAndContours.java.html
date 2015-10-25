@@ -58,7 +58,7 @@ import java.util.logging.Logger;
         }
 
 <span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L61">            plot(scaleSpaceImages, &quot;before_contours_&quot; + debugTag);</span>
+<span class="nc" id="L61">            plot(scaleSpaceImages, &quot;before_contours_&quot; + debugTag);</span>
         }
 
 <span class="fc bfc" id="L64" title="All 2 branches covered.">        for (int edgeIndex = 0; edgeIndex &lt; blobOrderedPerimeters.size(); ++edgeIndex) {</span>
@@ -111,7 +111,7 @@ import java.util.logging.Logger;
         }
 
 <span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L114">            plot(scaleSpaceImages, &quot;debug_after_contours_&quot; + debugTag);</span>
+<span class="nc" id="L114">            plot(scaleSpaceImages, &quot;debug_after_contours_&quot; + debugTag);</span>
         }
 
 <span class="pc bpc" id="L117" title="3 of 4 branches missed.">        assert(blobOrderedPerimeters.size() == contours.size());</span>
@@ -119,7 +119,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L119">        combineOverlappingPeaks(0.04f, 6.f, blobOrderedPerimeters, contours);</span>
 
 <span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L122">            plot(scaleSpaceImages, &quot;debug_after_contours_&quot; + debugTag);</span>
+<span class="nc" id="L122">            plot(scaleSpaceImages, &quot;debug_after_contours_&quot; + debugTag);</span>
         }
 
 <span class="pc bpc" id="L125" title="3 of 4 branches missed.">        assert(blobOrderedPerimeters.size() == contours.size());</span>
@@ -131,27 +131,27 @@ import java.util.logging.Logger;
         String label) {
 
         try {
-<span class="fc" id="L134">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="nc" id="L134">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
 
-<span class="fc bfc" id="L136" title="All 2 branches covered.">            for (int i = 0; i &lt; scaleSpaceImages.size(); ++i) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            for (int i = 0; i &lt; scaleSpaceImages.size(); ++i) {</span>
 
-<span class="fc" id="L138">                ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(i);</span>
+<span class="nc" id="L138">                ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(i);</span>
 
-<span class="fc" id="L140">                String str = Integer.toString(i);</span>
+<span class="nc" id="L140">                String str = Integer.toString(i);</span>
 
-<span class="fc" id="L142">                MiscDebug.plotScaleSpaceCurve(plotter, sscImg, str);</span>
+<span class="nc" id="L142">                MiscDebug.plotScaleSpaceCurve(plotter, sscImg, str);</span>
             }
 
-<span class="fc" id="L145">            String filePath = plotter.writeFile(label);</span>
+<span class="nc" id="L145">            String filePath = plotter.writeFile(label);</span>
 
-<span class="fc" id="L147">            Logger.getLogger(BlobsAndContours.class.getName()).info(</span>
+<span class="nc" id="L147">            Logger.getLogger(BlobsAndContours.class.getName()).info(</span>
                 &quot;write filePath=&quot; + filePath);
 
-<span class="fc" id="L150">            int z = 1;</span>
+<span class="nc" id="L150">            int z = 1;</span>
 
 <span class="nc" id="L152">        } catch (IOException ex) {</span>
-<span class="fc" id="L153">        }</span>
-<span class="fc" id="L154">    }</span>
+<span class="nc" id="L153">        }</span>
+<span class="nc" id="L154">    }</span>
 
     /**
      * contour peaks that overlap on the scale-free axis of the scale space

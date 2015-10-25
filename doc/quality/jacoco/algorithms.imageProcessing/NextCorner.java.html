@@ -11,7 +11,7 @@ import java.util.TreeSet;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L14" title="All 2 branches missed.">public class NextCorner {</span>
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class NextCorner {</span>
     
     /**
      * a list of corners extracted from a closed curve in a digital image
@@ -32,60 +32,60 @@ import java.util.TreeSet;
     
     protected final List&lt;FeatureComparisonStat&gt; matchedStats;
     
-<span class="nc" id="L35">    protected int matchedEdgeNumber1 = -1;</span>
-<span class="nc" id="L36">    protected int matchedEdgeNumber2 = -1;</span>
+<span class="fc" id="L35">    protected int matchedEdgeNumber1 = -1;</span>
+<span class="fc" id="L36">    protected int matchedEdgeNumber2 = -1;</span>
     
-<span class="nc" id="L38">    public NextCorner(final List&lt;CornerRegion&gt; corners) {</span>
+<span class="fc" id="L38">    public NextCorner(final List&lt;CornerRegion&gt; corners) {</span>
                 
-<span class="nc" id="L40">        origCorners = new TreeSet&lt;CornerRegion&gt;(</span>
+<span class="fc" id="L40">        origCorners = new TreeSet&lt;CornerRegion&gt;(</span>
             new DescendingKComparator());
                         
         // populate with contours that haven't been visited
-<span class="nc" id="L44">        remainingCorners = new TreeSet&lt;CornerRegion&gt;(</span>
+<span class="fc" id="L44">        remainingCorners = new TreeSet&lt;CornerRegion&gt;(</span>
             new DescendingKComparator());
         
-<span class="nc" id="L47">        matchedStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="fc" id="L47">        matchedStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
         
-<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (int i = 0; i &lt; corners.size(); i++) {</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (int i = 0; i &lt; corners.size(); i++) {</span>
             
-<span class="nc" id="L51">            CornerRegion corner = corners.get(i);</span>
+<span class="fc" id="L51">            CornerRegion corner = corners.get(i);</span>
             
-<span class="nc" id="L53">            origCorners.add(corner);</span>
+<span class="fc" id="L53">            origCorners.add(corner);</span>
             
-<span class="nc" id="L55">            remainingCorners.add(corner);</span>
+<span class="fc" id="L55">            remainingCorners.add(corner);</span>
         }
 
-<span class="nc" id="L58">        matchedCornerIndexes1 = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L58">        matchedCornerIndexes1 = new ArrayList&lt;Integer&gt;();</span>
         
-<span class="nc" id="L60">        matchedCornerIndexes2 = new ArrayList&lt;Integer&gt;();</span>
-<span class="nc" id="L61">    }</span>
+<span class="fc" id="L60">        matchedCornerIndexes2 = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L61">    }</span>
     
     public void addMatchedCorners(CornerRegion corner1, 
         CornerRegion corner2, Integer cornerIndex1, 
         Integer cornerIndex2, FeatureComparisonStat stat) {
         
-<span class="nc" id="L67">        markAsVisited(corner1);</span>
+<span class="fc" id="L67">        markAsVisited(corner1);</span>
         
-<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (corner2 == null) {</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (corner2 == null) {</span>
 <span class="nc" id="L70">            return;</span>
         }
         
-<span class="nc" id="L73">        matchedCornerIndexes1.add(cornerIndex1);</span>
-<span class="nc" id="L74">        matchedCornerIndexes2.add(cornerIndex2);</span>
-<span class="nc" id="L75">        matchedStats.add(stat);</span>
+<span class="fc" id="L73">        matchedCornerIndexes1.add(cornerIndex1);</span>
+<span class="fc" id="L74">        matchedCornerIndexes2.add(cornerIndex2);</span>
+<span class="fc" id="L75">        matchedStats.add(stat);</span>
 
-<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (matchedEdgeNumber1 == -1) {</span>
-<span class="nc" id="L78">            matchedEdgeNumber1 = corner1.getEdgeIdx();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (matchedEdgeNumber1 == -1) {</span>
+<span class="fc" id="L78">            matchedEdgeNumber1 = corner1.getEdgeIdx();</span>
         } else {
-<span class="nc bnc" id="L80" title="All 4 branches missed.">            assert(matchedEdgeNumber1 == corner1.getEdgeIdx());</span>
+<span class="pc bpc" id="L80" title="3 of 4 branches missed.">            assert(matchedEdgeNumber1 == corner1.getEdgeIdx());</span>
         }
         
-<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (matchedEdgeNumber2 == -1) {</span>
-<span class="nc" id="L84">            matchedEdgeNumber2 = corner2.getEdgeIdx();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (matchedEdgeNumber2 == -1) {</span>
+<span class="fc" id="L84">            matchedEdgeNumber2 = corner2.getEdgeIdx();</span>
         } else {
-<span class="nc bnc" id="L86" title="All 4 branches missed.">            assert(matchedEdgeNumber2 == corner2.getEdgeIdx());</span>
+<span class="pc bpc" id="L86" title="3 of 4 branches missed.">            assert(matchedEdgeNumber2 == corner2.getEdgeIdx());</span>
         }    
-<span class="nc" id="L88">    }</span>
+<span class="fc" id="L88">    }</span>
     
     /**
      * find the largest remaining corner within the list of unvisited.
@@ -110,8 +110,8 @@ import java.util.TreeSet;
     }
     
     public void markAsVisited(CornerRegion corner) {        
-<span class="nc" id="L113">        remainingCorners.remove(corner);</span>
-<span class="nc" id="L114">    }</span>
+<span class="fc" id="L113">        remainingCorners.remove(corner);</span>
+<span class="fc" id="L114">    }</span>
     
     public int getMatchedEdgeNumber2() {
 <span class="nc" id="L117">        return matchedEdgeNumber2;</span>
@@ -154,15 +154,15 @@ import java.util.TreeSet;
     }
     
     public List&lt;Integer&gt; getMatchedCornerIndexes1() {
-<span class="nc" id="L157">        return matchedCornerIndexes1;</span>
+<span class="fc" id="L157">        return matchedCornerIndexes1;</span>
     }
     
     public List&lt;Integer&gt; getMatchedCornerIndexes2() {
-<span class="nc" id="L161">        return matchedCornerIndexes2;</span>
+<span class="fc" id="L161">        return matchedCornerIndexes2;</span>
     }
     
     public List&lt;FeatureComparisonStat&gt; getMatchedFeatureComparisonStats() {
-<span class="nc" id="L165">        return matchedStats;</span>
+<span class="fc" id="L165">        return matchedStats;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

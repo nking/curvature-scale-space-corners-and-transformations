@@ -11,13 +11,13 @@ public class TransformationPair2 {
     private final CornerRegion corner2Curve1;
     private final CornerRegion corner2Curve2;
     
-<span class="nc" id="L14">    private TransformationParameters params = null;</span>
+<span class="fc" id="L14">    private TransformationParameters params = null;</span>
     
-<span class="nc" id="L16">    private boolean someScaleAreSmallerThanOne = false;</span>
+<span class="fc" id="L16">    private boolean someScaleAreSmallerThanOne = false;</span>
     
-<span class="nc" id="L18">    private double costAsSSD = 0;</span>
+<span class="fc" id="L18">    private double costAsSSD = 0;</span>
     
-<span class="nc" id="L20">    private double costAsDist = 0;</span>
+<span class="fc" id="L20">    private double costAsDist = 0;</span>
     
     /**
      * object used to track visits and help choose the next contour.
@@ -26,34 +26,34 @@ public class TransformationPair2 {
    
     public TransformationPair2(CornerRegion corner1Curve1, 
         CornerRegion corner1Curve2, CornerRegion corner2Curve1, 
-<span class="nc" id="L29">        CornerRegion corner2Curve2) {</span>
+<span class="fc" id="L29">        CornerRegion corner2Curve2) {</span>
         
-<span class="nc" id="L31">        this.corner1Curve1 = corner1Curve1;</span>
+<span class="fc" id="L31">        this.corner1Curve1 = corner1Curve1;</span>
         
-<span class="nc" id="L33">        this.corner1Curve2 = corner1Curve2;</span>
+<span class="fc" id="L33">        this.corner1Curve2 = corner1Curve2;</span>
         
-<span class="nc" id="L35">        this.corner2Curve1 = corner2Curve1;</span>
+<span class="fc" id="L35">        this.corner2Curve1 = corner2Curve1;</span>
         
-<span class="nc" id="L37">        this.corner2Curve2 = corner2Curve2;</span>
-<span class="nc" id="L38">    }</span>
+<span class="fc" id="L37">        this.corner2Curve2 = corner2Curve2;</span>
+<span class="fc" id="L38">    }</span>
     
     /**
      * @return the params
      */
     public TransformationParameters getTransformationParameters() {
-<span class="nc" id="L44">        return params;</span>
+<span class="fc" id="L44">        return params;</span>
     }
     
     public void addToCostAsSSD(double cost) {
-<span class="nc" id="L48">        costAsSSD += cost;</span>
-<span class="nc" id="L49">    }</span>
+<span class="fc" id="L48">        costAsSSD += cost;</span>
+<span class="fc" id="L49">    }</span>
     
     public void addToCostAsDistance(double cost) {
-<span class="nc" id="L52">        costAsDist += cost;</span>
-<span class="nc" id="L53">    }</span>
+<span class="fc" id="L52">        costAsDist += cost;</span>
+<span class="fc" id="L53">    }</span>
     
     public double getCostAsSSD() {
-<span class="nc" id="L56">        return costAsSSD;</span>
+<span class="fc" id="L56">        return costAsSSD;</span>
     }
     
     public double getCostAsDistance() {
@@ -64,29 +64,29 @@ public class TransformationPair2 {
      * @param theParameters
      */
     public void setTransformationParameters(TransformationParameters theParameters) {
-<span class="nc" id="L67">        this.params = theParameters;</span>
-<span class="nc" id="L68">    }</span>
+<span class="fc" id="L67">        this.params = theParameters;</span>
+<span class="fc" id="L68">    }</span>
 
     /**
      * @return the nextContour
      */
     public NextCorner getNextCorner() {
-<span class="nc" id="L74">        return nextCorner;</span>
+<span class="fc" id="L74">        return nextCorner;</span>
     }
 
     /**
      * @param theNextCorner the theNextCorner to set
      */
     public void setNextCorner(NextCorner theNextCorner) {
-<span class="nc" id="L81">        this.nextCorner = theNextCorner;</span>
-<span class="nc" id="L82">    }</span>
+<span class="fc" id="L81">        this.nextCorner = theNextCorner;</span>
+<span class="fc" id="L82">    }</span>
 
     public void setSomeScaleAreSmallerThanOne() {
 <span class="nc" id="L85">        someScaleAreSmallerThanOne = true;</span>
 <span class="nc" id="L86">    }</span>
     
     public boolean scaleIsPossiblyAmbiguous() {
-<span class="nc" id="L89">        return someScaleAreSmallerThanOne;</span>
+<span class="fc" id="L89">        return someScaleAreSmallerThanOne;</span>
     }
 
     @Override

@@ -226,8 +226,8 @@ public class BlobPerimeterHelper {
         
 <span class="fc" id="L227">        List&lt;PairIntArray&gt; blobPerimeters = segBinnedBlobPerimetersMap.get(type);</span>
         
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (blobPerimeters != null) {</span>
-<span class="nc" id="L230">            return blobPerimeters;</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (blobPerimeters != null) {</span>
+<span class="fc" id="L230">            return blobPerimeters;</span>
         }
         
 <span class="fc" id="L233">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
@@ -259,8 +259,8 @@ public class BlobPerimeterHelper {
     public List&lt;Set&lt;PairInt&gt;&gt; getBlobs(SegmentationType type, boolean 
         useBinnedImage) {
                 
-<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (useBinnedImage) {</span>
-<span class="nc" id="L263">            return getBinnedBlobs(type);</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (useBinnedImage) {</span>
+<span class="fc" id="L263">            return getBinnedBlobs(type);</span>
         } else {
 <span class="fc" id="L265">            return getUnbinnedBlobs(type);</span>
         }
@@ -269,16 +269,16 @@ public class BlobPerimeterHelper {
 
     private List&lt;Set&lt;PairInt&gt;&gt; getBinnedBlobs(SegmentationType type) {
         
-<span class="nc bnc" id="L272" title="All 2 branches missed.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
 <span class="nc" id="L273">            throw new IllegalStateException(</span>
             &quot;Cannot use segmentation type COLOR_POLARCIEXY_LARGE with binned preference&quot;);
         }
         
-<span class="nc" id="L277">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
+<span class="fc" id="L277">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
         
-<span class="nc" id="L279">        boolean useBinned = true;</span>
+<span class="fc" id="L279">        boolean useBinned = true;</span>
                 
-<span class="nc bnc" id="L281" title="All 2 branches missed.">        if (blobs == null) {</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">        if (blobs == null) {</span>
             
 <span class="nc" id="L283">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
                 imgHelper, type, useBinned);
@@ -286,7 +286,7 @@ public class BlobPerimeterHelper {
 <span class="nc" id="L286">            segBinnedBlobsMap.put(type, blobs);</span>
         }
         
-<span class="nc" id="L289">        return blobs;            </span>
+<span class="fc" id="L289">        return blobs;            </span>
     }
 
     private List&lt;Set&lt;PairInt&gt;&gt; getUnbinnedBlobs(SegmentationType type) {

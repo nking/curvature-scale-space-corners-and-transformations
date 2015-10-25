@@ -68,8 +68,8 @@ import thirdparty.HungarianAlgorithm;
 <span class="nc" id="L68">            throw new IllegalArgumentException(</span>
                 &quot;matchedXY1 and matchedXY2 must have same number of points&quot;);
         }
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (matchedXY1.getN() &lt; 2) {</span>
-<span class="nc" id="L72">            return null;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (matchedXY1.getN() &lt; 2) {</span>
+<span class="fc" id="L72">            return null;</span>
         }
 
 <span class="fc" id="L75">        log.info(&quot;start solution for &quot; + matchedXY1.getN() + &quot; points&quot;);</span>
@@ -172,9 +172,9 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L172">                continue;</span>
             }
 <span class="fc" id="L174">            double dtt = Math.abs(thetas[i] - avgTheta);</span>
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">            if (dtt &gt; 1.5*stDevTheta) {</span>
-<span class="nc" id="L176">                rm.add(Integer.valueOf(i));</span>
-<span class="nc" id="L177">                continue;</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (dtt &gt; 1.5*stDevTheta) {</span>
+<span class="fc" id="L176">                rm.add(Integer.valueOf(i));</span>
+<span class="fc" id="L177">                continue;</span>
             }
 
 <span class="fc" id="L180">log.info(&quot;scl=&quot; + scales[i] + &quot; stDevScale=&quot; + stDevScale</span>
@@ -785,67 +785,67 @@ import thirdparty.HungarianAlgorithm;
     public Map&lt;Integer, Set&lt;Integer&gt;&gt; findSimilarByScaleAndRotation(
         List&lt;TransformationParameters&gt; params) {
         
-<span class="nc" id="L788">        Map&lt;Integer, Set&lt;Integer&gt;&gt; sMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+<span class="fc" id="L788">        Map&lt;Integer, Set&lt;Integer&gt;&gt; sMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
         
-<span class="nc bnc" id="L790" title="All 2 branches missed.">        if (params.isEmpty()) {</span>
+<span class="pc bpc" id="L790" title="1 of 2 branches missed.">        if (params.isEmpty()) {</span>
 <span class="nc" id="L791">            return sMap;</span>
         }
         
-<span class="nc bnc" id="L794" title="All 2 branches missed.">        for (int i = 0; i &lt; params.size(); ++i) {</span>
+<span class="fc bfc" id="L794" title="All 2 branches covered.">        for (int i = 0; i &lt; params.size(); ++i) {</span>
             
-<span class="nc" id="L796">            TransformationParameters param = params.get(i);</span>
+<span class="fc" id="L796">            TransformationParameters param = params.get(i);</span>
                        
-<span class="nc" id="L798">            Set&lt;Integer&gt; sim = null;</span>
+<span class="fc" id="L798">            Set&lt;Integer&gt; sim = null;</span>
             
-<span class="nc bnc" id="L800" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; params.size(); ++j) {</span>
+<span class="fc bfc" id="L800" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; params.size(); ++j) {</span>
                 
-<span class="nc" id="L802">                TransformationParameters param2 = params.get(j);</span>
+<span class="fc" id="L802">                TransformationParameters param2 = params.get(j);</span>
                 
-<span class="nc bnc" id="L804" title="All 2 branches missed.">                if (!areSimilarByScaleAndRotation(param, param2)) {</span>
-<span class="nc" id="L805">                    continue;</span>
+<span class="fc bfc" id="L804" title="All 2 branches covered.">                if (!areSimilarByScaleAndRotation(param, param2)) {</span>
+<span class="fc" id="L805">                    continue;</span>
                 }
                 
-<span class="nc bnc" id="L808" title="All 2 branches missed.">                if ((param.getOriginX() != param2.getOriginX() )</span>
-<span class="nc bnc" id="L809" title="All 2 branches missed.">                    || (param.getOriginY() != param2.getOriginY())) {</span>
+<span class="pc bpc" id="L808" title="1 of 2 branches missed.">                if ((param.getOriginX() != param2.getOriginX() )</span>
+<span class="pc bpc" id="L809" title="1 of 2 branches missed.">                    || (param.getOriginY() != param2.getOriginY())) {</span>
 
 <span class="nc" id="L811">                    throw new IllegalArgumentException(</span>
                     &quot;params must all be with respect to same origin (x,y)&quot;);
                 }
         
-<span class="nc bnc" id="L815" title="All 2 branches missed.">                if (sim == null) {</span>
-<span class="nc" id="L816">                    sim = new HashSet&lt;Integer&gt;();</span>
-<span class="nc" id="L817">                    sim.add(Integer.valueOf(i));</span>
+<span class="fc bfc" id="L815" title="All 2 branches covered.">                if (sim == null) {</span>
+<span class="fc" id="L816">                    sim = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L817">                    sim.add(Integer.valueOf(i));</span>
                 }
-<span class="nc" id="L819">                sim.add(Integer.valueOf(j));</span>
+<span class="fc" id="L819">                sim.add(Integer.valueOf(j));</span>
             }
             
-<span class="nc bnc" id="L822" title="All 2 branches missed.">            if (sim != null) {</span>
-<span class="nc" id="L823">                sMap.put(Integer.valueOf(i), sim);</span>
+<span class="fc bfc" id="L822" title="All 2 branches covered.">            if (sim != null) {</span>
+<span class="fc" id="L823">                sMap.put(Integer.valueOf(i), sim);</span>
             }
         }
         
         // remove similar solutions
-<span class="nc bnc" id="L828" title="All 2 branches missed.">        for (int i = 0; i &lt; params.size(); ++i) {</span>
+<span class="fc bfc" id="L828" title="All 2 branches covered.">        for (int i = 0; i &lt; params.size(); ++i) {</span>
             
-<span class="nc" id="L830">            Integer key = Integer.valueOf(i);</span>
-<span class="nc" id="L831">            Set&lt;Integer&gt; sim = sMap.get(key);</span>
-<span class="nc bnc" id="L832" title="All 2 branches missed.">            if (sim == null) {</span>
-<span class="nc" id="L833">                continue;</span>
+<span class="fc" id="L830">            Integer key = Integer.valueOf(i);</span>
+<span class="fc" id="L831">            Set&lt;Integer&gt; sim = sMap.get(key);</span>
+<span class="fc bfc" id="L832" title="All 2 branches covered.">            if (sim == null) {</span>
+<span class="fc" id="L833">                continue;</span>
             }
             
-<span class="nc bnc" id="L836" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; params.size(); ++j) {</span>
-<span class="nc" id="L837">                Integer key2 = Integer.valueOf(j);</span>
-<span class="nc" id="L838">                Set&lt;Integer&gt; sim2 = sMap.get(key2);</span>
-<span class="nc bnc" id="L839" title="All 2 branches missed.">                if (sim2 == null) {</span>
-<span class="nc" id="L840">                    continue;</span>
+<span class="fc bfc" id="L836" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; params.size(); ++j) {</span>
+<span class="fc" id="L837">                Integer key2 = Integer.valueOf(j);</span>
+<span class="fc" id="L838">                Set&lt;Integer&gt; sim2 = sMap.get(key2);</span>
+<span class="fc bfc" id="L839" title="All 2 branches covered.">                if (sim2 == null) {</span>
+<span class="fc" id="L840">                    continue;</span>
                 }
-<span class="nc bnc" id="L842" title="All 2 branches missed.">                if (sim.equals(sim2)) {</span>
+<span class="pc bpc" id="L842" title="1 of 2 branches missed.">                if (sim.equals(sim2)) {</span>
 <span class="nc" id="L843">                    sMap.remove(key2);</span>
                 }
             }
         }
         
-<span class="nc" id="L848">        return sMap;</span>
+<span class="fc" id="L848">        return sMap;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

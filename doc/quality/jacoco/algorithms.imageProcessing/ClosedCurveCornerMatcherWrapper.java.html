@@ -11,9 +11,9 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L14" title="All 2 branches missed.">public class ClosedCurveCornerMatcherWrapper {</span>
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class ClosedCurveCornerMatcherWrapper {</span>
     
-<span class="nc" id="L16">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L16">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     /**
      * the original list of corner regions given to instance, sorted if not already.
@@ -31,9 +31,9 @@ import java.util.logging.Logger;
 
     private final int nMaxMatchable;
 
-<span class="nc" id="L34">    private TransformationParameters solutionParameters = null;</span>
+<span class="fc" id="L34">    private TransformationParameters solutionParameters = null;</span>
 
-<span class="nc" id="L36">    private double solutionCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L36">    private double solutionCost = Double.MAX_VALUE;</span>
 
     private final List&lt;Integer&gt; solutionMatchedCornerIndexes1;
 
@@ -41,25 +41,25 @@ import java.util.logging.Logger;
     
     private final List&lt;FeatureComparisonStat&gt; solutionMatchedCompStats;
 
-<span class="nc" id="L44">    private boolean solverHasFinished = false;</span>
+<span class="fc" id="L44">    private boolean solverHasFinished = false;</span>
 
-<span class="nc" id="L46">    private boolean debug = true;</span>
+<span class="fc" id="L46">    private boolean debug = true;</span>
     
     public ClosedCurveCornerMatcherWrapper(
         final IntensityFeatures features1,
         final IntensityFeatures features2,
         final List&lt;CornerRegion&gt; c1, final List&lt;CornerRegion&gt; c2,
-<span class="nc" id="L52">        boolean cornersAreAlreadySorted) {</span>
+<span class="fc" id="L52">        boolean cornersAreAlreadySorted) {</span>
 
-<span class="nc" id="L54">        this.corners1 = new ArrayList&lt;CornerRegion&gt;(c1);</span>
+<span class="fc" id="L54">        this.corners1 = new ArrayList&lt;CornerRegion&gt;(c1);</span>
 
-<span class="nc" id="L56">        this.corners2 = new ArrayList&lt;CornerRegion&gt;(c2);</span>
+<span class="fc" id="L56">        this.corners2 = new ArrayList&lt;CornerRegion&gt;(c2);</span>
         
-<span class="nc" id="L58">        this.features1 = features1;</span>
+<span class="fc" id="L58">        this.features1 = features1;</span>
         
-<span class="nc" id="L60">        this.features2 = features2;</span>
+<span class="fc" id="L60">        this.features2 = features2;</span>
 
-<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (!cornersAreAlreadySorted) {</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (!cornersAreAlreadySorted) {</span>
 
             // sort by descending |k|
 <span class="nc" id="L65">            Collections.sort(c1, new DescendingKComparator());</span>
@@ -67,14 +67,14 @@ import java.util.logging.Logger;
 <span class="nc" id="L67">            Collections.sort(c2, new DescendingKComparator());</span>
         }
 
-<span class="nc" id="L70">        nMaxMatchable = Math.min(corners1.size(), corners2.size());</span>
+<span class="fc" id="L70">        nMaxMatchable = Math.min(corners1.size(), corners2.size());</span>
 
-<span class="nc" id="L72">        solutionMatchedCornerIndexes1 = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L72">        solutionMatchedCornerIndexes1 = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="nc" id="L74">        solutionMatchedCornerIndexes2 = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L74">        solutionMatchedCornerIndexes2 = new ArrayList&lt;Integer&gt;();</span>
         
-<span class="nc" id="L76">        solutionMatchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
-<span class="nc" id="L77">    }</span>
+<span class="fc" id="L76">        solutionMatchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="fc" id="L77">    }</span>
     
      /**
      * match corners from the first list to the second.  the best scale can
@@ -84,36 +84,36 @@ import java.util.logging.Logger;
      */
     public boolean matchCorners() {
 
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (solverHasFinished) {</span>
 <span class="nc" id="L88">            throw new IllegalArgumentException(</span>
             &quot;matchCorners cannot be invoked more than once&quot;);
         }
 
-<span class="nc bnc" id="L92" title="All 4 branches missed.">        assert(this.solutionMatchedCornerIndexes1.isEmpty());</span>
+<span class="pc bpc" id="L92" title="3 of 4 branches missed.">        assert(this.solutionMatchedCornerIndexes1.isEmpty());</span>
 
-<span class="nc bnc" id="L94" title="All 4 branches missed.">        assert(this.solutionMatchedCornerIndexes2.isEmpty());</span>
+<span class="pc bpc" id="L94" title="3 of 4 branches missed.">        assert(this.solutionMatchedCornerIndexes2.isEmpty());</span>
 
-<span class="nc" id="L96">        solverHasFinished = true;</span>
+<span class="fc" id="L96">        solverHasFinished = true;</span>
 
-<span class="nc" id="L98">        boolean cornersAreAlreadySorted = true;</span>
+<span class="fc" id="L98">        boolean cornersAreAlreadySorted = true;</span>
         
-<span class="nc" id="L100">        ClosedCurveCornerMatcher mDefault = new ClosedCurveCornerMatcher(</span>
+<span class="fc" id="L100">        ClosedCurveCornerMatcher mDefault = new ClosedCurveCornerMatcher(</span>
             features1, features2, corners1, corners2, cornersAreAlreadySorted);
 
-<span class="nc bnc" id="L103" title="All 2 branches missed.">        boolean solved = mDefault.matchCorners() &amp;&amp;</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">            (mDefault.getSolvedParameters() != null);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        boolean solved = mDefault.matchCorners() &amp;&amp;</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">            (mDefault.getSolvedParameters() != null);</span>
 
-<span class="nc" id="L106">        log.info(&quot;default order: solved=&quot; + solved + &quot; ambig=&quot; + </span>
-<span class="nc" id="L107">            mDefault.scaleIsPossiblyAmbiguous());</span>
+<span class="fc" id="L106">        log.info(&quot;default order: solved=&quot; + solved + &quot; ambig=&quot; + </span>
+<span class="fc" id="L107">            mDefault.scaleIsPossiblyAmbiguous());</span>
         
-<span class="nc bnc" id="L109" title="All 4 branches missed.">        if (solved &amp;&amp; !mDefault.scaleIsPossiblyAmbiguous()) {</span>
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">        if (solved &amp;&amp; !mDefault.scaleIsPossiblyAmbiguous()) {</span>
 
-<span class="nc" id="L111">            setSolutionToDefault(mDefault);</span>
+<span class="fc" id="L111">            setSolutionToDefault(mDefault);</span>
 
-<span class="nc" id="L113">            return true;</span>
+<span class="fc" id="L113">            return true;</span>
         }
 
-<span class="nc" id="L116">        return false;</span>
+<span class="fc" id="L116">        return false;</span>
     }
 
     public int getNMaxMatchable() {
@@ -130,7 +130,7 @@ import java.util.logging.Logger;
 
     
     public TransformationParameters getSolvedParameters() {
-<span class="nc" id="L133">        return solutionParameters;</span>
+<span class="fc" id="L133">        return solutionParameters;</span>
     }
 
     /**
@@ -139,30 +139,30 @@ import java.util.logging.Logger;
      * @return
      */
     public double getSolvedCost() {
-<span class="nc" id="L142">        return solutionCost;</span>
+<span class="fc" id="L142">        return solutionCost;</span>
     }
 
     private void setSolutionToDefault(ClosedCurveCornerMatcher matcher) {
 
-<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (matcher == null) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (matcher == null) {</span>
 <span class="nc" id="L148">            return;</span>
         }
 
-<span class="nc" id="L151">        this.solutionCost = matcher.getSolvedCost();</span>
+<span class="fc" id="L151">        this.solutionCost = matcher.getSolvedCost();</span>
         
-<span class="nc" id="L153">        this.solutionParameters = matcher.getSolvedParameters();</span>
+<span class="fc" id="L153">        this.solutionParameters = matcher.getSolvedParameters();</span>
 
-<span class="nc" id="L155">        this.solutionMatchedCornerIndexes1.addAll(matcher.getSolutionMatchedCornerIndexes1());</span>
-<span class="nc" id="L156">        this.solutionMatchedCornerIndexes2.addAll(matcher.getSolutionMatchedCornerIndexes2());</span>
+<span class="fc" id="L155">        this.solutionMatchedCornerIndexes1.addAll(matcher.getSolutionMatchedCornerIndexes1());</span>
+<span class="fc" id="L156">        this.solutionMatchedCornerIndexes2.addAll(matcher.getSolutionMatchedCornerIndexes2());</span>
         
-<span class="nc" id="L158">        this.solutionMatchedCompStats.addAll(matcher.getSolutionMatchedCompStats());</span>
-<span class="nc" id="L159">    }</span>
+<span class="fc" id="L158">        this.solutionMatchedCompStats.addAll(matcher.getSolutionMatchedCompStats());</span>
+<span class="fc" id="L159">    }</span>
 
     /**
      * @return the solutionMatchedCompStats
      */
     public List&lt;FeatureComparisonStat&gt; getSolutionMatchedCompStats() {
-<span class="nc" id="L165">        return solutionMatchedCompStats;</span>
+<span class="fc" id="L165">        return solutionMatchedCompStats;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -169,7 +169,7 @@
     <target name="coverage">
         <record name="${logfile}" append="yes" loglevel="info"/>
         <echo message="coverage"/>
-        <jacoco:coverage enabled="true" classdumpdir="bin/instr-classes"
+        <jacoco:coverage enabled="true" classdumpdir="${classes.dir}/instr-classes"
             destfile="${classes.dir}/merged.exec">
             <junit fork="true" forkmode="once" printsummary="yes" haltonerror="true" haltonfailure="true">
                 <formatter type="plain" usefile="true"/>

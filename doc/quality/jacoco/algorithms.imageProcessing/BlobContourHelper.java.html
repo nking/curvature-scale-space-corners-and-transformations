@@ -88,51 +88,51 @@ public class BlobContourHelper {
 <span class="fc" id="L88">        boolean useBinned = false;</span>
         
 <span class="fc" id="L90">        contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);</span>
-<span class="fc" id="L91">        </span>
+        
 <span class="fc" id="L92">        segContoursMap.put(type, contours);</span>
         
 <span class="fc" id="L94">        return contours;</span>
     }
-<span class="fc" id="L96">    </span>
+    
     protected List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; 
         generatePerimeterContoursForBinned(SegmentationType type) {
             
-        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours = segBinnedContoursMap.get(type);
+<span class="fc" id="L100">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours = segBinnedContoursMap.get(type);</span>
 
-<span class="fc" id="L102">        if (contours != null) {</span>
-            return contours;
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        }</span>
-<span class="fc" id="L105">            </span>
-        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);
-        
-<span class="fc" id="L108">        if (segImg == null) {</span>
-            //TODO: consider changing logic to perform this if needed
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            throw new IllegalArgumentException(&quot;segmented image hasn't been created yet.  error?&quot;);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (contours != null) {</span>
+<span class="fc" id="L103">            return contours;</span>
         }
-<span class="nc" id="L112">        </span>
-        boolean useBinned = true;
+            
+<span class="fc" id="L106">        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);</span>
+        
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (segImg == null) {</span>
+            //TODO: consider changing logic to perform this if needed
+<span class="nc" id="L110">            throw new IllegalArgumentException(&quot;segmented image hasn't been created yet.  error?&quot;);</span>
+        }
+        
+<span class="fc" id="L113">        boolean useBinned = true;</span>
 
 <span class="fc" id="L115">        contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);</span>
-<span class="fc" id="L116">        </span>
+        
 <span class="fc" id="L117">        segBinnedContoursMap.put(type, contours);</span>
-<span class="fc" id="L118">        </span>
-        return contours;        
-<span class="fc" id="L120">    }</span>
+        
+<span class="fc" id="L119">        return contours;        </span>
+    }
     
-<span class="fc" id="L122">    public int sumPointsOfInterest(SegmentationType segmentationType, </span>
+    public int sumPointsOfInterest(SegmentationType segmentationType, 
         boolean useBinned) {
         
-        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours 
-            = getPerimeterContours(segmentationType, useBinned);
+<span class="fc" id="L125">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours </span>
+<span class="fc" id="L126">            = getPerimeterContours(segmentationType, useBinned);</span>
         
 <span class="fc" id="L128">        int n = 0;</span>
-<span class="fc" id="L129">        </span>
-        for (List&lt;CurvatureScaleSpaceContour&gt; list : contours) {
+        
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : contours) {</span>
 <span class="fc" id="L131">            n += list.size();</span>
-        }
-<span class="fc bfc" id="L133" title="All 2 branches covered.">        </span>
+<span class="fc" id="L132">        }</span>
+        
 <span class="fc" id="L134">        return n;</span>
-<span class="fc" id="L135">    }</span>
+    }
 
-<span class="fc" id="L137">}</span>
+}
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -141,35 +141,35 @@ import java.util.logging.Logger;
 
     protected String printToString(List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="nc" id="L144">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L144">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc bnc" id="L146" title="All 2 branches missed.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
             
-<span class="nc" id="L148">            sb.append(String.format(</span>
+<span class="fc" id="L148">            sb.append(String.format(</span>
             &quot; (%d,%d) (%d,%d) theta1=%.0f theta2=%.0f intSqDiff=%.1f(%.1f)&quot;, 
-<span class="nc" id="L150">            compStat.getImg1Point().getX(), compStat.getImg1Point().getY(), </span>
-<span class="nc" id="L151">            compStat.getImg2Point().getX(), compStat.getImg2Point().getY(), </span>
-<span class="nc" id="L152">            compStat.getImg1PointRotInDegrees(), </span>
-<span class="nc" id="L153">            compStat.getImg2PointRotInDegrees(), </span>
-<span class="nc" id="L154">            compStat.getSumIntensitySqDiff(), </span>
-<span class="nc" id="L155">            compStat.getImg2PointIntensityErr()));</span>
-<span class="nc" id="L156">        }</span>
+<span class="fc" id="L150">            compStat.getImg1Point().getX(), compStat.getImg1Point().getY(), </span>
+<span class="fc" id="L151">            compStat.getImg2Point().getX(), compStat.getImg2Point().getY(), </span>
+<span class="fc" id="L152">            compStat.getImg1PointRotInDegrees(), </span>
+<span class="fc" id="L153">            compStat.getImg2PointRotInDegrees(), </span>
+<span class="fc" id="L154">            compStat.getSumIntensitySqDiff(), </span>
+<span class="fc" id="L155">            compStat.getImg2PointIntensityErr()));</span>
+<span class="fc" id="L156">        }</span>
         
-<span class="nc" id="L158">        return sb.toString();</span>
+<span class="fc" id="L158">        return sb.toString();</span>
     }
 
     protected double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; 
         compStats) {
         
-<span class="nc" id="L164">        double sum = 0;</span>
+<span class="fc" id="L164">        double sum = 0;</span>
         
-<span class="nc bnc" id="L166" title="All 2 branches missed.">        for (FeatureComparisonStat compStat : compStats) {</span>
-<span class="nc" id="L167">            sum += compStat.getSumIntensitySqDiff();</span>
-<span class="nc" id="L168">        }</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="fc" id="L167">            sum += compStat.getSumIntensitySqDiff();</span>
+<span class="fc" id="L168">        }</span>
         
-<span class="nc" id="L170">        sum /= (double) compStats.size();</span>
+<span class="fc" id="L170">        sum /= (double) compStats.size();</span>
         
-<span class="nc" id="L172">        return sum;</span>
+<span class="fc" id="L172">        return sum;</span>
     }
 
     protected TransformationParameters calculateTransformation(int binFactor1, 
@@ -324,63 +324,63 @@ import java.util.logging.Logger;
 
     protected float[] calculateThetaDiff(List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="nc bnc" id="L327" title="All 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
+<span class="pc bpc" id="L327" title="2 of 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
 <span class="nc" id="L328">            return null;</span>
         }
         
-<span class="nc" id="L331">        float[] values = new float[compStats.size()];</span>
+<span class="fc" id="L331">        float[] values = new float[compStats.size()];</span>
         
-<span class="nc bnc" id="L333" title="All 2 branches missed.">        for (int i = 0; i &lt; compStats.size(); ++i) {</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        for (int i = 0; i &lt; compStats.size(); ++i) {</span>
             
-<span class="nc" id="L335">            FeatureComparisonStat stat = compStats.get(i);</span>
+<span class="fc" id="L335">            FeatureComparisonStat stat = compStats.get(i);</span>
         
             //NOTE: it's possible that the diff should be (360-d1)+d2 when d1&gt;d2
-<span class="nc" id="L338">            float diff = AngleUtil.getAngleDifference(</span>
-<span class="nc" id="L339">                stat.getImg1PointRotInDegrees(), stat.getImg2PointRotInDegrees());</span>
+<span class="fc" id="L338">            float diff = AngleUtil.getAngleDifference(</span>
+<span class="fc" id="L339">                stat.getImg1PointRotInDegrees(), stat.getImg2PointRotInDegrees());</span>
             
-<span class="nc" id="L341">            values[i] = diff;</span>
+<span class="fc" id="L341">            values[i] = diff;</span>
         }
         
-<span class="nc" id="L344">        return values;</span>
+<span class="fc" id="L344">        return values;</span>
     }
 
     protected void removeDiscrepantThetaDiff(List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="nc bnc" id="L349" title="All 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
-<span class="nc" id="L350">            return;</span>
+<span class="pc bpc" id="L349" title="1 of 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
+<span class="fc" id="L350">            return;</span>
         }
         
-<span class="nc" id="L353">        float[] values = calculateThetaDiff(compStats);</span>
+<span class="fc" id="L353">        float[] values = calculateThetaDiff(compStats);</span>
         
         // 20 degree wide bins
-<span class="nc" id="L356">        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, </span>
-<span class="nc" id="L357">            Errors.populateYErrorsBySqrt(values));</span>
+<span class="fc" id="L356">        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, </span>
+<span class="fc" id="L357">            Errors.populateYErrorsBySqrt(values));</span>
         
-<span class="nc" id="L359">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="fc" id="L359">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
         float thetaDiff;
-<span class="nc bnc" id="L362" title="All 2 branches missed.">        if (yMaxIdx == -1) {</span>
-<span class="nc" id="L363">            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);</span>
-<span class="nc" id="L364">            thetaDiff = thetaDiffMeanStDev[0];</span>
-<span class="nc" id="L365">        } else {</span>
-<span class="nc" id="L366">            thetaDiff = hist.getXHist()[yMaxIdx];</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        if (yMaxIdx == -1) {</span>
+<span class="fc" id="L363">            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);</span>
+<span class="fc" id="L364">            thetaDiff = thetaDiffMeanStDev[0];</span>
+<span class="fc" id="L365">        } else {</span>
+<span class="fc" id="L366">            thetaDiff = hist.getXHist()[yMaxIdx];</span>
         }
         
         //TODO: consider a bin larger than 20 degrees... 25
-<span class="nc" id="L370">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L370">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
         
-<span class="nc bnc" id="L372" title="All 2 branches missed.">        for (int i = 0; i &lt; values.length; ++i) {</span>
-<span class="nc" id="L373">            float diffRot = Math.abs(values[i] - thetaDiff);</span>
-<span class="nc bnc" id="L374" title="All 2 branches missed.">            if (diffRot &gt; 20) {</span>
-<span class="nc" id="L375">                remove.add(Integer.valueOf(i));</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">        for (int i = 0; i &lt; values.length; ++i) {</span>
+<span class="fc" id="L373">            float diffRot = Math.abs(values[i] - thetaDiff);</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">            if (diffRot &gt; 20) {</span>
+<span class="fc" id="L375">                remove.add(Integer.valueOf(i));</span>
             }
         }
         
-<span class="nc bnc" id="L379" title="All 2 branches missed.">        for (int i = remove.size() - 1; i &gt; -1; --i) {</span>
-<span class="nc" id="L380">            int idx = remove.get(i);</span>
-<span class="nc" id="L381">            compStats.remove(idx);</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">        for (int i = remove.size() - 1; i &gt; -1; --i) {</span>
+<span class="fc" id="L380">            int idx = remove.get(i);</span>
+<span class="fc" id="L381">            compStats.remove(idx);</span>
         }
-<span class="nc" id="L383">    }</span>
+<span class="fc" id="L383">    }</span>
 
     protected float[] calcIntensitySSDMeanAndStDev(List&lt;FeatureComparisonStat&gt; compStats) {
         
@@ -402,8 +402,8 @@ import java.util.logging.Logger;
 
     protected void removeIntensityOutliers(List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="pc bpc" id="L405" title="1 of 2 branches missed.">        if (compStats.size() &lt; 3) {</span>
-<span class="nc" id="L406">            return;</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">        if (compStats.size() &lt; 3) {</span>
+<span class="fc" id="L406">            return;</span>
         }
         
 <span class="fc" id="L409">        int n = compStats.size();</span>
@@ -434,19 +434,19 @@ import java.util.logging.Logger;
     protected float calculateDiffThetaMean(List&lt;FeatureComparisonStat&gt; 
         comparisonStats) {
         
-<span class="nc" id="L437">        float[] values = calculateThetaDiff(comparisonStats);</span>
+<span class="fc" id="L437">        float[] values = calculateThetaDiff(comparisonStats);</span>
         
-<span class="nc bnc" id="L439" title="All 4 branches missed.">        if (values == null || values.length == 0) {</span>
+<span class="pc bpc" id="L439" title="2 of 4 branches missed.">        if (values == null || values.length == 0) {</span>
 <span class="nc" id="L440">            return Float.POSITIVE_INFINITY;</span>
         }
         
-<span class="nc" id="L443">        double sum = 0;</span>
+<span class="fc" id="L443">        double sum = 0;</span>
         
-<span class="nc bnc" id="L445" title="All 2 branches missed.">        for (int i = 0; i &lt; values.length; ++i) {</span>
-<span class="nc" id="L446">            sum += values[i];</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">        for (int i = 0; i &lt; values.length; ++i) {</span>
+<span class="fc" id="L446">            sum += values[i];</span>
         }
         
-<span class="nc" id="L449">        return (float) (sum / ((float) values.length));</span>
+<span class="fc" id="L449">        return (float) (sum / ((float) values.length));</span>
     }
     
     protected boolean rotationIsConsistent(TransformationParameters params, 
