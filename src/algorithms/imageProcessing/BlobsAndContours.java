@@ -36,11 +36,6 @@ public class BlobsAndContours  {
 
         boolean setToExtractWeakCurvesTooIfNeeded = false;
 
-        if (type.equals(SegmentationType.BINARY)) {
-            // might need to restrict this to the binned images
-            setToExtractWeakCurvesTooIfNeeded = true;
-        }
-
         boolean allContoursZero = true;
 
         List<PairIntArray> blobOrderedPerimeters =

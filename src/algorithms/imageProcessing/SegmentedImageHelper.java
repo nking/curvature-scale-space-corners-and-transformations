@@ -196,9 +196,7 @@ public class SegmentedImageHelper {
     protected void applySegmentationToBinned(SegmentationType type) throws
         IOException, NoSuchAlgorithmException {
 
-        if (type.equals(SegmentationType.BINARY)) {
-            applySegmentationToBinned(type, 2);
-        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             applySegmentationToBinned(type, 2);
         } else {
             applySegmentationToBinned(type, -1);
@@ -216,9 +214,7 @@ public class SegmentedImageHelper {
     protected void applySegmentation(SegmentationType type) throws IOException,
         NoSuchAlgorithmException {
 
-        if (type.equals(SegmentationType.BINARY)) {
-            applySegmentation(type, 2);
-        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             applySegmentation(type, 2);
         } else {
             applySegmentation(type, -1);

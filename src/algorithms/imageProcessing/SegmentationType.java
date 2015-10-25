@@ -2,8 +2,6 @@ package algorithms.imageProcessing;
 
 /**
 <pre>
-    BINARY = KMPP for k=2 followed by adaptive mean thresholding 
-        (scl=20/binFactor);
     GREYSCALE_KMPP = KMPP for k=2;
     COLOR_POLARCIEXY_ADAPT = color to greyscale using polar theta of CIEXY 
         scale space followed by adaptive mean thresholding (scl=4?);
@@ -15,7 +13,6 @@ package algorithms.imageProcessing;
  */
 public enum SegmentationType {
 
-    BINARY,
     GREYSCALE_KMPP,
     COLOR_POLARCIEXY_LARGE,
     COLOR_POLARCIEXY_ADAPT,
