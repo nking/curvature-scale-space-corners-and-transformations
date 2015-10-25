@@ -38,6 +38,10 @@ public class BlobsAndPerimeters {
             imgHelper.getSmallestGroupLimitBinned() : 
             imgHelper.getSmallestGroupLimit();
         
+        if (smallestGroupLimit == 0) {
+            throw new IllegalStateException("smallestGroupLimit must be > 0");
+        }
+        
         int largestGroupLimit = useBinned ? 
             imgHelper.getLargestGroupLimitBinned() : 
             imgHelper.getLargestGroupLimit();
@@ -63,11 +67,7 @@ public class BlobsAndPerimeters {
             DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
             
             finder.setToUse8Neighbors();
-            if (smallestGroupLimit == 0) {
-                finder.setMinimumNumberInCluster(1);
-            } else {
-                finder.setMinimumNumberInCluster(smallestGroupLimit);
-            }
+            finder.setMinimumNumberInCluster(smallestGroupLimit);
             finder.findGroups(pixValue.intValue());
             
             int nGroups = finder.getNumberOfGroups();
@@ -99,24 +99,6 @@ public class BlobsAndPerimeters {
             for (Set<PairInt> blob : outputBlobs) {
                 growRadius(blob, segImg.getWidth(), segImg.getHeight());
             }
-            /*for (Set<PairInt> blob : outputBlobs) {
-                shrinkRadius(blob, segImg.getWidth(), segImg.getHeight());
-            }
-            // if shrink radius, have to redo contiguous search
-            List<Integer> rmBlobIndexes = new ArrayList<Integer>();
-            for (int i = 0; i < outputBlobs.size(); ++i) {
-                Set<PairInt> tmp = redoContiguous(outputBlobs.get(i),
-                    segImg.getWidth(), segImg.getHeight());
-                if (tmp.isEmpty()) {
-                    rmBlobIndexes.add(Integer.valueOf(i));
-                } else {
-                    outputBlobs.set(i, tmp);
-                }
-            }
-            for (int i = (rmBlobIndexes.size() - 1); i > -1; --i) {
-                outputBlobs.remove(rmBlobIndexes.get(i).intValue());
-            }
-            */
         }
         
         if (imgHelper.isInDebugMode()) {
@@ -179,30 +161,6 @@ public class BlobsAndPerimeters {
             
             if ((closedEdge != null) && (curveHelper.isAdjacent(closedEdge, 0, 
                 closedEdge.getN() - 1))) {
-                
-                if (false && type.equals(SegmentationType.BINARY)) {
-                    
-                    int nChanged = 0;
-                    
-                    //adjusting the edges using the unsegmented image did not work
-                    //as well on some images, so have disable this block.
-                    //keeping it until can review if it helps with some types of
-                    //segmentation.
-                    if (blobIsDarkerThanExterior(blob, closedEdge, greyImg)) {
-                        nChanged = curveHelper.adjustEdgesTowardsBrighterPixels(
-                            closedEdge, greyImg);
-                    } else {
-                        nChanged = curveHelper.adjustEdgesTowardsDarkerPixels(
-                            closedEdge, greyImg);
-                    }
-                    
-                    if (nChanged > 0) {
-                        //TODO: this method needs to be revisited...
-                        //curveHelper.removeRedundantPoints(closedEdge);
-                        curveHelper.pruneAdjacentNeighborsTo2(closedEdge);
-                        curveHelper.correctCheckeredSegments(closedEdge);
-                    }
-                }
 
                 outputBounds.add(closedEdge);
                 
@@ -248,7 +206,6 @@ public class BlobsAndPerimeters {
         
         log.info("nBlobs after filtered to top =" + inOutBlobs.size());
         
-//TODO: put debug sections in AOP for special build after replace aspectj
 if (imgHelper.isInDebugMode()) {
     Image img0 = ImageIOHelper.convertImage(segImg);
     for (int i = 0; i < outputBounds.size(); ++i) {
@@ -406,59 +363,6 @@ if (imgHelper.isInDebugMode()) {
         }
     }
 
-    protected static boolean blobIsDarkerThanExterior(Set<PairInt> blob, 
-        PairIntArray closedEdge, GreyscaleImage greyImg) {
-        
-        int w = greyImg.getWidth();
-        int h = greyImg.getHeight();
-        
-        long sumInside = 0;
-        long sumOutside = 0;
-        
-        Set<PairInt> counted = new HashSet<PairInt>();
-        // looking at a band of pixels within a distance of 2 pixels
-        // on both sides of the edge.
-        for (int i = 0; i < closedEdge.getN(); ++i) {
-            
-            int x = closedEdge.getX(i);
-            int y = closedEdge.getY(i);
-            for (int dx = -2; dx <= 2; ++dx) {
-                
-                int x2 = x + dx;
-                if ((x2 < 0) || (x2 > (w - 1))) {
-                    continue;
-                }
-                
-                for (int dy = -2; dy <= 2; ++dy) {
-                    
-                    int y2 = y + dy;
-                    if ((y2 < 0) || (y2 > (h - 1))) {
-                        continue;
-                    }
-                    
-                    PairInt p2 = new PairInt(x2, y2);
-                    if (counted.contains(p2)) {
-                        continue;
-                    }
-                    
-                    int v = greyImg.getValue(x2, y2);
-                    if (blob.contains(p2)) {
-                        sumInside += v;
-                    } else {
-                        sumOutside += v;
-                    }
-                    counted.add(p2);
-                }
-            }
-        }
-        
-        if (sumInside < sumOutside) {
-            return true;
-        }
-        
-        return false;
-    }
-
     /**
      * grow blob by 1 pixel radius, but exclude growing any image boundary
      * pixels.
@@ -498,7 +402,7 @@ if (imgHelper.isInDebugMode()) {
      * @param w
      * @param h
      */
-    protected void shrinkRadius(Set<PairInt> blob, int w, int h) {
+    protected static void shrinkRadius(Set<PairInt> blob, int w, int h) {
         
         // any point in blob with a non-point neighbor gets removed
         Set<PairInt> tmp = new HashSet<PairInt>();
@@ -518,41 +422,4 @@ if (imgHelper.isInDebugMode()) {
         blob.addAll(tmp);
     }
 
-    /*
-    protected static Set<PairInt> redoContiguous(Set<PairInt> points, int w, int h) {
-        
-        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-        
-        if (smallestGroupLimit == 0) {
-            finder.setMinimumNumberInCluster(1);
-        } else {
-            finder.setMinimumNumberInCluster(smallestGroupLimit);
-        }
-        finder.findConnectedPointGroups(points, w, h);
-        
-        int nGroups = finder.getNumberOfGroups();
-        
-        int nMaxGroup = Integer.MIN_VALUE;
-        int groupIdx = -1;
-        
-        for (int i = 0; i < nGroups; ++i) {
-            
-            Set<PairInt> group = finder.getXY(i);
-            
-            int nGroup = group.size();
-            if (nGroup < largestGroupLimit) {
-                if (nGroup > nMaxGroup) {
-                    groupIdx = i;
-                    nMaxGroup = nGroup;
-                }
-            }
-        }
-        
-        if (groupIdx == -1) {
-            return new HashSet<PairInt>();
-        }
-        
-        return finder.getXY(groupIdx);
-    }
-    */
 }

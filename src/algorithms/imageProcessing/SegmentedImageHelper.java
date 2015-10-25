@@ -25,6 +25,8 @@ public class SegmentedImageHelper {
     
     protected final GreyscaleImage imgGrey;
     
+    protected final float fracLowerLimitPolarCIEXY = 0.1f;//0.2f
+    
     /**
      * if true, was applied to imgGrey
      */
@@ -262,7 +264,8 @@ public class SegmentedImageHelper {
             
             // not expecting to use binned color images:
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
-            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(imgBinned, 0.2f, true);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(
+                imgBinned, fracLowerLimitPolarCIEXY, true);
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -271,7 +274,8 @@ public class SegmentedImageHelper {
             
             // not expecting to use binned color images:
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
-            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(imgBinned, 0.2f, false);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(
+                imgBinned, fracLowerLimitPolarCIEXY, false);
             imgBinnedSegmentedMap.put(type, segImg);
             
         } else {
@@ -322,16 +326,16 @@ public class SegmentedImageHelper {
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
             
-            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 0.2f, 
-                true);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 
+                fracLowerLimitPolarCIEXY, true);
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY) 
             || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
             
-            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 0.2f, 
-                true);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 
+                fracLowerLimitPolarCIEXY, true);
             imgSegmentedMap.put(type, segImg);
             
         } else {

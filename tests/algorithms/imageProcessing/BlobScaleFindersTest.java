@@ -1,10 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
-import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 

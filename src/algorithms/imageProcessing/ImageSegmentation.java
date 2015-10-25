@@ -1378,8 +1378,8 @@ public class ImageSegmentation {
         */
 
         int binWidth = 3;
-        Map<Integer, Collection<PairInt>> thetaPointMap = createThetaCIEXYMap(points0,
-            input, binWidth);
+        Map<Integer, Collection<PairInt>> thetaPointMap = createThetaCIEXYMap(
+            points0, input, binWidth);
        
         int n = (360/binWidth) + 1;
         
@@ -1399,12 +1399,18 @@ public class ImageSegmentation {
         nTot += (blackPixels.size() + nGrey + whitePixels.size());
         assert(nTot == input.getNPixels());
         
+        /*
+        TODO: this is where the DTClusterFinder would be good to use to find
+        the peaks.
+        */
+        
         PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, 
             thetaPointMap, 
             Math.round(fracFreqLimit * maxFreq));
         
         int[] minMaxXY = MiscMath.findMinMaxXY(peaks);
         
+        /*
         // ----- debug ---
         // plot the points as an image to see the data first
         int nPoints = 0;
@@ -1449,6 +1455,7 @@ public class ImageSegmentation {
                 null, ex);
         }
         // --- end debug
+        */
         
         if (peaks.getN() == 0) {
             for (Map.Entry<Integer, Collection<PairInt>> entry : thetaPointMap.entrySet()) {
@@ -1531,8 +1538,12 @@ public class ImageSegmentation {
             blackPixels, whitePixels);
         
         // add back in blackPixels and whitePixels
-        groupList.add(blackPixels);
-        groupList.add(whitePixels);
+        if (!blackPixels.isEmpty()) {
+            groupList.add(blackPixels);
+        }
+        if (!whitePixels.isEmpty()) {
+            groupList.add(whitePixels);
+        }
         
         int nTot2 = 0;
         for (Set<PairInt> groups : groupList) {
@@ -1833,6 +1844,13 @@ public class ImageSegmentation {
         return thetaPointMap;
     }
 
+    /**
+     * find peaks in the theta point map above lower limit.
+     * @param orderedThetaKeys
+     * @param thetaPointMap
+     * @param limit
+     * @return 
+     */
     protected PairIntArray findPeaksInThetaPointMap(final int[] orderedThetaKeys, 
         final Map<Integer, Collection<PairInt>> thetaPointMap, final int limit) {
         
