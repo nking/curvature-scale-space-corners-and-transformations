@@ -215,6 +215,9 @@ public class DFSContiguousValueFinder {
                         
         } else if ((groupId == null) && (pointToGroupMap.get(vIdx) != null)) {
 
+            // usually, u will have been added before v is visited, so this
+            // block is rarely used
+            
             groupId = pointToGroupMap.get(vIdx);
 
             groupMembership.get(groupId).add(uIdx);

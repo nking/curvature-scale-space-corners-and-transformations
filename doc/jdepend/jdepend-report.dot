@@ -1,0 +1,248 @@
+
+digraph g {
+        graph [
+	    rankdir = "LR"
+	];
+	node [
+	    fontsize = "12"
+	    fontname = "Courier"
+	    shape = "ellipse"
+	];
+	edge[];
+	"algorithms" [
+        label="algorithms | Total Classes: 8"
+	shape="record"
+	color=".99 0.8 .9"
+	style=filled
+    ];
+    "algorithms" -> "algorithms.misc"
+    "algorithms" -> "algorithms.util"
+    "algorithms.compGeometry" [
+        label="algorithms.compGeometry | Total Classes: 25"
+	shape="record"
+	color=".99 0.22 .9"
+	style=filled
+    ];
+    "algorithms.compGeometry" -> "algorithms"
+    "algorithms.compGeometry" -> "algorithms.imageProcessing"
+    "algorithms.compGeometry" -> "algorithms.misc"
+    "algorithms.compGeometry" -> "algorithms.util"
+    "algorithms.compGeometry" -> "org.ejml.data"
+    "algorithms.compGeometry" -> "org.ejml.ops"
+    "algorithms.compGeometry" -> "org.ejml.simple"
+    "algorithms.compGeometry.clustering" [
+        label="algorithms.compGeometry.clustering | Total Classes: 3"
+	shape="record"
+	color=".99 0.25 .9"
+	style=filled
+    ];
+    "algorithms.compGeometry.clustering" -> "algorithms"
+    "algorithms.compGeometry.clustering" -> "algorithms.imageProcessing"
+    "algorithms.compGeometry.clustering" -> "algorithms.misc"
+    "algorithms.compGeometry.convexHull" [
+        label="algorithms.compGeometry.convexHull | Total Classes: 4"
+	shape="record"
+	color=".99 0.33 .9"
+	style=filled
+    ];
+    "algorithms.compGeometry.convexHull" -> "algorithms"
+    "algorithms.compGeometry.convexHull" -> "algorithms.compGeometry"
+    "algorithms.compGeometry.convexHull" -> "algorithms.imageProcessing.util"
+    "algorithms.compGeometry.convexHull" -> "algorithms.util"
+    "algorithms.disjointSets" [
+        label="algorithms.disjointSets | Total Classes: 5"
+	shape="record"
+	color=".99 1 .9"
+	style=filled
+    ];
+    "algorithms.graphs" [
+        label="algorithms.graphs | Total Classes: 4"
+	shape="record"
+	color=".99 0.33 .9"
+	style=filled
+    ];
+    "algorithms.graphs" -> "algorithms"
+    "algorithms.graphs" -> "algorithms.util"
+    "algorithms.imageProcessing" [
+        label="algorithms.imageProcessing | Total Classes: 160"
+	shape="record"
+	color=".99 0.19 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing" -> "algorithms"
+    "algorithms.imageProcessing" -> "algorithms.compGeometry"
+    "algorithms.imageProcessing" -> "algorithms.compGeometry.clustering"
+    "algorithms.imageProcessing" -> "algorithms.compGeometry.convexHull"
+    "algorithms.imageProcessing" -> "algorithms.disjointSets"
+    "algorithms.imageProcessing" -> "algorithms.graphs"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.optimization"
+    "algorithms.imageProcessing" -> "algorithms.imageProcessing.util"
+    "algorithms.imageProcessing" -> "algorithms.misc"
+    "algorithms.imageProcessing" -> "algorithms.shortestPath"
+    "algorithms.imageProcessing" -> "algorithms.util"
+    "algorithms.imageProcessing" -> "com.climbwithyourfeet.clustering"
+    "algorithms.imageProcessing" -> "com.climbwithyourfeet.clustering.util"
+    "algorithms.imageProcessing" -> "org.ejml.simple"
+    "algorithms.imageProcessing" -> "thirdparty"
+    "algorithms.imageProcessing.optimization" [
+        label="algorithms.imageProcessing.optimization | Total Classes: 19"
+	shape="record"
+	color=".99 0.28 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.optimization" -> "algorithms.imageProcessing"
+    "algorithms.imageProcessing.optimization" -> "algorithms.util"
+    "algorithms.imageProcessing.util" [
+        label="algorithms.imageProcessing.util | Total Classes: 3"
+	shape="record"
+	color=".99 0.5 .9"
+	style=filled
+    ];
+    "algorithms.imageProcessing.util" -> "algorithms"
+    "algorithms.imageProcessing.util" -> "algorithms.misc"
+    "algorithms.imageProcessing.util" -> "org.ejml.simple"
+    "algorithms.misc" [
+        label="algorithms.misc | Total Classes: 9"
+	shape="record"
+	color=".99 0.55 .9"
+	style=filled
+    ];
+    "algorithms.misc" -> "algorithms"
+    "algorithms.misc" -> "algorithms.compGeometry.convexHull"
+    "algorithms.misc" -> "algorithms.imageProcessing"
+    "algorithms.misc" -> "algorithms.imageProcessing.util"
+    "algorithms.misc" -> "algorithms.util"
+    "algorithms.shortestPath" [
+        label="algorithms.shortestPath | Total Classes: 2"
+	shape="record"
+	color=".99 0.33 .9"
+	style=filled
+    ];
+    "algorithms.shortestPath" -> "algorithms.imageProcessing"
+    "algorithms.shortestPath" -> "algorithms.util"
+    "algorithms.util" [
+        label="algorithms.util | Total Classes: 32"
+	shape="record"
+	color=".99 0.33 .9"
+	style=filled
+    ];
+    "algorithms.util" -> "algorithms"
+    "algorithms.util" -> "algorithms.imageProcessing"
+    "algorithms.util" -> "algorithms.misc"
+    "algorithms.util" -> "org.ejml.data"
+    "algorithms.util" -> "org.ejml.factory"
+    "algorithms.util" -> "org.ejml.interfaces.decomposition"
+    "algorithms.util" -> "org.ejml.simple"
+    "algorithms.util" -> "org.jfree.chart"
+    "algorithms.util" -> "org.jfree.chart.annotations"
+    "algorithms.util" -> "org.jfree.chart.axis"
+    "algorithms.util" -> "org.jfree.chart.labels"
+    "algorithms.util" -> "org.jfree.chart.plot"
+    "algorithms.util" -> "org.jfree.chart.renderer.xy"
+    "algorithms.util" -> "org.jfree.data"
+    "algorithms.util" -> "org.jfree.data.xy"
+    "algorithms.util" -> "org.jfree.ui"
+    "com.climbwithyourfeet.clustering" [
+        label="com.climbwithyourfeet.clustering | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "com.climbwithyourfeet.clustering.util" [
+        label="com.climbwithyourfeet.clustering.util | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.ejml.data" [
+        label="org.ejml.data | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.ejml.factory" [
+        label="org.ejml.factory | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.ejml.interfaces.decomposition" [
+        label="org.ejml.interfaces.decomposition | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.ejml.ops" [
+        label="org.ejml.ops | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.ejml.simple" [
+        label="org.ejml.simple | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.chart" [
+        label="org.jfree.chart | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.chart.annotations" [
+        label="org.jfree.chart.annotations | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.chart.axis" [
+        label="org.jfree.chart.axis | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.chart.labels" [
+        label="org.jfree.chart.labels | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.chart.plot" [
+        label="org.jfree.chart.plot | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.chart.renderer.xy" [
+        label="org.jfree.chart.renderer.xy | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.data" [
+        label="org.jfree.data | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.data.xy" [
+        label="org.jfree.data.xy | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "org.jfree.ui" [
+        label="org.jfree.ui | Total Classes: "
+	shape="record"
+	color=".99 0.0 .9"
+	style=filled
+    ];
+    "thirdparty" [
+        label="thirdparty | Total Classes: 1"
+	shape="record"
+	color=".99 1 .9"
+	style=filled
+    ];
+    
+}

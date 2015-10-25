@@ -1473,20 +1473,20 @@ import org.ejml.simple.*;
 <span class="fc" id="L1473">        double a = epipolarLines.get(0, pointNumber);</span>
 <span class="fc" id="L1474">        double b = epipolarLines.get(1, pointNumber);</span>
 <span class="fc" id="L1475">        double c = epipolarLines.get(2, pointNumber);</span>
-<span class="pc bpc" id="L1476" title="1 of 2 branches missed.">        boolean isHoriz = (Math.abs(a/b) &lt;= 1.0);</span>
-<span class="pc bpc" id="L1477" title="1 of 2 branches missed.">        if (isHoriz) {</span>
+<span class="fc bfc" id="L1476" title="All 2 branches covered.">        boolean isHoriz = (Math.abs(a/b) &lt;= 1.0);</span>
+<span class="fc bfc" id="L1477" title="All 2 branches covered.">        if (isHoriz) {</span>
 <span class="fc bfc" id="L1478" title="All 2 branches covered.">            for (int x = 0; x &lt; imgWidth; x++) {</span>
                 //y = - (a/b) * x - (c/b)
 <span class="fc" id="L1480">                double y = (c + (a * (double)x)) / (-b);</span>
 <span class="fc" id="L1481">                line.add(x, (int) Math.round(y));</span>
             }
         } else {
-<span class="nc bnc" id="L1484" title="All 2 branches missed.">            for (int y = 0; y &lt; imgHeight; y++) {</span>
+<span class="fc bfc" id="L1484" title="All 2 branches covered.">            for (int y = 0; y &lt; imgHeight; y++) {</span>
                 //y = - (a/b) * x - (c/b)
                 //y+(c/b) = - (a/b) * x 
                 // ==&gt; x = (-b/a) * (y+(c/b)) = y*(-b/a) - (c/a)
-<span class="nc" id="L1488">                double x = -(c + (b * (double)y))/a;</span>
-<span class="nc" id="L1489">                line.add((int) Math.round(x), y);</span>
+<span class="fc" id="L1488">                double x = -(c + (b * (double)y))/a;</span>
+<span class="fc" id="L1489">                line.add((int) Math.round(x), y);</span>
             }
         }
   

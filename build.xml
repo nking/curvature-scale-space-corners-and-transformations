@@ -67,7 +67,8 @@
         <echo message="runTests:                   run tests"/>
         <echo message="runTest:                    run test with -Dtest=fqn of test"/>
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
-    	<echo message="runCoverage:                run code coverage tools"/>
+    	<echo message="runCoverage:                run code coverage tools (requires env.JACOCO_HOME)"/>
+        <echo message="runDependency               run code coverage tools (requires graphviz and jdepend)"/>
         <echo message="javadoc:                    create javadocs"/>
         <echo message="runTestsWithAspects:        run tests with aspects"/>
         <echo message="runTestWithAspects:         run test with aspects, use -Dtest=fqn"/>
@@ -634,6 +635,61 @@
                 <path refid="test.classpath"/>
             </classpath>
         </java>
+    </target>
+    
+    <target name="runDependency" 
+        description="run jDepend.  requires GraphViz and jDepend installed on computer" >
+        
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        
+        <path id="jdepend.classpath">
+            <pathelement location="${env.JDEPENDS_HOME}/lib/jdepend-2.9.1.jar"/>
+        </path>
+        
+        <property name="jdepend.docs.dir" location="${env.JDEPENDS_HOME}/docs"/>
+        
+        <!-- user may need to edit this -->
+        <property name="graphviz.bin.dir" location="/usr/local/bin"/>
+        
+        <mkdir dir="${classes.dir}/jdepend" />
+        
+        <echo message="making jDepend report"/>
+        
+        <java classname="jdepend.xmlui.JDepend" fork="yes">
+            <classpath refid="jdepend.classpath"/>
+            <arg value="-file"/>
+            <arg value="${jdepend.docs.dir}/jdepend-report.xml"/>
+            <arg value="${src.out.dir}"/>
+        </java>
+   
+        <echo message="creating a dot file"/>
+        
+        <style basedir="${jdepend.docs.dir}"
+            destdir="${classes.dir}/jdepend"
+            includes="jdepend-report.xml"
+            extension=".dot"
+            style="${env.JDEPENDS_HOME}/contrib/jdepend2dot.xsl"/>
+        
+        <!--
+        dot -Tpng -o docs/quality/jdepend/jdepend.png docs/quality/jdepend/jdepend-report.dot
+        -->
+        <echo message=""/>
+        <echo message="creating a png image from the dot file"/>
+        <exec dir="." executable="${graphviz.bin.dir}/dot" newenvironment="true" >
+            <arg line="-Tpng -o ${classes.dir}/jdepend/jdepend.png ${classes.dir}/jdepend/jdepend-report.dot"/>
+        </exec>
+        
+        <echo message=""/>
+        <echo message="creating report in html format"/>
+        
+        <style basedir="${jdepend.docs.dir}"
+            destdir="${classes.dir}/jdepend" 
+            includes="jdepend-report.xml"
+            style="${env.ANT_HOME}/etc/jdepend.xsl"/>
+        
+        <!--
+        could mv jdepend-report.html and all in ${classes.dir}/jdepend/ to docs/quality
+        -->
     </target>
     
 </project>

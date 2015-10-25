@@ -349,8 +349,8 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L349">            bestFit.getParameters().copy(), set1, set2,</span>
             useGreedyMatching);
 
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">        if (fitIsBetter(bestFit, fit2)) {</span>
-<span class="nc" id="L353">            bestFit = fit2;</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        if (fitIsBetter(bestFit, fit2)) {</span>
+<span class="fc" id="L353">            bestFit = fit2;</span>
         }
 
 <span class="fc" id="L356">        return bestFit;</span>
@@ -3942,7 +3942,7 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L3942">        }</span>
 
 <span class="fc" id="L3944">        log.info(&quot;similarToBestFit.size=&quot; + similarToBestFit.size());</span>
-<span class="pc bpc" id="L3945" title="1 of 2 branches missed.">        if (similarToBestFit.size() &gt; 1) {</span>
+<span class="fc bfc" id="L3945" title="All 2 branches covered.">        if (similarToBestFit.size() &gt; 1) {</span>
 <span class="fc bfc" id="L3946" title="All 2 branches covered.">            for (TransformationPointFit fit : similarToBestFit) {</span>
 <span class="fc" id="L3947">                log.info(&quot;similarFit=&quot; + fit.toString());</span>
 <span class="fc" id="L3948">            }</span>

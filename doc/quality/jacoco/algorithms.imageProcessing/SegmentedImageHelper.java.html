@@ -13,50 +13,52 @@ import java.util.logging.Logger;
  */
 public class SegmentedImageHelper {
 
-<span class="pc" id="L16">    protected int smallestGroupLimit = 100;</span>
+<span class="fc" id="L16">    protected int smallestGroupLimit = 100;</span>
     
-<span class="pc" id="L18">    protected int largestGroupLimit = 5000;</span>
+<span class="fc" id="L18">    protected int largestGroupLimit = 5000;</span>
     
-<span class="pc" id="L20">    protected int smallestGroupLimitBinned = smallestGroupLimit;</span>
+<span class="fc" id="L20">    protected int smallestGroupLimitBinned = smallestGroupLimit;</span>
     
-<span class="pc" id="L22">    protected int largestGroupLimitBinned = largestGroupLimit;</span>
+<span class="fc" id="L22">    protected int largestGroupLimitBinned = largestGroupLimit;</span>
     
     protected final ImageExt img;
     
     protected final GreyscaleImage imgGrey;
     
+<span class="fc" id="L28">    protected final float fracLowerLimitPolarCIEXY = 0.1f;//0.2f</span>
+    
     /**
      * if true, was applied to imgGrey
      */
-<span class="pc" id="L31">    protected boolean didApplyHistEq = false;</span>
+<span class="fc" id="L33">    protected boolean didApplyHistEq = false;</span>
     
     /**
      * applied to imgGreyBinned and imgSegmentedMap
      */
-<span class="pc" id="L36">    protected int binFactor = 1;</span>
+<span class="fc" id="L38">    protected int binFactor = 1;</span>
     
-<span class="pc" id="L38">    protected GreyscaleImage imgGreyBinned = null;</span>
+<span class="fc" id="L40">    protected GreyscaleImage imgGreyBinned = null;</span>
     
-<span class="pc" id="L40">    protected Map&lt;SegmentationType, GreyscaleImage&gt; imgSegmentedMap </span>
+<span class="fc" id="L42">    protected Map&lt;SegmentationType, GreyscaleImage&gt; imgSegmentedMap </span>
         = new HashMap&lt;SegmentationType, GreyscaleImage&gt;();
     
-<span class="pc" id="L43">    protected Map&lt;SegmentationType, GreyscaleImage&gt; imgBinnedSegmentedMap </span>
+<span class="fc" id="L45">    protected Map&lt;SegmentationType, GreyscaleImage&gt; imgBinnedSegmentedMap </span>
         = new HashMap&lt;SegmentationType, GreyscaleImage&gt;();
     
-<span class="pc" id="L46">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L48">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="pc" id="L48">    protected boolean debug = false;</span>
+<span class="fc" id="L50">    protected boolean debug = false;</span>
     
-<span class="pc" id="L50">    protected String debugTag = &quot;&quot;;</span>
+<span class="fc" id="L52">    protected String debugTag = &quot;&quot;;</span>
 
-<span class="nc" id="L52">    public SegmentedImageHelper(final ImageExt img) {</span>
+<span class="fc" id="L54">    public SegmentedImageHelper(final ImageExt img) {</span>
 
-<span class="nc" id="L54">        this.img = img;</span>
+<span class="fc" id="L56">        this.img = img;</span>
 
-<span class="nc" id="L56">        this.imgGrey = img.copyToGreyscale();</span>
+<span class="fc" id="L58">        this.imgGrey = img.copyToGreyscale();</span>
 
-<span class="nc" id="L58">        this.binFactor = 1;</span>
-<span class="nc" id="L59">    }</span>
+<span class="fc" id="L60">        this.binFactor = 1;</span>
+<span class="fc" id="L61">    }</span>
 
     /**
      * constructor with a tag for debugging
@@ -64,18 +66,18 @@ public class SegmentedImageHelper {
      * @param img
      * @param debugTag
      */
-<span class="fc" id="L67">    public SegmentedImageHelper(final ImageExt img, final String debugTag) {</span>
+<span class="fc" id="L69">    public SegmentedImageHelper(final ImageExt img, final String debugTag) {</span>
 
-<span class="fc" id="L69">        this.img = img;</span>
+<span class="fc" id="L71">        this.img = img;</span>
 
-<span class="fc" id="L71">        this.imgGrey = img.copyToGreyscale();</span>
+<span class="fc" id="L73">        this.imgGrey = img.copyToGreyscale();</span>
 
-<span class="fc" id="L73">        this.binFactor = 1;</span>
+<span class="fc" id="L75">        this.binFactor = 1;</span>
 
-<span class="fc" id="L75">        debug = true;</span>
+<span class="fc" id="L77">        debug = true;</span>
 
-<span class="fc" id="L77">        this.debugTag = debugTag;</span>
-<span class="fc" id="L78">    }</span>
+<span class="fc" id="L79">        this.debugTag = debugTag;</span>
+<span class="fc" id="L80">    }</span>
 
     /**
      * change the larger limit for blob sizes.  caveat is that this should be
@@ -85,8 +87,8 @@ public class SegmentedImageHelper {
      * @param limit 
      */
     public void increaseLargestGroupLimit(int limit) {
-<span class="fc" id="L88">        largestGroupLimit = limit;</span>
-<span class="fc" id="L89">    }</span>
+<span class="fc" id="L90">        largestGroupLimit = limit;</span>
+<span class="fc" id="L91">    }</span>
     
     /**
      * change the smallest limit for blob sizes.  caveat is that this should be
@@ -96,73 +98,73 @@ public class SegmentedImageHelper {
      * @param limit 
      */
     public void increaseSmallestGroupLimit(int limit) {
-<span class="nc" id="L99">        smallestGroupLimit = limit;</span>
-<span class="nc" id="L100">    }</span>
+<span class="nc" id="L101">        smallestGroupLimit = limit;</span>
+<span class="nc" id="L102">    }</span>
     
     public void createBinnedGreyscaleImage(int maxDimension) {
         
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (imgGreyBinned != null) {</span>
-<span class="nc" id="L105">            return;</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (imgGreyBinned != null) {</span>
+<span class="nc" id="L107">            return;</span>
         }
         
-<span class="fc" id="L108">        binFactor = (int) Math.ceil(Math.max((float) imgGrey.getWidth() / maxDimension, </span>
-<span class="fc" id="L109">            (float) imgGrey.getHeight() / maxDimension));</span>
+<span class="fc" id="L110">        binFactor = (int) Math.ceil(Math.max((float) imgGrey.getWidth() / maxDimension, </span>
+<span class="fc" id="L111">            (float) imgGrey.getHeight() / maxDimension));</span>
         
-<span class="fc" id="L111">        smallestGroupLimitBinned = smallestGroupLimit / (binFactor * binFactor);</span>
+<span class="fc" id="L113">        smallestGroupLimitBinned = smallestGroupLimit / (binFactor * binFactor);</span>
         
-<span class="fc" id="L113">        largestGroupLimitBinned = largestGroupLimit / (binFactor * binFactor);</span>
+<span class="fc" id="L115">        largestGroupLimitBinned = largestGroupLimit / (binFactor * binFactor);</span>
         
-<span class="fc" id="L115">        log.info(&quot;binFactor=&quot; + binFactor);</span>
+<span class="fc" id="L117">        log.info(&quot;binFactor=&quot; + binFactor);</span>
         // prevent from being smaller than needed for a convex hull
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (smallestGroupLimitBinned &lt; 4) {</span>
-<span class="nc" id="L118">            smallestGroupLimitBinned = 4;</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (smallestGroupLimitBinned &lt; 4) {</span>
+<span class="nc" id="L120">            smallestGroupLimitBinned = 4;</span>
         }
         
-<span class="fc" id="L121">        ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L122">        imgGreyBinned = imageProcessor.binImage(imgGrey, binFactor);</span>
-<span class="fc" id="L123">    }</span>
+<span class="fc" id="L123">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L124">        imgGreyBinned = imageProcessor.binImage(imgGrey, binFactor);</span>
+<span class="fc" id="L125">    }</span>
 
     public boolean applyEqualizationIfNeededByComparison(SegmentedImageHelper 
         otherImgHelper) {
         
         // doing this automatically for now, but can use the stats instead to
         // decide
-<span class="nc" id="L130">        boolean performHistEq = false;</span>
-<span class="nc" id="L131">        boolean useStatsToDecide = true;</span>
+<span class="fc" id="L132">        boolean performHistEq = false;</span>
+<span class="fc" id="L133">        boolean useStatsToDecide = true;</span>
         
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (useStatsToDecide) {</span>
-<span class="nc" id="L134">            ImageStatistics stats1 = ImageStatisticsHelper.examineImage(imgGrey, true);</span>
-<span class="nc" id="L135">            ImageStatistics stats2 = </span>
-<span class="nc" id="L136">                ImageStatisticsHelper.examineImage(otherImgHelper.getGreyscaleImage(), true);</span>
-<span class="nc" id="L137">            double median1DivMedian2 = stats1.getMedian() / stats2.getMedian();</span>
-<span class="nc" id="L138">            double meanDivMedian1 = stats1.getMean() / stats1.getMedian();</span>
-<span class="nc" id="L139">            double meanDivMedian2 = stats2.getMean() / stats2.getMedian();</span>
-<span class="nc bnc" id="L140" title="All 8 branches missed.">            if (((median1DivMedian2 &gt; 1) &amp;&amp; ((median1DivMedian2 - 1) &gt; 0.2)) || </span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (useStatsToDecide) {</span>
+<span class="fc" id="L136">            ImageStatistics stats1 = ImageStatisticsHelper.examineImage(imgGrey, true);</span>
+<span class="fc" id="L137">            ImageStatistics stats2 = </span>
+<span class="fc" id="L138">                ImageStatisticsHelper.examineImage(otherImgHelper.getGreyscaleImage(), true);</span>
+<span class="fc" id="L139">            double median1DivMedian2 = stats1.getMedian() / stats2.getMedian();</span>
+<span class="fc" id="L140">            double meanDivMedian1 = stats1.getMean() / stats1.getMedian();</span>
+<span class="fc" id="L141">            double meanDivMedian2 = stats2.getMean() / stats2.getMedian();</span>
+<span class="pc bpc" id="L142" title="5 of 8 branches missed.">            if (((median1DivMedian2 &gt; 1) &amp;&amp; ((median1DivMedian2 - 1) &gt; 0.2)) || </span>
                 ((median1DivMedian2 &lt; 1) &amp;&amp; (median1DivMedian2 &lt; 0.8))) {
-<span class="nc" id="L142">                performHistEq = true;</span>
-<span class="nc bnc" id="L143" title="All 8 branches missed.">            } else if (((meanDivMedian1 &gt; 1) &amp;&amp; ((meanDivMedian1 - 1) &gt; 0.2)) || </span>
+<span class="fc" id="L144">                performHistEq = true;</span>
+<span class="nc bnc" id="L145" title="All 8 branches missed.">            } else if (((meanDivMedian1 &gt; 1) &amp;&amp; ((meanDivMedian1 - 1) &gt; 0.2)) || </span>
                 ((meanDivMedian1 &lt; 1) &amp;&amp; (meanDivMedian1 &lt; 0.8))) {
-<span class="nc" id="L145">                performHistEq = true;</span>
-<span class="nc bnc" id="L146" title="All 8 branches missed.">            } else if (((meanDivMedian2 &gt; 1) &amp;&amp; ((meanDivMedian2 - 1) &gt; 0.2)) || </span>
+<span class="nc" id="L147">                performHistEq = true;</span>
+<span class="nc bnc" id="L148" title="All 8 branches missed.">            } else if (((meanDivMedian2 &gt; 1) &amp;&amp; ((meanDivMedian2 - 1) &gt; 0.2)) || </span>
                 ((meanDivMedian2 &lt; 1) &amp;&amp; (meanDivMedian2 &lt; 0.8))) {
-<span class="nc" id="L148">                performHistEq = true;</span>
+<span class="nc" id="L150">                performHistEq = true;</span>
             }
         }
-<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (performHistEq) {</span>
-<span class="nc" id="L152">            applyEqualization();</span>
-<span class="nc" id="L153">            otherImgHelper.applyEqualization();</span>
-<span class="nc" id="L154">            didApplyHistEq = true;</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (performHistEq) {</span>
+<span class="fc" id="L154">            applyEqualization();</span>
+<span class="fc" id="L155">            otherImgHelper.applyEqualization();</span>
+<span class="fc" id="L156">            didApplyHistEq = true;</span>
         }
-<span class="nc" id="L156">        return performHistEq;</span>
+<span class="fc" id="L158">        return performHistEq;</span>
     }
 
     public void applyEqualization() {
-<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (!didApplyHistEq) {</span>
-<span class="nc" id="L161">            HistogramEqualization hEq = new HistogramEqualization(imgGrey);</span>
-<span class="nc" id="L162">            hEq.applyFilter();</span>
-<span class="nc" id="L163">            didApplyHistEq = true;</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (!didApplyHistEq) {</span>
+<span class="fc" id="L163">            HistogramEqualization hEq = new HistogramEqualization(imgGrey);</span>
+<span class="fc" id="L164">            hEq.applyFilter();</span>
+<span class="fc" id="L165">            didApplyHistEq = true;</span>
         }
-<span class="nc" id="L165">    }</span>
+<span class="fc" id="L167">    }</span>
 
     /**
      * apply segmentation type type to the greyscale or color binned image
@@ -176,12 +178,12 @@ public class SegmentedImageHelper {
     public void applySegmentation(SegmentationType type, 
         boolean applyToBinnedImage) throws IOException, NoSuchAlgorithmException {
         
-<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (applyToBinnedImage) {</span>
-<span class="fc" id="L180">            applySegmentationToBinned(type);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (applyToBinnedImage) {</span>
+<span class="fc" id="L182">            applySegmentationToBinned(type);</span>
         } else {
-<span class="fc" id="L182">            applySegmentation(type);</span>
+<span class="fc" id="L184">            applySegmentation(type);</span>
         }
-<span class="fc" id="L184">    }</span>
+<span class="fc" id="L186">    }</span>
 
     /**
      * apply segmentation type type to the greyscale or color binned image
@@ -194,9 +196,7 @@ public class SegmentedImageHelper {
     protected void applySegmentationToBinned(SegmentationType type) throws
         IOException, NoSuchAlgorithmException {
 
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (type.equals(SegmentationType.BINARY)) {</span>
-<span class="nc" id="L198">            applySegmentationToBinned(type, 2);</span>
-<span class="fc bfc" id="L199" title="All 2 branches covered.">        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {</span>
 <span class="fc" id="L200">            applySegmentationToBinned(type, 2);</span>
         } else {
 <span class="fc" id="L202">            applySegmentationToBinned(type, -1);</span>
@@ -214,14 +214,12 @@ public class SegmentedImageHelper {
     protected void applySegmentation(SegmentationType type) throws IOException,
         NoSuchAlgorithmException {
 
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        if (type.equals(SegmentationType.BINARY)) {</span>
-<span class="nc" id="L218">            applySegmentation(type, 2);</span>
-<span class="fc bfc" id="L219" title="All 2 branches covered.">        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {</span>
-<span class="fc" id="L220">            applySegmentation(type, 2);</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {</span>
+<span class="fc" id="L218">            applySegmentation(type, 2);</span>
         } else {
-<span class="fc" id="L222">            applySegmentation(type, -1);</span>
+<span class="fc" id="L220">            applySegmentation(type, -1);</span>
         }
-<span class="fc" id="L224">    }</span>
+<span class="fc" id="L222">    }</span>
 
     /**
      * apply segmentation type type to the greyscale or color binned image
@@ -239,39 +237,41 @@ public class SegmentedImageHelper {
     protected void applySegmentationToBinned(SegmentationType type, int k)
         throws IOException, NoSuchAlgorithmException {
 
-<span class="fc" id="L242">        GreyscaleImage segImg = getBinnedSegmentationImage(type);</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (segImg != null) {</span>
-<span class="nc" id="L244">            log.warning(&quot;segmentation was already applied.  error?&quot;);</span>
+<span class="fc" id="L240">        GreyscaleImage segImg = getBinnedSegmentationImage(type);</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">        if (segImg != null) {</span>
+<span class="nc" id="L242">            log.warning(&quot;segmentation was already applied.  error?&quot;);</span>
             //return;
         }
 
-<span class="fc" id="L248">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L246">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
         
-<span class="fc" id="L251">        ImageSegmentation imageSegmentation = new ImageSegmentation();</span>
+<span class="fc" id="L249">        ImageSegmentation imageSegmentation = new ImageSegmentation();</span>
         
-<span class="fc" id="L253">        GreyscaleImage gsImg = getGreyscaleImageBinned();</span>
+<span class="fc" id="L251">        GreyscaleImage gsImg = getGreyscaleImageBinned();</span>
         
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {</span>
             
-<span class="fc" id="L257">            segImg = gsImg.copyImage();</span>
-<span class="fc" id="L258">            imageSegmentation.applyUsingKMPP(segImg, k);</span>
-<span class="fc" id="L259">            imgBinnedSegmentedMap.put(type, segImg);</span>
+<span class="fc" id="L255">            segImg = gsImg.copyImage();</span>
+<span class="fc" id="L256">            imageSegmentation.applyUsingKMPP(segImg, k);</span>
+<span class="fc" id="L257">            imgBinnedSegmentedMap.put(type, segImg);</span>
             
-<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {</span>
             
             // not expecting to use binned color images:
-<span class="nc" id="L264">            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);</span>
-<span class="nc" id="L265">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(imgBinned, 0.2f, true);</span>
-<span class="nc" id="L266">            imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);</span>
-<span class="nc" id="L267">            imgBinnedSegmentedMap.put(type, segImg);</span>
+<span class="nc" id="L262">            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);</span>
+<span class="nc" id="L263">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(</span>
+                imgBinned, fracLowerLimitPolarCIEXY, true);
+<span class="nc" id="L265">            imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);</span>
+<span class="nc" id="L266">            imgBinnedSegmentedMap.put(type, segImg);</span>
             
-<span class="pc bpc" id="L269" title="1 of 2 branches missed.">        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">            || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">            || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
             
             // not expecting to use binned color images:
-<span class="fc" id="L273">            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);</span>
-<span class="fc" id="L274">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(imgBinned, 0.2f, false);</span>
+<span class="fc" id="L272">            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);</span>
+<span class="fc" id="L273">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(</span>
+                imgBinned, fracLowerLimitPolarCIEXY, false);
 <span class="fc" id="L275">            imgBinnedSegmentedMap.put(type, segImg);</span>
             
 <span class="fc" id="L277">        } else {</span>
@@ -322,23 +322,23 @@ public class SegmentedImageHelper {
             
 <span class="pc bpc" id="L323" title="1 of 2 branches missed.">        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {</span>
             
-<span class="nc" id="L325">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 0.2f, </span>
-                true);
+<span class="nc" id="L325">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, </span>
+                fracLowerLimitPolarCIEXY, true);
 <span class="nc" id="L327">            imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);</span>
 <span class="nc" id="L328">            imgSegmentedMap.put(type, segImg);</span>
             
 <span class="fc bfc" id="L330" title="All 2 branches covered.">        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY) </span>
 <span class="pc bpc" id="L331" title="1 of 2 branches missed.">            || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
             
-<span class="fc" id="L333">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 0.2f, </span>
-                true);
+<span class="fc" id="L333">            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, </span>
+                fracLowerLimitPolarCIEXY, true);
 <span class="fc" id="L335">            imgSegmentedMap.put(type, segImg);</span>
             
         } else {
 <span class="nc" id="L338">            throw new UnsupportedOperationException(&quot;did not add impl for &quot; </span>
 <span class="nc" id="L339">                + type.name());</span>
         }
-<span class="pc bpc" id="L341" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        if (debug) {</span>
 <span class="fc" id="L342">            MiscDebug.writeImageCopy(segImg, &quot;segmented_&quot; + debugTag + &quot;_&quot; </span>
 <span class="fc" id="L343">                + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
         }
