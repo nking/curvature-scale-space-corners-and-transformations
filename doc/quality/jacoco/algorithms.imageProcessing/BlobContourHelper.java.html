@@ -24,20 +24,20 @@ public class BlobContourHelper {
     
 <span class="pc" id="L25">    protected String debugTag = &quot;&quot;;</span>
     
-<span class="fc" id="L27">    public BlobContourHelper(final BlobPerimeterHelper imgHelper) {</span>
+<span class="nc" id="L27">    public BlobContourHelper(final BlobPerimeterHelper imgHelper) {</span>
         
-<span class="fc" id="L29">        this.imgHelper = imgHelper;</span>
-<span class="fc" id="L30">    }</span>
+<span class="nc" id="L29">        this.imgHelper = imgHelper;</span>
+<span class="nc" id="L30">    }</span>
     
     public BlobContourHelper(final BlobPerimeterHelper imgHelper, 
-<span class="nc" id="L33">        final String debugTag) {</span>
+<span class="fc" id="L33">        final String debugTag) {</span>
         
-<span class="nc" id="L35">        this.imgHelper = imgHelper;</span>
+<span class="fc" id="L35">        this.imgHelper = imgHelper;</span>
         
-<span class="nc" id="L37">        debug = false;</span>
+<span class="fc" id="L37">        debug = false;</span>
         
-<span class="nc" id="L39">        this.debugTag = debugTag;</span>
-<span class="nc" id="L40">    }</span>
+<span class="fc" id="L39">        this.debugTag = debugTag;</span>
+<span class="fc" id="L40">    }</span>
     
     /**
      * generate contours (or retrieve cached contours) for blob perimeters from 
@@ -49,8 +49,8 @@ public class BlobContourHelper {
     public List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; generatePerimeterContours(
         SegmentationType type, boolean applyToBinnedImage) {
          
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (applyToBinnedImage) {</span>
-<span class="nc" id="L53">            return generatePerimeterContoursForBinned(type);</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (applyToBinnedImage) {</span>
+<span class="fc" id="L53">            return generatePerimeterContoursForBinned(type);</span>
         } else {
 <span class="fc" id="L55">            return generatePerimeterContoursUnbinned(type);</span>
         }
@@ -87,55 +87,52 @@ public class BlobContourHelper {
         
 <span class="fc" id="L88">        boolean useBinned = false;</span>
         
-<span class="fc" id="L90">BlobsAndContours.debug = true;</span>
-<span class="fc" id="L91">BlobsAndContours.debugTag = debugTag;</span>
-<span class="fc" id="L92">        contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);</span>
+<span class="fc" id="L90">        contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);</span>
+<span class="fc" id="L91">        </span>
+<span class="fc" id="L92">        segContoursMap.put(type, contours);</span>
         
-<span class="fc" id="L94">        segContoursMap.put(type, contours);</span>
-        
-<span class="fc" id="L96">        return contours;</span>
+<span class="fc" id="L94">        return contours;</span>
     }
-    
+<span class="fc" id="L96">    </span>
     protected List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; 
         generatePerimeterContoursForBinned(SegmentationType type) {
             
-<span class="nc" id="L102">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours = segBinnedContoursMap.get(type);</span>
+        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours = segBinnedContoursMap.get(type);
 
-<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (contours != null) {</span>
-<span class="nc" id="L105">            return contours;</span>
-        }
-            
-<span class="nc" id="L108">        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);</span>
+<span class="fc" id="L102">        if (contours != null) {</span>
+            return contours;
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        }</span>
+<span class="fc" id="L105">            </span>
+        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);
         
-<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (segImg == null) {</span>
+<span class="fc" id="L108">        if (segImg == null) {</span>
             //TODO: consider changing logic to perform this if needed
-<span class="nc" id="L112">            throw new IllegalArgumentException(&quot;segmented image hasn't been created yet.  error?&quot;);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            throw new IllegalArgumentException(&quot;segmented image hasn't been created yet.  error?&quot;);</span>
         }
-        
-<span class="nc" id="L115">        boolean useBinned = true;</span>
-<span class="nc" id="L116">BlobsAndContours.debug = true;</span>
-<span class="nc" id="L117">BlobsAndContours.debugTag = debugTag;</span>
-<span class="nc" id="L118">        contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);</span>
-        
-<span class="nc" id="L120">        segBinnedContoursMap.put(type, contours);</span>
-        
-<span class="nc" id="L122">        return contours;        </span>
-    }
+<span class="nc" id="L112">        </span>
+        boolean useBinned = true;
+
+<span class="fc" id="L115">        contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);</span>
+<span class="fc" id="L116">        </span>
+<span class="fc" id="L117">        segBinnedContoursMap.put(type, contours);</span>
+<span class="fc" id="L118">        </span>
+        return contours;        
+<span class="fc" id="L120">    }</span>
     
-    public int sumPointsOfInterest(SegmentationType segmentationType, 
+<span class="fc" id="L122">    public int sumPointsOfInterest(SegmentationType segmentationType, </span>
         boolean useBinned) {
         
-<span class="fc" id="L128">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours </span>
-<span class="fc" id="L129">            = getPerimeterContours(segmentationType, useBinned);</span>
+        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours 
+            = getPerimeterContours(segmentationType, useBinned);
         
-<span class="fc" id="L131">        int n = 0;</span>
-        
-<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : contours) {</span>
-<span class="fc" id="L134">            n += list.size();</span>
-<span class="fc" id="L135">        }</span>
-        
-<span class="fc" id="L137">        return n;</span>
-    }
+<span class="fc" id="L128">        int n = 0;</span>
+<span class="fc" id="L129">        </span>
+        for (List&lt;CurvatureScaleSpaceContour&gt; list : contours) {
+<span class="fc" id="L131">            n += list.size();</span>
+        }
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        </span>
+<span class="fc" id="L134">        return n;</span>
+<span class="fc" id="L135">    }</span>
 
-}
+<span class="fc" id="L137">}</span>
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

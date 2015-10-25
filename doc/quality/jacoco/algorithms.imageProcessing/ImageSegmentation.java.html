@@ -1315,7 +1315,7 @@ import java.util.logging.Logger;
     public List&lt;Set&lt;PairInt&gt;&gt; calculateUsingPolarCIEXYAndFrequency(ImageExt input,
         float fracFreqLimit, boolean useBlur) {
 
-<span class="pc bpc" id="L1318" title="1 of 2 branches missed.">        if (useBlur) {</span>
+<span class="fc bfc" id="L1318" title="All 2 branches covered.">        if (useBlur) {</span>
 <span class="fc" id="L1319">            ImageProcessor imageProcessor = new ImageProcessor();</span>
 <span class="fc" id="L1320">            imageProcessor.blur(input, 1.0f);</span>
         }
@@ -1354,20 +1354,20 @@ import java.util.logging.Logger;
         
 <span class="fc" id="L1355">        List&lt;Set&lt;PairInt&gt;&gt; groupList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;(greyPixelGroups.size());</span>
         
-<span class="pc bpc" id="L1357" title="1 of 2 branches missed.">        if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {</span>
-<span class="nc bnc" id="L1358" title="All 2 branches missed.">             if (points0.isEmpty()) {</span>
-<span class="nc" id="L1359">                 groupList.add(points0);</span>
+<span class="fc bfc" id="L1357" title="All 2 branches covered.">        if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {</span>
+<span class="pc bpc" id="L1358" title="1 of 2 branches missed.">             if (points0.isEmpty()) {</span>
+<span class="fc" id="L1359">                 groupList.add(points0);</span>
              }
-<span class="nc bnc" id="L1361" title="All 2 branches missed.">             if (!blackPixels.isEmpty()) {</span>
-<span class="nc" id="L1362">                 groupList.add(blackPixels);</span>
+<span class="pc bpc" id="L1361" title="1 of 2 branches missed.">             if (!blackPixels.isEmpty()) {</span>
+<span class="fc" id="L1362">                 groupList.add(blackPixels);</span>
              }
-<span class="nc bnc" id="L1364" title="All 2 branches missed.">             for (Set&lt;PairInt&gt; set : greyPixelGroups) {</span>
-<span class="nc" id="L1365">                groupList.add(set);</span>
-<span class="nc" id="L1366">             }</span>
-<span class="nc bnc" id="L1367" title="All 2 branches missed.">             if (!whitePixels.isEmpty()) {</span>
-<span class="nc" id="L1368">                 groupList.add(whitePixels);</span>
+<span class="fc bfc" id="L1364" title="All 2 branches covered.">             for (Set&lt;PairInt&gt; set : greyPixelGroups) {</span>
+<span class="fc" id="L1365">                groupList.add(set);</span>
+<span class="fc" id="L1366">             }</span>
+<span class="pc bpc" id="L1367" title="1 of 2 branches missed.">             if (!whitePixels.isEmpty()) {</span>
+<span class="fc" id="L1368">                 groupList.add(whitePixels);</span>
              }
-<span class="nc" id="L1370">             return groupList;</span>
+<span class="fc" id="L1370">             return groupList;</span>
         }
         
         /* ----- create a map of theta and frequency ----
@@ -1513,10 +1513,10 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1513" title="All 2 branches covered.">                    } else if (diffP == diffN) {</span>
 <span class="fc" id="L1514">                        int freqP = peaks.getY(currentPeakIdx);</span>
 <span class="fc" id="L1515">                        int freqN = peaks.getY(currentPeakIdx + 1);</span>
-<span class="pc bpc" id="L1516" title="1 of 2 branches missed.">                        if (freqP &lt; freqN) {</span>
+<span class="fc bfc" id="L1516" title="All 2 branches covered.">                        if (freqP &lt; freqN) {</span>
 <span class="fc" id="L1517">                            idx = currentPeakIdx;</span>
                         } else {
-<span class="nc" id="L1519">                            idx = currentPeakIdx + 1;</span>
+<span class="fc" id="L1519">                            idx = currentPeakIdx + 1;</span>
                         }
 <span class="fc" id="L1521">                    } else {</span>
 <span class="fc" id="L1522">                        idx = currentPeakIdx + 1;</span>
@@ -1881,10 +1881,10 @@ import java.util.logging.Logger;
 <span class="fc" id="L1881">            lastKey = key.intValue();</span>
 <span class="fc" id="L1882">            nInMap++;</span>
         }
-<span class="pc bpc" id="L1884" title="4 of 6 branches missed.">        if ((nInMap &gt; 0) &amp;&amp; isIncr &amp;&amp; (lastValue &gt; limit)) {</span>
+<span class="pc bpc" id="L1884" title="1 of 6 branches missed.">        if ((nInMap &gt; 0) &amp;&amp; isIncr &amp;&amp; (lastValue &gt; limit)) {</span>
             //checking value at theta=0 to make sure this is a peak
-<span class="nc" id="L1886">            Integer key = orderedThetaKeys[0];</span>
-<span class="nc bnc" id="L1887" title="All 2 branches missed.">            if (key.intValue() == 0) {</span>
+<span class="fc" id="L1886">            Integer key = orderedThetaKeys[0];</span>
+<span class="pc bpc" id="L1887" title="1 of 2 branches missed.">            if (key.intValue() == 0) {</span>
 <span class="nc" id="L1888">                Collection&lt;PairInt&gt; list = thetaPointMap.get(key);</span>
 <span class="nc bnc" id="L1889" title="All 2 branches missed.">                if (list == null) {</span>
 <span class="nc" id="L1890">                    peaks.add(lastKey, lastValue);</span>
@@ -1892,7 +1892,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L1892">                    peaks.add(lastKey, lastValue);</span>
                 }
 <span class="nc" id="L1894">            } else {</span>
-<span class="nc" id="L1895">                peaks.add(lastKey, lastValue);</span>
+<span class="fc" id="L1895">                peaks.add(lastKey, lastValue);</span>
             }
         }
         
@@ -1910,7 +1910,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1910" title="All 2 branches covered.">            if (key &lt; minKey) {</span>
 <span class="fc" id="L1911">                minKey = key;</span>
             }
-<span class="pc bpc" id="L1913" title="1 of 2 branches missed.">            if (key &gt; maxKey) {</span>
+<span class="fc bfc" id="L1913" title="All 2 branches covered.">            if (key &gt; maxKey) {</span>
 <span class="fc" id="L1914">                maxKey = key;</span>
             }
 <span class="fc" id="L1916">            nTot += entry.getValue().size();</span>
@@ -1928,7 +1928,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1928" title="All 2 branches covered.">            if (key &lt; minKey) {</span>
 <span class="fc" id="L1929">                minKey = key;</span>
             }
-<span class="pc bpc" id="L1931" title="1 of 2 branches missed.">            if (key &gt; maxKey) {</span>
+<span class="fc bfc" id="L1931" title="All 2 branches covered.">            if (key &gt; maxKey) {</span>
 <span class="fc" id="L1932">                maxKey = key;</span>
             }
 <span class="fc" id="L1934">            int y = entry.getValue().size();</span>
@@ -1947,8 +1947,8 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1947" title="All 2 branches covered.">        for (int i = minKey; i &lt;= maxKey; ++i) {</span>
 <span class="fc" id="L1948">            Integer key = Integer.valueOf(i);</span>
 <span class="fc" id="L1949">            Collection&lt;PairInt&gt; set = greyPixelMap.get(key);</span>
-<span class="pc bpc" id="L1950" title="1 of 2 branches missed.">            if (set == null) {</span>
-<span class="nc" id="L1951">                continue;</span>
+<span class="fc bfc" id="L1950" title="All 2 branches covered.">            if (set == null) {</span>
+<span class="fc" id="L1951">                continue;</span>
             }
 <span class="fc" id="L1953">            int y = set.size();</span>
 <span class="fc" id="L1954">            xPoints[count] = key.intValue();</span>

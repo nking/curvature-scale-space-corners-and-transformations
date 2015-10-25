@@ -29,27 +29,55 @@ public class BlobPerimeterHelper {
 <span class="pc" id="L29">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
         segBinnedBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="nc" id="L32">    public BlobPerimeterHelper(final ImageExt img) {</span>
-<span class="nc" id="L33">        imgHelper = new SegmentedImageHelper(img);</span>
-<span class="nc" id="L34">    }</span>
+<span class="pc" id="L32">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segLargeBlobsMap =      </span>
+        new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
+   
+<span class="pc" id="L35">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+        segLargeBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="fc" id="L36">    public BlobPerimeterHelper(final ImageExt img, final String debugTag) {</span>
-<span class="fc" id="L37">        imgHelper = new SegmentedImageHelper(img, debugTag);</span>
-<span class="fc" id="L38">    }</span>
+<span class="nc" id="L38">    public BlobPerimeterHelper(final ImageExt img) {</span>
+<span class="nc" id="L39">        imgHelper = new SegmentedImageHelper(img);</span>
+<span class="nc" id="L40">    }</span>
+    
+<span class="fc" id="L42">    public BlobPerimeterHelper(final ImageExt img, final String debugTag) {</span>
+<span class="fc" id="L43">        imgHelper = new SegmentedImageHelper(img, debugTag);</span>
+<span class="fc" id="L44">    }</span>
     
     public void createBinnedGreyscaleImage(int maxDimension) {
-<span class="nc" id="L41">        imgHelper.createBinnedGreyscaleImage(maxDimension);</span>
-<span class="nc" id="L42">    }</span>
+<span class="fc" id="L47">        imgHelper.createBinnedGreyscaleImage(maxDimension);</span>
+<span class="fc" id="L48">    }</span>
+    
+    /**
+     * change the larger limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseLargestGroupLimit(int limit) {
+<span class="fc" id="L58">        imgHelper.increaseLargestGroupLimit(limit);</span>
+<span class="fc" id="L59">    }</span>
+    
+    /**
+     * change the smallest limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseSmallestGroupLimit(int limit) {
+<span class="nc" id="L69">        imgHelper.increaseSmallestGroupLimit(limit);</span>
+<span class="nc" id="L70">    }</span>
 
     public boolean applyEqualizationIfNeededByComparison(SegmentedImageHelper 
         otherImgHelper) {
         
-<span class="nc" id="L47">        return imgHelper.applyEqualizationIfNeededByComparison(otherImgHelper);</span>
+<span class="nc" id="L75">        return imgHelper.applyEqualizationIfNeededByComparison(otherImgHelper);</span>
     }
 
     public void applyEqualization() {
-<span class="nc" id="L51">        imgHelper.applyEqualization();</span>
-<span class="nc" id="L52">    }</span>
+<span class="nc" id="L79">        imgHelper.applyEqualization();</span>
+<span class="nc" id="L80">    }</span>
 
     /**
      * apply segmentation type type to the greyscale or color binned image
@@ -63,51 +91,51 @@ public class BlobPerimeterHelper {
     public void applySegmentation(SegmentationType type, 
         boolean applyToBinnedImage) throws IOException, NoSuchAlgorithmException {
         
-<span class="fc" id="L66">        imgHelper.applySegmentation(type, applyToBinnedImage);</span>
-<span class="fc" id="L67">    }</span>
+<span class="fc" id="L94">        imgHelper.applySegmentation(type, applyToBinnedImage);</span>
+<span class="fc" id="L95">    }</span>
 
     public GreyscaleImage getSegmentationImage(SegmentationType type) {
-<span class="fc" id="L70">        return imgHelper.getSegmentationImage(type);</span>
+<span class="fc" id="L98">        return imgHelper.getSegmentationImage(type);</span>
     }
 
     public GreyscaleImage getBinnedSegmentationImage(SegmentationType type) {
-<span class="nc" id="L74">        return imgHelper.getBinnedSegmentationImage(type);</span>
+<span class="fc" id="L102">        return imgHelper.getBinnedSegmentationImage(type);</span>
     }
 
     public GreyscaleImage getGreyscaleImage(boolean getTheBinned) {
-<span class="fc" id="L78">        return imgHelper.getGreyscaleImage(getTheBinned);</span>
+<span class="fc" id="L106">        return imgHelper.getGreyscaleImage(getTheBinned);</span>
     }
 
     public GreyscaleImage getGreyscaleImage() {
-<span class="fc" id="L82">        return imgHelper.getGreyscaleImage();</span>
+<span class="fc" id="L110">        return imgHelper.getGreyscaleImage();</span>
     }
     
     public ImageExt getImage() {
-<span class="fc" id="L86">        return imgHelper.getImage();</span>
+<span class="fc" id="L114">        return imgHelper.getImage();</span>
     }
 
     public GreyscaleImage getGreyscaleImageBinned() {
-<span class="nc" id="L90">        return imgHelper.getGreyscaleImageBinned();</span>
+<span class="fc" id="L118">        return imgHelper.getGreyscaleImageBinned();</span>
     }
 
     public int getSmallestGroupLimit() {
-<span class="nc" id="L94">        return imgHelper.getSmallestGroupLimit();</span>
+<span class="fc" id="L122">        return imgHelper.getSmallestGroupLimit();</span>
     }
 
     public int getLargestGroupLimit() {
-<span class="nc" id="L98">        return imgHelper.getLargestGroupLimit();</span>
+<span class="fc" id="L126">        return imgHelper.getLargestGroupLimit();</span>
     }
 
     public int getSmallestGroupLimitBinned() {
-<span class="nc" id="L102">        return imgHelper.getSmallestGroupLimitBinned();</span>
+<span class="fc" id="L130">        return imgHelper.getSmallestGroupLimitBinned();</span>
     }
 
     public int getLargestGroupLimitBinned() {
-<span class="nc" id="L106">        return imgHelper.getLargestGroupLimitBinned();</span>
+<span class="fc" id="L134">        return imgHelper.getLargestGroupLimitBinned();</span>
     }
 
     public int getBinFactor() {
-<span class="nc" id="L110">        return imgHelper.getBinFactor();</span>
+<span class="nc" id="L138">        return imgHelper.getBinFactor();</span>
     }
 
     /**
@@ -118,139 +146,182 @@ public class BlobPerimeterHelper {
      * @return
      */
     public int getBinFactor(boolean getForBinned) {
-<span class="fc" id="L121">        return imgHelper.getBinFactor(getForBinned);</span>
+<span class="fc" id="L149">        return imgHelper.getBinFactor(getForBinned);</span>
     }
 
     public List&lt;PairIntArray&gt; getBlobPerimeters(SegmentationType type, boolean 
         useBinnedImage) {
                 
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (useBinnedImage) {</span>
-<span class="nc" id="L128">            return getBinnedBlobPerimeters(type);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (useBinnedImage) {</span>
+<span class="fc" id="L156">            return getBinnedBlobPerimeters(type);</span>
         } else {
-<span class="fc" id="L130">            return getUnbinnedBlobPerimeters(type);</span>
+<span class="fc" id="L158">            return getUnbinnedBlobPerimeters(type);</span>
         }
        
     }
 
     private List&lt;PairIntArray&gt; getUnbinnedBlobPerimeters(SegmentationType type) {
                 
-<span class="fc" id="L137">        List&lt;PairIntArray&gt; blobPerimeters = segBlobPerimetersMap.get(type);</span>
+<span class="fc" id="L165">        List&lt;PairIntArray&gt; blobPerimeters = null;</span>
         
-<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (blobPerimeters != null) {</span>
-<span class="fc" id="L140">            return blobPerimeters;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="fc" id="L168">            blobPerimeters = segLargeBlobPerimetersMap.get(type);</span>
+        } else {
+<span class="fc" id="L170">            blobPerimeters = segBlobPerimetersMap.get(type);</span>
         }
         
-<span class="fc" id="L143">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBlobsMap.get(type);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (blobPerimeters != null) {</span>
+<span class="fc" id="L174">            return blobPerimeters;</span>
+        }
         
-<span class="fc" id="L145">        boolean useBinned = false;</span>
+<span class="fc" id="L177">        List&lt;Set&lt;PairInt&gt;&gt; blobs = null;</span>
         
-<span class="fc" id="L147">        boolean discardWhenCavityIsSmallerThanBorder = true;</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="fc" id="L180">            blobs = segLargeBlobsMap.get(type);</span>
+        } else {
+<span class="fc" id="L182">            blobs = segBlobsMap.get(type);</span>
+        }
         
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (blobs == null) {</span>
+<span class="fc" id="L185">        boolean useBinned = false;</span>
+        
+<span class="fc" id="L187">        boolean discardWhenCavityIsSmallerThanBorder = true;</span>
+        
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (blobs == null) {</span>
             
-<span class="fc" id="L151">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+<span class="fc" id="L191">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
                 imgHelper, type, useBinned);
             
-<span class="fc" id="L154">            segBlobsMap.put(type, blobs);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="fc" id="L195">                segLargeBlobsMap.put(type, blobs);</span>
+            } else {
+<span class="fc" id="L197">                segBlobsMap.put(type, blobs);</span>
+            }
         }
         
-<span class="fc" id="L157">        blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
+<span class="fc" id="L201">        blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
             imgHelper, type, blobs, useBinned,
             discardWhenCavityIsSmallerThanBorder);
         
-<span class="fc" id="L161">        segBlobPerimetersMap.put(type, blobPerimeters);</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="fc" id="L206">            segLargeBlobPerimetersMap.put(type, blobPerimeters);</span>
         
-        // blobs may have been removed, so re-put them
-<span class="fc" id="L164">        segBlobsMap.put(type, blobs);</span>
+            // blobs may have been removed, so re-put them
+<span class="fc" id="L209">            segLargeBlobsMap.put(type, blobs);</span>
+        } else {
+<span class="fc" id="L211">            segBlobPerimetersMap.put(type, blobPerimeters);</span>
         
-<span class="fc" id="L166">        return blobPerimeters;</span>
+            // blobs may have been removed, so re-put them
+<span class="fc" id="L214">            segBlobsMap.put(type, blobs);</span>
+        }
+        
+<span class="fc" id="L217">        return blobPerimeters;</span>
     }
 
     private List&lt;PairIntArray&gt; getBinnedBlobPerimeters(SegmentationType type) {
         
-<span class="nc" id="L171">        List&lt;PairIntArray&gt; blobPerimeters = segBinnedBlobPerimetersMap.get(type);</span>
-        
-<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (blobPerimeters != null) {</span>
-<span class="nc" id="L174">            return blobPerimeters;</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="nc" id="L223">            throw new IllegalStateException(</span>
+            &quot;Cannot use segmentation type COLOR_POLARCIEXY_LARGE with binned preference&quot;);
         }
         
-<span class="nc" id="L177">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
+<span class="fc" id="L227">        List&lt;PairIntArray&gt; blobPerimeters = segBinnedBlobPerimetersMap.get(type);</span>
         
-<span class="nc" id="L179">        boolean useBinned = true;</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (blobPerimeters != null) {</span>
+<span class="nc" id="L230">            return blobPerimeters;</span>
+        }
         
-<span class="nc" id="L181">        boolean discardWhenCavityIsSmallerThanBorder = true;</span>
+<span class="fc" id="L233">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
         
-<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (blobs == null) {</span>
+<span class="fc" id="L235">        boolean useBinned = true;</span>
+        
+<span class="fc" id="L237">        boolean discardWhenCavityIsSmallerThanBorder = true;</span>
+        
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">        if (blobs == null) {</span>
             
-<span class="nc" id="L185">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+<span class="fc" id="L241">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
                 imgHelper, type, useBinned);
             
-<span class="nc" id="L188">            segBinnedBlobsMap.put(type, blobs);</span>
+<span class="fc" id="L244">            segBinnedBlobsMap.put(type, blobs);</span>
         }
         
-<span class="nc" id="L191">        blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
+<span class="fc" id="L247">        blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
             imgHelper, type, blobs, useBinned,
             discardWhenCavityIsSmallerThanBorder);
         
-<span class="nc" id="L195">        segBinnedBlobPerimetersMap.put(type, blobPerimeters);</span>
+<span class="fc" id="L251">        segBinnedBlobPerimetersMap.put(type, blobPerimeters);</span>
         
         // blobs may have been removed, so re-put them
-<span class="nc" id="L198">        segBinnedBlobsMap.put(type, blobs);</span>
+<span class="fc" id="L254">        segBinnedBlobsMap.put(type, blobs);</span>
             
-<span class="nc" id="L200">        return blobPerimeters;        </span>
+<span class="fc" id="L256">        return blobPerimeters;        </span>
     }
     
     public List&lt;Set&lt;PairInt&gt;&gt; getBlobs(SegmentationType type, boolean 
         useBinnedImage) {
                 
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (useBinnedImage) {</span>
-<span class="nc" id="L207">            return getBinnedBlobs(type);</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (useBinnedImage) {</span>
+<span class="nc" id="L263">            return getBinnedBlobs(type);</span>
         } else {
-<span class="fc" id="L209">            return getUnbinnedBlobs(type);</span>
+<span class="fc" id="L265">            return getUnbinnedBlobs(type);</span>
         }
        
     }
 
     private List&lt;Set&lt;PairInt&gt;&gt; getBinnedBlobs(SegmentationType type) {
         
-<span class="nc" id="L216">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
-        
-<span class="nc" id="L218">        boolean useBinned = true;</span>
-                
-<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (blobs == null) {</span>
-            
-<span class="nc" id="L222">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
-                imgHelper, type, useBinned);
-            
-<span class="nc" id="L225">            segBinnedBlobsMap.put(type, blobs);</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="nc" id="L273">            throw new IllegalStateException(</span>
+            &quot;Cannot use segmentation type COLOR_POLARCIEXY_LARGE with binned preference&quot;);
         }
         
-<span class="nc" id="L228">        return blobs;            </span>
+<span class="nc" id="L277">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
+        
+<span class="nc" id="L279">        boolean useBinned = true;</span>
+                
+<span class="nc bnc" id="L281" title="All 2 branches missed.">        if (blobs == null) {</span>
+            
+<span class="nc" id="L283">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+                imgHelper, type, useBinned);
+            
+<span class="nc" id="L286">            segBinnedBlobsMap.put(type, blobs);</span>
+        }
+        
+<span class="nc" id="L289">        return blobs;            </span>
     }
 
     private List&lt;Set&lt;PairInt&gt;&gt; getUnbinnedBlobs(SegmentationType type) {
         
-<span class="fc" id="L233">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBlobsMap.get(type);</span>
+<span class="fc" id="L294">        List&lt;Set&lt;PairInt&gt;&gt; blobs = null;</span>
         
-<span class="fc" id="L235">        boolean useBinned = false;</span>
-                
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (blobs == null) {</span>
-            
-<span class="nc" id="L239">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
-                imgHelper, type, useBinned);
-            
-<span class="nc" id="L242">            segBlobsMap.put(type, blobs);</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="fc" id="L297">            blobs = segLargeBlobsMap.get(type);</span>
+        } else {
+<span class="fc" id="L299">            blobs = segBlobsMap.get(type);</span>
         }
         
-<span class="fc" id="L245">        return blobs;</span>
+<span class="fc" id="L302">        boolean useBinned = false;</span>
+                
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        if (blobs == null) {</span>
+            
+<span class="fc" id="L306">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+                imgHelper, type, useBinned);
+            
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">            if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="nc" id="L310">                segLargeBlobsMap.put(type, blobs);</span>
+            } else {
+<span class="fc" id="L312">                segBlobsMap.put(type, blobs);</span>
+            }
+        }
+        
+<span class="fc" id="L316">        return blobs;</span>
     }
     
     public boolean isInDebugMode() {
-<span class="fc" id="L249">        return imgHelper.isInDebugMode();</span>
+<span class="fc" id="L320">        return imgHelper.isInDebugMode();</span>
     }
 
     public String getDebugTag() {
-<span class="fc" id="L253">        return imgHelper.getDebugTag();</span>
+<span class="fc" id="L324">        return imgHelper.getDebugTag();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

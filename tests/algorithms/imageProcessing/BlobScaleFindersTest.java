@@ -16,7 +16,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void est0() throws Exception {
+    public void test0() throws Exception {
 
         boolean useBinned = false;
 
@@ -59,7 +59,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void est1() throws Exception {
+    public void test1() throws Exception {
 
         boolean useBinned = false;
 
@@ -101,7 +101,7 @@ public class BlobScaleFindersTest extends TestCase {
         assertTrue(Math.abs(params.getScale() - 1) < 0.1);
     }
 
-    public void est2() throws Exception {
+    public void test2() throws Exception {
 
         boolean useBinned = false;
 
@@ -143,7 +143,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void est3() throws Exception {
+    public void test3() throws Exception {
 
         boolean useBinned = false;
 
@@ -185,7 +185,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void est4() throws Exception {
+    public void test4() throws Exception {
 
         boolean useBinned = true;
 
@@ -229,7 +229,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
     
-    public void est6() throws Exception {
+    public void test6() throws Exception {
 
         boolean useBinned = false;
 
@@ -272,7 +272,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void est7() throws Exception {
+    public void test7() throws Exception {
 
         boolean useBinned = false;
 

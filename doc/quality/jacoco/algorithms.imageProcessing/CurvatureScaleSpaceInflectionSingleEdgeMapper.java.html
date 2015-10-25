@@ -159,8 +159,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L159">        List&lt;CurvatureScaleSpaceContour&gt; result = </span>
 <span class="fc" id="L160">            contourFinder.findContours(scaleSpaceImage, edgeIndex);</span>
 
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
-<span class="nc" id="L163">            return result;</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (result.isEmpty()) {</span>
+<span class="fc" id="L163">            return result;</span>
         }
         
 <span class="fc" id="L166">        correctPeaks(result, edge);</span>

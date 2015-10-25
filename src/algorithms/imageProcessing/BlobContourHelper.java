@@ -87,8 +87,6 @@ public class BlobContourHelper {
         
         boolean useBinned = false;
         
-BlobsAndContours.debug = true;
-BlobsAndContours.debugTag = debugTag;
         contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);
         
         segContoursMap.put(type, contours);
@@ -113,8 +111,7 @@ BlobsAndContours.debugTag = debugTag;
         }
         
         boolean useBinned = true;
-BlobsAndContours.debug = true;
-BlobsAndContours.debugTag = debugTag;
+
         contours = BlobsAndContours.populateContours(imgHelper, type, useBinned);
         
         segBinnedContoursMap.put(type, contours);

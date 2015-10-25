@@ -51,8 +51,8 @@ public class ContourFinder {
 <span class="fc" id="L51">        List&lt;CurvatureScaleSpaceContour&gt; contours = new ArrayList&lt;CurvatureScaleSpaceContour&gt;();</span>
 
 <span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if ((scaleSpaceImage == null)</span>
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">            || (scaleSpaceImage.getImageSigmas().length == 0)) {</span>
-<span class="nc" id="L55">            return contours;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            || (scaleSpaceImage.getImageSigmas().length == 0)) {</span>
+<span class="fc" id="L55">            return contours;</span>
         }
 
 <span class="fc" id="L58">        ScaleSpaceCurveImage space = scaleSpaceImage.copy();</span>
@@ -505,7 +505,7 @@ public class ContourFinder {
 
             // TODO: improve correction for wrap around.
             // Also, this only includes peaks found at end, not beginning.
-<span class="pc bpc" id="L508" title="1 of 8 branches missed.">            if ((leftIndex &gt; -1) &amp;&amp; (leftIndex == (t.length - 1))</span>
+<span class="fc bfc" id="L508" title="All 8 branches covered.">            if ((leftIndex &gt; -1) &amp;&amp; (leftIndex == (t.length - 1))</span>
                 &amp;&amp; (t[leftIndex] &gt;= 0.9)
                 &amp;&amp; (t[0] &lt; 0.1)) {
 <span class="fc" id="L511">                rightIndex = 0;</span>
@@ -598,20 +598,20 @@ public class ContourFinder {
 
 <span class="fc" id="L599">                contours.remove(right);</span>
 <span class="fc" id="L600">                resort = true;</span>
-<span class="pc bpc" id="L601" title="1 of 4 branches missed.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="fc bfc" id="L601" title="All 4 branches covered.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
 
 <span class="fc" id="L603">                contours.remove(left);</span>
 <span class="fc" id="L604">                resort = true;</span>
             } else {
 
-<span class="pc bpc" id="L607" title="2 of 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L607" title="1 of 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
                     // left has 1 peak
 <span class="fc" id="L609">                    contours.remove(right);</span>
 <span class="fc" id="L610">                    resort = true;</span>
-<span class="nc bnc" id="L611" title="All 4 branches missed.">                } else if (rightIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L611" title="2 of 4 branches missed.">                } else if (rightIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
                     // right has 1 peak
-<span class="nc" id="L613">                    contours.remove(left);</span>
-<span class="nc" id="L614">                    resort = true;</span>
+<span class="fc" id="L613">                    contours.remove(left);</span>
+<span class="fc" id="L614">                    resort = true;</span>
 <span class="nc bnc" id="L615" title="All 4 branches missed.">                } else if (!rightIsTaller &amp;&amp; !leftIsTaller</span>
 <span class="nc bnc" id="L616" title="All 2 branches missed.">                    &amp;&amp; (right.getPeakDetails().length == 2)</span>
 <span class="nc bnc" id="L617" title="All 2 branches missed.">                    &amp;&amp; (left.getPeakDetails().length == 2)) {</span>

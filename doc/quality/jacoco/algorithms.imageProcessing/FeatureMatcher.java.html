@@ -1163,17 +1163,17 @@ public class FeatureMatcher {
 <span class="fc" id="L1163">            Errors.populateYErrorsBySqrt(values));</span>
         
 <span class="fc" id="L1165">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
-<span class="pc bpc" id="L1166" title="1 of 4 branches missed.">        if ((yMaxIdx &gt; -1) &amp;&amp; (hist.getYHist()[yMaxIdx] == 1)) {</span>
+<span class="fc bfc" id="L1166" title="All 4 branches covered.">        if ((yMaxIdx &gt; -1) &amp;&amp; (hist.getYHist()[yMaxIdx] == 1)) {</span>
 <span class="fc" id="L1167">            hist = Histogram.createSimpleHistogram(40.f, values, </span>
 <span class="fc" id="L1168">                Errors.populateYErrorsBySqrt(values));</span>
 <span class="fc" id="L1169">            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         }
         
         float thetaDiff;
-<span class="pc bpc" id="L1173" title="1 of 2 branches missed.">        if (yMaxIdx == -1) {</span>
-<span class="nc" id="L1174">            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);</span>
-<span class="nc" id="L1175">            thetaDiff = thetaDiffMeanStDev[0];</span>
-<span class="nc" id="L1176">        } else {</span>
+<span class="fc bfc" id="L1173" title="All 2 branches covered.">        if (yMaxIdx == -1) {</span>
+<span class="fc" id="L1174">            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);</span>
+<span class="fc" id="L1175">            thetaDiff = thetaDiffMeanStDev[0];</span>
+<span class="fc" id="L1176">        } else {</span>
 <span class="fc" id="L1177">            thetaDiff = hist.getXHist()[yMaxIdx];</span>
         }
         
