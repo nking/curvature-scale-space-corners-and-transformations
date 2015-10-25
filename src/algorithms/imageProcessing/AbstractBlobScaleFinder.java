@@ -8,6 +8,7 @@ import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -214,19 +215,26 @@ public abstract class AbstractBlobScaleFinder {
             
             sum += weights[i];
         }
-        
-        double tot = 0;
-        
-        for (int i = 0; i < compStats.size(); ++i) {
+
+        if (sum > 0) {
             
-            double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
+            double tot = 0;
+
+            for (int i = 0; i < compStats.size(); ++i) {
+
+                double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
+
+                weights[i] = (float) div;
+
+                tot += div;
+            }
+ 
+            assert(Math.abs(tot - 1.) < 0.03);
             
-            weights[i] = (float) div;
-            
-            tot += div;
+        } else {
+            float a = 1.f/weights.length;
+            Arrays.fill(weights, a);
         }
-        
-        assert(Math.abs(tot - 1.) < 0.03);
         
         TransformationParameters params = tc.calulateEuclidean(matchedXY1, 
             matchedXY2, weights, centroidX1, centroidY1, 
@@ -260,11 +268,17 @@ public abstract class AbstractBlobScaleFinder {
                 / compStat.getSumIntensitySqDiff();
         }
         
-        for (int i = 0; i < compStats.size(); ++i) {
-            
-            double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
-            
-            weights[i] = (float) div;
+        if (sum > 0) {
+            for (int i = 0; i < compStats.size(); ++i) {
+
+                double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
+
+                weights[i] = (float) div;
+            }
+        } else {
+            float a = 1.f/weights.length;
+            Arrays.fill(weights, a);
+            Arrays.fill(errDivInt, 0);
         }
         
         float[] wghtsMeanAndStDev = MiscMath.getAvgAndStDev(weights);

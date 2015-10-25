@@ -13,7 +13,7 @@ Story: Determine scale w/ blob perimeters and corners
 
     time estimate: 
         minimum: 3 days
-        maximum: 2 weeks
+        maximum: 2 weeks + 1 day
 
     amount of time used: 
 
@@ -32,7 +32,7 @@ Story: Determine scale w/ blob perimeters and corners
         so the more detailed specification for Task 3 and Task 4 
         should not take long before implementation.
 
----------------------------------------------------------------------
+------------------------------------------------------------------
 Task 1:
     goal: Refactor the current BlobScaleFinder and associated classes
        to make the current algorithm available as an alternative choice,
@@ -191,7 +191,7 @@ Task 3:
          1.5 days so far
 
     state of completion:
-         rough draft complete, needs more testing
+         rough draft complete, testing, and need to change tidy up logging and debugging code
 
     comments:
 
@@ -377,7 +377,7 @@ Task 4:
        2.5 days so far
 
     state of completion:
-       rough draft is complete, needs more testing
+       rough draft complete, testing, and need to change tidy up logging and debugging code
 
     comments:
               
@@ -465,7 +465,7 @@ Task 5:
        < 1.5 days
 
     state of completion:
-        rough draft is complete
+       rough draft complete, testing, and need to change tidy up logging and debugging code
 
     comments:
               
@@ -564,4 +564,28 @@ Task 6:
 
     comments:
               
+------------------------------------------------------------------
+Task 7:
+    goal: Add a segmentation to BlobScaleFinderWrapper for larger
+        blob ranges w/ existing polar cie xy segmented images.
+      
+    details:  
+
+       BlobScaleFinderWrapper tries several different segmentation and 
+           points of interest methods and could use one which is better
+           for large areas
+
+       create SegmentationType.COLOR_POLARCIEXY_LARGE and logic for it in
+       BlobScaleFinderWrapper and associated classes
+           
+       Add tests for the change
+
+    time estimate: < 1 day
+  
+    amount of time used: 
+
+    state of completion: 
+       rough draft is complete
+
+    comments:
 ---------------------------------------------------------------------

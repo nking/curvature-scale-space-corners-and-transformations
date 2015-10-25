@@ -77,6 +77,28 @@ public class SegmentedImageHelper {
         this.debugTag = debugTag;
     }
 
+    /**
+     * change the larger limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseLargestGroupLimit(int limit) {
+        largestGroupLimit = limit;
+    }
+    
+    /**
+     * change the smallest limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseSmallestGroupLimit(int limit) {
+        smallestGroupLimit = limit;
+    }
+    
     public void createBinnedGreyscaleImage(int maxDimension) {
         
         if (imgGreyBinned != null) {
@@ -176,9 +198,7 @@ public class SegmentedImageHelper {
             applySegmentationToBinned(type, 2);
         } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             applySegmentationToBinned(type, 2);
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
-            applySegmentationToBinned(type, -1);
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
+        } else {
             applySegmentationToBinned(type, -1);
         }
     }
@@ -198,9 +218,7 @@ public class SegmentedImageHelper {
             applySegmentation(type, 2);
         } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             applySegmentation(type, 2);
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
-            applySegmentation(type, -1);
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
+        } else {
             applySegmentation(type, -1);
         }
     }
@@ -234,19 +252,7 @@ public class SegmentedImageHelper {
         
         GreyscaleImage gsImg = getGreyscaleImageBinned();
         
-        if (type.equals(SegmentationType.BINARY)) {
-            
-            int scl = 1; //20/binFactor;
-            if (scl == 0) {
-                scl = 1;
-            }
-            
-            segImg = gsImg.copyImage();
-            imageSegmentation.applyUsingKMPP(segImg, 2);
-            imageProcessor.applyAdaptiveMeanThresholding(segImg, scl);
-            imgBinnedSegmentedMap.put(type, segImg);
-            
-        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             
             segImg = gsImg.copyImage();
             imageSegmentation.applyUsingKMPP(segImg, k);
@@ -260,7 +266,8 @@ public class SegmentedImageHelper {
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgBinnedSegmentedMap.put(type, segImg);
             
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
+        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)
+            || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
             
             // not expecting to use binned color images:
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
@@ -305,17 +312,7 @@ public class SegmentedImageHelper {
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
-        if (type.equals(SegmentationType.BINARY)) {
-            
-            //TODO: replace w/ resolution based scl
-            int scl = 1;
-            segImg = imgGrey.copyImage();
-            imageSegmentation.applyUsingKMPP(segImg, 2);
-            imageProcessor.blur(segImg, SIGMA.ZEROPOINTSEVENONE);
-            imageProcessor.applyAdaptiveMeanThresholding(segImg, scl);
-            imgSegmentedMap.put(type, segImg);
-            
-        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             
             segImg = imgGrey.copyImage();
             // expecting k=2
@@ -330,7 +327,8 @@ public class SegmentedImageHelper {
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgSegmentedMap.put(type, segImg);
             
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
+        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY) 
+            || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
             
             segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 0.2f, 
                 true);
@@ -388,7 +386,7 @@ public class SegmentedImageHelper {
         //for now throwing exception while testing
         if (imgGreyBinned == null) {
             throw new IllegalStateException(
-            "binned image is null.  use createBinnedGreyscaleImage(...)");
+            "binned image is null.  use createBinnedGreyscaleImage(...) first.");
         }
         
         return imgGreyBinned;

@@ -1,6 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -8,11 +13,14 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class BlobContoursScaleFinderTest extends TestCase {
-
+public class BlobScaleFinderWrapperTest extends TestCase {
+    
     private Logger log = Logger.getLogger(this.getClass().getName());
+    
+    public BlobScaleFinderWrapperTest() {
+    }
 
-    public void testFindScaleAdapMeans() throws Exception {
+    public void test0() throws Exception {
 
         boolean rotate = true;
         

@@ -29,6 +29,12 @@ public class BlobPerimeterHelper {
     private final Map<SegmentationType, List<PairIntArray>> 
         segBinnedBlobPerimetersMap = new HashMap<SegmentationType, List<PairIntArray>>();
     
+    private final Map<SegmentationType, List<Set<PairInt>>> segLargeBlobsMap =      
+        new HashMap<SegmentationType, List<Set<PairInt>>>();
+   
+    private final Map<SegmentationType, List<PairIntArray>> 
+        segLargeBlobPerimetersMap = new HashMap<SegmentationType, List<PairIntArray>>();
+    
     public BlobPerimeterHelper(final ImageExt img) {
         imgHelper = new SegmentedImageHelper(img);
     }
@@ -39,6 +45,28 @@ public class BlobPerimeterHelper {
     
     public void createBinnedGreyscaleImage(int maxDimension) {
         imgHelper.createBinnedGreyscaleImage(maxDimension);
+    }
+    
+    /**
+     * change the larger limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseLargestGroupLimit(int limit) {
+        imgHelper.increaseLargestGroupLimit(limit);
+    }
+    
+    /**
+     * change the smallest limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseSmallestGroupLimit(int limit) {
+        imgHelper.increaseSmallestGroupLimit(limit);
     }
 
     public boolean applyEqualizationIfNeededByComparison(SegmentedImageHelper 
@@ -134,13 +162,25 @@ public class BlobPerimeterHelper {
 
     private List<PairIntArray> getUnbinnedBlobPerimeters(SegmentationType type) {
                 
-        List<PairIntArray> blobPerimeters = segBlobPerimetersMap.get(type);
+        List<PairIntArray> blobPerimeters = null;
+        
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+            blobPerimeters = segLargeBlobPerimetersMap.get(type);
+        } else {
+            blobPerimeters = segBlobPerimetersMap.get(type);
+        }
         
         if (blobPerimeters != null) {
             return blobPerimeters;
         }
         
-        List<Set<PairInt>> blobs = segBlobsMap.get(type);
+        List<Set<PairInt>> blobs = null;
+        
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+            blobs = segLargeBlobsMap.get(type);
+        } else {
+            blobs = segBlobsMap.get(type);
+        }
         
         boolean useBinned = false;
         
@@ -151,22 +191,38 @@ public class BlobPerimeterHelper {
             blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(
                 imgHelper, type, useBinned);
             
-            segBlobsMap.put(type, blobs);
+            if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+                segLargeBlobsMap.put(type, blobs);
+            } else {
+                segBlobsMap.put(type, blobs);
+            }
         }
         
         blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(
             imgHelper, type, blobs, useBinned,
             discardWhenCavityIsSmallerThanBorder);
         
-        segBlobPerimetersMap.put(type, blobPerimeters);
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+            segLargeBlobPerimetersMap.put(type, blobPerimeters);
         
-        // blobs may have been removed, so re-put them
-        segBlobsMap.put(type, blobs);
+            // blobs may have been removed, so re-put them
+            segLargeBlobsMap.put(type, blobs);
+        } else {
+            segBlobPerimetersMap.put(type, blobPerimeters);
+        
+            // blobs may have been removed, so re-put them
+            segBlobsMap.put(type, blobs);
+        }
         
         return blobPerimeters;
     }
 
     private List<PairIntArray> getBinnedBlobPerimeters(SegmentationType type) {
+        
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+            throw new IllegalStateException(
+            "Cannot use segmentation type COLOR_POLARCIEXY_LARGE with binned preference");
+        }
         
         List<PairIntArray> blobPerimeters = segBinnedBlobPerimetersMap.get(type);
         
@@ -213,6 +269,11 @@ public class BlobPerimeterHelper {
 
     private List<Set<PairInt>> getBinnedBlobs(SegmentationType type) {
         
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+            throw new IllegalStateException(
+            "Cannot use segmentation type COLOR_POLARCIEXY_LARGE with binned preference");
+        }
+        
         List<Set<PairInt>> blobs = segBinnedBlobsMap.get(type);
         
         boolean useBinned = true;
@@ -230,7 +291,13 @@ public class BlobPerimeterHelper {
 
     private List<Set<PairInt>> getUnbinnedBlobs(SegmentationType type) {
         
-        List<Set<PairInt>> blobs = segBlobsMap.get(type);
+        List<Set<PairInt>> blobs = null;
+        
+        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+            blobs = segLargeBlobsMap.get(type);
+        } else {
+            blobs = segBlobsMap.get(type);
+        }
         
         boolean useBinned = false;
                 
@@ -239,7 +306,11 @@ public class BlobPerimeterHelper {
             blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(
                 imgHelper, type, useBinned);
             
-            segBlobsMap.put(type, blobs);
+            if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+                segLargeBlobsMap.put(type, blobs);
+            } else {
+                segBlobsMap.put(type, blobs);
+            }
         }
         
         return blobs;

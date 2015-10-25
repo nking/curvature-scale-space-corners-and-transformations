@@ -42,6 +42,12 @@ public class BlobsAndPerimeters {
             imgHelper.getLargestGroupLimitBinned() : 
             imgHelper.getLargestGroupLimit();
         
+        //TODO: refactor to use limits differently.  hard wiring an override here
+        if (!useBinned && type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
+            smallestGroupLimit = 5000;
+            largestGroupLimit = 100000;
+        }
+        
         GreyscaleImage segImg = useBinned ?
             imgHelper.getBinnedSegmentationImage(type) :
             imgHelper.getSegmentationImage(type);

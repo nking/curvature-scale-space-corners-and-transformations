@@ -66,6 +66,8 @@ public class BlobScaleFinderWrapper {
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {
 
+        debug = true;
+        
         img1Helper = new BlobPerimeterHelper(img1, "1");
 
         img2Helper = new BlobPerimeterHelper(img2, "2");
@@ -73,9 +75,9 @@ public class BlobScaleFinderWrapper {
         features1 = new IntensityFeatures(img1, 5, true);
 
         features2 = new IntensityFeatures(img2, 5, true);
-
+        
         skipBinnedImages = true;
-        useBinned1= false;
+        useBinned1 = false;
         useBinned2 = false;
 
         featuresBinned1 = null;
@@ -95,6 +97,8 @@ public class BlobScaleFinderWrapper {
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
         startWithBinnedImages) {
 
+        debug = true;
+        
         img1Helper = new BlobPerimeterHelper(img1, "1");
 
         img2Helper = new BlobPerimeterHelper(img2, "2");
@@ -262,12 +266,12 @@ public class BlobScaleFinderWrapper {
         SegmentationType[] seg1 = new SegmentationType[]{
             SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.GREYSCALE_KMPP,
-            //SegmentationType.BINARY
+            SegmentationType.COLOR_POLARCIEXY_LARGE
         };
         SegmentationType[] seg2 = new SegmentationType[]{
             SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.GREYSCALE_KMPP,
-            //SegmentationType.BINARY
+            SegmentationType.COLOR_POLARCIEXY_LARGE
         };
         
         int ordered1Idx = 0;
@@ -317,8 +321,13 @@ public class BlobScaleFinderWrapper {
                 algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
                 
                 if (blobContourHelper1 == null) {
-                    blobContourHelper1 = new BlobContourHelper(img1Helper);
-                    blobContourHelper2 = new BlobContourHelper(img2Helper);
+                    if (debug) {
+                        blobContourHelper1 = new BlobContourHelper(img1Helper, "1");
+                        blobContourHelper2 = new BlobContourHelper(img2Helper, "2");
+                    } else {
+                        blobContourHelper1 = new BlobContourHelper(img1Helper);
+                        blobContourHelper2 = new BlobContourHelper(img2Helper);
+                    }
                 }
 
                 blobContourHelper1.generatePerimeterContours(
@@ -330,8 +339,13 @@ public class BlobScaleFinderWrapper {
                 algType.equals(AlgType.CORNERS_COMBINATIONS)) {
 
                 if (blobCornerHelper1 == null) {
-                    blobCornerHelper1 = new BlobCornerHelper(img1Helper);
-                    blobCornerHelper2 = new BlobCornerHelper(img2Helper);
+                    if (debug) {
+                        blobCornerHelper1 = new BlobCornerHelper(img1Helper, "!");
+                        blobCornerHelper2 = new BlobCornerHelper(img2Helper, "2");
+                    } else {
+                        blobCornerHelper1 = new BlobCornerHelper(img1Helper);
+                        blobCornerHelper2 = new BlobCornerHelper(img2Helper);
+                    }
                 }
 
                 blobCornerHelper1.generatePerimeterCorners(
