@@ -963,41 +963,6 @@ public class MiscMath {
         return peaks;
     }
 
-    public static float[] extractAllXForYAboveHalfMax(HistogramHolder h) {
-        
-        if (h == null) {
-            return null;
-        }
-        
-        int peakIdx = MiscMath.findYMaxIndex(h.getYHist());
-        int peakY = h.getYHist()[peakIdx];
-        int crit = peakY/2;
-        
-        int i0 = -1;
-        int i1 = -1;
-        
-        for (int i = 0; i < h.getYHist().length; i++) {
-            int y = h.getYHist()[i];
-            if (y > crit) {
-                if (i0 == -1) {
-                    i0 = i;
-                }
-                i1 = i;
-            }
-        }
-        
-        int n = i1 - i0 + 1;
-        
-        float[] xs = new float[n];
-        int count = 0;
-        for (int i = i0; i <= i1; i++) {
-            xs[count] = h.getXHist()[i];
-            count++;
-        }
-        
-        return xs;
-    }
-
     public static int findLastZeroIndex(HistogramHolder h) {
         int n = h.getXHist().length;
         int lastZeroIdx = n - 1;
@@ -1299,11 +1264,12 @@ public class MiscMath {
     public static PairIntArray get20NeighborOffsets() {
         
         PairIntArray r2Offsets = new PairIntArray();
-        r2Offsets.add(-1, 2); r2Offsets.add(0, 2); r2Offsets.add(1, 2);
+        
+                              r2Offsets.add(-1, 2); r2Offsets.add(0, 2); r2Offsets.add(1, 2);
         r2Offsets.add(-2, 1); r2Offsets.add(-1, 1); r2Offsets.add(0, 1); r2Offsets.add(1, 1); r2Offsets.add(2, 1);
-        r2Offsets.add(-2, 0); r2Offsets.add(-1, 0); r2Offsets.add(0, 0); r2Offsets.add(1, 0); r2Offsets.add(2, 0);
+        r2Offsets.add(-2, 0); r2Offsets.add(-1, 0);                       r2Offsets.add(1, 0); r2Offsets.add(2, 0);
         r2Offsets.add(-2, -1); r2Offsets.add(-1, -1); r2Offsets.add(0, -1); r2Offsets.add(1, -1); r2Offsets.add(2, -1);
-        r2Offsets.add(-1, -2); r2Offsets.add(0, -2); r2Offsets.add(1, -2);
+                              r2Offsets.add(-1, -2); r2Offsets.add(0, -2); r2Offsets.add(1, -2);
         
         return r2Offsets;
     }
@@ -1519,52 +1485,6 @@ public class MiscMath {
             }
             
             float diff = a[i] - vc;
-        
-            sum += (diff * diff);
-            
-            count++;
-        }
-        
-        sum /= (double)count;
-                       
-        return (float)sum;
-    }
-
-    /**
-     * Determine the sum squared error within this array using 
-     * auto-correlation and a self reference value as the value at the centroid 
-     * of points.
-     * @param img
-     * @param points
-     * @return 
-     */
-    public static float sumSquaredError(GreyscaleImage img, Set<PairInt> points) {
-                        
-        if (img == null) {
-            throw new IllegalStateException("img cannot be null");
-        }
-        
-        if (points == null) {
-            throw new IllegalStateException("points cannot be null");
-        }
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        double[] xyCen = curveHelper.calculateXYCentroids(points);
-        int vCen = img.getValue((int)Math.round(xyCen[0]), 
-            (int)Math.round(xyCen[1]));
-        
-        int count = 0;
-        
-        double sum = 0;
-
-        for (PairInt p : points) {
-            
-            int x = p.getX();
-            int y = p.getY();
-            
-            int v = img.getValue(x, y);
-            
-            float diff = v - vCen;
         
             sum += (diff * diff);
             

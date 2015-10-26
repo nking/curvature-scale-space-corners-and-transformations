@@ -2,6 +2,7 @@ package algorithms.misc;
 
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 import algorithms.util.PolygonAndPointPlotter;
@@ -29,6 +30,50 @@ public class MiscMathTest extends TestCase {
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
+    }
+    
+    public void testGetAvgAndStDev() throws Exception {
+        
+        int[] x = new int[]{2, 2, 2, 4, 4, 4};
+        
+        double[] avgAndStDev = MiscMath.getAvgAndStDev(x, x.length);
+        assertEquals(avgAndStDev[0], 3.);
+        assertTrue(Math.abs(avgAndStDev[1] - 1.1) < 0.01);
+        
+        avgAndStDev = MiscMath.getAvgAndStDev(x);
+        assertEquals(avgAndStDev[0], 3.);
+        assertTrue(Math.abs(avgAndStDev[1] - 1.1) < 0.01);
+    }
+    
+    public void testGet20NeighborOffsets() throws Exception {
+                
+        PairIntArray offsets = MiscMath.get20NeighborOffsets();
+        
+        assertTrue(offsets.getN() == 20);
+        
+        Set<PairInt> expected = new HashSet<PairInt>();
+        for (int dx = -2; dx <= 2; ++dx) {
+            for (int dy = -2; dy <= 2; ++dy) {
+                if (dx == 0 && dy == 0) {
+                    continue;
+                }
+                expected.add(new PairInt(dx, dy));
+            }
+        }
+        //remove the 4 corners        
+        expected.remove(new PairInt(-2, -2));
+        expected.remove(new PairInt(-2, 2));
+        expected.remove(new PairInt(2, -2));
+        expected.remove(new PairInt(2, 2));
+        
+        assertTrue(expected.size() == 20);
+        
+        for (int i = 0; i < offsets.getN(); ++i) {
+            PairInt p = new PairInt(offsets.getX(i), offsets.getY(i));
+            assertTrue(expected.remove(p));
+        }
+        
+        assertTrue(expected.isEmpty());
     }
 
     /**
