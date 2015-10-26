@@ -68,7 +68,8 @@
         <echo message="runTest:                    run test with -Dtest=fqn of test"/>
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
     	<echo message="runCoverage:                run code coverage tools (requires env.JACOCO_HOME)"/>
-        <echo message="runDependency               run code coverage tools (requires graphviz and jdepend)"/>
+        <echo message="runDependency               run dependency analysis on packages (requires graphviz and jdepend)"/>
+        <echo message="runClassDependency          run dependency analysis on a class(requires jdk8)"/>
         <echo message="javadoc:                    create javadocs"/>
         <echo message="runTestsWithAspects:        run tests with aspects"/>
         <echo message="runTestWithAspects:         run test with aspects, use -Dtest=fqn"/>
@@ -640,6 +641,8 @@
     <target name="runDependency" 
         description="run jDepend.  requires GraphViz and jDepend installed on computer" >
         
+        <!-- TODO: replace w/ ant jdepend target -->
+        
         <record name="${logfile}" append="yes" loglevel="info"/>
         
         <path id="jdepend.classpath">
@@ -692,4 +695,35 @@
         -->
     </target>
     
+    <target name="runClassDependency" 
+        description="run jdeps for a class. (requires jdk 8)" >
+        
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        
+        <fail unless="class">
+            Set class to test.  example: -Dclass=algorithms.imageProcessing.DistanceTransformTest
+        </fail>
+        
+        <!-- user may need to edit this -->
+        <property name="graphviz.bin.dir" location="/usr/local/bin"/>
+        
+        <jar destfile="${classes.dir}/tmp.jar">
+            <fileset dir="${src.out.dir}" includes="**"/>
+        </jar>
+        
+        <exec dir="." executable="jdeps" newenvironment="true" >
+            <arg line="-f '(java.*)|(sun.*)' -v -verbose:class -R -cp ${classes.dir}/tmp.jar ${class}"/>
+        </exec>
+        
+        <!--
+        <exec dir="." executable="jdeps" newenvironment="true" >
+            <arg line="-dotoutput ${classes.dir}/${class} -f '(java.*)|(sun.*)' -verbose:class -R -cp ${classes.dir}/tmp.jar ${class}"/>
+        </exec>
+        
+        <echo message="creating a png image from the dot file"/>
+        <exec dir="." executable="${graphviz.bin.dir}/sfdp" newenvironment="true" >
+            <arg line="-Tpng -o ${classes.dir}/${class}.png ${classes.dir}/${class}/tmp.jar.dot"/>
+        </exec>
+        -->
+    </target>
 </project>
