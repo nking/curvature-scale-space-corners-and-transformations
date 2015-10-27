@@ -642,8 +642,67 @@ public class ButterflySectionFinderTest extends TestCase {
         
     }
     
-    public void estFindButterflySectionsLargeDiag() throws Exception {
+    public void testFindButterflySectionsLargeDiag() throws Exception {
         
+        
+        
+        for (int i = 0; i < 1; i++) {
+            
+            PairIntArray closedCurve = null;
+            
+            if (i == 0) {
+                closedCurve = getPattern12();
+            }
+
+            ButterflySectionFinder finder = new ButterflySectionFinder();
+
+            List<Routes> sections = finder.findButterflySections(closedCurve);
+
+            assertTrue(sections.size() == 1);
+
+            Routes routes = sections.get(0);
+
+            assertTrue(routes.route0.size() == 7);
+            assertTrue(routes.route1.size() == 7);
+            assertNotNull(routes.ep0);
+            assertNotNull(routes.ep0End);
+            assertNotNull(routes.ep1);
+            assertNotNull(routes.ep1End);
+
+            PairInt[] expectedR1 = new PairInt[]{
+                new PairInt(6, 17), new PairInt(7, 16), new PairInt(8, 15),
+                new PairInt(9, 14), new PairInt(10, 13),
+                new PairInt(11, 12), new PairInt(12, 11)
+            };
+            PairInt[] expectedR0 = new PairInt[]{
+                new PairInt(12, 13), new PairInt(11, 13), new PairInt(10, 14),
+                new PairInt(9, 15), new PairInt(8, 16), new PairInt(7, 17),
+                new PairInt(8, 18)
+            };
+
+            assertEquals(routes.ep0, expectedR0[0]);
+            assertEquals(routes.ep0End, expectedR0[expectedR0.length - 1]);
+            assertEquals(routes.ep1, expectedR1[0]);
+            assertEquals(routes.ep1End, expectedR1[expectedR1.length - 1]);
+
+            Iterator<PairInt> r = routes.getRoute0().iterator();
+            int nIter = 0;
+            while (r.hasNext()) {
+                PairInt p = r.next();
+                PairInt pExpected = expectedR0[nIter];
+                assertEquals(pExpected, p);
+                nIter++;
+            }
+
+            r = routes.getRoute1().iterator();
+            nIter = 0;
+            while (r.hasNext()) {
+                PairInt p = r.next();
+                PairInt pExpected = expectedR1[nIter];
+                assertEquals(pExpected, p);
+                nIter++;
+            }
+        }
         
     }
     
@@ -874,5 +933,70 @@ public class ButterflySectionFinderTest extends TestCase {
         }
         
         return p;
+    }
+    
+    protected PairIntArray getPattern12() {
+        
+        /*
+              # #                          20
+            #     #                        19
+              #     #                      18
+                # #                        17
+                  # #                      16
+                    # #                    15
+                      # #                  14
+                        # # # #            13
+                          #     #          12
+                            #     #        11
+                              # # #        10
+        
+            4 5 6 7 8 9 0 1 2 3 4 5 6
+         */
+        PairIntArray points = new PairIntArray(20);
+        points.add(4, 19); points.add(5, 18); points.add(6, 17); points.add(7, 16);
+        points.add(8, 15); points.add(9, 14); points.add(10, 13);
+        points.add(11, 12); points.add(12, 11);
+        points.add(13, 10); points.add(14, 10); points.add(15, 10);
+        points.add(15, 11); points.add(14, 12); points.add(13, 13);
+        points.add(12, 13); points.add(11, 13);
+        
+        points.add(10, 14); points.add(9, 15); points.add(8, 16);
+        points.add(7, 17); points.add(8, 18); points.add(7, 19);
+        points.add(6, 20); points.add(5, 20);
+        
+        return points;
+    }
+    
+    protected PairIntArray getPattern13() {
+        
+        /*
+              # #                          20
+            #     #                        19
+              #     #                      18
+                #   #                      17
+                  #   #                    16
+                    #   #                  15
+                      #   #                14
+                        #   # # #          13
+                          #       #        12
+                            #       #      11
+                              # # #        10
+        
+            4 5 6 7 8 9 0 1 2 3 4 5 6
+         */
+        
+        PairIntArray points = new PairIntArray(20);
+        points.add(4, 19); points.add(5, 18); points.add(6, 17); points.add(7, 16);
+        points.add(8, 15); points.add(9, 14); points.add(10, 13);
+        points.add(11, 12); points.add(12, 11);
+        points.add(13, 10); points.add(14, 10); points.add(15, 10);
+        points.add(16, 11); points.add(15, 12); points.add(14, 13);
+        points.add(13, 13); points.add(12, 13);
+        
+        points.add(11, 14); points.add(10, 15); points.add(9, 16);
+        points.add(8, 17); points.add(8, 18); points.add(7, 19);
+        points.add(6, 20); points.add(5, 20);
+        
+        return points;
     }
 }
