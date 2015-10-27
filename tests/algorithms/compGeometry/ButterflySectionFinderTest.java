@@ -433,7 +433,7 @@ public class ButterflySectionFinderTest extends TestCase {
             4 5 6 7  8  9  0  1 2 3 4 5 6
         */
         
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             
             PairIntArray closedCurve = null;
             
@@ -443,8 +443,10 @@ public class ButterflySectionFinderTest extends TestCase {
                 closedCurve = getPattern10SwapY();
             } else if (i == 2) {
                 closedCurve = getPattern10Crossed();
-            } else {
+            } else if (i == 3) {
                 closedCurve = getPattern10WrapAround();
+            } else {
+                closedCurve = getPattern10CrossedSwapY();
             }
 
             ButterflySectionFinder finder = new ButterflySectionFinder();
@@ -473,7 +475,7 @@ public class ButterflySectionFinderTest extends TestCase {
                 new PairInt(8, 6)
             };
 
-            if (i == 1) {
+            if ((i == 1) || (i == 4)) {
                 /*
                     # #  #  #  #  # # # # #      4  <-- r0
                   #         #  #  # # #     #    3
@@ -541,7 +543,7 @@ public class ButterflySectionFinderTest extends TestCase {
               4 5 6 7  8 
         */
         
-        for (int i = 0; i < 3; i++) {
+        for (int i = 3; i < 4; i++) {
             
             PairIntArray closedCurve = null;
             
@@ -549,8 +551,10 @@ public class ButterflySectionFinderTest extends TestCase {
                 closedCurve = getPattern11();
             } else if (i == 1) {
                 closedCurve = getPattern11SwapX();
-            } else {
+            } else if (i == 2) {
                 closedCurve = getPattern11Crossed();
+            } else {
+                closedCurve = getPattern11CrossedSwapX();
             }
 
             ButterflySectionFinder finder = new ButterflySectionFinder();
@@ -579,7 +583,7 @@ public class ButterflySectionFinderTest extends TestCase {
                 new PairInt(7, 39)
             };
 
-            if (i == 1) {
+            if ((i == 1) || (i == 3)) {
                 
                 /*
                       4 5 6 7 8 9 10
@@ -750,6 +754,18 @@ public class ButterflySectionFinderTest extends TestCase {
         return points;
     }
     
+    protected PairIntArray getPattern10CrossedSwapY() {
+        
+        PairIntArray p = getPattern10Crossed();
+        for (int i = 0; i < p.getN(); ++i) {
+            int x = p.getX(i);
+            int y = (2*4) - p.getY(i);
+            p.set(i, x, y);
+        }
+        
+        return p;
+    }
+    
     protected PairIntArray getPattern11() {
        
         /*
@@ -839,6 +855,18 @@ public class ButterflySectionFinderTest extends TestCase {
         */
 
         PairIntArray p = getPattern11();
+        for (int i = 0; i < p.getN(); ++i) {
+            int x = 14 - p.getX(i);
+            int y = p.getY(i);
+            p.set(i, x, y);
+        }
+        
+        return p;
+    }
+    
+    private PairIntArray getPattern11CrossedSwapX() {
+        
+        PairIntArray p = getPattern11Crossed();
         for (int i = 0; i < p.getN(); ++i) {
             int x = 14 - p.getX(i);
             int y = p.getY(i);

@@ -2248,28 +2248,63 @@ public class ButterflySectionFinder {
             if (sOrderedAscendingX && 
                 ((currentSegments.size() == 1) || csOrderedAscendingX)) {
                 
-                // last segment of current
                 Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
-            
                 if (!(currentLastSegment instanceof HorizSegment)) {
                     continue;
                 }
                 
+                Segment firstSegment = segments.get(0);
+                if (!(firstSegment instanceof HorizSegment)) {
+                    continue;
+                }
+                
+                /*
+                      c[0]    c[1]   c[2]      s[0]
+                      3  2    3  2   3  2      3  2
+                      0  1    0  1   0  1      0  1
+                */
+                
                 int clP2X = currentLastSegment.p2.getX();
                 int clP1X = currentLastSegment.p1.getX();
 
-                int fP3X = segments.get(0).p3.getX();
-                int fP0X = segments.get(0).p0.getX();
+                int fP3X = firstSegment.p3.getX();
+                int fP0X = firstSegment.p0.getX();
             
-                /*
-                immediately adjacent:
-                   clP2X  P3
-                   clP1X  P0
-                */
                 if ((((clP2X + 1) == fP3X) && ((clP1X + 1) == fP0X)) ||
                     ((clP2X == fP3X) && (clP1X == fP0X)) ) {
                     currentSegments.addAll(segments);
                     remove.add(Integer.valueOf(i));
+                    continue;
+                }
+                
+                /*
+                 s[n-1]     c[0]    c[1]   c[2] 
+                  3  2      3  2    3  2   3  2 
+                  0  1      0  1    0  1   0  1   
+                */
+                Segment currentFirstSegment = currentSegments.get(0);
+                if (!(currentFirstSegment instanceof HorizSegment)) {
+                    continue;
+                }
+                
+                Segment lastSegment = segments.get(segments.size() - 1);
+                if (!(lastSegment instanceof HorizSegment)) {
+                    continue;
+                }
+                int clP3X = currentFirstSegment.p3.getX();
+                int clP0X = currentFirstSegment.p0.getX();
+
+                int sP2X = lastSegment.p2.getX();
+                int sP1X = lastSegment.p1.getX();
+                
+                if ((((sP2X + 1) == clP3X) && ((sP1X + 1) == clP0X)) 
+                    || ((sP2X == clP3X) && (sP1X == clP0X))) {
+                    LinkedList<Segment> tmp = new LinkedList<Segment>();
+                    tmp.addAll(segments);
+                    tmp.addAll(currentSegments);
+                    remove.add(Integer.valueOf(i));
+                    currentSegments.clear();
+                    currentSegments.addAll(tmp);
                 }
                 
             } else if (!sOrderedAscendingX && 
@@ -2305,6 +2340,34 @@ public class ButterflySectionFinder {
                     currentSegments.clear();
                     currentSegments.addAll(tmp);
                 }
+                
+                /*
+                 s[0]        c[1]    c[0]  
+                 3  2        3  2    3  2   
+                 0  1        0  1    0  1   
+                */
+                Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
+                if (!(currentLastSegment instanceof HorizSegment)) {
+                    continue;
+                }
+            
+                Segment firstSegment = segments.get(0);
+                if (!(firstSegment instanceof HorizSegment)) {
+                    continue;
+                }
+                
+                int cP3X = currentLastSegment.p3.getX();
+                int cP0X = currentLastSegment.p0.getX();
+
+                int sP2X = firstSegment.p2.getX();
+                int sP1X = firstSegment.p1.getX();
+                
+                if ((((sP2X + 1) == cP3X) && ((sP1X + 1) == cP0X)) ||
+                    ((sP2X == cP3X) && (sP1X == cP0X)) ) {
+                    currentSegments.addAll(segments);
+                    remove.add(Integer.valueOf(i));
+                }
+                
             } else {
                 //TODO: handle merging when segments were assembled with different
                 // directions.  preferably, do this at top of method.
