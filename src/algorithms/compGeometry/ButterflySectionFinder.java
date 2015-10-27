@@ -126,8 +126,6 @@ public class ButterflySectionFinder {
             return null;
         }
 
-        //TODO: correct for wrap around of section from end of curve to beginning
-
         //TODO: edit to handle diagonal too when tests start
         mergeIfAdjacent(candidateSections);
         
@@ -2268,12 +2266,8 @@ public class ButterflySectionFinder {
                    clP2X  P3
                    clP1X  P0
                 */
-                if (((clP2X + 1) == fP3X) && ((clP1X + 1) == fP0X)) {
-                    currentSegments.addAll(segments);
-                    remove.add(Integer.valueOf(i));
-                } else if ((clP2X == fP3X) && (clP1X == fP0X)) {
-                    // there's an overlap of 1 column but the add segment methods
-                    // handle that logic
+                if ((((clP2X + 1) == fP3X) && ((clP1X + 1) == fP0X)) ||
+                    ((clP2X == fP3X) && (clP1X == fP0X)) ) {
                     currentSegments.addAll(segments);
                     remove.add(Integer.valueOf(i));
                 }
@@ -2302,14 +2296,8 @@ public class ButterflySectionFinder {
                 int sP3X = lastSegment.p3.getX();
                 int sP0X = lastSegment.p0.getX();
                 
-                if (((sP3X + 1) == cP2X) && ((sP0X + 1) == cP1X)) {
-                    LinkedList<Segment> tmp = new LinkedList<Segment>();
-                    tmp.addAll(segments);
-                    tmp.addAll(currentSegments);
-                    remove.add(Integer.valueOf(i));
-                    currentSegments.clear();
-                    currentSegments.addAll(tmp);
-                } else if ((sP3X == cP2X) && (sP0X == cP1X)) {
+                if ((((sP3X + 1) == cP2X) && ((sP0X + 1) == cP1X)) 
+                    || ((sP3X == cP2X) && (sP0X == cP1X))) {
                     LinkedList<Segment> tmp = new LinkedList<Segment>();
                     tmp.addAll(segments);
                     tmp.addAll(currentSegments);
@@ -2379,11 +2367,11 @@ public class ButterflySectionFinder {
                 currentSegments.get(0).p0.getY());
 
             boolean sOrderedDescendingY = 
-                (segments.get(currentSegments.size() - 1).p0.getY() <
+                (segments.get(segments.size() - 1).p0.getY() <
                 segments.get(0).p0.getY());
             
             if (sOrderedDescendingY && 
-                ((currentSegments.size() == 1) && csOrderedDescendingY)) {
+                ((currentSegments.size() == 1) || csOrderedDescendingY)) {
                 
                 // last segment of current
                 Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
@@ -2407,18 +2395,12 @@ public class ButterflySectionFinder {
                 int fP0Y = segments.get(0).p0.getY();
                 int fP3Y = segments.get(0).p3.getY();
                 
-                if (((clP1Y - 1) == fP0Y) && ((clP2Y - 1) == fP3Y)) {
+                if ((((clP1Y - 1) == fP0Y) && ((clP2Y - 1) == fP3Y))
+                    || ((clP1Y == fP0Y) && (clP2Y == fP3Y))) {
                     currentSegments.addAll(segments);
                     remove.add(Integer.valueOf(i));
-                } else if ((clP1Y == fP0Y) && (clP2Y == fP3Y)) {
-                    // there's an overlap of 1 column but the add segment methods
-                    // handle that logic
-                    currentSegments.addAll(segments);
-                    remove.add(Integer.valueOf(i));
+                    continue;
                 }
-                
-            } else if (!sOrderedDescendingY && 
-                ((currentSegments.size() == 1) && !csOrderedDescendingY)) {
                 
                 /*   
                              -3 
@@ -2429,7 +2411,6 @@ public class ButterflySectionFinder {
                                    2 1
                                    3 0  s[n-1]
                 */
-                
                 Segment currentFirstSegment = currentSegments.get(0);
                 if (!(currentFirstSegment instanceof VertSegment)) {
                     continue;
@@ -2443,17 +2424,12 @@ public class ButterflySectionFinder {
                 int cP0Y = currentFirstSegment.p0.getY();
                 int cP3Y = currentFirstSegment.p3.getY();
 
-                int sP1X = lastSegment.p1.getX();
-                int sP2X = lastSegment.p2.getX();
+                int sP1Y = lastSegment.p1.getY();
+                int sP2Y = lastSegment.p2.getY();
                 
-                if (((sP2X - 1) == cP3Y) && ((sP1X - 1) == cP0Y)) {
-                    LinkedList<Segment> tmp = new LinkedList<Segment>();
-                    tmp.addAll(segments);
-                    tmp.addAll(currentSegments);
-                    remove.add(Integer.valueOf(i));
-                    currentSegments.clear();
-                    currentSegments.addAll(tmp);
-                } else if ((sP2X == cP3Y) && (sP1X == cP0Y)) {
+                if ((((sP2Y - 1) == cP3Y) && ((sP1Y - 1) == cP0Y)) 
+                    || ((sP2Y == cP3Y) && (sP1Y == cP0Y))
+                    ) {
                     LinkedList<Segment> tmp = new LinkedList<Segment>();
                     tmp.addAll(segments);
                     tmp.addAll(currentSegments);
@@ -2461,6 +2437,77 @@ public class ButterflySectionFinder {
                     currentSegments.clear();
                     currentSegments.addAll(tmp);
                 }
+                
+            } else if (!sOrderedDescendingY && 
+                ((currentSegments.size() == 1) || !csOrderedDescendingY)) {
+                /*   
+                                   2 1
+                             -3    3 0 s[n-1]
+                    2 1      -2
+                    3 0 c[0] -1
+                    2 1       0
+                    3 0 c[1]
+                */
+                Segment currentFirstSegment = currentSegments.get(0);
+                if (!(currentFirstSegment instanceof VertSegment)) {
+                    continue;
+                }
+            
+                Segment lastSegment = segments.get(segments.size() - 1);
+                if (!(lastSegment instanceof VertSegment)) {
+                    continue;
+                }
+                
+                int cP2Y = currentFirstSegment.p2.getY();
+                int cP1Y = currentFirstSegment.p1.getY();
+
+                int sP3Y = lastSegment.p3.getY();
+                int sP0Y = lastSegment.p0.getY();
+                
+                if ((((cP2Y - 1) == sP3Y) && ((cP1Y - 1) == sP0Y))
+                    || ((cP2Y == sP3Y) && (cP1Y == sP0Y))){
+                    LinkedList<Segment> tmp = new LinkedList<Segment>();
+                    tmp.addAll(segments);
+                    tmp.addAll(currentSegments);
+                    remove.add(Integer.valueOf(i));
+                    currentSegments.clear();
+                    currentSegments.addAll(tmp);
+                    continue;
+                }
+                
+                /*   
+                             -3 
+                    2 1      -2
+                    3 0 c[0] -1
+                    2 1       0
+                    3 0 c[1]
+                                   2 1
+                                   3 0  s[0]
+                */
+                
+                // last segment of current
+                Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
+                if (!(currentLastSegment instanceof VertSegment)) {
+                    continue;
+                }
+                
+                Segment firstSegment = segments.get(0);
+                if (!(firstSegment instanceof VertSegment)) {
+                    continue;
+                }
+                
+                int clP3Y = currentLastSegment.p3.getY();
+                int clP0Y = currentLastSegment.p0.getY();
+
+                int sP2Y = firstSegment.p2.getY();
+                int sP1Y = firstSegment.p1.getY();
+                
+                if ((((sP2Y - 1) == clP3Y) && ((sP1Y - 1) == clP0Y))
+                    || ((sP2Y == clP3Y) && (sP1Y == clP0Y))) {
+                    currentSegments.addAll(segments);
+                    remove.add(Integer.valueOf(i));
+                }
+                
             } else {
                 //TODO: handle merging when segments were assembled with different
                 // directions.  preferably, do this at top of method.

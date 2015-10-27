@@ -433,7 +433,7 @@ public class ButterflySectionFinderTest extends TestCase {
             4 5 6 7  8  9  0  1 2 3 4 5 6
         */
         
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             
             PairIntArray closedCurve = null;
             
@@ -441,8 +441,10 @@ public class ButterflySectionFinderTest extends TestCase {
                 closedCurve = getPattern10();
             } else if (i == 1) {
                 closedCurve = getPattern10SwapY();
-            } else {
+            } else if (i == 2) {
                 closedCurve = getPattern10Crossed();
+            } else {
+                closedCurve = getPattern10WrapAround();
             }
 
             ButterflySectionFinder finder = new ButterflySectionFinder();
@@ -539,7 +541,7 @@ public class ButterflySectionFinderTest extends TestCase {
               4 5 6 7  8 
         */
         
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 3; i++) {
             
             PairIntArray closedCurve = null;
             
@@ -636,12 +638,6 @@ public class ButterflySectionFinderTest extends TestCase {
         
     }
     
-    /*
-    TEST for closed curve wrap around in middle of pattern.
-    TEST for crossed paths.  even though the algorithm uses an unordered
-    hash, it tends to be ordered by curve point order.
-    */
-    
     public void estFindButterflySectionsLargeDiag() throws Exception {
         
         
@@ -727,6 +723,33 @@ public class ButterflySectionFinderTest extends TestCase {
         return points;
     }
     
+    protected PairIntArray getPattern10WrapAround() {
+        
+        /*
+                                      #      7
+                # #  #              #   #    6
+              #         #  +  + + #     #    5
+                # #  +  +  #  # # + + #      4     
+                              ^
+                              |
+            4 5 6 7  8  9  0  1 2 3 4 5 6
+         */
+        
+        PairIntArray points = new PairIntArray(20);
+        points.add(11, 4); points.add(12, 4); points.add(13, 5); 
+        points.add(14, 6); points.add(15, 7); points.add(16, 6);
+        points.add(16, 5); points.add(15, 4);
+        points.add(14, 4); points.add(13, 4);
+        points.add(12, 5); points.add(11, 5); points.add(10, 5); 
+        
+        points.add(9, 4); points.add(8, 4); points.add(7, 4); points.add(6, 4);    
+          
+        points.add(5, 5); points.add(6, 6); points.add(7, 6);
+        points.add(8, 6); points.add(9, 5); points.add(10, 4);        
+        
+        return points;
+    }
+    
     protected PairIntArray getPattern11() {
        
         /*
@@ -766,10 +789,10 @@ public class ButterflySectionFinderTest extends TestCase {
           4 5 6 7  8 
             # #         41
           #     #       40
-            #   #       39
+            #   +       39
               # +       38
               + #       37
-              # #       36
+              + #       36
               + #       35
               # +       34
             #   #       33
@@ -777,7 +800,7 @@ public class ButterflySectionFinderTest extends TestCase {
             #   #       31           
               #         30
           4 5 6 7  8 
-         */
+        */
         
         PairIntArray points = new PairIntArray(20);
         points.add(6, 30); points.add(7, 31); points.add(7, 32);
