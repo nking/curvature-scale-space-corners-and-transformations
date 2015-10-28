@@ -8,10 +8,8 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 

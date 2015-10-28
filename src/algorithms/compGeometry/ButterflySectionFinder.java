@@ -110,6 +110,44 @@ public class ButterflySectionFinder {
             }
             
             if (segment == null) {
+                // an addition for the wide pattern diagonals:
+                Segment[] wSegments = checkWideDiagSegments(x, y, points);
+                if (wSegments != null) {
+                    assert(wSegments.length == 2);
+                    assert(wSegments[0] != null);
+                    assert(wSegments[1] != null);
+                    boolean[] alreadyAdded = new boolean[2];
+                    if (currentList != null) {
+                        for (int ii = 0; ii < 2; ++ii) {
+                            if (currentList.contains(wSegments[ii])) {
+                                alreadyAdded[ii] = true;
+                            }
+                        }
+                    }
+                    int n = candidateSections.size();
+                    int end = Math.max(n - 2, 0);
+                    for (int ic = (n - 1); ic >= end; --ic) {
+                        for (int ii = 0; ii < 2; ++ii) {
+                            if (candidateSections.get(ic).contains(wSegments[ii])) {
+                                alreadyAdded[ii] = true;
+                            }
+                        }
+                    }
+                    for (int ii = 0; ii < 2; ++ii) {
+                        if (!alreadyAdded[ii]) {
+                            if (currentList != null) {
+                                candidateSections.add(currentList);
+                            }
+                            currentList = new LinkedList<Segment>();
+                            currentList.add(wSegments[ii]);
+                            candidateSections.add(currentList);
+                            currentList = null;
+                        }
+                    }
+                }
+            }
+            
+            if (segment == null) {
                 if (currentList != null) {
                     candidateSections.add(currentList);
                     currentList = null;
@@ -396,7 +434,7 @@ public class ButterflySectionFinder {
         if (segment != null) {
             return segment;
         }
-
+                
         return null;
     }
 
@@ -559,42 +597,6 @@ public class ButterflySectionFinder {
         return routes;
     }
 
-    /*
-    private Pattern getEndPointsVertPattern1() {
-        // the pattern returned is relative to
-        //position '0', just like the other patterns.
-
-        //searching for .'s and #'s
-        //                -2
-        //   -  2  1  -   -1
-        //   -  3  0  -    0
-        //   -  .  .  -    1
-        //      #  -  #    2
-        //         -       3
-        //  -2 -1  0  1
-        Pattern pattern = new Pattern();
-        pattern.ones = new HashSet<PairInt>();
-        pattern.zeroes = new HashSet<PairInt>();
-
-        // '.' intermediate points
-        pattern.ones.add(new PairInt(-1, 1));
-        pattern.ones.add(new PairInt(0, 1));
-
-        // '#' end points
-        PairInt t1 = new PairInt(-1, 2);
-        pattern.ones.add(t1);
-        PairInt t0 = new PairInt(1, 2);
-        pattern.ones.add(t0);
-        pattern.ep0 = t0;
-        pattern.ones.add(t1);
-        pattern.ep1 = t1;
-
-        pattern.zeroes.add(new PairInt(-2, 1)); pattern.zeroes.add(new PairInt(1, 1));
-        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 3));
-        return pattern;
-    }
-    */
-    
     private Pattern getEndPointsVertPattern1S() {
         /* the pattern returned is relative to
         position '0', just like the other patterns.
@@ -657,44 +659,6 @@ public class ButterflySectionFinder {
         return pattern;
     }
 
-    /*
-    private Pattern getEndPointsVertPattern2() {
-
-        // the pattern returned is relative to
-        //position '0', just like the other patterns.
-
-        //searching for .'s and #'s
-        //                -2
-        //   -  2  1  -   -1
-        //   -  3  0  -    0
-        //   -  .  .  -    1
-        //   #  -  -  #    2
-        //      -  -       3
-        //  -2 -1  0  1
-        Pattern pattern = new Pattern();
-        pattern.ones = new HashSet<PairInt>();
-        pattern.zeroes = new HashSet<PairInt>();
-
-        // '.' intermediate points
-        pattern.ones.add(new PairInt(-1, 1));
-        pattern.ones.add(new PairInt(0, 1));
-
-        // '#' end points
-        PairInt t1 = new PairInt(-2, 2);
-        pattern.ones.add(t1);
-        PairInt t0 = new PairInt(1, 2);
-        pattern.ones.add(t0);
-        pattern.ep1 = t1;
-        pattern.ep0 = t0;
-
-        pattern.zeroes.add(new PairInt(-2, 1)); pattern.zeroes.add(new PairInt(1, 1));
-        pattern.zeroes.add(new PairInt(-1, 2)); pattern.zeroes.add(new PairInt(-1, 3));
-        pattern.zeroes.add(new PairInt(0, 2)); pattern.zeroes.add(new PairInt(0, 3));
-
-        return pattern;
-    }
-    */
-    
     private Pattern getEndPointsVertPattern2S() {
 
         /* the pattern returned is relative to
@@ -762,45 +726,6 @@ public class ButterflySectionFinder {
         pattern.zeroes.add(new PairInt(1, -1));
         return pattern;
     }
-    
-    /*
-    private Pattern getEndPointsVertPattern3() {
-
-        // the pattern returned is relative to
-        //position '0', just like the other patterns.
-
-        //searching for .'s and #'s
-        //                -2
-        //   -  2  1  -   -1
-        //   -  3  0  -    0
-        //   -  .  .  -    1
-        //   #  -  #       2
-        //      -          3
-        //  -2 -1  0  1
-
-        Pattern pattern = new Pattern();
-        pattern.ones = new HashSet<PairInt>();
-        pattern.zeroes = new HashSet<PairInt>();
-
-        pattern.zeroes.add(new PairInt(-2, 1));
-        pattern.zeroes.add(new PairInt(-1, 2));
-        pattern.zeroes.add(new PairInt(-1, 3));
-        pattern.zeroes.add(new PairInt(1, 1));
-
-        // '.' intermediate points
-        pattern.ones.add(new PairInt(-1, 1));
-        pattern.ones.add(new PairInt(0, 1));
-        // '#' end points
-        PairInt t1 = new PairInt(-2, 2);
-        pattern.ones.add(t1);
-        PairInt t0 = new PairInt(0, 2);
-        pattern.ones.add(t0);
-        pattern.ep1 = t1;
-        pattern.ep0 = t0;
-
-        return pattern;
-    }
-    */
     
     private Pattern getEndPointsVertPattern3S() {
 
@@ -1438,164 +1363,6 @@ public class ButterflySectionFinder {
         return new PairInt[]{firstNode, lastNode};
     }
 
-    protected PairInt[] getSecondToLastAndLast(Iterator<PairInt> iter) {
-        PairInt secondToLastNode = null;
-        PairInt lastNode = null;
-        while (iter.hasNext()) {
-            PairInt n0 = iter.next();
-            if (iter.hasNext()) {
-                secondToLastNode = n0;
-                lastNode = iter.next();
-            } else {
-                secondToLastNode = lastNode;
-                lastNode = n0;
-            }
-        }
-        return new PairInt[]{secondToLastNode, lastNode};
-    }
-    
-    private int addUUDiagSegmentToRoutes(Routes routes, DiagSegment
-        segment) {
-
-        assert(!routes.route0.isEmpty());
-        assert(!routes.route1.isEmpty());
-
-        /*      UUDiagSegment
-                    -  -      -2
-              -  2  1  -  -   -1
-              -  -  3  0  -    0
-                 -  -          1
-             -3 -2 -1  0  1
-
-               E0 is '1', and route0
-                  continues with
-                  point '0'
-               E1 is '3', and route1
-                  continues with '2'
-        */
-
-        // ------- add to route0 ---------
-        PairInt[] r0FirstLastNodes = getFirstAndLast(routes.route0.iterator());
-
-        double p0MinDistSq = Double.MAX_VALUE;
-        int p0MinIdx = -1;
-        double p1MinDistSq = Double.MAX_VALUE;
-        int p1MinIdx = -1;
-        for (int i = 0; i < r0FirstLastNodes.length; ++i) {
-            PairInt r0 = r0FirstLastNodes[i];
-            int distSq = distSq(segment.p0, r0);
-            if (distSq < p0MinDistSq) {
-                p0MinDistSq = distSq;
-                p0MinIdx = i;
-            }
-            distSq = distSq(segment.p1, r0);
-            if (distSq < p1MinDistSq) {
-                p1MinDistSq = distSq;
-                p1MinIdx = i;
-            }
-        }
-
-        if (p1MinDistSq < p0MinDistSq) {
-            /*
-            E0
-            [*]
-            [*]
-            '1'
-            '0'
-            */
-            if (p1MinIdx != 1) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            if (routes.ep0End != null) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            routes.route0.add(segment.p1);
-            routes.route0.add(segment.p0);
-        } else if (p0MinDistSq < p1MinDistSq) {
-            /*
-            '1'
-            '0'
-            [*]
-            [*]
-            E0end
-            */
-            if (p0MinIdx != 0) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            if (routes.ep0 != null) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
-            tmp.add(segment.p1);
-            tmp.add(segment.p0);
-            tmp.addAll(routes.route0);
-            routes.route0 = tmp;
-        } else {
-            throw new IllegalStateException("error in algorithm");
-        }
-
-        // ------ add to route1 ------------
-        PairInt[] r1FirstLastNodes = getFirstAndLast(routes.route1.iterator());
-        double p2MinDistSq = Double.MAX_VALUE;
-        int p2MinIdx = -1;
-        double p3MinDistSq = Double.MAX_VALUE;
-        int p3MinIdx = -1;
-        for (int i = 0; i < r1FirstLastNodes.length; ++i) {
-            PairInt r1 = r1FirstLastNodes[i];
-            int distSq = distSq(segment.p2, r1);
-            if (distSq < p2MinDistSq) {
-                p2MinDistSq = distSq;
-                p2MinIdx = i;
-            }
-            distSq = distSq(segment.p3, r1);
-            if (distSq < p3MinDistSq) {
-                p3MinDistSq = distSq;
-                p3MinIdx = i;
-            }
-        }
-
-        if (p2MinDistSq < p3MinDistSq) {
-            /*
-            E1end
-            [*]
-            [*]
-            '2'
-            '3'
-            */
-            if (p2MinIdx != 0) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            if (routes.ep1 != null) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            LinkedHashSet<PairInt> tmp = new LinkedHashSet<PairInt>();
-            tmp.add(segment.p3);
-            tmp.add(segment.p2);
-            tmp.addAll(routes.route1);
-            routes.route1 = tmp;
-        } else if (p3MinDistSq < p2MinDistSq) {
-            /*
-            '2'
-            '3'
-            [*]
-            [*]
-            E1
-            */
-            if (p3MinIdx != 1) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            if (routes.ep1End != null) {
-                throw new IllegalStateException("error in algorithm");
-            }
-            routes.route1.add(segment.p3);
-            routes.route1.add(segment.p2);
-        } else {
-            throw new IllegalStateException("error in algorithm");
-        }
-        
-        return 1;
-    }
-
     private ZigZagSegmentRoutes parseZigZag(Segment segment, Set<PairInt> endPoints) {
 
         if (!(segment instanceof ZigZagSegment) &&
@@ -1939,13 +1706,13 @@ public class ButterflySectionFinder {
             return;
         }
         
-        mergeDiagonalIfAdjacent(sections, UUDiagSegment.class);
+        mergeIfAdjacent(sections, UUDiagSegment.class);
         
-        mergeDiagonalIfAdjacent(sections, ULDiagSegment.class);
+        mergeIfAdjacent(sections, ULDiagSegment.class);
         
-        mergeHorizontalIfAdjacent(sections);
-        
-        mergeVerticalIfAdjacent(sections);
+        mergeIfAdjacent(sections, VertSegment.class);
+         
+        mergeHorizontalIfAdjacent(sections);       
         
         //TODO: add logic for diagonal in between horizonal or vertical merges
     }
@@ -2143,211 +1910,12 @@ public class ButterflySectionFinder {
         }
     }
     
-    private void mergeVerticalIfAdjacent(List<LinkedList<Segment>> sections) {
-        
-        if (sections.size() < 2) {
-            return;
-        }
-        
-        // sorts by each list's first item's p0.y, descending
-        Collections.sort(sections, new VertSegmentListComparator());
-        
-        /*
-        using algorithm similar to leftedge.  
-                   O(N*lg(N)) + O(N) where N is sections.size()
-        
-        sort by p0.y, then append, but only if adjacent and a vertical segment
-        */
-        
-        List<Integer> remove = new ArrayList<Integer>();
-        
-        int start = 0;
-        
-        LinkedList<Segment> currentSegments = null;
-        while ((currentSegments == null) && (start < sections.size())) {
-            LinkedList<Segment> list = sections.get(start);
-            assert(!list.isEmpty());
-            if (list.get(0) instanceof VertSegment) {
-                currentSegments = list;
-            }
-            start++;
-        }
-        
-        if (currentSegments == null) {
-            return;
-        }
-        
-        for (int i = start; i < sections.size(); ++i) {
-            
-            LinkedList<Segment> segments = sections.get(i);
-            assert(!segments.isEmpty());
-            if (!(segments.get(0) instanceof VertSegment)) {
-                // only merging the vertical segments with this method
-                continue;
-            }
-            
-            boolean csOrderedDescendingY = 
-                (currentSegments.get(currentSegments.size() - 1).p0.getY() <
-                currentSegments.get(0).p0.getY());
-
-            boolean sOrderedDescendingY = 
-                (segments.get(segments.size() - 1).p0.getY() <
-                segments.get(0).p0.getY());
-            
-            if (sOrderedDescendingY && 
-                ((currentSegments.size() == 1) || csOrderedDescendingY)) {
-                
-                // last segment of current
-                Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
-                
-                if (!(currentLastSegment instanceof VertSegment)) {
-                    continue;
-                }
-            
-                /*   
-                                   2 1
-                             -3    3 0 s[0]
-                    2 1      -2
-                    3 0 c[1] -1
-                    2 1       0
-                    3 0 c[0]
-                */
-                
-                int clP1Y = currentLastSegment.p1.getY();
-                int clP2Y = currentLastSegment.p2.getY();
-                
-                int fP0Y = segments.get(0).p0.getY();
-                int fP3Y = segments.get(0).p3.getY();
-                
-                if ((((clP1Y - 1) == fP0Y) && ((clP2Y - 1) == fP3Y))
-                    || ((clP1Y == fP0Y) && (clP2Y == fP3Y))) {
-                    currentSegments.addAll(segments);
-                    remove.add(Integer.valueOf(i));
-                    continue;
-                }
-                
-                /*   
-                             -3 
-                    2 1      -2
-                    3 0 c[1] -1
-                    2 1       0
-                    3 0 c[0]
-                                   2 1
-                                   3 0  s[n-1]
-                */
-                Segment currentFirstSegment = currentSegments.get(0);
-                if (!(currentFirstSegment instanceof VertSegment)) {
-                    continue;
-                }
-            
-                Segment lastSegment = segments.get(segments.size() - 1);
-                if (!(lastSegment instanceof VertSegment)) {
-                    continue;
-                }
-                
-                int cP0Y = currentFirstSegment.p0.getY();
-                int cP3Y = currentFirstSegment.p3.getY();
-
-                int sP1Y = lastSegment.p1.getY();
-                int sP2Y = lastSegment.p2.getY();
-                
-                if ((((sP2Y - 1) == cP3Y) && ((sP1Y - 1) == cP0Y)) 
-                    || ((sP2Y == cP3Y) && (sP1Y == cP0Y))
-                    ) {
-                    LinkedList<Segment> tmp = new LinkedList<Segment>();
-                    tmp.addAll(segments);
-                    tmp.addAll(currentSegments);
-                    remove.add(Integer.valueOf(i));
-                    currentSegments.clear();
-                    currentSegments.addAll(tmp);
-                }
-                
-            } else if (!sOrderedDescendingY && 
-                ((currentSegments.size() == 1) || !csOrderedDescendingY)) {
-                /*   
-                                   2 1
-                             -3    3 0 s[n-1]
-                    2 1      -2
-                    3 0 c[0] -1
-                    2 1       0
-                    3 0 c[1]
-                */
-                Segment currentFirstSegment = currentSegments.get(0);
-                if (!(currentFirstSegment instanceof VertSegment)) {
-                    continue;
-                }
-            
-                Segment lastSegment = segments.get(segments.size() - 1);
-                if (!(lastSegment instanceof VertSegment)) {
-                    continue;
-                }
-                
-                int cP2Y = currentFirstSegment.p2.getY();
-                int cP1Y = currentFirstSegment.p1.getY();
-
-                int sP3Y = lastSegment.p3.getY();
-                int sP0Y = lastSegment.p0.getY();
-                
-                if ((((cP2Y - 1) == sP3Y) && ((cP1Y - 1) == sP0Y))
-                    || ((cP2Y == sP3Y) && (cP1Y == sP0Y))){
-                    LinkedList<Segment> tmp = new LinkedList<Segment>();
-                    tmp.addAll(segments);
-                    tmp.addAll(currentSegments);
-                    remove.add(Integer.valueOf(i));
-                    currentSegments.clear();
-                    currentSegments.addAll(tmp);
-                    continue;
-                }
-                
-                /*   
-                             -3 
-                    2 1      -2
-                    3 0 c[0] -1
-                    2 1       0
-                    3 0 c[1]
-                                   2 1
-                                   3 0  s[0]
-                */
-                
-                // last segment of current
-                Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
-                if (!(currentLastSegment instanceof VertSegment)) {
-                    continue;
-                }
-                
-                Segment firstSegment = segments.get(0);
-                if (!(firstSegment instanceof VertSegment)) {
-                    continue;
-                }
-                
-                int clP3Y = currentLastSegment.p3.getY();
-                int clP0Y = currentLastSegment.p0.getY();
-
-                int sP2Y = firstSegment.p2.getY();
-                int sP1Y = firstSegment.p1.getY();
-                
-                if ((((sP2Y - 1) == clP3Y) && ((sP1Y - 1) == clP0Y))
-                    || ((sP2Y == clP3Y) && (sP1Y == clP0Y))) {
-                    currentSegments.addAll(segments);
-                    remove.add(Integer.valueOf(i));
-                }
-                
-            } else {
-                //TODO: handle merging when segments were assembled with different
-                // directions.  preferably, do this at top of method.
-                // the caveat is that a linked list may be composed of items
-                // which are composed of any combination of horizontal,
-                // vertical, and diagonal already ordered by curve point order.
-            }
-        }
-        
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            sections.remove(remove.get(i).intValue());
-        }
-    }
-
-     private void mergeDiagonalIfAdjacent(List<LinkedList<Segment>> sections,
-        final Class<? extends DiagSegment> cls) {
+    /**
+     * @param sections
+     * @param cls should only extend DiagSegment or VertSegment
+     */
+     private void mergeIfAdjacent(List<LinkedList<Segment>> sections,
+        final Class<? extends Segment> cls) {
         
         if (sections.size() < 2) {
             return;
@@ -2934,6 +2502,169 @@ public class ButterflySectionFinder {
         
         return false;
     }
+
+    private Segment[] checkWideDiagSegments(int x, int y, Set<PairInt> points) {
+
+        Segment[] segments = checkUUWideDiagSegments(x, y, points);
+
+        if (segments != null) {
+            return segments;
+        }
+
+        segments = checkULWideDiagSegments(x, y, points);
+
+        return segments;
+    }
+    
+    private Segment[] checkUUWideDiagSegments(int x, int y, Set<PairInt> points) {
+                
+        /*
+                 UUWideDiagSegment
+              .   .            -3
+              - # - # -        -2
+                - 2 - 1 -      -1        1 to 0 is ---> R0
+                  - 3 - 0 -     0        3 to 2 is ---> R1
+                      .   .     1
+                 -3-2-1 0 1 2
+        */
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        zeroes.add(new PairInt(x + 1, y));
+        zeroes.add(new PairInt(x - 1, y));
+        zeroes.add(new PairInt(x - 3, y));
+        zeroes.add(new PairInt(x,     y - 1));
+        zeroes.add(new PairInt(x - 2, y - 1));
+        zeroes.add(new PairInt(x - 4, y - 1));
+        zeroes.add(new PairInt(x - 1, y - 2));
+        zeroes.add(new PairInt(x - 3, y - 2));
+        zeroes.add(new PairInt(x - 5, y - 2));
+        for (PairInt p : zeroes) {
+            if (points.contains(p)) {
+                return null;
+            }
+        }
+        
+        PairInt p1 = new PairInt(x - 1, y - 1);
+        PairInt p2 = new PairInt(x - 3, y - 1);
+        PairInt p3 = new PairInt(x - 2, y);
+        PairInt p11 = new PairInt(x - 2, y - 2);
+        PairInt p22 = new PairInt(x - 4, y - 2);
+        
+        if (!points.contains(p1)) {
+            return null;
+        }
+        if (!points.contains(p2)) {
+            return null;
+        }
+        if (!points.contains(p3)) {
+            return null;
+        }
+        if (!points.contains(p11)) {
+            return null;
+        }
+        if (!points.contains(p22)) {
+            return null;
+        }
+        
+        /*
+                 UUWideDiagSegment
+              .   .            -3
+              - # - # -        -2
+                - 2 - 1 -      -1        1 to 0 is ---> R0
+                  - 3 - 0 -     0        3 to 2 is ---> R1
+                      .   .     1
+                 -3-2-1 0 1 2
+        */
+        Segment s0 = new Segment();
+        s0.p0 = new PairInt(x, y);
+        s0.p1 = p1;
+        s0.p2 = p2;
+        s0.p3 = p3;
+        
+        Segment s1 = new Segment();
+        s1.p0 = p1.copy();
+        s1.p3 = p2.copy();
+        s1.p1 = p11;
+        s1.p2 = p22;
+        
+        return new Segment[]{s0, s1};
+    }
+    
+    private Segment[] checkULWideDiagSegments(int x, int y, Set<PairInt> points) {
+             
+        /*
+                  ULWideDiagSegment
+                            - .  -5
+                          - #    -4
+                        - 2 - .  -3
+                        3 - #    -2
+                      . - 1 -    -1        1 to 0 is ---> R0
+                        0 -       0        3 to 2 is ---> R1
+                      . -         1
+                 -3-2-1 0 1 2 3
+        */
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        zeroes.add(new PairInt(x, y + 1));
+        zeroes.add(new PairInt(x, y - 1));
+        zeroes.add(new PairInt(x, y - 3));
+        zeroes.add(new PairInt(x + 1, y));
+        zeroes.add(new PairInt(x + 1, y - 2));
+        zeroes.add(new PairInt(x + 1, y - 4));
+        zeroes.add(new PairInt(x + 2, y - 1));
+        zeroes.add(new PairInt(x + 2, y - 3));
+        zeroes.add(new PairInt(x + 2, y - 5));
+        for (PairInt p : zeroes) {
+            if (points.contains(p)) {
+                return null;
+            }
+        }
+        
+        PairInt p1 = new PairInt(x + 1, y - 1);
+        PairInt p2 = new PairInt(x + 1, y - 3);
+        PairInt p3 = new PairInt(x, y - 2);
+        PairInt p11 = new PairInt(x + 2, y - 2);
+        PairInt p22 = new PairInt(x + 2, y - 4);
+        
+        if (!points.contains(p1)) {
+            return null;
+        }
+        if (!points.contains(p2)) {
+            return null;
+        }
+        if (!points.contains(p3)) {
+            return null;
+        }
+        if (!points.contains(p11)) {
+            return null;
+        }
+        if (!points.contains(p22)) {
+            return null;
+        }
+        
+        /*
+                   ULWideDiagSegment
+                              .  -5
+                            #    -4
+                          2   .  -3
+                        3   #    -2
+                      .   1      -1        1 to 0 is ---> R0
+                        0         0        3 to 2 is ---> R1
+                      .           1
+                 -3-2-1 0 1 2 3
+        */
+        Segment s0 = new Segment();
+        s0.p0 = new PairInt(x, y);
+        s0.p1 = p1;
+        s0.p2 = p2;
+        s0.p3 = p3;
+        
+        Segment s1 = new Segment();
+        s1.p0 = p1.copy();
+        s1.p3 = p2.copy();
+        s1.p1 = p11;
+        s1.p2 = p22;
+        
+        return new Segment[]{s0, s1};
+    }
     
     /*
     may change these classes to have ordered points or to specify the
@@ -2992,6 +2723,8 @@ public class ButterflySectionFinder {
     public static class DiagZigZagSegment extends Segment {
     }
     public static class DiagZigZagSegment2 extends Segment {
+    }
+    public static class WideDiagSegment extends Segment {
     }
 
     public static class Pattern {
@@ -3421,7 +3154,7 @@ public class ButterflySectionFinder {
     /**
      * route0 and route1 are the two routes in opposite directions for a section
      * in a closed curve with a junction. route0 and route1 do not cross and are
-     * populated to help populate the curve so that the points are traversed in
+     * exist to help populate the curve so that the points are traversed in
      * opposite directions.
      */
     public static class Routes {
