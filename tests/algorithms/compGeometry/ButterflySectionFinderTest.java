@@ -721,6 +721,69 @@ public class ButterflySectionFinderTest extends TestCase {
         
     }
     
+    public void testFindButterflySectionsWideDiag() throws Exception {        
+        
+        for (int i = 0; i < 1; i++) {
+            
+            PairIntArray closedCurve = null;
+            
+            if (i == 0) {
+                closedCurve = getPattern13();
+            }
+
+            ButterflySectionFinder finder = new ButterflySectionFinder();
+
+            List<Routes> sections = finder.findButterflySections(closedCurve);
+
+            assertTrue(sections.size() == 1);
+
+            Routes routes = sections.get(0);
+
+            assertTrue(routes.route0.size() == 7);
+            assertTrue(routes.route1.size() == 7);
+            assertNotNull(routes.ep0);
+            assertNotNull(routes.ep0End);
+            assertNotNull(routes.ep1);
+            assertNotNull(routes.ep1End);
+
+            PairInt[] expectedR1 = new PairInt[]{
+                new PairInt(7, 16), new PairInt(8, 15),
+                new PairInt(9, 14), new PairInt(10, 13),
+                new PairInt(11, 12), new PairInt(12, 11),
+                new PairInt(13, 10)
+            };
+            PairInt[] expectedR0 = new PairInt[]{
+                new PairInt(13, 13), new PairInt(12, 13), new PairInt(11, 14), 
+                new PairInt(10, 15), new PairInt(9, 16), new PairInt(8, 17), 
+                new PairInt(8, 18)
+            };
+
+            assertEquals(routes.ep0, expectedR0[0]);
+            assertEquals(routes.ep0End, expectedR0[expectedR0.length - 1]);
+            assertEquals(routes.ep1, expectedR1[0]);
+            assertEquals(routes.ep1End, expectedR1[expectedR1.length - 1]);
+
+            Iterator<PairInt> r = routes.getRoute0().iterator();
+            int nIter = 0;
+            while (r.hasNext()) {
+                PairInt p = r.next();
+                PairInt pExpected = expectedR0[nIter];
+                assertEquals(pExpected, p);
+                nIter++;
+            }
+
+            r = routes.getRoute1().iterator();
+            nIter = 0;
+            while (r.hasNext()) {
+                PairInt p = r.next();
+                PairInt pExpected = expectedR1[nIter];
+                assertEquals(pExpected, p);
+                nIter++;
+            }
+        }
+        
+    }
+    
     protected PairIntArray getPattern10() {
         
         /*

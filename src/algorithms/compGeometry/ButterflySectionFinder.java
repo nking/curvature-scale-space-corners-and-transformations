@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -52,7 +53,11 @@ public class ButterflySectionFinder {
             points);
 
         if (sectionsSmall != null && !sectionsSmall.isEmpty()) {
-            output.addAll(sectionsSmall);
+            if (sections == null) {
+                output.addAll(sectionsSmall);
+            } else if (doesNotContain(sections, sectionsSmall)) {            
+                output.addAll(sectionsSmall);
+            }
         }
 
         setNullEndpoints(output);
@@ -488,6 +493,11 @@ public class ButterflySectionFinder {
 
                 routes = findEndPointsDiagPatterns(points, routes,
                     (DiagSegment)firstOrLastSegment);
+                
+            } else if (firstOrLastSegment instanceof WideDiagSegment) {
+
+                routes = findEndPointsWideDiagPatterns(points, routes,
+                    (WideDiagSegment)firstOrLastSegment);
             }
 
             if (routes == null) {
@@ -874,6 +884,101 @@ public class ButterflySectionFinder {
         return routes;
     }
 
+    private Routes findEndPointsWideDiagPatterns(Set<PairInt> points,
+        Routes routes, WideDiagSegment segment) {
+
+        int x0 = segment.p0.getX();
+        int y0 = segment.p0.getY();
+        
+        if (segment instanceof ULWideDiagSegment) {
+            // returns top endpoint of '2', then '1'
+            
+            PairInt[] endPoints = null;
+            if (!((routes != null) && (routes.ep0 != null) && (routes.ep1End != null))) {
+                endPoints = findULWideDiagTopEndpoints(points,
+                    (ULWideDiagSegment)segment);
+            }
+            if (endPoints != null) {
+                if (routes == null) {
+                    routes = createRoute(segment, x0, y0);
+                }
+                PairInt e0 = endPoints[1];
+                PairInt e1End = endPoints[0];
+                routes.route1.add(e1End);
+                routes.ep1End = e1End;
+                routes.ep0 = e0;
+                LinkedHashSet<PairInt> tmp0 = new LinkedHashSet<PairInt>();
+                tmp0.add(e0);
+                tmp0.addAll(routes.route0);
+                routes.route0 = tmp0;
+                return routes;
+            }
+            // returns bottom endpoint of '3', then '0'
+            if (!((routes != null) && (routes.ep1 != null) && (routes.ep0End != null))) {
+                endPoints = findULWideDiagBottomEndpoints(points,
+                    (ULWideDiagSegment)segment);
+            }
+            if (endPoints != null) {
+                if (routes == null) {
+                    routes = createRoute(segment, x0, y0);
+                }
+                PairInt e1 = endPoints[0];
+                PairInt e0End = endPoints[1];
+                routes.route0.add(e0End);
+                routes.ep0End = e0End;
+                routes.ep1 = e1;
+                LinkedHashSet<PairInt> tmp1 = new LinkedHashSet<PairInt>();
+                tmp1.add(e1);
+                tmp1.addAll(routes.route1);
+                routes.route1 = tmp1;
+                return routes;
+            }
+            return routes;
+        }
+        
+        // else is instance of UUWideDiagSegment
+        PairInt[] endPoints = null;
+        // returns top endpoint of '2', then '1'
+        if (!((routes != null) && (routes.ep0 != null) && (routes.ep1End != null))) {
+            endPoints = findUUWideDiagTopEndpoints(points, 
+                (UUWideDiagSegment)segment);
+        }
+        if (endPoints != null) {
+            if (routes == null) {
+                routes = createRoute(segment, x0, y0);
+            }
+            routes.route1.add(endPoints[0]);
+            routes.ep1End = endPoints[0];
+            routes.ep0 = endPoints[1];
+            LinkedHashSet<PairInt> tmp0 = new LinkedHashSet<PairInt>();
+            tmp0.add(endPoints[1]);
+            tmp0.addAll(routes.route0);
+            routes.route0 = tmp0;
+            return routes;
+        }
+        
+        // returns bottom endpoint of '3', then '0'
+        if (!((routes != null) && (routes.ep1 != null) && (routes.ep0End != null))) {
+            endPoints = findUUWideDiagBottomEndpoints(points,
+                (UUWideDiagSegment)segment);
+        }
+        if (endPoints != null) {
+            if (routes == null) {
+                routes = createRoute(segment, x0, y0);
+            }
+            routes.route0.add(endPoints[1]);
+            routes.ep0End = endPoints[1];
+            routes.ep1 = endPoints[0];
+            LinkedHashSet<PairInt> tmp1 = new LinkedHashSet<PairInt>();
+            tmp1.add(endPoints[0]);
+            tmp1.addAll(routes.route1);
+            routes.route1 = tmp1;
+            return routes;
+        }
+        
+        return routes;
+    }
+    
     private Set<PairInt> checkForZigZagEndPoints(Set<PairInt> points,
         Segment segment) {
 
@@ -1087,7 +1192,10 @@ public class ButterflySectionFinder {
             
             return routes;
 
-        } else if ((segment instanceof UUDiagSegment) || (segment instanceof ULDiagSegment)) {
+        } else if ((segment instanceof UUDiagSegment) 
+            || (segment instanceof ULDiagSegment) 
+            || (segment instanceof UUWideDiagSegment)
+            || (segment instanceof ULWideDiagSegment)) {
             Routes routes = new Routes();
             routes.route0.add(segment.p1);
             routes.route0.add(segment.p0);
@@ -1275,10 +1383,12 @@ public class ButterflySectionFinder {
             }
         }
         
-        if (segment instanceof HorizSegment || (segment instanceof ULDiagSegment)) {
+        if (segment instanceof HorizSegment || (segment instanceof ULDiagSegment)
+            || (segment instanceof ULWideDiagSegment)) {
             assert(segment.p3.getX() < segment.p2.getX());
             assert(segment.p0.getX() < segment.p1.getX());
-        } else if (segment instanceof VertSegment || (segment instanceof UUDiagSegment)) {
+        } else if (segment instanceof VertSegment || (segment instanceof UUDiagSegment)
+            || (segment instanceof UUWideDiagSegment)) {
             assert(segment.p3.getY() > segment.p2.getY());
             assert(segment.p0.getY() > segment.p1.getY());
         }
@@ -1712,6 +1822,10 @@ public class ButterflySectionFinder {
         
         mergeIfAdjacent(sections, VertSegment.class);
          
+        mergeIfAdjacent(sections, UUWideDiagSegment.class);
+        
+        mergeIfAdjacent(sections, ULWideDiagSegment.class);
+        
         mergeHorizontalIfAdjacent(sections);       
         
         //TODO: add logic for diagonal in between horizonal or vertical merges
@@ -2479,6 +2593,81 @@ public class ButterflySectionFinder {
         return null;
     }
 
+    private PairInt[] findULWideDiagTopEndpoints(Set<PairInt> points, 
+        ULWideDiagSegment segment) {
+        
+        // returns top endpoint of '2', then '1'
+        /*
+                  ULWideDiagSegment
+                                     -5
+                        a b c        -4
+                        - 2 d        -3
+                        3 - e        -2
+                      . - 1 f        -1        1 to 0 is ---> R0
+                        0 - g         0        3 to 2 is ---> R1
+                      . -             1
+                 -3-2-1 0 1 2 3 4
+        */
+        PairInt a = new PairInt(segment.p0.getX(),     segment.p0.getY() - 4);
+        PairInt b = new PairInt(segment.p0.getX() + 1, segment.p0.getY() - 4);
+        PairInt c = new PairInt(segment.p0.getX() + 2, segment.p0.getY() - 4);
+        PairInt d = new PairInt(segment.p0.getX() + 2, segment.p0.getY() - 3);
+        PairInt e = new PairInt(segment.p0.getX() + 2, segment.p0.getY() - 2);
+        PairInt f = new PairInt(segment.p0.getX() + 2, segment.p0.getY() - 1);
+        PairInt g = new PairInt(segment.p0.getX() + 2, segment.p0.getY());
+        PairInt[] t2 = new PairInt[]{a, b, c, d, e};
+        PairInt[] t1 = new PairInt[]{e, f, g};
+        /*
+        find unique pair from set2={a, b, c, d, e} and set1={e, f, g}
+        where the pair are not adjacent horizontally or vertically
+        */
+        Set<PairInt> set2 = new HashSet<PairInt>();
+        for (PairInt p : t2) {
+            if (points.contains(p)) {
+                set2.add(p);
+            }
+        }
+        if (set2.isEmpty()) {
+            return null;
+        }
+        
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        for (PairInt p : t1) {
+            if (points.contains(p)) {
+                set1.add(p);
+            }
+        }
+        if (set1.isEmpty()) {
+            return null;
+        }
+        
+        PairInt s2 = null;
+        PairInt s1 = null;
+        int minDistSq = Integer.MAX_VALUE;
+        for (PairInt p2 : set2) {
+            for (PairInt p1 : set1) {
+                if (p2.equals(p1)) {
+                    continue;
+                }
+                int diffX = Math.abs(p2.getX() - p1.getX());
+                int diffY = Math.abs(p2.getY() - p1.getY());
+                if ((diffX == 0 && diffY == 1) || (diffX == 1 && diffY == 0)) {
+                    continue;
+                }
+                int distSq = (diffX * diffX) + (diffY* diffY);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    s2 = p2;
+                    s1 = p1;
+                }
+            }
+        }
+        if (s2 != null && s1 != null) {
+            return new PairInt[]{s2, s1};
+        }
+        return null;
+    }
+
     /**
      * check for x or y coordinates being 0. note that it does not include
      * a check for maximum column or row.
@@ -2523,14 +2712,12 @@ public class ButterflySectionFinder {
               .   .            -3
               - # - # -        -2
                 - 2 - 1 -      -1        1 to 0 is ---> R0
-                  - 3 - 0 -     0        3 to 2 is ---> R1
+                    3 - 0       0        3 to 2 is ---> R1
                       .   .     1
                  -3-2-1 0 1 2
         */
         Set<PairInt> zeroes = new HashSet<PairInt>();
-        zeroes.add(new PairInt(x + 1, y));
         zeroes.add(new PairInt(x - 1, y));
-        zeroes.add(new PairInt(x - 3, y));
         zeroes.add(new PairInt(x,     y - 1));
         zeroes.add(new PairInt(x - 2, y - 1));
         zeroes.add(new PairInt(x - 4, y - 1));
@@ -2574,13 +2761,13 @@ public class ButterflySectionFinder {
                       .   .     1
                  -3-2-1 0 1 2
         */
-        Segment s0 = new Segment();
+        UUWideDiagSegment s0 = new UUWideDiagSegment();
         s0.p0 = new PairInt(x, y);
         s0.p1 = p1;
         s0.p2 = p2;
         s0.p3 = p3;
         
-        Segment s1 = new Segment();
+        UUWideDiagSegment s1 = new UUWideDiagSegment();
         s1.p0 = p1.copy();
         s1.p3 = p2.copy();
         s1.p1 = p11;
@@ -2595,17 +2782,15 @@ public class ButterflySectionFinder {
                   ULWideDiagSegment
                             - .  -5
                           - #    -4
-                        - 2 - .  -3
+                          2 - .  -3
                         3 - #    -2
                       . - 1 -    -1        1 to 0 is ---> R0
                         0 -       0        3 to 2 is ---> R1
-                      . -         1
+                      .           1
                  -3-2-1 0 1 2 3
         */
         Set<PairInt> zeroes = new HashSet<PairInt>();
-        zeroes.add(new PairInt(x, y + 1));
         zeroes.add(new PairInt(x, y - 1));
-        zeroes.add(new PairInt(x, y - 3));
         zeroes.add(new PairInt(x + 1, y));
         zeroes.add(new PairInt(x + 1, y - 2));
         zeroes.add(new PairInt(x + 1, y - 4));
@@ -2651,19 +2836,253 @@ public class ButterflySectionFinder {
                       .           1
                  -3-2-1 0 1 2 3
         */
-        Segment s0 = new Segment();
+        ULWideDiagSegment s0 = new ULWideDiagSegment();
         s0.p0 = new PairInt(x, y);
         s0.p1 = p1;
         s0.p2 = p2;
         s0.p3 = p3;
         
-        Segment s1 = new Segment();
+        ULWideDiagSegment s1 = new ULWideDiagSegment();
         s1.p0 = p1.copy();
         s1.p3 = p2.copy();
         s1.p1 = p11;
         s1.p2 = p22;
         
         return new Segment[]{s0, s1};
+    }
+
+    private PairInt[] findULWideDiagBottomEndpoints(Set<PairInt> points, 
+        ULWideDiagSegment segment) {
+        
+        // returns bottom endpoint of '3', then '0'
+        /*
+                  ULWideDiagSegment
+                                     -4
+                      a - 2          -3
+                      b 3 -          -2
+                      c - 1          -1        1 to 0 is ---> R0
+                      d 0 -           0        3 to 2 is ---> R1
+                      e f g           1
+        
+                 -3-2-1 0 1 2 3 4
+        */
+        PairInt a = new PairInt(segment.p0.getX() - 1, segment.p0.getY() - 3);
+        PairInt b = new PairInt(segment.p0.getX() - 1, segment.p0.getY() - 2);
+        PairInt c = new PairInt(segment.p0.getX() - 1, segment.p0.getY() - 1);
+        PairInt d = new PairInt(segment.p0.getX() - 1, segment.p0.getY());
+        PairInt e = new PairInt(segment.p0.getX() - 1, segment.p0.getY() + 1);
+        PairInt f = new PairInt(segment.p0.getX(),     segment.p0.getY() + 1);
+        PairInt g = new PairInt(segment.p0.getX() + 1, segment.p0.getY() + 1);
+        PairInt[] t3 = new PairInt[]{a, b, c};
+        PairInt[] t0 = new PairInt[]{c, d, e, f, g};
+        /*
+        find unique pair from set3={a,b,c} and set0={c,d,e,f, f}
+        where the pair are not adjacent horizontally or vertically
+        */
+        Set<PairInt> set3 = new HashSet<PairInt>();
+        for (PairInt p : t3) {
+            if (points.contains(p)) {
+                set3.add(p);
+            }
+        }
+        if (set3.isEmpty()) {
+            return null;
+        }
+        
+        Set<PairInt> set0 = new HashSet<PairInt>();
+        for (PairInt p : t0) {
+            if (points.contains(p)) {
+                set0.add(p);
+            }
+        }
+        if (set0.isEmpty()) {
+            return null;
+        }
+        
+        PairInt s3 = null;
+        PairInt s0 = null;
+        int minDistSq = Integer.MAX_VALUE;
+        for (PairInt p3 : set3) {
+            for (PairInt p0 : set0) {
+                if (p3.equals(p0)) {
+                    continue;
+                }
+                int diffX = Math.abs(p3.getX() - p0.getX());
+                int diffY = Math.abs(p3.getY() - p0.getY());
+                if ((diffX == 0 && diffY == 1) || (diffX == 1 && diffY == 0)) {
+                    continue;
+                }
+                int distSq = (diffX * diffX) + (diffY* diffY);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    s3 = p3;
+                    s0 = p0;
+                }
+            }
+        }
+        if (s3 != null && s0 != null) {
+            return new PairInt[]{s3, s0};
+        }
+        return null;
+    }
+
+    private PairInt[] findUUWideDiagTopEndpoints(Set<PairInt> points, 
+        UUWideDiagSegment segment) {
+        
+        // returns top endpoint of '2', then '1'
+        /*
+                 UUWideDiagSegment  top endpoint
+                               -3
+                c d e f g      -2
+                b 2 - 1 -      -1        1 to 0 is ---> R0
+                a - 3 - 0 -     0        3 to 2 is ---> R1
+                      .   .     1
+                 -3-2-1 0 1 2
+        */
+        PairInt a = new PairInt(segment.p0.getX() - 4, segment.p0.getY());
+        PairInt b = new PairInt(segment.p0.getX() - 4, segment.p0.getY() - 1);
+        PairInt c = new PairInt(segment.p0.getX() - 4, segment.p0.getY() - 2);
+        PairInt d = new PairInt(segment.p0.getX() - 3, segment.p0.getY() - 2);
+        PairInt e = new PairInt(segment.p0.getX() - 2, segment.p0.getY() - 2);
+        PairInt f = new PairInt(segment.p0.getX() - 1, segment.p0.getY() - 2);
+        PairInt g = new PairInt(segment.p0.getX(), segment.p0.getY() - 2);
+        PairInt[] t2 = new PairInt[]{a, b, c, d, e};
+        PairInt[] t1 = new PairInt[]{e, f, g};
+        /*
+        find unique pair from set2={a,b,c,d, e} and set1={e,f, g}
+        where the pair are not adjacent horizontally or vertically
+        */
+        Set<PairInt> set2 = new HashSet<PairInt>();
+        for (PairInt p : t2) {
+            if (points.contains(p)) {
+                set2.add(p);
+            }
+        }
+        if (set2.isEmpty()) {
+            return null;
+        }
+        
+        Set<PairInt> set1 = new HashSet<PairInt>();
+        for (PairInt p : t1) {
+            if (points.contains(p)) {
+                set1.add(p);
+            }
+        }
+        if (set1.isEmpty()) {
+            return null;
+        }
+       
+        PairInt s2 = null;
+        PairInt s1 = null;
+        int minDistSq = Integer.MAX_VALUE;
+        for (PairInt p2 : set2) {
+            for (PairInt p1 : set1) {
+                if (p2.equals(p1)) {
+                    continue;
+                }
+                int diffX = Math.abs(p2.getX() - p1.getX());
+                int diffY = Math.abs(p2.getY() - p1.getY());
+                if ((diffX == 0 && diffY == 1) || (diffX == 1 && diffY == 0)) {
+                    continue;
+                }
+                int distSq = (diffX * diffX) + (diffY* diffY);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    s2 = p2;
+                    s1 = p1;
+                }
+            }
+        }
+        if (s2 != null && s1 != null) {
+            return new PairInt[]{s2, s1};
+        }
+        return null; 
+    }
+
+    private PairInt[] findUUWideDiagBottomEndpoints(Set<PairInt> points, 
+        UUWideDiagSegment segment) {
+        
+        // returns bottom endpoint of '3', then '0'
+        /*
+                 UUWideDiagSegment  bottom endpoint
+                                 -2
+                  2 - 1 - g      -1        1 to 0 is ---> R0
+                  - 3 - 0 f       0        3 to 2 is ---> R1
+                  a b c d e       1
+                 -3-2-1 0 1 2
+        */
+        PairInt a = new PairInt(segment.p0.getX() - 3, segment.p0.getY() + 1);
+        PairInt b = new PairInt(segment.p0.getX() - 2, segment.p0.getY() + 1);
+        PairInt c = new PairInt(segment.p0.getX() - 1, segment.p0.getY() + 1);
+        PairInt d = new PairInt(segment.p0.getX(), segment.p0.getY() + 1);
+        PairInt e = new PairInt(segment.p0.getX() + 1, segment.p0.getY() + 1);
+        PairInt f = new PairInt(segment.p0.getX() + 1, segment.p0.getY());
+        PairInt g = new PairInt(segment.p0.getX() + 1, segment.p0.getY() - 1);
+        PairInt[] t3 = new PairInt[]{a, b, c};
+        PairInt[] t0 = new PairInt[]{c, d, e, f, g};
+        /*
+        find unique pair from set3={a,b,c} and set0={c,d,e,f, g}
+        where the pair are not adjacent horizontally or vertically
+        */
+        Set<PairInt> set3 = new HashSet<PairInt>();
+        for (PairInt p : t3) {
+            if (points.contains(p)) {
+                set3.add(p);
+            }
+        }
+        if (set3.isEmpty()) {
+            return null;
+        }
+        
+        Set<PairInt> set0 = new HashSet<PairInt>();
+        for (PairInt p : t0) {
+            if (points.contains(p)) {
+                set0.add(p);
+            }
+        }
+        if (set0.isEmpty()) {
+            return null;
+        }
+       
+        PairInt s3 = null;
+        PairInt s0 = null;
+        int minDistSq = Integer.MAX_VALUE;
+        for (PairInt p3 : set3) {
+            for (PairInt p0 : set0) {
+                if (p3.equals(p0)) {
+                    continue;
+                }
+                int diffX = Math.abs(p3.getX() - p0.getX());
+                int diffY = Math.abs(p3.getY() - p0.getY());
+                if ((diffX == 0 && diffY == 1) || (diffX == 1 && diffY == 0)) {
+                    continue;
+                }
+                int distSq = (diffX * diffX) + (diffY* diffY);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    s3 = p3;
+                    s0 = p0;
+                }
+            }
+        }
+        if (s3 != null && s0 != null) {
+            return new PairInt[]{s3, s0};
+        }
+        return null;
+    }
+
+    private boolean doesNotContain(List<Routes> sections, 
+        List<Routes> sections2) {
+        
+        // assert that sections does not contain any member of sections2
+        for (Routes r2: sections2) {
+            for (Routes r: sections) {
+                if (r.contains(r2)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     
     /*
@@ -2689,6 +3108,48 @@ public class ButterflySectionFinder {
             }
             return false;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            
+            if (!(obj instanceof Segment)) {
+                return false;
+            }
+            
+            Segment other = (Segment)obj;
+            
+            if ((other.p0 == null && p0 != null) || 
+                (other.p1 == null && p1 != null) || 
+                (other.p2 == null && p2 != null) ||
+                (other.p3 == null && p3 != null)) {
+                return false;
+            }
+            
+            if ((other.p0 == null && p0 == null) || 
+                (other.p1 == null && p1 == null) || 
+                (other.p2 == null && p2 == null) ||
+                (other.p3 == null && p3 == null)) {
+                return true;
+            }
+            
+            if (!p0.equals(other.p0) || !p1.equals(other.p1) 
+                || !p2.equals(other.p2) || !p3.equals(other.p3)) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+            hash = 29 * hash + Objects.hashCode(this.p0);
+            hash = 29 * hash + Objects.hashCode(this.p1);
+            hash = 29 * hash + Objects.hashCode(this.p2);
+            hash = 29 * hash + Objects.hashCode(this.p3);
+            return hash;
+        }
+        
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
@@ -2725,6 +3186,10 @@ public class ButterflySectionFinder {
     public static class DiagZigZagSegment2 extends Segment {
     }
     public static class WideDiagSegment extends Segment {
+    }
+    public static class UUWideDiagSegment extends WideDiagSegment {
+    }
+    public static class ULWideDiagSegment extends WideDiagSegment {
     }
 
     public static class Pattern {
@@ -3165,6 +3630,34 @@ public class ButterflySectionFinder {
         //route0, route1 need to be searchable but ordered.
         LinkedHashSet<PairInt> route0 = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> route1 = new LinkedHashSet<PairInt>();
+        public boolean contains(PairInt p) {
+            if (route0.contains(p)) {
+                return true;
+            }
+            if (route1.contains(p)) {
+                return true;
+            }
+            return false;
+        }
+        public boolean contains(Routes r) {
+            for (PairInt p : r.route0) {
+                if (route0.contains(p)) {
+                    return true;
+                }
+                if (route1.contains(p)) {
+                    return true;
+                }
+            }
+            for (PairInt p : r.route1) {
+                if (route0.contains(p)) {
+                    return true;
+                }
+                if (route1.contains(p)) {
+                    return true;
+                }
+            }
+            return false;
+        }
         public LinkedHashSet<PairInt> getRoute0() {
             return route0;
         }
