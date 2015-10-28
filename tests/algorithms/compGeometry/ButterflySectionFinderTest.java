@@ -642,16 +642,16 @@ public class ButterflySectionFinderTest extends TestCase {
         
     }
     
-    public void testFindButterflySectionsLargeDiag() throws Exception {
+    public void testFindButterflySectionsDiag() throws Exception {        
         
-        
-        
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 2; i++) {
             
             PairIntArray closedCurve = null;
             
             if (i == 0) {
                 closedCurve = getPattern12();
+            } else if (i == 1) {
+                closedCurve = getPattern12SwapX();
             }
 
             ButterflySectionFinder finder = new ButterflySectionFinder();
@@ -679,6 +679,19 @@ public class ButterflySectionFinderTest extends TestCase {
                 new PairInt(9, 15), new PairInt(8, 16), new PairInt(7, 17),
                 new PairInt(8, 18)
             };
+            
+            if (i == 1) {
+                expectedR1 = new PairInt[]{
+                    new PairInt(22, 18), new PairInt(23, 17), new PairInt(22, 16),
+                    new PairInt(21, 15), new PairInt(20, 14),
+                    new PairInt(19, 13), new PairInt(18, 13)
+                };
+                expectedR0 = new PairInt[]{
+                    new PairInt(19, 12), new PairInt(20, 13), new PairInt(21, 14),
+                    new PairInt(22, 15), new PairInt(23, 16), new PairInt(24, 17),
+                    new PairInt(25, 18)
+                };
+            }
 
             assertEquals(routes.ep0, expectedR0[0]);
             assertEquals(routes.ep0End, expectedR0[expectedR0.length - 1]);
@@ -965,6 +978,35 @@ public class ButterflySectionFinderTest extends TestCase {
         points.add(6, 20); points.add(5, 20);
         
         return points;
+    }
+    
+    private PairIntArray getPattern12SwapX() {
+        
+        /*
+                                                    @ @          20
+                                                  @     @        19
+                                                @     @          18
+                                                  @ @            17
+                                                @ @              16
+                                              @ @                15
+                                            @ @                  14
+                                      @ @ @ @                    13
+                                    @     @                      12
+                                  #     @                        11
+                                  # @ @                          10
+        
+            4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 
+                        1                   2                   3
+         */
+
+        PairIntArray p = getPattern12();
+        for (int i = 0; i < p.getN(); ++i) {
+            int x = 30 - p.getX(i);
+            int y = p.getY(i);
+            p.set(i, x, y);
+        }
+        
+        return p;
     }
     
     protected PairIntArray getPattern13() {

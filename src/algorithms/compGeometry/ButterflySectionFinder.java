@@ -900,7 +900,7 @@ public class ButterflySectionFinder {
         }
         
         // else is instance of UUDiagSegment
-        
+    
         // returns top endpoint of '2', then '1'
         PairInt[] endPoints = findUUDiagTopEndpoints(points, 
             (UUDiagSegment)segment);
@@ -1332,26 +1332,7 @@ public class ButterflySectionFinder {
         routes.ep1 = tE1;
     }
 
-    /**
-     * add segment to routes and return 1 if did, else 0 (0 occurs when 
-     * segment is already part of routes).
-     * @param routes
-     * @param segment
-     * @return 
-     */
     private int addSegmentToRoutes(Routes routes, Segment segment) {
-
-        if ((segment instanceof VertSegment) || (segment instanceof HorizSegment)
-            || (segment instanceof  ULDiagSegment)) {
-            return addVertHorizSegmentToRoutes(routes, segment);
-        } else if (segment instanceof UUDiagSegment) {
-            return addUUDiagSegmentToRoutes(routes, (UUDiagSegment)segment);
-        }
-
-        return 0;
-    }
-
-    private int addVertHorizSegmentToRoutes(Routes routes, Segment segment) {
 
         assert(!routes.route0.isEmpty());
         assert(!routes.route1.isEmpty());
@@ -1380,22 +1361,21 @@ public class ButterflySectionFinder {
                        0             0
                                      1
              -3 -2 -1  0  1  2  3
+        
+        
+                UU Diag
+                -         -2
+             2  1  -  -   -1    1 to 0 is ---> R0
+             -  3  0  -    0
+             -  -          1    3 to 2 is ---> R1
+        
+         -3 -2 -1  0  1
         */ 
         
         // if segment is already in routes, return
-        if (segment instanceof HorizSegment || segment instanceof ULDiagSegment) {
-            if (routes.route0.contains(segment.p0) && routes.route0.contains(segment.p1)
-                && routes.route1.contains(segment.p2) && routes.route1.contains(segment.p3)) {
-                return 0;
-            }
-        } else if (segment instanceof VertSegment) {
-            if (routes.route1.contains(segment.p2) && routes.route1.contains(segment.p3)
-                && routes.route0.contains(segment.p1) && routes.route0.contains(segment.p0)) {
-                return 0;
-            }
-        } else {
-            throw new IllegalArgumentException(
-            "segment must be type HorizSegment or VertSegment");
+        if (routes.route0.contains(segment.p0) && routes.route0.contains(segment.p1)
+            && routes.route1.contains(segment.p2) && routes.route1.contains(segment.p3)) {
+            return 0;
         }
       
         // -------- add to routes1 -------------------------
@@ -1418,11 +1398,11 @@ public class ButterflySectionFinder {
                 p2MinIdx = i;
             }
         }
-
+        
         if (segment instanceof HorizSegment || (segment instanceof ULDiagSegment)) {
             assert(segment.p3.getX() < segment.p2.getX());
             assert(segment.p0.getX() < segment.p1.getX());
-        } else if (segment instanceof VertSegment) {
+        } else if (segment instanceof VertSegment || (segment instanceof UUDiagSegment)) {
             assert(segment.p3.getY() > segment.p2.getY());
             assert(segment.p0.getY() > segment.p1.getY());
         }
@@ -1454,6 +1434,14 @@ public class ButterflySectionFinder {
                        0             0
                                      1
              -3 -2 -1  0  1  2  3
+        
+              UU Diag
+                -         -2
+             2  1  -  -   -1    1 to 0 is ---> R0
+             -  3  0  -    0
+             -  -          1    3 to 2 is ---> R1
+        
+         -3 -2 -1  0  1
         */   
         
         if ((p2MinDistSq > p3MinDistSq) && (p3MinIdx == 1)) {
@@ -2596,19 +2584,19 @@ public class ButterflySectionFinder {
         3 to 2 is ---> R1
         
                    UU Diag, top endpoints
-              c  d  e  f
+              c  d  e  f          -2
               b  2  1  -  -       -1    
               a  -  3  0  -        0
                  -  -              1    
 
              -3 -2 -1  0  1
         */
-        PairInt a = new PairInt(segment.p2.getX() - 1, segment.p2.getY() + 1);
-        PairInt b = new PairInt(segment.p2.getX() - 1, segment.p2.getY());
-        PairInt c = new PairInt(segment.p2.getX() - 1, segment.p2.getY() - 1);
-        PairInt d = new PairInt(segment.p2.getX(),     segment.p2.getY() - 1);
-        PairInt e = new PairInt(segment.p1.getX(),     segment.p1.getY() - 1);
-        PairInt f = new PairInt(segment.p1.getX() + 1, segment.p1.getY() - 1);
+        PairInt a = new PairInt(segment.p0.getX() - 3, segment.p0.getY());
+        PairInt b = new PairInt(segment.p0.getX() - 3, segment.p0.getY() - 1);
+        PairInt c = new PairInt(segment.p0.getX() - 3, segment.p0.getY() - 2);
+        PairInt d = new PairInt(segment.p0.getX() - 2, segment.p0.getY() - 2);
+        PairInt e = new PairInt(segment.p0.getX() - 1, segment.p0.getY() - 2);
+        PairInt f = new PairInt(segment.p0.getX(),     segment.p0.getY() - 2);
         PairInt[] t2 = new PairInt[]{a, b, c, d};
         PairInt[] t1 = new PairInt[]{d, e, f};
         /*
@@ -2692,9 +2680,9 @@ public class ButterflySectionFinder {
 
              -3 -2 -1  0  1
         */
-        PairInt a = new PairInt(segment.p3.getX() - 1, segment.p3.getY() + 1);
-        PairInt b = new PairInt(segment.p3.getX(),     segment.p3.getY() + 1);
-        PairInt c = new PairInt(segment.p3.getX() + 1, segment.p3.getY() + 1);
+        PairInt a = new PairInt(segment.p0.getX() - 2, segment.p0.getY() + 1);
+        PairInt b = new PairInt(segment.p0.getX() - 1, segment.p0.getY() + 1);
+        PairInt c = new PairInt(segment.p0.getX(),     segment.p0.getY() + 1);
         PairInt d = new PairInt(segment.p0.getX() + 1, segment.p0.getY() + 1);
         PairInt e = new PairInt(segment.p0.getX() + 1, segment.p0.getY());
         PairInt f = new PairInt(segment.p0.getX() + 1, segment.p0.getY() - 1);
