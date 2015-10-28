@@ -103,6 +103,12 @@ public class ButterflySectionFinder {
 
             Segment segment = checkSegmentPatterns(x, y, points, neighbors);
 
+            // cannot have a segment touching the image boundaries, though
+            // that may need to change
+            if ((segment != null) && isOnImageBoundaries(segment)) {
+                segment = null;
+            }
+            
             if (segment == null) {
                 if (currentList != null) {
                     candidateSections.add(currentList);
@@ -1170,8 +1176,16 @@ public class ButterflySectionFinder {
         if (endPoints.size() < 2) {
             throw new IllegalStateException("error in algorithm");
         }
-        assert(routes.ep0End == null);
-        assert(routes.ep1 == null);
+        if ((routes.ep0End != null) || (routes.ep1 != null)) {
+            routes.route0.clear();
+            routes.route1.clear();
+            routes.ep0 = null;
+            routes.ep0End = null;
+            routes.ep1 = null;
+            routes.ep1End = null;
+        }
+        //assert(routes.ep0End == null);
+        //assert(routes.ep1 == null);
 
         /*
            endPointsVertPattern1, for example
@@ -1260,75 +1274,6 @@ public class ButterflySectionFinder {
         tmp0.addAll(routes.route0);
         routes.route0 = tmp0;
         routes.ep0 = tE0;
-    }
-
-    private void addEndpointsForUUDiagPattern(final int x0, final int y0,
-        final Pattern pattern, Routes routes, Set<PairInt> endPoints) {
-//IMMED: edit here
-        if (endPoints.size() < 3) {
-            throw new IllegalStateException("error in algorithm");
-        }
-        assert(routes.ep0End == null);
-        assert(routes.ep1 == null);
-
-        /*
-           UUDiagPattern1, for example
-                -  -          -2
-          -  2  1  -  -       -1
-          -  -  3 .0  #        0    <--# is route0 end endpoint
-             -  .  -           1
-                -  #           2    <--# is route1 start endpoint
-
-         -3 -2 -1  0  1
-        */
-        assert(pattern.ep0 != null);
-        assert(pattern.ep1 != null);
-
-        PairInt tI = new PairInt(x0 - 1, y0 + 1);
-        PairInt tE0 = new PairInt(x0 + pattern.ep0.getX(), y0 + pattern.ep0.getY());
-        PairInt tE1 = new PairInt(x0 + pattern.ep1.getX(), y0 + pattern.ep1.getY());
-        if (!endPoints.contains(tI) && !routes.getRoute0().contains(tI)) {
-            throw new IllegalStateException("error in algorithm");
-        }
-        if (!endPoints.contains(tE0) || !endPoints.contains(tE1)) {
-            throw new IllegalStateException("error in algorithm");
-        }
-        if (routes.getRoute0().isEmpty()) {
-            routes.route0.add(tE0);
-        } else if (routes.getRoute0().size() > 1) {
-            PairInt[] secondToLastAndLast = getSecondToLastAndLast(
-                routes.getRoute0().iterator());
-            if (secondToLastAndLast[1].equals(tE0)) {
-                // no need to add either to route
-            } else {
-                routes.route0.add(tE0);
-            }
-        }
-        routes.ep0End = tE0;
-
-        if (routes.getRoute1().isEmpty()) {
-            routes.route1.add(tE1);
-            routes.route1.add(tI);
-        } else if (routes.getRoute1().size() > 1) {
-            Iterator<PairInt> iter1 = routes.getRoute1().iterator();
-            PairInt r1 = iter1.next();
-            PairInt r2 = iter1.next();
-            if (r1.equals(tE1) && r2.equals(tI)) {
-                // no need to add to route
-            } else if (r1.equals(tI)) {
-                LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
-                tmpR1.add(tE1);
-                tmpR1.addAll(routes.route1);
-                routes.route1 = tmpR1;
-            } else {
-                LinkedHashSet<PairInt> tmpR1 = new LinkedHashSet<PairInt>();
-                tmpR1.add(tE1);
-                tmpR1.add(tI);
-                tmpR1.addAll(routes.route1);
-                routes.route1 = tmpR1;
-            }
-        }
-        routes.ep1 = tE1;
     }
 
     private int addSegmentToRoutes(Routes routes, Segment segment) {
@@ -2957,6 +2902,30 @@ public class ButterflySectionFinder {
             return new PairInt[]{s3, s0};
         }
         return null;
+    }
+
+    /**
+     * check for x or y coordinates being 0. note that it does not include
+     * a check for maximum column or row.
+     * @param segment
+     * @return 
+     */
+    private boolean isOnImageBoundaries(Segment segment) {
+        
+        if (segment.p0.getX() == 0 || segment.p0.getY() == 0) {
+            return true;
+        }
+        if (segment.p1.getX() == 0 || segment.p1.getY() == 0) {
+            return true;
+        }
+        if (segment.p2.getX() == 0 || segment.p2.getY() == 0) {
+            return true;
+        }
+        if (segment.p3.getX() == 0 || segment.p3.getY() == 0) {
+            return true;
+        }
+        
+        return false;
     }
     
     /*
