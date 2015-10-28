@@ -226,50 +226,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         }
     }
 
-    protected void adjustEdgesTowardsBrightPixels(List<PairIntArray> tmpEdges) {
-
-        if (edgeGuideImage == null) {
-            return;
-        }
-
-        int nReplaced = 1;
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        int nMaxIter = 100;
-        int nIter = 0;
-
-        while ((nIter < nMaxIter) && (nReplaced > 0)) {
-
-           nReplaced = 0;
-
-           for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
-
-                PairIntArray edge = tmpEdges.get(lIdx);
-
-                if (edge.getN() < 3) {
-                    continue;
-                }
-
-                int nEdgeReplaced = curveHelper.adjustEdgesTowardsBrighterPixels(
-                    edge, edgeGuideImage);
-
-                nReplaced += nEdgeReplaced;
-            }
-
-            log.fine("REPLACED: " + nReplaced + " nIter=" + nIter);
-
-            nIter++;
-        }
-
-        //TODO: fix this method!
-        curveHelper.removeRedundantPoints(tmpEdges);
-
-        curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
-
-        curveHelper.correctCheckeredSegments(tmpEdges);
-    }
-
     /**
      * add (vX, vY) to output where (uX,uY) is the last point, else create
      * new edges where necessary.  returns the index

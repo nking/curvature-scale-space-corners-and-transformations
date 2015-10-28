@@ -6,47 +6,20 @@ public class ArrayPair {
     
     protected final float[] y;
     
-    protected final float[] xe;
-    
-    protected final float[] ye;
-    
-<span class="fc" id="L13">    public ArrayPair(float[] a1, float[] a2) {</span>
+<span class="fc" id="L9">    public ArrayPair(float[] a1, float[] a2) {</span>
         
-<span class="fc" id="L15">        this.x = a1;</span>
+<span class="fc" id="L11">        this.x = a1;</span>
         
-<span class="fc" id="L17">        this.y = a2;</span>
+<span class="fc" id="L13">        this.y = a2;</span>
         
-<span class="fc" id="L19">        this.xe = null;</span>
-        
-<span class="fc" id="L21">        this.ye = null;</span>
-<span class="fc" id="L22">    }</span>
-    
-    public ArrayPair(float[] xArray, float[] yArray, float[] xErrorArray, 
-<span class="nc" id="L25">        float[] yErrorArray) {</span>
-        
-<span class="nc" id="L27">        this.x = xArray;</span>
-        
-<span class="nc" id="L29">        this.y = yArray;</span>
-        
-<span class="nc" id="L31">        this.xe = xErrorArray;</span>
-        
-<span class="nc" id="L33">        this.ye = yErrorArray;</span>
-<span class="nc" id="L34">    }</span>
-    
+<span class="fc" id="L15">    }    </span>
     public float[] getX() {
-<span class="fc" id="L37">        return x;</span>
+<span class="fc" id="L17">        return x;</span>
     }
     
     public float[] getY() {
-<span class="fc" id="L41">        return y;</span>
+<span class="fc" id="L21">        return y;</span>
     }
     
-    public float[] getXErrors() {
-<span class="nc" id="L45">        return xe;</span>
-    }
-    
-    public float[] getYErrors() {
-<span class="nc" id="L49">        return ye;</span>
-    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

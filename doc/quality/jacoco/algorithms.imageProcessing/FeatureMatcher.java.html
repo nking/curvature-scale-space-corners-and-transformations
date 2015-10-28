@@ -706,8 +706,8 @@ public class FeatureMatcher {
 <span class="fc" id="L706">                    continue;</span>
                 }
 <span class="fc bfc" id="L708" title="All 2 branches covered.">                for (int y1d = (y1 - dither); y1d &lt;= (y1 + dither); ++y1d) {</span>
-<span class="pc bpc" id="L709" title="1 of 2 branches missed.">                    if (!features1.isWithinYBounds(y1d)) {</span>
-<span class="nc" id="L710">                        continue;</span>
+<span class="fc bfc" id="L709" title="All 2 branches covered.">                    if (!features1.isWithinYBounds(y1d)) {</span>
+<span class="fc" id="L710">                        continue;</span>
                     }
                     
 <span class="fc" id="L713">                    IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);</span>

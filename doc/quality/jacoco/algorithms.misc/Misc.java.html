@@ -225,34 +225,5 @@ import java.util.Stack;
 <span class="fc" id="L225">        return xyout;</span>
     }
 
-    public static Set&lt;Integer&gt; findNeighborIndexes(PairIntArray edge, int idx) {
-        
-<span class="nc" id="L230">        Set&lt;Integer&gt; indexes = new HashSet&lt;Integer&gt;();</span>
-        
-<span class="nc" id="L232">        int x = edge.getX(idx);</span>
-<span class="nc" id="L233">        int y = edge.getY(idx);</span>
-        
-<span class="nc" id="L235">        return findNeighborIndexes(edge, x, y);</span>
-    }
-    public static Set&lt;Integer&gt; findNeighborIndexes(PairIntArray edge, int x, int y) {
-        
-<span class="nc" id="L239">        Set&lt;Integer&gt; indexes = new HashSet&lt;Integer&gt;();</span>
-        
-<span class="nc bnc" id="L241" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); ++i) {</span>
-<span class="nc" id="L242">            int x2 = edge.getX(i);</span>
-<span class="nc" id="L243">            int y2 = edge.getY(i);</span>
-<span class="nc bnc" id="L244" title="All 4 branches missed.">            if ((x2 == x) &amp;&amp; (y2 == y)) {</span>
-<span class="nc" id="L245">                continue;</span>
-            }
-<span class="nc" id="L247">            int xDiff = Math.abs(x2 - x);</span>
-<span class="nc" id="L248">            int yDiff = Math.abs(y2 - y);</span>
-<span class="nc bnc" id="L249" title="All 4 branches missed.">            if ((xDiff &lt; 2) &amp;&amp; (yDiff &lt; 2)) {</span>
-<span class="nc" id="L250">                indexes.add(Integer.valueOf(i));</span>
-            }
-        }
-        
-<span class="nc" id="L254">        return indexes;</span>
-    }
-   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

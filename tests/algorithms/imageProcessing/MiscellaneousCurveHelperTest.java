@@ -406,6 +406,26 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         cenXY = helper.calculateXYCentroids(xyp);
         assertTrue(cenXY[0] == 5);
         assertTrue(cenXY[1] == 3);
+        
+        //---
+        List<PairIntArray> list = new ArrayList<PairIntArray>();
+        PairIntArray pa0 = new PairIntArray();
+        for (int i = 0; i < xy.getN()/2; i++) {
+            int xp = xy.getX(i);
+            int yp = xy.getY(i);
+            pa0.add(xp, yp);
+        }
+        list.add(pa0);
+        PairIntArray pa1 = new PairIntArray();
+        for (int i = xy.getN()/2; i < xy.getN(); i++) {
+            int xp = xy.getX(i);
+            int yp = xy.getY(i);
+            pa1.add(xp, yp);
+        }
+        list.add(pa1);
+        cenXY = helper.calculateXYCentroids(xyp);
+        assertTrue(cenXY[0] == 5);
+        assertTrue(cenXY[1] == 3);
     }
     
     /**

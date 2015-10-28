@@ -642,7 +642,7 @@ public class ButterflySectionFinderTest extends TestCase {
     
     public void testFindButterflySectionsDiag() throws Exception {        
         
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             
             PairIntArray closedCurve = null;
             
@@ -654,6 +654,9 @@ public class ButterflySectionFinderTest extends TestCase {
                 closedCurve = getPattern12Crossed();
             } else if (i == 3) {
                 closedCurve = getPattern12CrossedSwapX();
+            } else if (i == 4) {
+                closedCurve = getPattern12Crossed();
+                closedCurve.reverse();
             }
 
             ButterflySectionFinder finder = new ButterflySectionFinder();
