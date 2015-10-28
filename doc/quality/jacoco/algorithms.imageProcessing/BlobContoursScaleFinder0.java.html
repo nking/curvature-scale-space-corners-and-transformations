@@ -197,7 +197,7 @@ import java.util.Set;
                 }
             }
             
-<span class="fc bfc" id="L200" title="All 2 branches covered.">            if (bestMatches != null) {</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">            if (bestMatches != null) {</span>
 <span class="fc" id="L201">                trMap.put(Integer.valueOf(i), bestMatches);</span>
             }
         }
@@ -243,8 +243,8 @@ ImageIOHelper.writeLabeledRegions(cr2, 0, 0, &quot;/debug_labeled_contours_2.png
 int z = 1;//1,3 in contours2 should be averaged?
 } catch(IOException e) {
 } */       
-<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (trMap.isEmpty()) {</span>
-<span class="fc" id="L247">            return null;</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (trMap.isEmpty()) {</span>
+<span class="nc" id="L247">            return null;</span>
         }
         
         // find best (lowest cost) and combine others with it if similar
@@ -274,15 +274,15 @@ int z = 1;//1,3 in contours2 should be averaged?
             
 <span class="fc" id="L275">            TransformationPair3 tr = entry.getValue();</span>
             
-<span class="fc bfc" id="L277" title="All 2 branches covered.">            if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">            if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {</span>
                 
-<span class="fc" id="L279">                float[] outputScaleRotTransXYStDev00 = new float[4];</span>
-<span class="fc" id="L280">                TransformationParameters params = calculateTransformation(</span>
-<span class="fc" id="L281">                    binFactor1, binFactor2, tr.getMatchedCompStats(), </span>
+<span class="nc" id="L279">                float[] outputScaleRotTransXYStDev00 = new float[4];</span>
+<span class="nc" id="L280">                TransformationParameters params = calculateTransformation(</span>
+<span class="nc" id="L281">                    binFactor1, binFactor2, tr.getMatchedCompStats(), </span>
                     outputScaleRotTransXYStDev00);
                 
-<span class="pc bpc" id="L284" title="1 of 2 branches missed.">                if (params != null) {</span>
-<span class="pc bpc" id="L285" title="1 of 2 branches missed.">                    if (areSimilar(minCostParams, params, 25)) {</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">                if (params != null) {</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">                    if (areSimilar(minCostParams, params, 25)) {</span>
 <span class="nc" id="L286">                        combine.addAll(tr.getMatchedCompStats());</span>
                     }
                 }

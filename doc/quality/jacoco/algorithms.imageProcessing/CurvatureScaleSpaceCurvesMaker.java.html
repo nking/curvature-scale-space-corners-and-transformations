@@ -63,7 +63,7 @@ import java.util.logging.Logger;
         */
         
 <span class="fc bfc" id="L65" title="All 2 branches covered.">        while (hasInflectionPoints</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">            &amp;&amp; (resultingSigma &lt; SIGMA.getValue(sigmaEnd))) {</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            &amp;&amp; (resultingSigma &lt; SIGMA.getValue(sigmaEnd))) {</span>
 
             ScaleSpaceCurve curve;
             
@@ -126,7 +126,7 @@ import java.util.logging.Logger;
 <span class="pc bpc" id="L126" title="1 of 2 branches missed.">        Float maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();</span>
         
 <span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if ((maxSigma != null) &amp;&amp; </span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">            sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {</span>
             
 <span class="fc" id="L131">            sortedMap.remove(maxSigma);</span>
             

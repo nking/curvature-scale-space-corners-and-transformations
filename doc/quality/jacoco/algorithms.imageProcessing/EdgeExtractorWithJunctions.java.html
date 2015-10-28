@@ -1270,9 +1270,9 @@ import java.util.logging.Level;
 <span class="fc" id="L1270">                PairIntArray pixEdge = edges.get(loc.getX());</span>
 <span class="fc" id="L1271">                PairInt pixCoords = new PairInt(pixEdge.getX(loc.getY()),</span>
 <span class="fc" id="L1272">                    pixEdge.getY(loc.getY()));</span>
-<span class="fc bfc" id="L1273" title="All 2 branches covered.">                if (exclude.contains(pixCoords)) {</span>
-<span class="fc" id="L1274">                    foundAnotherEdge = false;</span>
-<span class="fc" id="L1275">                    break;</span>
+<span class="pc bpc" id="L1273" title="1 of 2 branches missed.">                if (exclude.contains(pixCoords)) {</span>
+<span class="nc" id="L1274">                    foundAnotherEdge = false;</span>
+<span class="nc" id="L1275">                    break;</span>
                 }
 
 <span class="fc" id="L1278">                foundAnotherEdge = true;</span>
@@ -1745,8 +1745,8 @@ import java.util.logging.Level;
 <span class="fc" id="L1745">                    boolean isFirstEndPoint1 = false;</span>
 <span class="fc bfc" id="L1746" title="All 2 branches covered.">                    if (loc1.getY() == 0) {</span>
 <span class="fc" id="L1747">                        isFirstEndPoint1 = true;</span>
-<span class="pc bpc" id="L1748" title="1 of 4 branches missed.">                    } else if ((loc1.getY() != (n1 - 1)) &amp;&amp; (loc1.getY() &lt; 2)) {</span>
-<span class="nc" id="L1749">                        isFirstEndPoint1 = true;</span>
+<span class="fc bfc" id="L1748" title="All 4 branches covered.">                    } else if ((loc1.getY() != (n1 - 1)) &amp;&amp; (loc1.getY() &lt; 2)) {</span>
+<span class="fc" id="L1749">                        isFirstEndPoint1 = true;</span>
                     }
 
 <span class="fc bfc" id="L1752" title="All 4 branches covered.">                    if (isFirstEndPoint0 &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
@@ -1978,11 +1978,11 @@ import java.util.logging.Level;
             // i may be merged into maxEdgeIdx
 <span class="fc" id="L1979">            int nInserted = insert(theEdgeToPixelIndexMap, edges, maxEdgeIdx, i);</span>
 
-<span class="fc bfc" id="L1981" title="All 2 branches covered.">            if (nInserted &gt; 0) {</span>
+<span class="pc bpc" id="L1981" title="1 of 2 branches missed.">            if (nInserted &gt; 0) {</span>
 
-<span class="fc" id="L1983">                findJunctions(edges);</span>
+<span class="nc" id="L1983">                findJunctions(edges);</span>
 
-<span class="fc" id="L1985">                theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();</span>
+<span class="nc" id="L1985">                theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();</span>
             }
 
 <span class="fc" id="L1988">            nChanged += nInserted;</span>
@@ -2388,20 +2388,20 @@ import java.util.logging.Level;
 
 <span class="fc bfc" id="L2389" title="All 2 branches covered.">        for (Entry&lt;PairInt, Set&lt;PairInt&gt;&gt; entry : adjToEdge1LocMap.entrySet()) {</span>
 <span class="fc" id="L2390">            PairInt edge1Loc = entry.getKey();</span>
-<span class="fc bfc" id="L2391" title="All 2 branches covered.">            if (edge1Loc.getY() == 0) {</span>
-<span class="fc" id="L2392">                edge2LocForEdge1FirstLoc = entry.getValue();</span>
+<span class="pc bpc" id="L2391" title="1 of 2 branches missed.">            if (edge1Loc.getY() == 0) {</span>
+<span class="nc" id="L2392">                edge2LocForEdge1FirstLoc = entry.getValue();</span>
 <span class="fc bfc" id="L2393" title="All 2 branches covered.">            } else if (edge1Loc.getY() == (edge1.getN() - 1)) {</span>
 <span class="fc" id="L2394">                edge2LocForEdge1LastLoc = entry.getValue();</span>
             }
 <span class="fc" id="L2396">        }</span>
 
-<span class="pc bpc" id="L2398" title="1 of 4 branches missed.">        if ((edge2LocForEdge1FirstLoc != null) &amp;&amp; !edge2LocForEdge1FirstLoc.isEmpty()) {</span>
+<span class="pc bpc" id="L2398" title="3 of 4 branches missed.">        if ((edge2LocForEdge1FirstLoc != null) &amp;&amp; !edge2LocForEdge1FirstLoc.isEmpty()) {</span>
 
-<span class="fc" id="L2400">            int nIns = insertForEdge1FirstLocation(output, edge1Idx, edge2Idx,</span>
+<span class="nc" id="L2400">            int nIns = insertForEdge1FirstLocation(output, edge1Idx, edge2Idx,</span>
                 edge2LocForEdge1FirstLoc);
 
-<span class="pc bpc" id="L2403" title="1 of 2 branches missed.">            if (nIns &gt; 0) {</span>
-<span class="fc" id="L2404">                return nIns;</span>
+<span class="nc bnc" id="L2403" title="All 2 branches missed.">            if (nIns &gt; 0) {</span>
+<span class="nc" id="L2404">                return nIns;</span>
             }
         }
 
@@ -2983,9 +2983,9 @@ import java.util.logging.Level;
     private int insertForEdge1FirstLocation(List&lt;PairIntArray&gt; edges,
         final int edge1Idx, final int edge2Idx, Set&lt;PairInt&gt; edge2LocForEdge1FirstLoc) {
 
-<span class="fc" id="L2986">        PairIntArray edge1 = edges.get(edge1Idx);</span>
+<span class="nc" id="L2986">        PairIntArray edge1 = edges.get(edge1Idx);</span>
 
-<span class="fc" id="L2988">        PairIntArray edge2 = edges.get(edge2Idx);</span>
+<span class="nc" id="L2988">        PairIntArray edge2 = edges.get(edge2Idx);</span>
 
         /*
         have found locations in edge2 close to the first point in edge1
@@ -3011,17 +3011,17 @@ import java.util.logging.Level;
                              cIdx + 1
         */
 
-<span class="pc bpc" id="L3014" title="1 of 2 branches missed.">        for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {</span>
-<span class="pc bpc" id="L3015" title="1 of 2 branches missed.">            if (edge2Loc.getY() == 0) {</span>
+<span class="nc bnc" id="L3014" title="All 2 branches missed.">        for (PairInt edge2Loc : edge2LocForEdge1FirstLoc) {</span>
+<span class="nc bnc" id="L3015" title="All 2 branches missed.">            if (edge2Loc.getY() == 0) {</span>
 <span class="nc" id="L3016">                edge2.reverse();</span>
 <span class="nc" id="L3017">                edge1.insertAll(0, edge2);</span>
 <span class="nc" id="L3018">                edges.remove(edge2Idx);</span>
 <span class="nc" id="L3019">                return 1;</span>
-<span class="pc bpc" id="L3020" title="1 of 2 branches missed.">            } else if (edge2Loc.getY() == (edge2.getN() - 1)) {</span>
-<span class="fc" id="L3021">                edge2.addAll(edge1);</span>
-<span class="fc" id="L3022">                edges.set(edge1Idx, edge2);</span>
-<span class="fc" id="L3023">                edges.remove(edge2Idx);</span>
-<span class="fc" id="L3024">                return 1;</span>
+<span class="nc bnc" id="L3020" title="All 2 branches missed.">            } else if (edge2Loc.getY() == (edge2.getN() - 1)) {</span>
+<span class="nc" id="L3021">                edge2.addAll(edge1);</span>
+<span class="nc" id="L3022">                edges.set(edge1Idx, edge2);</span>
+<span class="nc" id="L3023">                edges.remove(edge2Idx);</span>
+<span class="nc" id="L3024">                return 1;</span>
             }
 <span class="nc" id="L3026">        }</span>
 
@@ -3113,19 +3113,19 @@ import java.util.logging.Level;
      */
     int findAdjacentToTopAtBottom(PairIntArray edge) {
 
-<span class="fc" id="L3116">        int x1 = edge.getX(0);</span>
-<span class="fc" id="L3117">        int y1 = edge.getY(0);</span>
+<span class="nc" id="L3116">        int x1 = edge.getX(0);</span>
+<span class="nc" id="L3117">        int y1 = edge.getY(0);</span>
 
-<span class="pc bpc" id="L3119" title="1 of 2 branches missed.">        for (int idx = (edge.getN() - 1); idx &gt; 0; --idx) {</span>
+<span class="nc bnc" id="L3119" title="All 2 branches missed.">        for (int idx = (edge.getN() - 1); idx &gt; 0; --idx) {</span>
 
-<span class="fc" id="L3121">            int x2 = edge.getX(idx);</span>
-<span class="fc" id="L3122">            int y2 = edge.getY(idx);</span>
+<span class="nc" id="L3121">            int x2 = edge.getX(idx);</span>
+<span class="nc" id="L3122">            int y2 = edge.getY(idx);</span>
 
-<span class="fc" id="L3124">            int diffX = Math.abs(x1 - x2);</span>
-<span class="fc" id="L3125">            int diffY = Math.abs(y1 - y2);</span>
+<span class="nc" id="L3124">            int diffX = Math.abs(x1 - x2);</span>
+<span class="nc" id="L3125">            int diffY = Math.abs(y1 - y2);</span>
 
-<span class="fc bfc" id="L3127" title="All 4 branches covered.">            if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
-<span class="fc" id="L3128">                return idx;</span>
+<span class="nc bnc" id="L3127" title="All 4 branches missed.">            if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L3128">                return idx;</span>
             }
         }
 
@@ -3134,19 +3134,19 @@ import java.util.logging.Level;
 
     int findAdjacentToBottomAtTop(PairIntArray edge) {
 
-<span class="fc" id="L3137">        int xn = edge.getX(edge.getN() - 1);</span>
-<span class="fc" id="L3138">        int yn = edge.getY(edge.getN() - 1);</span>
+<span class="nc" id="L3137">        int xn = edge.getX(edge.getN() - 1);</span>
+<span class="nc" id="L3138">        int yn = edge.getY(edge.getN() - 1);</span>
 
-<span class="pc bpc" id="L3140" title="1 of 2 branches missed.">        for (int idx = 0; idx &lt; (edge.getN() - 2); ++idx) {</span>
+<span class="nc bnc" id="L3140" title="All 2 branches missed.">        for (int idx = 0; idx &lt; (edge.getN() - 2); ++idx) {</span>
 
-<span class="fc" id="L3142">            int x2 = edge.getX(idx);</span>
-<span class="fc" id="L3143">            int y2 = edge.getY(idx);</span>
+<span class="nc" id="L3142">            int x2 = edge.getX(idx);</span>
+<span class="nc" id="L3143">            int y2 = edge.getY(idx);</span>
 
-<span class="fc" id="L3145">            int diffX = Math.abs(xn - x2);</span>
-<span class="fc" id="L3146">            int diffY = Math.abs(yn - y2);</span>
+<span class="nc" id="L3145">            int diffX = Math.abs(xn - x2);</span>
+<span class="nc" id="L3146">            int diffY = Math.abs(yn - y2);</span>
 
-<span class="fc bfc" id="L3148" title="All 4 branches covered.">            if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
-<span class="fc" id="L3149">                return idx;</span>
+<span class="nc bnc" id="L3148" title="All 4 branches missed.">            if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L3149">                return idx;</span>
             }
         }
 

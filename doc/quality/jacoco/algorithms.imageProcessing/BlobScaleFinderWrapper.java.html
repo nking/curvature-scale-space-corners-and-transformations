@@ -241,14 +241,14 @@ public class BlobScaleFinderWrapper {
 <span class="fc" id="L241">                params = calculateScaleImpl();</span>
             }
 
-<span class="fc bfc" id="L244" title="All 2 branches covered.">            if (params == null) {</span>
-<span class="fc" id="L245">                algType = AlgType.CORNERS_COMBINATIONS;</span>
-<span class="fc" id="L246">                params = calculateScaleImpl();</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="nc" id="L245">                algType = AlgType.CORNERS_COMBINATIONS;</span>
+<span class="nc" id="L246">                params = calculateScaleImpl();</span>
             }
 
-<span class="fc bfc" id="L249" title="All 2 branches covered.">            if (params == null) {</span>
-<span class="fc" id="L250">                algType = AlgType.CONTOURS_COMBINATIONS;</span>
-<span class="fc" id="L251">                params = calculateScaleImpl();</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="nc" id="L250">                algType = AlgType.CONTOURS_COMBINATIONS;</span>
+<span class="nc" id="L251">                params = calculateScaleImpl();</span>
             }
         }
         
@@ -318,7 +318,7 @@ public class BlobScaleFinderWrapper {
 <span class="fc" id="L318">            int n2 = 0;</span>
 
 <span class="fc bfc" id="L320" title="All 2 branches covered.">            if (algType.equals(AlgType.CONTOURS_ORDERED) || </span>
-<span class="fc bfc" id="L321" title="All 2 branches covered.">                algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">                algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
                 
 <span class="fc bfc" id="L323" title="All 2 branches covered.">                if (blobContourHelper1 == null) {</span>
 <span class="pc bpc" id="L324" title="1 of 2 branches missed.">                    if (debug) {</span>
@@ -335,8 +335,8 @@ public class BlobScaleFinderWrapper {
 <span class="fc" id="L335">                blobContourHelper2.generatePerimeterContours(</span>
                     segmentationType2, useBinned2);
                 
-<span class="fc bfc" id="L338" title="All 2 branches covered.">            } else if (algType.equals(AlgType.CORNERS_ORDERED) || </span>
-<span class="pc bpc" id="L339" title="1 of 2 branches missed.">                algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_ORDERED) || </span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">                algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
 
 <span class="fc bfc" id="L341" title="All 2 branches covered.">                if (blobCornerHelper1 == null) {</span>
 <span class="pc bpc" id="L342" title="1 of 2 branches missed.">                    if (debug) {</span>
@@ -366,7 +366,7 @@ public class BlobScaleFinderWrapper {
 <span class="fc" id="L366">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
 <span class="fc" id="L367">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
                 
-<span class="fc bfc" id="L369" title="All 2 branches covered.">            } else if (algType.equals(AlgType.CONTOURS_ORDERED)) {</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_ORDERED)) {</span>
                 
 <span class="fc" id="L371">                BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();</span>
 
@@ -377,27 +377,27 @@ public class BlobScaleFinderWrapper {
 <span class="fc" id="L377">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
 <span class="fc" id="L378">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
                 
-<span class="fc bfc" id="L380" title="All 2 branches covered.">            } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
+<span class="pc bnc" id="L380" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
                 
-<span class="fc" id="L382">                BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();</span>
+<span class="nc" id="L382">                BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();</span>
 
-<span class="fc" id="L384">                params = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
+<span class="nc" id="L384">                params = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
                     segmentationType1, useBinned1, blobCornerHelper2, f2,
                     segmentationType2, useBinned2, outputScaleRotTransXYStDev);
 
-<span class="fc" id="L388">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
-<span class="fc" id="L389">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+<span class="nc" id="L388">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="nc" id="L389">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
 
-<span class="pc bpc" id="L391" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
 
-<span class="fc" id="L393">                BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();</span>
+<span class="nc" id="L393">                BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();</span>
 
-<span class="fc" id="L395">                params = bsFinder.solveForScale(blobContourHelper1, f1,</span>
+<span class="nc" id="L395">                params = bsFinder.solveForScale(blobContourHelper1, f1,</span>
                     segmentationType1, useBinned1, blobContourHelper2, f2,
                     segmentationType2, useBinned2, outputScaleRotTransXYStDev);
 
-<span class="fc" id="L399">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
-<span class="fc" id="L400">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+<span class="nc" id="L399">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="nc" id="L400">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
                 
             }
 

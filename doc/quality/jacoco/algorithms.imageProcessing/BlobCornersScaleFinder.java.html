@@ -49,8 +49,8 @@ import java.util.Set;
 
 <span class="fc bfc" id="L50" title="All 2 branches covered.">        for (int idx1 = 0; idx1 &lt; blobs1.size(); ++idx1) {</span>
 
-<span class="fc bfc" id="L52" title="All 2 branches covered.">            if (corners1List.get(idx1).size() &lt; 3) {</span>
-<span class="fc" id="L53">                continue;</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">            if (corners1List.get(idx1).size() &lt; 3) {</span>
+<span class="nc" id="L53">                continue;</span>
             }
 
 <span class="fc" id="L56">            Integer index1 = Integer.valueOf(idx1);</span>
@@ -141,8 +141,8 @@ import java.util.Set;
                 }
             }
             
-<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (bestStats == null) {</span>
-<span class="fc" id="L145">                continue;</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">            if (bestStats == null) {</span>
+<span class="nc" id="L145">                continue;</span>
             }
             
 <span class="fc" id="L148">            index1BestMap.put(index1, bestStats);</span>
@@ -151,13 +151,13 @@ import java.util.Set;
         }
 
 <span class="fc" id="L153">        List&lt;FeatureComparisonStat&gt; bestOverall = null;</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (!index1BestMap.isEmpty()) {</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (!index1BestMap.isEmpty()) {</span>
 <span class="fc" id="L155">            bestOverall = filterToBestConsistent(index1BestMap, </span>
                 index1BestParamsMap, corners1List, corners2List);
         }
 
-<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (bestOverall == null) {</span>
-<span class="fc" id="L160">            return null;</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (bestOverall == null) {</span>
+<span class="nc" id="L160">            return null;</span>
         }
 
 <span class="fc" id="L163">        TransformationParameters params = calculateTransformation(</span>
@@ -165,8 +165,8 @@ import java.util.Set;
 <span class="fc" id="L165">            img2Helper.imgHelper.getBinFactor(useBinned2),</span>
             bestOverall, outputScaleRotTransXYStDev);
 
-<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (params == null) {</span>
-<span class="fc" id="L169">            return null;</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L169">            return null;</span>
         }
 
 <span class="fc" id="L172">        return params;</span>
@@ -187,8 +187,8 @@ import java.util.Set;
         
 <span class="fc" id="L188">            TransformationParameters params = index1BestParamsMap.get(key);</span>
             
-<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (params == null) {</span>
-<span class="fc" id="L191">                continue;</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="nc" id="L191">                continue;</span>
             }
             
 <span class="fc" id="L194">            IntensityFeatureComparisonStats ifs = index1BestMap.get(key);</span>
@@ -234,8 +234,8 @@ import java.util.Set;
         
 <span class="fc" id="L235">            TransformationParameters params = index1BestParamsMap.get(key);</span>
             
-<span class="fc bfc" id="L237" title="All 2 branches covered.">            if (params == null) {</span>
-<span class="fc" id="L238">                continue;</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="nc" id="L238">                continue;</span>
             }
             
 <span class="fc bfc" id="L241" title="All 2 branches covered.">            if (!tc.areSimilarByScaleAndRotation(bestCostParams, params)) {</span>
