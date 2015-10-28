@@ -23,7 +23,7 @@ public class ButterflySectionFinderTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public void estFindButterflySections() throws Exception {
+    public void testFindButterflySections() throws Exception {
         
         int w = 512;
         int h = 512;
@@ -161,7 +161,7 @@ public class ButterflySectionFinderTest extends TestCase {
         }
     }
     
-    public void estFindButterflySections3() throws Exception {
+    public void testFindButterflySections3() throws Exception {
         
         int w = 258;
         int h = 187;
@@ -293,10 +293,10 @@ public class ButterflySectionFinderTest extends TestCase {
         }
     }
    
-    public void estFindButterflySections2() throws Exception {
+    public void testFindButterflySections2() throws Exception {
         
-        int w = 374;
-        int h = 517;
+        int w = 525;
+        int h = 525;
         
         String fileName = "tmp_blob_777095183_374_517.dat";
 

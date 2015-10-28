@@ -540,11 +540,17 @@ public class ButterflySectionFinder {
                         routes = createRoute(segment, x0, y0);
                     }
                     if ((i & 1) == 0) {
-                        addEndpointsForHorizVertPatternForward(x0, y0,
-                            pattern, routes, endPoints, useVert);
+                        int added = addEndpointsForHorizVertPatternForward(
+                            x0, y0, pattern, routes, endPoints, useVert);
+                        if (added == 0) {
+                            routes = null;
+                        }
                     } else {
-                        addEndpointsForHorizVertPatternOppos(x0, y0,
+                        int added = addEndpointsForHorizVertPatternOppos(x0, y0,
                             pattern, routes, endPoints, useVert);
+                        if (added == 0) {
+                            routes = null;
+                        }
                     }
                     break;
                 }
@@ -1169,7 +1175,7 @@ public class ButterflySectionFinder {
         }
     }
 
-    private void addEndpointsForHorizVertPatternForward(final int x0,
+    private int addEndpointsForHorizVertPatternForward(final int x0,
         final int y0, Pattern pattern, final Routes routes,
         Set<PairInt> endPoints, boolean useVert) {
 
@@ -1177,12 +1183,7 @@ public class ButterflySectionFinder {
             throw new IllegalStateException("error in algorithm");
         }
         if ((routes.ep0End != null) || (routes.ep1 != null)) {
-            routes.route0.clear();
-            routes.route1.clear();
-            routes.ep0 = null;
-            routes.ep0End = null;
-            routes.ep1 = null;
-            routes.ep1End = null;
+            return 0;
         }
         //assert(routes.ep0End == null);
         //assert(routes.ep1 == null);
@@ -1228,16 +1229,20 @@ public class ButterflySectionFinder {
         routes.route1 = tmp1;
         routes.ep1 = tE1;
         
+        return 1;
     }
 
-    private void addEndpointsForHorizVertPatternOppos(int x0, int y0,
+    private int addEndpointsForHorizVertPatternOppos(int x0, int y0,
         Pattern pattern, Routes routes, Set<PairInt> endPoints, boolean useVert) {
 
         if (endPoints.size() < 2) {
             throw new IllegalStateException("error in algorithm");
         }
-        assert(routes.ep0 == null);
-        assert(routes.ep1End == null);
+        if ((routes.ep0 != null) || (routes.ep1End != null)) {
+            return 0;
+        }
+        //assert(routes.ep0 == null);
+        //assert(routes.ep1End == null);
 
         /*
          VertSegment
@@ -1274,6 +1279,8 @@ public class ButterflySectionFinder {
         tmp0.addAll(routes.route0);
         routes.route0 = tmp0;
         routes.ep0 = tE0;
+        
+        return 1;
     }
 
     private int addSegmentToRoutes(Routes routes, Segment segment) {
