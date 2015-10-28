@@ -644,7 +644,7 @@ public class ButterflySectionFinderTest extends TestCase {
     
     public void testFindButterflySectionsDiag() throws Exception {        
         
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 4; i++) {
             
             PairIntArray closedCurve = null;
             
@@ -652,6 +652,10 @@ public class ButterflySectionFinderTest extends TestCase {
                 closedCurve = getPattern12();
             } else if (i == 1) {
                 closedCurve = getPattern12SwapX();
+            } else if (i == 2) {
+                closedCurve = getPattern12Crossed();
+            } else if (i == 3) {
+                closedCurve = getPattern12CrossedSwapX();
             }
 
             ButterflySectionFinder finder = new ButterflySectionFinder();
@@ -680,7 +684,7 @@ public class ButterflySectionFinderTest extends TestCase {
                 new PairInt(8, 18)
             };
             
-            if (i == 1) {
+            if ((i == 1) || (i == 3)) {
                 expectedR1 = new PairInt[]{
                     new PairInt(22, 18), new PairInt(23, 17), new PairInt(22, 16),
                     new PairInt(21, 15), new PairInt(20, 14),
@@ -980,6 +984,39 @@ public class ButterflySectionFinderTest extends TestCase {
         return points;
     }
     
+    protected PairIntArray getPattern12Crossed() {
+        
+        /*
+              # #                          20
+            #     #                        19
+              #     #                      18
+                # #                        17
+                  # #                      16
+                    # #                    15
+                      # #                  14
+                        + + # #            13
+                          #     #          12
+                            #     #        11
+                              # # #        10
+        
+            4 5 6 7 8 9 0 1 2 3 4 5 6
+         */
+        PairIntArray points = new PairIntArray(20);
+        
+        points.add(11, 12); points.add(12, 11);
+        points.add(13, 10); points.add(14, 10); points.add(15, 10);
+        points.add(15, 11); points.add(14, 12); points.add(13, 13);
+        points.add(12, 13); points.add(11, 13);
+        
+        points.add(10, 13); points.add(9, 14); points.add(8, 15); 
+        points.add(7, 16); points.add(6, 17); points.add(5, 18);         
+        points.add(4, 19); points.add(5, 20); points.add(6, 20); 
+        points.add(7, 19); points.add(8, 18); points.add(7, 17); 
+        points.add(8, 16); points.add(9, 15); points.add(10, 14); 
+        
+        return points;
+    }
+    
     private PairIntArray getPattern12SwapX() {
         
         /*
@@ -1000,6 +1037,18 @@ public class ButterflySectionFinderTest extends TestCase {
          */
 
         PairIntArray p = getPattern12();
+        for (int i = 0; i < p.getN(); ++i) {
+            int x = 30 - p.getX(i);
+            int y = p.getY(i);
+            p.set(i, x, y);
+        }
+        
+        return p;
+    }
+    
+    private PairIntArray getPattern12CrossedSwapX() {
+       
+        PairIntArray p = getPattern12Crossed();
         for (int i = 0; i < p.getN(); ++i) {
             int x = 30 - p.getX(i);
             int y = p.getY(i);

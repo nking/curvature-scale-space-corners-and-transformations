@@ -126,7 +126,6 @@ public class ButterflySectionFinder {
             return null;
         }
 
-        //TODO: edit to handle diagonal too when tests start
         mergeIfAdjacent(candidateSections);
         
         List<Routes> output = new ArrayList<Routes>();
@@ -1988,7 +1987,9 @@ public class ButterflySectionFinder {
             return;
         }
         
-        //TODO: add logic for diagonal merges alone
+        mergeDiagonalIfAdjacent(sections, UUDiagSegment.class);
+        
+        mergeDiagonalIfAdjacent(sections, ULDiagSegment.class);
         
         mergeHorizontalIfAdjacent(sections);
         
@@ -2364,6 +2365,211 @@ public class ButterflySectionFinder {
                 
                 Segment firstSegment = segments.get(0);
                 if (!(firstSegment instanceof VertSegment)) {
+                    continue;
+                }
+                
+                int clP3Y = currentLastSegment.p3.getY();
+                int clP0Y = currentLastSegment.p0.getY();
+
+                int sP2Y = firstSegment.p2.getY();
+                int sP1Y = firstSegment.p1.getY();
+                
+                if ((((sP2Y - 1) == clP3Y) && ((sP1Y - 1) == clP0Y))
+                    || ((sP2Y == clP3Y) && (sP1Y == clP0Y))) {
+                    currentSegments.addAll(segments);
+                    remove.add(Integer.valueOf(i));
+                }
+                
+            } else {
+                //TODO: handle merging when segments were assembled with different
+                // directions.  preferably, do this at top of method.
+                // the caveat is that a linked list may be composed of items
+                // which are composed of any combination of horizontal,
+                // vertical, and diagonal already ordered by curve point order.
+            }
+        }
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            sections.remove(remove.get(i).intValue());
+        }
+    }
+
+     private void mergeDiagonalIfAdjacent(List<LinkedList<Segment>> sections,
+        final Class<? extends DiagSegment> cls) {
+        
+        if (sections.size() < 2) {
+            return;
+        }
+               
+        //NOTE:  this one is the same as mergeVertIfAdjacent except for type check
+        
+        // sorts by each list's first item's p0.y, descending
+        Collections.sort(sections, new VertSegmentListComparator());
+        
+        /*
+        using algorithm similar to leftedge.  
+                   O(N*lg(N)) + O(N) where N is sections.size()
+        
+        sort by p0.y, then append, but only if adjacent and a UUDiagSegment
+        */
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        int start = 0;
+        
+        LinkedList<Segment> currentSegments = null;
+        while ((currentSegments == null) && (start < sections.size())) {
+            LinkedList<Segment> list = sections.get(start);
+            assert(!list.isEmpty());
+            if (list.get(0).getClass().isAssignableFrom(cls)) {
+                currentSegments = list;
+            }
+            start++;
+        }
+        
+        if (currentSegments == null) {
+            return;
+        }
+        
+        for (int i = start; i < sections.size(); ++i) {
+            
+            LinkedList<Segment> segments = sections.get(i);
+            assert(!segments.isEmpty());
+            if (!(segments.get(0).getClass().isAssignableFrom(cls))) {
+                continue;
+            }
+            
+            boolean csOrderedDescendingY = 
+                (currentSegments.get(currentSegments.size() - 1).p0.getY() <
+                currentSegments.get(0).p0.getY());
+
+            boolean sOrderedDescendingY = 
+                (segments.get(segments.size() - 1).p0.getY() <
+                segments.get(0).p0.getY());
+            
+            if (sOrderedDescendingY && 
+                ((currentSegments.size() == 1) || csOrderedDescendingY)) {
+                
+                // last segment of current
+                Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
+                
+                if (!(currentLastSegment.getClass().isAssignableFrom(cls))) {
+                    continue;
+                }
+            
+                /*   
+                                               2 1
+                                       -3        3 0 s[0]
+                      2 1              -2
+                        3 0 c[1]       -1
+                          2 1           0
+                            3 0 c[0]
+                */
+                
+                int clP1Y = currentLastSegment.p1.getY();
+                int clP2Y = currentLastSegment.p2.getY();
+                
+                int fP0Y = segments.get(0).p0.getY();
+                int fP3Y = segments.get(0).p3.getY();
+             
+                if ((((clP1Y - 1) == fP0Y) && ((clP2Y - 1) == fP3Y))
+                    || ((clP1Y == fP0Y) && (clP2Y == fP3Y))) {
+                    currentSegments.addAll(segments);
+                    remove.add(Integer.valueOf(i));
+                    continue;
+                }
+                
+                /*   
+                                        -3 
+                    2 1                 -2
+                      3 0 c[1]          -1
+                        2 1              0
+                          3 0 c[0]
+                                   2 1
+                                   3 0  s[n-1]
+                */
+                Segment currentFirstSegment = currentSegments.get(0);
+                if (!(currentFirstSegment.getClass().isAssignableFrom(cls))) {
+                    continue;
+                }
+            
+                Segment lastSegment = segments.get(segments.size() - 1);
+                if (!(lastSegment.getClass().isAssignableFrom(cls))) {
+                    continue;
+                }
+                
+                int cP0Y = currentFirstSegment.p0.getY();
+                int cP3Y = currentFirstSegment.p3.getY();
+
+                int sP1Y = lastSegment.p1.getY();
+                int sP2Y = lastSegment.p2.getY();
+                
+                if ((((sP2Y - 1) == cP3Y) && ((sP1Y - 1) == cP0Y)) 
+                    || ((sP2Y == cP3Y) && (sP1Y == cP0Y))
+                    ) {
+                    LinkedList<Segment> tmp = new LinkedList<Segment>();
+                    tmp.addAll(segments);
+                    tmp.addAll(currentSegments);
+                    remove.add(Integer.valueOf(i));
+                    currentSegments.clear();
+                    currentSegments.addAll(tmp);
+                }
+                
+            } else if (!sOrderedDescendingY && 
+                ((currentSegments.size() == 1) || !csOrderedDescendingY)) {
+                /*   
+                                     2 1
+                                 -3    3 0 s[n-1]
+                    2 1          -2
+                      3 0 c[0]   -1
+                        2 1       0
+                          3 0 c[1]
+                */
+                Segment currentFirstSegment = currentSegments.get(0);
+                if (!(currentFirstSegment.getClass().isAssignableFrom(cls))) {
+                    continue;
+                }
+            
+                Segment lastSegment = segments.get(segments.size() - 1);
+                if (!(lastSegment.getClass().isAssignableFrom(cls))) {
+                    continue;
+                }
+                
+                int cP2Y = currentFirstSegment.p2.getY();
+                int cP1Y = currentFirstSegment.p1.getY();
+
+                int sP3Y = lastSegment.p3.getY();
+                int sP0Y = lastSegment.p0.getY();
+                
+                if ((((cP2Y - 1) == sP3Y) && ((cP1Y - 1) == sP0Y))
+                    || ((cP2Y == sP3Y) && (cP1Y == sP0Y))){
+                    LinkedList<Segment> tmp = new LinkedList<Segment>();
+                    tmp.addAll(segments);
+                    tmp.addAll(currentSegments);
+                    remove.add(Integer.valueOf(i));
+                    currentSegments.clear();
+                    currentSegments.addAll(tmp);
+                    continue;
+                }
+                
+                /*   
+                                    -3 
+                    2 1             -2
+                      3 0 c[0]      -1
+                        2 1          0
+                          3 0 c[1]
+                                   2 1
+                                   3 0  s[0]
+                */
+                
+                // last segment of current
+                Segment currentLastSegment = currentSegments.get(currentSegments.size() - 1);
+                if (!(currentLastSegment.getClass().isAssignableFrom(cls))) {
+                    continue;
+                }
+                
+                Segment firstSegment = segments.get(0);
+                if (!(firstSegment.getClass().isAssignableFrom(cls))) {
                     continue;
                 }
                 
