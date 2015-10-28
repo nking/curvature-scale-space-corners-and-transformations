@@ -3194,7 +3194,7 @@ public class ButterflySectionFinder {
     private Segment checkVertHorizSegmentPattern(int x, int y,
         Set<PairInt> neighbors, boolean useVertical) {
 
-        if (neighbors.size() <= 4) {
+        if (neighbors.size() < 4) {
             return null;
         }
             
