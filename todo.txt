@@ -1,76 +1,35 @@
--- tests for code in general related to agile story
-   -- specifically also need:
-      the line processing algorithms such as Untraversable...
--- new test data for agile story
--- adding the adaptive mean segmentation
+-- more efficient holders for the image data
 
--- follow up on corner regions not used because of:
-   need more neighboring points because the slopes are all the same
-   -- do I loose valuable corners because of this?
+-- for scale calculator:
+   consider a segmentation type for images which have objects
+   which touch the bounds of the image (hence, get filtered out as blobs).
+   -- if there are no blobs for any segmentation tried, this 
+      method would take one of the methods such as the color cie
+      but to all blobs before filering, would apply a shrink
+      by 2 or 3 pixels to separate parts (then use dfs to find blobs), 
+      then grow back by a radius of that 2 or 3 (to not have the pixels affect scale
+      for image comparisons where 1 pixel represents a much different
+      size than 1 pixel in the other image)
+      --> should be tested on the valve image
 
--- tests for the new code
+-- finish w/ changes to feature matcher to use scale
+   and finish changed to PointMatcher and stereo projection 
 
--- finish the solution for corners for epipolar solution using
-   a given scale and a wrapper that will
-   determine scale using the scale calculating code.
+-- implement the recursive methods for the gaussian and it's derivatives
 
--- when finished w/ agile story,
-   add a new segmentation for adapt means alone w/ h=3
-   that uses same infrastructure as KMPP greyscale
-   imageProcessor.applyAdaptiveMeanThresholding(segImg, 3);//11
-
--- consider implementing the recursive filters.
-
--- update aspects if needed
-
--- write tests for butterfly section finder using
-   sections that include all types
--- finish running tests that use it on a border (one of the Extractor tests)
-
--- run tests of butterfly section using edges w/ lots of junctions
-   such as the lab test image or lena test image
-
--- look into git time stamps used by log
-
--- returning to point matchers with
-   ability to determine scale from BlobScaleFinder
-   -- determine scale
-   -- modify feature matcher to accept scale.
-      it should not have responsibility of determining scale
-
-   current steps which might need to be trimmed:
-      -- hEq.applyFilter();
-      -- possibly perform binning
-      -- if not binned, apply blur of 1
-      -- use corner detector (w/ setting to not use hist eq) w/ grey scale image
-      -- getEdgeCornerRegions
-      -- use the FeatureMatcher on the canny edge products plus the rebuilt 360 theta
-      --    features.findBestMatch
-
-   ==> use of image mor efficient?
-
--- finish this:
-    The method uses the recursive and separable properties of Gaussians where
- * possible.
+-- update aspects if needed and considering replacing them
+    -- consider replacing aspectj with something like nanning aop
 
 -- improve skyline extraction code
 
--- similarity that uses and exponential base?
-
--- search for min-cut algorithm and implement
-   -- ? sim to voronoi regions search space for intersecting?  reread this 
-      section when can see more clearly.
-   -- corman's
-   -- mit lectures
-   -- literture
+-- similarity that uses an exponential base?
 
 -- text recognition
    -- would like a class to extract and match text
       -- can see from the books test image that a binary segmentation would
          work best.
-         -- mean afaptive thresholding might be a good follow up.
+         -- mean adaptive thresholding might be a good follow up.
          -- blobs can be found as contiguous pixels of same value
-         -- may need to use a watershed algorithm to help separate letters
          -- for the separated letters, should apply skeletonization possibly
          -- match against fonts.
             -- note font databases such as
@@ -78,101 +37,8 @@
     some papers:
       http://www.rfai.li.univ-tours.fr/fr/ressources/_dh/DOC/DocOCR/OCRbinarisation.pdf
 
----- notes below to clean up...
-
-   minimizing normalized cut exactly is NP complete
-
-   Solving a standard eigenvalue problem for all
-      eigenvectors takes O(n^3) operations, where n is the
-      number of nodes in the graph. 
-   The Shi & <> algorithm therefore makes the following work arounds for speed:
-   http://citeseer.ist.psu.edu/viewdoc/download;jsessionid=7BCE20C29712FA33CD5125E304A51939?doi=10.1.1.160.2324&rep=rep1&type=pdf
-     - sparse eigenvalue systems because the graphs are often only locally
-       connected.
-     - only the top few eigenvalues are needed for graph partitioning
-     - the precision for eigenvectors is low, sometimes only the right sign bit is needed.
-     ==> Lanczos method. The running time of a O(m*n) + O(m**M(n)) 
-         where m is max number of matrix-vector computations required,
-         and M is the cost of a matrix-vector computation of A_x 
-         where A = D^(-1/2) * (D - W) * D^(-1/2)
-         The sparsity of A is identical to that of W, so the computation
-         is only O(n)
-         where n is the number of image pixels- 
-         each of the matrix vector computations is multiplied by a small constant
-         factr which empirically is < O(n^1/2).
-     *** comparison test data at:   http://www.cs.berkeley.edu/~jshi/Grouping
-
-their sparse matrix impl is?
-   the sparse eigenvalue decomposition is computed using the LASO2 numerical package developed by Scott
-
-sparse matrix:
-Depending on what is needed and how it is accessed and whether the whole image is
-stored, consider current implementations or a combination of linked lists stored in arrays or maps w/ key=colr or row number.
-  (0) current implementation is to keep a set or map of PairInt points and to
-      use neighborhood offsets when needing to explore neighbors.
-  (1) could consider:
-      map of PairInts extended to carry data and refs to the col and row array
-      for cols: array of linked lists of nodes where a point exists.
-      for rows: array of linked lists of nodes where a point exists.
-      then can navigate thru the cols to see (x,y) is a point, find that in the points map and continue.
-      if needed to see the point's connections above, would use it's reference to cols and look at colNode.prev.
-need to choose best for the graph and cuts of the graph
-
---------------------
-following the scikitlearn:
---------
-
-# Convert the image into a graph with the value of the gradient on the edges.
-graph = image.img_to_graph(img, mask=mask)
-
-# Take a decreasing function of the gradient: we take it weakly
-# dependent from the gradient the segmentation is close to a voronoi
-graph.data = np.exp(-graph.data / graph.data.std())
-
-# Force the solver to be arpack, since amg is numerically unstable on this example
-labels = spectral_clustering(graph, n_clusters=4, eigen_solver='arpack') <--------
-label_im = -np.ones(mask.shape)
-label_im[mask] = labels
-
-see http://www.slideshare.net/xrmeng/sparse-data-supportinmllib for apache sparse matrix support and Lanczos eigensolver
-
-
-
---------------------
-
--- need better segmentation for Brown&Lowe
-   -- current method is still the best, but the kmeans plus plus uses random
-      and that sometimes results in slightly different cluster centers hence
-      different enough blobs to affect the results.
-      -- multiple restarts?
-      -- current solution is to try again if contours were produced.
-         -- consider replacing the clustering.  
-            see the mean shift and also, 
-            or altering my clustering code to be faster and create an input writer
-            to extract what it needs from an image for the algorithm.
-
-   -- spectral clustering:
-      Shi and Malik 2000, Scott and Longuet-Higgins, Ng et al. 2002
-
-   -- before proceeding further w impl more clustering, look for python cv implementations
-      that can be run in scikit
-
-      can compare results to  http://scikit-learn.org/stable/modules/generated/sklearn.cluster.SpectralClustering.html
-
--- need better segmentation for the books test image (which is large and needs mean adaptive thresholding)
-
--- make a wrapper for running many iterations of the scale calculator for blobs 
-   on many different images (diff rotation and translation and scale)
-   and log the segmentation algorithms that found the correct answer.
-   -- would like to be able to use image statistics to know the best segmentation
-      so log what's necessary to find that 
-
--------------------
-
--- control flow graph for method called resolve()
+-- control flow graph for method called resolve() in DistanceTransform
    and same for resolveIterative to simplify the later
-
--- implement the recursive methods for the gaussian and it's derivatives
 
 -- considering implementing a max-tree (Meister and Wilkinson)
    -- for a shape filter for blobs for example
@@ -180,18 +46,8 @@ see http://www.slideshare.net/xrmeng/sparse-data-supportinmllib for apache spars
 
 -- impl wavelets using "lifted wavelets".  see Sweldens 1996 and 1997
 
--- consider making a segmentation algorithm from my 2-pt correl clustering code
-   (anywhere I'm using k segmentation and greyscale could be replaced with
-    my clustering code it I make the gev fitting/peak determination faster).
-   --> what does the distance transform look like for my code w/ inverted points?
-
 -- update the command line runners.
 -- begin outline for rectification code
-
--- consider replacing aspectj with something like nanning aop
-
--- make an executable jar for the two-point correlation code and a link to
-   it from the wiki
 
 -- finish the PointMatchers and remove unused experimental code everywhere.
 -- revisit kmeansplusplus...
