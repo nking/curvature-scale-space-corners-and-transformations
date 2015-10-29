@@ -1,0 +1,38 @@
+========================================================================
+Story: Reduce memory use of Image and GreyscaleImage
+ 
+    summary: caching segmentation images in the scale calculator
+      is consuming alot of memory, so need to reduce the space
+      complexity.
+
+    time estimate: 
+
+    amount of time used: 
+
+    state of completion: 
+
+    comments regarding state:
+
+    comments:
+
+------------------------------------------------------------------
+Task 1:  Refactor Image and GreyscaleImage and associated classes
+      
+    details:  
+
+      The Image.java and GreyscaleImage.java can easily be changed
+      to use 4 times less memory by storing 4 bytes in each
+      space in their integer arrays.
+      Code accessing the arrays has to be updated to use the
+      image methods instead of directly accessing the arrays now
+      (for example, MiscMath methods for min and max finding).
+
+    time estimate: 
+  
+    amount of time used:
+
+    state of completion: 
+
+    comments:
+              
+---------------------------------------------------------------------
