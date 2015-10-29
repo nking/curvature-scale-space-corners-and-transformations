@@ -227,7 +227,6 @@ if (imgHelper.isInDebugMode()) {
         }
     }
     long ts = MiscDebug.getCurrentTimeFormatted();
-    MiscDebug.writeImageCopy(segImg, "segmentation_" + imgHelper.getDebugTag() + "_" + ts + ".png");
     MiscDebug.writeImageCopy(img0, "blob_perimeters_" + imgHelper.getDebugTag() + "_" + ts + ".png");
 }
 

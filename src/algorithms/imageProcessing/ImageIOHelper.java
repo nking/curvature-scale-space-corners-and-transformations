@@ -487,6 +487,7 @@ public class ImageIOHelper {
         }
         
         ImageIO.write(outputImage, "PNG", new File(filePath));
+        
     }
     
     public static void writeOutputImage(String filePath, GreyscaleImage data) 

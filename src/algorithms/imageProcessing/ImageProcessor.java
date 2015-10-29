@@ -2741,6 +2741,10 @@ public class ImageProcessor {
                 }
             }
         }
+
+        imgM = null;
+
+        System.gc();
     }
 
     /**

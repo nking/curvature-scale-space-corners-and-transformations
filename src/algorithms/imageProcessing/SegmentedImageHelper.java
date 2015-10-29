@@ -238,10 +238,6 @@ public class SegmentedImageHelper {
         throws IOException, NoSuchAlgorithmException {
 
         GreyscaleImage segImg = getBinnedSegmentationImage(type);
-        if (segImg != null) {
-            log.warning("segmentation was already applied.  error?");
-            //return;
-        }
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -274,6 +270,12 @@ public class SegmentedImageHelper {
                 imgBinned, fracLowerLimitPolarCIEXY, false);
             imgBinnedSegmentedMap.put(type, segImg);
             
+        } else if (type.equals(SegmentationType.ADAPTIVE_MEAN)) {
+            
+            segImg = imgGrey.copyImage();
+            imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
+            imgBinnedSegmentedMap.put(type, segImg);
+            
         } else {
             throw new UnsupportedOperationException("did not add impl for " 
                 + type.name());
@@ -303,11 +305,6 @@ public class SegmentedImageHelper {
         
         GreyscaleImage segImg = getSegmentationImage(type);
         
-        if (segImg != null) {
-            log.warning("segmentation was already applied.  error?");
-            //return;
-        }
-        
         ImageProcessor imageProcessor = new ImageProcessor();
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
@@ -316,7 +313,7 @@ public class SegmentedImageHelper {
             
             segImg = imgGrey.copyImage();
             // expecting k=2
-            imageSegmentation.applyUsingKMPP(segImg, k);
+            //imageSegmentation.applyUsingKMPP(segImg, k);
                         
             imgSegmentedMap.put(type, segImg);
             
@@ -332,6 +329,12 @@ public class SegmentedImageHelper {
             
             segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 
                 fracLowerLimitPolarCIEXY, true);
+            imgSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.ADAPTIVE_MEAN)) {
+            
+            segImg = imgGrey.copyImage();
+            imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgSegmentedMap.put(type, segImg);
             
         } else {

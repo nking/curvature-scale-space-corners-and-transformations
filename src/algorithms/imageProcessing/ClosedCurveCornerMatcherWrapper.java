@@ -103,7 +103,7 @@ public class ClosedCurveCornerMatcherWrapper {
         boolean solved = mDefault.matchCorners() &&
             (mDefault.getSolvedParameters() != null);
 
-        log.info("default order: solved=" + solved + " ambig=" + 
+        log.fine("default order: solved=" + solved + " ambig=" + 
             mDefault.scaleIsPossiblyAmbiguous());
         
         if (solved && !mDefault.scaleIsPossiblyAmbiguous()) {

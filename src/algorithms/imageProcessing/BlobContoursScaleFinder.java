@@ -113,16 +113,6 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
 
                 Set<PairInt> blob2 = blobs2.get(idx2);
                 
-double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
-log.info("index1=" + index1.toString() + " index2=" + index2.toString()
-+ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
-
-log.info(
-String.format("[%d](%d,%d) [%d](%d,%d)  nCurvePoints=%d, %d", 
-idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-curve1.getN(), curve2.getN()));               
-
                 CurvatureScaleSpaceInflectionSingleEdgeMapper mapper =
                     new CurvatureScaleSpaceInflectionSingleEdgeMapper(
                     0, 0, 0, 0);
@@ -138,17 +128,6 @@ curve1.getN(), curve2.getN()));
 
                         singleSolnMap.put(new PairInt(idx1, idx2), mapper.getMatcher());
                     }
-
-if (mapper.getMatcher() != null) {
-log.info(String.format("*discarding [%d] (%d,%d)  [%d] (%d,%d)  nMCs=%d",
-idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-mapper.getMatcher().getSolutionMatchedContours1().size()));
-} else {
-log.info(String.format("*discarding [%d] (%d,%d)  [%d] (%d,%d)",
-idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1])));
-}
 
                     continue;
                 }
@@ -367,29 +346,6 @@ sb.append(
 
         log.info(sb.toString());
 
-// looking at idx=2, 7 for full image and idx=0, 0 for binned
-//if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
-if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
-((index1.intValue() == 3) && (index2.intValue() == 3))) {
-try {
-ImageExt img1C = img1.createColorGreyscaleExt();
-ImageExt img2C = img2.createColorGreyscaleExt();
-for (FeatureComparisonStat compStat : compStats) {
-    int x1 = compStat.getImg1Point().getX();
-    int y1 = compStat.getImg1Point().getY();
-    int x2 = compStat.getImg2Point().getX();
-    int y2 = compStat.getImg2Point().getY();
-    img1C.setRGB(x1, y1, 255, 0, 0);
-    img2C.setRGB(x2, y2, 255, 0, 0);
-}
-String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/features1_before_redo.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/features2_before_redo.png", img2C);
-int z = 1;
-} catch(IOException e) {
-}
-}
-
         // if bestCompStat's difference in orientation is different than the
         // others', re-do the others to see if have an improved calculation.
         // the "re-do" should try a dither of 1 or 2
@@ -423,12 +379,12 @@ redoStats = true;
                 bestCompStat.getImg1PointRotInDegrees(),
                 bestCompStat.getImg2PointRotInDegrees(), matcher);
             
-            log.info("redone: " + printToString(compStats) + " combinedStat="
+            log.fine("redone: " + printToString(compStats) + " combinedStat="
                 + calculateCombinedIntensityStat(compStats));
        
             removeDiscrepantThetaDiff(compStats);
 
-            log.info("theta diff filtered: " + printToString(compStats) + " combinedStat="
+            log.fine("theta diff filtered: " + printToString(compStats) + " combinedStat="
                 + calculateCombinedIntensityStat(compStats));
             
             removeIntensityOutliers(compStats);
@@ -507,36 +463,11 @@ redoStats = true;
             } // end details
         }// end matching contours for index1, index2
 
-        sb.append(printToString(compStats)).append(" nMaxStats=").append(nMaxStats);
+        if (debug) {
+            sb.append(printToString(compStats)).append(" nMaxStats=").append(nMaxStats);
 
-        log.info(sb.toString());
-
-// looking at idx=2, 7 for full image and idx=0, 0 for binned
-//if ((index1.intValue() == 2) && (index2.intValue() == 6)) {
-if (((index1.intValue() == 0) && (index2.intValue() == 0)) ||
-((index1.intValue() == 3) && (index2.intValue() == 3))) {
-try {
-ImageExt img1C = img1.createColorGreyscaleExt();
-ImageExt img2C = img2.createColorGreyscaleExt();
-MiscDebug.debugPlot(matcher.getSolutionMatchedContours1(), img1C,
-    0, 0, "1_" + index1 + "_redone");
-MiscDebug.debugPlot(matcher.getSolutionMatchedContours2(), img2C,
-    0, 0, "2_" + index2 + "_redone");
-for (FeatureComparisonStat compStat : compStats) {
-    int x1 = compStat.getImg1Point().getX();
-    int y1 = compStat.getImg1Point().getY();
-    int x2 = compStat.getImg2Point().getX();
-    int y2 = compStat.getImg2Point().getY();
-    img1C.setRGB(x1, y1, 0, 255, 0);
-    img2C.setRGB(x2, y2, 0, 255, 0);
-}
-String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/contours_1_redone.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/contours_2_redone.png", img2C);
-int z = 1;
-} catch(IOException e) {
-}
-}
+            log.info(sb.toString());
+        }
         
         //removeOutliers(compStats);
 

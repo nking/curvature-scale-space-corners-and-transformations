@@ -60,9 +60,6 @@ public class BlobsAndContours  {
 
             PairIntArray edge = blobOrderedPerimeters.get(edgeIndex);
 
-MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-double[] xycen = curveHelper.calculateXYCentroids(edge);
-
             ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(edgeIndex);
 
             List<CurvatureScaleSpaceContour> c =

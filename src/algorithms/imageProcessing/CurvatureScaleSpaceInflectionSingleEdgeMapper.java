@@ -134,13 +134,14 @@ public final class CurvatureScaleSpaceInflectionSingleEdgeMapper {
         ScaleSpaceCurveImage scaleSpaceImage = 
             csscMaker.convertScaleSpaceMapToSparseImage(
             scaleSpaceMap, edgeIndex, edge.getN());
-                       
- try {
- String fileSuffix = "edge_" + edgeIndex + "_" + MiscDebug.getCurrentTimeFormatted();
- MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);
- int z = 1;
- } catch (IOException ex) {
- }
+                    
+        /*
+        try {
+            String fileSuffix = "edge_" + edgeIndex + "_" + MiscDebug.getCurrentTimeFormatted();
+            MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);
+            int z = 1;
+        } catch (IOException ex) {
+        }*/
 
         return scaleSpaceImage;
     }

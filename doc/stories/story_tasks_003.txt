@@ -16,6 +16,8 @@ Story: Determine scale w/ blob perimeters and corners
         maximum: 2 weeks + 1 day
 
     amount of time used: 
+        9.5 days + 2.5 for testing = 12 days
+        (note, should use FTE units in future)
 
     state of completion: in implementation phase
 
@@ -188,10 +190,10 @@ Task 3:
                    but another may be needed for changes coincident with matching algorithm.
   
     amount of time used: 
-         1.5 days so far
+         1.5
 
     state of completion:
-         rough draft complete, testing, and need to change tidy up logging and debugging code
+         complete, though will continue adding tests as other stories are completed
 
     comments:
 
@@ -374,10 +376,10 @@ Task 4:
     time estimate: minimum one day, maximum 1 week.
   
     amount of time used: 
-       2.5 days so far
+       2.5 days 
 
     state of completion:
-       rough draft complete, testing, and need to change tidy up logging and debugging code
+       complete, though will continue adding tests as other stories are completed
 
     comments:
               
@@ -465,7 +467,7 @@ Task 5:
        < 1.5 days
 
     state of completion:
-       rough draft complete, testing, and need to change tidy up logging and debugging code
+       complete, though will continue adding tests as other stories are completed
 
     comments:
               
@@ -560,7 +562,7 @@ Task 6:
         2 days
 
     state of completion:
-        rough draft is completed
+       complete, though will continue adding tests as other stories are completed
 
     comments:
               
@@ -583,6 +585,7 @@ Task 7:
     time estimate: < 1 day
   
     amount of time used: 
+       complete, though will continue adding tests as other stories are completed
 
     state of completion: 
        rough draft is complete

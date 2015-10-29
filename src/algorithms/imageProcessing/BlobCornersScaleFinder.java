@@ -55,14 +55,14 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
             Integer index1 = Integer.valueOf(idx1);
 
-            PairIntArray curve1 = perimeters1.get(idx1);
+            //PairIntArray curve1 = perimeters1.get(idx1);
 
-            Set<PairInt> blob1 = blobs1.get(idx1);
+            //Set<PairInt> blob1 = blobs1.get(idx1);
             
             List<CornerRegion> corners1 = corners1List.get(idx1);
             Collections.sort(corners1, new DescendingKComparator());
 
-            double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
+            //double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
 
             IntensityFeatureComparisonStats bestStats = null;
             
@@ -76,22 +76,12 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
                 Integer index2 = Integer.valueOf(idx2);
 
-                PairIntArray curve2 = perimeters2.get(idx2);
+                //PairIntArray curve2 = perimeters2.get(idx2);
 
-                Set<PairInt> blob2 = blobs2.get(idx2);
+                //Set<PairInt> blob2 = blobs2.get(idx2);
                 
                 List<CornerRegion> corners2 = corners2List.get(idx2);
                 Collections.sort(corners2, new DescendingKComparator());
-
-double[] xyCen2 = curveHelper.calculateXYCentroids(curve2);
-log.info("index1=" + index1.toString() + " index2=" + index2.toString()
-+ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
-
-log.info(
-String.format("[%d](%d,%d) [%d](%d,%d)  nCurvePoints=%d, %d", 
-idx1, (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
-idx2, (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
-curve1.getN(), curve2.getN()));               
 
                 ClosedCurveCornerMatcherWrapper mapper =
                     new ClosedCurveCornerMatcherWrapper(features1, features2, 
@@ -111,7 +101,7 @@ curve1.getN(), curve2.getN()));
                 
                 List<FeatureComparisonStat> compStats = mapper.getSolutionMatchedCompStats();
                     
-                log.info("theta diff filtered: " + printToString(compStats) 
+                log.fine("theta diff filtered: " + printToString(compStats) 
                     + " combinedStat=" + calculateCombinedIntensityStat(compStats));
             
                 removeIntensityOutliers(compStats);

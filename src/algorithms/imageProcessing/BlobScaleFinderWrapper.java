@@ -261,17 +261,26 @@ public class BlobScaleFinderWrapper {
         /*
         depending on image statistics, different combinations of segmentation
         and binning are tried.
+ 
+        ADAPTIVE_MEAN is a good quick segmentation algorithm (O(N)), but it produces
+        many blobs, so the total calculation takes twice as long
+        as some of the other methods (empirically derived...).
+        
+        TODO:  Need to reduce the space complexity of the images to be able to more
+        easily cache all of these images and products.
         */
 
         SegmentationType[] seg1 = new SegmentationType[]{
             SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.GREYSCALE_KMPP,
-            SegmentationType.COLOR_POLARCIEXY_LARGE
+            SegmentationType.COLOR_POLARCIEXY_LARGE,
+            SegmentationType.ADAPTIVE_MEAN
         };
         SegmentationType[] seg2 = new SegmentationType[]{
             SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.GREYSCALE_KMPP,
-            SegmentationType.COLOR_POLARCIEXY_LARGE
+            SegmentationType.COLOR_POLARCIEXY_LARGE,
+            SegmentationType.ADAPTIVE_MEAN
         };
         
         int ordered1Idx = 0;

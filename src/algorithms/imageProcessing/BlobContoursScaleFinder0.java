@@ -76,10 +76,6 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         SegmentationType type2, boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
 
-        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
-            
-        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
-
         List<List<CurvatureScaleSpaceContour>> contours1List = 
             img1Helper.getPerimeterContours(type1, useBinned1);
         

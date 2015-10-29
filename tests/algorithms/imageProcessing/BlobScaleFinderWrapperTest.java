@@ -21,7 +21,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
         
         String fileName1, fileName2;
 
-        for (int i = 0; i < 3;/*3;*/ ++i) {
+        for (int i = 0; i < 3; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -33,9 +33,15 @@ public class BlobScaleFinderWrapperTest extends TestCase {
                     fileName2 = "venturi_mountain_j6_0010.png";
                     break;
                 }
-                default: {
+                case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+                default: {
+                    fileName1 = "campus_010.jpg";
+                    fileName2 = "campus_011.jpg";
+                    rotate = false;
                     break;
                 }
             }
@@ -60,8 +66,13 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
             log.info("fileName=" + fileName1 + ", " + fileName2);
             
-            BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
-                img1Orig, img2Orig);
+            BlobScaleFinderWrapper scaleFinder = null;
+            
+            if (i == 3) {
+                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig, true);
+            } else {
+                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig);
+            }
             
             scaleFinder.setToDebug();
 
@@ -77,6 +88,9 @@ public class BlobScaleFinderWrapperTest extends TestCase {
             } else {
                 assertTrue(Math.abs(params.getScale() - 1) < 0.12);
             }
+            
+            scaleFinder = null;
+            System.gc();
         }
     }
     

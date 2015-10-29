@@ -123,7 +123,7 @@ public class ClosedCurveCornerMatcher0 {
                     compStat = featureMatcher.ditherAndRotateForBestLocation(
                         features1, features2, region1, region2, dither);
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.severe(ex.getMessage());
+                    log.fine(ex.getMessage());
                 }
                
                 if (compStat != null) {

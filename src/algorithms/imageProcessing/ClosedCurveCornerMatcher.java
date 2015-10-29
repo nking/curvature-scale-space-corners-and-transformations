@@ -331,7 +331,7 @@ public class ClosedCurveCornerMatcher {
                     rotationInDegrees, rotationTolerance);
 
             } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                log.severe(ex.getMessage());
+                log.fine(ex.getMessage());
             }
 
             if (compStat == null) {
@@ -419,7 +419,7 @@ public class ClosedCurveCornerMatcher {
                         features1, features2, region1, region2, dither);
 
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.severe("**CONSIDER using more points in corner region");
+                    log.fine("**CONSIDER using more points in corner region");
                 }
 
                 if (compStat == null) {
@@ -534,16 +534,6 @@ public class ClosedCurveCornerMatcher {
         // if no match, contains a null
         CornersAndFeatureStat[] indexes2 = getBestSSDC1ToC2();
 
-log.info("getBestSSDC1ToC2: ");
-for (int i = 0; i < indexes2.length; ++i) {
-    CornersAndFeatureStat cfs = indexes2[i];
-    if (cfs == null) {
-        continue;
-    }
-    log.info("pre-search: SSD match of " + cfs.stat.getImg1Point().toString()
-        + " to " + cfs.stat.getImg2Point());
-}
-
         /*
         If one knew that that best SSD match of a point in curve1 to
         point in curve2 were true for at least 2 points in the curves,
@@ -632,7 +622,7 @@ for (int i = 0; i < indexes2.length; ++i) {
                     compStat1 = featureMatcher.ditherAndRotateForBestLocation(
                         features1, features2, cr1C1, cr1C2, dither);
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.severe(ex.getMessage());
+                    log.fine(ex.getMessage());
                 }
 
                 if (compStat1 == null) {
