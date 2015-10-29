@@ -5,7 +5,7 @@ Story: Reduce memory use of Image and GreyscaleImage
       is consuming alot of memory, so need to reduce the space
       complexity.
 
-    time estimate: 
+    time estimate: min 2 days, max 5 days (FTE)
 
     amount of time used: 
 
@@ -26,10 +26,15 @@ Task 1:  Refactor Image and GreyscaleImage and associated classes
       Code accessing the arrays has to be updated to use the
       image methods instead of directly accessing the arrays now
       (for example, MiscMath methods for min and max finding).
+      For 64 bit systems, the space that an int occupies on the
+      stack is word size, so a long[] should be used and in that
+      case the savings is a factor of 8 per image array (= 24 for 
+      color image).
 
-    time estimate: 
+    time estimate: min 2 days, max 5 days
   
     amount of time used:
+        1 day so far
 
     state of completion: 
 
