@@ -76,7 +76,7 @@ public class ImageLt {
             
             itemByteLength = 8;
             
-            len = (int)(nPixels/itemByteLength) + 1;
+            len = (nPixels/itemByteLength) + 1;
             
             rL = new long[len];
 
@@ -92,7 +92,7 @@ public class ImageLt {
             
             itemByteLength = 4;
             
-            len = (int)(nPixels/itemByteLength) + 1;
+            len = (nPixels/itemByteLength) + 1;
                 
             r = new int[len];
 
@@ -128,7 +128,7 @@ public class ImageLt {
             
             itemByteLength = 8;
             
-            len = (int)(nPixels/itemByteLength) + 1;
+            len = (nPixels/itemByteLength) + 1;
             
             rL = new long[len];
 
@@ -144,7 +144,7 @@ public class ImageLt {
             
             itemByteLength = 4;
             
-            len = (int)(nPixels/itemByteLength) + 1;
+            len = (nPixels/itemByteLength) + 1;
                 
             r = new int[len];
 
@@ -177,7 +177,7 @@ public class ImageLt {
      */
     protected int getRowNumber(int pixelIdx) {
         
-        int nthElement = (int)(pixelIdx/itemByteLength);
+        int nthElement = (pixelIdx/itemByteLength);
         
         return nthElement;
     }
@@ -193,6 +193,14 @@ public class ImageLt {
         return (row * width) + col;
     }
   
+    /**
+     * set the r, g, and b values for the pixel at location with col and row
+     * @param col
+     * @param row
+     * @param rPix
+     * @param gPix
+     * @param bPix 
+     */
     public void setRGB(int col, int row, int rPix, int gPix, int bPix) {
         
         if ((col < 0) || (col > (width - 1))) {
@@ -255,28 +263,54 @@ public class ImageLt {
     }
     
     protected long set64BitValue(long rowValue, int setValue, int byteNumber) {
-                
-        rowValue -= (rowValue >> (byteNumber * 8L)) & 255L;
         
-        rowValue += ((setValue & 255L) << (byteNumber * 8L));
+        long shift = 8L * (long)byteNumber;
+        
+        long prevValue = (rowValue >> shift) & 255L;
+        
+        long shifted = (prevValue & 255L) << shift;
+        
+        rowValue -= shifted;
+        
+        shifted = (setValue & 255L) << shift;
+                
+        rowValue += shifted;
+                
+        assert(((rowValue >> shift) & 255L) == setValue);
         
         return rowValue;
     }
     
     protected int set32BitValue(int rowValue, int setValue, int byteNumber) {
-                
-        rowValue -= (rowValue >> (byteNumber * 8)) & 255;
+            
+        int shift = 8 * byteNumber;
         
-        rowValue += ((setValue & 255) << (byteNumber * 8));
+        int prevValue = (rowValue >> shift) & 255;
+        
+        int shifted = (prevValue & 255) << shift;
+        
+        rowValue -= shifted;
+        
+        shifted = (setValue & 255) << shift;
+                
+        rowValue += shifted;
+                
+        assert(((rowValue >> shift) & 255) == setValue);
         
         return rowValue;
     }
     
+    /**
+     * set the r, g, and b values for the pixel at location with col and row
+     * @param col
+     * @param row
+     * @param rgb 
+     */
     public void setRGB(int col, int row, int rgb) {
         
         int idx = getInternalIndex(col, row);
         
-        if ((idx < 0) || (idx > (r.length - 1))) {
+        if ((idx < 0) || (idx > (nPixels - 1))) {
             throw new IllegalArgumentException(
                 "col and/or are out of bounds");
         }
@@ -296,9 +330,19 @@ public class ImageLt {
     
     protected int get64BitValue(long rowValue, int byteNumber) {
                 
-        return (int)((rowValue >> (byteNumber * 8L)) & 255L);
+        long shift = 8L * (long)byteNumber;
+        
+        long byteValue = (rowValue >> shift) & 255L;
+        
+        return (int)byteValue;
     }
     
+    /**
+     * get r value at image location col, row
+     * @param col
+     * @param row
+     * @return 
+     */
     public int getR(int col, int row) {
         
         if ((col < 0) || (col > (width - 1))) {
@@ -329,6 +373,12 @@ public class ImageLt {
         
     }
     
+    /**
+     * get b value at image location col, row
+     * @param col
+     * @param row
+     * @return 
+     */
     public int getB(int col, int row) {
         
         if ((col < 0) || (col > (width - 1))) {
@@ -358,6 +408,12 @@ public class ImageLt {
         }
     }
     
+    /**
+     * get g value at image location col, row
+     * @param col
+     * @param row
+     * @return 
+     */
     public int getG(int col, int row) {
         
         if ((col < 0) || (col > (width - 1))) {
@@ -387,6 +443,11 @@ public class ImageLt {
         }
     }
     
+    /**
+     * get r value at image pixel index derived from location col, row
+     * @param pixelIndex
+     * @return 
+     */
     public int getR(int pixelIndex) {
                
         if ((pixelIndex < 0) || (pixelIndex > (nPixels - 1))) {
@@ -405,6 +466,11 @@ public class ImageLt {
         }
     }
     
+    /**
+     * get b value at image pixel index derived from location col, row
+     * @param pixelIndex
+     * @return 
+     */
     public int getB(int pixelIndex) {
         
         if ((pixelIndex < 0) || (pixelIndex > (nPixels - 1))) {
@@ -423,6 +489,11 @@ public class ImageLt {
         }
     }
     
+    /**
+     * get g value at image pixel index derived from location col, row
+     * @param pixelIndex
+     * @return 
+     */
     public int getG(int pixelIndex) {
 
         if ((pixelIndex < 0) || (pixelIndex > (nPixels - 1))) {
@@ -441,6 +512,12 @@ public class ImageLt {
         }
     }
     
+    /**
+     * get the combined rgb value at image location col, row
+     * @param col
+     * @param row
+     * @return 
+     */
     public int getRGB(int col, int row) {
     
         int pixelIndex = getInternalIndex(col, row);
@@ -460,35 +537,43 @@ public class ImageLt {
         return rgb;
     }
     
+    /**
+     * copy the image to another instance
+     * @return 
+     */
     public ImageLt copyImage() {
        
-        ImageLt img2 = new ImageLt(width, height);
+        ImageLt img2 = new ImageLt(width, height, !is64Bit);
         
         if (is64Bit) {
-            System.arraycopy(rL, 0, img2.rL, 0, rL.length);
-            System.arraycopy(gL, 0, img2.gL, 0, gL.length);
-            System.arraycopy(bL, 0, img2.bL, 0, bL.length);
+            System.arraycopy(rL, 0, img2.rL, 0, len);
+            System.arraycopy(gL, 0, img2.gL, 0, len);
+            System.arraycopy(bL, 0, img2.bL, 0, len);
         } else {
-            System.arraycopy(r, 0, img2.r, 0, r.length);
-            System.arraycopy(g, 0, img2.g, 0, g.length);
-            System.arraycopy(b, 0, img2.b, 0, b.length);
+            System.arraycopy(r, 0, img2.r, 0, len);
+            System.arraycopy(g, 0, img2.g, 0, len);
+            System.arraycopy(b, 0, img2.b, 0, len);
         }
        
         return img2;
     }
     
+    /**
+     * copy the image to another instance, but of subclass type ImageExt
+     * @return 
+     */
     public ImageLtExt copyToImageExt() {
        
-        ImageLtExt img2 = new ImageLtExt(width, height);
+        ImageLtExt img2 = new ImageLtExt(width, height, !is64Bit);
         
         if (is64Bit) {
-            System.arraycopy(rL, 0, img2.rL, 0, rL.length);
-            System.arraycopy(gL, 0, img2.gL, 0, gL.length);
-            System.arraycopy(bL, 0, img2.bL, 0, bL.length);
+            System.arraycopy(rL, 0, img2.rL, 0, len);
+            System.arraycopy(gL, 0, img2.gL, 0, len);
+            System.arraycopy(bL, 0, img2.bL, 0, len);
         } else {
-            System.arraycopy(r, 0, img2.r, 0, r.length);
-            System.arraycopy(g, 0, img2.g, 0, g.length);
-            System.arraycopy(b, 0, img2.b, 0, b.length);
+            System.arraycopy(r, 0, img2.r, 0, len);
+            System.arraycopy(g, 0, img2.g, 0, len);
+            System.arraycopy(b, 0, img2.b, 0, len);
         }
        
         return img2;
@@ -569,7 +654,7 @@ public class ImageLt {
             }
         }
         
-        GreyscaleImageLt out = new GreyscaleImageLt(width, height);
+        GreyscaleImageLt out = new GreyscaleImageLt(width, height, !is64Bit);
         
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
@@ -578,9 +663,7 @@ public class ImageLt {
                 // or does it need separation into rgb and then averaged?
                 
                 int rgb = outputImage.getRGB(i, j);
-                
-                // prefer GREEN?
-                
+                                
                 int r = (rgb >> 16) & 0xFF;
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;  
@@ -594,6 +677,12 @@ public class ImageLt {
         return out;
     }
     
+    /**
+     * reset the contents of this image to the contents of copyThis, but
+     * only if the dimensions are the same.
+     * 
+     * @param copyThis 
+     */
     public void resetTo(ImageLt copyThis) {
         
         if (copyThis.getNPixels() != nPixels) {
@@ -611,13 +700,13 @@ public class ImageLt {
         }
         
         if (is64Bit) {
-            System.arraycopy(copyThis.rL, 0, rL, 0, copyThis.rL.length);
-            System.arraycopy(copyThis.gL, 0, gL, 0, copyThis.gL.length);
-            System.arraycopy(copyThis.bL, 0, bL, 0, copyThis.bL.length);
+            System.arraycopy(copyThis.rL, 0, rL, 0, copyThis.len);
+            System.arraycopy(copyThis.gL, 0, gL, 0, copyThis.len);
+            System.arraycopy(copyThis.bL, 0, bL, 0, copyThis.len);
         } else {
-            System.arraycopy(copyThis.r, 0, r, 0, copyThis.r.length);
-            System.arraycopy(copyThis.g, 0, g, 0, copyThis.g.length);
-            System.arraycopy(copyThis.b, 0, b, 0, copyThis.b.length);
+            System.arraycopy(copyThis.r, 0, r, 0, copyThis.len);
+            System.arraycopy(copyThis.g, 0, g, 0, copyThis.len);
+            System.arraycopy(copyThis.b, 0, b, 0, copyThis.len);
         }
     }
 
@@ -642,6 +731,11 @@ public class ImageLt {
         return nPixels;
     }
     
+    /**
+     * get the image pixel col location from the pixel index
+     * @param internalIndex
+     * @return 
+     */
     public int getCol(int internalIndex) {
         
         if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
@@ -656,6 +750,11 @@ public class ImageLt {
         return col;
     }
     
+    /**
+     * get the image pixel row location from the pixel index
+     * @param internalIndex
+     * @return 
+     */
     public int getRow(int internalIndex) {
         
         if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
@@ -666,5 +765,20 @@ public class ImageLt {
         int row = internalIndex/width;
         
         return row;
+    }
+    
+    public void debugPrint() {
+        StringBuilder sb = new StringBuilder();
+        for (int row = 0; row < height; ++row) {
+            for (int col = 0; col < width; ++col) {
+                int r = getR(col, row);
+                int g = getG(col, row);
+                int b = getB(col, row);
+                String str = String.format("(%3d %3d %3d) ", r, g, b);
+                sb.append(str);
+            }
+            sb.append("\n");
+        }
+        System.out.println(sb.toString());
     }
 }

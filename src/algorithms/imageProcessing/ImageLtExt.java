@@ -52,6 +52,15 @@ public class ImageLtExt extends ImageLt {
         super(theWidth, theHeight);
     }
     
+    /**
+     * @param theWidth
+     * @param theHeight
+     */
+    public ImageLtExt (int theWidth, int theHeight, boolean use32Bit) {
+        
+        super(theWidth, theHeight, use32Bit);
+    }
+    
     protected void init() {
         
         this.cieX = new float[nPixels];
