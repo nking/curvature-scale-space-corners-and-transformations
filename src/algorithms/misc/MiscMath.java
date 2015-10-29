@@ -1574,4 +1574,38 @@ public class MiscMath {
         
         return ordered;
     }
+
+    public static long findMaxForByteCompressed(long[] aL, int len, int bytesPerItem) {
+        
+        long max = Long.MIN_VALUE;
+        
+        for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+            long total = aL[elementIdx];
+            for (int i = 0; i < bytesPerItem; i++) {
+                long v = (total >> (long)(i * bytesPerItem)) & 255L;
+                if (v > max) {
+                    max = v;
+                }
+            }
+        }
+        
+        return max;
+    }
+
+    public static int findMaxForByteCompressed(int[] a, int len, int bytesPerItem) {
+        
+        int max = Integer.MIN_VALUE;
+        
+        for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+            int total = a[elementIdx];
+            for (int i = 0; i < bytesPerItem; i++) {
+                int v = (total >> (i * bytesPerItem)) & 255;
+                if (v > max) {
+                    max = v;
+                }
+            }
+        }
+        
+        return max;
+    }
 }

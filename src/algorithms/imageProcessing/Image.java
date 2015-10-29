@@ -10,10 +10,6 @@ public class Image {
     
     //TODO:  add alpha when needed
     
-    //TODO: consider more compact representation of the data.
-    // since r,g,and b are less than 256, can put 4 indexed values into
-    // an integer with shift and add techiniques.
-    
     final int[] r;
     final int[] g;
     final int[] b;
