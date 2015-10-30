@@ -34,7 +34,7 @@ Task 1:  Refactor Image and GreyscaleImage and associated classes
     time estimate: min 2 days, max 5 days
   
     amount of time used:
-        1 day so far
+        1.5 days so far
 
     state of completion: 
         implemented, but still testing
@@ -61,7 +61,23 @@ Task 1:  For the scale calculator image cache, need the cache to
               will handle reading a persisted file if the image is
               one of the persisted holders.
               the image will be placed back in the cache.
- 
+
+        Note that the images are retained as references in classes 
+           such as IntensityFeatures, so that class has to be changed to allow
+           the image to be passed as a reference at the method level
+           and documentation added to the class to make sure the user knows
+           it should only be used on one (same) image...(could later add
+           identities to images to make safer use)
+
+        Note too that a less ideal solution not chosen would be to 
+           perform all algorithms for matching on a given segmented image
+           and then construct new objects which cache images (or clear them).
+           This approach does not let the fastest matching algorithms
+           operate on all segmentation types first before proceeding to
+           the slower matching algorithms as is currently done.
+           This alternate solution could still be easily implemented
+           later even after the caching changes, but is not the current choice.
+           
         Consider exploring google collections.  guava has maps that
           keep track of last time used to help make decisions about 
           which members to release in addition to using java's weak
