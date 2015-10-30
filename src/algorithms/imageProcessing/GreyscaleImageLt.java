@@ -10,7 +10,7 @@ import java.util.Arrays;
  */
 public class GreyscaleImageLt {
     
-    final boolean is64Bit;
+    public final boolean is64Bit;
     
     /**
      * array holding image values in range 0-255 and 4 values stored in

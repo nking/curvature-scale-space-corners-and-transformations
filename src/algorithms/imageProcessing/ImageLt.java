@@ -11,7 +11,7 @@ public class ImageLt {
     
     //TODO:  add alpha when needed
     
-    final boolean is64Bit;
+    public final boolean is64Bit;
     
     /**
      * array holding red image values in range 0-255 and 4 values stored in
@@ -577,56 +577,6 @@ public class ImageLt {
         }
        
         return img2;
-    }
-    
-    /**
-     * using the color tables of awt and BufferedImage, convert this image
-     * to greyscale.
-     * @return 
-     */
-    public GreyscaleImage copyToGreyscale() {
-        
-        /*
-        to maintain same image conversion as used in ImageIOHelper,
-        will use the java methods.  
-        TODO: There should be a way to perform
-        a pixel by pixel conversion instead of creating a
-        BufferedImage.
-        */
-        
-        BufferedImage outputImage = new BufferedImage(width, height, 
-            BufferedImage.TYPE_BYTE_GRAY);
-        
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                int rgbValue = getRGB(i, j);
-                outputImage.setRGB(i, j, rgbValue);
-            }
-        }
-        
-        GreyscaleImage out = new GreyscaleImage(width, height);
-        
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                
-                // presumably, this is already combined?
-                // or does it need separation into rgb and then averaged?
-                
-                int rgb = outputImage.getRGB(i, j);
-                
-                // prefer GREEN?
-                
-                int r = (rgb >> 16) & 0xFF;
-                int g = (rgb >> 8) & 0xFF;
-                int b = rgb & 0xFF;  
-                    
-                int v = Math.round((r + g + b)/3.f);
-                
-                out.setValue(i, j, v);
-            }
-        }
-        
-        return out;
     }
     
     /**
