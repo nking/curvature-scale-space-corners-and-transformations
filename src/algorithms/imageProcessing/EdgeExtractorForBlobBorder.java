@@ -161,7 +161,7 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "border_perimeter_" + ts + ".png");
+MiscDebug.writeImage(img3, "border_perimeter_" + ts);
 }
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -221,7 +221,7 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "border_before_spur_removal_" + ts + ".png");
+MiscDebug.writeImage(img3, "border_before_spur_removal_" + ts);
 }
         SpurRemover spurRm = new SpurRemover();
         if (debug) {
@@ -238,7 +238,7 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "border_after_spur_removal_" + ts + ".png");
+MiscDebug.writeImage(img3, "border_after_spur_removal_" + ts);
 }
 if (debug) {     
 try {
@@ -282,7 +282,7 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "border_after_untraversable_removal_" + ts + ".png");
+MiscDebug.writeImage(img3, "border_after_untraversable_removal_" + ts);
 }
 log.fine("for " + ts + " finished UntraversableLobeRemover");
 
@@ -349,7 +349,7 @@ for (int col = 0; col < img.getWidth(); ++col) {
         }
     }
 }
-MiscDebug.writeImageCopy(img2, "before_single_curve_extraction_" + ts + ".png");
+MiscDebug.writeImage(img2, "before_single_curve_extraction_" + ts);
 for (Routes routes : butterFlySections2) {
     Iterator<PairInt> iter = routes.getRoute0().iterator();
     while (iter.hasNext()) {
@@ -366,7 +366,7 @@ for (Routes routes : butterFlySections2) {
         img2.setRGB(p.getX(), p.getY(), 0, 0, 255);
     }
 }
-MiscDebug.writeImageCopy(img2, "before_single_curve_extraction_" + ts + ".png");
+MiscDebug.writeImage(img2, "before_single_curve_extraction_" + ts);
 }
 
         EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
@@ -400,7 +400,7 @@ for (int i = 0; i < out.getN(); ++i) {
 }
 img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
 img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
-MiscDebug.writeImageCopy(img3, "border_trimEndpointSpurs.png");
+MiscDebug.writeImage(img3, "border_trimEndpointSpurs");
 }
 
             boolean altered = trimEndpointSpursIfAny(out, img.getWidth(), 
@@ -413,7 +413,7 @@ for (int i = 0; i < out.getN(); ++i) {
 }
 img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
 img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
-MiscDebug.writeImageCopy(img3, "border_before_reorder_endpoints.png");
+MiscDebug.writeImage(img3, "border_before_reorder_endpoints");
 }
 
             if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
@@ -427,7 +427,7 @@ for (int i = 0; i < out.getN(); ++i) {
 }
 img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
 img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
-MiscDebug.writeImageCopy(img3, "border_after_reorder_endpoints.png");
+MiscDebug.writeImage(img3, "border_after_reorder_endpoints");
 }               
 
                 if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
@@ -442,7 +442,7 @@ for (int i = 0; i < out.getN(); ++i) {
 }
 img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);
 img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
-MiscDebug.writeImageCopy(img3, "border_trim_multiple_curves.png");
+MiscDebug.writeImage(img3, "border_trim_multiple_curves");
 int z = 1;
 }                    
 
@@ -477,7 +477,7 @@ for (int j = 0; j < out.getN(); ++j) {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
     }
 }
-MiscDebug.writeImageCopy(img3, "output_" + ts + ".png");
+MiscDebug.writeImage(img3, "output_" + ts);
 }
 
         return out;
@@ -500,7 +500,7 @@ for (int i = 0; i < curve.getN(); ++i) {
     int y = curve.getY(i);
     img3.setRGB(x, y, 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTimeFormatted());
 }      
 
             Set<PairInt> points = Misc.convert(curve);
@@ -534,7 +534,7 @@ for (int i = 0; i < curve.getN(); ++i) {
     int y = curve.getY(i);
     img3.setRGB(x, y, 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img3, "before_trim_endpoints_" + MiscDebug.getCurrentTimeFormatted());
 }
 
             Set<PairInt> points = Misc.convert(curve);

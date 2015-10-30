@@ -328,7 +328,7 @@ public class IntensityFeatures {
                     int y = Math.round(yT[i]);
                     int v0 = gsImg.getValue(x, y);
                     v += v0;
-                    cCount++; // img changed?  w=480,h=640
+                    cCount++;
                 }
                 if (cCount == 0) {
                     output[count] = sentinel;

@@ -1861,7 +1861,7 @@ for (int i = 0; i < output.size(); ++i) {
         }
     }
 }
-MiscDebug.writeImageCopy(img0, "output_before_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img0, "output_before_merges_" + MiscDebug.getCurrentTimeFormatted());
 }
 
         output = findEdgesIntermediateSteps(output);
@@ -1886,7 +1886,7 @@ for (int i = 0; i < output.size(); ++i) {
         }
     }
 }
-MiscDebug.writeImageCopy(img2, "output_after_merges_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img2, "output_after_merges_" + MiscDebug.getCurrentTimeFormatted());
 }
 
         if (output.isEmpty()) {
@@ -1920,7 +1920,8 @@ for (int j = 0; j < out.getN(); ++j) {
         ImageIOHelper.addPointToImage(x, y, img2, 0, 255, 0, 0);
     }
 }
-MiscDebug.writeImageCopy(img2, "output_after_reorder_endpoints_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img2, "output_after_reorder_endpoints_" 
+    + MiscDebug.getCurrentTimeFormatted());
 }
 
         return out;

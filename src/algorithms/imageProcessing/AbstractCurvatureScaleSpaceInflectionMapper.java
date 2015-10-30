@@ -216,7 +216,7 @@ for (int j = 0; j < edges1.get(i1).getN(); ++j) {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
     }
 }
-MiscDebug.writeImageCopy(img3, "edge1_" + i1 + "_.png");
+MiscDebug.writeImage(img3, "edge1_" + i1);
         }
             for (int i2 = 0; i2 < contourLists2.size(); ++i2) {
 
@@ -240,7 +240,7 @@ for (int j = 0; j < edges2.get(i2).getN(); ++j) {
         ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
     }
 }
-MiscDebug.writeImageCopy(img3, "edge2_" + i2 + "_.png");
+MiscDebug.writeImage(img3, "edge2_" + i2);
 }
 log.info("i1=" + i1 + " i2=" + i2);
 log.info("offsetImage 1=(" + offsetImageX1 + "," + offsetImageY1 + ")");

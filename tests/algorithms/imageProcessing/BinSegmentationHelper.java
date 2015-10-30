@@ -971,7 +971,7 @@ for (int i = 0; i < edges1.size(); ++i) {
         }
     }
 }
-MiscDebug.writeImageCopy(img0, "blob_contours_1_" + MiscDebug.getCurrentTimeFormatted() + ".png");       
+MiscDebug.writeImage(img0, "blob_contours_1_" + MiscDebug.getCurrentTimeFormatted());       
 img0 = ImageIOHelper.convertImage(img2GreyOrig);
 for (int i = 0; i < edges2.size(); ++i) {
     PairIntArray pa = edges2.get(i);
@@ -991,7 +991,7 @@ for (int i = 0; i < edges2.size(); ++i) {
         }
     }
 }
-MiscDebug.writeImageCopy(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeFormatted() + ".png"); 
+MiscDebug.writeImage(img0, "blob_contours_2_" + MiscDebug.getCurrentTimeFormatted()); 
 
         CurvatureScaleSpaceInflectionEdgeMapper mapper = 
             new CurvatureScaleSpaceInflectionEdgeMapper(edges1, edges2,

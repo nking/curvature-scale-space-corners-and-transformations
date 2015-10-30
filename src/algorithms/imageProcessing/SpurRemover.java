@@ -42,8 +42,8 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : curve) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "spur_removal_" + nIter + "_" 
-+ MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img3, "spur_removal_" + nIter + "_" 
++ MiscDebug.getCurrentTimeFormatted());
 }
 
             nChanged = 0;
@@ -93,8 +93,8 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : curve) {
     img3.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "spur_removal_" + nIter + "_" 
-+ MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img3, "spur_removal_" + nIter + "_" 
++ MiscDebug.getCurrentTimeFormatted());
 }
 
     }

@@ -282,8 +282,8 @@ public class SegmentedImageHelper {
         }
         
         if (debug) {
-            MiscDebug.writeImageCopy(gsImg, "segmented_" + debugTag + "_" 
-                + MiscDebug.getCurrentTimeFormatted() + ".png");
+            MiscDebug.writeImage(gsImg, "segmented_" + debugTag + "_" 
+                + MiscDebug.getCurrentTimeFormatted());
         }
     }
 
@@ -342,8 +342,8 @@ public class SegmentedImageHelper {
                 + type.name());
         }
         if (debug) {
-            MiscDebug.writeImageCopy(segImg, "segmented_" + debugTag + "_" 
-                + MiscDebug.getCurrentTimeFormatted() + ".png");
+            MiscDebug.writeImage(segImg, "segmented_" + debugTag + "_" 
+                + MiscDebug.getCurrentTimeFormatted());
         }
     }
 

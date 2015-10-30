@@ -406,26 +406,6 @@ public class MiscDebug {
         }
     }
 
-    public static void writeImageCopy(Image img, String outfileName) {
-        Image img2 = img.copyImage();
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/" + outfileName, img2);
-        } catch (IOException ex) {
-            System.err.println(ex.getMessage());
-        }
-    }
-    
-    public static void writeImageCopy(GreyscaleImage img, String outfileName) {
-        GreyscaleImage img2 = img.copyImage();
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/" + outfileName, img2);
-        } catch (IOException ex) {
-            System.err.println(ex.getMessage());
-        }
-    }
-    
     public static int findEdgeContainingPoint(List<PairIntArray> edges, 
         int startX, int stopX, int startY, int stopY) {
         
@@ -873,7 +853,7 @@ public class MiscDebug {
         }
     }
     
-    public static void writeImage(ImageExt img, String fileNameSuffix) {
+    public static void writeImage(Image img, String fileNameSuffix) {
         
         try {
             String dirPath = ResourceFinder.findDirectory("bin");

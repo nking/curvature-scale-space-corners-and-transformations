@@ -1197,15 +1197,6 @@ public class ImageProcessor {
             nIter++;
         }
 
-        if (nIter  > 30) {
-            try {
-                multiply(input, 255);
-                ImageDisplayer.displayImage("segmented for sky", input);
-                int z = 1;
-            } catch (IOException ex) {
-                Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
     }
 
     public void removeSpurs(Set<PairInt> points, int width, int height) {

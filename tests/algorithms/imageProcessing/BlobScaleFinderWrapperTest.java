@@ -3,6 +3,8 @@ package algorithms.imageProcessing;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 /**
  *
@@ -94,4 +96,20 @@ public class BlobScaleFinderWrapperTest extends TestCase {
         }
     }
     
+    /**
+     * Test suite
+     * @return static Test
+    */
+    public static Test suite(){
+        return new TestSuite(BlobScaleFinderWrapperTest.class);
+    }
+
+    /**
+     * Set up a Junit test runner
+     * @param args Not used.
+    */
+    public static void main(String[] args) {
+
+        junit.textui.TestRunner.run(suite());
+    }
 }

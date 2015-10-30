@@ -115,8 +115,8 @@ public class BlobsAndPerimeters {
                 c++;
             }
             
-            MiscDebug.writeImageCopy(img0, "blobs_" + imgHelper.getDebugTag() 
-                + "_" + MiscDebug.getCurrentTimeFormatted() + ".png");
+            MiscDebug.writeImage(img0, "blobs_" + imgHelper.getDebugTag() 
+                + "_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return outputBlobs;
@@ -227,7 +227,7 @@ if (imgHelper.isInDebugMode()) {
         }
     }
     long ts = MiscDebug.getCurrentTimeFormatted();
-    MiscDebug.writeImageCopy(img0, "blob_perimeters_" + imgHelper.getDebugTag() + "_" + ts + ".png");
+    MiscDebug.writeImage(img0, "blob_perimeters_" + imgHelper.getDebugTag() + "_" + ts);
 }
 
          return outputBounds;

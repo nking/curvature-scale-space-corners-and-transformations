@@ -74,8 +74,8 @@ Image img1 = new Image(imageWidth, imageHeight);
 for (PairInt p : closedCurve) {
     img1.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img1, "before_removed_untr_lobe_"
-    + MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img1, "before_removed_untr_lobe_"
+    + MiscDebug.getCurrentTimeFormatted());
 }
             for (PairInt p : closedCurve) {
 
@@ -130,8 +130,8 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p2 : closedCurve) {
     img3.setRGB(p2.getX(), p2.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, "removed_untr_lobe_"
-+ MiscDebug.getCurrentTimeFormatted() + ".png");
+MiscDebug.writeImage(img3, "removed_untr_lobe_"
++ MiscDebug.getCurrentTimeFormatted());
 }
                 assert(closedCurve.size() > 0);
 

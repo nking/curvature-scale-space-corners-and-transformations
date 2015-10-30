@@ -147,8 +147,8 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
                     ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);
                 }
             }
-            MiscDebug.writeImageCopy(img3, "blob_ordered_perimeter_" 
-                + MiscDebug.getCurrentTimeFormatted() + ".png");
+            MiscDebug.writeImage(img3, "blob_ordered_perimeter_" 
+                + MiscDebug.getCurrentTimeFormatted());
 
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 

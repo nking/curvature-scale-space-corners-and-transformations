@@ -221,8 +221,8 @@ public class TmpTest extends TestCase {
                 clrImage.setRGB(edge.getX(i), edge.getY(i), 255, 0, 0);
             }
         }
-        MiscDebug.writeImageCopy(clrImage, 
-            "skyline_straightened_" + fileNameRoot + ".png");
+        MiscDebug.writeImage(clrImage, 
+            "skyline_straightened_" + fileNameRoot);
         
         assertTrue(skylineEdges.size() >= 1);
     }
