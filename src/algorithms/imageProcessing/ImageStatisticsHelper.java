@@ -18,7 +18,14 @@ public class ImageStatisticsHelper {
      * @return [meanR, meanG, meanB]
      */
     public static int getMean(final GreyscaleImage img) {
-        return getMean(img.getValues()); 
+        
+        long sum = 0;
+        
+        for (int i = 0; i < img.len; i++) {
+            sum += img.getValue(i);
+        }
+
+        return (int)(sum/img.len);
     }
     
     /**
@@ -27,7 +34,13 @@ public class ImageStatisticsHelper {
      * @return [meanR, meanG, meanB]
      */
     public static int getMedian(final GreyscaleImage img) {
-        return getMedian(img.getValues()); 
+        
+        int[] values = new int[img.getNPixels()];
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            values[i] = img.getValue(i);
+        }
+        
+        return getMedian(values); 
     }
     
     private static int getMean(int[] a) {
@@ -197,13 +210,13 @@ public class ImageStatisticsHelper {
      * @param useSturges
      * @return 
      */
-    public static ImageStatistics examineImage(final GreyscaleImage input, 
+    public static ImageStatistics examineImage(final GreyscaleImage img, 
         boolean useSturges) {
                        
-        float[] values = new float[input.getNPixels()];
+        float[] values = new float[img.getNPixels()];
         
-        for (int i = 0; i < input.getValues().length; i++) {
-            values[i] = input.getValues()[i];
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            values[i] = img.getValue(i);
         }
         
         return examine(values, useSturges);

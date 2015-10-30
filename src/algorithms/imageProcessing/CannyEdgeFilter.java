@@ -757,7 +757,7 @@ public class CannyEdgeFilter {
         
         float[] pixValues = new float[input.getNPixels()];
         for (int i = 0; i < input.getNPixels(); i++) {
-            pixValues[i] = input.getValues()[i];
+            pixValues[i] = input.getValue(i);
         }
 
         float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);
@@ -783,9 +783,19 @@ public class CannyEdgeFilter {
         
         this.imgHistogram = hist;
         
-        float max = MiscMath.findMax(input.getValues());
-
-        float min = MiscMath.findMin(input.getValues());
+        float max, min;
+        
+        if (input.is64Bit) {
+            max = MiscMath.findMaxForByteCompressed(input.aL, input.len, 
+                input.itemByteLength);
+            min = MiscMath.findMinForByteCompressed(input.aL, input.len, 
+                input.itemByteLength);
+        } else {
+            max = MiscMath.findMaxForByteCompressed(input.a, input.len, 
+                input.itemByteLength);
+            min = MiscMath.findMinForByteCompressed(input.a, input.len, 
+                input.itemByteLength);
+        }
       
         if (max < (255.f * 0.8f)) {
             return true;
@@ -796,7 +806,7 @@ public class CannyEdgeFilter {
 
         double sum = 0;
         for (int i = 0; i < input.getNPixels(); i++) {
-            sum += input.getValues()[i];
+            sum += input.getValue(i);
         }
         double avg = sum/input.getNPixels();
         

@@ -189,18 +189,18 @@ public class BlobScaleFinderWrapper {
         */
 
         ImageStatistics statsR1 = ImageStatisticsHelper.examine(
-            img1Helper.getImage().r, true);
+            img1Helper.getImage().getRValues(), true);
         ImageStatistics statsB1 = ImageStatisticsHelper.examine(
-            img1Helper.getImage().b, true);
+            img1Helper.getImage().getBValues(), true);
         ImageStatistics statsG1 = ImageStatisticsHelper.examine(
-            img1Helper.getImage().g, true);
+            img1Helper.getImage().getGValues(), true);
 
         ImageStatistics statsR2 = ImageStatisticsHelper.examine(
-            img2Helper.getImage().r, true);
+            img2Helper.getImage().getRValues(), true);
         ImageStatistics statsB2 = ImageStatisticsHelper.examine(
-            img2Helper.getImage().b, true);
+            img2Helper.getImage().getBValues(), true);
         ImageStatistics statsG2 = ImageStatisticsHelper.examine(
-            img2Helper.getImage().g, true);
+            img2Helper.getImage().getGValues(), true);
 
         log.info("stats R1=" + statsR1.toString());
         log.info("stats G1=" + statsG1.toString());

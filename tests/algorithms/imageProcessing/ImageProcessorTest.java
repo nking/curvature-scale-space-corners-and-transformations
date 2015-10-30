@@ -803,7 +803,9 @@ public class ImageProcessorTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         GreyscaleImage img = new GreyscaleImage(10, 10);
-        Arrays.fill(img.getValues(), 100);
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            img.setValue(i, 100);
+        }
         
         float x = 2f;
         float y = 2f;

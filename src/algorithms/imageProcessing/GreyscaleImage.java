@@ -10,13 +10,28 @@ import java.util.Arrays;
  */
 public class GreyscaleImage {
     
-    private int[] a;
+    public final boolean is64Bit;
     
-    private int width;
+    /**
+     * array holding image values in range 0-255 and 4 values stored in
+     * one int.
+     */
+    protected final int[] a;
     
-    private int height;
+    /**
+     * 64 bit version of a array
+     */
+    protected final long[] aL;
     
-    private int nPixels;
+    protected final int width;
+    
+    protected final int height;
+    
+    protected final int nPixels;
+    
+    protected final int itemByteLength;
+    
+    protected final int len;
     
     private int xRelativeOffset = 0;
     
@@ -28,13 +43,74 @@ public class GreyscaleImage {
      */
     public GreyscaleImage (int theWidth, int theHeight) {
         
+        String arch = System.getProperty("sun.arch.data.model");
+        
+        is64Bit = ((arch != null) && arch.equals("64")) ? true : false;
+        
         nPixels = theWidth * theHeight;
         
         width = theWidth;
         
         height = theHeight;
         
-        a = new int[nPixels];
+        if (is64Bit) {
+            
+            itemByteLength = 8;
+            
+            len = (nPixels/itemByteLength) + 1;
+            
+            aL = new long[len];
+            
+            a = null;
+            
+        } else {
+            
+            itemByteLength = 4;
+            
+            len = (nPixels/itemByteLength) + 1;
+                
+            a = new int[len];
+            
+            aL = null;
+        }
+        
+    }
+    
+    /**
+     * @param theWidth
+     * @param theHeight
+     */
+    public GreyscaleImage (int theWidth, int theHeight, boolean use32Bit) {
+                
+        is64Bit = !use32Bit;
+        
+        nPixels = theWidth * theHeight;
+        
+        width = theWidth;
+        
+        height = theHeight;
+        
+        if (is64Bit) {
+            
+            itemByteLength = 8;
+            
+            len = (nPixels/itemByteLength) + 1;
+            
+            aL = new long[len];
+            
+            a = null;
+            
+        } else {
+            
+            itemByteLength = 4;
+            
+            len = (nPixels/itemByteLength) + 1;
+                
+            a = new int[len];
+            
+            aL = null;
+        }
+        
     }
     
     /**
@@ -42,42 +118,155 @@ public class GreyscaleImage {
      * @param value 
      */
     public void fill(int value) {
-        Arrays.fill(a, value);
-    }
-    
-    public void multiply(int factor) {
         
-        for (int i = 0; i < nPixels; i++) {
-            a[i] *= factor;
+        if (value < 0 || (value > 255)) {
+            throw new IllegalArgumentException(
+                "value must be between 0 and 255 inclusive");
         }
+        
+        if (is64Bit) {
+            
+            long total = 0;
+            for (int i = 0; i < 8; i++) {
+                total += ((value & 255L) << (i * 8L));
+            }
+            Arrays.fill(aL, total);
+            
+        } else {
+            
+            int total = 0;
+            for (int i = 0; i < 4; i++) {
+                total += ((value & 255) << (i * 8));
+            }
+            Arrays.fill(a, total);
+            
+        }
+        
     }
     
+    /**
+     * convenience method to multiply entire image by factor.  Note that
+     * if the result for a pixel is > 255, it is set to 255.
+     * @param factor a positive number that results in pixel values in range
+     * 0 to 255;
+     */
+    public void multiply(float factor) {
+        
+        if (factor < 0) {
+            throw new IllegalArgumentException(
+                "factor has to be a positive number");
+        }
+        
+        if (is64Bit) {
+            
+            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+                long total = aL[elementIdx];
+                long total2 = 0;
+                for (int i = 0; i < 8; i++) {
+                    long v = (total >> (i * 8L)) & 255L;
+                    v = (long)(v * factor);
+                    total2 += ((v & 255L) << (i * 8L));
+                }
+                aL[elementIdx] = total2;
+            }
+            
+        } else {
+            
+            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+                int total = a[elementIdx];
+                int total2 = 0;
+                for (int i = 0; i < 8; i++) {
+                    long v = (total >> (i * 8)) & 255;
+                    v = (long)(v * factor);
+                    total2 += ((v & 255) << (i * 8));
+                }
+                a[elementIdx] = total2;
+            }
+        }
+        
+    }
+    
+    /**
+     * divide each pixel value by number
+     * @param number 
+     */
     public void divide(int number) {
         
-        for (int i = 0; i < nPixels; i++) {
-            a[i] /= number;
+        if (number < 0) {
+            throw new IllegalArgumentException(
+                "number has to be a positive number");
+        }
+        
+        if (is64Bit) {
+            
+            long f = number;
+            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+                long total = aL[elementIdx];
+                long total2 = 0;
+                for (int i = 0; i < 8; i++) {
+                    long v = (total >> (i * 8L)) & 255L;
+                    v = v / f;
+                    total2 += ((v & 255L) << (i * 8L));
+                }
+                aL[elementIdx] = total2;
+            }
+            
+        } else {
+            
+            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+                int total = a[elementIdx];
+                int total2 = 0;
+                for (int i = 0; i < 8; i++) {
+                    long v = (total >> (i * 8)) & 255;
+                    v = v / number;
+                    total2 += ((v & 255) << (i * 8));
+                }
+                a[elementIdx] = total2;
+            }
         }
     }
     
+    /**
+     * scale pixel values up to 255, inclusive by applying a normalization
+     * factor.
+     */
     public void normalizeToMax255() {
         
-        int max = MiscMath.findMax(a);
+        int max;
+        
+        if (is64Bit) {
+            max = (int)MiscMath.findMaxForByteCompressed(aL, len, 8);
+        } else {
+            max = MiscMath.findMaxForByteCompressed(a, len, 4);
+        }
+        
         if (max == 0) {
             return;
         }
-        int maxIdx = MiscMath.findYMaxIndex(a);
-        int c = getCol(maxIdx);
-        int r = getRow(maxIdx);
         
-        double factor = 255./max;
+        float factor = 255.f/(float)max;
         
-        for (int i = 0; i < nPixels; i++) {
-            double v = a[i] * factor;
-            a[i] = (int)v;
-        }
+        multiply(factor);
         
     }
     
+    /**
+     * given the image column and row, return a pixel number which can be used
+     * to retrieve data.
+     * @param col
+     * @param row
+     * @return 
+     */
+    public int getInternalIndex(int col, int row) {
+        return (row * width) + col;
+    }
+    
+    /**
+     * set value of pixel at location col, row
+     * @param col
+     * @param row
+     * @param value 
+     */
     public void setValue(int col, int row, int value) {
         
         if ((col < 0) || (col > (width - 1))) {
@@ -89,22 +278,55 @@ public class GreyscaleImage {
                 + row + " height=" + height);
         }
         
-        int idx = (row * width) + col;
+        int idx = getInternalIndex(col, row);
         
-        if ((idx < 0) || (idx > (a.length - 1))) {
-            throw new IllegalArgumentException(
-                "col and/or are out of bounds");
-        }
-        
-        /*
-        int rPix = (value >> 16) & 0xFF;
-        int gPix = (value >> 8) & 0xFF;
-        int bPix = value & 0xFF;
-        */
+        setValue(idx, value);
        
-        a[idx] = value;
     }
     
+    protected long set64BitValue(long rowValue, int setValue, int byteNumber) {
+        
+        long shift = 8L * (long)byteNumber;
+        
+        long prevValue = (rowValue >> shift) & 255L;
+        
+        long shifted = (prevValue & 255L) << shift;
+        
+        rowValue -= shifted;
+        
+        shifted = (setValue & 255L) << shift;
+                
+        rowValue += shifted;
+                
+        assert(((rowValue >> shift) & 255L) == setValue);
+        
+        return rowValue;
+    }
+    
+    protected int set32BitValue(int rowValue, int setValue, int byteNumber) {
+            
+        int shift = 8 * byteNumber;
+        
+        int prevValue = (rowValue >> shift) & 255;
+        
+        int shifted = (prevValue & 255) << shift;
+        
+        rowValue -= shifted;
+        
+        shifted = (setValue & 255) << shift;
+                
+        rowValue += shifted;
+                
+        assert(((rowValue >> shift) & 255) == setValue);
+        
+        return rowValue;
+    }
+    
+    /**
+     * add the col and row for pixel index to the given array 
+     * @param array
+     * @param internalIndex 
+     */
     public void getXY(PairIntArray array, int internalIndex) {
         
         if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
@@ -121,56 +343,113 @@ public class GreyscaleImage {
         array.add(col, row);
     }
     
-    public int getRow(int internalIndex) {
+    /**
+     * get the image row number for the pixel index
+     * @param pixelIndex
+     * @return 
+     */
+    public int getRow(int pixelIndex) {
         
-        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+        if ((pixelIndex < 0) || (pixelIndex > (nPixels - 1))) {
             throw new IllegalArgumentException(
                 "internalIndex is out of bounds:");
         }
    
         // int idx = (row * width) + col;
         //     idx/w = row  + 0;
-        int row = internalIndex/width;
+        int row = pixelIndex/width;
         
         return row;
     }
     
-    public int getCol(int internalIndex) {
+    /**
+     * get the image col number for the pixel index
+     * @param pixelIndex
+     * @return 
+     */
+    public int getCol(int pixelIndex) {
         
-        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+        if ((pixelIndex < 0) || (pixelIndex > (nPixels - 1))) {
             throw new IllegalArgumentException(
                 "internalIndex is out of bounds:");
         }
    
         // int idx = (row * width) + col;
         //     idx/w = row  + 0;
-        int row = internalIndex/width;
+        int row = pixelIndex/width;
         
-        int col = internalIndex - (row * width);
+        int col = pixelIndex - (row * width);
         
         return col;
     }
     
-    public void setValue(int internalIndex, int value) {
+    /**
+     * set pixel at pixelIndex to value
+     * @param pixelIndex
+     * @param value 
+     */
+    public void setValue(int pixelIndex, int value) {
         
-        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+        if ((pixelIndex < 0) || (pixelIndex > (nPixels - 1))) {
             throw new IllegalArgumentException(
                 "internalIndex is out of bounds:");
         }
         
-        a[internalIndex] = value;
-    }
-    
-    public int getValue(int internalIndex) {
-        
-        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+        if ((value > 255) || (value < 0)) {
             throw new IllegalArgumentException(
-                "internalIndex is out of bounds:");
+                "value must be between 0 and 255, inclusive");
         }
         
-        return a[internalIndex];
+        int elementIdx = pixelIndex/itemByteLength;
+        
+        int byteNumber = pixelIndex - (elementIdx*itemByteLength);
+                
+        if (is64Bit) {
+            aL[elementIdx] = set64BitValue(aL[elementIdx], value, byteNumber);
+        } else {
+            a[elementIdx] = set32BitValue(a[elementIdx], value, byteNumber);
+        }
     }
     
+    protected int get32BitValue(int rowValue, int byteNumber) {
+                
+        return (rowValue >> (byteNumber * 8)) & 255;
+    }
+    
+    protected int get64BitValue(long rowValue, int byteNumber) {
+                
+        return (int)((rowValue >> (byteNumber * 8L)) & 255L);
+    }
+    
+    /**
+     * get value at pixelIndex
+     * @param pixelIndex
+     * @return 
+     */
+    public int getValue(int pixelIndex) {
+        
+        if ((pixelIndex < 0) || (pixelIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "pixelIndex is out of bounds:");
+        }
+        
+        int elementIdx = pixelIndex/itemByteLength;
+        
+        int byteNumber = pixelIndex - (elementIdx*itemByteLength);
+        
+        if (is64Bit) {
+            return get64BitValue(aL[elementIdx], byteNumber);
+        } else {
+            return get32BitValue(a[elementIdx], byteNumber);
+        }
+    }
+    
+    /**
+     * get the pixel index for the given col, row
+     * @param col
+     * @param row
+     * @return 
+     */
     public int getIndex(int col, int row) {
         
         if ((col < 0) || (col > (width - 1))) {
@@ -182,11 +461,17 @@ public class GreyscaleImage {
                 + row + " height=" + height);
         }
         
-        int idx = (row * width) + col;
+        int idx = getInternalIndex(col, row);
         
         return idx;
     }
         
+    /**
+     * get the pixel value at image location col, row
+     * @param col
+     * @param row
+     * @return 
+     */
     public int getValue(int col, int row) {
         
         if ((col < 0) || (col > (width - 1))) {
@@ -198,22 +483,11 @@ public class GreyscaleImage {
                 + row + " height=" + height);
         }
         
-        int idx = (row * width) + col;
+        int idx = getInternalIndex(col, row);
        
-        if (idx > a.length) {
-            throw new IllegalArgumentException("coords are out of bounds");
-        }
-        /*
-        int rgb = (int)(((r[idx] & 0x0ff) << 16) 
-            | ((g[idx] & 0x0ff) << 8) | (b[idx] & 0x0ff));
-        */
-        return a[idx];
+        return getValue(idx);
     }
     
-    public int[] getValues() {
-        return a;
-    }
- 
     public int getWidth() {
         return width;
     }
@@ -223,10 +497,31 @@ public class GreyscaleImage {
     }
     
     public float[] getFloatValues() {
+        
         float[] t = new float[nPixels];
-        for (int i = 0; i < nPixels; ++i) {
-            t[i] = a[i];
+        
+        int count = 0;
+        
+        if (is64Bit) {
+            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+                long total = aL[elementIdx];
+                for (int i = 0; i < 8; i++) {
+                    long v = (total >> (i * 8L)) & 255L;
+                    t[count] = (int)v;
+                    count++;
+                }
+            }
+        } else {
+            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+                int total = a[elementIdx];
+                for (int i = 0; i < 4; i++) {
+                    int v = (total >> (i * 8)) & 255;
+                    t[count] = v;
+                    count++;
+                }
+            }
         }
+        
         return t;
     }
     
@@ -234,16 +529,18 @@ public class GreyscaleImage {
        
         GreyscaleImage img2 = createWithDimensions();
                 
-        System.arraycopy(a, 0, img2.a, 0, nPixels);
-        
-        img2.nPixels = nPixels;
+        if (is64Bit) {
+            System.arraycopy(aL, 0, img2.aL, 0, len);
+        } else {
+            System.arraycopy(a, 0, img2.a, 0, len);
+        }
         
         return img2;
     }
     
     public GreyscaleImage createWithDimensions() {
        
-        GreyscaleImage img2 = new GreyscaleImage(width, height);
+        GreyscaleImage img2 = new GreyscaleImage(width, height, !is64Bit);
                 
         img2.xRelativeOffset = xRelativeOffset;
         img2.yRelativeOffset = yRelativeOffset;
@@ -251,10 +548,19 @@ public class GreyscaleImage {
         return img2;
     }
     
+    /**
+     * create a sub image centered on (xCenter, yCenter) of width subWidth
+     * and height subHeight
+     * @param xCenter
+     * @param yCenter
+     * @param subWidth
+     * @param subHeight
+     * @return 
+     */
     public GreyscaleImage subImage(int xCenter, int yCenter, int subWidth, 
         int subHeight) {
        
-        GreyscaleImage img2 = new GreyscaleImage(subWidth, subHeight);
+        GreyscaleImage img2 = new GreyscaleImage(subWidth, subHeight, !is64Bit);
                 
         int col2 = 0;
         for (int col = (xCenter - (subWidth/2)); col < (xCenter + (subWidth/2));
@@ -277,47 +583,80 @@ public class GreyscaleImage {
         return img2;
     }
     
-    public Image copyImageToGreen() {
-        
-        Image img2 = new Image(width, height);
-        
-        System.arraycopy(a, 0, img2.g, 0, nPixels);
-        
-        return img2;
-    }
-    
     public ImageExt createColorGreyscaleExt() {
         
         ImageExt img2 = new ImageExt(width, height);
         
-        System.arraycopy(a, 0, img2.r, 0, nPixels);
-        System.arraycopy(a, 0, img2.g, 0, nPixels);
-        System.arraycopy(a, 0, img2.b, 0, nPixels);
+        if (is64Bit) {
+            System.arraycopy(aL, 0, img2.rL, 0, len);
+            System.arraycopy(aL, 0, img2.gL, 0, len);
+            System.arraycopy(aL, 0, img2.bL, 0, len);
+        } else {
+            System.arraycopy(a, 0, img2.r, 0, len);
+            System.arraycopy(a, 0, img2.g, 0, len);
+            System.arraycopy(a, 0, img2.b, 0, len);
+        }
+        
+        return img2;
+    }
+    
+    public Image createColorGreyscale() {
+        
+        Image img2 = new Image(width, height);
+        
+        if (is64Bit) {
+            System.arraycopy(aL, 0, img2.rL, 0, len);
+            System.arraycopy(aL, 0, img2.gL, 0, len);
+            System.arraycopy(aL, 0, img2.bL, 0, len);
+        } else {
+            System.arraycopy(a, 0, img2.r, 0, len);
+            System.arraycopy(a, 0, img2.g, 0, len);
+            System.arraycopy(a, 0, img2.b, 0, len);
+        }
         
         return img2;
     }
     
     public void resetTo(final GreyscaleImage copyThis) {
         
-        if (copyThis.nPixels == nPixels) {
-            
-            System.arraycopy(copyThis.a, 0, a, 0, nPixels);
-            
-        } else {
-            
-            a = copyThis.a;
-    
-            width = copyThis.width;
-    
-            height = copyThis.height;
-    
-            nPixels = copyThis.nPixels;
-            
-            xRelativeOffset = copyThis.xRelativeOffset;
-            
-            yRelativeOffset = copyThis.yRelativeOffset;
+        if (copyThis.getNPixels() != nPixels) {
+            throw new IllegalArgumentException("cannot convert this fixed " 
+                + "image size to the size of copyThis.");
         }
         
+        if (copyThis.width != width) {
+            throw new IllegalArgumentException(
+                "copyThis.width must be same as this width");
+        }
+        if (copyThis.height != height) {
+            throw new IllegalArgumentException(
+                "copyThis.height must be same as this width");
+        }
+        
+        if (is64Bit) {
+            System.arraycopy(copyThis.aL, 0, aL, 0, copyThis.len);
+        } else {
+            System.arraycopy(copyThis.a, 0, a, 0, copyThis.len);
+        }
+        
+        xRelativeOffset = copyThis.xRelativeOffset;
+            
+        yRelativeOffset = copyThis.yRelativeOffset;
+        
+    }
+    
+    
+    public void debugPrint() {
+        StringBuilder sb = new StringBuilder();
+        for (int row = 0; row < height; ++row) {
+            for (int col = 0; col < width; ++col) {
+                int v = getValue(col, row);
+                String str = String.format("(%3d) ", v);
+                sb.append(str);
+            }
+            sb.append("\n");
+        }
+        System.out.println(sb.toString());
     }
 
     /**
@@ -369,5 +708,13 @@ public class GreyscaleImage {
         }
         
         return true;
+    }
+
+    public int[] getValues() {
+        int[] v = new int[nPixels];
+        for (int i = 0; i < nPixels; ++i) {
+            v[i] = getValue(i);
+        }
+        return v;
     }
 }

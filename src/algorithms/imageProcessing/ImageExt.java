@@ -52,6 +52,15 @@ public class ImageExt extends Image {
         super(theWidth, theHeight);
     }
     
+    /**
+     * @param theWidth
+     * @param theHeight
+     */
+    public ImageExt (int theWidth, int theHeight, boolean use32Bit) {
+        
+        super(theWidth, theHeight, use32Bit);
+    }
+    
     protected void init() {
         
         this.cieX = new float[nPixels];
@@ -217,9 +226,9 @@ public class ImageExt extends Image {
             return;
         }
         
-        int rPix = r[idx];
-        int gPix = g[idx];
-        int bPix = b[idx];
+        int rPix = getR(idx);
+        int gPix = getG(idx);
+        int bPix = getB(idx);
 
         float[] xy = cieC.rgbToXYChromaticity(rPix, gPix, bPix);
         
@@ -271,14 +280,11 @@ public class ImageExt extends Image {
             }
         }
     }
-  
+
+    @Override
     public Image copyImage() {
-       
-        ImageExt img2 = new ImageExt(getWidth(), getHeight());
-        
-        System.arraycopy(r, 0, img2.r, 0, nPixels);
-        System.arraycopy(g, 0, img2.g, 0, nPixels);
-        System.arraycopy(b, 0, img2.b, 0, nPixels);
+    
+        ImageExt img2 = copyToImageExt();
         
         System.arraycopy(cieX, 0, img2.cieX, 0, nPixels);
         System.arraycopy(cieY, 0, img2.cieY, 0, nPixels);
@@ -303,9 +309,7 @@ public class ImageExt extends Image {
             "copyThis has to be instance of ImageWithCIE");
         }
         
-        System.arraycopy(copyThis.r, 0, r, 0, nPixels);
-        System.arraycopy(copyThis.g, 0, g, 0, nPixels);
-        System.arraycopy(copyThis.b, 0, b, 0, nPixels);
+        super.resetTo(copyThis);
         
         System.arraycopy(((ImageExt)copyThis).cieX, 0, cieX, 0, nPixels);
         System.arraycopy(((ImageExt)copyThis).cieY, 0, cieY, 0, nPixels);

@@ -55,7 +55,9 @@ public class FeaturesTest extends TestCase {
         boolean normalize = false;
         
         GreyscaleImage img = new GreyscaleImage(10, 10);
-        Arrays.fill(img.getValues(), 100);
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            img.setValue(i, 100);
+        }
         
         GreyscaleImage gradientImg = img.createWithDimensions();
         GreyscaleImage thetaImg = img.createWithDimensions();

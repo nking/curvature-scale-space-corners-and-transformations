@@ -6,7 +6,7 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class ImageLtTest extends TestCase {
+public class ImageTest extends TestCase {
     
     public void test0() throws Exception {
         
@@ -16,14 +16,14 @@ public class ImageLtTest extends TestCase {
         
             int w = 3;
             int h = 2;
-            ImageLt img;
+            Image img;
             
             if (i == 0) {
-                img = new ImageLt(w, h);
+                img = new Image(w, h);
             } else if (i == 1) {
-                img = new ImageLt(w, h, true);
+                img = new Image(w, h, true);
             } else {
-                img = new ImageLt(w, h, false);
+                img = new Image(w, h, false);
             }
 
             assertEquals(w*h, img.getNPixels());
@@ -48,7 +48,7 @@ public class ImageLtTest extends TestCase {
             assertEquals(g, img.getG(pixIdx));
             assertEquals(b, img.getB(pixIdx));
 
-            ImageLt img2 = img.copyImage();
+            Image img2 = img.copyImage();
             assertEquals(img.getNPixels(), img2.getNPixels());
             assertEquals(w, img2.getWidth());
             assertEquals(h, img2.getHeight());
@@ -61,7 +61,7 @@ public class ImageLtTest extends TestCase {
             assertEquals(b, img2.getB(pixIdx));
 
 
-            ImageLtExt img3 = img.copyToImageExt();
+            ImageExt img3 = img.copyToImageExt();
             assertEquals(img.getNPixels(), img3.getNPixels());
             assertEquals(w, img3.getWidth());
             assertEquals(h, img3.getHeight());
@@ -73,7 +73,7 @@ public class ImageLtTest extends TestCase {
             assertEquals(g, img3.getG(pixIdx));
             assertEquals(b, img3.getB(pixIdx));
 
-            GreyscaleImageLt img4 = img.copyToGreyscaleLt();
+            GreyscaleImage img4 = img.copyToGreyscale();
             assertEquals(img.getNPixels(), img4.getNPixels());
             assertEquals(w, img4.getWidth());
             assertEquals(h, img4.getHeight());

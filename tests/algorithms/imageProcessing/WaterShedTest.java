@@ -92,7 +92,16 @@ public class WaterShedTest extends TestCase {
         final Set<PairInt> regionalMinima = ws.getRegionalMinima();
         // fudging the test since already know that all of the minima have the
         // same value.
-        int minValue = MiscMath.findMin(img09.getValues());
+        
+        int minValue;
+        if (img09.is64Bit) {
+            minValue = (int)MiscMath.findMinForByteCompressed(img09.aL, img09.len, 
+                img09.itemByteLength);
+        } else {
+            minValue = MiscMath.findMinForByteCompressed(img09.a, img09.len, 
+                img09.itemByteLength);
+        }
+        
         Set<PairInt> expected = new HashSet<PairInt>(regionalMinima);
         for (PairInt p : regionalMinima) {
             int v = img09.getValue(p.getX(), p.getY());

@@ -74,7 +74,7 @@ public class MiscDebug {
         
         try {
             
-            Image img2 = img.copyImageToGreen();
+            Image img2 = img.createColorGreyscale();
 
             ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
             int nExtraForDot = 1;
@@ -371,7 +371,7 @@ public class MiscDebug {
         
         try {
             
-            Image img2 = img.copyImageToGreen();
+            Image img2 = img.createColorGreyscale();
 
             ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
             int nExtraForDot = 1;

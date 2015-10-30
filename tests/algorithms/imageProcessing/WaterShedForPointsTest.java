@@ -670,7 +670,9 @@ public class WaterShedForPointsTest extends TestCase {
             ImageIOHelper.writeOutputImage(bin + "/" + fileRoot + "_labelled.png", imgL);
 
             GreyscaleImage imgW = new GreyscaleImage(w, h);
-            Arrays.fill(imgW.getValues(), 255);
+            for (int i = 0; i < imgW.getNPixels(); ++i) {
+                imgW.setValue(i, 255);
+            }
             for (PairInt p : points) {
                 int v = labelled2.get(p);
      //System.out.println(p.toString() + " v=" + v);

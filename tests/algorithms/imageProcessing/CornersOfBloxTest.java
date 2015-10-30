@@ -101,7 +101,7 @@ public class CornersOfBloxTest extends TestCase {
         String sep = System.getProperty("file.separator");
         ImageIOHelper.writeOutputImage(dirPath + sep + "corners_blox.png", image);
         
-        Image img2 = detector.getImage().copyImageToGreen();
+        Image img2 = detector.getImage().createColorGreyscale();
         
         try {
             for (PairIntArray edge : detector.getEdges()) {

@@ -1591,6 +1591,23 @@ public class MiscMath {
         
         return max;
     }
+    
+    public static long findMinForByteCompressed(long[] aL, int len, int bytesPerItem) {
+        
+        long min = Long.MAX_VALUE;
+        
+        for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+            long total = aL[elementIdx];
+            for (int i = 0; i < bytesPerItem; i++) {
+                long v = (total >> (long)(i * bytesPerItem)) & 255L;
+                if (v < min) {
+                    min = v;
+                }
+            }
+        }
+        
+        return min;
+    }
 
     public static int findMaxForByteCompressed(int[] a, int len, int bytesPerItem) {
         
@@ -1607,5 +1624,22 @@ public class MiscMath {
         }
         
         return max;
+    }
+    
+    public static int findMinForByteCompressed(int[] a, int len, int bytesPerItem) {
+        
+        int min = Integer.MAX_VALUE;
+        
+        for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
+            int total = a[elementIdx];
+            for (int i = 0; i < bytesPerItem; i++) {
+                int v = (total >> (i * bytesPerItem)) & 255;
+                if (v < min) {
+                    min = v;
+                }
+            }
+        }
+        
+        return min;
     }
 }

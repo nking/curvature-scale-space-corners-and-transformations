@@ -37,13 +37,33 @@ public class SegmentedImageHelperTest extends TestCase {
         
         GreyscaleImage gsImg1 = imgHelper1.getGreyscaleImage();
         GreyscaleImage gsImg2 = imgHelper2.getGreyscaleImage();
+
+        int min1, max1;
+        if (gsImg1.is64Bit) {
+            min1 = (int)MiscMath.findMinForByteCompressed(gsImg1.aL, gsImg1.len, 
+                gsImg1.itemByteLength);
+            max1 = (int)MiscMath.findMaxForByteCompressed(gsImg1.aL, gsImg1.len, 
+                gsImg1.itemByteLength);
+        } else {
+            min1 = MiscMath.findMinForByteCompressed(gsImg1.a, gsImg1.len, 
+                gsImg1.itemByteLength);
+            max1 = MiscMath.findMaxForByteCompressed(gsImg1.a, gsImg1.len, 
+                gsImg1.itemByteLength);
+        }
         
-        int min1 = MiscMath.findMin(gsImg1.getValues(), gsImg1.getNPixels());        
-        int max1 = MiscMath.findMax(gsImg1.getValues(), gsImg1.getNPixels());
-       
-        int min2 = MiscMath.findMin(gsImg2.getValues(), gsImg2.getNPixels());        
-        int max2 = MiscMath.findMax(gsImg2.getValues(), gsImg2.getNPixels());
-        
+        int min2, max2;
+        if (gsImg2.is64Bit) {
+            min2 = (int)MiscMath.findMinForByteCompressed(gsImg2.aL, gsImg2.len, 
+                gsImg2.itemByteLength);
+            max2 = (int)MiscMath.findMaxForByteCompressed(gsImg2.aL, gsImg2.len, 
+                gsImg2.itemByteLength);
+        } else {
+            min2 = MiscMath.findMinForByteCompressed(gsImg2.a, gsImg2.len, 
+                gsImg2.itemByteLength);
+            max2 = MiscMath.findMaxForByteCompressed(gsImg2.a, gsImg2.len, 
+                gsImg2.itemByteLength);
+        }
+               
         assertEquals(255, max1);
         assertEquals(255, max2);
         assertEquals(0, min1);

@@ -814,7 +814,15 @@ public class ImageProcessor {
 
     public void subtractMinimum(GreyscaleImage input) {
 
-        int min = MiscMath.findMin(input.getValues());
+        int min;
+        
+        if (input.is64Bit) {
+            min = (int)MiscMath.findMinForByteCompressed(input.aL, input.len, 
+                input.itemByteLength);
+        } else {
+            min = MiscMath.findMinForByteCompressed(input.a, input.len, 
+                input.itemByteLength);
+        }
 
         for (int col = 0; col < input.getWidth(); col++) {
 
@@ -2888,8 +2896,10 @@ public class ImageProcessor {
         int w = img.getWidth();
         int h = img.getHeight();
 
-        GreyscaleImage mean = img.createWithDimensions();
-
+        int[] mean = new int[img.getNPixels()];
+        
+        int[] imgValues = img.getValues();
+        
         // sum along rows
         for (int i = 0; i < w; ++i) {
 
@@ -2902,11 +2912,13 @@ public class ImageProcessor {
                 float count = halfDimension - j;
                 float sum = 0;
                 for (int k = j; k < halfDimension; ++k) {
-                    sum += img.getValue(i, k);
+                    int pixIdx = img.getIndex(i, k);
+                    sum += imgValues[pixIdx];
                 }
                 sum /= count;
                 sum *= dimension;
-                mean.setValue(i, j, Math.round(sum));
+                int pixIdx = img.getIndex(i, j);
+                mean[pixIdx] = Math.round(sum);
             }
 
             /* pixels between halfDimension and j-halfDimension
@@ -2917,9 +2929,11 @@ public class ImageProcessor {
             */
             int sum0 = 0;
             for (int j = 0; j <= 2*halfDimension; ++j) {
-                sum0 += img.getValue(i, j);
+                int pixIdx = img.getIndex(i, j);
+                sum0 += imgValues[pixIdx];
             }
-            mean.setValue(i, halfDimension, sum0);
+            int pixIdx = img.getIndex(i, halfDimension);
+            mean[pixIdx] = sum0;
             /*
             halfDimension = 2
             0 1 2 3 4 5 6
@@ -2928,10 +2942,13 @@ public class ImageProcessor {
 
             */
             for (int j = halfDimension + 1; j < (h - halfDimension); ++j) {
-                int vp = img.getValue(i, j - halfDimension - 1);
-                int vl =  img.getValue(i, j + halfDimension);
+                pixIdx = img.getIndex(i, j - halfDimension - 1);
+                int vp = imgValues[pixIdx];
+                pixIdx = img.getIndex(i, j + halfDimension);
+                int vl =  imgValues[pixIdx];
                 sum0 = sum0 - vp + vl;
-                mean.setValue(i, j, sum0);
+                pixIdx = img.getIndex(i, j);
+                mean[pixIdx] = sum0;
             }
             /* last halfDimension pixels
             0 1 2 3   n=4, halfDimension = 2
@@ -2941,11 +2958,13 @@ public class ImageProcessor {
                 float count = h - j + 1;
                 float sum = 0;
                 for (int k = (j - 1); k < h; ++k) {
-                    sum += img.getValue(i, k);
+                    pixIdx = img.getIndex(i, k);
+                    sum +=  imgValues[pixIdx];
                 }
                 sum /= count;
                 sum *= dimension;
-                mean.setValue(i, j, Math.round(sum));
+                pixIdx = img.getIndex(i, j);
+                mean[pixIdx] = Math.round(sum);
             }
         }
 
@@ -2961,11 +2980,13 @@ public class ImageProcessor {
                 float count = halfDimension - i;
                 float sum = 0;
                 for (int k = i; k < halfDimension; ++k) {
-                    sum += mean.getValue(k, j);
+                    int pixIdx = img.getIndex(k, j);
+                    sum += mean[pixIdx];                    
                 }
                 sum /= count;
                 sum *= dimension;
-                img.setValue(i, j, Math.round(sum));
+                int pixIdx = img.getIndex(i, j);
+                imgValues[pixIdx] =  Math.round(sum);
             }
 
             /* pixels between halfDimension and j-halfDimension
@@ -2976,9 +2997,11 @@ public class ImageProcessor {
             */
             int sum0 = 0;
             for (int i = 0; i <= 2*halfDimension; ++i) {
-                sum0 += mean.getValue(i, j);
+                int pixIdx = img.getIndex(i, j);
+                sum0 += mean[pixIdx]; 
             }
-            img.setValue(halfDimension, j, sum0);
+            int pixIdx = img.getIndex(halfDimension, j);
+            imgValues[pixIdx] = sum0;
             /*
             halfDimension = 2
             0 1 2 3 4 5 6
@@ -2987,10 +3010,13 @@ public class ImageProcessor {
 
             */
             for (int i = halfDimension + 1; i < (w - halfDimension); ++i) {
-                int vp = mean.getValue(i - halfDimension - 1, j);
-                int vl =  mean.getValue(i + halfDimension, j);
+                pixIdx = img.getIndex(i - halfDimension - 1, j);
+                int vp = mean[pixIdx];
+                pixIdx = img.getIndex(i + halfDimension, j);
+                int vl =  mean[pixIdx];
                 sum0 = sum0 - vp + vl;
-                img.setValue(i, j, sum0);
+                pixIdx = img.getIndex(i, j);
+                imgValues[pixIdx] = sum0;
             }
             /* last halfDimension pixels
             0 1 2 3   n=4, halfDimension = 2
@@ -3000,11 +3026,13 @@ public class ImageProcessor {
                 float count = w - i + 1;
                 float sum = 0;
                 for (int k = (i - 1); k < w; ++k) {
-                    sum += mean.getValue(k, j);
+                    pixIdx = img.getIndex(k, j);
+                    sum += mean[pixIdx];
                 }
                 sum /= count;
                 sum *= dimension;
-                img.setValue(i, j, Math.round(sum));
+                pixIdx = img.getIndex(i, j);
+                imgValues[pixIdx] = Math.round(sum);
             }
         }
 
@@ -3012,10 +3040,14 @@ public class ImageProcessor {
         float dsq = dimension * dimension;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                int v = img.getValue(i, j);
+                int pixIdx = img.getIndex(i, j);
+                int v = imgValues[pixIdx];
                 v = Math.round((float)v/dsq);
-                img.setValue(i, j, v);
+                imgValues[pixIdx] = v;
             }
+        }
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            img.setValue(i, imgValues[i]);
         }
     }
 }
