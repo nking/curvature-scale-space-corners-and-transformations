@@ -1,0 +1,6 @@
+The 2 UW images campus_010.jpg and campus_011.jpg are from 
+pano_test.zip from
+http://www.cs.cornell.edu/courses/cs6670/2011sp/projects/p2/project2.html
+
+Did not see a license or terms of use, presumably, the images are
+free for use.
