@@ -8,12 +8,18 @@ Story: Reduce memory use of Image and GreyscaleImage
     time estimate: min 3 days, max 7 days (FTE)
 
     amount of time used: 
+        < 2 days FTE
 
     state of completion: 
+        complete
 
     comments regarding state:
 
     comments:
+        images were changed to internally use a more condensed 
+        format saving a factor of 4 to 24 in space and an object 
+        holding image references was changed to allow the gc to 
+        reclaim memory more easily.
 
 ------------------------------------------------------------------
 Task 1:  Refactor Image and GreyscaleImage and associated classes
@@ -94,9 +100,13 @@ Task 2:  For the scale calculator image cache, need the cache to
     time estimate: min 1 day, max 2 days
   
     amount of time used:
+        3 hours
 
     state of completion: 
+        closed
 
     comments:
+        goals were met with changes to IntensityFeatures and associated
+           classes, so peristence logic for caching was not needed.
               
 ---------------------------------------------------------------------
