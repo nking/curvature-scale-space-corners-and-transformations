@@ -61,6 +61,23 @@ public class IntensityFeatures {
         this.useNormalizedIntensities = useNormalizedIntensities;
         this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
     }
+    
+    /**
+     * constructor for an instance which retains no image references and
+     * relies on the user to consistently provide the same image to 
+     * instance methods.
+     * @param blockHalfWidths
+     * @param useNormalizedIntensities 
+     */
+    public IntensityFeatures(final int blockHalfWidths, final boolean 
+        useNormalizedIntensities) {
+
+        this.gsImg = null;
+        this.clrImg = null;
+        this.bHalfW = blockHalfWidths;
+        this.useNormalizedIntensities = useNormalizedIntensities;
+        this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
+    }
 
     /**
      * extract the intensity from the image for the given block center and
@@ -74,7 +91,40 @@ public class IntensityFeatures {
     public IntensityDescriptor extractIntensity(final int xCenter, 
         final int yCenter, final int rotation) {
         
-        checkBounds(xCenter, yCenter);
+        if (clrImg == null && gsImg == null) {
+            throw new IllegalStateException("no images were provided at "
+            + "construction so " 
+            + "extractIntensity(image, xCenter, yCenter, rotatation) "
+            + "must be used instead");
+        }
+        
+        if (clrImg != null) {
+            return extractIntensity(clrImg, xCenter, yCenter, rotation);
+        } else {
+            return extractIntensity(gsImg, xCenter, yCenter, rotation);
+        }
+    }
+
+    /**
+     * extract the intensity from the image for the given block center and
+     * return it in a descriptor.
+     * @param img greyscale image which needs a descriptor for given location
+     * and orientation.  note that because the instance caches previous
+     * calculations, the invoker must supply the same image each time.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return
+     */
+    public IntensityDescriptor extractIntensity(GreyscaleImage img, 
+        final int xCenter, final int yCenter, final int rotation) {
+        
+        if (img == null) {
+            throw new IllegalStateException("img cannot be null");
+        }
+                
+        checkBounds(img, xCenter, yCenter);
         
         PairInt p = new PairInt(xCenter, yCenter);
         
@@ -95,9 +145,11 @@ public class IntensityFeatures {
         }
         
         if (useBinnedCellIntensities) {
-            descriptor = extractIntensityForCells(xCenter, yCenter, rotation);
+            descriptor = extractIntensityForCells(img, xCenter, yCenter, 
+                rotation);
         } else {
-            descriptor = extractIntensityForBlock(xCenter, yCenter, rotation);
+            descriptor = extractIntensityForBlock(img, xCenter, yCenter, 
+                rotation);
         }
         
         if (descriptor != null) {
@@ -106,19 +158,89 @@ public class IntensityFeatures {
         
         return descriptor;
     }
-
-    protected IntensityDescriptor extractIntensityForBlock(int xCenter, int yCenter, int rotation) {
+    
+    /**
+     * extract the intensity from the image for the given block center and
+     * return it in a descriptor.
+     * @param img color image which needs a descriptor for given location
+     * and orientation.  note that because the instance caches previous
+     * calculations, the invoker must supply the same image each time.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return
+     */
+    public IntensityDescriptor extractIntensity(Image img, final int xCenter, 
+        final int yCenter, final int rotation) {
+        
+        if (img == null) {
+            throw new IllegalStateException("img cannot be null");
+        }
+                    
+        checkBounds(img, xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        Map<Integer, IntensityDescriptor> descriptors = intensityBlocks.get(p);
+        
+        IntensityDescriptor descriptor = null;
+        
+        if (descriptors != null) {
+            descriptor = descriptors.get(rotationKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        } else {
+            descriptors = new HashMap<Integer, IntensityDescriptor>();
+            intensityBlocks.put(p, descriptors);
+        }
+        
+        if (useBinnedCellIntensities) {
+            descriptor = extractIntensityForCells(img, xCenter, yCenter, 
+                rotation);
+        } else {
+            descriptor = extractIntensityForBlock(img, xCenter, yCenter, 
+                rotation);
+        }
+        
+        if (descriptor != null) {
+            descriptors.put(rotationKey, descriptor);
+        }
+        
+        return descriptor;
+    }
+    
+    protected IntensityDescriptor extractIntensityForBlock(GreyscaleImage img,
+        int xCenter, int yCenter, int rotation) {
+        
         Transformer transformer = new Transformer();
         
         float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);
         
         IntensityDescriptor descriptor;
         
-        if (gsImg != null) {
-            descriptor = extractGsIntensityForBlock(xCenter, yCenter, frameOffsets);
-        } else {
-            descriptor = extractClrIntensityForBlock(xCenter, yCenter, frameOffsets);
+        descriptor = extractGsIntensityForBlock(img, xCenter, yCenter, 
+            frameOffsets);
+       
+        if (useNormalizedIntensities && (descriptor != null)) {
+            descriptor.applyNormalization();
         }
+        
+        return descriptor;
+    }
+    
+    protected IntensityDescriptor extractIntensityForBlock(Image img, 
+        int xCenter, int yCenter, int rotation) {
+        
+        Transformer transformer = new Transformer();
+        
+        float[][] frameOffsets = transformer.transformXY(rotation, xyOffsets);
+        
+        IntensityDescriptor descriptor = extractClrIntensityForBlock(img, 
+            xCenter, yCenter, frameOffsets);
         
         if (useNormalizedIntensities && (descriptor != null)) {
             descriptor.applyNormalization();
@@ -127,14 +249,24 @@ public class IntensityFeatures {
         return descriptor;
     }
 
-    protected IntensityDescriptor extractIntensityForCells(int xCenter, int yCenter, int rotation) {
-        IntensityDescriptor descriptor;
+    protected IntensityDescriptor extractIntensityForCells(GreyscaleImage img,
+        int xCenter, int yCenter, int rotation) {
         
-        if (gsImg != null) {
-            descriptor = extractGsIntensityForCells(xCenter, yCenter, rotation);
-        } else {
-            descriptor = extractClrIntensityForCells(xCenter, yCenter, rotation);
+        IntensityDescriptor descriptor = 
+            extractGsIntensityForCells(img, xCenter, yCenter, rotation);
+        
+        if (useNormalizedIntensities && (descriptor != null)) {
+            descriptor.applyNormalization();
         }
+        
+        return descriptor;
+    }
+    
+    protected IntensityDescriptor extractIntensityForCells(Image img,
+        int xCenter, int yCenter, int rotation) {
+        
+        IntensityDescriptor descriptor = 
+            extractClrIntensityForCells(img, xCenter, yCenter, rotation);
         
         if (useNormalizedIntensities && (descriptor != null)) {
             descriptor.applyNormalization();
@@ -179,42 +311,101 @@ public class IntensityFeatures {
     }
     
     protected void checkBounds(int x, int y) {
-        if (!isWithinXBounds(x)) {
+        if (clrImg == null && gsImg == null) {
+            throw new IllegalStateException("no images were provided at "
+            + "construction so " 
+            + "extractIntensity(image, xCenter, yCenter, rotatation) "
+            + "must be used instead");
+        }
+        if (clrImg != null) {
+            checkBounds(clrImg, x, y);
+        } else {
+            checkBounds(gsImg, x, y);
+        }
+    }
+    
+    protected void checkBounds(GreyscaleImage img, int x, int y) {
+        if (!isWithinXBounds(img, x)) {
             throw new IllegalArgumentException("x is out of bounds of image");
         }
-        if (!isWithinYBounds(y)) {
+        if (!isWithinYBounds(img, y)) {
+            throw new IllegalArgumentException("y is out of bounds of image");
+        }
+    }
+    
+    protected void checkBounds(Image img, int x, int y) {
+        if (!isWithinXBounds(img, x)) {
+            throw new IllegalArgumentException("x is out of bounds of image");
+        }
+        if (!isWithinYBounds(img, y)) {
             throw new IllegalArgumentException("y is out of bounds of image");
         }
     }
 
-    public boolean isWithinXBounds(int x) {
+    protected boolean isWithinXBounds(int x) {
+        if (clrImg == null && gsImg == null) {
+            throw new IllegalStateException("no images were provided at "
+            + "construction so " 
+            + "extractIntensity(image, xCenter, yCenter, rotatation) "
+            + "must be used instead");
+        }
+        if (clrImg != null) {
+            return isWithinXBounds(clrImg, x);
+        } else {
+            return isWithinXBounds(gsImg, x);
+        }
+    }
+    
+    protected boolean isWithinYBounds(int y) {
+        if (clrImg == null && gsImg == null) {
+            throw new IllegalStateException("no images were provided at "
+            + "construction so " 
+            + "extractIntensity(image, xCenter, yCenter, rotatation) "
+            + "must be used instead");
+        }
+        if (clrImg != null) {
+            return isWithinYBounds(clrImg, y);
+        } else {
+            return isWithinYBounds(gsImg, y);
+        }
+    }
+    
+    public boolean isWithinXBounds(GreyscaleImage img, int x) {
         if (x < 0) {
             return false;
         }
-        if (gsImg != null) {
-            if (x > (gsImg.getWidth() - 1)) {
-                return false;
-            }
-        } else {
-            if (x > (clrImg.getWidth() - 1)) {
-                return false;
-            }
+        if (x > (img.getWidth() - 1)) {
+            return false;
+        }
+        return true;
+    }
+    
+    public boolean isWithinYBounds(GreyscaleImage img, int y) {
+        if (y < 0) {
+            return false;
+        }
+        if (y > (img.getHeight() - 1)) {
+            return false;
         }
         return true;
     }
 
-    public boolean isWithinYBounds(int y) {
+    public boolean isWithinXBounds(Image img, int x) {
+        if (x < 0) {
+            return false;
+        }
+        if (x > (img.getWidth() - 1)) {
+            return false;
+        }
+        return true;
+    }
+    
+    public boolean isWithinYBounds(Image img, int y) {
         if (y < 0) {
             return false;
         }
-        if (gsImg != null) {
-            if (y > (gsImg.getHeight() - 1)) {
-                return false;
-            }
-        } else {
-            if (y > (clrImg.getHeight() - 1)) {
-                return false;
-            }
+        if (y > (img.getHeight() - 1)) {
+            return false;
         }
         return true;
     }
@@ -223,11 +414,13 @@ public class IntensityFeatures {
      * extract the intensity from the image and place in the descriptor.
      * Note that if the transformed pixel is out of bounds of the image,
      * a sentinel is the value for that location in the descriptor.
+     * @param img
      * @param xCenter
      * @param yCenter
      * @return
      */
-    protected IntensityDescriptor extractGsIntensityForBlock(int xCenter, int yCenter, float[][] offsets) {
+    protected IntensityDescriptor extractGsIntensityForBlock(GreyscaleImage img,
+        int xCenter, int yCenter, float[][] offsets) {
         
         float[] output = new float[offsets.length];
         
@@ -241,22 +434,23 @@ public class IntensityFeatures {
             
             float y1P = yCenter + offsets[i][1];
             
-            if ((x1P < 0) || (Math.ceil(x1P) > (gsImg.getWidth() - 1)) || 
-                (y1P < 0) || (Math.ceil(y1P) > (gsImg.getHeight() - 1))) {
+            if ((x1P < 0) || (Math.ceil(x1P) > (img.getWidth() - 1)) || 
+                (y1P < 0) || (Math.ceil(y1P) > (img.getHeight() - 1))) {
                 output[count] = sentinel;
             } else {
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 // bilinear:
                 //double v = imageProcessor.biLinearInterpolation(gsImg, x1P, y1P);
                 // nearest neighbor
-                double v = gsImg.getValue(Math.round(x1P), Math.round(y1P));
+                double v = img.getValue(Math.round(x1P), Math.round(y1P));
                 output[count] = (int) Math.round(v);
             }
             
             count++;
         }
         
-        IntensityDescriptor desc = new GsIntensityDescriptor(output, offsets.length >> 1);
+        IntensityDescriptor desc = new GsIntensityDescriptor(output, 
+            offsets.length >> 1);
         
         return desc;
     }
@@ -264,13 +458,14 @@ public class IntensityFeatures {
     /**
      * extract the intensity from the image in 2X2 cells surrounding
      * (xCenter, yCenter) for 16 cells.
+     * @param img
      * @param xCenter
      * @param yCenter
      * @param rotation
      * @return
      */
-    protected IntensityDescriptor extractGsIntensityForCells(int xCenter, 
-        int yCenter, int rotation) {
+    protected IntensityDescriptor extractGsIntensityForCells(GreyscaleImage img,
+        int xCenter, int yCenter, int rotation) {
         
         /*
           3 [-][-][.][.][-][-][.][.]
@@ -310,8 +505,8 @@ public class IntensityFeatures {
                 
                 // --- calculate values for the cell ---
                 boolean withinBounds = transformCellCoordinates(rotation, 
-                    xCenter, yCenter, dx, dy, cellDim, gsImg.getWidth(), 
-                    gsImg.getHeight(), xT, yT);
+                    xCenter, yCenter, dx, dy, cellDim, img.getWidth(), 
+                    img.getHeight(), xT, yT);
                 
                 if (!withinBounds) {
                     if (count == centralPixelIndex) {
@@ -326,7 +521,7 @@ public class IntensityFeatures {
                 for (int i = 0; i < xT.length; ++i) {
                     int x = Math.round(xT[i]);
                     int y = Math.round(yT[i]);
-                    int v0 = gsImg.getValue(x, y);
+                    int v0 = img.getValue(x, y);
                     v += v0;
                     cCount++;
                 }
@@ -347,13 +542,14 @@ public class IntensityFeatures {
     /**
      * extract the intensity from the image in 2X2 cells surrounding
      * (xCenter, yCenter) for 16 cells.
+     * @param img
      * @param xCenter
      * @param yCenter
      * @param rotation
      * @return
      */
-    protected IntensityDescriptor extractClrIntensityForCells(int xCenter, 
-        int yCenter, int rotation) {
+    protected IntensityDescriptor extractClrIntensityForCells(Image img,
+        int xCenter, int yCenter, int rotation) {
 
         /*
           3 [-][-][.][.][-][-][.][.]
@@ -396,8 +592,8 @@ public class IntensityFeatures {
             for (int dy = -range0; dy < range0; dy += cellDim) {
                 // --- calculate values for the cell ---
                 boolean withinBounds = transformCellCoordinates(rotation, 
-                    xCenter, yCenter, dx, dy, cellDim, clrImg.getWidth(), 
-                    clrImg.getHeight(), xT, yT);
+                    xCenter, yCenter, dx, dy, cellDim, img.getWidth(), 
+                    img.getHeight(), xT, yT);
                 
                 if (!withinBounds) {
                     if (count == centralPixelIndex) {
@@ -416,9 +612,9 @@ public class IntensityFeatures {
                 for (int i = 0; i < xT.length; ++i) {
                     int x = Math.round(xT[i]);
                     int y = Math.round(yT[i]);
-                    r += clrImg.getR(x, y);
-                    g += clrImg.getG(x, y);
-                    b += clrImg.getB(x, y);
+                    r += img.getR(x, y);
+                    g += img.getG(x, y);
+                    b += img.getB(x, y);
                     cCount++;
                 }
                 if (cCount == 0) {
@@ -448,12 +644,15 @@ public class IntensityFeatures {
      * extract the intensity from the image and place in the descriptor.
      * Note that if the transformed pixel is out of bounds of the image,
      * a sentinel is the value for that location in the descriptor.
+     * @param img
      * @param xCenter
      * @param yCenter
      * @param offsets
      * @return
      */
-    protected IntensityDescriptor extractClrIntensityForBlock(int xCenter, int yCenter, float[][] offsets) {
+    protected IntensityDescriptor extractClrIntensityForBlock(Image img,
+        int xCenter, int yCenter, float[][] offsets) {
+        
         int sentinel = ClrIntensityDescriptor.sentinel;
         int[] outputR = new int[offsets.length];
         int[] outputG = new int[outputR.length];
@@ -462,25 +661,27 @@ public class IntensityFeatures {
         for (int i = 0; i < offsets.length; ++i) {
             float x1P = xCenter + offsets[i][0];
             float y1P = yCenter + offsets[i][1];
-            if ((x1P < 0) || (Math.ceil(x1P) > (clrImg.getWidth() - 1)) || (y1P < 0) || (Math.ceil(y1P) > (clrImg.getHeight() - 1))) {
+            if ((x1P < 0) || (Math.ceil(x1P) > (img.getWidth() - 1)) 
+                || (y1P < 0) || (Math.ceil(y1P) > (img.getHeight() - 1))) {
                 outputR[count] = sentinel;
                 outputG[count] = sentinel;
                 outputB[count] = sentinel;
             } else {
                 //non-adaptive algorithms: nearest neighbor or bilinear
                 // bilinear:
-                //double[] v = imageProcessor.biLinearInterpolation(clrImg, x1P, y1P);
+                //double[] v = imageProcessor.biLinearInterpolation(img, x1P, y1P);
                 // nearest neighbor
-                int r = clrImg.getR(Math.round(x1P), Math.round(y1P));
-                int g = clrImg.getG(Math.round(x1P), Math.round(y1P));
-                int b = clrImg.getB(Math.round(x1P), Math.round(y1P));
+                int r = img.getR(Math.round(x1P), Math.round(y1P));
+                int g = img.getG(Math.round(x1P), Math.round(y1P));
+                int b = img.getB(Math.round(x1P), Math.round(y1P));
                 outputR[count] = r;
                 outputG[count] = g;
                 outputB[count] = b;
             }
             count++;
         }
-        IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG, outputB, offsets.length);
+        IntensityDescriptor desc = new ClrIntensityDescriptor(outputR, outputG, 
+            outputB, offsets.length);
         return desc;
     }
 

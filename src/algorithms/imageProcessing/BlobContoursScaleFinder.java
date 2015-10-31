@@ -311,7 +311,7 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
    
                 FeatureComparisonStat compStat =
                     featureMatcher.ditherAndRotateForBestLocation(
-                    features1, features2, region1, region2, dither);
+                    features1, features2, region1, region2, dither, img1, img2);
 
 sb.append(
     String.format(" (%d,%d) theta1=%d   (%d,%d) theta2=%d",

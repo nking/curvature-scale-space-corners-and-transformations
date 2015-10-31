@@ -18,14 +18,6 @@ import java.util.logging.Logger;
  */
 public class ClosedCurveCornerMatcher0 {
     
-    protected final List<CornerRegion> c1;
-
-    protected final List<CornerRegion> c2;
-        
-    protected final IntensityFeatures features1;
-    
-    protected final IntensityFeatures features2;
-
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean solverHasFinished = false;
@@ -38,62 +30,35 @@ public class ClosedCurveCornerMatcher0 {
 
     private TransformationPair4 solutionTransformationPair = null;
     
-    /**
-     * 
-     * @param features1
-     * @param features2
-     * @param corners1
-     * @param corners2
-     * @param cornersAreAlreadyCCW corners should already be in counter
-     * clockwise order
-     */
-    public ClosedCurveCornerMatcher0(final IntensityFeatures features1,
-        final IntensityFeatures features2, final List<CornerRegion> corners1, 
-        final List<CornerRegion> corners2, boolean cornersAreAlreadyCCW) {
-        
-        c1 = new ArrayList<CornerRegion>(corners1.size());
-
-        c2 = new ArrayList<CornerRegion>(corners2.size());
-        
-        if (c1.size() != c2.size()) {
-            throw new IllegalArgumentException("c1 and c2 must be same size");
-        }
-        
-        this.features1 = features1;
-        
-        this.features2 = features2;
-        
-        c1.addAll(corners1);
-        c2.addAll(corners2);
-
-        if (!cornersAreAlreadyCCW) {
-            sortCornersToCCW(c2);
-            sortCornersToCCW(c2);
-        }       
+    public ClosedCurveCornerMatcher0() {
     }
 
-    public boolean matchCorners() {
-        
-        if (solverHasFinished) {
-            throw new IllegalStateException(
-            "matchContours cannot be invoked more than once");
-        }
-
-        boolean solved = solve();
-
-        return solved;        
-    }
-     
     /**
      * find solution using corners paired by curve order.
      * The algorithm requires c1.size() == c2.size().
      * with runtime O(n).
      * 
      */
-    private boolean solve() {
+    public boolean matchCorners(final IntensityFeatures features1,
+        final IntensityFeatures features2, final List<CornerRegion> corners1, 
+        final List<CornerRegion> corners2, boolean cornersAreAlreadyCCW,
+        GreyscaleImage img1, GreyscaleImage img2) {
         
+        if (solverHasFinished) {
+            throw new IllegalStateException(
+            "matchContours cannot be invoked more than once");
+        }
+
+        List<CornerRegion> c1 = new ArrayList<CornerRegion>(corners1.size());
+        List<CornerRegion> c2 = new ArrayList<CornerRegion>(corners2.size());        
         if (c1.size() != c2.size()) {
-            throw new IllegalStateException("c1 and c2 must be same size");
+            throw new IllegalArgumentException("c1 and c2 must be same size");
+        }
+        c1.addAll(corners1);
+        c2.addAll(corners2);
+        if (!cornersAreAlreadyCCW) {
+            sortCornersToCCW(c2);
+            sortCornersToCCW(c2);
         }
         
         int deltaIdx = 0;
@@ -121,7 +86,8 @@ public class ClosedCurveCornerMatcher0 {
                 FeatureComparisonStat compStat = null;
                 try {
                     compStat = featureMatcher.ditherAndRotateForBestLocation(
-                        features1, features2, region1, region2, dither);
+                        features1, features2, region1, region2, dither, img1, 
+                        img2);
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
                     log.fine(ex.getMessage());
                 }

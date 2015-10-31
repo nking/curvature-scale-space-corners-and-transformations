@@ -35,6 +35,10 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(
             type2, useBinned2);
+        
+        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
+        
+        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
                 
         assert(blobs1.size() == perimeters1.size());
         assert(blobs1.size() == corners1List.size());
@@ -84,23 +88,27 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 Collections.sort(corners2, new DescendingKComparator());
 
                 ClosedCurveCornerMatcherWrapper mapper =
-                    new ClosedCurveCornerMatcherWrapper(features1, features2, 
-                    corners1, corners2, true);
+                    new ClosedCurveCornerMatcherWrapper();
                 
-                boolean matched = mapper.matchCorners();
+                boolean matched = mapper.matchCorners(features1, features2, 
+                    corners1, corners2, true, img1, img2);
               
                 if (!matched) {
                     continue;
                 }
                 
-                TransformationParameters params = mapper.getSolvedParameters();
+                TransformationPair2 transformationPair = mapper.getSolution();
+                
+                TransformationParameters params = 
+                    transformationPair.getTransformationParameters();
                 
                 if (params == null) {
                     continue;
                 }
                 
-                List<FeatureComparisonStat> compStats = mapper.getSolutionMatchedCompStats();
-                    
+                List<FeatureComparisonStat> compStats = 
+                    transformationPair.getNextCorner().getMatchedFeatureComparisonStats();
+                                    
                 log.fine("theta diff filtered: " + printToString(compStats) 
                     + " combinedStat=" + calculateCombinedIntensityStat(compStats));
             
@@ -113,7 +121,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 IntensityFeatureComparisonStats stats = new 
                     IntensityFeatureComparisonStats(index1.intValue(), 
                     index2.intValue(), mapper.getSolvedCost(), 
-                        mapper.getSolvedParameters().getScale());
+                    params.getScale());
                 
                 stats.addAll(compStats);
                 

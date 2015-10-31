@@ -212,11 +212,10 @@ int z = 1;//1,3 in contours2 should be averaged?
                     }
                 }
                 
-                ClosedCurveCornerMatcher0 matcher 
-                    = new ClosedCurveCornerMatcher0(features1, features2, c1, 
-                        c2, true);
+                ClosedCurveCornerMatcher0 matcher = new ClosedCurveCornerMatcher0();
                 
-                boolean solved = matcher.matchCorners();
+                boolean solved = matcher.matchCorners(features1, features2, c1, 
+                    c2, true, img1, img2);
                 
                 if (solved) {
                     
@@ -248,7 +247,7 @@ int z = 1;//1,3 in contours2 should be averaged?
                 trMap.put(Integer.valueOf(i), bestMatches);
             }
         }
-              
+        
         if (trMap.isEmpty()) {
             return null;
         }

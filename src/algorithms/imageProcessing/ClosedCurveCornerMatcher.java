@@ -22,9 +22,7 @@ import thirdparty.HungarianAlgorithm;
  * @author nichole
  */
 public class ClosedCurveCornerMatcher {
-
-    protected Heap heap = null;
-
+    
     /**
      * the costs calculated here are small fractions, so they need to be
      * multiplied by a large constant for use with the Fibonacci heap
@@ -33,16 +31,8 @@ public class ClosedCurveCornerMatcher {
      */
     protected final static long heapKeyFactor = 1000000000000l;
 
-    protected final List<CornerRegion> c1;
-
-    protected final List<CornerRegion> c2;
-
-    protected final NearestPoints np;
-
-    protected final IntensityFeatures features1;
-
-    protected final IntensityFeatures features2;
-
+    protected TransformationPair2 solution = null;
+    
     protected final int dither = 3;
 
     protected final int rotationTolerance = 20;
@@ -50,53 +40,54 @@ public class ClosedCurveCornerMatcher {
     //TODO: tune this
     private int tolerance = 2;
 
-    private float kMin1;
-    private float kMax1;
-    private float kMin2;
-    private float kMax2;
-
-    private TransformationParameters solutionParameters = null;
-
     private double solutionCost = Double.MAX_VALUE;
-
-    private List<Integer> solutionMatchedCornerIndexes1 = null;
-
-    private List<Integer> solutionMatchedCornerIndexes2 = null;
-
-    private List<FeatureComparisonStat> solutionMatchedCompStats = null;
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean solverHasFinished = false;
 
-    private boolean hasBeenInitialized = false;
-
     private boolean solutionHasSomeScalesSmallerThanOne = false;
 
-    public ClosedCurveCornerMatcher(final IntensityFeatures features1,
+    public ClosedCurveCornerMatcher() {
+    }
+
+    private void resetDefaults() {
+        solverHasFinished = false;
+        solutionHasSomeScalesSmallerThanOne = false;
+        solutionCost = Double.MAX_VALUE;
+        solution = null;
+    }
+    
+    /**
+     * 
+     * @param features1
+     * @param features2
+     * @param corners1
+     * @param corners2
+     * @param cornersAreAlreadySorted
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @return 
+     */
+    public boolean matchCorners(final IntensityFeatures features1,
         final IntensityFeatures features2, final List<CornerRegion> corners1,
-        final List<CornerRegion> corners2, boolean cornersAreAlreadySorted) {
+        final List<CornerRegion> corners2, boolean cornersAreAlreadySorted,
+        GreyscaleImage img1, GreyscaleImage img2) {
 
-        c1 = new ArrayList<CornerRegion>(corners1.size());
-
-        c2 = new ArrayList<CornerRegion>(corners2.size());
-
-        solutionMatchedCompStats = new ArrayList<FeatureComparisonStat>();
-
-        this.features1 = features1;
-
-        this.features2 = features2;
-
-        initializeVariables(corners1, corners2);
-
+        if (solverHasFinished) {
+            resetDefaults();
+        }
+        
+        List<CornerRegion> c1 = new ArrayList<CornerRegion>(corners1.size());
+        List<CornerRegion> c2 = new ArrayList<CornerRegion>(corners2.size());
+        c1.addAll(corners1);
+        c2.addAll(corners2);
         if (!cornersAreAlreadySorted) {
-
             // sort by descending |k|
             Collections.sort(c1, new DescendingKComparator());
-
             Collections.sort(c2, new DescendingKComparator());
         }
-
+        
         int[] xC2 = new int[c2.size()];
         int[] yC2 = new int[c2.size()];
         for (int i = 0; i < c2.size(); ++i) {
@@ -104,36 +95,23 @@ public class ClosedCurveCornerMatcher {
             xC2[i] = cr.getX()[cr.getKMaxIdx()];
             yC2[i] = cr.getY()[cr.getKMaxIdx()];
         }
-        np = new NearestPoints(xC2, yC2);
+        
+        NearestPoints np = new NearestPoints(xC2, yC2);
 
-        initializeHeapNodes();
-    }
-
-    public boolean matchCorners() {
-
-        if (solverHasFinished) {
-            throw new IllegalStateException(
-            "matchContours cannot be invoked more than once");
-        }
+        Heap heap = new Heap();
+        
+        initializeHeapNodes(heap, c1, c2, np, features1, features2, img1, img2);
 
         if (heap.getNumberOfNodes() == 0) {
             solverHasFinished = true;
             return false;
         }
-
-        solutionParameters = null;
-        solutionCost = Double.MAX_VALUE;
         
-        //TODO: this may need revision as more tests are added.
-        //      the method is not expected to be used as much as the alternatives
-        //      so the revision is not highest priority
-        // The next statements are looking at the top 10 results, combining
-        // them and finding the best averge SSD among the combined.
-        
-        //temporary look at evaluating entire solutions:
-        HeapNode minCost = heap.extractMin();//solve();
+        //evaluating entire solutions for top 10 below instead of just best in heap
+        HeapNode minCost = heap.extractMin();
 
         if (minCost == null) {
+            solverHasFinished = true;
             return false;
         }
 
@@ -274,7 +252,7 @@ public class ClosedCurveCornerMatcher {
             long costL = (long)(bestSSD * heapKeyFactor);
             minCost = new HeapNode(costL);
             minCost.setData(transformationPair);
-
+            
             // ========= end combining results ==========
             
         } else {
@@ -282,19 +260,11 @@ public class ClosedCurveCornerMatcher {
         }
         
         TransformationPair2 transformationPair = (TransformationPair2)minCost.getData();
-        NextCorner nc = transformationPair.getNextCorner();
         
-        TransformationParameters params = transformationPair.getTransformationParameters();
-
-        solutionParameters = params;
+        solution = transformationPair;
+        
         solutionCost = ((double)minCost.getKey()/(double)heapKeyFactor);
-
-        solutionMatchedCornerIndexes1 = nc.getMatchedCornerIndexes1();
-
-        solutionMatchedCornerIndexes2 = nc.getMatchedCornerIndexes2();
-
-        solutionMatchedCompStats = nc.getMatchedFeatureComparisonStats();
-
+        
         solverHasFinished = true;
 
         solutionHasSomeScalesSmallerThanOne = transformationPair.scaleIsPossiblyAmbiguous();
@@ -303,8 +273,11 @@ public class ClosedCurveCornerMatcher {
     }
 
     private CornersAndFeatureStat findBestMatchWithinTolerance(
+        List<CornerRegion> c1, List<CornerRegion> c2, NearestPoints np,
+        IntensityFeatures features1, IntensityFeatures features2,
         int corner1Idx, CornerRegion cornerCurve1, double[] predictedXYCurve2,
-        int rotationInDegrees, int rotationTolerance) {
+        int rotationInDegrees, int rotationTolerance,
+        GreyscaleImage img1, GreyscaleImage img2) {
 
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
@@ -328,7 +301,7 @@ public class ClosedCurveCornerMatcher {
 
                 compStat = featureMatcher.ditherAndRotateForBestLocation(
                     features1, features2, cornerCurve1, corner2, dither,
-                    rotationInDegrees, rotationTolerance);
+                    rotationInDegrees, rotationTolerance, img1, img2);
 
             } catch (CornerRegion.CornerRegionDegneracyException ex) {
                 log.fine(ex.getMessage());
@@ -390,9 +363,18 @@ public class ClosedCurveCornerMatcher {
      * the results are not used as the final match, rather a part of combinations
      * tried towards a solution.
      * runtime complexity is O(N_c1 * N_c2)
+     * @param c1
+     * @param c2
+     * @param features1
+     * @param features2
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
      * @return
      */
-    protected CornersAndFeatureStat[] getBestSSDC1ToC2() {
+    protected CornersAndFeatureStat[] getBestSSDC1ToC2(
+        List<CornerRegion> c1, List<CornerRegion> c2,
+        IntensityFeatures features1, IntensityFeatures features2, 
+        GreyscaleImage img1, GreyscaleImage img2) {
 
         // if no match, contains a null
         CornersAndFeatureStat[] indexes2 = new CornersAndFeatureStat[c1.size()];
@@ -416,7 +398,8 @@ public class ClosedCurveCornerMatcher {
                 try {
 
                     compStat = featureMatcher.ditherAndRotateForBestLocation(
-                        features1, features2, region1, region2, dither);
+                        features1, features2, region1, region2, dither, 
+                        img1, img2);
 
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
                     log.fine("**CONSIDER using more points in corner region");
@@ -427,7 +410,9 @@ public class ClosedCurveCornerMatcher {
                 }
 
                 if (best == null) {
-                    if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
+                    if (compStat.getSumIntensitySqDiff() < 
+                        compStat.getImg2PointIntensityErr()) {
+                        
                         best = compStat;
                         bestIdx2 = j;
                     }
@@ -453,53 +438,12 @@ public class ClosedCurveCornerMatcher {
         return indexes2;
     }
 
-    private void initializeVariables(List<CornerRegion> corners1,
-        List<CornerRegion> corners2) {
-
-        if (hasBeenInitialized) {
-            return;
-        }
-
-        c1.addAll(corners1);
-        c2.addAll(corners2);
-
-        float minK = Float.MAX_VALUE;
-        float maxK = Float.MIN_VALUE;
-        for (int i = 0; i < c1.size(); i++) {
-            CornerRegion cr = c1.get(i);
-            float k = Math.abs(cr.k[cr.getKMaxIdx()]);
-            if (k < minK) {
-                minK = k;
-            }
-            if (k > maxK) {
-                maxK = k;
-            }
-        }
-        kMin1 = minK;
-        kMax1 = maxK;
-
-        minK = Float.MAX_VALUE;
-        maxK = Float.MIN_VALUE;
-        for (int i = 0; i < c2.size(); i++) {
-            CornerRegion cr = c2.get(i);
-            float k = Math.abs(cr.k[cr.getKMaxIdx()]);
-            if (k < minK) {
-                minK = k;
-            }
-            if (k > maxK) {
-                maxK = k;
-            }
-        }
-        kMin2 = minK;
-        kMax2 = maxK;
-
-        hasBeenInitialized = true;
-    }
-
     /**
      * initialize the starter solution nodes for the heap
      */
-    private void initializeHeapNodes() {
+    private void initializeHeapNodes(Heap heap, List<CornerRegion> c1,
+        List<CornerRegion> c2, NearestPoints np, IntensityFeatures features1,
+        IntensityFeatures features2, GreyscaleImage img1, GreyscaleImage img2) {
 
         /*
         using a limit decided by runtime to decide between
@@ -513,15 +457,7 @@ public class ClosedCurveCornerMatcher {
         the best match is correct for at least 2 out of n is not bad for n > 10.
         */
 
-        heap = new Heap();
-
-        int n = Math.min(c1.size(), c2.size());
-
-        /*if (n < 10) {
-            initHeapNodes2();
-        } else {*/
-            initHeapNodes1();
-        //}
+        initHeapNodes1(heap, c1, c2, np, features1, features2, img1, img2);
     }
 
     /**
@@ -529,10 +465,13 @@ public class ClosedCurveCornerMatcher {
      * with runtime O(n*(n-1)/2).
      *
      */
-    private void initHeapNodes1() {
+    private void initHeapNodes1(Heap heap, List<CornerRegion> c1,
+        List<CornerRegion> c2, NearestPoints np, IntensityFeatures features1,
+        IntensityFeatures features2, GreyscaleImage img1, GreyscaleImage img2) {
 
         // if no match, contains a null
-        CornersAndFeatureStat[] indexes2 = getBestSSDC1ToC2();
+        CornersAndFeatureStat[] indexes2 = getBestSSDC1ToC2(c1, c2,
+            features1, features2, img1, img2);
 
         /*
         If one knew that that best SSD match of a point in curve1 to
@@ -556,7 +495,7 @@ public class ClosedCurveCornerMatcher {
 
         for (int i = 0; i < indexes2.length; ++i) {
 
-            CornerRegion cr1C1 = this.c1.get(i);
+            CornerRegion cr1C1 = c1.get(i);
 
             if (indexes2[i] == null) {
                 continue;
@@ -566,7 +505,7 @@ public class ClosedCurveCornerMatcher {
 
             for (int j = (i + 1); j < c1.size(); ++j) {
 
-                CornerRegion cr2C1 = this.c1.get(j);
+                CornerRegion cr2C1 = c1.get(j);
 
                 if (indexes2[j] == null) {
                     continue;
@@ -579,118 +518,12 @@ public class ClosedCurveCornerMatcher {
                 }
 
                 // temporarily, evaluating all corners for each starter solution:
-                insertNodeTMP(tc, indexes2[i], cr1C1, cr1C2, indexes2[j], cr2C1,
-                    cr2C2);
+                insertNodeTMP(heap, c1, c2, np, features1, features2, 
+                    tc, indexes2[i], cr1C1, cr1C2, indexes2[j], cr2C1, cr2C2,
+                    img1, img2);
+               
             }
         }
-    }
-
-    /**
-     * create starter solution nodes for the heap using a pattern of combinations
-     * with runtime O(n*n*(n-1)/2).
-     */
-    private void initHeapNodes2() {
-
-        // if no match, has a null
-        CornersAndFeatureStat[] indexes2 = getBestSSDC1ToC2();
-
-        /*
-        An improvement in completeness to initHeapNodes1() would be to try
-        all matches just for the first point in the two points needed in the solution.
-            The number of starter solutions would be  n*n*(n-1)/2
-            The chances of finding the correct solution are much higher.
-            It requires that only one point in the corners common to both curves
-            be a true match for it's best SSD match in curve 2.
-       for a curve with 4 corners, the heap would have 24 solution starter nodes
-        */
-
-        FeatureMatcher featureMatcher = new FeatureMatcher();
-
-        MatchedPointsTransformationCalculator
-            tc = new MatchedPointsTransformationCalculator();
-
-        for (int idx1C1 = 0; idx1C1 < c1.size(); ++idx1C1) {
-
-            CornerRegion cr1C1 = this.c1.get(idx1C1);
-
-            for (int idx1C2 = 0; idx1C2 < c2.size(); ++idx1C2) {
-
-                CornerRegion cr1C2 = this.c2.get(idx1C2);
-
-                FeatureComparisonStat compStat1 = null;
-                try {
-                    compStat1 = featureMatcher.ditherAndRotateForBestLocation(
-                        features1, features2, cr1C1, cr1C2, dither);
-                } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.fine(ex.getMessage());
-                }
-
-                if (compStat1 == null) {
-                    continue;
-                }
-
-                if (compStat1.getSumIntensitySqDiff() >= compStat1.getImg2PointIntensityErr()) {
-                    continue;
-                }
-
-                CornersAndFeatureStat cfs1 = new CornersAndFeatureStat(cr1C1,
-                    cr1C2, compStat1);
-                cfs1.idx1 = idx1C1;
-                cfs1.idx2 = idx1C2;
-
-                for (int idx2C1 = (idx1C1 + 1); idx2C1 < c1.size(); ++idx2C1) {
-
-                    CornerRegion cr2C1 = this.c1.get(idx2C1);
-
-                    if (indexes2[idx2C1] == null) {
-                        continue;
-                    }
-
-                    CornerRegion cr2C2 = indexes2[idx2C1].cr2;
-
-                    if (cr2C2.equals(cr1C2)) {
-                        continue;
-                    }
-
-                    insertNode(tc, cfs1, cr1C1, cr1C2, indexes2[idx2C1],
-                        cr2C1, cr2C2);
-                }
-            }
-        }
-    }
-
-    private double calculateCost(CornerRegion cornerRegion, double x2, double y2) {
-
-        if (cornerRegion == null) {
-
-            return calculateUnMatchedCost();
-        }
-
-        double dist = distance(cornerRegion.x[cornerRegion.getKMaxIdx()],
-            cornerRegion.y[cornerRegion.getKMaxIdx()], x2, y2);
-
-        return dist;
-    }
-
-    private double calculateCost(PairInt cornerPoint, double x2, double y2) {
-
-        if (cornerPoint == null) {
-
-            return calculateUnMatchedCost();
-        }
-
-        double dist = distance(cornerPoint.getX(), cornerPoint.getY(),
-            x2, y2);
-
-        return dist;
-    }
-
-    private double calculateUnMatchedCost() {
-        //TODO: refine this.  needs to be a large number but < infinity
-
-        int n = Math.max(c1.size(), c2.size());
-
-        return tolerance*n;
     }
 
     private double distance(double x1, double y1, double x2, double y2) {
@@ -703,8 +536,8 @@ public class ClosedCurveCornerMatcher {
         return dist;
     }
 
-    public TransformationParameters getSolvedParameters() {
-        return solutionParameters;
+    public TransformationPair2 getSolution() {
+        return solution;
     }
 
     /**
@@ -720,100 +553,13 @@ public class ClosedCurveCornerMatcher {
         return solutionHasSomeScalesSmallerThanOne;
     }
 
-    public List<Integer> getSolutionMatchedCornerIndexes1() {
-        return solutionMatchedCornerIndexes1;
-    }
-
-    public List<Integer> getSolutionMatchedCornerIndexes2() {
-        return solutionMatchedCornerIndexes2;
-    }
-
-    public List<FeatureComparisonStat> getSolutionMatchedCompStats() {
-        return solutionMatchedCompStats;
-    }
-
-    private void insertNode(MatchedPointsTransformationCalculator tc,
+    private void insertNodeTMP(Heap heap, 
+        List<CornerRegion> c1, List<CornerRegion> c2, NearestPoints np,
+        IntensityFeatures features1, IntensityFeatures features2,
+        MatchedPointsTransformationCalculator tc,
         CornersAndFeatureStat stat1, CornerRegion cr1C1, CornerRegion cr1C2,
-        CornersAndFeatureStat stat2, CornerRegion cr2C1, CornerRegion cr2C2) {
-
-        // use dither corrected locations:
-        final int x1C1 = stat1.stat.getImg1Point().getX();
-        final int y1C1 = stat1.stat.getImg1Point().getY();
-        final int x1C2 = stat1.stat.getImg2Point().getX();
-        final int y1C2 = stat1.stat.getImg2Point().getY();
-
-        final int x2C1 = stat2.stat.getImg1Point().getX();
-        final int y2C1 = stat2.stat.getImg1Point().getY();
-        final int x2C2 = stat2.stat.getImg2Point().getX();
-        final int y2C2 = stat2.stat.getImg2Point().getY();
-
-        // with 2 points in both image, calc transformation
-        TransformationParameters params = tc.calulateEuclidean(
-            x1C1, y1C1, x2C1, y2C1,
-            x1C2, y1C2, x2C2, y2C2, 0, 0);
-
-        TransformationPair2 transformationPair =
-            new TransformationPair2(cr1C1, cr1C2, cr2C1, cr2C2);
-
-        transformationPair.setTransformationParameters(params);
-
-        NextCorner nc = new NextCorner(c1);
-        nc.addMatchedCorners(cr1C1, cr1C2, stat1.idx1, stat1.idx2, stat1.stat);
-        nc.addMatchedCorners(cr2C1, cr2C2, stat2.idx1, stat2.idx2, stat2.stat);
-
-        transformationPair.setNextCorner(nc);
-
-        // choose a third point in c1
-        CornerRegion c3C1 = nc.findStrongestRemainingCorner();
-        
-        //TODO: improve srch here w/ different data structure:
-        int c3C1Idx = c1.indexOf(c3C1);
-
-        // apply the transformation to it
-        double[] xy3C2 = applyTransformation(c3C1, params);
-
-        // find the best matching SSD within tolerance of predicted, and
-        // restrict to existing rotation
-        CornersAndFeatureStat cfs = findBestMatchWithinTolerance(
-            c3C1Idx, c3C1, xy3C2,
-            Math.round(params.getRotationInDegrees()), rotationTolerance);
-
-        double cost;
-        double costSSD;
-
-        if (cfs != null) {
-
-            nc.addMatchedCorners(c3C1, cfs.cr2, cfs.idx1, cfs.idx2, cfs.stat);
-
-            cost = calculateCost(cfs.stat.getImg2Point(), xy3C2[0], xy3C2[1]);
-
-            // TODO: may need to add cost as SSD in quadrature
-            costSSD = cfs.stat.getSumIntensitySqDiff();
-
-            transformationPair.addToCostAsDistance(cost);
-
-            transformationPair.addToCostAsSSD(costSSD);
-
-        } else {
-
-            cost = calculateUnMatchedCost();
-
-            costSSD = 10000;
-        }
-
-        // put node in heap
-        long costL = (long)(costSSD * heapKeyFactor);
-
-        HeapNode node = new HeapNode(costL);
-
-        node.setData(transformationPair);
-
-        heap.insert(node);
-    }
-
-    private void insertNodeTMP(MatchedPointsTransformationCalculator tc,
-        CornersAndFeatureStat stat1, CornerRegion cr1C1, CornerRegion cr1C2,
-        CornersAndFeatureStat stat2, CornerRegion cr2C1, CornerRegion cr2C2) {
+        CornersAndFeatureStat stat2, CornerRegion cr2C1, CornerRegion cr2C2,
+        GreyscaleImage img1, GreyscaleImage img2) {
 
         // use dither corrected locations:
         final int x1C1 = stat1.stat.getImg1Point().getX();
@@ -862,13 +608,16 @@ public class ClosedCurveCornerMatcher {
             }
 
             double[] xy3C2 = applyTransformation(c3C1, params);
-            CornersAndFeatureStat cfs = findBestMatchWithinTolerance(i, c3C1, 
-                xy3C2, Math.round(params.getRotationInDegrees()), 
-                rotationTolerance);
+            CornersAndFeatureStat cfs = findBestMatchWithinTolerance(c1, c2, np,
+                features1, features2,
+                i, c3C1, xy3C2, Math.round(params.getRotationInDegrees()), 
+                rotationTolerance, img1, img2);
+            
    //TODO: consider discarding already chosen in findBestMatchWithinTolerance
             if ((cfs == null) || cfs.cr2.equals(cr1C2) || cfs.cr2.equals(cr2C2)) {
                 continue;
             }
+            
             cfs.idx1 = i;
 
             assert(cfs.idx2 != -1);
@@ -971,73 +720,4 @@ public class ClosedCurveCornerMatcher {
 
         return xyT;
     }
-
-    private HeapNode solve() {
-
-        HeapNode u = heap.extractMin();
-
-        while (u != null) {
-
-            TransformationPair2 transformationPair = (TransformationPair2)u.getData();
-
-            NextCorner nc = transformationPair.getNextCorner();
-
-            CornerRegion corner1s = nc.findStrongestRemainingCorner();
-
-            if (corner1s == null) {
-                return u;
-            }
-            
-            //TODO: improve srch here w/ different data structure:
-            int corner1sIdx = c1.indexOf(corner1s);
-
-            TransformationParameters params
-                = transformationPair.getTransformationParameters();
-
-            // apply the transformation to it
-            double[] xyC2 = applyTransformation(corner1s, params);
-
-            // find the best matching SSD within tolerance of predicted
-            CornersAndFeatureStat cfs = findBestMatchWithinTolerance(
-                corner1sIdx, corner1s, xyC2, 
-                Math.round(params.getRotationInDegrees()), rotationTolerance);
-
-            double cost2;
-            double cost2SSD;
-
-            if (cfs != null) {
-
-                nc.addMatchedCorners(corner1s, cfs.cr2,
-                    Integer.valueOf(cfs.idx1), Integer.valueOf(cfs.idx2),
-                    cfs.stat);
-
-                cost2 = calculateCost(cfs.stat.getImg2Point(), xyC2[0], xyC2[1]);
-
-                cost2SSD = cfs.stat.getSumIntensitySqDiff();
-
-                // TODO: revise SSD as cost... may need to be added in quadrature
-
-                transformationPair.addToCostAsDistance(cost2);
-
-                transformationPair.addToCostAsSSD(cost2SSD);
-
-            } else {
-
-                cost2 = calculateUnMatchedCost();
-
-                cost2SSD = 10000;
-            }
-
-            u.setData(transformationPair);
-
-            u.setKey(u.getKey() + (long)(cost2SSD * heapKeyFactor));
-
-            heap.insert(u);
-
-            u = heap.extractMin();
-        }
-
-        return u;
-    }
-
 }

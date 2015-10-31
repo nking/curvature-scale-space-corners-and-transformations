@@ -32,14 +32,6 @@ public class ClosedCurveContourMatcher0 {
        combine similar with it to make a large point set to solve
        the euclidean transformation with.
     */
-    
-    protected final List<BlobPerimeterRegion> cr1;
-    
-    protected final List<BlobPerimeterRegion> cr2;
-
-    protected final IntensityFeatures features1;
-
-    protected final IntensityFeatures features2;
 
     protected final int dither = 6;//3
     
@@ -56,38 +48,9 @@ public class ClosedCurveContourMatcher0 {
 
     private boolean solverHasFinished = false;
 
-    public ClosedCurveContourMatcher0(final IntensityFeatures features1,
-        final IntensityFeatures features2, 
-        final List<BlobPerimeterRegion> regions1,
-        final List<BlobPerimeterRegion> regions2) {
-        
-        if (regions1.size() != regions2.size()) {
-            throw new IllegalArgumentException("region lists must be same size");
-        }
-
-        cr1 = new ArrayList<BlobPerimeterRegion>(regions1.size());
-        
-        cr2 = new ArrayList<BlobPerimeterRegion>(regions2.size());
-
-        this.features1 = features1;
-
-        this.features2 = features2;
-
-        cr1.addAll(regions1);
-        
-        cr2.addAll(regions2);
-        
-        sortRegions();
+    public ClosedCurveContourMatcher0() {
     }
 
-    private void sortRegions() {
-        
-        // sort regions by ascending indexes, idx and order CW
-        sortRegion(cr1);
-        
-        sortRegion(cr2);
-    }
-    
     public static void sortRegion(List<BlobPerimeterRegion> regions) {
     
         if (regions.size() < 2) {
@@ -122,12 +85,34 @@ public class ClosedCurveContourMatcher0 {
         }
     }
     
-    public boolean matchCorners() {
+    public boolean matchCorners(final IntensityFeatures features1,
+        final IntensityFeatures features2, 
+        final List<BlobPerimeterRegion> regions1,
+        final List<BlobPerimeterRegion> regions2,
+        final GreyscaleImage img1, final GreyscaleImage img2) {
 
         if (solverHasFinished) {
             throw new IllegalStateException(
             "matchContours cannot be invoked more than once");
         }
+        
+        if (regions1.size() != regions2.size()) {
+            throw new IllegalArgumentException("region lists must be same size");
+        }
+
+        List<BlobPerimeterRegion> cr1 = new ArrayList<BlobPerimeterRegion>(
+            regions1.size());
+    
+        List<BlobPerimeterRegion> cr2 = new ArrayList<BlobPerimeterRegion>(
+            regions2.size());
+
+        cr1.addAll(regions1);
+        
+        cr2.addAll(regions2);
+        
+        // sort regions by ascending indexes, idx and order CW
+        sortRegion(cr1);
+        sortRegion(cr2);
         
         int deltaIdx = 0;
         
@@ -156,7 +141,8 @@ public class ClosedCurveContourMatcher0 {
                 // the number of rotation tries here (use the default instead of 20)
                 FeatureComparisonStat compStat = 
                     featureMatcher.ditherAndRotateForBestLocation(
-                    features1, features2, region1, region2, dither, degreeIntervals);
+                    features1, features2, region1, region2, dither, 
+                    img1, img2, degreeIntervals);
                
                 if (compStat != null) {
                     if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {

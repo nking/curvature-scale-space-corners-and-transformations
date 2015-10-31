@@ -65,8 +65,8 @@ public class IntensityFeatureComparisonStats implements
                 Logger.getLogger(this.getClass().getName()).warning(
                     "comparison by cost differs from comparison by intensity SSD"
                     + " cc=" + cc + " ci=" + ci + 
-                    "this.stat=" + this.toString() +
-                    "other.stat=" + other.toString()
+                    " this.stat=" + this.toString() +
+                    " other.stat=" + other.toString()
                 );
             }
             
@@ -189,4 +189,22 @@ public class IntensityFeatureComparisonStats implements
         
         return false;        
     }
+
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("cost=").append(Double.toString(cost)).append(" ")
+            .append("adjustedCost").append(Double.toString(adjustedCost))
+            .append(" ").append(" scale=").append(Double.toString(scale))
+            .append(" stats=[");
+        for (FeatureComparisonStat stat : comparisonStats) {
+            sb.append(stat.toString()).append(", ");
+        }
+        sb.append("]");
+            
+        return sb.toString();
+    }
+    
 }

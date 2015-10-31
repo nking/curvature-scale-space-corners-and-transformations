@@ -87,6 +87,9 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);
         
+        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
+        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
+        
         Map<Integer, List<BlobPerimeterRegion>> contours1PointMaps = 
             new HashMap<Integer, List<BlobPerimeterRegion>>();
 
@@ -159,13 +162,13 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                         continue;
                     }
                 }
-                
+            
                 //matching algorithm here for c1p and c2p
                 ClosedCurveContourMatcher0 matcher 
-                    = new ClosedCurveContourMatcher0(features1, features2, 
-                    c1p, c2p);
+                    = new ClosedCurveContourMatcher0();
                 
-                boolean solved = matcher.matchCorners();
+                boolean solved = matcher.matchCorners(features1, features2, 
+                    c1p, c2p, img1, img2);
                 
                 if (solved) {
                     

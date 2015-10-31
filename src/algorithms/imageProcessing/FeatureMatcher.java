@@ -398,6 +398,36 @@ public class FeatureMatcher {
             x1, y1, rot1, x2, y2, rot2, dither);
     }
     
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @return
+     */
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither,
+        GreyscaleImage img1, GreyscaleImage img2) {
+     
+        final int x1 = region1.getX();
+        final int y1 = region1.getY();
+        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());
+        
+        final int x2 = region2.getX();
+        final int y2 = region2.getY();
+        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rot1, x2, y2, rot2, dither, img1, img2);
+    }
+    
     public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
         CornerRegion region1, CornerRegion region2, int dither) throws 
@@ -415,6 +445,26 @@ public class FeatureMatcher {
         
         return ditherAndRotateForBestLocation(features1, features2,
             x1, y1, rotD1, x2, y2, rotD2, dither);
+    }
+    
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        CornerRegion region1, CornerRegion region2, int dither,
+        GreyscaleImage img1, GreyscaleImage img2) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rotD1, x2, y2, rotD2, dither, img1, img2);
     }
     
     /**
@@ -500,6 +550,48 @@ public class FeatureMatcher {
     
     /**
      * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @param degreeIntervals a value > 20 is not recommended
+     * @return
+     */
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither,
+        GreyscaleImage img1, GreyscaleImage img2, int degreeIntervals) {
+     
+        final int x1 = region1.getX();
+        final int y1 = region1.getY();
+        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
+        
+        final int x2 = region2.getX();
+        final int y2 = region2.getY();
+        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        int n = 360/degreeIntervals;
+        int[] rotations = new int[n];
+        int i = 0;
+        for (int rot1 = 0; rot1 < 360; rot1 += degreeIntervals) {
+            rotations[i] = rot1 + rotD1;
+            if (rotations[i] > 359) {
+                rotations[i] -= 360;
+            }
+            i++;
+        }
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rotations, x2, y2, rotD2, dither, img1, img2);
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
      * orientation. 
      * @param features1
      * @param x1
@@ -534,6 +626,46 @@ public class FeatureMatcher {
         
         return ditherAndRotateForBestLocation(features1, features2, x1, y1, 
             rotations, x2, y2, rot2, dither);
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation. 
+     * @param features1
+     * @param x1
+     * @param y1
+     * @param features2
+     * @param rot1
+     * @param x2
+     * @param dither
+     * @param rot2
+     * @param y2
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @return
+     */
+    protected FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        final int x1, final int y1, final int rot1,
+        final int x2, final int y2, final int rot2,        
+        int dither, GreyscaleImage img1, GreyscaleImage img2) {
+        
+        
+        int[] rotations = new int[10];
+        int i = 0;
+        for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
+            rotations[i] = rotD1;
+            i++;
+        }
+        rotations[i] = rot1 + 90;
+        i++;
+        rotations[i] = rot1 + 180;
+        i++;
+        rotations[i] = rot1 + 270;
+        i++;
+        
+        return ditherAndRotateForBestLocation(features1, features2, x1, y1, 
+            rotations, x2, y2, rot2, dither, img1, img2);
     }
     
     /**
@@ -614,6 +746,88 @@ public class FeatureMatcher {
         return best;
     }
     
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation. 
+     * @param features1
+     * @param x1
+     * @param y1
+     * @param features2
+     * @param rotations
+     * @param x2
+     * @param dither
+     * @param rot2
+     * @param y2
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @return
+     */
+    protected FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        final int x1, final int y1, final int[] rotations,
+        final int x2, final int y2, final int rot2,        
+        int dither, GreyscaleImage img1, GreyscaleImage img2) {
+        
+        FeatureComparisonStat best = null;
+        
+        IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, 
+            rot2);
+        
+        if (desc2 == null) {
+            return null;
+        }
+        
+        /*
+        NOTE: best distinguisher for improved rotation angle is usually 
+        the gradient images because these are on edges.
+        */
+        
+        for (int rotD1 : rotations) {
+            if (rotD1 > 359) {
+                rotD1 = rotD1 - 360;
+            } else if (rotD1 < 0) {
+                rotD1 += 360;
+            }
+            for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+                if (!features1.isWithinXBounds(img1, x1d)) {
+                    continue;
+                }
+                for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                    if (!features1.isWithinYBounds(img1, y1d)) {
+                        continue;
+                    }
+                    
+                    IntensityDescriptor desc1 = features1.extractIntensity(img1, 
+                        x1d, y1d, rotD1);
+        
+                    if (desc1 == null) {
+                        return null;
+                    }
+                    
+                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(
+                        desc1, x1d, y1d, desc2, x2, y2);
+                   
+                    if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {
+                       
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
+                        } else {
+                            if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                                best = stat;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
+    }
+    
     public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
         CornerRegion region1, CornerRegion region2, int dither,
@@ -633,6 +847,42 @@ public class FeatureMatcher {
         return ditherAndRotateForBestLocation(features1, features2,
             x1, y1, rotD1, x2, y2, rotD2, dither, expectedRotationInDegrees,
             rotationTol);
+    }
+    
+    /**
+     * 
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @param expectedRotationInDegrees
+     * @param rotationTol
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @return
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
+     */
+    public FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        CornerRegion region1, CornerRegion region2, int dither,
+        final int expectedRotationInDegrees, final int rotationTol,
+        GreyscaleImage img1, GreyscaleImage img2) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
+        
+        return ditherAndRotateForBestLocation(features1, features2,
+            x1, y1, rotD1, x2, y2, rotD2, dither, expectedRotationInDegrees,
+            rotationTol, img1, img2);
     }
     
     /**
@@ -711,6 +961,115 @@ public class FeatureMatcher {
                     }
                     
                     IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);
+        
+                    if (desc1 == null) {
+                        return null;
+                    }
+                    
+                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(
+                        desc1, x1d, y1d, desc2, x2, y2);
+                   
+                    if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
+                        } else {
+                            if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                                best = stat;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation. 
+     * @param features1
+     * @param x1
+     * @param y1
+     * @param features2
+     * @param rot1
+     * @param x2
+     * @param dither
+     * @param rot2
+     * @param y2
+     * @param expectedRotationInDegrees
+     * @param rotationTol
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @return
+     */
+    protected FeatureComparisonStat ditherAndRotateForBestLocation(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        final int x1, final int y1, final int rot1,
+        final int x2, final int y2, final int rot2,        
+        int dither, final int expectedRotationInDegrees, final int rotationTol,
+        GreyscaleImage img1, GreyscaleImage img2) {
+        
+        FeatureComparisonStat best = null;
+        
+        IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, 
+            rot2);
+        
+        if (desc2 == null) {
+            return null;
+        }
+        
+        /*
+        NOTE: best distinguisher for improved rotation angle is usually 
+        the gradient images because these are on edges.
+        */
+        
+        int[] rotations = new int[10];
+        int i = 0;
+        for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
+            rotations[i] = rotD1;
+            i++;
+        }
+        rotations[i] = rot1 + 90;
+        i++;
+        rotations[i] = rot1 + 180;
+        i++;
+        rotations[i] = rot1 + 270;
+        i++;
+        
+        for (int rotD1 : rotations) {
+            if (rotD1 > 359) {
+                rotD1 = rotD1 - 360;
+            } else if (rotD1 < 0) {
+                rotD1 += 360;
+            }
+            
+            // only try rotations within expected rotation limits
+            float rotDescriptors = AngleUtil.getAngleDifference(rotD1, rot2);
+            if (rotDescriptors < 0) {
+                rotDescriptors += 360;
+            }
+            float rotDiff = AngleUtil.getAngleDifference(
+                expectedRotationInDegrees, rotDescriptors);
+            if (Math.abs(rotDiff) > rotationTol) {
+                continue;
+            }
+            
+            for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+                if (!features1.isWithinXBounds(img1, x1d)) {
+                    continue;
+                }
+                for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                    if (!features1.isWithinYBounds(img1, y1d)) {
+                        continue;
+                    }
+                    
+                    IntensityDescriptor desc1 = features1.extractIntensity(img1, 
+                        x1d, y1d, rotD1);
         
                     if (desc1 == null) {
                         return null;

@@ -45,7 +45,9 @@ public class BlobScaleFinderWrapper {
     protected BlobContourHelper blobContourHelper1 = null;
     protected BlobContourHelper blobContourHelper2 = null;
 
+    // use with img1Helper.getImage() or getGreyscaleImage(), but not both
     protected final IntensityFeatures features1;
+    // use img2Helper.getGreyscaleImageBinned(), 
     protected final IntensityFeatures featuresBinned1;
     protected final IntensityFeatures features2;
     protected final IntensityFeatures featuresBinned2;
@@ -72,9 +74,9 @@ public class BlobScaleFinderWrapper {
 
         img2Helper = new BlobPerimeterHelper(img2, "2");
 
-        features1 = new IntensityFeatures(img1, 5, true);
+        features1 = new IntensityFeatures(5, true);
 
-        features2 = new IntensityFeatures(img2, 5, true);
+        features2 = new IntensityFeatures(5, true);
         
         skipBinnedImages = true;
         useBinned1 = false;
@@ -113,11 +115,9 @@ public class BlobScaleFinderWrapper {
 
             img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
             
-            featuresBinned1 = new IntensityFeatures(
-                img1Helper.getGreyscaleImageBinned(), 5, true);
+            featuresBinned1 = new IntensityFeatures(5, true);
             
-            featuresBinned2 = new IntensityFeatures(
-                img2Helper.getGreyscaleImageBinned(), 5, true);
+            featuresBinned2 = new IntensityFeatures(5, true);
             
         } else {
             
@@ -129,9 +129,9 @@ public class BlobScaleFinderWrapper {
             
         }
 
-        features1 = new IntensityFeatures(img1, 5, true);
+        features1 = new IntensityFeatures(5, true);
 
-        features2 = new IntensityFeatures(img2, 5, true);
+        features2 = new IntensityFeatures(5, true);
 
     }
 
@@ -363,7 +363,7 @@ public class BlobScaleFinderWrapper {
                     segmentationType2, useBinned2);
 
             }
-            
+
             if (algType.equals(AlgType.CORNERS_ORDERED)) {
                 
                 BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
