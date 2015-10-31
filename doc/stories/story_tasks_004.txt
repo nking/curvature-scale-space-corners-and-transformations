@@ -42,8 +42,8 @@ Task 1:  Refactor Image and GreyscaleImage and associated classes
     comments:
               
 ---------------------------------------------------------------------
-Task 1:  For the scale calculator image cache, need the cache to
-         perist images to temporary files when memory use becomes
+Task 2:  For the scale calculator image cache, need the cache to
+         persist images to temporary files when memory use becomes
          large and re-read them as needed.
       
     details:  
@@ -68,6 +68,14 @@ Task 1:  For the scale calculator image cache, need the cache to
            and documentation added to the class to make sure the user knows
            it should only be used on one (same) image...(could later add
            identities to images to make safer use)
+
+           X BlobContoursScaleFinder corrected
+           X BlobContoursScaleFinder0 corrected
+                 X ClosedCurveContourMatcher0 corrected
+           X BlobCornerScaleFinder corrected
+                 X ClosedCurveCornerMatcherWrapper
+                 X ClosedCurveCornerMatcher
+           X BlobCornerScaleFinder0 corrected
 
         Note too that a less ideal solution not chosen would be to 
            perform all algorithms for matching on a given segmented image

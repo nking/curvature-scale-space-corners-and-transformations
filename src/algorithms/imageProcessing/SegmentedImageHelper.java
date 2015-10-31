@@ -313,7 +313,7 @@ public class SegmentedImageHelper {
             
             segImg = imgGrey.copyImage();
             // expecting k=2
-            //imageSegmentation.applyUsingKMPP(segImg, k);
+            imageSegmentation.applyUsingKMPP(segImg, k);
                         
             imgSegmentedMap.put(type, segImg);
             
