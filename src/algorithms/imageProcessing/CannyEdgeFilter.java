@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
 import algorithms.util.Errors;
 import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
@@ -212,11 +213,18 @@ public class CannyEdgeFilter {
         this.filterProducts = gradientProducts;
                 
         input.resetTo(filterProducts.getGradientXY());
-         
+        
         if (!useLineDrawingMode) {
             apply2LayerFilter(input);
         }
 
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            int v = input.getValue(i);
+            if (v < 0) {
+                input.setValue(i, 0);
+            }
+        }
+         
         applyLineThinnerFilter(input);
         
     }
@@ -336,9 +344,8 @@ public class CannyEdgeFilter {
         int w = img2.getWidth();
         int h = img2.getHeight();
         
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
         
         //TODO:  define "connected" as connected only to "sure-edge" points or
         //       connected to any point in the image in progress?
@@ -417,13 +424,13 @@ public class CannyEdgeFilter {
         float[] kernel = Gaussian1D.getKernel(sigma);
 
         float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);
-        
+            
         GreyscaleImage g0 = img.copyImage();
         
-        apply1DKernelToImage(g0, kernel, calculateForX);
-        
         GreyscaleImage g1 = img.copyImage();
-        
+          
+        apply1DKernelToImage(g0, kernel, calculateForX);
+                
         apply1DKernelToImage(g1, kernel2, calculateForX);
        
         ImageProcessor ImageProcessor = new ImageProcessor();
@@ -433,16 +440,6 @@ public class CannyEdgeFilter {
         return g;
     }
     
-    private void applyGaussian(final GreyscaleImage img, float sigma) {
-       
-        float[] kernel = Gaussian1D.getKernel(sigma);
-                
-        apply1DKernelToImage(img, kernel, true);
-                
-        apply1DKernelToImage(img, kernel, false);
-       
-    }
-     
     /**
      * convolve the image with a Sobel X 1D kernel which is the same as a 
      * Gaussian first derivative with sigma = sqrt(1)/2.
@@ -484,7 +481,7 @@ public class CannyEdgeFilter {
         float[] kernel = Gaussian1DFirstDeriv.getKernel(
             SIGMA.ZEROPOINTFIVE);
                 
-        GreyscaleImage output = input.copyImage();
+        GreyscaleImage output = input.copyToSignedImage();
         
         apply1DKernelToImage(output, kernel, calculateForX);
         
@@ -546,16 +543,16 @@ public class CannyEdgeFilter {
             lineThinner = lineThinnerClass.newInstance();
             
             if (filterProducts != null) {
-                if (shrinkToSize != null && !filterProducts.getGradientXY().isThisSize(shrinkToSize)) {                
+                /*if (shrinkToSize != null && !filterProducts.getGradientXY().isThisSize(shrinkToSize)) {                
                     GreyscaleImage gXY2 = filterProducts.getGradientXY().copyImage();
                     ImageProcessor imageProcessor = new ImageProcessor();
                     imageProcessor.shrinkImage(gXY2, shrinkToSize);
                     lineThinner.setEdgeGuideImage(gXY2);
-                } else {
+                } else {*/
                     lineThinner.setEdgeGuideImage(filterProducts.getGradientXY());
-                }
+                //}
             }
-            
+                        
             lineThinner.applyFilter(img);
             
         } catch (InstantiationException ex) {
@@ -783,20 +780,9 @@ public class CannyEdgeFilter {
         
         this.imgHistogram = hist;
         
-        float max, min;
+        float max = input.getMax();
+        float min = input.getMin();
         
-        if (input.is64Bit) {
-            max = MiscMath.findMaxForByteCompressed(input.aL, input.len, 
-                input.itemByteLength);
-            min = MiscMath.findMinForByteCompressed(input.aL, input.len, 
-                input.itemByteLength);
-        } else {
-            max = MiscMath.findMaxForByteCompressed(input.a, input.len, 
-                input.itemByteLength);
-            min = MiscMath.findMinForByteCompressed(input.a, input.len, 
-                input.itemByteLength);
-        }
-      
         if (max < (255.f * 0.8f)) {
             return true;
         }

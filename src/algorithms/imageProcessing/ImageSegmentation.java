@@ -902,7 +902,7 @@ public class ImageSegmentation {
         log.info("nTot=" + nTot + " nPixels=" + input.getNPixels());
         assert(nTot == input.getNPixels());
         // ------ end debug -----
-        
+  
         mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
             blackPixels, whitePixels);
         
@@ -1214,7 +1214,7 @@ public class ImageSegmentation {
      */
     public GreyscaleImage applyUsingPolarCIEXYAndFrequency(ImageExt input,
         final float fracFreqLimit, boolean useBlur) {
-        
+                
         List<Set<PairInt>> clusters = calculateUsingPolarCIEXYAndFrequency(
             input, fracFreqLimit, useBlur);
         
@@ -1316,6 +1316,7 @@ public class ImageSegmentation {
         float fracFreqLimit, boolean useBlur) {
 
         if (useBlur) {
+            input = input.copyToImageExt();
             ImageProcessor imageProcessor = new ImageProcessor();
             imageProcessor.blur(input, 1.0f);
         }
@@ -1333,7 +1334,7 @@ public class ImageSegmentation {
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
         Set<PairInt> points0 = new HashSet<PairInt>();
-        
+       
         populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
         
         double[] minMaxTheta0 = findMinMaxTheta(input, points0);
@@ -1408,11 +1409,10 @@ public class ImageSegmentation {
             thetaPointMap, 
             Math.round(fracFreqLimit * maxFreq));
         
-        int[] minMaxXY = MiscMath.findMinMaxXY(peaks);
-        
         /*
         // ----- debug ---
         // plot the points as an image to see the data first
+        int[] minMaxXY = MiscMath.findMinMaxXY(peaks);
         int nPoints = 0;
         int maxX = Integer.MIN_VALUE;
         int maxY = Integer.MIN_VALUE;
@@ -1958,10 +1958,12 @@ public class ImageSegmentation {
         }
         assert(nTot == nTot2);
         
+        int count = 0;
+        
+        /*
         // --- debug
         float[] xPoints = new float[greyPixelMap.size()];
         float[] yPoints = new float[greyPixelMap.size()];
-        int count = 0;
         for (int i = minKey; i <= maxKey; ++i) {
             Integer key = Integer.valueOf(i);
             Collection<PairInt> set = greyPixelMap.get(key);
@@ -1983,6 +1985,7 @@ public class ImageSegmentation {
                 null, ex);
         }
         // --- end debug
+        */
         
         final int[] orderedKeys = new int[maxKey - minKey + 1];
         count = 0;
@@ -2053,6 +2056,7 @@ public class ImageSegmentation {
             groupList.get(idx).addAll(set);
         }
         
+        /*
         // ----- debug ----
         int nTot3 = 0;
         for (Collection<PairInt> set : groupList) {
@@ -2060,6 +2064,7 @@ public class ImageSegmentation {
         }
         assert(nTot == nTot3);
         // ----- end debug -----
+        */
         
         return groupList;
     }
@@ -2131,9 +2136,8 @@ public class ImageSegmentation {
     }
 
     private void mergeOrAppendGreyWithOthers(ImageExt input, 
-        List<Set<PairInt>> greyPixelGroups, 
-        List<Set<PairInt>> groupList, Set<PairInt> blackPixels,
-        Set<PairInt> whitePixels) {
+        List<Set<PairInt>> greyPixelGroups, List<Set<PairInt>> groupList, 
+        Set<PairInt> blackPixels, Set<PairInt> whitePixels) {
                 
         Map<PairInt, Integer> colorPixGroupMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < groupList.size(); ++i) {
@@ -2209,27 +2213,22 @@ public class ImageSegmentation {
                     } else {
                         if ((diffRGB < minDiffRGB) && (diffRGB < limit)) {
                             minDiffRGB = diffRGB;
-                            colorClusterIdx = colorClusterIndex.intValue();
-                            diffR = Math.abs(r2 - r); 
-                            diffG = Math.abs(g2 - g);
-                            diffB = Math.abs(b2 - b);
+                            colorClusterIdx = (colorClusterIndex == null) ? -1 :
+                                colorClusterIndex.intValue();
                         }
                     }
                 }
                 if (minDiffBlack < 75) {
                     blackPixels.add(greyP);
                     remove.add(greyP);
-                    continue;
                 } else if (minDiffWhite < 75) {
                     whitePixels.add(greyP);
                     remove.add(greyP);
-                    continue;
                 } else {
                     if (colorClusterIdx != -1) {
                         //add to color cluster and remove from grey list
                         groupList.get(colorClusterIdx).add(greyP);
                         remove.add(greyP);
-                        continue;
                     }
                 }
             }
@@ -2289,7 +2288,6 @@ public class ImageSegmentation {
                 int g = input.getG(idx);
                 int b = input.getB(idx);
 
-                //dark grey, such as r,g,b=105,105,105?
                 if ((r <= 32) && (g <= 32) && (b <= 32)) {
                     blackPixels.add(new PairInt(i, j));
                     continue;

@@ -224,8 +224,8 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString()
 + " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
 
 try {
-ImageExt img1C = img1.createColorGreyscaleExt();
-ImageExt img2C = img2.createColorGreyscaleExt();
+ImageExt img1C = img1.copyToColorGreyscaleExt();
+ImageExt img2C = img2.copyToColorGreyscaleExt();
 //ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
 ImageIOHelper.addAlternatingColorRegionsToImage(cr1, img1C, 0, 0, 1);
            

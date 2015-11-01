@@ -124,8 +124,8 @@ public class ImageSegmentationTest extends TestCase {
                          GreyscaleImage gsImg2 = img2.copyToGreyscale();
                          imageSegmentation.applyUsingKMPP(gsImg1, kBands);
                          imageSegmentation.applyUsingKMPP(gsImg2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 1: {
@@ -140,8 +140,8 @@ public class ImageSegmentationTest extends TestCase {
                          float maxValue = MiscMath.findMax(values1);*/
                          imageSegmentation.applyUsingKMPP(gsImg1, kBands);
                          imageSegmentation.applyUsingKMPP(gsImg2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 2: {
@@ -150,8 +150,8 @@ public class ImageSegmentationTest extends TestCase {
                          GreyscaleImage gsImg2 = img2.copyToGreyscale();
                          imageSegmentation.applyUsingKMPP(gsImg1, kBands);
                          imageSegmentation.applyUsingKMPP(gsImg2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 3: {
@@ -160,8 +160,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenHistEq(img1, kBands, true);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenHistEq(img2, kBands, true);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 4: {
@@ -170,8 +170,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenHistEq(img1, kBands, true);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenHistEq(img2, kBands, true);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 5: {
@@ -180,8 +180,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenHistEq(img1, kBands, true);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenHistEq(img2, kBands, true);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 6: {
@@ -190,8 +190,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenKMPPThenHistEq(img1, kBands, true);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenKMPPThenHistEq(img2, kBands, true);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 7: {
@@ -200,8 +200,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenKMPPThenHistEq(img1, kBands, true);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenKMPPThenHistEq(img2, kBands, true);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 8: {
@@ -210,8 +210,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenKMPPThenHistEq(img1, kBands, true);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenKMPPThenHistEq(img2, kBands, true);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 9: {
@@ -221,8 +221,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenHistogram(img1, kBands);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenHistogram(img2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 10: {
@@ -232,8 +232,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenHistogram(img1, kBands);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenHistogram(img2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 11: {
@@ -243,8 +243,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenHistogram(img1, kBands);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenHistogram(img2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 12: {
@@ -254,8 +254,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenKMPP(img1, kBands);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenKMPP(img2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 13: {
@@ -265,8 +265,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenKMPP(img1, kBands);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenKMPP(img2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 14: {
@@ -276,8 +276,8 @@ public class ImageSegmentationTest extends TestCase {
                              .applyUsingCIEXYPolarThetaThenKMPP(img1, kBands);
                          GreyscaleImage gsImg2 = imageSegmentation
                              .applyUsingCIEXYPolarThetaThenKMPP(img2, kBands);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg2.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg2.copyToColorGreyscaleExt();
                          break;
                      }
                      case 15: {
@@ -311,8 +311,8 @@ public class ImageSegmentationTest extends TestCase {
                              imageSegmentation.applyUsingPolarCIEXYAndFrequency(img1, true);
                          GreyscaleImage gsImg2 = 
                              imageSegmentation.applyUsingPolarCIEXYAndFrequency(img2, true);
-                         img1 = gsImg1.createColorGreyscaleExt();
-                         img2 = gsImg1.createColorGreyscaleExt();
+                         img1 = gsImg1.copyToColorGreyscaleExt();
+                         img2 = gsImg1.copyToColorGreyscaleExt();
                          break;
                      }
                      case 17: {

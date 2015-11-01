@@ -5,33 +5,59 @@ import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
 /**
- *
+ * class to hold data with values in range 0-255 or -255 to 255 depending
+ * upon constructor used (the later is needed for gradient images).
+ * 
  * @author nichole
  */
 public class GreyscaleImage {
+
+    /**
+     * type for how data is stored which is by default Bits32 for a 32 bit
+     * platform and Bits64 for a 64 bit platform each holding values in 
+     * range 0 to 255, inclusive, else user can 
+     * specify Bits32Signed or Bits64Signed which is the Bits32 or Bits64
+     * storage with a range of -255 to 255 (needed for gradient images for
+     * example) else the Bits32FullRangeInt type can hold signed integers.
+     */
+    public static enum Type {
+        Bits32, Bits64, Bits32Signed, Bits64Signed, Bits32FullRangeInt;
+        public Type copy(Type t) {
+            return Type.values()[t.ordinal()];
+        }
+    }
     
-    public final boolean is64Bit;
+    private Type type;
+    
+    public boolean is64Bit;
     
     /**
-     * array holding image values in range 0-255 and 4 values stored in
-     * one int.
+     * array holding image values in range 0-255 (default) 
+     * or -255 to 255 depending upon constructor used.
      */
-    protected final int[] a;
+    private int[] a;
     
     /**
      * 64 bit version of a array
      */
-    protected final long[] aL;
+    private long[] aL;
     
-    protected final int width;
+    private int width;
     
-    protected final int height;
+    private int height;
     
-    protected final int nPixels;
+    private int minAllowed;
     
-    protected final int itemByteLength;
+    private int maxAllowed;
     
-    protected final int len;
+    private int nPixels;
+    
+    // number of datum in one item of the array a or aL
+    private int itemNDatum;
+    
+    private int datumNBits;
+    
+    private int len;
     
     private int xRelativeOffset = 0;
     
@@ -53,36 +79,67 @@ public class GreyscaleImage {
         
         height = theHeight;
         
+        int wordSize;
         if (is64Bit) {
+            wordSize = 64;
+            type = Type.Bits64;
+        } else {
+            wordSize = 32;
+            type = Type.Bits32;
+        }
+        
+        datumNBits = 8;
+        
+        minAllowed = 0;
             
-            itemByteLength = 8;
+        maxAllowed = 255;
+        
+        itemNDatum = wordSize/datumNBits;
+                        
+        len = (nPixels/itemNDatum) + 1;
             
-            len = (nPixels/itemByteLength) + 1;
-            
+        if (is64Bit) {
+                        
             aL = new long[len];
             
             a = null;
             
         } else {
             
-            itemByteLength = 4;
-            
-            len = (nPixels/itemByteLength) + 1;
-                
             a = new int[len];
             
             aL = null;
         }
-        
+       
     }
     
     /**
      * @param theWidth
      * @param theHeight
+     * @param theType image type
      */
-    public GreyscaleImage (int theWidth, int theHeight, boolean use32Bit) {
-                
-        is64Bit = !use32Bit;
+    public GreyscaleImage (int theWidth, int theHeight, Type theType) {
+        
+        if (theType == null) {
+            String arch = System.getProperty("sun.arch.data.model");        
+            if ((arch != null) && arch.equals("64")) {
+                type = Type.Bits64;
+            } else {
+                type = Type.Bits32;
+            }
+        } else {
+            type = theType;
+        }
+        
+        int wordSize;
+        
+        if (type.equals(Type.Bits64) || type.equals(Type.Bits64Signed)) {
+            is64Bit = true;
+            wordSize = 64;
+        } else {
+            is64Bit = false;
+            wordSize = 32;
+        }
         
         nPixels = theWidth * theHeight;
         
@@ -90,27 +147,47 @@ public class GreyscaleImage {
         
         height = theHeight;
         
-        if (is64Bit) {
-            
-            itemByteLength = 8;
-            
-            len = (nPixels/itemByteLength) + 1;
-            
-            aL = new long[len];
-            
-            a = null;
-            
+        if (type.equals(Type.Bits32FullRangeInt)) {
+            maxAllowed = Integer.MAX_VALUE;
         } else {
-            
-            itemByteLength = 4;
-            
-            len = (nPixels/itemByteLength) + 1;
-                
-            a = new int[len];
-            
-            aL = null;
+            maxAllowed = 255;
         }
         
+        if (type.equals(Type.Bits32) || type.equals(Type.Bits64)) {
+            
+            datumNBits = 8;
+            
+            minAllowed = 0;
+            
+        } else if (type.equals(Type.Bits32FullRangeInt)) {
+            
+            minAllowed = Integer.MIN_VALUE;
+            
+            datumNBits = 32;
+            
+        } else {//if (type.equals(Type.Bits32Signed) || type.equals(Type.Bits64Signed)) {
+            
+            datumNBits = 9;
+            
+            minAllowed = -255;
+        }
+        
+        itemNDatum = wordSize/datumNBits;
+                        
+        len = (nPixels/itemNDatum) + 1;
+        
+        if (is64Bit) {
+
+            aL = new long[len];
+
+            a = null;
+
+        } else {
+
+            a = new int[len];
+
+            aL = null;
+        }        
     }
     
     /**
@@ -119,24 +196,29 @@ public class GreyscaleImage {
      */
     public void fill(int value) {
         
-        if (value < 0 || (value > 255)) {
+        if (value < minAllowed || (value > maxAllowed)) {
             throw new IllegalArgumentException(
-                "value must be between 0 and 255 inclusive");
+                "value must be between " + minAllowed + " and " + maxAllowed + 
+                 ", inclusive");
+        }
+       
+        if (!type.equals(Type.Bits32FullRangeInt)) {
+            value -= minAllowed;
         }
         
         if (is64Bit) {
-            
+            long mask = (1L << datumNBits) - 1L;
             long total = 0;
-            for (int i = 0; i < 8; i++) {
-                total += ((value & 255L) << (i * 8L));
+            for (int i = 0; i < itemNDatum; i++) {
+                total += ((value & mask) << (long)(i * datumNBits));
             }
             Arrays.fill(aL, total);
             
         } else {
-            
+            int mask = (1 << datumNBits) - 1;
             int total = 0;
-            for (int i = 0; i < 4; i++) {
-                total += ((value & 255) << (i * 8));
+            for (int i = 0; i < itemNDatum; i++) {
+                total += ((value & mask) << (i * datumNBits));
             }
             Arrays.fill(a, total);
             
@@ -158,27 +240,39 @@ public class GreyscaleImage {
         }
         
         if (is64Bit) {
-            
+            long mask = (1L << datumNBits) - 1L;
             for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
                 long total = aL[elementIdx];
                 long total2 = 0;
-                for (int i = 0; i < 8; i++) {
-                    long v = (total >> (i * 8L)) & 255L;
-                    v = (long)(v * factor);
-                    total2 += ((v & 255L) << (i * 8L));
+                for (int i = 0; i < itemNDatum; i++) {
+                    long v = (total >> (long)(i * datumNBits)) & mask;
+                    if (type.equals(Type.Bits32FullRangeInt)) {
+                        v = (long)(v * factor);
+                    } else {
+                        v += minAllowed;
+                        v = (long)(v * factor);
+                        v -= minAllowed;
+                    }
+                    total2 += ((v & mask) << (long)(i * datumNBits));
                 }
                 aL[elementIdx] = total2;
             }
             
         } else {
-            
+            int mask = (1 << datumNBits) - 1;
             for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
                 int total = a[elementIdx];
                 int total2 = 0;
-                for (int i = 0; i < 8; i++) {
-                    long v = (total >> (i * 8)) & 255;
-                    v = (long)(v * factor);
-                    total2 += ((v & 255) << (i * 8));
+                for (int i = 0; i < itemNDatum; i++) {
+                    int v = (total >> (i * datumNBits)) & mask;
+                    if (type.equals(Type.Bits32FullRangeInt)) {
+                        v = (int)(v * factor);
+                    } else {
+                        v += minAllowed;
+                        v = (int)(v * factor);
+                        v -= minAllowed;
+                    }
+                    total2 += ((v & mask) << (i * datumNBits));
                 }
                 a[elementIdx] = total2;
             }
@@ -198,32 +292,74 @@ public class GreyscaleImage {
         }
         
         if (is64Bit) {
-            
+            long mask = (1L << datumNBits) - 1L;
             long f = number;
             for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
                 long total = aL[elementIdx];
                 long total2 = 0;
-                for (int i = 0; i < 8; i++) {
-                    long v = (total >> (i * 8L)) & 255L;
-                    v = v / f;
-                    total2 += ((v & 255L) << (i * 8L));
+                for (int i = 0; i < itemNDatum; i++) {
+                    long v = (total >> (long)(i * datumNBits)) & mask;
+                    if (type.equals(Type.Bits32FullRangeInt)) {
+                        v = v / f;
+                    } else {
+                        v += minAllowed;
+                        v = v / f;
+                        v -= minAllowed;
+                    }
+                    total2 += ((v & mask) << (long)(i * datumNBits));
                 }
                 aL[elementIdx] = total2;
             }
             
         } else {
-            
+            int mask = (1 << datumNBits) - 1;
             for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
                 int total = a[elementIdx];
                 int total2 = 0;
-                for (int i = 0; i < 8; i++) {
-                    long v = (total >> (i * 8)) & 255;
-                    v = v / number;
-                    total2 += ((v & 255) << (i * 8));
+                for (int i = 0; i < itemNDatum; i++) {
+                    int v = (total >> (i * datumNBits)) & mask;
+                    if (type.equals(Type.Bits32FullRangeInt)) {
+                        v = v / number;
+                    } else {
+                        v += minAllowed;
+                        v = v / number;
+                        v -= minAllowed;
+                    }
+                    total2 += ((v & mask) << (i * datumNBits));
                 }
                 a[elementIdx] = total2;
             }
         }
+    }
+    
+    public int getMin() {
+        int min;
+    
+        if (is64Bit) {
+            min = (int)MiscMath.findMinForByteCompressed(aL, len, itemNDatum,
+                datumNBits, minAllowed);
+        } else if (type.equals(Type.Bits32FullRangeInt)) {
+            min = MiscMath.findMin(a, len);
+        } else {
+            min = MiscMath.findMinForByteCompressed(a, len, itemNDatum,
+                datumNBits, minAllowed);
+        }
+        return min;
+    }
+    
+    public int getMax() {
+        int max;
+       
+        if (is64Bit) {
+            max = (int)MiscMath.findMaxForByteCompressed(aL, len, itemNDatum,
+                datumNBits, minAllowed);
+        } else if (type.equals(Type.Bits32FullRangeInt)) {
+            max = MiscMath.findMax(a, len);
+        } else {
+            max = MiscMath.findMaxForByteCompressed(a, len, itemNDatum,
+                datumNBits, minAllowed);
+        }
+        return max;
     }
     
     /**
@@ -232,14 +368,8 @@ public class GreyscaleImage {
      */
     public void normalizeToMax255() {
         
-        int max;
-        
-        if (is64Bit) {
-            max = (int)MiscMath.findMaxForByteCompressed(aL, len, 8);
-        } else {
-            max = MiscMath.findMaxForByteCompressed(a, len, 4);
-        }
-        
+        int max = getMax();
+       
         if (max == 0) {
             return;
         }
@@ -283,41 +413,53 @@ public class GreyscaleImage {
         setValue(idx, value);
        
     }
-    
-    protected long set64BitValue(long rowValue, int setValue, int byteNumber) {
+         
+    private long set64BitValue(long rowValue, int setValue, int datumNumber) {
+               
+        setValue -= minAllowed;
         
-        long shift = 8L * (long)byteNumber;
+        long mask = (1L << datumNBits) - 1L;
+              
+        long shift = (long)(datumNBits * datumNumber);
         
-        long prevValue = (rowValue >> shift) & 255L;
+        long prevValue = (rowValue >> shift) & mask;
         
-        long shifted = (prevValue & 255L) << shift;
+        long shifted = prevValue << shift;
         
         rowValue -= shifted;
         
-        shifted = (setValue & 255L) << shift;
+        shifted = (setValue & mask) << shift;
                 
         rowValue += shifted;
-                
-        assert(((rowValue >> shift) & 255L) == setValue);
+        
+        assert(((rowValue >> shift) & mask) == setValue);
         
         return rowValue;
     }
     
-    protected int set32BitValue(int rowValue, int setValue, int byteNumber) {
-            
-        int shift = 8 * byteNumber;
+    private int set32BitValue(int rowValue, int setValue, int datumNumber) {
+          
+        if (type.equals(Type.Bits32FullRangeInt)) {
+            return setValue;
+        }
         
-        int prevValue = (rowValue >> shift) & 255;
+        int mask = (1 << datumNBits) - 1;
         
-        int shifted = (prevValue & 255) << shift;
+        setValue -= minAllowed;
+        
+        int shift = datumNBits * datumNumber;
+        
+        int prevValue = (rowValue >> shift) & mask;
+        
+        int shifted = (prevValue & mask) << shift;
         
         rowValue -= shifted;
         
-        shifted = (setValue & 255) << shift;
+        shifted = (setValue & mask) << shift;
                 
         rowValue += shifted;
                 
-        assert(((rowValue >> shift) & 255) == setValue);
+        assert(((rowValue >> shift) & mask) == setValue);
         
         return rowValue;
     }
@@ -395,30 +537,51 @@ public class GreyscaleImage {
                 "internalIndex is out of bounds:");
         }
         
-        if ((value > 255) || (value < 0)) {
+        if (value < minAllowed || (value > maxAllowed)) {
             throw new IllegalArgumentException(
-                "value must be between 0 and 255, inclusive");
+                "value must be between " + minAllowed + " and " + maxAllowed + 
+                 ", inclusive.  value=" + value);
         }
         
-        int elementIdx = pixelIndex/itemByteLength;
+        int elementIdx = pixelIndex/itemNDatum;
         
-        int byteNumber = pixelIndex - (elementIdx*itemByteLength);
+        int datumNumber = pixelIndex - (elementIdx*itemNDatum);
                 
         if (is64Bit) {
-            aL[elementIdx] = set64BitValue(aL[elementIdx], value, byteNumber);
+            aL[elementIdx] = set64BitValue(aL[elementIdx], value, datumNumber);
         } else {
-            a[elementIdx] = set32BitValue(a[elementIdx], value, byteNumber);
+            a[elementIdx] = set32BitValue(a[elementIdx], value, datumNumber);
         }
     }
     
-    protected int get32BitValue(int rowValue, int byteNumber) {
-                
-        return (rowValue >> (byteNumber * 8)) & 255;
+    private int get32BitValue(int rowValue, int datumNumber) {
+        
+        if (type.equals(Type.Bits32FullRangeInt)) {
+            return rowValue;
+        }
+        
+        int mask = (1 << datumNBits) - 1;
+        
+        int v = (rowValue >> (datumNumber * datumNBits)) & mask;
+        
+        if (!type.equals(Type.Bits32FullRangeInt)) {
+            v += minAllowed;
+        }
+        
+        return v;
     }
     
-    protected int get64BitValue(long rowValue, int byteNumber) {
-                
-        return (int)((rowValue >> (byteNumber * 8L)) & 255L);
+    private int get64BitValue(long rowValue, int datumNumber) {
+        
+        long mask = (1L << datumNBits) - 1L;
+        
+        int v = (int)((rowValue >> (datumNumber * datumNBits)) & mask);
+        
+        if (!type.equals(Type.Bits32FullRangeInt)) {
+            v += minAllowed;
+        }
+        
+        return v;
     }
     
     /**
@@ -433,14 +596,14 @@ public class GreyscaleImage {
                 "pixelIndex is out of bounds:");
         }
         
-        int elementIdx = pixelIndex/itemByteLength;
+        int elementIdx = pixelIndex/itemNDatum;
         
-        int byteNumber = pixelIndex - (elementIdx*itemByteLength);
+        int datumNumber = pixelIndex - (elementIdx*itemNDatum);
         
         if (is64Bit) {
-            return get64BitValue(aL[elementIdx], byteNumber);
+            return get64BitValue(aL[elementIdx], datumNumber);
         } else {
-            return get32BitValue(a[elementIdx], byteNumber);
+            return get32BitValue(a[elementIdx], datumNumber);
         }
     }
     
@@ -500,26 +663,8 @@ public class GreyscaleImage {
         
         float[] t = new float[nPixels];
         
-        int count = 0;
-        
-        if (is64Bit) {
-            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
-                long total = aL[elementIdx];
-                for (int i = 0; i < 8; i++) {
-                    long v = (total >> (i * 8L)) & 255L;
-                    t[count] = (int)v;
-                    count++;
-                }
-            }
-        } else {
-            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
-                int total = a[elementIdx];
-                for (int i = 0; i < 4; i++) {
-                    int v = (total >> (i * 8)) & 255;
-                    t[count] = v;
-                    count++;
-                }
-            }
+        for (int i = 0; i < nPixels; ++i) {
+            t[i] = getValue(i);
         }
         
         return t;
@@ -538,12 +683,63 @@ public class GreyscaleImage {
         return img2;
     }
     
+    public GreyscaleImage copyToSignedImage() {
+
+        GreyscaleImage img2;
+        
+        if (type.equals(Type.Bits32) || type.equals(Type.Bits64)) {
+            if (type.equals(Type.Bits32)) {
+                img2 = new GreyscaleImage(width, height, GreyscaleImage.Type.Bits32Signed);
+            } else {
+                img2 = new GreyscaleImage(width, height, GreyscaleImage.Type.Bits64Signed);
+            }
+            for (int i = 0; i < nPixels; ++i) {
+                int v = getValue(i);
+                img2.setValue(i, v);
+            }
+        } else {
+            img2 = new GreyscaleImage(width, height, type);
+            if (is64Bit) {
+                System.arraycopy(aL, 0, img2.aL, 0, len);
+            } else {
+                System.arraycopy(a, 0, img2.a, 0, len);
+            }
+        }
+                
+        return img2;
+    }
+    
     public GreyscaleImage createWithDimensions() {
        
-        GreyscaleImage img2 = new GreyscaleImage(width, height, !is64Bit);
+        GreyscaleImage img2 = new GreyscaleImage(width, height, type);
                 
         img2.xRelativeOffset = xRelativeOffset;
         img2.yRelativeOffset = yRelativeOffset;
+        
+        return img2;
+    }
+    
+    public GreyscaleImage createSignedWithDimensions() {
+        
+        GreyscaleImage img2;
+        
+        if (type.equals(Type.Bits32) || type.equals(Type.Bits64)) {
+            if (type.equals(Type.Bits32)) {
+                img2 = new GreyscaleImage(width, height, GreyscaleImage.Type.Bits32Signed);
+            } else {
+                img2 = new GreyscaleImage(width, height, GreyscaleImage.Type.Bits64Signed);
+            }
+        } else {
+            img2 = new GreyscaleImage(width, height, type);
+        }
+        
+        return img2;
+    }
+    
+    public GreyscaleImage createFullRangeIntWithDimensions() {
+        
+        GreyscaleImage img2 = new GreyscaleImage(width, height, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
         
         return img2;
     }
@@ -560,7 +756,7 @@ public class GreyscaleImage {
     public GreyscaleImage subImage(int xCenter, int yCenter, int subWidth, 
         int subHeight) {
        
-        GreyscaleImage img2 = new GreyscaleImage(subWidth, subHeight, !is64Bit);
+        GreyscaleImage img2 = new GreyscaleImage(subWidth, subHeight, type);
                 
         int col2 = 0;
         for (int col = (xCenter - (subWidth/2)); col < (xCenter + (subWidth/2));
@@ -583,35 +779,63 @@ public class GreyscaleImage {
         return img2;
     }
     
-    public ImageExt createColorGreyscaleExt() {
+    public ImageExt copyToColorGreyscaleExt() {
         
-        ImageExt img2 = new ImageExt(width, height);
+        ImageExt img2 = new ImageExt(width, height, !is64Bit);
         
         if (is64Bit) {
-            System.arraycopy(aL, 0, img2.rL, 0, len);
-            System.arraycopy(aL, 0, img2.gL, 0, len);
-            System.arraycopy(aL, 0, img2.bL, 0, len);
+            if (len == img2.len) {
+                System.arraycopy(aL, 0, img2.rL, 0, len);
+                System.arraycopy(aL, 0, img2.gL, 0, len);
+                System.arraycopy(aL, 0, img2.bL, 0, len);
+            } else {
+                for (int i = 0; i < nPixels; ++i) {
+                    int v = getValue(i);
+                    img2.setRGB(i, v, v, v);
+                }
+            }
         } else {
-            System.arraycopy(a, 0, img2.r, 0, len);
-            System.arraycopy(a, 0, img2.g, 0, len);
-            System.arraycopy(a, 0, img2.b, 0, len);
+            if (len == img2.len) {
+                System.arraycopy(a, 0, img2.r, 0, len);
+                System.arraycopy(a, 0, img2.g, 0, len);
+                System.arraycopy(a, 0, img2.b, 0, len);
+            } else {
+                for (int i = 0; i < nPixels; ++i) {
+                    int v = getValue(i);
+                    img2.setRGB(i, v, v, v);
+                }
+            }
         }
         
         return img2;
     }
     
-    public Image createColorGreyscale() {
+    public Image copyToColorGreyscale() {
         
-        Image img2 = new Image(width, height);
+        Image img2 = new Image(width, height, !is64Bit);
         
         if (is64Bit) {
-            System.arraycopy(aL, 0, img2.rL, 0, len);
-            System.arraycopy(aL, 0, img2.gL, 0, len);
-            System.arraycopy(aL, 0, img2.bL, 0, len);
+            if (len == img2.len) {
+                System.arraycopy(aL, 0, img2.rL, 0, len);
+                System.arraycopy(aL, 0, img2.gL, 0, len);
+                System.arraycopy(aL, 0, img2.bL, 0, len);
+            } else {
+                for (int i = 0; i < nPixels; ++i) {
+                    int v = getValue(i);
+                    img2.setRGB(i, v, v, v);
+                }
+            }
         } else {
-            System.arraycopy(a, 0, img2.r, 0, len);
-            System.arraycopy(a, 0, img2.g, 0, len);
-            System.arraycopy(a, 0, img2.b, 0, len);
+            if (len == img2.len) {
+                System.arraycopy(a, 0, img2.r, 0, len);
+                System.arraycopy(a, 0, img2.g, 0, len);
+                System.arraycopy(a, 0, img2.b, 0, len);
+            } else {
+                for (int i = 0; i < nPixels; ++i) {
+                    int v = getValue(i);
+                    img2.setRGB(i, v, v, v);
+                }
+            }
         }
         
         return img2;
@@ -619,32 +843,42 @@ public class GreyscaleImage {
     
     public void resetTo(final GreyscaleImage copyThis) {
         
-        if (copyThis.getNPixels() != nPixels) {
-            throw new IllegalArgumentException("cannot convert this fixed " 
-                + "image size to the size of copyThis.");
-        }
-        
-        if (copyThis.width != width) {
-            throw new IllegalArgumentException(
-                "copyThis.width must be same as this width");
-        }
-        if (copyThis.height != height) {
-            throw new IllegalArgumentException(
-                "copyThis.height must be same as this width");
-        }
-        
-        if (is64Bit) {
-            System.arraycopy(copyThis.aL, 0, aL, 0, copyThis.len);
-        } else {
-            System.arraycopy(copyThis.a, 0, a, 0, copyThis.len);
-        }
-        
+        type = copyThis.getType().copy(copyThis.type);
+        is64Bit = copyThis.is64Bit;
+        width = copyThis.width;
+        height = copyThis.height;
+        minAllowed = copyThis.minAllowed;
+        maxAllowed = copyThis.maxAllowed;
+        nPixels = copyThis.getNPixels();
+        itemNDatum = copyThis.itemNDatum;
+        datumNBits = copyThis.datumNBits;
+        len = copyThis.len;
         xRelativeOffset = copyThis.xRelativeOffset;
-            
         yRelativeOffset = copyThis.yRelativeOffset;
+       
+        if (a == null && copyThis.a != null) {
+            a = new int[copyThis.a.length];
+        } else if ((a != null) && copyThis.a == null) {
+            a = null;
+        } else if ((a != null) && (a.length != copyThis.a.length)) {
+            a = new int[copyThis.a.length];
+        }
+        
+        if (aL == null && copyThis.aL != null) {
+            aL = new long[copyThis.aL.length];
+        } else if ((aL != null) && copyThis.aL == null) {
+            aL = null;
+        } else if ((aL != null) && (aL.length != copyThis.aL.length)) {
+            aL = new long[copyThis.aL.length];
+        }
+        
+        if (a != null) {
+            System.arraycopy(copyThis.a, 0, a, 0, copyThis.len);
+        } else {
+            System.arraycopy(copyThis.aL, 0, aL, 0, copyThis.len);
+        }
         
     }
-    
     
     public void debugPrint() {
         StringBuilder sb = new StringBuilder();
@@ -716,5 +950,37 @@ public class GreyscaleImage {
             v[i] = getValue(i);
         }
         return v;
+    }
+    
+    /**
+     * @return the minAllowed
+     */
+    public int getMinAllowed() {
+        return minAllowed;
+    }
+
+    /**
+     * @return the maxAllowed
+     */
+    public int getMaxAllowed() {
+        return maxAllowed;
+    }
+
+    /**
+     * @return the itemNDatum
+     */
+    public int getItemNDatum() {
+        return itemNDatum;
+    }
+
+    /**
+     * @return the datumNBits
+     */
+    public int getDatumNBits() {
+        return datumNBits;
+    }
+    
+    public Type getType() {
+        return type;
     }
 }

@@ -94,7 +94,7 @@ public class CornersOfLabTest extends TestCase {
         String sep = System.getProperty("file.separator");
         ImageIOHelper.writeOutputImage(dirPath + sep + "corners_lab.png", image);
      
-        Image img2 = detector.getImage().createColorGreyscale();
+        Image img2 = detector.getImage().copyToColorGreyscale();
         
         try {
             for (PairIntArray edge : detector.getEdges()) {

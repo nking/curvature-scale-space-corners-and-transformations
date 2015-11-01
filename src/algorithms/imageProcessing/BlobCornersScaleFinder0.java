@@ -120,8 +120,8 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         List<List<CornerRegion>> corners2List = 
             img2Helper.getPerimeterCorners(type2, useBinned2);
         
-        List<Set<PairInt>> blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);
-        List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
+        //List<Set<PairInt>> blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);
+        //List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
         List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);
         
@@ -149,8 +149,8 @@ log.info("index1=" + index1.toString() + " index2=" + index2.toString()
 + " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
 
 try {
-ImageExt img1C = img1.createColorGreyscaleExt();
-ImageExt img2C = img2.createColorGreyscaleExt();
+ImageExt img1C = img1.copyToColorGreyscaleExt();
+ImageExt img2C = img2.copyToColorGreyscaleExt();
 //ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
 ImageIOHelper.addAlternatingColorCornerRegionsToImage(cr1, img1C, 0, 0, 1);
            

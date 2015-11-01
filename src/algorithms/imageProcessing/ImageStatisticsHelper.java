@@ -21,11 +21,11 @@ public class ImageStatisticsHelper {
         
         long sum = 0;
         
-        for (int i = 0; i < img.len; i++) {
+        for (int i = 0; i < img.getNPixels(); i++) {
             sum += img.getValue(i);
         }
 
-        return (int)(sum/img.len);
+        return (int)(sum/img.getNPixels());
     }
     
     /**

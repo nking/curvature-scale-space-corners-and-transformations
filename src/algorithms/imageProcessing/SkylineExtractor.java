@@ -132,7 +132,7 @@ public class SkylineExtractor {
 
             ImageProcessor imageProcessor = new ImageProcessor();
             
-            imageProcessor.multiply(mask, 255);
+            mask.multiply(255);
             
             CannyEdgeFilter filter = new CannyEdgeFilter();
             

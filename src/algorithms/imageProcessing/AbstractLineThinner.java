@@ -1060,7 +1060,7 @@ public abstract class AbstractLineThinner implements ILineThinner {
         int w = input.getWidth();
         int h = input.getHeight();
         
-        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2);
+        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2, input.getType());
         output.setXRelativeOffset(1);
         output.setYRelativeOffset(1);
         

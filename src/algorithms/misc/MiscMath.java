@@ -1575,14 +1575,18 @@ public class MiscMath {
         return ordered;
     }
 
-    public static long findMaxForByteCompressed(long[] aL, int len, int bytesPerItem) {
+    public static long findMaxForByteCompressed(long[] aL, int len, 
+        int itemNDatum, int datumNBits, int minDatum) {
+        
+        long mask = (1L << datumNBits) - 1L;
         
         long max = Long.MIN_VALUE;
         
         for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
             long total = aL[elementIdx];
-            for (int i = 0; i < bytesPerItem; i++) {
-                long v = (total >> (long)(i * bytesPerItem)) & 255L;
+            for (int i = 0; i < itemNDatum; i++) {
+                long v = (total >> (long)(i * datumNBits)) & mask;
+                v += minDatum;
                 if (v > max) {
                     max = v;
                 }
@@ -1592,14 +1596,18 @@ public class MiscMath {
         return max;
     }
     
-    public static long findMinForByteCompressed(long[] aL, int len, int bytesPerItem) {
+    public static long findMinForByteCompressed(long[] aL, int len, 
+        int itemNDatum, int datumNBits, int minDatum) {
+                
+        long mask = (1L << datumNBits) - 1L;
         
         long min = Long.MAX_VALUE;
         
         for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
             long total = aL[elementIdx];
-            for (int i = 0; i < bytesPerItem; i++) {
-                long v = (total >> (long)(i * bytesPerItem)) & 255L;
+            for (int i = 0; i < itemNDatum; i++) {
+                long v = (total >> (long)(i * datumNBits)) & mask;
+                v += minDatum;
                 if (v < min) {
                     min = v;
                 }
@@ -1609,14 +1617,18 @@ public class MiscMath {
         return min;
     }
 
-    public static int findMaxForByteCompressed(int[] a, int len, int bytesPerItem) {
+    public static int findMaxForByteCompressed(int[] a, int len, int itemNDatum, 
+        int datumNBits, int minDatum) {
+        
+        int mask = (1 << datumNBits) - 1;
         
         int max = Integer.MIN_VALUE;
         
         for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
             int total = a[elementIdx];
-            for (int i = 0; i < bytesPerItem; i++) {
-                int v = (total >> (i * bytesPerItem)) & 255;
+            for (int i = 0; i < itemNDatum; i++) {
+                int v = (total >> (i * datumNBits)) & mask;
+                v += minDatum;
                 if (v > max) {
                     max = v;
                 }
@@ -1626,14 +1638,18 @@ public class MiscMath {
         return max;
     }
     
-    public static int findMinForByteCompressed(int[] a, int len, int bytesPerItem) {
+    public static int findMinForByteCompressed(int[] a, int len, int itemNDatum, 
+        int datumNBits, int minDatum) {
+        
+        int mask = (1 << datumNBits) - 1;
         
         int min = Integer.MAX_VALUE;
         
         for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
             int total = a[elementIdx];
-            for (int i = 0; i < bytesPerItem; i++) {
-                int v = (total >> (i * bytesPerItem)) & 255;
+            for (int i = 0; i < itemNDatum; i++) {
+                int v = (total >> (i * datumNBits)) & mask;
+                v += minDatum;
                 if (v < min) {
                     min = v;
                 }

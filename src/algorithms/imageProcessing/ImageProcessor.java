@@ -73,6 +73,15 @@ public class ImageProcessor {
         applyKernel(input, kernelXY, norm);
     }
 
+    /**
+     * apply the kernels to the input.  Note that the current image format
+     * only accepts value between 0 and 255, inclusive.
+     * @param input
+     * @param kernelX
+     * @param kernelY
+     * @param normFactorX
+     * @param normFactorY 
+     */
     protected void applyKernels(Image input, Kernel kernelX, Kernel kernelY,
         float normFactorX, float normFactorY) {
 
@@ -367,36 +376,10 @@ public class ImageProcessor {
         input.resetTo(output);
     }
 
-    public Image computeTheta(Image convolvedX, Image convolvedY) {
-
-        Image output = new Image(convolvedX.getWidth(), convolvedX.getHeight());
-
-        for (int i = 0; i < convolvedX.getWidth(); i++) {
-            for (int j = 0; j < convolvedX.getHeight(); j++) {
-
-                double rX = convolvedX.getR(i, j);
-                double gX = convolvedX.getG(i, j);
-                double bX = convolvedX.getB(i, j);
-
-                double rY = convolvedY.getR(i, j);
-                double gY = convolvedY.getG(i, j);
-                double bY = convolvedY.getB(i, j);
-
-                int thetaR = calculateTheta(rX, rY);
-                int thetaG = calculateTheta(gX, gY);
-                int thetaB = calculateTheta(bX, bY);
-
-                output.setRGB(i, j, thetaR, thetaG, thetaB);
-            }
-        }
-
-        return output;
-    }
-
     public GreyscaleImage computeTheta(final GreyscaleImage convolvedX,
         final GreyscaleImage convolvedY) {
 
-        GreyscaleImage output = convolvedX.createWithDimensions();
+        GreyscaleImage output = convolvedX.createSignedWithDimensions();
 
         for (int i = 0; i < convolvedX.getWidth(); i++) {
             for (int j = 0; j < convolvedX.getHeight(); j++) {
@@ -461,7 +444,7 @@ public class ImageProcessor {
             throw new IllegalArgumentException("image heights must be the same");
         }
 
-        GreyscaleImage output = image.createWithDimensions();
+        GreyscaleImage output = image.createSignedWithDimensions();
 
         for (int i = 0; i < image.getWidth(); i++) {
             for (int j = 0; j < image.getHeight(); j++) {
@@ -535,7 +518,7 @@ public class ImageProcessor {
      * images bounded by zero's have to be shrunk to the columns and rows
      * of the first non-zeroes in order to keep the lines that should be
      * attached to the image edges from eroding completely.
-     *
+     * Note, this expects image has values only non-negative numbers.
      * @param input
      * @return
      */
@@ -634,7 +617,7 @@ public class ImageProcessor {
 
             int yLen = yNZLast - yNZFirst + 1;
 
-            GreyscaleImage output = new GreyscaleImage(xLen, yLen);
+            GreyscaleImage output = new GreyscaleImage(xLen, yLen, input.getType());
             output.setXRelativeOffset(xNZFirst);
             output.setYRelativeOffset(yNZFirst);
 
@@ -667,7 +650,7 @@ public class ImageProcessor {
         int offset1X = offsetsAndDimensions[0];
         int offset1Y = offsetsAndDimensions[1];
 
-        GreyscaleImage output = new GreyscaleImage(w2, h2);
+        GreyscaleImage output = new GreyscaleImage(w2, h2, input.getType());
         output.setXRelativeOffset(offset1X);
         output.setYRelativeOffset(offset1Y);
 
@@ -797,33 +780,10 @@ public class ImageProcessor {
         //return theta;
     }
 
-    public void multiply(GreyscaleImage input, float m) {
-
-        for (int col = 0; col < input.getWidth(); col++) {
-
-            for (int row = 0; row < input.getHeight(); row++) {
-
-                int v = input.getValue(col, row);
-
-                int f = (int)(m * v);
-
-                input.setValue(col, row, f);
-            }
-        }
-    }
-
     public void subtractMinimum(GreyscaleImage input) {
 
-        int min;
+        int min = input.getMin();
         
-        if (input.is64Bit) {
-            min = (int)MiscMath.findMinForByteCompressed(input.aL, input.len, 
-                input.itemByteLength);
-        } else {
-            min = MiscMath.findMinForByteCompressed(input.a, input.len, 
-                input.itemByteLength);
-        }
-
         for (int col = 0; col < input.getWidth(); col++) {
 
             for (int row = 0; row < input.getHeight(); row++) {
@@ -835,45 +795,6 @@ public class ImageProcessor {
                 input.setValue(col, row, f);
             }
         }
-    }
-
-    /**
-     * multiply these images, that is pixel by pixel multiplication.
-     * No corrections are made for integer overflow.
-     * @param input1
-     * @param input2
-     * @return
-     */
-    public GreyscaleImage multiply(GreyscaleImage input1, GreyscaleImage input2)  {
-
-        if (input1 == null) {
-            throw new IllegalArgumentException("input1 cannot be null");
-        }
-        if (input2 == null) {
-            throw new IllegalArgumentException("input2 cannot be null");
-        }
-        if (input1.getWidth() != input2.getWidth()) {
-            throw new IllegalArgumentException(
-            "input1 and input2 must have same widths");
-        }
-        if (input1.getHeight()!= input2.getHeight()) {
-            throw new IllegalArgumentException(
-            "input1 and input2 must have same heights");
-        }
-
-        GreyscaleImage output = input1.createWithDimensions();
-
-        for (int col = 0; col < input1.getWidth(); col++) {
-
-            for (int row = 0; row < input1.getHeight(); row++) {
-
-                int v = input1.getValue(col, row) * input2.getValue(col, row);
-
-                output.setValue(col, row, v);
-            }
-        }
-
-        return output;
     }
 
     /**
@@ -990,10 +911,10 @@ public class ImageProcessor {
 
         int w = input.getWidth();
         int h = input.getHeight();
-        Image output = (ImageExt)input.copyImage();
+        Image output = input.copyImage();
 
-        for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
                 double[] conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, true);
                 output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
@@ -1002,8 +923,8 @@ public class ImageProcessor {
 
         input.resetTo(output);
 
-        for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
                 double[] conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, false);
                 output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
@@ -1489,7 +1410,7 @@ public class ImageProcessor {
         int w1 = w0/binFactor;
         int h1 = h0/binFactor;
 
-        GreyscaleImage out = new GreyscaleImage(w1, h1);
+        GreyscaleImage out = new GreyscaleImage(w1, h1, img.getType());
         out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/binFactor));
         out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/binFactor));
 
@@ -1554,7 +1475,7 @@ public class ImageProcessor {
         int w1 = w0/binFactor;
         int h1 = h0/binFactor;
 
-        GreyscaleImage out = new GreyscaleImage(w1, h1);
+        GreyscaleImage out = new GreyscaleImage(w1, h1, img.getType());
         out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/binFactor));
         out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/binFactor));
 
@@ -1606,7 +1527,7 @@ public class ImageProcessor {
         int w1 = w0/binFactor;
         int h1 = h0/binFactor;
 
-        Image out = new Image(w1, h1);
+        Image out = new Image(w1, h1, !img.is64Bit);
 
         binImage(img, binFactor, out);
 
@@ -1625,7 +1546,7 @@ public class ImageProcessor {
         int w1 = w0/binFactor;
         int h1 = h0/binFactor;
 
-        ImageExt out = new ImageExt(w1, h1);
+        ImageExt out = new ImageExt(w1, h1, !img.is64Bit);
 
         binImage(img, binFactor, out);
 
@@ -2088,7 +2009,7 @@ public class ImageProcessor {
         int xOffsetOrig = input.getXRelativeOffset();
         int yOffsetOrig = input.getYRelativeOffset();
 
-        GreyscaleImage output = new GreyscaleImage(w, h);
+        GreyscaleImage output = new GreyscaleImage(w, h, input.getType());
         output.setXRelativeOffset(xOffset + xOffsetOrig);
         output.setYRelativeOffset(yOffset + yOffsetOrig);
 
@@ -2174,10 +2095,6 @@ public class ImageProcessor {
         return cc;
     }
 
-    /**
-     *
-     * @param cc
-     */
     public void writeToImage(GreyscaleImage img, Complex[][] cc) {
 
         img.fill(0);
@@ -2212,11 +2129,6 @@ public class ImageProcessor {
 
     }
 
-    /**
-     * write a 2-D complex array from the image
-     *
-     * @param input
-     */
     protected Complex[][] convertImage(GreyscaleImage input) {
 
         // initialize matrix of complex numbers as real numbers from image
@@ -2389,7 +2301,7 @@ public class ImageProcessor {
             }
         }
 
-        GreyscaleImage img2 = img0.createWithDimensions();
+        GreyscaleImage img2 = img0.createFullRangeIntWithDimensions();
 
         writePositiveRealToImage(img2, ccDeconv);
 
@@ -2398,7 +2310,7 @@ public class ImageProcessor {
 
         Complex[][] inverse = apply2DFFT(ccDeconv, false);
 
-        GreyscaleImage img4 = img0.createWithDimensions();
+        GreyscaleImage img4 = img0.createFullRangeIntWithDimensions();
 
         writePositiveRealToImage(img4, inverse);
 
@@ -2441,7 +2353,7 @@ public class ImageProcessor {
             h2 = (1 << (int)p2Y);
         }
 
-        GreyscaleImage img2 = new GreyscaleImage(w2, h2);
+        GreyscaleImage img2 = new GreyscaleImage(w2, h2, img.getType());
 
         for (int col = 0; col < w; col++) {
             for (int row = 0; row < h; row++) {
@@ -2761,6 +2673,9 @@ public class ImageProcessor {
      * </pre>
      * runtime complexity is O(N_pixels)
      * This can be used as part of adaptive mean thresholding.
+     * NOTE: this method if not tested, may need edits for new img storage
+     * (mean intermediate values might be > 255, so need to be using arrays
+     * until have final values. need to revisit this code soon)
      * @param img
      * @param dimension
      */
@@ -2783,20 +2698,20 @@ public class ImageProcessor {
         int w = img.getWidth();
         int h = img.getHeight();
 
-        GreyscaleImage mean = img.createWithDimensions();
-
+        int[] mean = new int[img.getNPixels()];
+        
         // sum along rows
         for (int i = 0; i < w; ++i) {
             int sum0 = 0;
             for (int j = 0; j < dimension; ++j) {
                 sum0 += img.getValue(i, j);
             }
-            mean.setValue(i, 0, sum0);
+            mean[img.getInternalIndex(i, 0)] = sum0;
             for (int j = 1; j <= (h - dimension); ++j) {
                 int vp = img.getValue(i, j - 1);
                 int vl =  img.getValue(i, dimension + j - 1);
                 sum0 = sum0 - vp + vl;
-                mean.setValue(i, j, sum0);
+                mean[img.getInternalIndex(i, j)] = sum0;
             }
             // last dimension - 1 rows: sum along them, divide by count then mult by dimension
             for (int j = (h - dimension + 1); j < h; ++j) {
@@ -2807,22 +2722,24 @@ public class ImageProcessor {
                 }
                 sum /= count;
                 sum *= dimension;
-                mean.setValue(i, j, Math.round(sum));
+                mean[img.getInternalIndex(i, j)] = Math.round(sum);
             }
         }
 
+        int[] mean2 = new int[img.getNPixels()];
+      
         // sum along columns
         for (int j = 0; j < h; ++j) {
             int sum0 = 0;
             for (int i = 0; i < dimension; ++i) {
-                sum0 += mean.getValue(i, j);
+                sum0 += mean[img.getInternalIndex(i, j)];
             }
-            img.setValue(0, j, sum0);
+            mean2[img.getInternalIndex(0, j)] = sum0;
             for (int i = 1; i <= (w - dimension); ++i) {
-                int vp = mean.getValue(i - 1, j);
-                int vl = mean.getValue(dimension + i - 1, j);
+                int vp = mean[img.getInternalIndex(i - 1, j)];
+                int vl = mean[img.getInternalIndex(dimension + i - 1, j)];
                 sum0 = sum0 - vp + vl;
-                img.setValue(i, j, sum0);
+                mean2[img.getInternalIndex(i, j)] = sum0;
             }
 
             // last dimension - 1 cols: sum along them, divide by count then mult by dimension
@@ -2830,11 +2747,11 @@ public class ImageProcessor {
                 float count = h - i;
                 float sum = 0;
                 for (int k = i; k < w; ++k) {
-                    sum += mean.getValue(k, j);
+                    sum += mean[img.getInternalIndex(k, j)];
                 }
                 sum /= count;
                 sum *= dimension;
-                img.setValue(i, j, Math.round(sum));
+                mean2[img.getInternalIndex(i, j)] = Math.round(sum);
             }
         }
 
@@ -2842,7 +2759,7 @@ public class ImageProcessor {
         float dsq = dimension * dimension;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                int v = img.getValue(i, j);
+                int v = mean2[img.getInternalIndex(i, j)];
                 v = Math.round((float)v/dsq);
                 img.setValue(i, j, v);
             }

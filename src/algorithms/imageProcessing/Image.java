@@ -214,41 +214,39 @@ public class Image {
         
         int idx = getInternalIndex(col, row);
        
-        if ((idx < 0) || (idx > (nPixels - 1))) {
+        setRGB(idx, rPix, gPix, bPix);
+    }
+    
+    /**
+     * set the r, g, and b values for the pixel at location with col and row
+     * @param pixIdx
+     * @param rPix
+     * @param gPix
+     * @param bPix 
+     */
+    public void setRGB(int pixIdx, int rPix, int gPix, int bPix) {
+        
+        if ((pixIdx < 0) || (pixIdx > (nPixels - 1))) {
             throw new IllegalArgumentException(
                 "col and/or are out of bounds");
         }
         
-        if ((rPix > 255) || (rPix < 0) || (gPix > 255) || (gPix < 0) ||
-            (bPix > 255) || (bPix < 0)) {
+        if ((rPix > 255) || (rPix < 0)){
             throw new IllegalArgumentException(
-                "values must be between 0 and 255, inclusive");
+                "values must be between 0 and 255, inclusive. rPix=" + rPix);
+        }
+        if ((gPix > 255) || (gPix < 0)){
+            throw new IllegalArgumentException(
+                "values must be between 0 and 255, inclusive. gPix=" + gPix);
+        }
+        if ((bPix > 255) || (bPix < 0)){
+            throw new IllegalArgumentException(
+                "values must be between 0 and 255, inclusive. bPix=" + bPix);
         }
         
-        /*
-        Example:
-           3 x 2 image -> nPixels = 6;  32 bit os; itemByteLength = 4
-        int nElements of r array = (nPixels/itemByteLength) + 1 = 2
+        int elementIdx = pixIdx/itemByteLength;
         
-        to set a value in col=1, row=1
-        image reference frame:
-        [0][1][2]  
-        [0][*][2] 
-        
-        condensed array reference frame for 32 bit os:
-        [0][1][2][3]
-        [4][5][-][-]
-        
-        int idx = (row * width) + col = (1*3) + 1 = 4
-        
-        int elementIdx = idx/itemByteLength = 4/4 = 1
-        
-        int byteNumber = idx - (elementIdx*itemByteLength) = 4 - (1*4) = 0
-        */
-        
-        int elementIdx = idx/itemByteLength;
-        
-        int byteNumber = idx - (elementIdx*itemByteLength);
+        int byteNumber = pixIdx - (elementIdx*itemByteLength);
                 
         if (is64Bit) {
             rL[elementIdx] = set64BitValue(rL[elementIdx], rPix, byteNumber);
@@ -637,7 +635,10 @@ public class Image {
             }
         }
         
-        GreyscaleImage out = new GreyscaleImage(width, height, !is64Bit);
+        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :
+            GreyscaleImage.Type.Bits32;
+        
+        GreyscaleImage out = new GreyscaleImage(width, height, type);
         
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {

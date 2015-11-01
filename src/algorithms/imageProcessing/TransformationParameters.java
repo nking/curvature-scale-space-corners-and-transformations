@@ -28,6 +28,12 @@ public class TransformationParameters {
      * @param rotationInDegrees the rotation to set in units of degrees
      */
     public void setRotationInDegrees(float rotationInDegrees) {
+        if (rotationInDegrees < 0) {
+            rotationInDegrees += 360;
+        } else if (rotationInDegrees > 360) {
+            int m = (int)(rotationInDegrees/360)*360;
+            rotationInDegrees -= m;
+        }
         this.rotationInRadians = (float) (rotationInDegrees * Math.PI/180.);
     }
     
@@ -35,6 +41,12 @@ public class TransformationParameters {
      * @param theRotationInRadians the rotation to set in units of radians
      */
     public void setRotationInRadians(float theRotationInRadians) {
+        if (theRotationInRadians < 0) {
+            theRotationInRadians += 2.*Math.PI;
+        } else if (theRotationInRadians > 2.*Math.PI) {
+            double m = (int)(theRotationInRadians/2*Math.PI)*2.*Math.PI;
+            theRotationInRadians -= m;
+        }
         this.rotationInRadians = theRotationInRadians;
     }
 

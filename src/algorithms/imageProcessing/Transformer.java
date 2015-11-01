@@ -535,6 +535,8 @@ public class Transformer {
     /**
      * apply transformation params to image input. Note, the rotation is applied in a clockwise
       * direction (which is in the -z direction using right hand rule).
+      * NOTE that currently the additional data in an ImageExt beyond an Image
+      * instance is not transformed too.
      * @param input
      * @param params
      * @param outputWidth

@@ -86,8 +86,8 @@ public class ClosedCurveCornerMatcher0 {
                 FeatureComparisonStat compStat = null;
                 try {
                     compStat = featureMatcher.ditherAndRotateForBestLocation(
-                        features1, features2, region1, region2, dither, img1, 
-                        img2);
+                        features1, features2, region1, region2, dither, 
+                        img1, img2);
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
                     log.fine(ex.getMessage());
                 }

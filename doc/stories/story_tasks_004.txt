@@ -8,7 +8,7 @@ Story: Reduce memory use of Image and GreyscaleImage
     time estimate: min 3 days, max 7 days (FTE)
 
     amount of time used: 
-        < 2 days FTE
+        < 3 days FTE
 
     state of completion: 
         complete
@@ -40,7 +40,7 @@ Task 1:  Refactor Image and GreyscaleImage and associated classes
     time estimate: min 2 days, max 5 days
   
     amount of time used:
-        1.5 days so far
+        2.5 days 
 
     state of completion: 
         implemented, but still testing

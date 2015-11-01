@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
@@ -31,9 +32,8 @@ public class ImageProcessorTest extends TestCase {
         
         assertNotNull(result);
         assertTrue(result.getNPixels() == input.getNPixels());
-        assertTrue(result.r.length == input.r.length);
-        assertTrue(result.g.length == input.g.length);
-        assertTrue(result.b.length == input.b.length);
+        assertTrue(result.getWidth() == input.getWidth());
+        assertTrue(result.getHeight() == input.getHeight());
     }
     
     public void testCopyImage() throws Exception {
@@ -41,9 +41,7 @@ public class ImageProcessorTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("tajmahal.png");
         
         Image img = ImageIOHelper.readImage(filePath);
-        
-        ImageProcessor ImageProcessor = new ImageProcessor();
-                
+                        
         Image img2 = img.copyImage();
         
         assertNotNull(img2);
@@ -184,96 +182,14 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    public void testComputeTheta_Image_Image() {
-        
-        int w = 10;
-        int h = 10;
-        Image imageX = new Image(w, h);
-        Image imageY = new Image(w, h);
-        
-        // for 90 degrees
-        imageX.setRGB(1, 1, 0, 0, 0);
-        imageY.setRGB(1, 1, 1, 1, 1);
-        
-        // 90
-        imageX.setRGB(2, 2, 0, 0, 0);
-        imageY.setRGB(2, 2, -1, -1, -1);
-        
-        //0
-        imageX.setRGB(3, 3, 1, 1, 1);
-        imageY.setRGB(3, 3, 0, 0, 0);
-        
-        //0
-        imageX.setRGB(4, 4, -1, -1, -1);
-        imageY.setRGB(4, 4, 0, 0, 0);
-        
-        //45
-        imageX.setRGB(5, 5, 1, 1, 1);
-        imageY.setRGB(5, 5, 1, 1, 1);
-        
-        //-45
-        imageX.setRGB(6, 6, -1, -1, -1);
-        imageY.setRGB(6, 6, 1, 1, 1);
-        
-        //45
-        imageX.setRGB(7, 7, -1, -1, -1);
-        imageY.setRGB(7, 7, -1, -1, -1);
-        
-        //-45
-        imageX.setRGB(8, 8, 1, 1, 1);
-        imageY.setRGB(8, 8, -1, -1, -1);
-        
-        ImageProcessor instance = new ImageProcessor();
-        Image result = instance.computeTheta(imageX, imageY);
-                
-        // 1,1  90
-        // 2,2  90
-        // 3,3  0
-        // 4,4  0
-        // 5,5  45
-        // 6,6  -45
-        // 7,7  45
-        // 8,8  -45
-
-        assertTrue(result.getR(1, 1) == 90);
-        assertTrue(result.getG(1, 1) == 90);
-        assertTrue(result.getB(1, 1) == 90);
-        
-        assertTrue(result.getR(2, 2) == 90);
-        assertTrue(result.getG(2, 2) == 90);
-        assertTrue(result.getB(2, 2) == 90);
-        
-        assertTrue(result.getR(3, 3) == 0);
-        assertTrue(result.getG(3, 3) == 0);
-        assertTrue(result.getB(3, 3) == 0);
-        
-        assertTrue(result.getR(4, 4) == 0);
-        assertTrue(result.getG(4, 4) == 0);
-        assertTrue(result.getB(4, 4) == 0);
-        
-        assertTrue(result.getR(5, 5) == 45);
-        assertTrue(result.getG(5, 5) == 45);
-        assertTrue(result.getB(5, 5) == 45);
-        
-        assertTrue(result.getR(6, 6) == -45);
-        assertTrue(result.getG(6, 6) == -45);
-        assertTrue(result.getB(6, 6) == -45);
-        
-        assertTrue(result.getR(7, 7) == 45);
-        assertTrue(result.getG(7, 7) == 45);
-        assertTrue(result.getB(7, 7) == 45);
-        
-        assertTrue(result.getR(8, 8) == -45);
-        assertTrue(result.getG(8, 8) == -45);
-        assertTrue(result.getB(8, 8) == -45);
-    }
-    
     public void testComputeTheta_GreyscaleImage_GreyscaleImage() {
         
         int w = 10;
         int h = 10;
-        GreyscaleImage imageX = new GreyscaleImage(w, h);
-        GreyscaleImage imageY = new GreyscaleImage(w, h);
+        GreyscaleImage imageX = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits64Signed);
+        GreyscaleImage imageY = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32Signed);
         
         // for 90 degrees
         imageX.setValue(1, 1, 0);
@@ -699,7 +615,7 @@ public class ImageProcessorTest extends TestCase {
                 
         Complex[][] ccOut = imageProcessor.apply2DFFT(cc, true);
         
-        GreyscaleImage img3 = img2.createWithDimensions();
+        GreyscaleImage img3 = img2.createFullRangeIntWithDimensions();
         
         imageProcessor.writeToImage(img3, ccOut);
                            
@@ -778,9 +694,9 @@ public class ImageProcessorTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         Image img = new Image(10, 10);
-        Arrays.fill(img.r, 100);
-        Arrays.fill(img.g, 200);
-        Arrays.fill(img.b, 50);
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            img.setRGB(i, 100, 200, 50);
+        }
         
         float x = 2f;
         float y = 2f;
@@ -1030,6 +946,80 @@ public class ImageProcessorTest extends TestCase {
             } else {
                 ImageIOHelper.writeOutputImage(bin + "/books_thresh_v0.png", 
                     img0);
+            }
+        }
+    }
+    
+    public void testBlur0() throws Exception {
+        
+        // color circles rotated by 90, blurred compared to not rotated and blurred
+        String cPath = ResourceFinder.findFileInTestResources("two_circles_color2.png");
+        Image t = ImageIOHelper.readImage(cPath);
+        
+        // trimming to 99 by 99
+        Image cTrImg = new Image(99, 99);
+        for (int i = 0; i < 99; ++i) {
+            for (int j = 0; j < 99; ++j) {
+                cTrImg.setRGB(i, j, t.getRGB(i, j));
+            }
+        }
+        int m = 99/2;
+        
+        Image cImg = cTrImg.copyImage();
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(m);
+        params.setOriginY(m);
+        params.setRotationInDegrees(90);
+        params.setScale(1.0f);
+        params.setTranslationX(0);
+        params.setTranslationY(0);
+        
+        Transformer transformer = new Transformer();
+        cTrImg = transformer.applyTransformation(cTrImg, params, 
+            cTrImg.getHeight(), cTrImg.getWidth());        
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(cTrImg, 1.0f);
+        
+        imageProcessor.blur(cImg, 1.0f);
+        
+        //MiscDebug.writeImage(cImg, "blur_0");
+        //MiscDebug.writeImage(cTrImg, "blur_0_tr");
+        
+        TransformationParameters params2 = new TransformationParameters();
+        params2.setOriginX(m);
+        params2.setOriginY(m);
+        params2.setRotationInDegrees(-90);
+        params2.setScale(1.0f);
+        params2.setTranslationX(0);
+        params2.setTranslationY(0);
+        
+        cTrImg = transformer.applyTransformation(cTrImg, params2, 
+            cTrImg.getWidth(), cTrImg.getHeight());
+        
+        //MiscDebug.writeImage(cTrImg, "blur_0_tr_revtr");
+        
+        int w = cImg.getWidth();
+        int h = cImg.getHeight();
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int r0 = cImg.getR(i, j);
+                int g0 = cImg.getG(i, j);
+                int b0 = cImg.getB(i, j);
+                
+                int r1 = cTrImg.getR(i, j);
+                int g1 = cTrImg.getG(i, j);
+                int b1 = cTrImg.getB(i, j);
+                
+                int diffR = Math.abs(r0 - r1);
+                int diffG = Math.abs(g0 - g1);
+                int diffB = Math.abs(b0 - b1);
+              
+                assertTrue(diffR <= 1);
+                assertTrue(diffG <= 1);
+                assertTrue(diffB <= 1);
             }
         }
     }
