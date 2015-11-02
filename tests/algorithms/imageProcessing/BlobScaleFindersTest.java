@@ -41,8 +41,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1,
@@ -86,8 +86,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1,
@@ -127,8 +127,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1,
@@ -171,8 +171,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1,
@@ -217,8 +217,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1,
@@ -260,8 +260,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1,
@@ -272,6 +272,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         assertNotNull(params);
 
+        log.info("params=" + params);
+        
         assertTrue(Math.abs(params.getScale() - 1) < 0.15);
 
     }
@@ -306,8 +308,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1,
@@ -349,8 +351,8 @@ public class BlobScaleFindersTest extends TestCase {
 
         float[] outputScaleRotTransXYStDev = new float[4];
 
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
             bch1, features1, type, useBinned,

@@ -46,7 +46,7 @@ public class SegmentedImageHelperTest extends TestCase {
         assertEquals(255, max1);
         assertEquals(255, max2);
         assertEquals(0, min1);
-        assertEquals(1, min2);
+        assertEquals(0, min2);
 
     }
 
