@@ -28,7 +28,8 @@ public class WaterShedTest extends TestCase {
         int h = img0.getHeight();
 
         int factor = 2;//100
-        GreyscaleImage img09 = new GreyscaleImage(w*factor, h*factor);
+        GreyscaleImage img09 = new GreyscaleImage(w*factor, h*factor, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
                 int v = img0.getValue(i, j) + 2;
@@ -46,7 +47,8 @@ public class WaterShedTest extends TestCase {
 
         assertNotNull(lowerComplete);
 
-        GreyscaleImage imgL = new GreyscaleImage(lowerComplete.length, lowerComplete[0].length);
+        GreyscaleImage imgL = new GreyscaleImage(lowerComplete.length, 
+            lowerComplete[0].length, GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < lowerComplete.length; ++i) {
             for (int j = 0; j < lowerComplete[0].length; ++j) {
                 imgL.setValue(i, j, lowerComplete[i][j]);
@@ -326,7 +328,8 @@ public class WaterShedTest extends TestCase {
         im[3] = new int[]{1, 2, 3, 2, 1};
         im[4] = new int[]{0, 1, 2, 1, 0};
 
-        GreyscaleImage img = new GreyscaleImage(im.length, im[0].length);
+        GreyscaleImage img = new GreyscaleImage(im.length, im[0].length,
+        GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < im.length; ++i) {
             for (int j = 0; j < im[0].length; ++j) {
                 img.setValue(i, j, im[i][j]);
@@ -520,7 +523,8 @@ public class WaterShedTest extends TestCase {
         im[3] = new int[]{1, 2, 3, 2, 1};
         im[4] = new int[]{0, 1, 2, 1, 0};
 
-        GreyscaleImage img = new GreyscaleImage(im.length, im[0].length);
+        GreyscaleImage img = new GreyscaleImage(im.length, im[0].length,
+        GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < im.length; ++i) {
             for (int j = 0; j < im[0].length; ++j) {
                 img.setValue(i, j, im[i][j]);
@@ -644,7 +648,8 @@ public class WaterShedTest extends TestCase {
 
         int[][] labelled2 = ws.createLabelledImage(img0);
 
-        GreyscaleImage imgL = new GreyscaleImage(w, h);
+        GreyscaleImage imgL = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
         for (int j = 0; j < h; ++j) {
             for (int i = 0; i < w; ++i) {
                 int v = labelled2[i][j];

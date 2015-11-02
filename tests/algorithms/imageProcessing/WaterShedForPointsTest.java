@@ -32,7 +32,8 @@ public class WaterShedForPointsTest extends TestCase {
         int h = img0.getHeight();
 
         int factor = 2;//100
-        GreyscaleImage img09 = new GreyscaleImage(w*factor, h*factor);
+        GreyscaleImage img09 = new GreyscaleImage(w*factor, h*factor, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
                 int v = img0.getValue(i, j) + 2;
@@ -57,7 +58,8 @@ public class WaterShedForPointsTest extends TestCase {
 
         assertNotNull(lowerComplete);
 
-        GreyscaleImage imgL = new GreyscaleImage(img09.getWidth(), img09.getHeight());
+        GreyscaleImage imgL = new GreyscaleImage(img09.getWidth(), img09.getHeight(), 
+            GreyscaleImage.Type.Bits32FullRangeInt);
         for (Entry<PairInt, Integer> entry : lowerComplete.entrySet()) {
             PairInt p = entry.getKey();
             int v = entry.getValue().intValue();
@@ -300,7 +302,7 @@ public class WaterShedForPointsTest extends TestCase {
         im[4] = new int[]{0, 1, 2, 1, 0};
 
         Set<PairInt> points = new HashSet<PairInt>();
-        GreyscaleImage img = new GreyscaleImage(w, h);
+        GreyscaleImage img = new GreyscaleImage(w, h, GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 img.setValue(i, j, im[i][j]);
@@ -554,7 +556,7 @@ public class WaterShedForPointsTest extends TestCase {
         im[4] = new int[]{0, 1, 2, 1, 0};
 
         Set<PairInt> points = new HashSet<PairInt>();
-        GreyscaleImage img = new GreyscaleImage(w, h);
+        GreyscaleImage img = new GreyscaleImage(w, h, GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 img.setValue(i, j, im[i][j]);
@@ -660,7 +662,7 @@ public class WaterShedForPointsTest extends TestCase {
 
             Map<PairInt, Integer> labelled2 = ws.createLabelledImage(img0, points);
 
-            GreyscaleImage imgL = new GreyscaleImage(w, h);
+            GreyscaleImage imgL = new GreyscaleImage(w, h, GreyscaleImage.Type.Bits32FullRangeInt);
             for (Entry<PairInt, Integer> entry : labelled2.entrySet()) {
                 PairInt p = entry.getKey();
                 int v = entry.getValue().intValue();
@@ -669,7 +671,7 @@ public class WaterShedForPointsTest extends TestCase {
 
             ImageIOHelper.writeOutputImage(bin + "/" + fileRoot + "_labelled.png", imgL);
 
-            GreyscaleImage imgW = new GreyscaleImage(w, h);
+            GreyscaleImage imgW = new GreyscaleImage(w, h, GreyscaleImage.Type.Bits32FullRangeInt);
             for (int i = 0; i < imgW.getNPixels(); ++i) {
                 imgW.setValue(i, 255);
             }
