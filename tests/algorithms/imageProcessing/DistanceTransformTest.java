@@ -167,7 +167,8 @@ public class DistanceTransformTest extends TestCase {
         
         ImageIOHelper.writeOutputImage(bin + "/m_dt_spiral.png", outputImgM);
         
-        GreyscaleImage outputImgM2 = new GreyscaleImage(w, h);
+        GreyscaleImage outputImgM2 = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 outputImgM2.setValue(i, j, dtM[i][j]);
@@ -178,7 +179,8 @@ public class DistanceTransformTest extends TestCase {
         
         
         // ----- inverse binary of that  ----------
-        GreyscaleImage imgInv0 = new GreyscaleImage(w, h);
+        GreyscaleImage imgInv0 = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
         Set<PairInt> pointsInvM = new HashSet<PairInt>();
         
         for (int x = 0; x < w; ++x) {
