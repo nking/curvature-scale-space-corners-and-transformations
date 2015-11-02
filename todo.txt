@@ -1,16 +1,7 @@
--- more efficient holders for the image data
-
--- for scale calculator:
-   consider a segmentation type for images which have objects
-   which touch the bounds of the image (hence, get filtered out as blobs).
-   -- if there are no blobs for any segmentation tried, this 
-      method would take one of the methods such as the color cie
-      but to all blobs before filering, would apply a shrink
-      by 2 or 3 pixels to separate parts (then use dfs to find blobs), 
-      then grow back by a radius of that 2 or 3 (to not have the pixels affect scale
-      for image comparisons where 1 pixel represents a much different
-      size than 1 pixel in the other image)
-      --> should be tested on the valve image
+-- for scale calculator, consider exiting early with a good answer if
+   st.dev. in params is low and number of matching points is high.
+   for some images, a good solution is found early on, but the algorithm
+   calculates a solution for each blob match (n < 20 blobs times n < 20 blobs)
 
 -- finish w/ changes to feature matcher to use scale
    and finish changed to PointMatcher and stereo projection 
