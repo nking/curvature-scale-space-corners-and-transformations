@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import static algorithms.imageProcessing.ImageExt.rgbToLumaMatrix;
 import algorithms.imageProcessing.util.MatrixUtil;
 import java.awt.Color;
 import java.security.SecureRandom;
@@ -23,16 +22,7 @@ public class ImageExtTest extends TestCase {
         
         int n = w * h;
         
-        assertTrue(img.nPixels == n);
-        assertTrue(img.r.length == n);
-        assertTrue(img.g.length == n);
-        assertTrue(img.b.length == n);
-        assertTrue(img.cieX.length == n);
-        assertTrue(img.cieY.length == n);
-        assertTrue(img.hue.length == n);
-        assertTrue(img.saturation.length == n);
-        assertTrue(img.brightness.length == n);
-        assertTrue(img.luma.length == n);
+        assertTrue(img.getNPixels() == n);
         
     }
 
@@ -40,8 +30,8 @@ public class ImageExtTest extends TestCase {
 
         // this also implicitly tests calculateColorIncludingNeighbors
         
-        int w = 10;
-        int h = 10;
+        int w = 5;
+        int h = 5;
         int n = w * h;
         
         ImageExt img = new ImageExt(w, h);
@@ -54,25 +44,15 @@ public class ImageExtTest extends TestCase {
             }
         }
         
-        // assert extra colors are all zeros at first
-        for (int idx = 0; idx < n; idx++) {
-            assertTrue(img.cieX[idx] == 0.);
-            assertTrue(img.cieY[idx] == 0.);
-            assertTrue(img.hue[idx] == 0.);
-            assertTrue(img.saturation[idx] == 0.);
-            assertTrue(img.brightness[idx] == 0.);
-            assertTrue(img.luma[idx] == 0.);
-        }
-        
         img.setRadiusForPopulateOnDemand(5);
         img.getCIEX(w/2, h/2);
         for (int idx = 0; idx < n; idx++) {
-            assertTrue(img.cieX[idx] > 0.);
-            assertTrue(img.cieY[idx] > 0.);
-            assertTrue(img.hue[idx] > 0.);
-            assertTrue(img.saturation[idx] > 0.);
-            assertTrue(img.brightness[idx] > 0.);
-            assertTrue(img.luma[idx] > 0.);
+            assertTrue(img.getCIEX(idx) > 0.);
+            assertTrue(img.getCIEY(idx) > 0.);
+            assertTrue(img.getHue(idx) > 0.);
+            assertTrue(img.getSaturation(idx) > 0.);
+            assertTrue(img.getBrightness(idx) > 0.);
+            assertTrue(img.getLuma(idx) > 0.);
         }
         
         // ------ same test but w/ radius = 0 ------
@@ -96,29 +76,20 @@ public class ImageExtTest extends TestCase {
                 
                 int idx = img.getInternalIndex(col, row);
                 
-                if ((col == x) && (row == y)) {
-                    assertTrue(img.cieX[idx] > 0.);
-                    assertTrue(img.cieY[idx] > 0.);
-                    assertTrue(img.hue[idx] > 0.);
-                    assertTrue(img.saturation[idx] > 0.);
-                    assertTrue(img.brightness[idx] > 0.);
-                    assertTrue(img.luma[idx] > 0.);
-                } else {
-                    assertTrue(img.cieX[idx] == 0.);
-                    assertTrue(img.cieY[idx] == 0.);
-                    assertTrue(img.hue[idx] == 0.);
-                    assertTrue(img.saturation[idx] == 0.);
-                    assertTrue(img.brightness[idx] == 0.);
-                    assertTrue(img.luma[idx] == 0.);
-                }
+                assertTrue(img.getCIEX(idx) > 0.);
+                assertTrue(img.getCIEY(idx) > 0.);
+                assertTrue(img.getHue(idx) > 0.);
+                assertTrue(img.getSaturation(idx) > 0.);
+                assertTrue(img.getBrightness(idx) > 0.);
+                assertTrue(img.getLuma(idx) > 0.);
             }
         }
     }
     
     public void testIndexes() throws Exception {
                 
-        int w = 10;
-        int h = 10;
+        int w = 5;
+        int h = 5;
         int n = w * h;
         
         ImageExt img = new ImageExt(w, h);
@@ -147,34 +118,31 @@ public class ImageExtTest extends TestCase {
     
     public void testGetters() throws Exception {
                 
-        int w = 10;
-        int h = 10;
+        int w = 5;
+        int h = 5;
         int n = w * h;
         
         ImageExt img = new ImageExt(w, h);
         img.setRadiusForPopulateOnDemand(n);
-        
-        int nTests = 10;
-        
+                
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         sr.setSeed(seed);
         
         CIEChromaticity cieC = new CIEChromaticity();
         
-        for (int i = 0; i < nTests; i++) {
+        for (int i = 0; i < 10; i++) {
             
-            int x = sr.nextInt(10);
-            int y = sr.nextInt(10);
+            int idx = sr.nextInt(n);
             
-            int r = sr.nextInt(256);
-            int g = sr.nextInt(256);
-            int b = sr.nextInt(256);
-            img.setRGB(x, y, r, g, b);
+            int r = sr.nextInt(255);
+            int g = sr.nextInt(255);
+            int b = sr.nextInt(255);
+            img.setRGB(idx, r, g, b);
             
-            assertTrue(img.getR(x, y) == r);
-            assertTrue(img.getG(x, y) == g);
-            assertTrue(img.getB(x, y) == b);
+            assertTrue(img.getR(idx) == r);
+            assertTrue(img.getG(idx) == g);
+            assertTrue(img.getB(idx) == b);
         }
         
         for (int idx = 0; idx < img.getNPixels(); idx++) {
@@ -220,8 +188,8 @@ public class ImageExtTest extends TestCase {
 
     public void testCalculateColorIncludingNeighbors() throws Exception {
         
-        int w = 10;
-        int h = 10;
+        int w = 5;
+        int h = 5;
         int n = w * h;
         
         ImageExt img = new ImageExt(w, h);
@@ -235,7 +203,7 @@ public class ImageExtTest extends TestCase {
             
             int r = idx*1;
             int g = idx*2;
-            int b = idx*3;
+            int b = idx*1;
             
             img.setRGB(x, y, r, g, b);
         }
@@ -283,21 +251,21 @@ public class ImageExtTest extends TestCase {
                     double[] expectedYUV = MatrixUtil.multiply(rgbToLumaMatrix,
                         new double[]{expectedR, expectedG, expectedB});
 
-                    assertTrue(Math.abs(img.cieX[index] - expectedCIEXY[0]) < 0.01);
-                    assertTrue(Math.abs(img.cieY[index] - expectedCIEXY[1]) < 0.01);
+                    assertTrue(Math.abs(img.getCIEX(index) - expectedCIEXY[0]) < 0.01);
+                    assertTrue(Math.abs(img.getCIEY(index) - expectedCIEXY[1]) < 0.01);
             
-                    assertTrue(Math.abs(img.hue[index] - expectedHSB[0]) < 0.01);
-                    assertTrue(Math.abs(img.saturation[index] - expectedHSB[1]) < 0.01);
-                    assertTrue(Math.abs(img.brightness[index] - expectedHSB[2]) < 0.01);
-                    assertTrue(Math.abs(img.luma[index] - expectedYUV[0]) < 0.01);
+                    assertTrue(Math.abs(img.getHue(index) - expectedHSB[0]) < 0.01);
+                    assertTrue(Math.abs(img.getSaturation(index) - expectedHSB[1]) < 0.01);
+                    assertTrue(Math.abs(img.getBrightness(index) - expectedHSB[2]) < 0.01);
+                    assertTrue(Math.abs(img.getLuma(index) - expectedYUV[0]) < 0.01);
                 }
             }
         }
     }
     
     private ImageExt getImageExt0() {
-        int w = 10;
-        int h = 10;
+        int w = 5;
+        int h = 5;
         int n = w * h;
         
         ImageExt img = new ImageExt(w, h);
@@ -309,7 +277,7 @@ public class ImageExtTest extends TestCase {
             
             int r = idx*1;
             int g = idx*2;
-            int b = idx*3;
+            int b = idx*1;
             
             img.setRGB(x, y, r, g, b);
         }
@@ -336,15 +304,15 @@ public class ImageExtTest extends TestCase {
         
         for (int idx = 0; idx < img.getNPixels(); idx++) {
             
-            assertTrue(image2.r[idx] == img.r[idx]);
-            assertTrue(image2.g[idx] == img.g[idx]);
-            assertTrue(image2.b[idx] == img.b[idx]);
-            assertTrue(Math.abs(image2.cieX[idx] - img.cieX[idx]) < 0.01);
-            assertTrue(Math.abs(image2.cieY[idx] - img.cieY[idx]) < 0.01);
-            assertTrue(Math.abs(image2.hue[idx] - img.hue[idx]) < 0.01);
-            assertTrue(Math.abs(image2.saturation[idx] - img.saturation[idx]) < 0.01);
-            assertTrue(Math.abs(image2.brightness[idx] - img.brightness[idx]) < 0.01);
-            assertTrue(Math.abs(image2.luma[idx] - img.luma[idx]) < 0.01);
+            assertTrue(image2.getR(idx) == img.getR(idx));
+            assertTrue(image2.getG(idx) == img.getG(idx));
+            assertTrue(image2.getB(idx) == img.getB(idx));
+            assertTrue(Math.abs(image2.getCIEX(idx) - img.getCIEX(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getCIEY(idx) - img.getCIEY(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getHue(idx) - img.getHue(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getSaturation(idx) - img.getSaturation(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getBrightness(idx) - img.getBrightness(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getLuma(idx) - img.getLuma(idx)) < 0.01);
         }
     }
 
@@ -362,17 +330,17 @@ public class ImageExtTest extends TestCase {
         
         for (int idx = 0; idx < img.getNPixels(); idx++) {
             
-            assertTrue(image2.r[idx] == img.r[idx]);
-            assertTrue(image2.g[idx] == img.g[idx]);
-            assertTrue(image2.b[idx] == img.b[idx]);
-            assertTrue(Math.abs(image2.cieX[idx] - img.cieX[idx]) < 0.01);
-            assertTrue(Math.abs(image2.cieY[idx] - img.cieY[idx]) < 0.01);
-            assertTrue(Math.abs(image2.hue[idx] - img.hue[idx]) < 0.01);
-            assertTrue(Math.abs(image2.saturation[idx] - img.saturation[idx]) 
+            assertTrue(image2.getR(idx) == img.getR(idx));
+            assertTrue(image2.getG(idx) == img.getG(idx));
+            assertTrue(image2.getB(idx) == img.getB(idx));
+            assertTrue(Math.abs(image2.getCIEX(idx) - img.getCIEX(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getCIEX(idx) - img.getCIEX(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getHue(idx) - img.getHue(idx)) < 0.01);
+            assertTrue(Math.abs(image2.getSaturation(idx) - img.getSaturation(idx)) 
                 < 0.01);
-            assertTrue(Math.abs(image2.brightness[idx] - img.brightness[idx]) 
+            assertTrue(Math.abs(image2.getBrightness(idx) - img.getBrightness(idx)) 
                 < 0.01);
-            assertTrue(Math.abs(image2.luma[idx] - img.luma[idx]) < 0.01);
+            assertTrue(Math.abs(image2.getLuma(idx) - img.getLuma(idx)) < 0.01);
         }
         
     }
