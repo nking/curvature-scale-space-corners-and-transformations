@@ -1,6 +1,11 @@
-editing in progress...
+Project is still in progress and what is present is not fully tested
+yet.  
 
-java 7 or later
+Instructions for use of the command line executables will be here
+when one of the components being improved is finished.
 
-list of classes/methods in the project which are only in java 7 and beyond:
-    ThreadLocalRandom
+The project requires java 7 or later to run and requires ant
+to build.
+
+The java 7 restriction is due to inclusion of the class ThreadLocalRandom
+
