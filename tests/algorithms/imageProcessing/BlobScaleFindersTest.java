@@ -33,7 +33,7 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
         bph2.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "1");
+        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
         bch2.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
             useBinned);
 
@@ -68,6 +68,7 @@ public class BlobScaleFindersTest extends TestCase {
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        bph1.applyEqualization();
         bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
         BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
 
@@ -75,8 +76,9 @@ public class BlobScaleFindersTest extends TestCase {
             useBinned);
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        bph2.applyEqualization();
         bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "1");
+        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
         bch2.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
             useBinned);
 
@@ -117,7 +119,7 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
         bph2.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
-        BlobContourHelper bch2 = new BlobContourHelper(bph2, "1");
+        BlobContourHelper bch2 = new BlobContourHelper(bph2, "2");
         bch2.generatePerimeterContours(SegmentationType.GREYSCALE_KMPP,
             useBinned);
 
@@ -152,14 +154,16 @@ public class BlobScaleFindersTest extends TestCase {
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        bph1.applyEqualization();
         bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
         BlobContourHelper bch1 = new BlobContourHelper(bph1, "1");
         bch1.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY,
             useBinned);
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        bph2.applyEqualization();
         bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobContourHelper bch2 = new BlobContourHelper(bph2, "1");
+        BlobContourHelper bch2 = new BlobContourHelper(bph2, "2");
         bch2.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY,
             useBinned);
 
@@ -194,6 +198,7 @@ public class BlobScaleFindersTest extends TestCase {
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        bph1.applyEqualization();
         bph1.createBinnedGreyscaleImage(300);
         bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
         BlobContourHelper bch1 = new BlobContourHelper(bph1, "1");
@@ -201,9 +206,10 @@ public class BlobScaleFindersTest extends TestCase {
             useBinned);
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        bph2.applyEqualization();
         bph2.createBinnedGreyscaleImage(300);
         bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobContourHelper bch2 = new BlobContourHelper(bph2, "1");
+        BlobContourHelper bch2 = new BlobContourHelper(bph2, "2");
         bch2.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY,
             useBinned);
 
@@ -246,7 +252,7 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
         bph2.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "1");
+        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
         bch2.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
             useBinned);
 
@@ -336,7 +342,7 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
         bph2.applySegmentation(type, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "1");
+        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
         bch2.generatePerimeterCorners(type, useBinned);
 
         BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
