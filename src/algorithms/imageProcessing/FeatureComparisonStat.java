@@ -204,9 +204,15 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     public String toString() {
         
         StringBuilder sb = new StringBuilder();
-        sb.append("p1=").append(img1Point.toString()).append(" ")
-            .append("p2=").append(img2Point.toString())
-            .append(String.format(" ssdInt=%.4f", sumIntensitySqDiff))
+        sb.append("p1=");
+        if (img1Point != null) {
+            sb.append(img1Point.toString()).append(" ");
+        }
+        sb.append("p2=");
+        if (img2Point != null) {
+            sb.append(img2Point.toString()).append(" ");
+        }
+        sb.append(String.format(" ssdInt=%.4f", sumIntensitySqDiff))
             .append(String.format(" err2Int=%.4f", img2PointIntensityErr))
             .append(String.format(" ssdGrd=%.4f", sumGradientSqDiff))
             .append(String.format(" err2Grd=%.4f", img2PointGradientErr))            
