@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,20 +10,11 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class Kernel1DHelperTest {
+public class Kernel1DHelperTest extends TestCase {
     
     public Kernel1DHelperTest() {
     }
     
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-
-    @Test
     public void testConvolvePointWithKernel_5args() throws Exception {
         
         // create a delta dirac function and convolve it w/ first derivative
@@ -38,7 +30,7 @@ public class Kernel1DHelperTest {
         boolean calculateForX = true;
         
         GreyscaleImage outputX = new GreyscaleImage(img.getWidth(), 
-            img.getHeight());
+            img.getHeight(), GreyscaleImage.Type.Bits32FullRangeInt);
         
         GreyscaleImage outputY = outputX.copyImage();
         
@@ -62,7 +54,8 @@ public class Kernel1DHelperTest {
         ImageIOHelper.writeOutputImage(dirPath + "/tmpGY.png", outputY);
         */
         
-        GreyscaleImage output2 = new GreyscaleImage(img.getWidth(), img.getHeight());
+        GreyscaleImage output2 = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            GreyscaleImage.Type.Bits32FullRangeInt);
         
         calculateForX = false;
         
