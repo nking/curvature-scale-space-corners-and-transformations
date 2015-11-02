@@ -276,20 +276,23 @@ public class BlobScaleFindersTest extends TestCase {
 
         String filePath1 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0001.png");
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+     
 
         String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "venturi1");
+        bph1.applyEqualization();
         bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
+        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "venturi1");
 
         bch1.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
             useBinned);
 
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "venturi2");
+        bph2.applyEqualization();
         bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "1");
+        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "venturi2");
         bch2.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
             useBinned);
 
@@ -308,6 +311,8 @@ public class BlobScaleFindersTest extends TestCase {
             outputScaleRotTransXYStDev);
 
         assertNotNull(params);
+        
+        //log.info("params=" + params);
 
         assertTrue(Math.abs(params.getScale() - 1) < 0.1);
     }

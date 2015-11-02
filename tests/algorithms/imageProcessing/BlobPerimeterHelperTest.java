@@ -63,7 +63,7 @@ public class BlobPerimeterHelperTest extends TestCase {
         
         assertNotNull(blobs2);
         
-        assertTrue(blobs2.size() >= 10);
+        assertTrue(blobs2.size() >= 5);
    
         List<PairIntArray> perimeterList = bph.getBlobPerimeters(
             SegmentationType.GREYSCALE_KMPP, useBinned);
