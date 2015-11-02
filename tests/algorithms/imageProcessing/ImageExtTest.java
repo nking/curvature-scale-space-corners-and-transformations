@@ -103,8 +103,8 @@ public class ImageExtTest extends TestCase {
                 
         for (int i = 0; i < nTests; i++) {
             
-            int x = sr.nextInt(10);
-            int y = sr.nextInt(10);
+            int x = sr.nextInt(w);
+            int y = sr.nextInt(h);
             
             int idx = img.getInternalIndex(x, y);
             
@@ -235,7 +235,7 @@ public class ImageExtTest extends TestCase {
                     
                     int expectedR = index*1;
                     int expectedG = index*2;
-                    int expectedB = index*3;
+                    int expectedB = index*1;
                     
                     float[] expectedCIEXY = cieC.rgbToXYChromaticity(
                         expectedR, expectedG, expectedB);
