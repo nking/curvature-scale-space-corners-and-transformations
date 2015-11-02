@@ -539,17 +539,12 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             pairWeights.put(pairIndex, Float.valueOf(pairWeight));
         }
         
-        List<Double> thetas = new ArrayList<Double>();
-        List<Float> thetasWeights = new ArrayList<Float>();
-        
-        double scaleAvg = 0;
-        double transXAvg = 0;
-        double transYAvg = 0;
-        
+        List<Double> thetas = new ArrayList<Double>();        
         List<Float> scales = new ArrayList<Float>();
         List<Float> transXs = new ArrayList<Float>();
         List<Float> transYs = new ArrayList<Float>();
-                
+        List<Float> pairWeights2 = new ArrayList<Float>();
+
         for (PairInt pairIndex : pairIndexes) {
 
             int idx1 = pairIndex.getX();
@@ -576,7 +571,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             theta *= -1;
             
             if (theta < 0) {
-                theta = 2 * Math.PI + theta;
+                theta += 2 * Math.PI;
             }
             
             double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));
@@ -619,15 +614,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             double transX = 0.5 * (transX1 + transX2);
 
             double transY = 0.5 * (transY1 + transY2);
-            
-            float pairWeight = pairWeights.get(pairIndex).floatValue();
-            scaleAvg += (scale * pairWeight);
-            transXAvg += (transX * pairWeight);
-            transYAvg += (transY * pairWeight);
-            
+                        
             thetas.add(Double.valueOf(theta));
-            thetasWeights.add(Float.valueOf(pairWeight));
-            
+            pairWeights2.add(pairWeights.get(pairIndex));
             scales.add((float)scale);
             transXs.add((float)transX);
             transYs.add((float)transY);
@@ -638,15 +627,61 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         for (int i = 0; i < (thetaCorr.size() - 1); ++i) {
             AngleUtil.calcAngleAddition(thetaCorr.get(i), thetaCorr.get(i + 1), true, 
                 quadrantCorrectedTheta);
+            if (quadrantCorrectedTheta[0] > 2.*Math.PI) {
+                quadrantCorrectedTheta[0] = (quadrantCorrectedTheta[0] % (2.*Math.PI));
+            }
             thetaCorr.set(i, quadrantCorrectedTheta[0]);
+            if (quadrantCorrectedTheta[1] > 2.*Math.PI) {
+                quadrantCorrectedTheta[1] = (quadrantCorrectedTheta[1] % (2.*Math.PI));
+            }
             thetaCorr.set(i + 1, quadrantCorrectedTheta[1]);
         }
         
         double thetaAvg = 0;
         for (int i = 0; i < thetaCorr.size(); ++i) {
-            thetaAvg += thetaCorr.get(i) * thetasWeights.get(i);
-        }      
+            thetaAvg += thetaCorr.get(i) * pairWeights2.get(i);
+        }
         
+        // remove those w/ discrepant thetas
+        List<Integer> remove = new ArrayList<Integer>();
+        for (int i = 0; i < thetaCorr.size(); ++i) {
+            double diff = Math.abs(thetaCorr.get(i) - thetaAvg);
+            if (diff > 20) {
+                remove.add(Integer.valueOf(i));
+            }
+        }
+        if (!remove.isEmpty()) {
+            for (int i = (remove.size() - 1); i > -1; --i) {
+                int idx = remove.get(i).intValue();
+                scales.remove(idx);
+                thetaCorr.remove(idx);
+                transXs.remove(idx);
+                transYs.remove(idx);
+                pairWeights2.remove(idx);
+            }
+            // rebalance the remaining weights
+            float ws = 0;
+            for (Float pw : pairWeights2) {
+                ws += pw.floatValue();
+            }
+            for (int i = 0; i < pairWeights2.size(); ++i) {
+                float v = pairWeights2.get(i)/ws;
+                pairWeights2.set(i, v);
+            }
+        }
+        
+        float scaleAvg = 0;
+        thetaAvg = 0;
+        float transXAvg = 0;
+        float transYAvg = 0;
+        for (int i = 0; i < scales.size(); ++i) {
+            float w = pairWeights2.get(i);
+            scaleAvg += scales.get(i) * w;
+            thetaAvg += thetaCorr.get(i) * w;
+            transXAvg += transXs.get(i) * w;
+            transYAvg += transYs.get(i) * w;
+        }
+               
         // ----- determine standard deviations ----
         if (outputScaleRotTransXYStDev != null) {
             double scaleSum = 0;
