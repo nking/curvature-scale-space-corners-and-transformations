@@ -714,9 +714,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
                 
         TransformationParameters params = new TransformationParameters();
         params.setRotationInRadians((float)thetaAvg);
-        params.setScale((float)scaleAvg);
-        params.setTranslationX((float)transXAvg);
-        params.setTranslationY((float)transYAvg);
+        params.setScale(scaleAvg);
+        params.setTranslationX(transXAvg);
+        params.setTranslationY(transYAvg);
         params.setOriginX((float)centroidX1);
         params.setOriginY((float)centroidY1);
      

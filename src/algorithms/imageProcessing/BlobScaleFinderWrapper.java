@@ -274,13 +274,13 @@ public class BlobScaleFinderWrapper {
             SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.GREYSCALE_KMPP,
             SegmentationType.COLOR_POLARCIEXY_LARGE,
-            SegmentationType.ADAPTIVE_MEAN
+            //SegmentationType.ADAPTIVE_MEAN
         };
         SegmentationType[] seg2 = new SegmentationType[]{
             SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.GREYSCALE_KMPP,
             SegmentationType.COLOR_POLARCIEXY_LARGE,
-            SegmentationType.ADAPTIVE_MEAN
+            //SegmentationType.ADAPTIVE_MEAN
         };
         
         int ordered1Idx = 0;

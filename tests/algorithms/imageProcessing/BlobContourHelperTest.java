@@ -49,7 +49,7 @@ public class BlobContourHelperTest extends TestCase {
         assertNotNull(contoursList2);
         
         assertTrue(contoursList1.size() >= 5);
-        assertTrue(contoursList2.size() >= 10);
+        assertTrue(contoursList2.size() >= 5);
         
         int nNonZero1 = bch.sumPointsOfInterest(
             SegmentationType.GREYSCALE_KMPP, useBinned);
@@ -57,7 +57,7 @@ public class BlobContourHelperTest extends TestCase {
             SegmentationType.COLOR_POLARCIEXY, useBinned);
         
         assertTrue(nNonZero1 >= 2*5);
-        assertTrue(nNonZero2 >= 2*10);
+        assertTrue(nNonZero2 >= 2*5);
     }
 
     public void test2() throws Exception {
@@ -101,6 +101,47 @@ public class BlobContourHelperTest extends TestCase {
         
         assertTrue(nNonZero1 >= 2*5);
         assertTrue(nNonZero2 >= 2*10);
+    }
+
+    public void test3() throws Exception {
+        
+        boolean useBinned = false;
+        
+        String filePath = ResourceFinder.findFileInTestResources("blox.gif");
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+        
+        BlobPerimeterHelper bph = new BlobPerimeterHelper(img, "blox3_1");
+        bph.increaseLargestGroupLimit(100000);
+        
+        assertEquals(1, bph.getBinFactor(true));
+        
+        bph.applySegmentation(SegmentationType.ADAPTIVE_MEAN, useBinned);
+        
+        bph.applySegmentation(SegmentationType.COLOR_POLARCIEXY_LARGE, useBinned);
+        
+        BlobContourHelper bch = new BlobContourHelper(bph, "blox3_2");
+       
+        List<List<CurvatureScaleSpaceContour>> contoursList1 = 
+            bch.generatePerimeterContours(SegmentationType.ADAPTIVE_MEAN, 
+                useBinned);
+        
+        List<List<CurvatureScaleSpaceContour>> contoursList2 = 
+            bch.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY_LARGE, 
+                useBinned);
+        
+        assertNotNull(contoursList1);
+        assertNotNull(contoursList2);
+        
+        //assertTrue(contoursList1.size() >= 5);
+        //assertTrue(contoursList2.size() >= 5);
+        
+        int nNonZero1 = bch.sumPointsOfInterest(
+            SegmentationType.ADAPTIVE_MEAN, useBinned);
+        int nNonZero2 = bch.sumPointsOfInterest(
+            SegmentationType.COLOR_POLARCIEXY_LARGE, useBinned);
+        
+        //assertTrue(nNonZero1 >= 2*5);
+        //assertTrue(nNonZero2 >= 2*5);
     }
 
 }

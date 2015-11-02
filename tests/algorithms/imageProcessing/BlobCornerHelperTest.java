@@ -47,7 +47,7 @@ public class BlobCornerHelperTest extends TestCase {
         assertNotNull(cList2);
 
         assertTrue(cList1.size() >= 5);
-        assertTrue(cList2.size() >= 10);
+        assertTrue(cList2.size() >= 5);
 
         int nNonZero1 = bch.sumPointsOfInterest(
             SegmentationType.GREYSCALE_KMPP, useBinned);
@@ -55,7 +55,7 @@ public class BlobCornerHelperTest extends TestCase {
             SegmentationType.COLOR_POLARCIEXY, useBinned);
 
         assertTrue(nNonZero1 >= 2*5);
-        assertTrue(nNonZero2 >= 2*10);
+        assertTrue(nNonZero2 >= 2*5);
     }
 
     public void test2() throws Exception {
