@@ -8,7 +8,7 @@
    calculates a solution for each blob match (n < 20 blobs times n < 20 blobs)
 
 -- finish w/ changes to feature matcher to use scale
-   and finish changed to PointMatcher and stereo projection 
+   and finish changes to PointMatcher and stereo projection 
 
 -- implement the recursive methods for the gaussian and it's derivatives
 
@@ -48,7 +48,8 @@
 -- revisit kmeansplusplus...
 
 -- make the method to combine 2 skyline masks to decide what is sky and what
-   is land when there are differences.
+   is land when there are differences.  This can happen when there are clouds
+   are snow or varying occlusion, etc
 
 -- move all of debugging code to aspects or test.  jfree should not need to be included
    in the command line jar unless add an output that uses it.
