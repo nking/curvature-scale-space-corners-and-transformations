@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  *
@@ -188,8 +189,15 @@ public class BlobPerimeterHelper {
         
         if (blobs == null) {
             
+            long t0 = System.currentTimeMillis();
+            
             blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(
                 imgHelper, type, useBinned);
+            
+            long t1 = System.currentTimeMillis();
+            long t1Sec = (t1 - t0)/1000;
+            Logger.getLogger(this.getClass().getName()).info("blobs(sec)=" 
+                + t1Sec);
             
             if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
                 segLargeBlobsMap.put(type, blobs);
@@ -198,9 +206,16 @@ public class BlobPerimeterHelper {
             }
         }
         
+        long t0 = System.currentTimeMillis();
+        
         blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(
             imgHelper, type, blobs, useBinned,
             discardWhenCavityIsSmallerThanBorder);
+        
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        Logger.getLogger(this.getClass().getName()).info("perimeters(sec)=" 
+            + t1Sec);
         
         if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
             segLargeBlobPerimetersMap.put(type, blobPerimeters);

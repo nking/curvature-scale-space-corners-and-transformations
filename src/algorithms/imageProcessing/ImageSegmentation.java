@@ -1209,12 +1209,16 @@ public class ImageSegmentation {
      * CIE xy pixel clusters, may be in separate groups already due to a
      * frequency based grouping for them.
      * @param input
+     * @param fracFreqLimit
      * @param useBlur apply a gaussian blur of sigma=1 before the method logic
      * @return 
      */
     public GreyscaleImage applyUsingPolarCIEXYAndFrequency(ImageExt input,
         final float fracFreqLimit, boolean useBlur) {
-                
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         List<Set<PairInt>> clusters = calculateUsingPolarCIEXYAndFrequency(
             input, fracFreqLimit, useBlur);
         
@@ -1239,7 +1243,7 @@ public class ImageSegmentation {
             delta = 1;
         }
         
-        GreyscaleImage img2 = new GreyscaleImage(input.getWidth(), input.getHeight());
+        GreyscaleImage img2 = new GreyscaleImage(w, h);
         for (int k = 0; k < n; ++k) {
             
             int idx = indexes[n - k - 1];
@@ -1336,7 +1340,7 @@ public class ImageSegmentation {
         Set<PairInt> points0 = new HashSet<PairInt>();
        
         populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
-        
+
         double[] minMaxTheta0 = findMinMaxTheta(input, points0);
         
         log.info("for all non-white and non-black, minTheta=" + minMaxTheta0[0]
@@ -1352,7 +1356,7 @@ public class ImageSegmentation {
         // -------- end debug -------
 
         List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
-        
+
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(greyPixelGroups.size());
         
         if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {
@@ -1538,7 +1542,7 @@ public class ImageSegmentation {
             blackPixels, whitePixels);
         
         // add back in blackPixels and whitePixels
-        if (!blackPixels.isEmpty()) {
+        /*if (!blackPixels.isEmpty()) {
             groupList.add(blackPixels);
         }
         if (!whitePixels.isEmpty()) {
@@ -1552,7 +1556,7 @@ public class ImageSegmentation {
            
         log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
         assert(nTot2 == input.getNPixels());
-        
+        */
         return groupList;
     }
 
@@ -2055,8 +2059,7 @@ public class ImageSegmentation {
             assert(idx != -1);
             groupList.get(idx).addAll(set);
         }
-        
-        /*
+
         // ----- debug ----
         int nTot3 = 0;
         for (Collection<PairInt> set : groupList) {
@@ -2064,8 +2067,7 @@ public class ImageSegmentation {
         }
         assert(nTot == nTot3);
         // ----- end debug -----
-        */
-        
+                
         return groupList;
     }
 
@@ -2279,6 +2281,9 @@ public class ImageSegmentation {
         
         CIEChromaticity cieC = new CIEChromaticity();
         
+        // looking for limits in peaks of (r,g,b) <= (32,32,32) and > (191,191,191)
+        int[] whiteBlackLimits = findByHistogramLimitsForBlackAndWhite(input);
+                
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
 
@@ -2288,7 +2293,10 @@ public class ImageSegmentation {
                 int g = input.getG(idx);
                 int b = input.getB(idx);
 
-                if ((r <= 32) && (g <= 32) && (b <= 32)) {
+                //TODO: would be good to determine this boundary more precisely
+                // by histogram
+                if ((r <= whiteBlackLimits[0]) && (g <= whiteBlackLimits[0]) 
+                    && (b <= whiteBlackLimits[0])) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
                 }
@@ -2298,7 +2306,8 @@ public class ImageSegmentation {
 
                 if (cieC.isWhite2(cx, cy)) {
                     //grey will be binned into clusters by avgRGB and peak frequency
-                    if ((r <= 191) && (g <= 191) && (b <= 191)) {
+                    if ((r <= whiteBlackLimits[1]) && (g <= whiteBlackLimits[1]) 
+                        && (b <= whiteBlackLimits[1])) {
                         Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));
                         Collection<PairInt> set = greyPixelMap.get(avgRGB);
                         if (set == null) {
@@ -2401,6 +2410,64 @@ public class ImageSegmentation {
                 set.remove(rm);
             }
         }
+    }
+
+    private int[] findByHistogramLimitsForBlackAndWhite(ImageExt input) {
+                
+        //looking for limits of (r,g,b) <= (32,32,32) and > (191,191,191)
+        
+        List<Integer> avgL = new ArrayList<Integer>();
+        
+        List<Integer> avgH = new ArrayList<Integer>();
+        
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            int r = input.getR(i);
+            int g = input.getG(i);
+            int b = input.getB(i);
+            if ((r <= 32) && (g <= 32) && (b <= 32)) {
+                int avg = (r + g + b)/3;
+                avgL.add(Integer.valueOf(avg));
+            } else if ((r > 191) && (g > 191) && (b > 191)) {
+                int avg = (r + g + b)/3;
+                avgH.add(Integer.valueOf(avg));
+            }
+        }
+        
+        int[] limits = new int[2];
+        
+        if (avgL.size() > 30) {
+            HistogramHolder hist = Histogram.createSimpleHistogram(avgL);
+            if (hist == null) {
+                limits[0] = 32;
+            } else {
+                List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);
+                if (indexes == null || indexes.isEmpty()) {
+                    limits[0] = 32;
+                } else {
+                    limits[0] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
+                }
+            }
+        } else {
+            limits[0] = 32;
+        }
+        
+        if (avgH.size() > 30) {
+            HistogramHolder hist = Histogram.createSimpleHistogram(avgH);
+            if (hist == null) {
+                limits[1] = 191;
+            } else {
+                List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);
+                if (indexes == null || indexes.isEmpty()) {
+                    limits[1] = 191;
+                } else {
+                    limits[1] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
+                }
+            }
+        } else {
+            limits[1] = 191;
+        }
+        
+        return limits;
     }
 
     public static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {

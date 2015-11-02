@@ -245,6 +245,30 @@ public class Histogram {
         return hist;        
     }
     
+     public static HistogramHolder createSimpleHistogram(List<Integer> values) {
+
+        if (values == null) {
+            throw new IllegalArgumentException(
+            "values and valueErrors cannot be null and must be the same length");
+        }
+        if (values.isEmpty()) {
+            return null;
+        }
+        float[] v = new float[values.size()];
+        for (int i = 0; i < values.size(); ++i) {
+            v[i] = values.get(i).intValue();
+        }
+        float[] ve = Errors.populateYErrorsBySqrt(v);
+        
+        int nBins = (int)(2*Math.pow(v.length, 0.3333));
+        
+        if (v.length == 1) {
+            nBins = 1;
+        }
+        
+        return createSimpleHistogram(nBins, v, ve);
+    }
+     
     public static HistogramHolder createSimpleHistogram(float[] values, 
         float[] valueErrors) {
 

@@ -120,8 +120,8 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         List<List<CornerRegion>> corners2List = 
             img2Helper.getPerimeterCorners(type2, useBinned2);
         
-        //List<Set<PairInt>> blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);
-        //List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
+        List<Set<PairInt>> blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);
+        List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
         List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);
         
@@ -168,10 +168,12 @@ int z = 1;//1,3 in contours2 should be averaged?
 } catch(IOException e) {
 }
 */
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         Map<Integer, TransformationPair4> trMap = new HashMap<Integer, TransformationPair4>();
         
         for (int i = 0; i < n1; ++i) {
-            
+                        
             List<CornerRegion> corners1 = corners1List.get(i);
             int nc1 = corners1.size();
             if (nc1 < 3) {
@@ -181,13 +183,13 @@ int z = 1;//1,3 in contours2 should be averaged?
             TransformationPair4 bestMatches = null;
             
             for (int j = 0; j < n2; ++j) {
-                
+                                
                 List<CornerRegion> corners2 = corners2List.get(j);
                 int nc2 = corners2.size();
                 if (nc2 < 3) {
                     continue;
                 }
-                
+
                 int minN = Math.min(nc1, nc2);
                 int diffNC = Math.abs(nc1 - nc2);
                 
@@ -252,6 +254,8 @@ int z = 1;//1,3 in contours2 should be averaged?
             return null;
         }
         
+        long t10 = System.currentTimeMillis();
+        
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
         
@@ -302,6 +306,10 @@ int z = 1;//1,3 in contours2 should be averaged?
         
         TransformationParameters combinedParams = calculateTransformation(
             binFactor1, binFactor2, combine, outputScaleRotTransXYStDev);
+        
+        long t11 = System.currentTimeMillis();
+        long t1Sec = (t10 - t11)/1000;
+        log.info("    compare and combine matches(sec)=" + t1Sec);
         
         return combinedParams;
     }

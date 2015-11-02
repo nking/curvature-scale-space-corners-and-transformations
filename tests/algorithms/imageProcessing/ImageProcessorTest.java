@@ -1024,4 +1024,17 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
+    public void testBlur1() throws Exception {
+        
+        // color circles rotated by 90, blurred compared to not rotated and blurred
+        String cPath = ResourceFinder.findFileInTestResources("closed_curve_square.png");
+        Image t = ImageIOHelper.readImage(cPath);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(t, 1.0f);
+                
+        MiscDebug.writeImage(t, "blur_1");        
+        
+    }
+    
 }

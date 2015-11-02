@@ -85,14 +85,14 @@ public class BlobsAndPerimeters {
             }
         }
         
-        if (segmentedToLineDrawing) {
+        //if (segmentedToLineDrawing) {
             // for line drawings, there may be a blob due to an objects
             // line and to it's interior points, so we want to remove the
             // blob for the interior points and keep the exterior.  choosing
             // the exterior because later feature matching should be better
             // for points outside of the blob which is largely similar content.
             removeRedundantBlobs(outputBlobs);
-        }
+        //}
         
         if (modifyBlobs) {
             // helps to fill in single pixel holes

@@ -19,18 +19,14 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
     public void test0() throws Exception {
 
-        if (true) {
-            return;
-        }
-        
         boolean rotate = true;
         
         String fileName1, fileName2;
 
-        for (int i = 0; i < 1; ++i) {
-            fileName1 = "valve_gaussian.png";
-            fileName2 = "valve_gaussian.png";
-            /*switch(i) {
+        for (int i = 0; i < 4; ++i) {
+            //fileName1 = "valve_gaussian.png";
+            //fileName2 = "valve_gaussian.png";
+            switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
@@ -52,7 +48,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
                     rotate = false;
                     break;
                 }
-            }*/
+            }
 
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             ImageExt img1Orig = ImageIOHelper.readImageExt(filePath1);

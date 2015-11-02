@@ -315,10 +315,21 @@ public class BlobScaleFinderWrapper {
                 f2 = features2;
             }
 
+            long t0 = System.currentTimeMillis();
+            
             img1Helper.applySegmentation(segmentationType1, useBinned1);
 
+            long t1 = System.currentTimeMillis();
+            
             img2Helper.applySegmentation(segmentationType2, useBinned2);
 
+            long t2 = System.currentTimeMillis();
+            
+            long t1Sec = (t1 - t0)/1000;
+            long t2Sec = (t2 - t1)/1000;
+            log.info("segmentation1(sec)=" + t1Sec 
+                + " segmentation2(sec)=" + t2Sec);
+            
             float[] outputScaleRotTransXYStDev = new float[4];
 
             TransformationParameters params = null;
@@ -357,13 +368,25 @@ public class BlobScaleFinderWrapper {
                     }
                 }
 
+                t0 = System.currentTimeMillis();
+                
                 blobCornerHelper1.generatePerimeterCorners(
                     segmentationType1, useBinned1);
+                
+                t1 = System.currentTimeMillis();
+                
                 blobCornerHelper2.generatePerimeterCorners(
                     segmentationType2, useBinned2);
 
+                t2 = System.currentTimeMillis();
+                t1Sec = (t1 - t0)/1000;
+                t2Sec = (t2 - t1)/1000;
+                Logger.getLogger(this.getClass().getName()).info("corners1(sec)=" 
+                    + t1Sec + " corners1(sec)=" + t2Sec);
             }
 
+            t0 = System.currentTimeMillis();
+                
             if (algType.equals(AlgType.CORNERS_ORDERED)) {
                 
                 BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
@@ -409,7 +432,12 @@ public class BlobScaleFinderWrapper {
                 n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
                 
             }
-
+            
+            t1 = System.currentTimeMillis();
+            t1Sec = (t1 - t0)/1000;
+            Logger.getLogger(this.getClass().getName()).info("matching(sec)=" 
+                + t1Sec);
+                
             if (params != null) {
 
                 log.info("params for type"
@@ -424,16 +452,16 @@ public class BlobScaleFinderWrapper {
 
                 // TODO: consider returning the number of points used in the
                 // calculation
-                float factor0 = (outputScaleRotTransXYStDev[0]/params.getScale());
-                float factor1 = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);
+                float tS = (outputScaleRotTransXYStDev[0]/params.getScale());
+                float tR = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);
 
                 // consider comparing stdev in translations to a fraction of the image
-                float factor2 = outputScaleRotTransXYStDev[2];
-                float factor3 = outputScaleRotTransXYStDev[3];
+                float tTx = outputScaleRotTransXYStDev[2];
+                float tTy = outputScaleRotTransXYStDev[3];
 
                 //TODO: review these limits
-                if ((factor0 < 0.2) && (factor1 >= 18.) && (factor2 < 100)
-                    && (factor3 < 100)) {
+                if ((tS < 0.2) && (tR >= 18.) && (tTx < 30)
+                    && (tTy < 30)) {
 
                     return params;
                 }
