@@ -470,30 +470,30 @@ import java.util.Set;
     public static float[] getAvgAndStDevIgnoreForSentinel(int[] x, int length, 
         final int sentinel) {
         
-<span class="fc" id="L473">        int n = length;</span>
-<span class="fc" id="L474">        double sumX = 0;</span>
-<span class="fc" id="L475">        int count = 0;</span>
-<span class="fc bfc" id="L476" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc bfc" id="L477" title="All 2 branches covered.">            if (x[i] == sentinel) {</span>
-<span class="fc" id="L478">                continue;</span>
+<span class="nc" id="L473">        int n = length;</span>
+<span class="nc" id="L474">        double sumX = 0;</span>
+<span class="nc" id="L475">        int count = 0;</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
+<span class="nc" id="L478">                continue;</span>
             }
-<span class="fc" id="L480">            sumX += x[i];</span>
-<span class="fc" id="L481">            count++;</span>
+<span class="nc" id="L480">            sumX += x[i];</span>
+<span class="nc" id="L481">            count++;</span>
         }
         
-<span class="fc" id="L484">        float avgX = (float)(sumX/(float)count);</span>
+<span class="nc" id="L484">        float avgX = (float)(sumX/(float)count);</span>
         
-<span class="fc" id="L486">        sumX = 0;</span>
-<span class="fc bfc" id="L487" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc bfc" id="L488" title="All 2 branches covered.">            if (x[i] == sentinel) {</span>
-<span class="fc" id="L489">                continue;</span>
+<span class="nc" id="L486">        sumX = 0;</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
+<span class="nc" id="L489">                continue;</span>
             }
-<span class="fc" id="L491">            double diffX = x[i] - avgX;</span>
-<span class="fc" id="L492">            sumX += (diffX * diffX);</span>
+<span class="nc" id="L491">            double diffX = x[i] - avgX;</span>
+<span class="nc" id="L492">            sumX += (diffX * diffX);</span>
         }
-<span class="fc" id="L494">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
+<span class="nc" id="L494">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
         
-<span class="fc" id="L496">        return new float[]{avgX, stdDevX};</span>
+<span class="nc" id="L496">        return new float[]{avgX, stdDevX};</span>
     }
     
     /**
@@ -1016,28 +1016,28 @@ import java.util.Set;
      */
     public static int[] findMinMaxXY(PairIntArray points) {
         
-<span class="fc" id="L1019">        int xMin = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1020">        int xMax = Integer.MIN_VALUE;</span>
-<span class="fc" id="L1021">        int yMin = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1022">        int yMax = Integer.MIN_VALUE;</span>
+<span class="nc" id="L1019">        int xMin = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1020">        int xMax = Integer.MIN_VALUE;</span>
+<span class="nc" id="L1021">        int yMin = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1022">        int yMax = Integer.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1024" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
-<span class="fc" id="L1025">            int x = points.getX(i);</span>
-<span class="fc" id="L1026">            int y = points.getY(i);</span>
-<span class="fc bfc" id="L1027" title="All 2 branches covered.">            if (x &lt; xMin) {</span>
-<span class="fc" id="L1028">                xMin = x;</span>
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
+<span class="nc" id="L1025">            int x = points.getX(i);</span>
+<span class="nc" id="L1026">            int y = points.getY(i);</span>
+<span class="nc bnc" id="L1027" title="All 2 branches missed.">            if (x &lt; xMin) {</span>
+<span class="nc" id="L1028">                xMin = x;</span>
             }
-<span class="fc bfc" id="L1030" title="All 2 branches covered.">            if (y &lt; yMin) {</span>
-<span class="fc" id="L1031">                yMin = y;</span>
+<span class="nc bnc" id="L1030" title="All 2 branches missed.">            if (y &lt; yMin) {</span>
+<span class="nc" id="L1031">                yMin = y;</span>
             }
-<span class="pc bpc" id="L1033" title="1 of 2 branches missed.">            if (x &gt; xMax) {</span>
-<span class="fc" id="L1034">                xMax = x;</span>
+<span class="nc bnc" id="L1033" title="All 2 branches missed.">            if (x &gt; xMax) {</span>
+<span class="nc" id="L1034">                xMax = x;</span>
             }
-<span class="fc bfc" id="L1036" title="All 2 branches covered.">            if (y &gt; yMax) {</span>
-<span class="fc" id="L1037">                yMax = y;</span>
+<span class="nc bnc" id="L1036" title="All 2 branches missed.">            if (y &gt; yMax) {</span>
+<span class="nc" id="L1037">                yMax = y;</span>
             }
         }
-<span class="fc" id="L1040">        return new int[]{xMin, xMax, yMin, yMax};</span>
+<span class="nc" id="L1040">        return new int[]{xMin, xMax, yMin, yMax};</span>
     }
 
     public static int numberOfBits(long i) {
@@ -1358,8 +1358,8 @@ import java.util.Set;
 <span class="fc" id="L1358">                continue;</span>
             }
 <span class="fc" id="L1360">            float v2 = b[i];</span>
-<span class="pc bpc" id="L1361" title="1 of 2 branches missed.">            if (v2 == sentinel) {</span>
-<span class="nc" id="L1362">                continue;</span>
+<span class="fc bfc" id="L1361" title="All 2 branches covered.">            if (v2 == sentinel) {</span>
+<span class="fc" id="L1362">                continue;</span>
             }
             
 <span class="fc" id="L1365">            float diff = v1 - v2;</span>
@@ -1573,6 +1573,90 @@ import java.util.Set;
         }
         
 <span class="fc" id="L1575">        return ordered;</span>
+    }
+
+    public static long findMaxForByteCompressed(long[] aL, int len, 
+        int itemNDatum, int datumNBits, int minDatum) {
+        
+<span class="fc" id="L1581">        long mask = (1L &lt;&lt; datumNBits) - 1L;</span>
+        
+<span class="fc" id="L1583">        long max = Long.MIN_VALUE;</span>
+        
+<span class="fc bfc" id="L1585" title="All 2 branches covered.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="fc" id="L1586">            long total = aL[elementIdx];</span>
+<span class="fc bfc" id="L1587" title="All 2 branches covered.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="fc" id="L1588">                long v = (total &gt;&gt; (long)(i * datumNBits)) &amp; mask;</span>
+<span class="fc" id="L1589">                v += minDatum;</span>
+<span class="fc bfc" id="L1590" title="All 2 branches covered.">                if (v &gt; max) {</span>
+<span class="fc" id="L1591">                    max = v;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L1596">        return max;</span>
+    }
+    
+    public static long findMinForByteCompressed(long[] aL, int len, 
+        int itemNDatum, int datumNBits, int minDatum) {
+                
+<span class="fc" id="L1602">        long mask = (1L &lt;&lt; datumNBits) - 1L;</span>
+        
+<span class="fc" id="L1604">        long min = Long.MAX_VALUE;</span>
+        
+<span class="fc bfc" id="L1606" title="All 2 branches covered.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="fc" id="L1607">            long total = aL[elementIdx];</span>
+<span class="fc bfc" id="L1608" title="All 2 branches covered.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="fc" id="L1609">                long v = (total &gt;&gt; (long)(i * datumNBits)) &amp; mask;</span>
+<span class="fc" id="L1610">                v += minDatum;</span>
+<span class="fc bfc" id="L1611" title="All 2 branches covered.">                if (v &lt; min) {</span>
+<span class="fc" id="L1612">                    min = v;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L1617">        return min;</span>
+    }
+
+    public static int findMaxForByteCompressed(int[] a, int len, int itemNDatum, 
+        int datumNBits, int minDatum) {
+        
+<span class="nc" id="L1623">        int mask = (1 &lt;&lt; datumNBits) - 1;</span>
+        
+<span class="nc" id="L1625">        int max = Integer.MIN_VALUE;</span>
+        
+<span class="nc bnc" id="L1627" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="nc" id="L1628">            int total = a[elementIdx];</span>
+<span class="nc bnc" id="L1629" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="nc" id="L1630">                int v = (total &gt;&gt; (i * datumNBits)) &amp; mask;</span>
+<span class="nc" id="L1631">                v += minDatum;</span>
+<span class="nc bnc" id="L1632" title="All 2 branches missed.">                if (v &gt; max) {</span>
+<span class="nc" id="L1633">                    max = v;</span>
+                }
+            }
+        }
+        
+<span class="nc" id="L1638">        return max;</span>
+    }
+    
+    public static int findMinForByteCompressed(int[] a, int len, int itemNDatum, 
+        int datumNBits, int minDatum) {
+        
+<span class="nc" id="L1644">        int mask = (1 &lt;&lt; datumNBits) - 1;</span>
+        
+<span class="nc" id="L1646">        int min = Integer.MAX_VALUE;</span>
+        
+<span class="nc bnc" id="L1648" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="nc" id="L1649">            int total = a[elementIdx];</span>
+<span class="nc bnc" id="L1650" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="nc" id="L1651">                int v = (total &gt;&gt; (i * datumNBits)) &amp; mask;</span>
+<span class="nc" id="L1652">                v += minDatum;</span>
+<span class="nc bnc" id="L1653" title="All 2 branches missed.">                if (v &lt; min) {</span>
+<span class="nc" id="L1654">                    min = v;</span>
+                }
+            }
+        }
+        
+<span class="nc" id="L1659">        return min;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

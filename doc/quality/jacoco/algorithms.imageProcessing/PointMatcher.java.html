@@ -2150,8 +2150,8 @@ private void writeTransformed(TransformationParameters parameters,
                         // change rotation
 <span class="fc" id="L2151">                        float rotContraction = rotInRadians + (beta</span>
 <span class="fc" id="L2152">                            * (fits[worstFitIdx].getRotationInRadians() - rotInRadians));</span>
-<span class="fc bfc" id="L2153" title="All 2 branches covered.">                        if (rotContraction &lt; 0) {</span>
-<span class="fc" id="L2154">                            rotContraction = rotContraction + (float)(2.*Math.PI);</span>
+<span class="pc bpc" id="L2153" title="1 of 2 branches missed.">                        if (rotContraction &lt; 0) {</span>
+<span class="nc" id="L2154">                            rotContraction = rotContraction + (float)(2.*Math.PI);</span>
 <span class="pc bpc" id="L2155" title="1 of 2 branches missed.">                        } else if (rotContraction &gt;= (2.*Math.PI)) {</span>
 <span class="nc" id="L2156">                            rotContraction = rotContraction - (float)(2.*Math.PI);</span>
                         }
@@ -2230,8 +2230,8 @@ private void writeTransformed(TransformationParameters parameters,
 <span class="fc" id="L2230">                                    = (fits[bestFitIdx].getRotationInRadians()</span>
 <span class="fc" id="L2231">                                    + (tau * (fits[i].getRotationInRadians()</span>
 <span class="fc" id="L2232">                                    - fits[bestFitIdx].getRotationInRadians())));</span>
-<span class="fc bfc" id="L2233" title="All 2 branches covered.">                                if (rotReduction &lt; 0) {</span>
-<span class="fc" id="L2234">                                    rotReduction = rotReduction + (float)(2.*Math.PI);</span>
+<span class="pc bpc" id="L2233" title="1 of 2 branches missed.">                                if (rotReduction &lt; 0) {</span>
+<span class="nc" id="L2234">                                    rotReduction = rotReduction + (float)(2.*Math.PI);</span>
 <span class="pc bpc" id="L2235" title="1 of 2 branches missed.">                                } else if (rotReduction &gt;= (2.*Math.PI)) {</span>
 <span class="nc" id="L2236">                                    rotReduction = rotReduction - (float)(2.*Math.PI);</span>
                                 }

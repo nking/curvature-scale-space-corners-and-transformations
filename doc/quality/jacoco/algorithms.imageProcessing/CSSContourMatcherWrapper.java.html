@@ -132,7 +132,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L132" title="All 2 branches covered.">        boolean solved = mDefault.matchContours() &amp;&amp;</span>
 <span class="pc bpc" id="L133" title="1 of 2 branches missed.">            (mDefault.getSolvedScale() &lt; Double.MAX_VALUE);</span>
 
-<span class="fc" id="L135">        log.info(&quot;default order: solved=&quot; + solved + &quot; ambig=&quot; + </span>
+<span class="fc" id="L135">        log.fine(&quot;default order: solved=&quot; + solved + &quot; ambig=&quot; + </span>
 <span class="fc" id="L136">            mDefault.scaleIsPossiblyAmbiguous() + &quot; possibly scl &lt; 1=&quot; + </span>
 <span class="fc" id="L137">            mDefault.strongestPeaksImplyScaleSmallerThanOne());</span>
         
@@ -152,7 +152,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L152" title="All 2 branches covered.">        boolean solvedReverse = mReverse.matchContours() &amp;&amp;</span>
 <span class="pc bpc" id="L153" title="1 of 2 branches missed.">            (mReverse.getSolvedScale() &lt; Double.MAX_VALUE);</span>
 
-<span class="fc" id="L155">        log.info(&quot;reverse order: solved=&quot; + solvedReverse + &quot; ambig=&quot; + </span>
+<span class="fc" id="L155">        log.fine(&quot;reverse order: solved=&quot; + solvedReverse + &quot; ambig=&quot; + </span>
 <span class="fc" id="L156">            mReverse.scaleIsPossiblyAmbiguous() + &quot; possibly scl &lt; 1=&quot; + </span>
 <span class="fc" id="L157">            mReverse.strongestPeaksImplyScaleSmallerThanOne());</span>
         

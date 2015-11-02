@@ -216,7 +216,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L216">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
     }
 }
-<span class="fc" id="L219">MiscDebug.writeImageCopy(img3, &quot;edge1_&quot; + i1 + &quot;_.png&quot;);</span>
+<span class="fc" id="L219">MiscDebug.writeImage(img3, &quot;edge1_&quot; + i1);</span>
         }
 <span class="fc bfc" id="L221" title="All 2 branches covered.">            for (int i2 = 0; i2 &lt; contourLists2.size(); ++i2) {</span>
 
@@ -240,7 +240,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L240">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
     }
 }
-<span class="fc" id="L243">MiscDebug.writeImageCopy(img3, &quot;edge2_&quot; + i2 + &quot;_.png&quot;);</span>
+<span class="fc" id="L243">MiscDebug.writeImage(img3, &quot;edge2_&quot; + i2);</span>
 }
 <span class="fc" id="L245">log.info(&quot;i1=&quot; + i1 + &quot; i2=&quot; + i2);</span>
 <span class="fc" id="L246">log.info(&quot;offsetImage 1=(&quot; + offsetImageX1 + &quot;,&quot; + offsetImageY1 + &quot;)&quot;);</span>

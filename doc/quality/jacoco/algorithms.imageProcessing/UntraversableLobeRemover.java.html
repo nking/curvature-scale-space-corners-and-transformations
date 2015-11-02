@@ -74,8 +74,8 @@ Image img1 = new Image(imageWidth, imageHeight);
 for (PairInt p : closedCurve) {
     img1.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img1, &quot;before_removed_untr_lobe_&quot;
-    + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);
+MiscDebug.writeImage(img1, &quot;before_removed_untr_lobe_&quot;
+    + MiscDebug.getCurrentTimeFormatted());
 }
 <span class="fc bfc" id="L80" title="All 2 branches covered.">            for (PairInt p : closedCurve) {</span>
 
@@ -130,8 +130,8 @@ Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p2 : closedCurve) {
     img3.setRGB(p2.getX(), p2.getY(), 255, 0, 0);
 }
-MiscDebug.writeImageCopy(img3, &quot;removed_untr_lobe_&quot;
-+ MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);
+MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
++ MiscDebug.getCurrentTimeFormatted());
 }
 <span class="pc bpc" id="L136" title="3 of 4 branches missed.">                assert(closedCurve.size() &gt; 0);</span>
 
@@ -586,8 +586,8 @@ MiscDebug.writeImageCopy(img3, &quot;removed_untr_lobe_&quot;
 <span class="fc" id="L586">            neighbors.removeAll(junctionPoints);</span>
 
 <span class="fc bfc" id="L588" title="All 2 branches covered.">            if (!p.equals(jC)) {</span>
-<span class="pc bpc" id="L589" title="2 of 4 branches missed.">                if (neighbors.isEmpty() || neighbors.size() &gt; 2) {</span>
-<span class="nc" id="L590">                    return null;</span>
+<span class="pc bpc" id="L589" title="1 of 4 branches missed.">                if (neighbors.isEmpty() || neighbors.size() &gt; 2) {</span>
+<span class="fc" id="L590">                    return null;</span>
                 }
 <span class="fc bfc" id="L592" title="All 2 branches covered.">                if (neighbors.size() &gt; 1) {</span>
                     // keep the closest to jC
@@ -630,8 +630,8 @@ MiscDebug.writeImageCopy(img3, &quot;removed_untr_lobe_&quot;
 <span class="fc" id="L630">                    Set&lt;PairInt&gt; spokeJ = spokes.get(j);</span>
 <span class="pc bpc" id="L631" title="3 of 4 branches missed.">                    assert(!spokeJ.isEmpty());</span>
 <span class="fc bfc" id="L632" title="All 2 branches covered.">                    for (PairInt pJ : spokeJ) {</span>
-<span class="fc bfc" id="L633" title="All 2 branches covered.">                        if (areAdjacent(pI, pJ)) {</span>
-<span class="fc" id="L634">                            return null;</span>
+<span class="pc bpc" id="L633" title="1 of 2 branches missed.">                        if (areAdjacent(pI, pJ)) {</span>
+<span class="nc" id="L634">                            return null;</span>
                         }
 <span class="fc" id="L636">                    }</span>
                 }

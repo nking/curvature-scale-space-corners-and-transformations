@@ -161,7 +161,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L161" title="All 2 branches covered.">for (PairInt p : borderPixels) {</span>
 <span class="fc" id="L162">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
 <span class="fc" id="L163">}</span>
-<span class="fc" id="L164">MiscDebug.writeImageCopy(img3, &quot;border_perimeter_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L164">MiscDebug.writeImage(img3, &quot;border_perimeter_&quot; + ts);</span>
 }
         
 <span class="fc" id="L167">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
@@ -221,7 +221,7 @@ int z = 1;
 <span class="fc bfc" id="L221" title="All 2 branches covered.">for (PairInt p : borderPixels) {</span>
 <span class="fc" id="L222">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
 <span class="fc" id="L223">}</span>
-<span class="fc" id="L224">MiscDebug.writeImageCopy(img3, &quot;border_before_spur_removal_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L224">MiscDebug.writeImage(img3, &quot;border_before_spur_removal_&quot; + ts);</span>
 }
 <span class="fc" id="L226">        SpurRemover spurRm = new SpurRemover();</span>
 <span class="fc bfc" id="L227" title="All 2 branches covered.">        if (debug) {</span>
@@ -238,7 +238,7 @@ int z = 1;
 <span class="fc bfc" id="L238" title="All 2 branches covered.">for (PairInt p : borderPixels) {</span>
 <span class="fc" id="L239">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
 <span class="fc" id="L240">}</span>
-<span class="fc" id="L241">MiscDebug.writeImageCopy(img3, &quot;border_after_spur_removal_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L241">MiscDebug.writeImage(img3, &quot;border_after_spur_removal_&quot; + ts);</span>
 }
 <span class="fc bfc" id="L243" title="All 2 branches covered.">if (debug) {     </span>
 try {
@@ -282,7 +282,7 @@ try {
 <span class="fc bfc" id="L282" title="All 2 branches covered.">for (PairInt p : borderPixels) {</span>
 <span class="fc" id="L283">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
 <span class="fc" id="L284">}</span>
-<span class="fc" id="L285">MiscDebug.writeImageCopy(img3, &quot;border_after_untraversable_removal_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L285">MiscDebug.writeImage(img3, &quot;border_after_untraversable_removal_&quot; + ts);</span>
 }
 <span class="fc" id="L287">log.fine(&quot;for &quot; + ts + &quot; finished UntraversableLobeRemover&quot;);</span>
 
@@ -349,7 +349,7 @@ try {
         }
     }
 }
-<span class="fc" id="L352">MiscDebug.writeImageCopy(img2, &quot;before_single_curve_extraction_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L352">MiscDebug.writeImage(img2, &quot;before_single_curve_extraction_&quot; + ts);</span>
 <span class="fc bfc" id="L353" title="All 2 branches covered.">for (Routes routes : butterFlySections2) {</span>
 <span class="fc" id="L354">    Iterator&lt;PairInt&gt; iter = routes.getRoute0().iterator();</span>
 <span class="fc bfc" id="L355" title="All 2 branches covered.">    while (iter.hasNext()) {</span>
@@ -366,7 +366,7 @@ try {
 <span class="fc" id="L366">        img2.setRGB(p.getX(), p.getY(), 0, 0, 255);</span>
 <span class="fc" id="L367">    }</span>
 <span class="fc" id="L368">}</span>
-<span class="fc" id="L369">MiscDebug.writeImageCopy(img2, &quot;before_single_curve_extraction_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L369">MiscDebug.writeImage(img2, &quot;before_single_curve_extraction_&quot; + ts);</span>
 }
 
 <span class="fc" id="L372">        EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);</span>
@@ -400,7 +400,7 @@ try {
 }
 <span class="nc" id="L401">img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);</span>
 <span class="nc" id="L402">img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);</span>
-<span class="nc" id="L403">MiscDebug.writeImageCopy(img3, &quot;border_trimEndpointSpurs.png&quot;);</span>
+<span class="nc" id="L403">MiscDebug.writeImage(img3, &quot;border_trimEndpointSpurs&quot;);</span>
 }
 
 <span class="fc" id="L406">            boolean altered = trimEndpointSpursIfAny(out, img.getWidth(), </span>
@@ -413,7 +413,7 @@ try {
 }
 <span class="nc" id="L414">img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);</span>
 <span class="nc" id="L415">img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);</span>
-<span class="nc" id="L416">MiscDebug.writeImageCopy(img3, &quot;border_before_reorder_endpoints.png&quot;);</span>
+<span class="nc" id="L416">MiscDebug.writeImage(img3, &quot;border_before_reorder_endpoints&quot;);</span>
 }
 
 <span class="pc bpc" id="L419" title="1 of 2 branches missed.">            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
@@ -427,7 +427,7 @@ try {
 }
 <span class="nc" id="L428">img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);</span>
 <span class="nc" id="L429">img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);</span>
-<span class="nc" id="L430">MiscDebug.writeImageCopy(img3, &quot;border_after_reorder_endpoints.png&quot;);</span>
+<span class="nc" id="L430">MiscDebug.writeImage(img3, &quot;border_after_reorder_endpoints&quot;);</span>
 }               
 
 <span class="nc bnc" id="L433" title="All 2 branches missed.">                if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
@@ -442,7 +442,7 @@ try {
 }
 <span class="nc" id="L443">img3.setRGB(out.getX(0), out.getY(0), 255, 255, 0);</span>
 <span class="nc" id="L444">img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);</span>
-<span class="nc" id="L445">MiscDebug.writeImageCopy(img3, &quot;border_trim_multiple_curves.png&quot;);</span>
+<span class="nc" id="L445">MiscDebug.writeImage(img3, &quot;border_trim_multiple_curves&quot;);</span>
 <span class="nc" id="L446">int z = 1;</span>
 }                    
 
@@ -477,7 +477,7 @@ try {
 <span class="fc" id="L477">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
     }
 }
-<span class="fc" id="L480">MiscDebug.writeImageCopy(img3, &quot;output_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L480">MiscDebug.writeImage(img3, &quot;output_&quot; + ts);</span>
 }
 
 <span class="fc" id="L483">        return out;</span>
@@ -500,7 +500,7 @@ try {
 <span class="nc" id="L500">    int y = curve.getY(i);</span>
 <span class="nc" id="L501">    img3.setRGB(x, y, 255, 0, 0);</span>
 }
-<span class="nc" id="L503">MiscDebug.writeImageCopy(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+<span class="nc" id="L503">MiscDebug.writeImage(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted());</span>
 }      
 
 <span class="fc" id="L506">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
@@ -534,7 +534,7 @@ try {
 <span class="nc" id="L534">    int y = curve.getY(i);</span>
 <span class="nc" id="L535">    img3.setRGB(x, y, 255, 0, 0);</span>
 }
-<span class="nc" id="L537">MiscDebug.writeImageCopy(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+<span class="nc" id="L537">MiscDebug.writeImage(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted());</span>
 }
 
 <span class="fc" id="L540">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>

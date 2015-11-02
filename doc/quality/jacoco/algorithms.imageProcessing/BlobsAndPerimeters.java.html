@@ -85,14 +85,14 @@ import java.util.logging.Logger;
             }
 <span class="fc" id="L86">        }</span>
         
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (segmentedToLineDrawing) {</span>
+        //if (segmentedToLineDrawing) {
             // for line drawings, there may be a blob due to an objects
             // line and to it's interior points, so we want to remove the
             // blob for the interior points and keep the exterior.  choosing
             // the exterior because later feature matching should be better
             // for points outside of the blob which is largely similar content.
-<span class="nc" id="L94">            removeRedundantBlobs(outputBlobs);</span>
-        }
+<span class="fc" id="L94">            removeRedundantBlobs(outputBlobs);</span>
+        //}
         
 <span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (modifyBlobs) {</span>
             // helps to fill in single pixel holes
@@ -115,8 +115,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L115">                c++;</span>
             }
             
-<span class="fc" id="L118">            MiscDebug.writeImageCopy(img0, &quot;blobs_&quot; + imgHelper.getDebugTag() </span>
-<span class="fc" id="L119">                + &quot;_&quot; + MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+<span class="fc" id="L118">            MiscDebug.writeImage(img0, &quot;blobs_&quot; + imgHelper.getDebugTag() </span>
+<span class="fc" id="L119">                + &quot;_&quot; + MiscDebug.getCurrentTimeFormatted());</span>
         }
         
 <span class="fc" id="L122">        return outputBlobs;</span>
@@ -227,11 +227,10 @@ import java.util.logging.Logger;
         }
     }
 <span class="fc" id="L229">    long ts = MiscDebug.getCurrentTimeFormatted();</span>
-<span class="fc" id="L230">    MiscDebug.writeImageCopy(segImg, &quot;segmentation_&quot; + imgHelper.getDebugTag() + &quot;_&quot; + ts + &quot;.png&quot;);</span>
-<span class="fc" id="L231">    MiscDebug.writeImageCopy(img0, &quot;blob_perimeters_&quot; + imgHelper.getDebugTag() + &quot;_&quot; + ts + &quot;.png&quot;);</span>
+<span class="fc" id="L230">    MiscDebug.writeImage(img0, &quot;blob_perimeters_&quot; + imgHelper.getDebugTag() + &quot;_&quot; + ts);</span>
 }
 
-<span class="fc" id="L234">         return outputBounds;</span>
+<span class="fc" id="L233">         return outputBounds;</span>
     }
 
     // worse case runtime is O(N_blob^2) to compare centroids and dimensions.
@@ -243,125 +242,125 @@ import java.util.logging.Logger;
         // the exterior because later feature matching should be better
         // for points outside of the blob which is largely similar content.
         
-<span class="fc" id="L246">        boolean preferExterior = true;</span>
+<span class="fc" id="L245">        boolean preferExterior = true;</span>
         
-<span class="fc" id="L248">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L247">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc" id="L250">        Map&lt;PairInt, Integer&gt; blobCenters = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="fc" id="L249">        Map&lt;PairInt, Integer&gt; blobCenters = new HashMap&lt;PairInt, Integer&gt;();</span>
         
-<span class="fc" id="L252">        LinkedHashSet&lt;Integer&gt; remove = new LinkedHashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L251">        LinkedHashSet&lt;Integer&gt; remove = new LinkedHashSet&lt;Integer&gt;();</span>
         
-<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = 0; i &lt; outputBlobs.size(); ++i) {</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        for (int i = 0; i &lt; outputBlobs.size(); ++i) {</span>
             
-<span class="fc" id="L256">            Set&lt;PairInt&gt; blob = outputBlobs.get(i);</span>
+<span class="fc" id="L255">            Set&lt;PairInt&gt; blob = outputBlobs.get(i);</span>
             
-<span class="fc" id="L258">            double[] xyCen = curveHelper.calculateXYCentroids(blob);</span>
+<span class="fc" id="L257">            double[] xyCen = curveHelper.calculateXYCentroids(blob);</span>
             
-<span class="fc" id="L260">            PairInt p = new PairInt((int) Math.round(xyCen[0]), </span>
-<span class="fc" id="L261">                (int) Math.round(xyCen[1]));</span>
+<span class="fc" id="L259">            PairInt p = new PairInt((int) Math.round(xyCen[0]), </span>
+<span class="fc" id="L260">                (int) Math.round(xyCen[1]));</span>
             
-<span class="fc" id="L263">            Integer index = Integer.valueOf(i);</span>
+<span class="fc" id="L262">            Integer index = Integer.valueOf(i);</span>
             
             //keep larger dimension blob
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">            if (blobCenters.containsKey(p)) {</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            if (blobCenters.containsKey(p)) {</span>
                 
                 // compare and keep exterior perimeter
-<span class="nc" id="L269">                int mapIdx = blobCenters.get(p).intValue();</span>
+<span class="fc" id="L268">                int mapIdx = blobCenters.get(p).intValue();</span>
                 
-<span class="nc" id="L271">                Set&lt;PairInt&gt; mapBlob = outputBlobs.get(mapIdx);</span>
+<span class="fc" id="L270">                Set&lt;PairInt&gt; mapBlob = outputBlobs.get(mapIdx);</span>
                 
                 //xMin, xMax, yMin, yMax
-<span class="nc" id="L274">                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob);</span>
-<span class="nc" id="L275">                int[] minMaxXY2 = MiscMath.findMinMaxXY(mapBlob);</span>
-<span class="nc" id="L276">                int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
-<span class="nc" id="L277">                int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
-<span class="nc" id="L278">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
-<span class="nc" id="L279">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
+<span class="fc" id="L273">                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob);</span>
+<span class="fc" id="L274">                int[] minMaxXY2 = MiscMath.findMinMaxXY(mapBlob);</span>
+<span class="fc" id="L275">                int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
+<span class="fc" id="L276">                int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
+<span class="fc" id="L277">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
+<span class="fc" id="L278">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
                 
-<span class="nc bnc" id="L281" title="All 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
+<span class="pc bpc" id="L280" title="9 of 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
                     (!preferExterior &amp;&amp; (w1 &gt; w2) &amp;&amp; (h1 &gt; h2))) {
-<span class="nc" id="L283">                    remove.add(Integer.valueOf(i));</span>
-<span class="nc" id="L284">                    continue;</span>
+<span class="nc" id="L282">                    remove.add(Integer.valueOf(i));</span>
+<span class="nc" id="L283">                    continue;</span>
                 }
-<span class="nc" id="L286">                remove.add(Integer.valueOf(mapIdx));</span>
-<span class="nc" id="L287">                blobCenters.put(p, index);</span>
+<span class="fc" id="L285">                remove.add(Integer.valueOf(mapIdx));</span>
+<span class="fc" id="L286">                blobCenters.put(p, index);</span>
                 
-<span class="nc" id="L289">            } else {</span>
-<span class="fc" id="L290">                blobCenters.put(p, index);</span>
+<span class="fc" id="L288">            } else {</span>
+<span class="fc" id="L289">                blobCenters.put(p, index);</span>
             }
         }
         
-<span class="fc bfc" id="L294" title="All 2 branches covered.">        for (Map.Entry&lt;PairInt, Integer&gt; entry : blobCenters.entrySet()) {</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (Map.Entry&lt;PairInt, Integer&gt; entry : blobCenters.entrySet()) {</span>
             
-<span class="fc" id="L296">            Integer index = entry.getValue();</span>
-<span class="fc" id="L297">            PairInt p = entry.getKey();</span>
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">            if (remove.contains(index)) {</span>
-<span class="nc" id="L299">                continue;</span>
+<span class="fc" id="L295">            Integer index = entry.getValue();</span>
+<span class="fc" id="L296">            PairInt p = entry.getKey();</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">            if (remove.contains(index)) {</span>
+<span class="fc" id="L298">                continue;</span>
             }
             
-<span class="fc" id="L302">            Set&lt;PairInt&gt; blob1 = outputBlobs.get(index.intValue());</span>
+<span class="fc" id="L301">            Set&lt;PairInt&gt; blob1 = outputBlobs.get(index.intValue());</span>
             
-<span class="fc" id="L304">            int[] minMaxXY1 = MiscMath.findMinMaxXY(blob1);</span>
+<span class="fc" id="L303">            int[] minMaxXY1 = MiscMath.findMinMaxXY(blob1);</span>
             
-<span class="fc" id="L306">            int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
-<span class="fc" id="L307">            int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
+<span class="fc" id="L305">            int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
+<span class="fc" id="L306">            int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
             
             // look for another center within dx,dy=(3,3)
-<span class="fc bfc" id="L310" title="All 2 branches covered.">            for (Map.Entry&lt;PairInt, Integer&gt; entry2 : blobCenters.entrySet()) {</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">            for (Map.Entry&lt;PairInt, Integer&gt; entry2 : blobCenters.entrySet()) {</span>
                 
-<span class="fc" id="L312">                Integer index2 = entry2.getValue();</span>
-<span class="fc bfc" id="L313" title="All 2 branches covered.">                if (index2.intValue() == index.intValue()) {</span>
-<span class="fc" id="L314">                    continue;</span>
+<span class="fc" id="L311">                Integer index2 = entry2.getValue();</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">                if (index2.intValue() == index.intValue()) {</span>
+<span class="fc" id="L313">                    continue;</span>
                 }
-<span class="pc bpc" id="L316" title="1 of 2 branches missed.">                if (remove.contains(index2)) {</span>
-<span class="nc" id="L317">                    continue;</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">                if (remove.contains(index2)) {</span>
+<span class="fc" id="L316">                    continue;</span>
                 }
                 
-<span class="fc" id="L320">                PairInt p2 = entry2.getKey();</span>
-<span class="fc" id="L321">                int diffX = Math.abs(p2.getX() - p.getX());</span>
-<span class="fc" id="L322">                int diffY = Math.abs(p2.getY() - p.getY());</span>
-<span class="pc bpc" id="L323" title="3 of 4 branches missed.">                if ((diffX &gt; 3) || (diffY &gt; 3)) {</span>
-<span class="nc" id="L324">                    continue;</span>
+<span class="fc" id="L319">                PairInt p2 = entry2.getKey();</span>
+<span class="fc" id="L320">                int diffX = Math.abs(p2.getX() - p.getX());</span>
+<span class="fc" id="L321">                int diffY = Math.abs(p2.getY() - p.getY());</span>
+<span class="fc bfc" id="L322" title="All 4 branches covered.">                if ((diffX &gt; 3) || (diffY &gt; 3)) {</span>
+<span class="fc" id="L323">                    continue;</span>
                 }
                 
                 // if arrive here, there were 2 blobs with near centers
-<span class="nc" id="L328">                Set&lt;PairInt&gt; blob2 = outputBlobs.get(index2.intValue());</span>
+<span class="fc" id="L327">                Set&lt;PairInt&gt; blob2 = outputBlobs.get(index2.intValue());</span>
                 //keep larger dimension blob
                 //xMin, xMax, yMin, yMax
-<span class="nc" id="L331">                int[] minMaxXY2 = MiscMath.findMinMaxXY(blob2);</span>
+<span class="fc" id="L330">                int[] minMaxXY2 = MiscMath.findMinMaxXY(blob2);</span>
                 
-<span class="nc" id="L333">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
-<span class="nc" id="L334">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
+<span class="fc" id="L332">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
+<span class="fc" id="L333">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
                 
-<span class="nc bnc" id="L336" title="All 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
+<span class="pc bpc" id="L335" title="6 of 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
                     (!preferExterior &amp;&amp; (w1 &gt; w2) &amp;&amp; (h1 &gt; h2))) {
                     
                     // keep blob 2 for preferExterior
                     
-<span class="nc" id="L341">                    remove.add(index);</span>
+<span class="fc" id="L340">                    remove.add(index);</span>
                     
                 } else {
                     
                     // keep blob 1 for preferExterior
                     
-<span class="nc" id="L347">                    remove.add(index2);</span>
+<span class="fc" id="L346">                    remove.add(index2);</span>
                 }
-<span class="nc" id="L349">                break;</span>
+<span class="fc" id="L348">                break;</span>
             }
-<span class="fc" id="L351">        }</span>
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">        if (remove.isEmpty()) {</span>
-<span class="fc" id="L353">            return;</span>
+<span class="fc" id="L350">        }</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        if (remove.isEmpty()) {</span>
+<span class="fc" id="L352">            return;</span>
         }
         
-<span class="nc" id="L356">        List&lt;Integer&gt; rm = new ArrayList&lt;Integer&gt;(remove);</span>
+<span class="fc" id="L355">        List&lt;Integer&gt; rm = new ArrayList&lt;Integer&gt;(remove);</span>
         
-<span class="nc" id="L358">        Collections.sort(rm);</span>
+<span class="fc" id="L357">        Collections.sort(rm);</span>
         
-<span class="nc bnc" id="L360" title="All 2 branches missed.">        for (int i = rm.size() - 1; i &gt; -1; --i) {</span>
-<span class="nc" id="L361">            int idx = rm.get(i).intValue();</span>
-<span class="nc" id="L362">            outputBlobs.remove(idx);</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        for (int i = rm.size() - 1; i &gt; -1; --i) {</span>
+<span class="fc" id="L360">            int idx = rm.get(i).intValue();</span>
+<span class="fc" id="L361">            outputBlobs.remove(idx);</span>
         }
-<span class="nc" id="L364">    }</span>
+<span class="fc" id="L363">    }</span>
 
     /**
      * grow blob by 1 pixel radius, but exclude growing any image boundary
@@ -372,29 +371,29 @@ import java.util.logging.Logger;
      */
     protected static void growRadius(Set&lt;PairInt&gt; blob, int w, int h) {
         
-<span class="fc" id="L375">        int[] dxs8 = Misc.dx8;</span>
-<span class="fc" id="L376">        int[] dys8 = Misc.dy8;</span>
+<span class="fc" id="L374">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L375">        int[] dys8 = Misc.dy8;</span>
         
-<span class="fc" id="L378">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L377">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L380" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
-<span class="fc bfc" id="L381" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
                 
-<span class="fc" id="L383">                int x2 = p.getX() + dxs8[i];</span>
-<span class="fc" id="L384">                int y2 = p.getY() + dys8[i];</span>
+<span class="fc" id="L382">                int x2 = p.getX() + dxs8[i];</span>
+<span class="fc" id="L383">                int y2 = p.getY() + dys8[i];</span>
                 
                 // do not grow image boundary pixels too
-<span class="fc bfc" id="L387" title="All 8 branches covered.">                if ((x2 &lt; 1) || (y2 &lt; 1) || (x2 &gt; (w - 2)) || (y2 &gt; (h - 2))) {</span>
-<span class="fc" id="L388">                    continue;</span>
+<span class="fc bfc" id="L386" title="All 8 branches covered.">                if ((x2 &lt; 1) || (y2 &lt; 1) || (x2 &gt; (w - 2)) || (y2 &gt; (h - 2))) {</span>
+<span class="fc" id="L387">                    continue;</span>
                 }
                 
-<span class="fc" id="L391">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L390">                PairInt p2 = new PairInt(x2, y2);</span>
                 
-<span class="fc" id="L393">                tmp.add(p2);</span>
+<span class="fc" id="L392">                tmp.add(p2);</span>
             }
-<span class="fc" id="L395">        }</span>
-<span class="fc" id="L396">        blob.addAll(tmp);</span>
-<span class="fc" id="L397">    }</span>
+<span class="fc" id="L394">        }</span>
+<span class="fc" id="L395">        blob.addAll(tmp);</span>
+<span class="fc" id="L396">    }</span>
 
     /**
      * shrink blob by 1 pixel radius
@@ -405,22 +404,22 @@ import java.util.logging.Logger;
     protected static void shrinkRadius(Set&lt;PairInt&gt; blob, int w, int h) {
         
         // any point in blob with a non-point neighbor gets removed
-<span class="fc" id="L408">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L407">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L410">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L409">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc bfc" id="L412" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
         
-<span class="fc" id="L414">            int nN = curveHelper.countNeighbors(p.getX(), p.getY(), blob, w, h);</span>
+<span class="fc" id="L413">            int nN = curveHelper.countNeighbors(p.getX(), p.getY(), blob, w, h);</span>
             
-<span class="fc bfc" id="L416" title="All 2 branches covered.">            if (nN == 8) {</span>
-<span class="fc" id="L417">                tmp.add(p);</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">            if (nN == 8) {</span>
+<span class="fc" id="L416">                tmp.add(p);</span>
             }
-<span class="fc" id="L419">        }</span>
+<span class="fc" id="L418">        }</span>
         
-<span class="fc" id="L421">        blob.clear();</span>
-<span class="fc" id="L422">        blob.addAll(tmp);</span>
-<span class="fc" id="L423">    }</span>
+<span class="fc" id="L420">        blob.clear();</span>
+<span class="fc" id="L421">        blob.addAll(tmp);</span>
+<span class="fc" id="L422">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

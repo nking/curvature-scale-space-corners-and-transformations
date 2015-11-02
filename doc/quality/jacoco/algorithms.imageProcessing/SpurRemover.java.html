@@ -42,8 +42,8 @@ import java.util.Set;
 <span class="fc bfc" id="L42" title="All 2 branches covered.">for (PairInt p : curve) {</span>
 <span class="fc" id="L43">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
 <span class="fc" id="L44">}</span>
-<span class="fc" id="L45">MiscDebug.writeImageCopy(img3, &quot;spur_removal_&quot; + nIter + &quot;_&quot; </span>
-<span class="fc" id="L46">+ MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+<span class="fc" id="L45">MiscDebug.writeImage(img3, &quot;spur_removal_&quot; + nIter + &quot;_&quot; </span>
+<span class="fc" id="L46">+ MiscDebug.getCurrentTimeFormatted());</span>
 }
 
 <span class="fc" id="L49">            nChanged = 0;</span>
@@ -93,8 +93,8 @@ import java.util.Set;
 <span class="fc bfc" id="L93" title="All 2 branches covered.">for (PairInt p : curve) {</span>
 <span class="fc" id="L94">    img3.setRGB(p.getX(), p.getY(), 255, 0, 0);</span>
 <span class="fc" id="L95">}</span>
-<span class="fc" id="L96">MiscDebug.writeImageCopy(img3, &quot;spur_removal_&quot; + nIter + &quot;_&quot; </span>
-<span class="fc" id="L97">+ MiscDebug.getCurrentTimeFormatted() + &quot;.png&quot;);</span>
+<span class="fc" id="L96">MiscDebug.writeImage(img3, &quot;spur_removal_&quot; + nIter + &quot;_&quot; </span>
+<span class="fc" id="L97">+ MiscDebug.getCurrentTimeFormatted());</span>
 }
 
 <span class="fc" id="L100">    }</span>
@@ -119,8 +119,8 @@ import java.util.Set;
 <span class="fc" id="L119">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>
 <span class="fc" id="L120">            imageWidth, imageHeight, getPattern1());</span>
         
-<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (hasPattern) {</span>
-<span class="fc" id="L123">            return true;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (hasPattern) {</span>
+<span class="nc" id="L123">            return true;</span>
         }
 
 <span class="fc" id="L126">        hasPattern = testPatternSwapDirections(xCoord, yCoord, curve, </span>

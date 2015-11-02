@@ -65,8 +65,8 @@ public class IntensityFeatureComparisonStats implements
 <span class="fc" id="L65">                Logger.getLogger(this.getClass().getName()).warning(</span>
                     &quot;comparison by cost differs from comparison by intensity SSD&quot;
                     + &quot; cc=&quot; + cc + &quot; ci=&quot; + ci + 
-<span class="fc" id="L68">                    &quot;this.stat=&quot; + this.toString() +</span>
-<span class="fc" id="L69">                    &quot;other.stat=&quot; + other.toString()</span>
+<span class="fc" id="L68">                    &quot; this.stat=&quot; + this.toString() +</span>
+<span class="fc" id="L69">                    &quot; other.stat=&quot; + other.toString()</span>
                 );
             }
             
@@ -89,9 +89,9 @@ public class IntensityFeatureComparisonStats implements
 <span class="fc" id="L89">            return compareByCombinedIntStat(other);</span>
         }
         
-<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (compareByCost) {</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (compareByCost) {</span>
             
-<span class="fc" id="L94">            return compareByCost(other);</span>
+<span class="nc" id="L94">            return compareByCost(other);</span>
             
         } else {
             
@@ -189,5 +189,23 @@ public class IntensityFeatureComparisonStats implements
         
 <span class="fc" id="L190">        return false;        </span>
     }
+
+    @Override
+    public String toString() {
+        
+<span class="fc" id="L196">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="fc" id="L198">        sb.append(&quot;cost=&quot;).append(Double.toString(cost)).append(&quot; &quot;)</span>
+<span class="fc" id="L199">            .append(&quot;adjustedCost&quot;).append(Double.toString(adjustedCost))</span>
+<span class="fc" id="L200">            .append(&quot; &quot;).append(&quot; scale=&quot;).append(Double.toString(scale))</span>
+<span class="fc" id="L201">            .append(&quot; stats=[&quot;);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        for (FeatureComparisonStat stat : comparisonStats) {</span>
+<span class="fc" id="L203">            sb.append(stat.toString()).append(&quot;, &quot;);</span>
+<span class="fc" id="L204">        }</span>
+<span class="fc" id="L205">        sb.append(&quot;]&quot;);</span>
+            
+<span class="fc" id="L207">        return sb.toString();</span>
+    }
+    
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

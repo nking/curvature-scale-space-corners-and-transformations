@@ -301,8 +301,8 @@ import java.util.Set;
         Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; overridePointsAdded, 
         Set&lt;PairInt&gt; overridePointsRemoved, int imageWidth, int imageHeight) {
         
-<span class="nc" id="L304">        int col = p.getX();</span>
-<span class="nc" id="L305">        int row = p.getY();</span>
+<span class="fc" id="L304">        int col = p.getX();</span>
+<span class="fc" id="L305">        int row = p.getY();</span>
         
         /*
         coordinates of the 8 neighbors as already created PairInts without 
@@ -310,16 +310,16 @@ import java.util.Set;
         indexes are found as +1 of the difference relative to center,
         for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
         */
-<span class="nc" id="L313">        PairInt[][] neighborCoords = createCoordinatePointsForEightNeighbors(</span>
+<span class="fc" id="L313">        PairInt[][] neighborCoords = createCoordinatePointsForEightNeighbors(</span>
             col, row);
         
-<span class="nc bnc" id="L316" title="All 2 branches missed.">        if ((col - 1) &lt; 0) {</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">        if ((col - 1) &lt; 0) {</span>
             /*
              | @ @
              | C @
              | @ @
              */
-<span class="nc bnc" id="L322" title="All 2 branches missed.">            if ((col + 1) &gt; (imageWidth - 1)) {</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">            if ((col + 1) &gt; (imageWidth - 1)) {</span>
                 /*
                  | @ |
                  | C |
@@ -329,7 +329,7 @@ import java.util.Set;
                 // what its position
 <span class="nc" id="L330">                return true;</span>
             }
-<span class="nc bnc" id="L332" title="All 2 branches missed.">            if ((row - 1) &lt; 0) {</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">            if ((row - 1) &lt; 0) {</span>
                 /*
                  | @ @
                  | C @
@@ -358,7 +358,7 @@ import java.util.Set;
                 }
                 
 <span class="nc" id="L360">                return false;</span>
-<span class="nc bnc" id="L361" title="All 2 branches missed.">            } else if ((row + 1) &gt; (imageHeight - 1)) {</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">            } else if ((row + 1) &gt; (imageHeight - 1)) {</span>
                 /*
                  | C @
                  | @ @
@@ -395,19 +395,19 @@ import java.util.Set;
              | C .     '#' is disconnected if All .'s are 0s
              | ? ?     AND AtLeastOne (? is 1)
              */
-<span class="nc" id="L398">            if (</span>
+<span class="fc" id="L398">            if (</span>
                 (
-<span class="nc bnc" id="L400" title="All 2 branches missed.">                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &amp;&amp;</span>
-<span class="nc bnc" id="L401" title="All 2 branches missed.">                    (overridePointsAdded.contains(neighborCoords[1][2]) ||</span>
-<span class="nc bnc" id="L402" title="All 2 branches missed.">                    points.contains(neighborCoords[1][2])))</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &amp;&amp;</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">                    (overridePointsAdded.contains(neighborCoords[1][2]) ||</span>
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">                    points.contains(neighborCoords[1][2])))</span>
                     || 
-<span class="nc bnc" id="L404" title="All 2 branches missed.">                    (!overridePointsRemoved.contains(neighborCoords[2][2]) &amp;&amp;</span>
-<span class="nc bnc" id="L405" title="All 2 branches missed.">                    (overridePointsAdded.contains(neighborCoords[2][2]) ||</span>
-<span class="nc bnc" id="L406" title="All 2 branches missed.">                    points.contains(neighborCoords[2][2])))</span>
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">                    (!overridePointsRemoved.contains(neighborCoords[2][2]) &amp;&amp;</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">                    (overridePointsAdded.contains(neighborCoords[2][2]) ||</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">                    points.contains(neighborCoords[2][2])))</span>
                 ) 
                 &amp;&amp; 
-<span class="nc bnc" id="L409" title="All 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[2][1]) ||</span>
-<span class="nc bnc" id="L410" title="All 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[2][1]) &amp;&amp;</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[2][1]) ||</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[2][1]) &amp;&amp;</span>
 <span class="nc bnc" id="L411" title="All 2 branches missed.">                    !points.contains(neighborCoords[2][1])))</span>
                 ) {
                 
@@ -429,23 +429,23 @@ import java.util.Set;
              | C #   '#' is disconnected if All .'s are 0s
              | . _
              */
-<span class="nc" id="L432">            if (</span>
-<span class="nc bnc" id="L433" title="All 2 branches missed.">                (!overridePointsRemoved.contains(neighborCoords[2][1]) &amp;&amp;</span>
-<span class="nc bnc" id="L434" title="All 2 branches missed.">                (overridePointsAdded.contains(neighborCoords[2][1]) ||</span>
+<span class="fc" id="L432">            if (</span>
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">                (!overridePointsRemoved.contains(neighborCoords[2][1]) &amp;&amp;</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">                (overridePointsAdded.contains(neighborCoords[2][1]) ||</span>
 <span class="nc bnc" id="L435" title="All 2 branches missed.">                points.contains(neighborCoords[2][1])))</span>
                 ) {
                 
-<span class="nc" id="L438">                if (</span>
-<span class="nc bnc" id="L439" title="All 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[1][2]) ||</span>
-<span class="nc bnc" id="L440" title="All 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[1][2]) &amp;&amp;</span>
-<span class="nc bnc" id="L441" title="All 2 branches missed.">                    !points.contains(neighborCoords[1][2])))</span>
+<span class="fc" id="L438">                if (</span>
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[1][2]) ||</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[1][2]) &amp;&amp;</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">                    !points.contains(neighborCoords[1][2])))</span>
                     || 
 <span class="nc bnc" id="L443" title="All 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[1][0]) ||</span>
 <span class="nc bnc" id="L444" title="All 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[1][0]) &amp;&amp;</span>
 <span class="nc bnc" id="L445" title="All 2 branches missed.">                    !points.contains(neighborCoords[1][0])))</span>
                     ) {
                     
-<span class="nc" id="L448">                    return true;</span>
+<span class="fc" id="L448">                    return true;</span>
                 }
             }
             /*
@@ -1060,7 +1060,7 @@ import java.util.Set;
 <span class="fc" id="L1060">        int w = input.getWidth();</span>
 <span class="fc" id="L1061">        int h = input.getHeight();</span>
         
-<span class="fc" id="L1063">        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2);</span>
+<span class="fc" id="L1063">        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2, input.getType());</span>
 <span class="fc" id="L1064">        output.setXRelativeOffset(1);</span>
 <span class="fc" id="L1065">        output.setYRelativeOffset(1);</span>
         

@@ -204,19 +204,25 @@ import algorithms.util.PairInt;
     public String toString() {
         
 <span class="fc" id="L206">        StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L207">        sb.append(&quot;p1=&quot;).append(img1Point.toString()).append(&quot; &quot;)</span>
-<span class="fc" id="L208">            .append(&quot;p2=&quot;).append(img2Point.toString())</span>
-<span class="fc" id="L209">            .append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff))</span>
-<span class="fc" id="L210">            .append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr))</span>
-<span class="fc" id="L211">            .append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff))</span>
-<span class="fc" id="L212">            .append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr))            </span>
-<span class="fc" id="L213">            .append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff))</span>
-<span class="fc" id="L214">            .append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr))</span>
-<span class="fc" id="L215">            .append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees))</span>
-<span class="fc" id="L216">            .append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees))</span>
+<span class="fc" id="L207">        sb.append(&quot;p1=&quot;);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        if (img1Point != null) {</span>
+<span class="fc" id="L209">            sb.append(img1Point.toString()).append(&quot; &quot;);</span>
+        }
+<span class="fc" id="L211">        sb.append(&quot;p2=&quot;);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (img2Point != null) {</span>
+<span class="fc" id="L213">            sb.append(img2Point.toString()).append(&quot; &quot;);</span>
+        }
+<span class="fc" id="L215">        sb.append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff))</span>
+<span class="fc" id="L216">            .append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr))</span>
+<span class="fc" id="L217">            .append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff))</span>
+<span class="fc" id="L218">            .append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr))            </span>
+<span class="fc" id="L219">            .append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff))</span>
+<span class="fc" id="L220">            .append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr))</span>
+<span class="fc" id="L221">            .append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees))</span>
+<span class="fc" id="L222">            .append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees))</span>
         ;
         
-<span class="fc" id="L219">        return sb.toString();</span>
+<span class="fc" id="L225">        return sb.toString();</span>
     }
 
 }

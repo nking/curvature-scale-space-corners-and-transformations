@@ -64,26 +64,26 @@ public class CurvatureScaleSpaceContour {
     
     public CurvatureScaleSpaceContour copy() {
         
-<span class="fc" id="L67">        CurvatureScaleSpaceContour c = </span>
-<span class="fc" id="L68">            new CurvatureScaleSpaceContour(peak.getX(), peak.getY());</span>
+<span class="nc" id="L67">        CurvatureScaleSpaceContour c = </span>
+<span class="nc" id="L68">            new CurvatureScaleSpaceContour(peak.getX(), peak.getY());</span>
         
-<span class="fc" id="L70">        c.setEdgeNumber(edgeNumber);</span>
+<span class="nc" id="L70">        c.setEdgeNumber(edgeNumber);</span>
         
-<span class="fc" id="L72">        CurvatureScaleSpaceImagePoint[] peakDetails = </span>
+<span class="nc" id="L72">        CurvatureScaleSpaceImagePoint[] peakDetails = </span>
             new CurvatureScaleSpaceImagePoint[peakDetailPoints.length];
         
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; peakDetailPoints.length; ++i) {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        for (int i = 0; i &lt; peakDetailPoints.length; ++i) {</span>
             
-<span class="fc" id="L77">            CurvatureScaleSpaceImagePoint cssip = peakDetailPoints[i];</span>
+<span class="nc" id="L77">            CurvatureScaleSpaceImagePoint cssip = peakDetailPoints[i];</span>
             
-<span class="fc" id="L79">            CurvatureScaleSpaceImagePoint cssipCopy = cssip.copy();</span>
+<span class="nc" id="L79">            CurvatureScaleSpaceImagePoint cssipCopy = cssip.copy();</span>
             
-<span class="fc" id="L81">            peakDetails[i] = cssipCopy;</span>
+<span class="nc" id="L81">            peakDetails[i] = cssipCopy;</span>
         }
         
-<span class="fc" id="L84">        c.setPeakDetails(peakDetails);</span>
+<span class="nc" id="L84">        c.setPeakDetails(peakDetails);</span>
         
-<span class="fc" id="L86">        return c;</span>
+<span class="nc" id="L86">        return c;</span>
     }
 
     @Override

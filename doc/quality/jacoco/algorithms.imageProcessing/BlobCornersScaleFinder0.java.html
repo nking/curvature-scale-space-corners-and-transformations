@@ -3,10 +3,7 @@
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -23,19 +20,19 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="fc" id="L26">public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {</span>
+<span class="fc" id="L23">public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {</span>
 
     protected void filterToSameNumberIfPossible(
         PairIntArray curve1, List&lt;CornerRegion&gt; regions1,
         PairIntArray curve2, List&lt;CornerRegion&gt; regions2) {
         
-<span class="fc" id="L32">        int dist = 2;</span>
+<span class="fc" id="L29">        int dist = 2;</span>
         
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (regions1.size() != regions2.size()) {</span>
-<span class="fc" id="L35">            filterCorners(curve1, regions1, dist);</span>
-<span class="fc" id="L36">            filterCorners(curve2, regions2, dist);</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (regions1.size() != regions2.size()) {</span>
+<span class="fc" id="L32">            filterCorners(curve1, regions1, dist);</span>
+<span class="fc" id="L33">            filterCorners(curve2, regions2, dist);</span>
         }
-<span class="fc" id="L38">    }</span>
+<span class="fc" id="L35">    }</span>
     
     protected void filterCorners(PairIntArray curve, 
         List&lt;CornerRegion&gt; regions, int dist) {
@@ -44,66 +41,66 @@ import java.util.Set;
         if there are more than 1 corner within dist of 2 or so of on another,
         remove all except strongest corner.
         */
-<span class="fc" id="L47">        List&lt;Set&lt;Integer&gt;&gt; closeCornerIndexes = findCloseCorners(dist, regions);</span>
+<span class="fc" id="L44">        List&lt;Set&lt;Integer&gt;&gt; closeCornerIndexes = findCloseCorners(dist, regions);</span>
         
-<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (closeCornerIndexes.isEmpty()) {</span>
-<span class="fc" id="L50">            return;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (closeCornerIndexes.isEmpty()) {</span>
+<span class="fc" id="L47">            return;</span>
         }
         
-<span class="fc" id="L53">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (Set&lt;Integer&gt; set : closeCornerIndexes) {</span>
-<span class="fc" id="L55">            float maxK = Float.MIN_VALUE;</span>
-<span class="fc" id="L56">            Integer maxKIndex = null;</span>
-<span class="fc bfc" id="L57" title="All 2 branches covered.">            for (Integer index : set) {</span>
-<span class="fc" id="L58">                CornerRegion cr = regions.get(index.intValue());</span>
-<span class="fc" id="L59">                float k = cr.getK()[cr.getKMaxIdx()];</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">                if (k &gt; maxK) {</span>
-<span class="fc" id="L61">                    maxK = k;</span>
-<span class="fc" id="L62">                    maxKIndex = index;</span>
+<span class="fc" id="L50">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (Set&lt;Integer&gt; set : closeCornerIndexes) {</span>
+<span class="fc" id="L52">            float maxK = Float.MIN_VALUE;</span>
+<span class="fc" id="L53">            Integer maxKIndex = null;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            for (Integer index : set) {</span>
+<span class="fc" id="L55">                CornerRegion cr = regions.get(index.intValue());</span>
+<span class="fc" id="L56">                float k = cr.getK()[cr.getKMaxIdx()];</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                if (k &gt; maxK) {</span>
+<span class="fc" id="L58">                    maxK = k;</span>
+<span class="fc" id="L59">                    maxKIndex = index;</span>
                 }
-<span class="fc" id="L64">            }</span>
-<span class="fc bfc" id="L65" title="All 2 branches covered.">            for (Integer index : set) {</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">                if (!index.equals(maxKIndex)) {</span>
-<span class="fc" id="L67">                    remove.add(index);</span>
+<span class="fc" id="L61">            }</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            for (Integer index : set) {</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                if (!index.equals(maxKIndex)) {</span>
+<span class="fc" id="L64">                    remove.add(index);</span>
                 }
-<span class="fc" id="L69">            }</span>
-<span class="fc" id="L70">        }</span>
+<span class="fc" id="L66">            }</span>
+<span class="fc" id="L67">        }</span>
         
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (remove.size() &gt; 1) {</span>
-<span class="fc" id="L73">            Collections.sort(remove);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (remove.size() &gt; 1) {</span>
+<span class="fc" id="L70">            Collections.sort(remove);</span>
         }
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L76">            regions.remove(remove.get(i).intValue());</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L73">            regions.remove(remove.get(i).intValue());</span>
         }
-<span class="fc" id="L78">    }</span>
+<span class="fc" id="L75">    }</span>
     
     private static List&lt;Set&lt;Integer&gt;&gt; findCloseCorners(int tolD, 
         List&lt;CornerRegion&gt; regions) {
        
-<span class="fc" id="L83">        float[] x = new float[regions.size()];</span>
-<span class="fc" id="L84">        float[] y = new float[regions.size()];</span>
-<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
-<span class="fc" id="L86">            CornerRegion cr = regions.get(i);            </span>
-<span class="fc" id="L87">            x[i] = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L88">            y[i] = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L80">        float[] x = new float[regions.size()];</span>
+<span class="fc" id="L81">        float[] y = new float[regions.size()];</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="fc" id="L83">            CornerRegion cr = regions.get(i);            </span>
+<span class="fc" id="L84">            x[i] = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L85">            y[i] = cr.getY()[cr.getKMaxIdx()];</span>
         }
         
-<span class="fc" id="L91">        List&lt;Set&lt;Integer&gt;&gt; close = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+<span class="fc" id="L88">        List&lt;Set&lt;Integer&gt;&gt; close = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
         
-<span class="fc" id="L93">        FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(x, y);</span>
+<span class="fc" id="L90">        FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(x, y);</span>
 
-<span class="fc" id="L95">        groupFinder.findGroupsOfPoints(tolD);</span>
+<span class="fc" id="L92">        groupFinder.findGroupsOfPoints(tolD);</span>
         
-<span class="fc" id="L97">        int nGroups = groupFinder.getNumberOfGroups();</span>
+<span class="fc" id="L94">        int nGroups = groupFinder.getNumberOfGroups();</span>
         
-<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L100">            Set&lt;Integer&gt; group = groupFinder.getGroupIndexes(i);</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (group.size() &gt; 1) {</span>
-<span class="fc" id="L102">                close.add(group);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L97">            Set&lt;Integer&gt; group = groupFinder.getGroupIndexes(i);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            if (group.size() &gt; 1) {</span>
+<span class="fc" id="L99">                close.add(group);</span>
             }
         }
         
-<span class="fc" id="L106">        return close;</span>
+<span class="fc" id="L103">        return close;</span>
     }
   
     public TransformationParameters solveForScale(
@@ -113,23 +110,23 @@ import java.util.Set;
         SegmentationType type2, boolean useBinned2,
         float[] outputScaleRotTransXYStDev) {
 
-<span class="fc" id="L116">        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);</span>
+<span class="fc" id="L113">        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);</span>
             
-<span class="fc" id="L118">        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);</span>
+<span class="fc" id="L115">        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);</span>
 
-<span class="fc" id="L120">        List&lt;List&lt;CornerRegion&gt;&gt; corners1List = </span>
-<span class="fc" id="L121">            img1Helper.getPerimeterCorners(type1, useBinned1);</span>
+<span class="fc" id="L117">        List&lt;List&lt;CornerRegion&gt;&gt; corners1List = </span>
+<span class="fc" id="L118">            img1Helper.getPerimeterCorners(type1, useBinned1);</span>
         
-<span class="fc" id="L123">        List&lt;List&lt;CornerRegion&gt;&gt; corners2List = </span>
-<span class="fc" id="L124">            img2Helper.getPerimeterCorners(type2, useBinned2);</span>
+<span class="fc" id="L120">        List&lt;List&lt;CornerRegion&gt;&gt; corners2List = </span>
+<span class="fc" id="L121">            img2Helper.getPerimeterCorners(type2, useBinned2);</span>
         
-<span class="fc" id="L126">        List&lt;Set&lt;PairInt&gt;&gt; blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);</span>
-<span class="fc" id="L127">        List&lt;Set&lt;PairInt&gt;&gt; blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);</span>
-<span class="fc" id="L128">        List&lt;PairIntArray&gt; perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);</span>
-<span class="fc" id="L129">        List&lt;PairIntArray&gt; perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);</span>
+<span class="fc" id="L123">        List&lt;Set&lt;PairInt&gt;&gt; blobs1 = img1Helper.imgHelper.getBlobs(type1, useBinned1);</span>
+<span class="fc" id="L124">        List&lt;Set&lt;PairInt&gt;&gt; blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);</span>
+<span class="fc" id="L125">        List&lt;PairIntArray&gt; perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);</span>
+<span class="fc" id="L126">        List&lt;PairIntArray&gt; perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);</span>
         
-<span class="fc" id="L131">        int n1 = corners1List.size();</span>
-<span class="fc" id="L132">        int n2 = corners2List.size();</span>
+<span class="fc" id="L128">        int n1 = corners1List.size();</span>
+<span class="fc" id="L129">        int n2 = corners2List.size();</span>
         
 /*
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -152,8 +149,8 @@ log.info(&quot;index1=&quot; + index1.toString() + &quot; index2=&quot; + index2
 + &quot; xyCen1=&quot; + Arrays.toString(xyCen1) + &quot; xyCen2=&quot; + Arrays.toString(xyCen2));
 
 try {
-ImageExt img1C = img1.createColorGreyscaleExt();
-ImageExt img2C = img2.createColorGreyscaleExt();
+ImageExt img1C = img1.copyToColorGreyscaleExt();
+ImageExt img2C = img2.copyToColorGreyscaleExt();
 //ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
 ImageIOHelper.addAlternatingColorCornerRegionsToImage(cr1, img1C, 0, 0, 1);
            
@@ -171,90 +168,93 @@ int z = 1;//1,3 in contours2 should be averaged?
 } catch(IOException e) {
 }
 */
-<span class="fc" id="L174">        Map&lt;Integer, TransformationPair4&gt; trMap = new HashMap&lt;Integer, TransformationPair4&gt;();</span>
+<span class="fc" id="L171">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc bfc" id="L176" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
-            
-<span class="fc" id="L178">            List&lt;CornerRegion&gt; corners1 = corners1List.get(i);</span>
-<span class="fc" id="L179">            int nc1 = corners1.size();</span>
-<span class="fc bfc" id="L180" title="All 2 branches covered.">            if (nc1 &lt; 3) {</span>
-<span class="fc" id="L181">                continue;</span>
+<span class="fc" id="L173">        Map&lt;Integer, TransformationPair4&gt; trMap = new HashMap&lt;Integer, TransformationPair4&gt;();</span>
+        
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+                        
+<span class="fc" id="L177">            List&lt;CornerRegion&gt; corners1 = corners1List.get(i);</span>
+<span class="fc" id="L178">            int nc1 = corners1.size();</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (nc1 &lt; 3) {</span>
+<span class="fc" id="L180">                continue;</span>
             }
             
-<span class="fc" id="L184">            TransformationPair4 bestMatches = null;</span>
+<span class="fc" id="L183">            TransformationPair4 bestMatches = null;</span>
             
-<span class="fc bfc" id="L186" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
-                
-<span class="fc" id="L188">                List&lt;CornerRegion&gt; corners2 = corners2List.get(j);</span>
-<span class="fc" id="L189">                int nc2 = corners2.size();</span>
-<span class="fc bfc" id="L190" title="All 2 branches covered.">                if (nc2 &lt; 3) {</span>
-<span class="fc" id="L191">                    continue;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
+                                
+<span class="fc" id="L187">                List&lt;CornerRegion&gt; corners2 = corners2List.get(j);</span>
+<span class="fc" id="L188">                int nc2 = corners2.size();</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                if (nc2 &lt; 3) {</span>
+<span class="fc" id="L190">                    continue;</span>
                 }
+
+<span class="fc" id="L193">                int minN = Math.min(nc1, nc2);</span>
+<span class="fc" id="L194">                int diffNC = Math.abs(nc1 - nc2);</span>
                 
-<span class="fc" id="L194">                int minN = Math.min(nc1, nc2);</span>
-<span class="fc" id="L195">                int diffNC = Math.abs(nc1 - nc2);</span>
-                
-<span class="fc bfc" id="L197" title="All 8 branches covered.">                if (((minN &gt; 10) &amp;&amp; (diffNC &gt; 3)) || ((minN &lt;= 10) &amp;&amp; (diffNC &gt; 2))){</span>
-<span class="fc" id="L198">                    continue;</span>
+<span class="fc bfc" id="L196" title="All 8 branches covered.">                if (((minN &gt; 10) &amp;&amp; (diffNC &gt; 3)) || ((minN &lt;= 10) &amp;&amp; (diffNC &gt; 2))){</span>
+<span class="fc" id="L197">                    continue;</span>
                 }
                 
                 List&lt;CornerRegion&gt; c1;
                 List&lt;CornerRegion&gt; c2;
                 
-<span class="fc bfc" id="L204" title="All 2 branches covered.">                if (nc1 == nc2) {</span>
-<span class="fc" id="L205">                    c1 = corners1;</span>
-<span class="fc" id="L206">                    c2 = corners2;</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                if (nc1 == nc2) {</span>
+<span class="fc" id="L204">                    c1 = corners1;</span>
+<span class="fc" id="L205">                    c2 = corners2;</span>
                 } else {
-<span class="fc" id="L208">                    c1 = new ArrayList&lt;CornerRegion&gt;(corners1);</span>
-<span class="fc" id="L209">                    c2 = new ArrayList&lt;CornerRegion&gt;(corners2);                  </span>
-<span class="fc" id="L210">                    filterToSameNumberIfPossible(perimeters1.get(i), c1,</span>
-<span class="fc" id="L211">                        perimeters2.get(j), c2);</span>
+<span class="fc" id="L207">                    c1 = new ArrayList&lt;CornerRegion&gt;(corners1);</span>
+<span class="fc" id="L208">                    c2 = new ArrayList&lt;CornerRegion&gt;(corners2);                  </span>
+<span class="fc" id="L209">                    filterToSameNumberIfPossible(perimeters1.get(i), c1,</span>
+<span class="fc" id="L210">                        perimeters2.get(j), c2);</span>
                     
-<span class="fc bfc" id="L213" title="All 2 branches covered.">                    if (c1.size() != c2.size()) {</span>
-<span class="fc" id="L214">                        continue;</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">                    if (c1.size() != c2.size()) {</span>
+<span class="fc" id="L213">                        continue;</span>
                     }
                 }
                 
-<span class="fc" id="L218">                ClosedCurveCornerMatcher0 matcher </span>
-                    = new ClosedCurveCornerMatcher0(features1, features2, c1, 
-                        c2, true);
+<span class="fc" id="L217">                ClosedCurveCornerMatcher0 matcher = new ClosedCurveCornerMatcher0();</span>
                 
-<span class="fc" id="L222">                boolean solved = matcher.matchCorners();</span>
+<span class="fc" id="L219">                boolean solved = matcher.matchCorners(features1, features2, c1, </span>
+                    c2, true, img1, img2);
                 
-<span class="fc bfc" id="L224" title="All 2 branches covered.">                if (solved) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                if (solved) {</span>
                     
-<span class="fc bfc" id="L226" title="All 2 branches covered.">                    if (bestMatches == null) {</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">                    if (bestMatches == null) {</span>
                         
-<span class="fc" id="L228">                        bestMatches = matcher.getTransformationPair();</span>
-<span class="fc" id="L229">                        bestMatches.setCornerListIndex1(i);</span>
-<span class="fc" id="L230">                        bestMatches.setCornerListIndex2(j);</span>
+<span class="fc" id="L226">                        bestMatches = matcher.getTransformationPair();</span>
+<span class="fc" id="L227">                        bestMatches.setCornerListIndex1(i);</span>
+<span class="fc" id="L228">                        bestMatches.setCornerListIndex2(j);</span>
                         
                     } else {
                         
-<span class="fc" id="L234">                        TransformationPair4 tr = matcher.getTransformationPair();</span>
-<span class="fc" id="L235">                        tr.setCornerListIndex1(i);</span>
-<span class="fc" id="L236">                        tr.setCornerListIndex2(j);</span>
+<span class="fc" id="L232">                        TransformationPair4 tr = matcher.getTransformationPair();</span>
+<span class="fc" id="L233">                        tr.setCornerListIndex1(i);</span>
+<span class="fc" id="L234">                        tr.setCornerListIndex2(j);</span>
                         
-<span class="fc" id="L238">                        int bN = bestMatches.getMatchedCornerRegions1().size();</span>
-<span class="fc" id="L239">                        int cN = tr.getMatchedCornerRegions1().size();</span>
+<span class="fc" id="L236">                        int bN = bestMatches.getMatchedCornerRegions1().size();</span>
+<span class="fc" id="L237">                        int cN = tr.getMatchedCornerRegions1().size();</span>
                         
-<span class="fc bfc" id="L241" title="All 4 branches covered.">                        if (((cN &gt;= bN) &amp;&amp; (tr.getCost() &lt; bestMatches.getCost()))</span>
-<span class="pc bpc" id="L242" title="3 of 4 branches missed.">                            || ((tr.getCost() == bestMatches.getCost()) &amp;&amp; (cN &gt; bN))) {</span>
+<span class="fc bfc" id="L239" title="All 4 branches covered.">                        if (((cN &gt;= bN) &amp;&amp; (tr.getCost() &lt; bestMatches.getCost()))</span>
+<span class="pc bpc" id="L240" title="3 of 4 branches missed.">                            || ((tr.getCost() == bestMatches.getCost()) &amp;&amp; (cN &gt; bN))) {</span>
                             
-<span class="fc" id="L244">                            bestMatches = tr;</span>
+<span class="fc" id="L242">                            bestMatches = tr;</span>
                         }
                     }
                 }
             }
             
-<span class="fc bfc" id="L250" title="All 2 branches covered.">            if (bestMatches != null) {</span>
-<span class="fc" id="L251">                trMap.put(Integer.valueOf(i), bestMatches);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">            if (bestMatches != null) {</span>
+<span class="fc" id="L249">                trMap.put(Integer.valueOf(i), bestMatches);</span>
             }
         }
-              
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (trMap.isEmpty()) {</span>
-<span class="fc" id="L256">            return null;</span>
+        
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (trMap.isEmpty()) {</span>
+<span class="nc" id="L254">            return null;</span>
         }
+        
+<span class="fc" id="L257">        long t10 = System.currentTimeMillis();</span>
         
 <span class="fc" id="L259">        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);</span>
 <span class="fc" id="L260">        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);</span>
@@ -291,23 +291,27 @@ int z = 1;//1,3 in contours2 should be averaged?
                     outputScaleRotTransXYStDev00);
                 
 <span class="pc bpc" id="L293" title="1 of 2 branches missed.">                if (params != null) {</span>
-<span class="fc bfc" id="L294" title="All 2 branches covered.">                    if (areSimilar(minCostParams, params, 25)) {</span>
-<span class="fc" id="L295">                        combine.addAll(tr.getMatchedCompStats());</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">                    if (areSimilar(minCostParams, params, 25)) {</span>
+<span class="nc" id="L295">                        combine.addAll(tr.getMatchedCompStats());</span>
                     }
                 }
             }
 <span class="fc" id="L299">        }</span>
         
-<span class="fc bfc" id="L301" title="All 2 branches covered.">        if (combine.isEmpty()) {</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        if (combine.isEmpty()) {</span>
 <span class="fc" id="L302">            return minCostParams;</span>
         }
         
-<span class="fc" id="L305">        combine.addAll(minCostTR.getMatchedCompStats());</span>
+<span class="nc" id="L305">        combine.addAll(minCostTR.getMatchedCompStats());</span>
         
-<span class="fc" id="L307">        TransformationParameters combinedParams = calculateTransformation(</span>
+<span class="nc" id="L307">        TransformationParameters combinedParams = calculateTransformation(</span>
             binFactor1, binFactor2, combine, outputScaleRotTransXYStDev);
         
-<span class="fc" id="L310">        return combinedParams;</span>
+<span class="nc" id="L310">        long t11 = System.currentTimeMillis();</span>
+<span class="nc" id="L311">        long t1Sec = (t10 - t11)/1000;</span>
+<span class="nc" id="L312">        log.info(&quot;    compare and combine matches(sec)=&quot; + t1Sec);</span>
+        
+<span class="nc" id="L314">        return combinedParams;</span>
     }
 
 }

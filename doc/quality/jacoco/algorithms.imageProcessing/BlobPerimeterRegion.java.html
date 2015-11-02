@@ -189,21 +189,21 @@ public class BlobPerimeterRegion {
 <span class="fc" id="L189">    }</span>
     
     public int getIndexWithinCurve() {
-<span class="fc" id="L192">        return idxWithinCurve;</span>
+<span class="nc" id="L192">        return idxWithinCurve;</span>
     }
 
     public BlobPerimeterRegion copy() {
         
-<span class="fc" id="L197">        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, </span>
+<span class="nc" id="L197">        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, </span>
             prevY, x, y, nextX, nextY, blob);
         
-<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (orientation != Double.MIN_VALUE) {</span>
-<span class="fc" id="L201">            c.orientation = orientation;</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (orientation != Double.MIN_VALUE) {</span>
+<span class="nc" id="L201">            c.orientation = orientation;</span>
         }
         
-<span class="fc" id="L204">        c.setIndexWithinCurve(idxWithinCurve);</span>
+<span class="nc" id="L204">        c.setIndexWithinCurve(idxWithinCurve);</span>
         
-<span class="fc" id="L206">        return c;</span>
+<span class="nc" id="L206">        return c;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -902,7 +902,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L902">        log.info(&quot;nTot=&quot; + nTot + &quot; nPixels=&quot; + input.getNPixels());</span>
 <span class="pc bpc" id="L903" title="3 of 4 branches missed.">        assert(nTot == input.getNPixels());</span>
         // ------ end debug -----
-        
+  
 <span class="fc" id="L906">        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, </span>
             blackPixels, whitePixels);
         
@@ -1209,54 +1209,58 @@ import java.util.logging.Logger;
      * CIE xy pixel clusters, may be in separate groups already due to a
      * frequency based grouping for them.
      * @param input
+     * @param fracFreqLimit
      * @param useBlur apply a gaussian blur of sigma=1 before the method logic
      * @return 
      */
     public GreyscaleImage applyUsingPolarCIEXYAndFrequency(ImageExt input,
         final float fracFreqLimit, boolean useBlur) {
         
-<span class="fc" id="L1218">        List&lt;Set&lt;PairInt&gt;&gt; clusters = calculateUsingPolarCIEXYAndFrequency(</span>
+<span class="fc" id="L1219">        int w = input.getWidth();</span>
+<span class="fc" id="L1220">        int h = input.getHeight();</span>
+        
+<span class="fc" id="L1222">        List&lt;Set&lt;PairInt&gt;&gt; clusters = calculateUsingPolarCIEXYAndFrequency(</span>
             input, fracFreqLimit, useBlur);
         
-<span class="fc" id="L1221">        int n = clusters.size();</span>
+<span class="fc" id="L1225">        int n = clusters.size();</span>
         //assert(n &lt; 256);
         
         // sort indexes by set size
-<span class="fc" id="L1225">        int maxSize = Integer.MIN_VALUE;</span>
-<span class="fc" id="L1226">        int[] indexes = new int[n];</span>
-<span class="fc" id="L1227">        int[] sizes = new int[n];</span>
-<span class="fc bfc" id="L1228" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1229">            indexes[i] = i;</span>
-<span class="fc" id="L1230">            sizes[i] = clusters.get(i).size();</span>
-<span class="fc bfc" id="L1231" title="All 2 branches covered.">            if (sizes[i] &gt; maxSize) {</span>
-<span class="fc" id="L1232">                maxSize = sizes[i];</span>
+<span class="fc" id="L1229">        int maxSize = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1230">        int[] indexes = new int[n];</span>
+<span class="fc" id="L1231">        int[] sizes = new int[n];</span>
+<span class="fc bfc" id="L1232" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1233">            indexes[i] = i;</span>
+<span class="fc" id="L1234">            sizes[i] = clusters.get(i).size();</span>
+<span class="fc bfc" id="L1235" title="All 2 branches covered.">            if (sizes[i] &gt; maxSize) {</span>
+<span class="fc" id="L1236">                maxSize = sizes[i];</span>
             }
         }
-<span class="fc" id="L1235">        CountingSort.sort(sizes, indexes, maxSize);</span>
+<span class="fc" id="L1239">        CountingSort.sort(sizes, indexes, maxSize);</span>
         
-<span class="fc" id="L1237">        int delta = 256/clusters.size();</span>
-<span class="pc bpc" id="L1238" title="1 of 2 branches missed.">        if (delta == 0) {</span>
-<span class="nc" id="L1239">            delta = 1;</span>
+<span class="fc" id="L1241">        int delta = 256/clusters.size();</span>
+<span class="pc bpc" id="L1242" title="1 of 2 branches missed.">        if (delta == 0) {</span>
+<span class="nc" id="L1243">            delta = 1;</span>
         }
         
-<span class="fc" id="L1242">        GreyscaleImage img2 = new GreyscaleImage(input.getWidth(), input.getHeight());</span>
-<span class="fc bfc" id="L1243" title="All 2 branches covered.">        for (int k = 0; k &lt; n; ++k) {</span>
+<span class="fc" id="L1246">        GreyscaleImage img2 = new GreyscaleImage(w, h);</span>
+<span class="fc bfc" id="L1247" title="All 2 branches covered.">        for (int k = 0; k &lt; n; ++k) {</span>
             
-<span class="fc" id="L1245">            int idx = indexes[n - k - 1];</span>
+<span class="fc" id="L1249">            int idx = indexes[n - k - 1];</span>
             
-<span class="fc" id="L1247">            Set&lt;PairInt&gt; set = clusters.get(idx);</span>
+<span class="fc" id="L1251">            Set&lt;PairInt&gt; set = clusters.get(idx);</span>
             
-<span class="fc" id="L1249">            int v = 255 - delta*k;</span>
-<span class="pc bpc" id="L1250" title="1 of 2 branches missed.">            if (v &lt; 1) {</span>
-<span class="nc" id="L1251">                continue;</span>
+<span class="fc" id="L1253">            int v = 255 - delta*k;</span>
+<span class="pc bpc" id="L1254" title="1 of 2 branches missed.">            if (v &lt; 1) {</span>
+<span class="nc" id="L1255">                continue;</span>
             }
             
-<span class="fc bfc" id="L1254" title="All 2 branches covered.">            for (PairInt p : set) {</span>
-<span class="fc" id="L1255">                img2.setValue(p.getX(), p.getY(), v);</span>
-<span class="fc" id="L1256">            }</span>
+<span class="fc bfc" id="L1258" title="All 2 branches covered.">            for (PairInt p : set) {</span>
+<span class="fc" id="L1259">                img2.setValue(p.getX(), p.getY(), v);</span>
+<span class="fc" id="L1260">            }</span>
         }
         
-<span class="fc" id="L1259">        return img2;</span>
+<span class="fc" id="L1263">        return img2;</span>
     }
     
     /**
@@ -1282,9 +1286,9 @@ import java.util.logging.Logger;
     public List&lt;Set&lt;PairInt&gt;&gt; calculateUsingPolarCIEXYAndFrequency(ImageExt input,
         boolean useBlur) {
 
-<span class="fc" id="L1285">        float fracFreqLimit = 0.03f;</span>
+<span class="fc" id="L1289">        float fracFreqLimit = 0.03f;</span>
         
-<span class="fc" id="L1287">        return calculateUsingPolarCIEXYAndFrequency(input, fracFreqLimit, useBlur);</span>
+<span class="fc" id="L1291">        return calculateUsingPolarCIEXYAndFrequency(input, fracFreqLimit, useBlur);</span>
     }
     
     /**
@@ -1315,9 +1319,10 @@ import java.util.logging.Logger;
     public List&lt;Set&lt;PairInt&gt;&gt; calculateUsingPolarCIEXYAndFrequency(ImageExt input,
         float fracFreqLimit, boolean useBlur) {
 
-<span class="fc bfc" id="L1318" title="All 2 branches covered.">        if (useBlur) {</span>
-<span class="fc" id="L1319">            ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L1320">            imageProcessor.blur(input, 1.0f);</span>
+<span class="fc bfc" id="L1322" title="All 2 branches covered.">        if (useBlur) {</span>
+<span class="fc" id="L1323">            input = input.copyToImageExt();</span>
+<span class="fc" id="L1324">            ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L1325">            imageProcessor.blur(input, 1.0f);</span>
         }
 
         //making a segmentation method using CIEXY polar theta
@@ -1326,48 +1331,48 @@ import java.util.logging.Logger;
         // gathering the pixels by proximity to the theta peaks
         // and when equidistant, chooses the largest peak.
 
-<span class="fc" id="L1329">        Set&lt;PairInt&gt; blackPixels = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1334">        Set&lt;PairInt&gt; blackPixels = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc" id="L1331">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; greyPixelMap = new HashMap&lt;Integer, Collection&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L1336">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; greyPixelMap = new HashMap&lt;Integer, Collection&lt;PairInt&gt;&gt;();</span>
         
-<span class="fc" id="L1333">        Set&lt;PairInt&gt; whitePixels = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1338">        Set&lt;PairInt&gt; whitePixels = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc" id="L1335">        Set&lt;PairInt&gt; points0 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1340">        Set&lt;PairInt&gt; points0 = new HashSet&lt;PairInt&gt;();</span>
+       
+<span class="fc" id="L1342">        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);</span>
+
+<span class="fc" id="L1344">        double[] minMaxTheta0 = findMinMaxTheta(input, points0);</span>
         
-<span class="fc" id="L1337">        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);</span>
-        
-<span class="fc" id="L1339">        double[] minMaxTheta0 = findMinMaxTheta(input, points0);</span>
-        
-<span class="fc" id="L1341">        log.info(&quot;for all non-white and non-black, minTheta=&quot; + minMaxTheta0[0]</span>
+<span class="fc" id="L1346">        log.info(&quot;for all non-white and non-black, minTheta=&quot; + minMaxTheta0[0]</span>
             + &quot; maxTheta=&quot; + minMaxTheta0[1]);
         
         // -------- debug -------
-<span class="fc" id="L1345">        int nGrey = 0;</span>
-<span class="fc bfc" id="L1346" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
-<span class="fc" id="L1347">            nGrey += entry.getValue().size();</span>
-<span class="fc" id="L1348">        }</span>
-<span class="pc bpc" id="L1349" title="1 of 2 branches missed.">        assert((points0.size() + blackPixels.size() + nGrey + </span>
-<span class="nc bnc" id="L1350" title="All 2 branches missed.">            whitePixels.size()) == input.getNPixels());</span>
+<span class="fc" id="L1350">        int nGrey = 0;</span>
+<span class="fc bfc" id="L1351" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
+<span class="fc" id="L1352">            nGrey += entry.getValue().size();</span>
+<span class="fc" id="L1353">        }</span>
+<span class="pc bpc" id="L1354" title="1 of 2 branches missed.">        assert((points0.size() + blackPixels.size() + nGrey + </span>
+<span class="nc bnc" id="L1355" title="All 2 branches missed.">            whitePixels.size()) == input.getNPixels());</span>
         // -------- end debug -------
 
-<span class="fc" id="L1353">        List&lt;Set&lt;PairInt&gt;&gt; greyPixelGroups = groupByPeaks(greyPixelMap);</span>
+<span class="fc" id="L1358">        List&lt;Set&lt;PairInt&gt;&gt; greyPixelGroups = groupByPeaks(greyPixelMap);</span>
+
+<span class="fc" id="L1360">        List&lt;Set&lt;PairInt&gt;&gt; groupList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;(greyPixelGroups.size());</span>
         
-<span class="fc" id="L1355">        List&lt;Set&lt;PairInt&gt;&gt; groupList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;(greyPixelGroups.size());</span>
-        
-<span class="fc bfc" id="L1357" title="All 2 branches covered.">        if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {</span>
-<span class="pc bpc" id="L1358" title="1 of 2 branches missed.">             if (points0.isEmpty()) {</span>
-<span class="fc" id="L1359">                 groupList.add(points0);</span>
+<span class="fc bfc" id="L1362" title="All 2 branches covered.">        if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {</span>
+<span class="pc bpc" id="L1363" title="1 of 2 branches missed.">             if (points0.isEmpty()) {</span>
+<span class="fc" id="L1364">                 groupList.add(points0);</span>
              }
-<span class="pc bpc" id="L1361" title="1 of 2 branches missed.">             if (!blackPixels.isEmpty()) {</span>
-<span class="fc" id="L1362">                 groupList.add(blackPixels);</span>
+<span class="pc bpc" id="L1366" title="1 of 2 branches missed.">             if (!blackPixels.isEmpty()) {</span>
+<span class="fc" id="L1367">                 groupList.add(blackPixels);</span>
              }
-<span class="fc bfc" id="L1364" title="All 2 branches covered.">             for (Set&lt;PairInt&gt; set : greyPixelGroups) {</span>
-<span class="fc" id="L1365">                groupList.add(set);</span>
-<span class="fc" id="L1366">             }</span>
-<span class="pc bpc" id="L1367" title="1 of 2 branches missed.">             if (!whitePixels.isEmpty()) {</span>
-<span class="fc" id="L1368">                 groupList.add(whitePixels);</span>
+<span class="fc bfc" id="L1369" title="All 2 branches covered.">             for (Set&lt;PairInt&gt; set : greyPixelGroups) {</span>
+<span class="fc" id="L1370">                groupList.add(set);</span>
+<span class="fc" id="L1371">             }</span>
+<span class="pc bpc" id="L1372" title="1 of 2 branches missed.">             if (!whitePixels.isEmpty()) {</span>
+<span class="fc" id="L1373">                 groupList.add(whitePixels);</span>
              }
-<span class="fc" id="L1370">             return groupList;</span>
+<span class="fc" id="L1375">             return groupList;</span>
         }
         
         /* ----- create a map of theta and frequency ----
@@ -1377,42 +1382,41 @@ import java.util.logging.Logger;
         few pixels.
         */
 
-<span class="fc" id="L1380">        int binWidth = 3;</span>
-<span class="fc" id="L1381">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; thetaPointMap = createThetaCIEXYMap(</span>
+<span class="fc" id="L1385">        int binWidth = 3;</span>
+<span class="fc" id="L1386">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; thetaPointMap = createThetaCIEXYMap(</span>
             points0, input, binWidth);
        
-<span class="fc" id="L1384">        int n = (360/binWidth) + 1;</span>
+<span class="fc" id="L1389">        int n = (360/binWidth) + 1;</span>
         
-<span class="fc" id="L1386">        int[] orderedThetaKeys = new int[n];</span>
-<span class="fc bfc" id="L1387" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1388">            orderedThetaKeys[i] = i;</span>
+<span class="fc" id="L1391">        int[] orderedThetaKeys = new int[n];</span>
+<span class="fc bfc" id="L1392" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1393">            orderedThetaKeys[i] = i;</span>
         }
-<span class="fc" id="L1390">        int maxFreq = Integer.MIN_VALUE;</span>
-<span class="fc" id="L1391">        int nTot = 0;</span>
-<span class="fc bfc" id="L1392" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
-<span class="fc" id="L1393">            int count = entry.getValue().size();</span>
-<span class="fc bfc" id="L1394" title="All 2 branches covered.">            if (count &gt; maxFreq) {</span>
-<span class="fc" id="L1395">                maxFreq = count;</span>
+<span class="fc" id="L1395">        int maxFreq = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1396">        int nTot = 0;</span>
+<span class="fc bfc" id="L1397" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
+<span class="fc" id="L1398">            int count = entry.getValue().size();</span>
+<span class="fc bfc" id="L1399" title="All 2 branches covered.">            if (count &gt; maxFreq) {</span>
+<span class="fc" id="L1400">                maxFreq = count;</span>
             }
-<span class="fc" id="L1397">            nTot += entry.getValue().size();</span>
-<span class="fc" id="L1398">        }</span>
-<span class="fc" id="L1399">        nTot += (blackPixels.size() + nGrey + whitePixels.size());</span>
-<span class="pc bpc" id="L1400" title="3 of 4 branches missed.">        assert(nTot == input.getNPixels());</span>
+<span class="fc" id="L1402">            nTot += entry.getValue().size();</span>
+<span class="fc" id="L1403">        }</span>
+<span class="fc" id="L1404">        nTot += (blackPixels.size() + nGrey + whitePixels.size());</span>
+<span class="pc bpc" id="L1405" title="3 of 4 branches missed.">        assert(nTot == input.getNPixels());</span>
         
         /*
         TODO: this is where the DTClusterFinder would be good to use to find
         the peaks.
         */
         
-<span class="fc" id="L1407">        PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, </span>
+<span class="fc" id="L1412">        PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, </span>
             thetaPointMap, 
-<span class="fc" id="L1409">            Math.round(fracFreqLimit * maxFreq));</span>
-        
-<span class="fc" id="L1411">        int[] minMaxXY = MiscMath.findMinMaxXY(peaks);</span>
+<span class="fc" id="L1414">            Math.round(fracFreqLimit * maxFreq));</span>
         
         /*
         // ----- debug ---
         // plot the points as an image to see the data first
+        int[] minMaxXY = MiscMath.findMinMaxXY(peaks);
         int nPoints = 0;
         int maxX = Integer.MIN_VALUE;
         int maxY = Integer.MIN_VALUE;
@@ -1457,16 +1461,16 @@ import java.util.logging.Logger;
         // --- end debug
         */
         
-<span class="pc bpc" id="L1460" title="1 of 2 branches missed.">        if (peaks.getN() == 0) {</span>
-<span class="nc bnc" id="L1461" title="All 2 branches missed.">            for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
-<span class="nc" id="L1462">                groupList.add(new HashSet&lt;PairInt&gt;(entry.getValue()));</span>
-<span class="nc" id="L1463">            }</span>
-<span class="nc" id="L1464">            groupList.add(blackPixels);</span>
-<span class="nc" id="L1465">            groupList.add(whitePixels);</span>
-<span class="nc" id="L1466">            return groupList;</span>
+<span class="pc bpc" id="L1464" title="1 of 2 branches missed.">        if (peaks.getN() == 0) {</span>
+<span class="nc bnc" id="L1465" title="All 2 branches missed.">            for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
+<span class="nc" id="L1466">                groupList.add(new HashSet&lt;PairInt&gt;(entry.getValue()));</span>
+<span class="nc" id="L1467">            }</span>
+<span class="nc" id="L1468">            groupList.add(blackPixels);</span>
+<span class="nc" id="L1469">            groupList.add(whitePixels);</span>
+<span class="nc" id="L1470">            return groupList;</span>
         }
-<span class="fc bfc" id="L1468" title="All 2 branches covered.">        for (int i = 0; i &lt; peaks.getN(); ++i) {</span>
-<span class="fc" id="L1469">            groupList.add(new HashSet&lt;PairInt&gt;());</span>
+<span class="fc bfc" id="L1472" title="All 2 branches covered.">        for (int i = 0; i &lt; peaks.getN(); ++i) {</span>
+<span class="fc" id="L1473">            groupList.add(new HashSet&lt;PairInt&gt;());</span>
         }
         
         /* traverse in ordered manner thetaPointMap to compare to current theta position
@@ -1474,141 +1478,141 @@ import java.util.logging.Logger;
            then place it in the groupsList.
            points before the first peak are compared with last peak too for wrap around.
         */
-<span class="fc" id="L1477">        int currentPeakIdx = -1;</span>
-<span class="fc bfc" id="L1478" title="All 2 branches covered.">        for (int i : orderedThetaKeys) {</span>
-<span class="fc" id="L1479">            Integer key = Integer.valueOf(i);</span>
-<span class="fc" id="L1480">            Collection&lt;PairInt&gt; list = thetaPointMap.get(key);</span>
-<span class="fc bfc" id="L1481" title="All 2 branches covered.">            if (list == null) {</span>
-<span class="fc" id="L1482">                continue;</span>
+<span class="fc" id="L1481">        int currentPeakIdx = -1;</span>
+<span class="fc bfc" id="L1482" title="All 2 branches covered.">        for (int i : orderedThetaKeys) {</span>
+<span class="fc" id="L1483">            Integer key = Integer.valueOf(i);</span>
+<span class="fc" id="L1484">            Collection&lt;PairInt&gt; list = thetaPointMap.get(key);</span>
+<span class="fc bfc" id="L1485" title="All 2 branches covered.">            if (list == null) {</span>
+<span class="fc" id="L1486">                continue;</span>
             }
-<span class="fc" id="L1484">            int idx = -1;</span>
-<span class="fc bfc" id="L1485" title="All 4 branches covered.">            if ((currentPeakIdx == -1) || (currentPeakIdx == (peaks.getN() - 1))) {</span>
+<span class="fc" id="L1488">            int idx = -1;</span>
+<span class="fc bfc" id="L1489" title="All 4 branches covered.">            if ((currentPeakIdx == -1) || (currentPeakIdx == (peaks.getN() - 1))) {</span>
                 int diffL, diffF;
-<span class="fc bfc" id="L1487" title="All 2 branches covered.">                if (currentPeakIdx == -1) {</span>
-<span class="fc" id="L1488">                    diffL = key.intValue() + 360 - peaks.getX(peaks.getN() - 1);</span>
-<span class="fc" id="L1489">                    diffF = peaks.getX(0) - key.intValue();</span>
-<span class="fc bfc" id="L1490" title="All 2 branches covered.">                    if (diffF == 0) {</span>
-<span class="fc" id="L1491">                        currentPeakIdx = 0;</span>
+<span class="fc bfc" id="L1491" title="All 2 branches covered.">                if (currentPeakIdx == -1) {</span>
+<span class="fc" id="L1492">                    diffL = key.intValue() + 360 - peaks.getX(peaks.getN() - 1);</span>
+<span class="fc" id="L1493">                    diffF = peaks.getX(0) - key.intValue();</span>
+<span class="fc bfc" id="L1494" title="All 2 branches covered.">                    if (diffF == 0) {</span>
+<span class="fc" id="L1495">                        currentPeakIdx = 0;</span>
                     }
                 } else {
-<span class="fc" id="L1494">                    diffL = key.intValue() - peaks.getX(currentPeakIdx);</span>
-<span class="fc" id="L1495">                    diffF = peaks.getX(0) + 360 - key.intValue();</span>
+<span class="fc" id="L1498">                    diffL = key.intValue() - peaks.getX(currentPeakIdx);</span>
+<span class="fc" id="L1499">                    diffF = peaks.getX(0) + 360 - key.intValue();</span>
                 }
-<span class="fc bfc" id="L1497" title="All 2 branches covered.">                if (diffL &lt; diffF) {</span>
-<span class="fc" id="L1498">                    idx = peaks.getN() - 1;</span>
-<span class="pc bpc" id="L1499" title="1 of 2 branches missed.">                } else if (diffL == diffF) {</span>
-<span class="nc" id="L1500">                    int freqL = peaks.getY(peaks.getN() - 1);</span>
-<span class="nc" id="L1501">                    int freqF = peaks.getY(0);</span>
-<span class="nc bnc" id="L1502" title="All 2 branches missed.">                    if (freqL &lt; freqF) {</span>
-<span class="nc" id="L1503">                        idx = peaks.getN() - 1;</span>
+<span class="fc bfc" id="L1501" title="All 2 branches covered.">                if (diffL &lt; diffF) {</span>
+<span class="fc" id="L1502">                    idx = peaks.getN() - 1;</span>
+<span class="pc bpc" id="L1503" title="1 of 2 branches missed.">                } else if (diffL == diffF) {</span>
+<span class="nc" id="L1504">                    int freqL = peaks.getY(peaks.getN() - 1);</span>
+<span class="nc" id="L1505">                    int freqF = peaks.getY(0);</span>
+<span class="nc bnc" id="L1506" title="All 2 branches missed.">                    if (freqL &lt; freqF) {</span>
+<span class="nc" id="L1507">                        idx = peaks.getN() - 1;</span>
                     } else {
-<span class="nc" id="L1505">                        idx = 0;</span>
+<span class="nc" id="L1509">                        idx = 0;</span>
                     }
-<span class="nc" id="L1507">                } else {</span>
-<span class="fc" id="L1508">                    idx = 0;</span>
+<span class="nc" id="L1511">                } else {</span>
+<span class="fc" id="L1512">                    idx = 0;</span>
                 }
-<span class="fc" id="L1510">            } else {</span>
+<span class="fc" id="L1514">            } else {</span>
                 // this has to update currentPeakIdx
-<span class="fc" id="L1512">                int diffP = key.intValue() - peaks.getX(currentPeakIdx);</span>
-<span class="fc" id="L1513">                int diffN = peaks.getX(currentPeakIdx + 1) - key.intValue();</span>
-<span class="fc bfc" id="L1514" title="All 2 branches covered.">                if (diffN == 0) {</span>
-<span class="fc" id="L1515">                    currentPeakIdx++;</span>
-<span class="fc" id="L1516">                    idx = currentPeakIdx;</span>
+<span class="fc" id="L1516">                int diffP = key.intValue() - peaks.getX(currentPeakIdx);</span>
+<span class="fc" id="L1517">                int diffN = peaks.getX(currentPeakIdx + 1) - key.intValue();</span>
+<span class="fc bfc" id="L1518" title="All 2 branches covered.">                if (diffN == 0) {</span>
+<span class="fc" id="L1519">                    currentPeakIdx++;</span>
+<span class="fc" id="L1520">                    idx = currentPeakIdx;</span>
                 } else {
-<span class="fc bfc" id="L1518" title="All 2 branches covered.">                    if (diffP &lt; diffN) {</span>
-<span class="fc" id="L1519">                        idx = currentPeakIdx;</span>
-<span class="fc bfc" id="L1520" title="All 2 branches covered.">                    } else if (diffP == diffN) {</span>
-<span class="fc" id="L1521">                        int freqP = peaks.getY(currentPeakIdx);</span>
-<span class="fc" id="L1522">                        int freqN = peaks.getY(currentPeakIdx + 1);</span>
-<span class="fc bfc" id="L1523" title="All 2 branches covered.">                        if (freqP &lt; freqN) {</span>
-<span class="fc" id="L1524">                            idx = currentPeakIdx;</span>
+<span class="fc bfc" id="L1522" title="All 2 branches covered.">                    if (diffP &lt; diffN) {</span>
+<span class="fc" id="L1523">                        idx = currentPeakIdx;</span>
+<span class="fc bfc" id="L1524" title="All 2 branches covered.">                    } else if (diffP == diffN) {</span>
+<span class="fc" id="L1525">                        int freqP = peaks.getY(currentPeakIdx);</span>
+<span class="fc" id="L1526">                        int freqN = peaks.getY(currentPeakIdx + 1);</span>
+<span class="fc bfc" id="L1527" title="All 2 branches covered.">                        if (freqP &lt; freqN) {</span>
+<span class="fc" id="L1528">                            idx = currentPeakIdx;</span>
                         } else {
-<span class="fc" id="L1526">                            idx = currentPeakIdx + 1;</span>
+<span class="fc" id="L1530">                            idx = currentPeakIdx + 1;</span>
                         }
-<span class="fc" id="L1528">                    } else {</span>
-<span class="fc" id="L1529">                        idx = currentPeakIdx + 1;</span>
+<span class="fc" id="L1532">                    } else {</span>
+<span class="fc" id="L1533">                        idx = currentPeakIdx + 1;</span>
                     }
                 }
             }
-<span class="pc bpc" id="L1533" title="3 of 4 branches missed.">            assert(idx != -1);</span>
-<span class="fc" id="L1534">            groupList.get(idx).addAll(list);</span>
+<span class="pc bpc" id="L1537" title="3 of 4 branches missed.">            assert(idx != -1);</span>
+<span class="fc" id="L1538">            groupList.get(idx).addAll(list);</span>
         }
         
-<span class="fc" id="L1537">        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, </span>
+<span class="fc" id="L1541">        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, </span>
             blackPixels, whitePixels);
         
         // add back in blackPixels and whitePixels
-<span class="fc bfc" id="L1541" title="All 2 branches covered.">        if (!blackPixels.isEmpty()) {</span>
-<span class="fc" id="L1542">            groupList.add(blackPixels);</span>
+        /*if (!blackPixels.isEmpty()) {
+            groupList.add(blackPixels);
         }
-<span class="pc bpc" id="L1544" title="1 of 2 branches missed.">        if (!whitePixels.isEmpty()) {</span>
-<span class="fc" id="L1545">            groupList.add(whitePixels);</span>
+        if (!whitePixels.isEmpty()) {
+            groupList.add(whitePixels);
         }
         
-<span class="fc" id="L1548">        int nTot2 = 0;</span>
-<span class="fc bfc" id="L1549" title="All 2 branches covered.">        for (Set&lt;PairInt&gt; groups : groupList) {</span>
-<span class="fc" id="L1550">            nTot2 += groups.size();</span>
-<span class="fc" id="L1551">        }</span>
+        int nTot2 = 0;
+        for (Set&lt;PairInt&gt; groups : groupList) {
+            nTot2 += groups.size();
+        }
            
-<span class="fc" id="L1553">        log.info(&quot;img nPix=&quot; + input.getNPixels() + &quot; nTot2=&quot; + nTot2);</span>
-<span class="pc bpc" id="L1554" title="3 of 4 branches missed.">        assert(nTot2 == input.getNPixels());</span>
-        
-<span class="fc" id="L1556">        return groupList;</span>
+        log.info(&quot;img nPix=&quot; + input.getNPixels() + &quot; nTot2=&quot; + nTot2);
+        assert(nTot2 == input.getNPixels());
+        */
+<span class="fc" id="L1560">        return groupList;</span>
     }
 
     private Map&lt;Integer, List&lt;PairInt&gt;&gt; createThetaCIEXYMap(Set&lt;PairInt&gt;
         points0, ImageExt input, double minTheta, double thetaFactor,
         double[] outputMinMaxTheta, int[] outputMinMaxFreq) {
 
-<span class="fc" id="L1563">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L1567">        CIEChromaticity cieC = new CIEChromaticity();</span>
 
         // key = theta, value = pixels having that key
-<span class="fc" id="L1566">        Map&lt;Integer, List&lt;PairInt&gt;&gt; thetaPointMap = new HashMap&lt;Integer, List&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L1570">        Map&lt;Integer, List&lt;PairInt&gt;&gt; thetaPointMap = new HashMap&lt;Integer, List&lt;PairInt&gt;&gt;();</span>
 
-<span class="fc" id="L1568">        double minTheta0 = minTheta;</span>
-<span class="fc" id="L1569">        outputMinMaxTheta[0] = Double.MIN_VALUE;</span>
-<span class="fc" id="L1570">        outputMinMaxTheta[1] = Double.MAX_VALUE;</span>
+<span class="fc" id="L1572">        double minTheta0 = minTheta;</span>
+<span class="fc" id="L1573">        outputMinMaxTheta[0] = Double.MIN_VALUE;</span>
+<span class="fc" id="L1574">        outputMinMaxTheta[1] = Double.MAX_VALUE;</span>
 
-<span class="fc bfc" id="L1572" title="All 2 branches covered.">        for (PairInt p : points0) {</span>
+<span class="fc bfc" id="L1576" title="All 2 branches covered.">        for (PairInt p : points0) {</span>
 
-<span class="fc" id="L1574">            int idx = input.getInternalIndex(p.getX(), p.getY());</span>
+<span class="fc" id="L1578">            int idx = input.getInternalIndex(p.getX(), p.getY());</span>
 
-<span class="fc" id="L1576">            float cx = input.getCIEX(idx);</span>
-<span class="fc" id="L1577">            float cy = input.getCIEY(idx);</span>
+<span class="fc" id="L1580">            float cx = input.getCIEX(idx);</span>
+<span class="fc" id="L1581">            float cy = input.getCIEY(idx);</span>
 
-<span class="fc" id="L1579">            double theta = thetaFactor * (</span>
-<span class="fc" id="L1580">                (cieC.calculateXYTheta(cx, cy)*180./Math.PI) - minTheta0);</span>
+<span class="fc" id="L1583">            double theta = thetaFactor * (</span>
+<span class="fc" id="L1584">                (cieC.calculateXYTheta(cx, cy)*180./Math.PI) - minTheta0);</span>
 
-<span class="fc" id="L1582">            Integer thetaCIEXY = Integer.valueOf((int)Math.round(theta));</span>
+<span class="fc" id="L1586">            Integer thetaCIEXY = Integer.valueOf((int)Math.round(theta));</span>
 
-<span class="fc" id="L1584">            List&lt;PairInt&gt; list = thetaPointMap.get(thetaCIEXY);</span>
-<span class="fc bfc" id="L1585" title="All 2 branches covered.">            if (list == null) {</span>
-<span class="fc" id="L1586">                list = new ArrayList&lt;PairInt&gt;();</span>
-<span class="fc" id="L1587">                thetaPointMap.put(thetaCIEXY, list);</span>
+<span class="fc" id="L1588">            List&lt;PairInt&gt; list = thetaPointMap.get(thetaCIEXY);</span>
+<span class="fc bfc" id="L1589" title="All 2 branches covered.">            if (list == null) {</span>
+<span class="fc" id="L1590">                list = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L1591">                thetaPointMap.put(thetaCIEXY, list);</span>
             }
-<span class="fc" id="L1589">            list.add(p);</span>
+<span class="fc" id="L1593">            list.add(p);</span>
 
-<span class="pc bpc" id="L1591" title="1 of 2 branches missed.">            if (theta &lt; outputMinMaxTheta[0]) {</span>
-<span class="nc" id="L1592">                outputMinMaxTheta[0] = theta;</span>
+<span class="pc bpc" id="L1595" title="1 of 2 branches missed.">            if (theta &lt; outputMinMaxTheta[0]) {</span>
+<span class="nc" id="L1596">                outputMinMaxTheta[0] = theta;</span>
             }
-<span class="pc bpc" id="L1594" title="1 of 2 branches missed.">            if (theta &gt; outputMinMaxTheta[1]) {</span>
-<span class="nc" id="L1595">                outputMinMaxTheta[1] = theta;</span>
+<span class="pc bpc" id="L1598" title="1 of 2 branches missed.">            if (theta &gt; outputMinMaxTheta[1]) {</span>
+<span class="nc" id="L1599">                outputMinMaxTheta[1] = theta;</span>
             }
-<span class="fc" id="L1597">        }</span>
+<span class="fc" id="L1601">        }</span>
 
-<span class="fc" id="L1599">        outputMinMaxFreq[0] = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1600">        outputMinMaxFreq[1] = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L1601" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, List&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
-<span class="fc" id="L1602">            int count = entry.getValue().size();</span>
-<span class="fc bfc" id="L1603" title="All 2 branches covered.">            if (count &lt; outputMinMaxFreq[0]) {</span>
-<span class="fc" id="L1604">                outputMinMaxFreq[0] = count;</span>
+<span class="fc" id="L1603">        outputMinMaxFreq[0] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1604">        outputMinMaxFreq[1] = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L1605" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, List&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
+<span class="fc" id="L1606">            int count = entry.getValue().size();</span>
+<span class="fc bfc" id="L1607" title="All 2 branches covered.">            if (count &lt; outputMinMaxFreq[0]) {</span>
+<span class="fc" id="L1608">                outputMinMaxFreq[0] = count;</span>
             }
-<span class="fc bfc" id="L1606" title="All 2 branches covered.">            if (count &gt; outputMinMaxFreq[1]) {</span>
-<span class="fc" id="L1607">                outputMinMaxFreq[1] = count;</span>
+<span class="fc bfc" id="L1610" title="All 2 branches covered.">            if (count &gt; outputMinMaxFreq[1]) {</span>
+<span class="fc" id="L1611">                outputMinMaxFreq[1] = count;</span>
             }
-<span class="fc" id="L1609">        }</span>
+<span class="fc" id="L1613">        }</span>
 
-<span class="fc" id="L1611">        return thetaPointMap;</span>
+<span class="fc" id="L1615">        return thetaPointMap;</span>
     }
 
     private List&lt;Map&lt;com.climbwithyourfeet.clustering.util.PairInt, 
@@ -1618,90 +1622,90 @@ import java.util.logging.Logger;
         
         List&lt;Map&lt;com.climbwithyourfeet.clustering.util.PairInt, 
             List&lt;PairIntWithIndex&gt;&gt;&gt; 
-<span class="fc" id="L1621">            mapsList = </span>
+<span class="fc" id="L1625">            mapsList = </span>
                 new ArrayList&lt;Map&lt;com.climbwithyourfeet.clustering.util.PairInt, 
                 List&lt;PairIntWithIndex&gt;&gt;&gt;();
         
-<span class="fc" id="L1625">        int nMaps = partitionFreqFracs.length + 1;</span>
+<span class="fc" id="L1629">        int nMaps = partitionFreqFracs.length + 1;</span>
         
-<span class="fc bfc" id="L1627" title="All 2 branches covered.">        for (int i = 0; i &lt; nMaps; ++i) {</span>
-<span class="fc" id="L1628">            mapsList.add(</span>
+<span class="fc bfc" id="L1631" title="All 2 branches covered.">        for (int i = 0; i &lt; nMaps; ++i) {</span>
+<span class="fc" id="L1632">            mapsList.add(</span>
                 new HashMap&lt;com.climbwithyourfeet.clustering.util.PairInt, 
                 List&lt;PairIntWithIndex&gt;&gt;());
         }
         
-<span class="fc" id="L1633">        final int[] partitionFreqs = new int[partitionFreqFracs.length];</span>
-<span class="fc bfc" id="L1634" title="All 2 branches covered.">        for (int i = 0; i &lt; partitionFreqs.length; ++i) {</span>
-<span class="fc" id="L1635">            partitionFreqs[i] = Math.round(partitionFreqFracs[i]*maxFreq);</span>
+<span class="fc" id="L1637">        final int[] partitionFreqs = new int[partitionFreqFracs.length];</span>
+<span class="fc bfc" id="L1638" title="All 2 branches covered.">        for (int i = 0; i &lt; partitionFreqs.length; ++i) {</span>
+<span class="fc" id="L1639">            partitionFreqs[i] = Math.round(partitionFreqFracs[i]*maxFreq);</span>
         }
         
-<span class="fc" id="L1638">        int[] maxXY = new int[2];</span>
-<span class="fc" id="L1639">        Arrays.fill(maxXY, Integer.MIN_VALUE);</span>
+<span class="fc" id="L1642">        int[] maxXY = new int[2];</span>
+<span class="fc" id="L1643">        Arrays.fill(maxXY, Integer.MIN_VALUE);</span>
                 
-<span class="fc bfc" id="L1641" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, List&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
+<span class="fc bfc" id="L1645" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, List&lt;PairInt&gt;&gt; entry : thetaPointMap.entrySet()) {</span>
 
-<span class="fc" id="L1643">            Integer theta = entry.getKey();</span>
+<span class="fc" id="L1647">            Integer theta = entry.getKey();</span>
 
-<span class="fc" id="L1645">            int count = entry.getValue().size();</span>
+<span class="fc" id="L1649">            int count = entry.getValue().size();</span>
 
-<span class="fc" id="L1647">            List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
-<span class="fc bfc" id="L1648" title="All 2 branches covered.">            for (PairInt p : entry.getValue()) {</span>
-<span class="fc" id="L1649">                int pixIdx = input.getInternalIndex(p.getX(), p.getY());</span>
-<span class="fc" id="L1650">                PairIntWithIndex p2 = new PairIntWithIndex(theta.intValue(),</span>
+<span class="fc" id="L1651">            List&lt;PairIntWithIndex&gt; list = new ArrayList&lt;PairIntWithIndex&gt;();</span>
+<span class="fc bfc" id="L1652" title="All 2 branches covered.">            for (PairInt p : entry.getValue()) {</span>
+<span class="fc" id="L1653">                int pixIdx = input.getInternalIndex(p.getX(), p.getY());</span>
+<span class="fc" id="L1654">                PairIntWithIndex p2 = new PairIntWithIndex(theta.intValue(),</span>
                     count, pixIdx);
-<span class="fc" id="L1652">                list.add(p2);</span>
-<span class="fc" id="L1653">            }</span>
+<span class="fc" id="L1656">                list.add(p2);</span>
+<span class="fc" id="L1657">            }</span>
             
-<span class="fc" id="L1655">            int n = partitionFreqs.length;</span>
-<span class="fc" id="L1656">            int idx = 0;</span>
-<span class="pc bpc" id="L1657" title="1 of 2 branches missed.">            for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc bfc" id="L1658" title="All 2 branches covered.">                if (i == 0) {</span>
-<span class="fc bfc" id="L1659" title="All 2 branches covered.">                    if (count &lt; partitionFreqs[0]) {</span>
-<span class="fc" id="L1660">                        idx = 0;</span>
-<span class="fc" id="L1661">                        break;</span>
+<span class="fc" id="L1659">            int n = partitionFreqs.length;</span>
+<span class="fc" id="L1660">            int idx = 0;</span>
+<span class="pc bpc" id="L1661" title="1 of 2 branches missed.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L1662" title="All 2 branches covered.">                if (i == 0) {</span>
+<span class="fc bfc" id="L1663" title="All 2 branches covered.">                    if (count &lt; partitionFreqs[0]) {</span>
+<span class="fc" id="L1664">                        idx = 0;</span>
+<span class="fc" id="L1665">                        break;</span>
                     }
-<span class="fc bfc" id="L1663" title="All 4 branches covered.">                } else if ((i == (n - 1)) &amp;&amp; count &gt;= partitionFreqs[i]) {</span>
-<span class="fc" id="L1664">                    idx = n;// one past partitions is last list bin</span>
-<span class="fc" id="L1665">                    break;</span>
+<span class="fc bfc" id="L1667" title="All 4 branches covered.">                } else if ((i == (n - 1)) &amp;&amp; count &gt;= partitionFreqs[i]) {</span>
+<span class="fc" id="L1668">                    idx = n;// one past partitions is last list bin</span>
+<span class="fc" id="L1669">                    break;</span>
                 } else {
-<span class="pc bpc" id="L1667" title="1 of 4 branches missed.">                    if ((count &gt;= partitionFreqs[i - 1]) &amp;&amp; (count &lt; partitionFreqs[i])) {</span>
-<span class="fc" id="L1668">                        idx = i;</span>
-<span class="fc" id="L1669">                        break;</span>
+<span class="pc bpc" id="L1671" title="1 of 4 branches missed.">                    if ((count &gt;= partitionFreqs[i - 1]) &amp;&amp; (count &lt; partitionFreqs[i])) {</span>
+<span class="fc" id="L1672">                        idx = i;</span>
+<span class="fc" id="L1673">                        break;</span>
                     }
                 }
             }
             
             // this is unique to all maps, not stomping on existing key
-<span class="fc" id="L1675">            mapsList.get(idx).put(</span>
+<span class="fc" id="L1679">            mapsList.get(idx).put(</span>
                 new com.climbwithyourfeet.clustering.util.PairInt(
-<span class="fc" id="L1677">                    theta.intValue(), count), list);</span>
+<span class="fc" id="L1681">                    theta.intValue(), count), list);</span>
             
-<span class="fc bfc" id="L1679" title="All 2 branches covered.">            if (theta.intValue() &gt; maxXY[0]) {</span>
-<span class="fc" id="L1680">                maxXY[0] = theta.intValue();</span>
+<span class="fc bfc" id="L1683" title="All 2 branches covered.">            if (theta.intValue() &gt; maxXY[0]) {</span>
+<span class="fc" id="L1684">                maxXY[0] = theta.intValue();</span>
             }
-<span class="fc bfc" id="L1682" title="All 2 branches covered.">            if (count &gt; maxXY[1]) {</span>
-<span class="fc" id="L1683">                maxXY[1] = count;</span>
+<span class="fc bfc" id="L1686" title="All 2 branches covered.">            if (count &gt; maxXY[1]) {</span>
+<span class="fc" id="L1687">                maxXY[1] = count;</span>
             }
-<span class="fc" id="L1685">        }</span>
+<span class="fc" id="L1689">        }</span>
         
         // ----- temporary print of all pixels -------
         // ----- debug ---
-<span class="fc" id="L1689">        GreyscaleImage img = new GreyscaleImage(maxXY[0] + 1, maxXY[1] + 1);</span>
-<span class="fc bfc" id="L1690" title="All 2 branches covered.">        for (int i = 0; i &lt; mapsList.size(); ++i) {            </span>
-<span class="fc bfc" id="L1691" title="All 2 branches covered.">            for (com.climbwithyourfeet.clustering.util.PairInt p : mapsList.get(i).keySet()) {</span>
-<span class="fc" id="L1692">                img.setValue(p.getX(), p.getY(), 255);</span>
-<span class="fc" id="L1693">            }</span>
+<span class="fc" id="L1693">        GreyscaleImage img = new GreyscaleImage(maxXY[0] + 1, maxXY[1] + 1);</span>
+<span class="fc bfc" id="L1694" title="All 2 branches covered.">        for (int i = 0; i &lt; mapsList.size(); ++i) {            </span>
+<span class="fc bfc" id="L1695" title="All 2 branches covered.">            for (com.climbwithyourfeet.clustering.util.PairInt p : mapsList.get(i).keySet()) {</span>
+<span class="fc" id="L1696">                img.setValue(p.getX(), p.getY(), 255);</span>
+<span class="fc" id="L1697">            }</span>
         }
         try {
-<span class="fc" id="L1696">            ImageIOHelper.writeOutputImage(</span>
-<span class="fc" id="L1697">                ResourceFinder.findDirectory(&quot;bin&quot;) + &quot;/dt2_input.png&quot;, img);</span>
-<span class="nc" id="L1698">        } catch (IOException ex) {</span>
-<span class="nc" id="L1699">            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,</span>
+<span class="fc" id="L1700">            ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L1701">                ResourceFinder.findDirectory(&quot;bin&quot;) + &quot;/dt2_input.png&quot;, img);</span>
+<span class="nc" id="L1702">        } catch (IOException ex) {</span>
+<span class="nc" id="L1703">            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,</span>
                 null, ex);
-<span class="fc" id="L1701">        }</span>
+<span class="fc" id="L1705">        }</span>
         // --- end debug
         
-<span class="fc" id="L1704">        return mapsList;</span>
+<span class="fc" id="L1708">        return mapsList;</span>
     }
 
     private void rescaleKeys(
@@ -1709,55 +1713,55 @@ import java.util.logging.Logger;
             List&lt;PairIntWithIndex&gt;&gt;&gt; thetaFreqMaps, int scaleTo) {
         
         // --- can remove the count after debugging ----
-<span class="fc" id="L1712">        int nTotBefore = 0;</span>
-<span class="fc bfc" id="L1713" title="All 2 branches covered.">        for (int i = 0; i &lt; thetaFreqMaps.size(); ++i) {</span>
+<span class="fc" id="L1716">        int nTotBefore = 0;</span>
+<span class="fc bfc" id="L1717" title="All 2 branches covered.">        for (int i = 0; i &lt; thetaFreqMaps.size(); ++i) {</span>
             for (Map.Entry&lt;com.climbwithyourfeet.clustering.util.PairInt, 
-<span class="fc bfc" id="L1715" title="All 2 branches covered.">                List&lt;PairIntWithIndex&gt;&gt; entry : thetaFreqMaps.get(i).entrySet()) {</span>
-<span class="fc" id="L1716">                nTotBefore += entry.getValue().size();</span>
-<span class="fc" id="L1717">            }</span>
+<span class="fc bfc" id="L1719" title="All 2 branches covered.">                List&lt;PairIntWithIndex&gt;&gt; entry : thetaFreqMaps.get(i).entrySet()) {</span>
+<span class="fc" id="L1720">                nTotBefore += entry.getValue().size();</span>
+<span class="fc" id="L1721">            }</span>
         }
         
-<span class="fc bfc" id="L1720" title="All 2 branches covered.">        for (int i = 0; i &lt; thetaFreqMaps.size(); ++i) {</span>
+<span class="fc bfc" id="L1724" title="All 2 branches covered.">        for (int i = 0; i &lt; thetaFreqMaps.size(); ++i) {</span>
             
             Map&lt;com.climbwithyourfeet.clustering.util.PairInt, 
-<span class="fc" id="L1723">                List&lt;PairIntWithIndex&gt;&gt; thetaFreqMap = thetaFreqMaps.get(i);</span>
+<span class="fc" id="L1727">                List&lt;PairIntWithIndex&gt;&gt; thetaFreqMap = thetaFreqMaps.get(i);</span>
             
-<span class="fc" id="L1725">            int[] minMax = findMinMaxOfKeyYs(thetaFreqMap.keySet());</span>
+<span class="fc" id="L1729">            int[] minMax = findMinMaxOfKeyYs(thetaFreqMap.keySet());</span>
                  
             Map&lt;com.climbwithyourfeet.clustering.util.PairInt, 
-<span class="fc" id="L1728">                List&lt;PairIntWithIndex&gt;&gt; thetaFreqMap2 = rescaleKeyYs(</span>
+<span class="fc" id="L1732">                List&lt;PairIntWithIndex&gt;&gt; thetaFreqMap2 = rescaleKeyYs(</span>
                     thetaFreqMap, scaleTo, minMax);
             
-<span class="fc" id="L1731">            thetaFreqMaps.set(i, thetaFreqMap2);</span>
+<span class="fc" id="L1735">            thetaFreqMaps.set(i, thetaFreqMap2);</span>
         }
         
         // --- can remove the count after debugging ----
-<span class="fc" id="L1735">        int nTotAfter = 0;</span>
-<span class="fc bfc" id="L1736" title="All 2 branches covered.">        for (int i = 0; i &lt; thetaFreqMaps.size(); ++i) {</span>
+<span class="fc" id="L1739">        int nTotAfter = 0;</span>
+<span class="fc bfc" id="L1740" title="All 2 branches covered.">        for (int i = 0; i &lt; thetaFreqMaps.size(); ++i) {</span>
             for (Map.Entry&lt;com.climbwithyourfeet.clustering.util.PairInt, 
-<span class="fc bfc" id="L1738" title="All 2 branches covered.">                List&lt;PairIntWithIndex&gt;&gt; entry : thetaFreqMaps.get(i).entrySet()) {</span>
-<span class="fc" id="L1739">                nTotAfter += entry.getValue().size();</span>
-<span class="fc" id="L1740">            }</span>
+<span class="fc bfc" id="L1742" title="All 2 branches covered.">                List&lt;PairIntWithIndex&gt;&gt; entry : thetaFreqMaps.get(i).entrySet()) {</span>
+<span class="fc" id="L1743">                nTotAfter += entry.getValue().size();</span>
+<span class="fc" id="L1744">            }</span>
         }
-<span class="pc bpc" id="L1742" title="3 of 4 branches missed.">        assert(nTotBefore == nTotAfter);</span>
-<span class="fc" id="L1743">    }</span>
+<span class="pc bpc" id="L1746" title="3 of 4 branches missed.">        assert(nTotBefore == nTotAfter);</span>
+<span class="fc" id="L1747">    }</span>
 
     private int[] findMinMaxOfKeyYs(
         Set&lt;com.climbwithyourfeet.clustering.util.PairInt&gt; keySet) {
         
-<span class="fc" id="L1748">        int min = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1749">        int max = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1752">        int min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1753">        int max = Integer.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1751" title="All 2 branches covered.">        for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {</span>
-<span class="fc" id="L1752">            int y = p.getY();</span>
-<span class="fc bfc" id="L1753" title="All 2 branches covered.">            if (y &lt; min) {</span>
-<span class="fc" id="L1754">                min = y;</span>
+<span class="fc bfc" id="L1755" title="All 2 branches covered.">        for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {</span>
+<span class="fc" id="L1756">            int y = p.getY();</span>
+<span class="fc bfc" id="L1757" title="All 2 branches covered.">            if (y &lt; min) {</span>
+<span class="fc" id="L1758">                min = y;</span>
             }
-<span class="fc bfc" id="L1756" title="All 2 branches covered.">            if (y &gt; max) {</span>
-<span class="fc" id="L1757">                max = y;</span>
+<span class="fc bfc" id="L1760" title="All 2 branches covered.">            if (y &gt; max) {</span>
+<span class="fc" id="L1761">                max = y;</span>
             }
-<span class="fc" id="L1759">        }</span>
-<span class="fc" id="L1760">        return new int[]{min, max};</span>
+<span class="fc" id="L1763">        }</span>
+<span class="fc" id="L1764">        return new int[]{min, max};</span>
     }
 
     private Map&lt;com.climbwithyourfeet.clustering.util.PairInt, 
@@ -1766,82 +1770,82 @@ import java.util.logging.Logger;
     List&lt;PairIntWithIndex&gt;&gt; thetaFreqMap, final int scaleTo, final int[] minMaxY) {
         
         Map&lt;com.climbwithyourfeet.clustering.util.PairInt, 
-<span class="fc" id="L1769">            List&lt;PairIntWithIndex&gt;&gt; scaledMap </span>
+<span class="fc" id="L1773">            List&lt;PairIntWithIndex&gt;&gt; scaledMap </span>
             = new HashMap&lt;com.climbwithyourfeet.clustering.util.PairInt, 
                 List&lt;PairIntWithIndex&gt;&gt;();
         
-<span class="pc bpc" id="L1773" title="1 of 2 branches missed.">        if ((minMaxY[1] - minMaxY[0]) == 0) {</span>
-<span class="nc" id="L1774">            return thetaFreqMap;</span>
+<span class="pc bpc" id="L1777" title="1 of 2 branches missed.">        if ((minMaxY[1] - minMaxY[0]) == 0) {</span>
+<span class="nc" id="L1778">            return thetaFreqMap;</span>
         }
         
-<span class="fc" id="L1777">        float factor = scaleTo/(minMaxY[1] - minMaxY[0]);</span>
+<span class="fc" id="L1781">        float factor = scaleTo/(minMaxY[1] - minMaxY[0]);</span>
         
         for (Map.Entry&lt;com.climbwithyourfeet.clustering.util.PairInt, 
-<span class="fc bfc" id="L1780" title="All 2 branches covered.">            List&lt;PairIntWithIndex&gt;&gt; entry : thetaFreqMap.entrySet()) {</span>
+<span class="fc bfc" id="L1784" title="All 2 branches covered.">            List&lt;PairIntWithIndex&gt;&gt; entry : thetaFreqMap.entrySet()) {</span>
             
-<span class="fc" id="L1782">            com.climbwithyourfeet.clustering.util.PairInt p = entry.getKey();</span>
+<span class="fc" id="L1786">            com.climbwithyourfeet.clustering.util.PairInt p = entry.getKey();</span>
             
-<span class="fc" id="L1784">            int y = Math.round(factor * (p.getY() - minMaxY[0]));</span>
+<span class="fc" id="L1788">            int y = Math.round(factor * (p.getY() - minMaxY[0]));</span>
             
-<span class="fc" id="L1786">            com.climbwithyourfeet.clustering.util.PairInt p2 = new</span>
-<span class="fc" id="L1787">                com.climbwithyourfeet.clustering.util.PairInt(p.getX(), y);</span>
+<span class="fc" id="L1790">            com.climbwithyourfeet.clustering.util.PairInt p2 = new</span>
+<span class="fc" id="L1791">                com.climbwithyourfeet.clustering.util.PairInt(p.getX(), y);</span>
             
-<span class="fc" id="L1789">            scaledMap.put(p2, entry.getValue());</span>
-<span class="fc" id="L1790">        }</span>
+<span class="fc" id="L1793">            scaledMap.put(p2, entry.getValue());</span>
+<span class="fc" id="L1794">        }</span>
         
-<span class="fc" id="L1792">        return scaledMap;</span>
+<span class="fc" id="L1796">        return scaledMap;</span>
     }
 
     private int[] findMaxXY(Set&lt;com.climbwithyourfeet.clustering.util.PairInt&gt; 
         keySet) {
         
-<span class="fc" id="L1798">        int maxX = Integer.MIN_VALUE;</span>
-<span class="fc" id="L1799">        int maxY = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1802">        int maxX = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1803">        int maxY = Integer.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1801" title="All 2 branches covered.">        for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {</span>
-<span class="fc" id="L1802">            int x = p.getX();</span>
-<span class="fc" id="L1803">            int y = p.getY();</span>
-<span class="fc bfc" id="L1804" title="All 2 branches covered.">            if (x &gt; maxX) {</span>
-<span class="fc" id="L1805">                maxX = x;</span>
+<span class="fc bfc" id="L1805" title="All 2 branches covered.">        for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {</span>
+<span class="fc" id="L1806">            int x = p.getX();</span>
+<span class="fc" id="L1807">            int y = p.getY();</span>
+<span class="fc bfc" id="L1808" title="All 2 branches covered.">            if (x &gt; maxX) {</span>
+<span class="fc" id="L1809">                maxX = x;</span>
             }
-<span class="fc bfc" id="L1807" title="All 2 branches covered.">            if (y &gt; maxY) {</span>
-<span class="fc" id="L1808">                maxY = y;</span>
+<span class="fc bfc" id="L1811" title="All 2 branches covered.">            if (y &gt; maxY) {</span>
+<span class="fc" id="L1812">                maxY = y;</span>
             }
-<span class="fc" id="L1810">        }</span>
-<span class="fc" id="L1811">        return new int[]{maxX, maxY};</span>
+<span class="fc" id="L1814">        }</span>
+<span class="fc" id="L1815">        return new int[]{maxX, maxY};</span>
     }
 
     private Map&lt;Integer, Collection&lt;PairInt&gt;&gt; createThetaCIEXYMap(Set&lt;PairInt&gt; 
         points, ImageExt input, int binWidth) {
         
-<span class="fc" id="L1817">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L1821">        CIEChromaticity cieC = new CIEChromaticity();</span>
 
         // key = theta, value = pixels having that key
-<span class="fc" id="L1820">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; thetaPointMap = new HashMap&lt;Integer, Collection&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L1824">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; thetaPointMap = new HashMap&lt;Integer, Collection&lt;PairInt&gt;&gt;();</span>
         
-<span class="fc bfc" id="L1822" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L1826" title="All 2 branches covered.">        for (PairInt p : points) {</span>
 
-<span class="fc" id="L1824">            int idx = input.getInternalIndex(p.getX(), p.getY());</span>
+<span class="fc" id="L1828">            int idx = input.getInternalIndex(p.getX(), p.getY());</span>
 
-<span class="fc" id="L1826">            float cx = input.getCIEX(idx);</span>
-<span class="fc" id="L1827">            float cy = input.getCIEY(idx);</span>
+<span class="fc" id="L1830">            float cx = input.getCIEX(idx);</span>
+<span class="fc" id="L1831">            float cy = input.getCIEY(idx);</span>
 
-<span class="fc" id="L1829">            double thetaRadians = cieC.calculateXYTheta(cx, cy);</span>
-<span class="fc" id="L1830">            double theta = thetaRadians * 180./Math.PI;</span>
+<span class="fc" id="L1833">            double thetaRadians = cieC.calculateXYTheta(cx, cy);</span>
+<span class="fc" id="L1834">            double theta = thetaRadians * 180./Math.PI;</span>
 
-<span class="fc" id="L1832">            int thetaCIEXY = (int)Math.round(theta);</span>
+<span class="fc" id="L1836">            int thetaCIEXY = (int)Math.round(theta);</span>
             
-<span class="fc" id="L1834">            Integer binKey = Integer.valueOf(thetaCIEXY/binWidth);</span>
+<span class="fc" id="L1838">            Integer binKey = Integer.valueOf(thetaCIEXY/binWidth);</span>
 
-<span class="fc" id="L1836">            Collection&lt;PairInt&gt; list = thetaPointMap.get(binKey);</span>
-<span class="fc bfc" id="L1837" title="All 2 branches covered.">            if (list == null) {</span>
-<span class="fc" id="L1838">                list = new ArrayList&lt;PairInt&gt;();</span>
-<span class="fc" id="L1839">                thetaPointMap.put(binKey, list);</span>
+<span class="fc" id="L1840">            Collection&lt;PairInt&gt; list = thetaPointMap.get(binKey);</span>
+<span class="fc bfc" id="L1841" title="All 2 branches covered.">            if (list == null) {</span>
+<span class="fc" id="L1842">                list = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L1843">                thetaPointMap.put(binKey, list);</span>
             }
-<span class="fc" id="L1841">            list.add(p);</span>
-<span class="fc" id="L1842">        }</span>
+<span class="fc" id="L1845">            list.add(p);</span>
+<span class="fc" id="L1846">        }</span>
         
-<span class="fc" id="L1844">        return thetaPointMap;</span>
+<span class="fc" id="L1848">        return thetaPointMap;</span>
     }
 
     /**
@@ -1854,558 +1858,619 @@ import java.util.logging.Logger;
     protected PairIntArray findPeaksInThetaPointMap(final int[] orderedThetaKeys, 
         final Map&lt;Integer, Collection&lt;PairInt&gt;&gt; thetaPointMap, final int limit) {
         
-<span class="fc" id="L1857">        int lastKey = -1;</span>
-<span class="fc" id="L1858">        int lastValue = -1;</span>
-<span class="fc" id="L1859">        boolean isIncr = false;</span>
-<span class="fc" id="L1860">        PairIntArray peaks = new PairIntArray();</span>
-<span class="fc" id="L1861">        int nInMap = 0;</span>
-<span class="fc bfc" id="L1862" title="All 2 branches covered.">        for (int i : orderedThetaKeys) {</span>
-<span class="fc" id="L1863">            Integer key = Integer.valueOf(i);</span>
-<span class="fc" id="L1864">            Collection&lt;PairInt&gt; list = thetaPointMap.get(key);</span>
-<span class="fc bfc" id="L1865" title="All 2 branches covered.">            if (list == null) {</span>
-<span class="fc bfc" id="L1866" title="All 6 branches covered.">                if ((nInMap &gt; 0) &amp;&amp; isIncr &amp;&amp; (lastValue &gt; limit)) {</span>
-<span class="fc" id="L1867">                    peaks.add(lastKey, lastValue);</span>
+<span class="fc" id="L1861">        int lastKey = -1;</span>
+<span class="fc" id="L1862">        int lastValue = -1;</span>
+<span class="fc" id="L1863">        boolean isIncr = false;</span>
+<span class="fc" id="L1864">        PairIntArray peaks = new PairIntArray();</span>
+<span class="fc" id="L1865">        int nInMap = 0;</span>
+<span class="fc bfc" id="L1866" title="All 2 branches covered.">        for (int i : orderedThetaKeys) {</span>
+<span class="fc" id="L1867">            Integer key = Integer.valueOf(i);</span>
+<span class="fc" id="L1868">            Collection&lt;PairInt&gt; list = thetaPointMap.get(key);</span>
+<span class="fc bfc" id="L1869" title="All 2 branches covered.">            if (list == null) {</span>
+<span class="fc bfc" id="L1870" title="All 6 branches covered.">                if ((nInMap &gt; 0) &amp;&amp; isIncr &amp;&amp; (lastValue &gt; limit)) {</span>
+<span class="fc" id="L1871">                    peaks.add(lastKey, lastValue);</span>
                 }
-<span class="fc" id="L1869">                lastKey = key.intValue();</span>
-<span class="fc" id="L1870">                lastValue = 0;</span>
-<span class="fc" id="L1871">                isIncr = false;</span>
-<span class="fc" id="L1872">                continue;</span>
+<span class="fc" id="L1873">                lastKey = key.intValue();</span>
+<span class="fc" id="L1874">                lastValue = 0;</span>
+<span class="fc" id="L1875">                isIncr = false;</span>
+<span class="fc" id="L1876">                continue;</span>
             }
-<span class="fc" id="L1874">            int count = list.size();</span>
-<span class="fc bfc" id="L1875" title="All 2 branches covered.">            if (nInMap == 1) {</span>
-<span class="fc bfc" id="L1876" title="All 2 branches covered.">                if (count &gt; lastValue) {</span>
-<span class="fc" id="L1877">                    isIncr = true;</span>
+<span class="fc" id="L1878">            int count = list.size();</span>
+<span class="fc bfc" id="L1879" title="All 2 branches covered.">            if (nInMap == 1) {</span>
+<span class="fc bfc" id="L1880" title="All 2 branches covered.">                if (count &gt; lastValue) {</span>
+<span class="fc" id="L1881">                    isIncr = true;</span>
                 } else {
-<span class="pc bpc" id="L1879" title="1 of 2 branches missed.">                    if (lastValue &gt; limit) {</span>
-<span class="nc" id="L1880">                        peaks.add(lastKey, lastValue);</span>
+<span class="pc bpc" id="L1883" title="1 of 2 branches missed.">                    if (lastValue &gt; limit) {</span>
+<span class="nc" id="L1884">                        peaks.add(lastKey, lastValue);</span>
                     }
-<span class="fc" id="L1882">                    isIncr = false;</span>
+<span class="fc" id="L1886">                    isIncr = false;</span>
                 }
-<span class="fc bfc" id="L1884" title="All 2 branches covered.">            } else if (nInMap != 0) {</span>
-<span class="fc bfc" id="L1885" title="All 2 branches covered.">                if (isIncr) {</span>
-<span class="fc bfc" id="L1886" title="All 2 branches covered.">                    if (count &lt; lastValue) {</span>
-<span class="fc bfc" id="L1887" title="All 2 branches covered.">                        if (lastValue &gt; limit) {</span>
-<span class="fc" id="L1888">                            peaks.add(lastKey, lastValue);</span>
+<span class="fc bfc" id="L1888" title="All 2 branches covered.">            } else if (nInMap != 0) {</span>
+<span class="fc bfc" id="L1889" title="All 2 branches covered.">                if (isIncr) {</span>
+<span class="fc bfc" id="L1890" title="All 2 branches covered.">                    if (count &lt; lastValue) {</span>
+<span class="fc bfc" id="L1891" title="All 2 branches covered.">                        if (lastValue &gt; limit) {</span>
+<span class="fc" id="L1892">                            peaks.add(lastKey, lastValue);</span>
                         }
-<span class="fc" id="L1890">                        isIncr = false;</span>
+<span class="fc" id="L1894">                        isIncr = false;</span>
                     }
                 } else {
-<span class="fc bfc" id="L1893" title="All 2 branches covered.">                    if (count &gt; lastValue) {</span>
-<span class="fc" id="L1894">                        isIncr = true;</span>
+<span class="fc bfc" id="L1897" title="All 2 branches covered.">                    if (count &gt; lastValue) {</span>
+<span class="fc" id="L1898">                        isIncr = true;</span>
                     }
                 }
             }
-<span class="fc" id="L1898">            lastValue = count;</span>
-<span class="fc" id="L1899">            lastKey = key.intValue();</span>
-<span class="fc" id="L1900">            nInMap++;</span>
+<span class="fc" id="L1902">            lastValue = count;</span>
+<span class="fc" id="L1903">            lastKey = key.intValue();</span>
+<span class="fc" id="L1904">            nInMap++;</span>
         }
-<span class="fc bfc" id="L1902" title="All 6 branches covered.">        if ((nInMap &gt; 0) &amp;&amp; isIncr &amp;&amp; (lastValue &gt; limit)) {</span>
+<span class="pc bpc" id="L1906" title="2 of 6 branches missed.">        if ((nInMap &gt; 0) &amp;&amp; isIncr &amp;&amp; (lastValue &gt; limit)) {</span>
             //checking value at theta=0 to make sure this is a peak
-<span class="fc" id="L1904">            Integer key = orderedThetaKeys[0];</span>
-<span class="pc bpc" id="L1905" title="1 of 2 branches missed.">            if (key.intValue() == 0) {</span>
-<span class="nc" id="L1906">                Collection&lt;PairInt&gt; list = thetaPointMap.get(key);</span>
-<span class="nc bnc" id="L1907" title="All 2 branches missed.">                if (list == null) {</span>
-<span class="nc" id="L1908">                    peaks.add(lastKey, lastValue);</span>
-<span class="nc bnc" id="L1909" title="All 2 branches missed.">                } else if (list.size() &lt; lastValue) {</span>
-<span class="nc" id="L1910">                    peaks.add(lastKey, lastValue);</span>
+<span class="fc" id="L1908">            Integer key = orderedThetaKeys[0];</span>
+<span class="pc bpc" id="L1909" title="1 of 2 branches missed.">            if (key.intValue() == 0) {</span>
+<span class="nc" id="L1910">                Collection&lt;PairInt&gt; list = thetaPointMap.get(key);</span>
+<span class="nc bnc" id="L1911" title="All 2 branches missed.">                if (list == null) {</span>
+<span class="nc" id="L1912">                    peaks.add(lastKey, lastValue);</span>
+<span class="nc bnc" id="L1913" title="All 2 branches missed.">                } else if (list.size() &lt; lastValue) {</span>
+<span class="nc" id="L1914">                    peaks.add(lastKey, lastValue);</span>
                 }
-<span class="nc" id="L1912">            } else {</span>
-<span class="fc" id="L1913">                peaks.add(lastKey, lastValue);</span>
+<span class="nc" id="L1916">            } else {</span>
+<span class="fc" id="L1917">                peaks.add(lastKey, lastValue);</span>
             }
         }
         
-<span class="fc" id="L1917">        return peaks;</span>
+<span class="fc" id="L1921">        return peaks;</span>
     }
 
     private List&lt;Set&lt;PairInt&gt;&gt; groupByPeaks(
         Map&lt;Integer, Collection&lt;PairInt&gt;&gt; greyPixelMap) {
         
-<span class="fc" id="L1923">        int nTot = 0;</span>
-<span class="fc" id="L1924">        int minKey = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1925">        int maxKey = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L1926" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
-<span class="fc" id="L1927">            int key = entry.getKey().intValue();</span>
-<span class="fc bfc" id="L1928" title="All 2 branches covered.">            if (key &lt; minKey) {</span>
-<span class="fc" id="L1929">                minKey = key;</span>
+<span class="fc" id="L1927">        int nTot = 0;</span>
+<span class="fc" id="L1928">        int minKey = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1929">        int maxKey = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L1930" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
+<span class="fc" id="L1931">            int key = entry.getKey().intValue();</span>
+<span class="fc bfc" id="L1932" title="All 2 branches covered.">            if (key &lt; minKey) {</span>
+<span class="fc" id="L1933">                minKey = key;</span>
             }
-<span class="fc bfc" id="L1931" title="All 2 branches covered.">            if (key &gt; maxKey) {</span>
-<span class="fc" id="L1932">                maxKey = key;</span>
+<span class="fc bfc" id="L1935" title="All 2 branches covered.">            if (key &gt; maxKey) {</span>
+<span class="fc" id="L1936">                maxKey = key;</span>
             }
-<span class="fc" id="L1934">            nTot += entry.getValue().size();</span>
-<span class="fc" id="L1935">        }</span>
+<span class="fc" id="L1938">            nTot += entry.getValue().size();</span>
+<span class="fc" id="L1939">        }</span>
         
-<span class="fc" id="L1937">        int binWidth = 8;</span>
-<span class="fc" id="L1938">        greyPixelMap = binByKeys(greyPixelMap, minKey, maxKey, binWidth);</span>
+<span class="fc" id="L1941">        int binWidth = 8;</span>
+<span class="fc" id="L1942">        greyPixelMap = binByKeys(greyPixelMap, minKey, maxKey, binWidth);</span>
         
-<span class="fc" id="L1940">        int nTot2 = 0;</span>
-<span class="fc" id="L1941">        minKey = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1942">        maxKey = Integer.MIN_VALUE;</span>
-<span class="fc" id="L1943">        int maxFreq = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L1944" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
-<span class="fc" id="L1945">            int key = entry.getKey().intValue();</span>
-<span class="fc bfc" id="L1946" title="All 2 branches covered.">            if (key &lt; minKey) {</span>
-<span class="fc" id="L1947">                minKey = key;</span>
+<span class="fc" id="L1944">        int nTot2 = 0;</span>
+<span class="fc" id="L1945">        minKey = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1946">        maxKey = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1947">        int maxFreq = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L1948" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
+<span class="fc" id="L1949">            int key = entry.getKey().intValue();</span>
+<span class="fc bfc" id="L1950" title="All 2 branches covered.">            if (key &lt; minKey) {</span>
+<span class="fc" id="L1951">                minKey = key;</span>
             }
-<span class="fc bfc" id="L1949" title="All 2 branches covered.">            if (key &gt; maxKey) {</span>
-<span class="fc" id="L1950">                maxKey = key;</span>
+<span class="fc bfc" id="L1953" title="All 2 branches covered.">            if (key &gt; maxKey) {</span>
+<span class="fc" id="L1954">                maxKey = key;</span>
             }
-<span class="fc" id="L1952">            int y = entry.getValue().size();</span>
-<span class="fc bfc" id="L1953" title="All 2 branches covered.">            if (y &gt; maxFreq) {</span>
-<span class="fc" id="L1954">                maxFreq = y;</span>
+<span class="fc" id="L1956">            int y = entry.getValue().size();</span>
+<span class="fc bfc" id="L1957" title="All 2 branches covered.">            if (y &gt; maxFreq) {</span>
+<span class="fc" id="L1958">                maxFreq = y;</span>
             }
 
-<span class="fc" id="L1957">            nTot2 += y;</span>
-<span class="fc" id="L1958">        }</span>
-<span class="pc bpc" id="L1959" title="3 of 4 branches missed.">        assert(nTot == nTot2);</span>
+<span class="fc" id="L1961">            nTot2 += y;</span>
+<span class="fc" id="L1962">        }</span>
+<span class="pc bpc" id="L1963" title="3 of 4 branches missed.">        assert(nTot == nTot2);</span>
         
+<span class="fc" id="L1965">        int count = 0;</span>
+        
+        /*
         // --- debug
-<span class="fc" id="L1962">        float[] xPoints = new float[greyPixelMap.size()];</span>
-<span class="fc" id="L1963">        float[] yPoints = new float[greyPixelMap.size()];</span>
-<span class="fc" id="L1964">        int count = 0;</span>
-<span class="fc bfc" id="L1965" title="All 2 branches covered.">        for (int i = minKey; i &lt;= maxKey; ++i) {</span>
-<span class="fc" id="L1966">            Integer key = Integer.valueOf(i);</span>
-<span class="fc" id="L1967">            Collection&lt;PairInt&gt; set = greyPixelMap.get(key);</span>
-<span class="fc bfc" id="L1968" title="All 2 branches covered.">            if (set == null) {</span>
-<span class="fc" id="L1969">                continue;</span>
+        float[] xPoints = new float[greyPixelMap.size()];
+        float[] yPoints = new float[greyPixelMap.size()];
+        for (int i = minKey; i &lt;= maxKey; ++i) {
+            Integer key = Integer.valueOf(i);
+            Collection&lt;PairInt&gt; set = greyPixelMap.get(key);
+            if (set == null) {
+                continue;
             }
-<span class="fc" id="L1971">            int y = set.size();</span>
-<span class="fc" id="L1972">            xPoints[count] = key.intValue();</span>
-<span class="fc" id="L1973">            yPoints[count] = y;</span>
-<span class="fc" id="L1974">            count++;</span>
+            int y = set.size();
+            xPoints[count] = key.intValue();
+            yPoints[count] = y;
+            count++;
         }
         try {
             //maxY=2000;
-<span class="fc" id="L1978">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-<span class="fc" id="L1979">            plotter.addPlot(0, maxKey, 0, maxFreq, xPoints, yPoints, xPoints, yPoints, &quot;grey avgRGB vs freq&quot;);</span>
-<span class="fc" id="L1980">            plotter.writeFile(&quot;_segmentation3_grey_&quot;);</span>
-<span class="nc" id="L1981">        } catch (IOException ex) {</span>
-<span class="nc" id="L1982">            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,</span>
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            plotter.addPlot(0, maxKey, 0, maxFreq, xPoints, yPoints, xPoints, yPoints, &quot;grey avgRGB vs freq&quot;);
+            plotter.writeFile(&quot;_segmentation3_grey_&quot;);
+        } catch (IOException ex) {
+            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
                 null, ex);
-<span class="fc" id="L1984">        }</span>
-        // --- end debug
-        
-<span class="fc" id="L1987">        final int[] orderedKeys = new int[maxKey - minKey + 1];</span>
-<span class="fc" id="L1988">        count = 0;</span>
-<span class="fc bfc" id="L1989" title="All 2 branches covered.">        for (int i = minKey; i &lt;= maxKey; ++i) {</span>
-<span class="fc" id="L1990">            orderedKeys[count] = i;</span>
-<span class="fc" id="L1991">            count++;</span>
         }
-<span class="fc" id="L1993">        int limit = (int)(0.03 * maxFreq);</span>
-<span class="fc" id="L1994">        PairIntArray peaks = findPeaksInThetaPointMap(orderedKeys, greyPixelMap, limit);</span>
+        // --- end debug
+        */
+        
+<span class="fc" id="L1994">        final int[] orderedKeys = new int[maxKey - minKey + 1];</span>
+<span class="fc" id="L1995">        count = 0;</span>
+<span class="fc bfc" id="L1996" title="All 2 branches covered.">        for (int i = minKey; i &lt;= maxKey; ++i) {</span>
+<span class="fc" id="L1997">            orderedKeys[count] = i;</span>
+<span class="fc" id="L1998">            count++;</span>
+        }
+<span class="fc" id="L2000">        int limit = (int)(0.03 * maxFreq);</span>
+<span class="fc" id="L2001">        PairIntArray peaks = findPeaksInThetaPointMap(orderedKeys, greyPixelMap, limit);</span>
 
         // if there are several peaks within small range of keys, that's noise,
         // so removing them
-<span class="fc" id="L1998">        filterPeaksIfNoisey(peaks);</span>
+<span class="fc" id="L2005">        filterPeaksIfNoisey(peaks);</span>
         
         // ---- gather points in greyPixelMap into groups around the peaks ----
-<span class="fc" id="L2001">        List&lt;Set&lt;PairInt&gt;&gt; groupList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;(orderedKeys.length + 1);</span>
-<span class="fc bfc" id="L2002" title="All 2 branches covered.">        for (int i = 0; i &lt; peaks.getN(); ++i) {</span>
-<span class="fc" id="L2003">            groupList.add(new HashSet&lt;PairInt&gt;());</span>
+<span class="fc" id="L2008">        List&lt;Set&lt;PairInt&gt;&gt; groupList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;(orderedKeys.length + 1);</span>
+<span class="fc bfc" id="L2009" title="All 2 branches covered.">        for (int i = 0; i &lt; peaks.getN(); ++i) {</span>
+<span class="fc" id="L2010">            groupList.add(new HashSet&lt;PairInt&gt;());</span>
         }
         
-<span class="fc bfc" id="L2006" title="All 2 branches covered.">        if (peaks.getN() == 0) {</span>
-<span class="fc" id="L2007">            return groupList;</span>
-<span class="fc bfc" id="L2008" title="All 2 branches covered.">        } else if (peaks.getN() == 1) {</span>
-<span class="fc bfc" id="L2009" title="All 2 branches covered.">            for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
-<span class="fc" id="L2010">                Collection&lt;PairInt&gt; set = entry.getValue();</span>
-<span class="fc" id="L2011">                groupList.get(0).addAll(set);</span>
-<span class="fc" id="L2012">            }</span>
-<span class="fc" id="L2013">            return groupList;</span>
+<span class="pc bpc" id="L2013" title="1 of 2 branches missed.">        if (peaks.getN() == 0) {</span>
+<span class="nc" id="L2014">            return groupList;</span>
+<span class="fc bfc" id="L2015" title="All 2 branches covered.">        } else if (peaks.getN() == 1) {</span>
+<span class="fc bfc" id="L2016" title="All 2 branches covered.">            for (Map.Entry&lt;Integer, Collection&lt;PairInt&gt;&gt; entry : greyPixelMap.entrySet()) {</span>
+<span class="fc" id="L2017">                Collection&lt;PairInt&gt; set = entry.getValue();</span>
+<span class="fc" id="L2018">                groupList.get(0).addAll(set);</span>
+<span class="fc" id="L2019">            }</span>
+<span class="fc" id="L2020">            return groupList;</span>
         }
         
-<span class="fc" id="L2016">        int currentPeakIdx = -1;</span>
-<span class="fc bfc" id="L2017" title="All 2 branches covered.">        for (int i : orderedKeys) {</span>
-<span class="fc" id="L2018">            Integer key = Integer.valueOf(i);</span>
-<span class="fc" id="L2019">            Collection&lt;PairInt&gt; set = greyPixelMap.get(key);</span>
-<span class="pc bpc" id="L2020" title="1 of 2 branches missed.">            if (set == null) {</span>
-<span class="nc" id="L2021">                continue;</span>
+<span class="fc" id="L2023">        int currentPeakIdx = -1;</span>
+<span class="fc bfc" id="L2024" title="All 2 branches covered.">        for (int i : orderedKeys) {</span>
+<span class="fc" id="L2025">            Integer key = Integer.valueOf(i);</span>
+<span class="fc" id="L2026">            Collection&lt;PairInt&gt; set = greyPixelMap.get(key);</span>
+<span class="pc bpc" id="L2027" title="1 of 2 branches missed.">            if (set == null) {</span>
+<span class="nc" id="L2028">                continue;</span>
             }
-<span class="fc" id="L2023">            int idx = -1;</span>
-<span class="fc bfc" id="L2024" title="All 2 branches covered.">            if (currentPeakIdx == -1) {</span>
-<span class="fc" id="L2025">                currentPeakIdx = 0;</span>
-<span class="fc" id="L2026">                idx = 0;</span>
-<span class="fc bfc" id="L2027" title="All 2 branches covered.">            } else if (currentPeakIdx == (peaks.getN() - 1)) {</span>
-<span class="fc" id="L2028">                idx = currentPeakIdx;</span>
+<span class="fc" id="L2030">            int idx = -1;</span>
+<span class="fc bfc" id="L2031" title="All 2 branches covered.">            if (currentPeakIdx == -1) {</span>
+<span class="fc" id="L2032">                currentPeakIdx = 0;</span>
+<span class="fc" id="L2033">                idx = 0;</span>
+<span class="fc bfc" id="L2034" title="All 2 branches covered.">            } else if (currentPeakIdx == (peaks.getN() - 1)) {</span>
+<span class="fc" id="L2035">                idx = currentPeakIdx;</span>
             } else {
                 // this has to update currentPeakIdx
-<span class="fc" id="L2031">                int diffP = key.intValue() - peaks.getX(currentPeakIdx);</span>
-<span class="fc" id="L2032">                int diffN = peaks.getX(currentPeakIdx + 1) - key.intValue();</span>
-<span class="fc bfc" id="L2033" title="All 2 branches covered.">                if (diffN == 0) {</span>
-<span class="fc" id="L2034">                    currentPeakIdx++;</span>
-<span class="fc" id="L2035">                    idx = currentPeakIdx;</span>
+<span class="fc" id="L2038">                int diffP = key.intValue() - peaks.getX(currentPeakIdx);</span>
+<span class="fc" id="L2039">                int diffN = peaks.getX(currentPeakIdx + 1) - key.intValue();</span>
+<span class="fc bfc" id="L2040" title="All 2 branches covered.">                if (diffN == 0) {</span>
+<span class="fc" id="L2041">                    currentPeakIdx++;</span>
+<span class="fc" id="L2042">                    idx = currentPeakIdx;</span>
                 } else {
-<span class="fc bfc" id="L2037" title="All 2 branches covered.">                    if (diffP &lt; diffN) {</span>
-<span class="fc" id="L2038">                        idx = currentPeakIdx;</span>
-<span class="fc bfc" id="L2039" title="All 2 branches covered.">                    } else if (diffP == diffN) {</span>
-<span class="fc" id="L2040">                        int freqP = peaks.getY(currentPeakIdx);</span>
-<span class="fc" id="L2041">                        int freqN = peaks.getY(currentPeakIdx + 1);</span>
-<span class="fc bfc" id="L2042" title="All 2 branches covered.">                        if (freqP &lt; freqN) {</span>
-<span class="fc" id="L2043">                            idx = currentPeakIdx;</span>
+<span class="fc bfc" id="L2044" title="All 2 branches covered.">                    if (diffP &lt; diffN) {</span>
+<span class="fc" id="L2045">                        idx = currentPeakIdx;</span>
+<span class="fc bfc" id="L2046" title="All 2 branches covered.">                    } else if (diffP == diffN) {</span>
+<span class="fc" id="L2047">                        int freqP = peaks.getY(currentPeakIdx);</span>
+<span class="fc" id="L2048">                        int freqN = peaks.getY(currentPeakIdx + 1);</span>
+<span class="fc bfc" id="L2049" title="All 2 branches covered.">                        if (freqP &lt; freqN) {</span>
+<span class="fc" id="L2050">                            idx = currentPeakIdx;</span>
                         } else {
-<span class="fc" id="L2045">                            idx = currentPeakIdx + 1;</span>
+<span class="fc" id="L2052">                            idx = currentPeakIdx + 1;</span>
                         }
-<span class="fc" id="L2047">                    } else {</span>
-<span class="fc" id="L2048">                        idx = currentPeakIdx + 1;</span>
+<span class="fc" id="L2054">                    } else {</span>
+<span class="fc" id="L2055">                        idx = currentPeakIdx + 1;</span>
                     }
                 }
             }
-<span class="pc bpc" id="L2052" title="3 of 4 branches missed.">            assert(idx != -1);</span>
-<span class="fc" id="L2053">            groupList.get(idx).addAll(set);</span>
+<span class="pc bpc" id="L2059" title="3 of 4 branches missed.">            assert(idx != -1);</span>
+<span class="fc" id="L2060">            groupList.get(idx).addAll(set);</span>
         }
-        
+
         // ----- debug ----
-<span class="fc" id="L2057">        int nTot3 = 0;</span>
-<span class="fc bfc" id="L2058" title="All 2 branches covered.">        for (Collection&lt;PairInt&gt; set : groupList) {</span>
-<span class="fc" id="L2059">            nTot3 += set.size();</span>
-<span class="fc" id="L2060">        }</span>
-<span class="pc bpc" id="L2061" title="3 of 4 branches missed.">        assert(nTot == nTot3);</span>
+<span class="fc" id="L2064">        int nTot3 = 0;</span>
+<span class="fc bfc" id="L2065" title="All 2 branches covered.">        for (Collection&lt;PairInt&gt; set : groupList) {</span>
+<span class="fc" id="L2066">            nTot3 += set.size();</span>
+<span class="fc" id="L2067">        }</span>
+<span class="pc bpc" id="L2068" title="3 of 4 branches missed.">        assert(nTot == nTot3);</span>
         // ----- end debug -----
-        
-<span class="fc" id="L2064">        return groupList;</span>
+                
+<span class="fc" id="L2071">        return groupList;</span>
     }
 
     private Map&lt;Integer, Collection&lt;PairInt&gt;&gt; binByKeys(
         Map&lt;Integer, Collection&lt;PairInt&gt;&gt; greyPixelMap, 
         int minKey, int maxKey, int binWidth) {
         
-<span class="fc" id="L2071">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; map2 </span>
+<span class="fc" id="L2078">        Map&lt;Integer, Collection&lt;PairInt&gt;&gt; map2 </span>
             = new HashMap&lt;Integer, Collection&lt;PairInt&gt;&gt;();
         
-<span class="fc bfc" id="L2074" title="All 2 branches covered.">        for (int i = minKey; i &lt;= maxKey; ++i) {</span>
+<span class="fc bfc" id="L2081" title="All 2 branches covered.">        for (int i = minKey; i &lt;= maxKey; ++i) {</span>
             
-<span class="fc" id="L2076">            Integer key = Integer.valueOf(i);</span>
+<span class="fc" id="L2083">            Integer key = Integer.valueOf(i);</span>
             
-<span class="fc" id="L2078">            Collection&lt;PairInt&gt; c = greyPixelMap.get(key);</span>
+<span class="fc" id="L2085">            Collection&lt;PairInt&gt; c = greyPixelMap.get(key);</span>
             
-<span class="fc bfc" id="L2080" title="All 2 branches covered.">            if (c == null) {</span>
-<span class="fc" id="L2081">                continue;</span>
+<span class="fc bfc" id="L2087" title="All 2 branches covered.">            if (c == null) {</span>
+<span class="fc" id="L2088">                continue;</span>
             }
             
-<span class="fc" id="L2084">            Integer binKey = Integer.valueOf(i/binWidth);</span>
+<span class="fc" id="L2091">            Integer binKey = Integer.valueOf(i/binWidth);</span>
             
-<span class="fc" id="L2086">            Collection&lt;PairInt&gt; c2 = map2.get(binKey);</span>
-<span class="fc bfc" id="L2087" title="All 2 branches covered.">            if (c2 == null) {</span>
-<span class="fc" id="L2088">                c2 = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L2089">                map2.put(binKey, c2);</span>
+<span class="fc" id="L2093">            Collection&lt;PairInt&gt; c2 = map2.get(binKey);</span>
+<span class="fc bfc" id="L2094" title="All 2 branches covered.">            if (c2 == null) {</span>
+<span class="fc" id="L2095">                c2 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L2096">                map2.put(binKey, c2);</span>
             }
-<span class="fc" id="L2091">            c2.addAll(c);</span>
+<span class="fc" id="L2098">            c2.addAll(c);</span>
         }
         
-<span class="fc" id="L2094">        return map2;</span>
+<span class="fc" id="L2101">        return map2;</span>
     }
 
     private void filterPeaksIfNoisey(PairIntArray peaks) {
         
-<span class="fc bfc" id="L2099" title="All 2 branches covered.">        if (peaks.getN() == 0) {</span>
-<span class="fc" id="L2100">            return;</span>
+<span class="pc bpc" id="L2106" title="1 of 2 branches missed.">        if (peaks.getN() == 0) {</span>
+<span class="nc" id="L2107">            return;</span>
         }
         
-<span class="fc" id="L2103">        int sumDeltaX = 0;</span>
-<span class="fc bfc" id="L2104" title="All 2 branches covered.">        for (int i = (peaks.getN() - 1); i &gt; 0; --i) {</span>
-<span class="fc" id="L2105">            sumDeltaX += (peaks.getX(i) - peaks.getX(i - 1));</span>
+<span class="fc" id="L2110">        int sumDeltaX = 0;</span>
+<span class="fc bfc" id="L2111" title="All 2 branches covered.">        for (int i = (peaks.getN() - 1); i &gt; 0; --i) {</span>
+<span class="fc" id="L2112">            sumDeltaX += (peaks.getX(i) - peaks.getX(i - 1));</span>
         }
         //TODO: this may need to be revised:
         // if there are more than 1 peaks per delta x of 5 or so, re-bin by 4 
-<span class="fc" id="L2109">        float deltaX = (float)sumDeltaX/((float)peaks.getN() - 1);</span>
-<span class="fc bfc" id="L2110" title="All 2 branches covered.">        if (deltaX &lt; 5) {</span>
+<span class="fc" id="L2116">        float deltaX = (float)sumDeltaX/((float)peaks.getN() - 1);</span>
+<span class="fc bfc" id="L2117" title="All 2 branches covered.">        if (deltaX &lt; 5) {</span>
             // re-bin by 4
-<span class="fc" id="L2112">            PairIntArray peaks2 = new PairIntArray();</span>
-<span class="fc bfc" id="L2113" title="All 2 branches covered.">            for (int i = 0; i &lt; peaks.getN(); i += 4) {</span>
-<span class="fc" id="L2114">                int sumX = 0;</span>
-<span class="fc" id="L2115">                int sumY = 0;</span>
-<span class="fc" id="L2116">                int count = 0;</span>
-<span class="fc bfc" id="L2117" title="All 2 branches covered.">                for (int j = i; j &lt; (i + 5); ++j) {</span>
-<span class="fc" id="L2118">                    sumX += peaks.getX(i);</span>
-<span class="fc" id="L2119">                    sumY += peaks.getY(i);</span>
-<span class="fc" id="L2120">                    count++;</span>
+<span class="fc" id="L2119">            PairIntArray peaks2 = new PairIntArray();</span>
+<span class="fc bfc" id="L2120" title="All 2 branches covered.">            for (int i = 0; i &lt; peaks.getN(); i += 4) {</span>
+<span class="fc" id="L2121">                int sumX = 0;</span>
+<span class="fc" id="L2122">                int sumY = 0;</span>
+<span class="fc" id="L2123">                int count = 0;</span>
+<span class="fc bfc" id="L2124" title="All 2 branches covered.">                for (int j = i; j &lt; (i + 5); ++j) {</span>
+<span class="fc" id="L2125">                    sumX += peaks.getX(i);</span>
+<span class="fc" id="L2126">                    sumY += peaks.getY(i);</span>
+<span class="fc" id="L2127">                    count++;</span>
                 }
-<span class="fc" id="L2122">                sumX = Math.round((float)sumX/(float)count);</span>
-<span class="fc" id="L2123">                sumY = Math.round((float)sumY/(float)count);</span>
-<span class="fc" id="L2124">                peaks2.add(sumX, sumY);</span>
+<span class="fc" id="L2129">                sumX = Math.round((float)sumX/(float)count);</span>
+<span class="fc" id="L2130">                sumY = Math.round((float)sumY/(float)count);</span>
+<span class="fc" id="L2131">                peaks2.add(sumX, sumY);</span>
             }
             
-<span class="fc" id="L2127">            peaks.removeRange(0, peaks.getN() - 1);</span>
-<span class="fc" id="L2128">            peaks.addAll(peaks2);</span>
+<span class="fc" id="L2134">            peaks.removeRange(0, peaks.getN() - 1);</span>
+<span class="fc" id="L2135">            peaks.addAll(peaks2);</span>
         }
         
-<span class="fc" id="L2131">    }</span>
+<span class="fc" id="L2138">    }</span>
 
     private void mergeOrAppendGreyWithOthers(ImageExt input, 
-        List&lt;Set&lt;PairInt&gt;&gt; greyPixelGroups, 
-        List&lt;Set&lt;PairInt&gt;&gt; groupList, Set&lt;PairInt&gt; blackPixels,
-        Set&lt;PairInt&gt; whitePixels) {
+        List&lt;Set&lt;PairInt&gt;&gt; greyPixelGroups, List&lt;Set&lt;PairInt&gt;&gt; groupList, 
+        Set&lt;PairInt&gt; blackPixels, Set&lt;PairInt&gt; whitePixels) {
                 
-<span class="fc" id="L2138">        Map&lt;PairInt, Integer&gt; colorPixGroupMap = new HashMap&lt;PairInt, Integer&gt;();</span>
-<span class="fc bfc" id="L2139" title="All 2 branches covered.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
-<span class="fc" id="L2140">            Set&lt;PairInt&gt; set = groupList.get(i);</span>
-<span class="fc" id="L2141">            Integer groupKey = Integer.valueOf(i);</span>
-<span class="fc bfc" id="L2142" title="All 2 branches covered.">            for (PairInt p : set) {</span>
-<span class="fc" id="L2143">                colorPixGroupMap.put(p, groupKey);</span>
-<span class="fc" id="L2144">            }</span>
+<span class="fc" id="L2144">        Map&lt;PairInt, Integer&gt; colorPixGroupMap = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="fc bfc" id="L2145" title="All 2 branches covered.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
+<span class="fc" id="L2146">            Set&lt;PairInt&gt; set = groupList.get(i);</span>
+<span class="fc" id="L2147">            Integer groupKey = Integer.valueOf(i);</span>
+<span class="fc bfc" id="L2148" title="All 2 branches covered.">            for (PairInt p : set) {</span>
+<span class="fc" id="L2149">                colorPixGroupMap.put(p, groupKey);</span>
+<span class="fc" id="L2150">            }</span>
         }
 
         // similarity limit for a grey pixel to join adjacent color pixel's cluster
-<span class="fc" id="L2148">        int limit = 40;</span>
+<span class="fc" id="L2154">        int limit = 40;</span>
         
-<span class="fc" id="L2150">        int w = input.getWidth();</span>
-<span class="fc" id="L2151">        int h = input.getHeight();</span>
+<span class="fc" id="L2156">        int w = input.getWidth();</span>
+<span class="fc" id="L2157">        int h = input.getHeight();</span>
         
-<span class="fc" id="L2153">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L2154">        int[] dys = Misc.dy8;</span>
-<span class="fc bfc" id="L2155" title="All 2 branches covered.">        for (Set&lt;PairInt&gt; greyGroup : greyPixelGroups) {</span>
+<span class="fc" id="L2159">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L2160">        int[] dys = Misc.dy8;</span>
+<span class="fc bfc" id="L2161" title="All 2 branches covered.">        for (Set&lt;PairInt&gt; greyGroup : greyPixelGroups) {</span>
             
-<span class="fc" id="L2157">            Set&lt;PairInt&gt; remove = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L2163">            Set&lt;PairInt&gt; remove = new HashSet&lt;PairInt&gt;();</span>
             
-<span class="fc bfc" id="L2159" title="All 2 branches covered.">            for (PairInt greyP : greyGroup) {</span>
-<span class="fc" id="L2160">                int x = greyP.getX();</span>
-<span class="fc" id="L2161">                int y = greyP.getY();</span>
+<span class="fc bfc" id="L2165" title="All 2 branches covered.">            for (PairInt greyP : greyGroup) {</span>
+<span class="fc" id="L2166">                int x = greyP.getX();</span>
+<span class="fc" id="L2167">                int y = greyP.getY();</span>
                 
-<span class="fc" id="L2163">                int idx = input.getInternalIndex(x, y);</span>
-<span class="fc" id="L2164">                int r = input.getR(idx);</span>
-<span class="fc" id="L2165">                int g = input.getG(idx);</span>
-<span class="fc" id="L2166">                int b = input.getB(idx);</span>
+<span class="fc" id="L2169">                int idx = input.getInternalIndex(x, y);</span>
+<span class="fc" id="L2170">                int r = input.getR(idx);</span>
+<span class="fc" id="L2171">                int g = input.getG(idx);</span>
+<span class="fc" id="L2172">                int b = input.getB(idx);</span>
                 
                 // ---- check for color similarity ------
-<span class="fc" id="L2169">                int minDiffRGB = Integer.MAX_VALUE;</span>
-<span class="fc" id="L2170">                int colorClusterIdx = -1;</span>
-<span class="fc" id="L2171">                int minDiffBlack = Integer.MAX_VALUE;</span>
-<span class="fc" id="L2172">                int minDiffWhite = Integer.MAX_VALUE;</span>
+<span class="fc" id="L2175">                int minDiffRGB = Integer.MAX_VALUE;</span>
+<span class="fc" id="L2176">                int colorClusterIdx = -1;</span>
+<span class="fc" id="L2177">                int minDiffBlack = Integer.MAX_VALUE;</span>
+<span class="fc" id="L2178">                int minDiffWhite = Integer.MAX_VALUE;</span>
                 
-<span class="fc bfc" id="L2174" title="All 2 branches covered.">                for (int i = 0; i &lt; dxs.length; ++i) {</span>
-<span class="fc" id="L2175">                    int x2 = x + dxs[i];</span>
-<span class="fc" id="L2176">                    int y2 = y + dys[i];</span>
-<span class="fc bfc" id="L2177" title="All 8 branches covered.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="fc" id="L2178">                        continue;</span>
+<span class="fc bfc" id="L2180" title="All 2 branches covered.">                for (int i = 0; i &lt; dxs.length; ++i) {</span>
+<span class="fc" id="L2181">                    int x2 = x + dxs[i];</span>
+<span class="fc" id="L2182">                    int y2 = y + dys[i];</span>
+<span class="fc bfc" id="L2183" title="All 8 branches covered.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="fc" id="L2184">                        continue;</span>
                     }
-<span class="fc" id="L2180">                    PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L2186">                    PairInt p2 = new PairInt(x2, y2);</span>
                     
-<span class="fc" id="L2182">                    boolean adjIsBlack = blackPixels.contains(p2);</span>
-<span class="fc" id="L2183">                    boolean adjIsWhite = whitePixels.contains(p2);</span>
+<span class="fc" id="L2188">                    boolean adjIsBlack = blackPixels.contains(p2);</span>
+<span class="fc" id="L2189">                    boolean adjIsWhite = whitePixels.contains(p2);</span>
                     
-<span class="fc" id="L2185">                    Integer colorClusterIndex = colorPixGroupMap.get(p2);</span>
-<span class="fc bfc" id="L2186" title="All 6 branches covered.">                    if ((colorClusterIndex == null) &amp;&amp; !adjIsBlack &amp;&amp; !adjIsWhite) {</span>
-<span class="fc" id="L2187">                        continue;</span>
+<span class="fc" id="L2191">                    Integer colorClusterIndex = colorPixGroupMap.get(p2);</span>
+<span class="fc bfc" id="L2192" title="All 6 branches covered.">                    if ((colorClusterIndex == null) &amp;&amp; !adjIsBlack &amp;&amp; !adjIsWhite) {</span>
+<span class="fc" id="L2193">                        continue;</span>
                     }
                                         
-<span class="fc" id="L2190">                    int idx2 = input.getInternalIndex(x2, y2);</span>
-<span class="fc" id="L2191">                    int r2 = input.getR(idx2);</span>
-<span class="fc" id="L2192">                    int g2 = input.getG(idx2);</span>
-<span class="fc" id="L2193">                    int b2 = input.getB(idx2);</span>
+<span class="fc" id="L2196">                    int idx2 = input.getInternalIndex(x2, y2);</span>
+<span class="fc" id="L2197">                    int r2 = input.getR(idx2);</span>
+<span class="fc" id="L2198">                    int g2 = input.getG(idx2);</span>
+<span class="fc" id="L2199">                    int b2 = input.getB(idx2);</span>
                     
-<span class="fc" id="L2195">                    int diffR = Math.abs(r2 - r);</span>
-<span class="fc" id="L2196">                    int diffG = Math.abs(g2 - g);</span>
-<span class="fc" id="L2197">                    int diffB = Math.abs(b2 - b);</span>
+<span class="fc" id="L2201">                    int diffR = Math.abs(r2 - r);</span>
+<span class="fc" id="L2202">                    int diffG = Math.abs(g2 - g);</span>
+<span class="fc" id="L2203">                    int diffB = Math.abs(b2 - b);</span>
                     
-<span class="fc" id="L2199">                    int diffRGB = diffR + diffG + diffB;</span>
+<span class="fc" id="L2205">                    int diffRGB = diffR + diffG + diffB;</span>
                     
-<span class="fc bfc" id="L2201" title="All 2 branches covered.">                    if (adjIsBlack) {</span>
-<span class="fc bfc" id="L2202" title="All 4 branches covered.">                        if (diffR == diffG &amp;&amp; diffR == diffB) {</span>
-<span class="fc" id="L2203">                            minDiffBlack = diffR;</span>
+<span class="fc bfc" id="L2207" title="All 2 branches covered.">                    if (adjIsBlack) {</span>
+<span class="fc bfc" id="L2208" title="All 4 branches covered.">                        if (diffR == diffG &amp;&amp; diffR == diffB) {</span>
+<span class="fc" id="L2209">                            minDiffBlack = diffR;</span>
                         }
-<span class="fc bfc" id="L2205" title="All 2 branches covered.">                    } else if (adjIsWhite) {</span>
-<span class="fc bfc" id="L2206" title="All 4 branches covered.">                        if (diffR == diffG &amp;&amp; diffR == diffB) {</span>
-<span class="fc" id="L2207">                            minDiffWhite = diffR;</span>
+<span class="fc bfc" id="L2211" title="All 2 branches covered.">                    } else if (adjIsWhite) {</span>
+<span class="fc bfc" id="L2212" title="All 4 branches covered.">                        if (diffR == diffG &amp;&amp; diffR == diffB) {</span>
+<span class="fc" id="L2213">                            minDiffWhite = diffR;</span>
                         }
                     } else {
-<span class="fc bfc" id="L2210" title="All 4 branches covered.">                        if ((diffRGB &lt; minDiffRGB) &amp;&amp; (diffRGB &lt; limit)) {</span>
-<span class="fc" id="L2211">                            minDiffRGB = diffRGB;</span>
-<span class="fc" id="L2212">                            colorClusterIdx = colorClusterIndex.intValue();</span>
-<span class="fc" id="L2213">                            diffR = Math.abs(r2 - r); </span>
-<span class="fc" id="L2214">                            diffG = Math.abs(g2 - g);</span>
-<span class="fc" id="L2215">                            diffB = Math.abs(b2 - b);</span>
+<span class="fc bfc" id="L2216" title="All 4 branches covered.">                        if ((diffRGB &lt; minDiffRGB) &amp;&amp; (diffRGB &lt; limit)) {</span>
+<span class="fc" id="L2217">                            minDiffRGB = diffRGB;</span>
+<span class="pc bpc" id="L2218" title="1 of 2 branches missed.">                            colorClusterIdx = (colorClusterIndex == null) ? -1 :</span>
+<span class="fc" id="L2219">                                colorClusterIndex.intValue();</span>
                         }
                     }
                 }
-<span class="fc bfc" id="L2219" title="All 2 branches covered.">                if (minDiffBlack &lt; 75) {</span>
-<span class="fc" id="L2220">                    blackPixels.add(greyP);</span>
-<span class="fc" id="L2221">                    remove.add(greyP);</span>
-<span class="fc" id="L2222">                    continue;</span>
-<span class="fc bfc" id="L2223" title="All 2 branches covered.">                } else if (minDiffWhite &lt; 75) {</span>
-<span class="fc" id="L2224">                    whitePixels.add(greyP);</span>
+<span class="fc bfc" id="L2223" title="All 2 branches covered.">                if (minDiffBlack &lt; 75) {</span>
+<span class="fc" id="L2224">                    blackPixels.add(greyP);</span>
 <span class="fc" id="L2225">                    remove.add(greyP);</span>
-<span class="fc" id="L2226">                    continue;</span>
+<span class="fc bfc" id="L2226" title="All 2 branches covered.">                } else if (minDiffWhite &lt; 75) {</span>
+<span class="fc" id="L2227">                    whitePixels.add(greyP);</span>
+<span class="fc" id="L2228">                    remove.add(greyP);</span>
                 } else {
-<span class="fc bfc" id="L2228" title="All 2 branches covered.">                    if (colorClusterIdx != -1) {</span>
+<span class="fc bfc" id="L2230" title="All 2 branches covered.">                    if (colorClusterIdx != -1) {</span>
                         //add to color cluster and remove from grey list
-<span class="fc" id="L2230">                        groupList.get(colorClusterIdx).add(greyP);</span>
-<span class="fc" id="L2231">                        remove.add(greyP);</span>
-<span class="fc" id="L2232">                        continue;</span>
+<span class="fc" id="L2232">                        groupList.get(colorClusterIdx).add(greyP);</span>
+<span class="fc" id="L2233">                        remove.add(greyP);</span>
                     }
                 }
-<span class="fc" id="L2235">            }</span>
-<span class="fc bfc" id="L2236" title="All 2 branches covered.">            for (PairInt rm : remove) {</span>
-<span class="fc" id="L2237">                greyGroup.remove(rm);</span>
-<span class="fc" id="L2238">            }</span>
-<span class="fc" id="L2239">        }</span>
+<span class="fc" id="L2236">            }</span>
+<span class="fc bfc" id="L2237" title="All 2 branches covered.">            for (PairInt rm : remove) {</span>
+<span class="fc" id="L2238">                greyGroup.remove(rm);</span>
+<span class="fc" id="L2239">            }</span>
+<span class="fc" id="L2240">        }</span>
 
         // any remaining points in the grey list should be added as sets to
         // the color pixels list now
-<span class="fc bfc" id="L2243" title="All 2 branches covered.">        for (int i = 0; i &lt; greyPixelGroups.size(); ++i) {</span>
-<span class="fc" id="L2244">            Set&lt;PairInt&gt; greyGroup = greyPixelGroups.get(i);</span>
-<span class="fc" id="L2245">            groupList.add(greyGroup);</span>
+<span class="fc bfc" id="L2244" title="All 2 branches covered.">        for (int i = 0; i &lt; greyPixelGroups.size(); ++i) {</span>
+<span class="fc" id="L2245">            Set&lt;PairInt&gt; greyGroup = greyPixelGroups.get(i);</span>
+<span class="fc" id="L2246">            groupList.add(greyGroup);</span>
         }
-<span class="fc" id="L2247">        greyPixelGroups.clear();</span>
-<span class="fc" id="L2248">    }</span>
+<span class="fc" id="L2248">        greyPixelGroups.clear();</span>
+<span class="fc" id="L2249">    }</span>
     
     protected double[] findMinMaxTheta(ImageExt input, Set&lt;PairInt&gt; points0) {
         
-<span class="fc" id="L2252">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L2253">        CIEChromaticity cieC = new CIEChromaticity();</span>
         
-<span class="fc" id="L2254">        double[] minMaxTheta = new double[2];</span>
+<span class="fc" id="L2255">        double[] minMaxTheta = new double[2];</span>
         
-<span class="fc bfc" id="L2256" title="All 2 branches covered.">        for (PairInt p : points0) {</span>
-<span class="fc" id="L2257">            int x = p.getX();</span>
-<span class="fc" id="L2258">            int y = p.getY();</span>
+<span class="fc bfc" id="L2257" title="All 2 branches covered.">        for (PairInt p : points0) {</span>
+<span class="fc" id="L2258">            int x = p.getX();</span>
+<span class="fc" id="L2259">            int y = p.getY();</span>
             
-<span class="fc" id="L2260">            double thetaRadians = cieC.calculateXYTheta(x, y);</span>
-<span class="fc" id="L2261">            double theta = thetaRadians * 180. / Math.PI;</span>
+<span class="fc" id="L2261">            double thetaRadians = cieC.calculateXYTheta(x, y);</span>
+<span class="fc" id="L2262">            double theta = thetaRadians * 180. / Math.PI;</span>
 
-<span class="pc bpc" id="L2263" title="1 of 2 branches missed.">            if (theta &lt; minMaxTheta[0]) {</span>
-<span class="nc" id="L2264">                minMaxTheta[0] = theta;</span>
+<span class="pc bpc" id="L2264" title="1 of 2 branches missed.">            if (theta &lt; minMaxTheta[0]) {</span>
+<span class="nc" id="L2265">                minMaxTheta[0] = theta;</span>
             }
-<span class="fc bfc" id="L2266" title="All 2 branches covered.">            if (theta &gt; minMaxTheta[1]) {</span>
-<span class="fc" id="L2267">                minMaxTheta[1] = theta;</span>
+<span class="fc bfc" id="L2267" title="All 2 branches covered.">            if (theta &gt; minMaxTheta[1]) {</span>
+<span class="fc" id="L2268">                minMaxTheta[1] = theta;</span>
             }
-<span class="fc" id="L2269">        }</span>
+<span class="fc" id="L2270">        }</span>
         
-<span class="fc" id="L2271">        return minMaxTheta;</span>
+<span class="fc" id="L2272">        return minMaxTheta;</span>
     }
 
     private void populatePixelLists(ImageExt input, Set&lt;PairInt&gt; points0, 
         Set&lt;PairInt&gt; blackPixels, Set&lt;PairInt&gt; whitePixels, 
         Map&lt;Integer, Collection&lt;PairInt&gt;&gt; greyPixelMap) {
         
-<span class="fc" id="L2278">        int w = input.getWidth();</span>
-<span class="fc" id="L2279">        int h = input.getHeight();</span>
+<span class="fc" id="L2279">        int w = input.getWidth();</span>
+<span class="fc" id="L2280">        int h = input.getHeight();</span>
         
-<span class="fc" id="L2281">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L2282">        CIEChromaticity cieC = new CIEChromaticity();</span>
         
-<span class="fc bfc" id="L2283" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L2284" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+        // looking for limits in peaks of (r,g,b) &lt;= (32,32,32) and &gt; (191,191,191)
+<span class="fc" id="L2285">        int[] whiteBlackLimits = findByHistogramLimitsForBlackAndWhite(input);</span>
+                
+<span class="fc bfc" id="L2287" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L2288" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
 
-<span class="fc" id="L2286">                int idx = input.getInternalIndex(i, j);</span>
+<span class="fc" id="L2290">                int idx = input.getInternalIndex(i, j);</span>
 
-<span class="fc" id="L2288">                int r = input.getR(idx);</span>
-<span class="fc" id="L2289">                int g = input.getG(idx);</span>
-<span class="fc" id="L2290">                int b = input.getB(idx);</span>
+<span class="fc" id="L2292">                int r = input.getR(idx);</span>
+<span class="fc" id="L2293">                int g = input.getG(idx);</span>
+<span class="fc" id="L2294">                int b = input.getB(idx);</span>
 
-                //dark grey, such as r,g,b=105,105,105?
-<span class="fc bfc" id="L2293" title="All 6 branches covered.">                if ((r &lt;= 32) &amp;&amp; (g &lt;= 32) &amp;&amp; (b &lt;= 32)) {</span>
-<span class="fc" id="L2294">                    blackPixels.add(new PairInt(i, j));</span>
-<span class="fc" id="L2295">                    continue;</span>
+                //TODO: would be good to determine this boundary more precisely
+                // by histogram
+<span class="fc bfc" id="L2298" title="All 6 branches covered.">                if ((r &lt;= whiteBlackLimits[0]) &amp;&amp; (g &lt;= whiteBlackLimits[0]) </span>
+                    &amp;&amp; (b &lt;= whiteBlackLimits[0])) {
+<span class="fc" id="L2300">                    blackPixels.add(new PairInt(i, j));</span>
+<span class="fc" id="L2301">                    continue;</span>
                 }
 
-<span class="fc" id="L2298">                float cx = input.getCIEX(idx);</span>
-<span class="fc" id="L2299">                float cy = input.getCIEY(idx);</span>
+<span class="fc" id="L2304">                float cx = input.getCIEX(idx);</span>
+<span class="fc" id="L2305">                float cy = input.getCIEY(idx);</span>
 
-<span class="fc bfc" id="L2301" title="All 2 branches covered.">                if (cieC.isWhite2(cx, cy)) {</span>
+<span class="fc bfc" id="L2307" title="All 2 branches covered.">                if (cieC.isWhite2(cx, cy)) {</span>
                     //grey will be binned into clusters by avgRGB and peak frequency
-<span class="fc bfc" id="L2303" title="All 6 branches covered.">                    if ((r &lt;= 191) &amp;&amp; (g &lt;= 191) &amp;&amp; (b &lt;= 191)) {</span>
-<span class="fc" id="L2304">                        Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));</span>
-<span class="fc" id="L2305">                        Collection&lt;PairInt&gt; set = greyPixelMap.get(avgRGB);</span>
-<span class="fc bfc" id="L2306" title="All 2 branches covered.">                        if (set == null) {</span>
-<span class="fc" id="L2307">                            set = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L2308">                            greyPixelMap.put(avgRGB, set);</span>
+<span class="fc bfc" id="L2309" title="All 6 branches covered.">                    if ((r &lt;= whiteBlackLimits[1]) &amp;&amp; (g &lt;= whiteBlackLimits[1]) </span>
+                        &amp;&amp; (b &lt;= whiteBlackLimits[1])) {
+<span class="fc" id="L2311">                        Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));</span>
+<span class="fc" id="L2312">                        Collection&lt;PairInt&gt; set = greyPixelMap.get(avgRGB);</span>
+<span class="fc bfc" id="L2313" title="All 2 branches covered.">                        if (set == null) {</span>
+<span class="fc" id="L2314">                            set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L2315">                            greyPixelMap.put(avgRGB, set);</span>
                         }
-<span class="fc" id="L2310">                        set.add(new PairInt(i, j));</span>
-<span class="fc" id="L2311">                    } else {</span>
-<span class="fc" id="L2312">                        whitePixels.add(new PairInt(i, j));</span>
+<span class="fc" id="L2317">                        set.add(new PairInt(i, j));</span>
+<span class="fc" id="L2318">                    } else {</span>
+<span class="fc" id="L2319">                        whitePixels.add(new PairInt(i, j));</span>
                     }
-<span class="fc" id="L2314">                    continue;</span>
+<span class="fc" id="L2321">                    continue;</span>
                 }
 
-<span class="fc" id="L2317">                points0.add(new PairInt(i, j));                </span>
+<span class="fc" id="L2324">                points0.add(new PairInt(i, j));                </span>
             }
         }
-<span class="fc" id="L2320">    }</span>
+<span class="fc" id="L2327">    }</span>
 
     private void mergeNoise(ImageExt input, List&lt;Set&lt;PairInt&gt;&gt; groupList) {
         
-<span class="nc" id="L2324">        Map&lt;PairInt, Integer&gt; pixelToGroupMap = new HashMap&lt;PairInt, Integer&gt;();</span>
-<span class="nc bnc" id="L2325" title="All 2 branches missed.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
-<span class="nc" id="L2326">            Set&lt;PairInt&gt; set = groupList.get(i);</span>
-<span class="nc bnc" id="L2327" title="All 2 branches missed.">            for (PairInt p : set) {</span>
-<span class="nc" id="L2328">                pixelToGroupMap.put(p, Integer.valueOf(i));</span>
-<span class="nc" id="L2329">            }</span>
+<span class="nc" id="L2331">        Map&lt;PairInt, Integer&gt; pixelToGroupMap = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="nc bnc" id="L2332" title="All 2 branches missed.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
+<span class="nc" id="L2333">            Set&lt;PairInt&gt; set = groupList.get(i);</span>
+<span class="nc bnc" id="L2334" title="All 2 branches missed.">            for (PairInt p : set) {</span>
+<span class="nc" id="L2335">                pixelToGroupMap.put(p, Integer.valueOf(i));</span>
+<span class="nc" id="L2336">            }</span>
         }
                 
-<span class="nc" id="L2332">        final int w = input.getWidth();</span>
-<span class="nc" id="L2333">        final int h = input.getHeight();</span>
+<span class="nc" id="L2339">        final int w = input.getWidth();</span>
+<span class="nc" id="L2340">        final int h = input.getHeight();</span>
         
-<span class="nc" id="L2335">        int[] dxs8 = Misc.dx8;</span>
-<span class="nc" id="L2336">        int[] dys8 = Misc.dy8;</span>
+<span class="nc" id="L2342">        int[] dxs8 = Misc.dx8;</span>
+<span class="nc" id="L2343">        int[] dys8 = Misc.dy8;</span>
         
-<span class="nc" id="L2338">        float diffLimit = 0.01f;</span>
+<span class="nc" id="L2345">        float diffLimit = 0.01f;</span>
         
-<span class="nc bnc" id="L2340" title="All 2 branches missed.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
-<span class="nc" id="L2341">            Set&lt;PairInt&gt; set = groupList.get(i);</span>
-<span class="nc" id="L2342">            Set&lt;PairInt&gt; remove = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L2343" title="All 2 branches missed.">            for (PairInt p : set) {</span>
-<span class="nc" id="L2344">                int x = p.getX();</span>
-<span class="nc" id="L2345">                int y = p.getY();</span>
-<span class="nc" id="L2346">                int idx = input.getInternalIndex(x, y);</span>
+<span class="nc bnc" id="L2347" title="All 2 branches missed.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
+<span class="nc" id="L2348">            Set&lt;PairInt&gt; set = groupList.get(i);</span>
+<span class="nc" id="L2349">            Set&lt;PairInt&gt; remove = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L2350" title="All 2 branches missed.">            for (PairInt p : set) {</span>
+<span class="nc" id="L2351">                int x = p.getX();</span>
+<span class="nc" id="L2352">                int y = p.getY();</span>
+<span class="nc" id="L2353">                int idx = input.getInternalIndex(x, y);</span>
                 
-<span class="nc" id="L2348">                float cieX = input.getCIEX(idx);</span>
-<span class="nc" id="L2349">                float cieY = input.getCIEY(idx);</span>
+<span class="nc" id="L2355">                float cieX = input.getCIEX(idx);</span>
+<span class="nc" id="L2356">                float cieY = input.getCIEY(idx);</span>
                 
-<span class="nc" id="L2351">                Integer groupIndex = pixelToGroupMap.get(p);</span>
+<span class="nc" id="L2358">                Integer groupIndex = pixelToGroupMap.get(p);</span>
                 
                 // key=groupIndex, value=number of pixels similar
-<span class="nc" id="L2354">                Map&lt;Integer, Integer&gt; groupSimilarCount = new HashMap&lt;Integer, Integer&gt;();</span>
+<span class="nc" id="L2361">                Map&lt;Integer, Integer&gt; groupSimilarCount = new HashMap&lt;Integer, Integer&gt;();</span>
                 
                 // use cieXY, polar theta of cieXY, or rgb?
-<span class="nc bnc" id="L2357" title="All 2 branches missed.">                for (int nIdx = 0; nIdx &lt; dxs8.length; ++nIdx) {</span>
-<span class="nc" id="L2358">                    int x2 = x + dxs8[nIdx];</span>
-<span class="nc" id="L2359">                    int y2 = y + dys8[nIdx];</span>
-<span class="nc bnc" id="L2360" title="All 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L2361">                        continue;</span>
-                    }
-<span class="nc" id="L2363">                    int idx2 = input.getInternalIndex(x2, y2);</span>
-                    
-<span class="nc" id="L2365">                    Integer groupIndex2 = pixelToGroupMap.get(new PairInt(x2, y2));</span>
-                    
-<span class="nc bnc" id="L2367" title="All 2 branches missed.">                    if (groupIndex.intValue() == groupIndex2.intValue()) {</span>
+<span class="nc bnc" id="L2364" title="All 2 branches missed.">                for (int nIdx = 0; nIdx &lt; dxs8.length; ++nIdx) {</span>
+<span class="nc" id="L2365">                    int x2 = x + dxs8[nIdx];</span>
+<span class="nc" id="L2366">                    int y2 = y + dys8[nIdx];</span>
+<span class="nc bnc" id="L2367" title="All 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
 <span class="nc" id="L2368">                        continue;</span>
                     }
+<span class="nc" id="L2370">                    int idx2 = input.getInternalIndex(x2, y2);</span>
                     
-<span class="nc" id="L2371">                    float cieX2 = input.getCIEX(idx2);</span>
-<span class="nc" id="L2372">                    float cieY2 = input.getCIEY(idx2);</span>
+<span class="nc" id="L2372">                    Integer groupIndex2 = pixelToGroupMap.get(new PairInt(x2, y2));</span>
                     
-<span class="nc" id="L2374">                    float diffCIEX = Math.abs(cieX2 - cieX);</span>
-<span class="nc" id="L2375">                    float diffCIEY = Math.abs(cieY2 - cieY);</span>
-                    
-<span class="nc bnc" id="L2377" title="All 4 branches missed.">                    if ((diffCIEX &gt; diffLimit) || (diffCIEY &gt; diffLimit)) {</span>
-<span class="nc" id="L2378">                        continue;</span>
+<span class="nc bnc" id="L2374" title="All 2 branches missed.">                    if (groupIndex.intValue() == groupIndex2.intValue()) {</span>
+<span class="nc" id="L2375">                        continue;</span>
                     }
                     
-<span class="nc" id="L2381">                    Integer count = groupSimilarCount.get(groupIndex2);</span>
-<span class="nc bnc" id="L2382" title="All 2 branches missed.">                    if (count == null) {</span>
-<span class="nc" id="L2383">                        groupSimilarCount.put(groupIndex2, Integer.valueOf(1));</span>
+<span class="nc" id="L2378">                    float cieX2 = input.getCIEX(idx2);</span>
+<span class="nc" id="L2379">                    float cieY2 = input.getCIEY(idx2);</span>
+                    
+<span class="nc" id="L2381">                    float diffCIEX = Math.abs(cieX2 - cieX);</span>
+<span class="nc" id="L2382">                    float diffCIEY = Math.abs(cieY2 - cieY);</span>
+                    
+<span class="nc bnc" id="L2384" title="All 4 branches missed.">                    if ((diffCIEX &gt; diffLimit) || (diffCIEY &gt; diffLimit)) {</span>
+<span class="nc" id="L2385">                        continue;</span>
+                    }
+                    
+<span class="nc" id="L2388">                    Integer count = groupSimilarCount.get(groupIndex2);</span>
+<span class="nc bnc" id="L2389" title="All 2 branches missed.">                    if (count == null) {</span>
+<span class="nc" id="L2390">                        groupSimilarCount.put(groupIndex2, Integer.valueOf(1));</span>
                     } else {
-<span class="nc" id="L2385">                        groupSimilarCount.put(groupIndex2, Integer.valueOf(count.intValue() + 11));</span>
+<span class="nc" id="L2392">                        groupSimilarCount.put(groupIndex2, Integer.valueOf(count.intValue() + 11));</span>
                     }
                    
                 }
-<span class="nc bnc" id="L2389" title="All 2 branches missed.">                if (groupSimilarCount.isEmpty()) {</span>
-<span class="nc" id="L2390">                    continue;</span>
+<span class="nc bnc" id="L2396" title="All 2 branches missed.">                if (groupSimilarCount.isEmpty()) {</span>
+<span class="nc" id="L2397">                    continue;</span>
                 }
-<span class="nc bnc" id="L2392" title="All 2 branches missed.">                for (Entry&lt;Integer, Integer&gt; entry : groupSimilarCount.entrySet()) {</span>
-<span class="nc bnc" id="L2393" title="All 2 branches missed.">                    if (entry.getValue() &gt;= 6) {</span>
+<span class="nc bnc" id="L2399" title="All 2 branches missed.">                for (Entry&lt;Integer, Integer&gt; entry : groupSimilarCount.entrySet()) {</span>
+<span class="nc bnc" id="L2400" title="All 2 branches missed.">                    if (entry.getValue() &gt;= 6) {</span>
                         // assign this group to pixel p
-<span class="nc" id="L2395">                        pixelToGroupMap.put(p, entry.getKey());</span>
-<span class="nc" id="L2396">                        remove.add(p);</span>
-<span class="nc" id="L2397">                        groupList.get(entry.getKey().intValue()).add(p);</span>
-<span class="nc" id="L2398">                        break;</span>
+<span class="nc" id="L2402">                        pixelToGroupMap.put(p, entry.getKey());</span>
+<span class="nc" id="L2403">                        remove.add(p);</span>
+<span class="nc" id="L2404">                        groupList.get(entry.getKey().intValue()).add(p);</span>
+<span class="nc" id="L2405">                        break;</span>
                     }
-<span class="nc" id="L2400">                }</span>
-<span class="nc" id="L2401">            }</span>
-<span class="nc bnc" id="L2402" title="All 2 branches missed.">            for (PairInt rm : remove) {</span>
-<span class="nc" id="L2403">                set.remove(rm);</span>
-<span class="nc" id="L2404">            }</span>
+<span class="nc" id="L2407">                }</span>
+<span class="nc" id="L2408">            }</span>
+<span class="nc bnc" id="L2409" title="All 2 branches missed.">            for (PairInt rm : remove) {</span>
+<span class="nc" id="L2410">                set.remove(rm);</span>
+<span class="nc" id="L2411">            }</span>
         }
-<span class="nc" id="L2406">    }</span>
+<span class="nc" id="L2413">    }</span>
 
-<span class="fc" id="L2408">    public static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {</span>
+    private int[] findByHistogramLimitsForBlackAndWhite(ImageExt input) {
+                
+        //looking for limits of (r,g,b) &lt;= (32,32,32) and &gt; (191,191,191)
+        
+<span class="fc" id="L2419">        List&lt;Integer&gt; avgL = new ArrayList&lt;Integer&gt;();</span>
+        
+<span class="fc" id="L2421">        List&lt;Integer&gt; avgH = new ArrayList&lt;Integer&gt;();</span>
+        
+<span class="fc bfc" id="L2423" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getNPixels(); ++i) {</span>
+<span class="fc" id="L2424">            int r = input.getR(i);</span>
+<span class="fc" id="L2425">            int g = input.getG(i);</span>
+<span class="fc" id="L2426">            int b = input.getB(i);</span>
+<span class="fc bfc" id="L2427" title="All 6 branches covered.">            if ((r &lt;= 32) &amp;&amp; (g &lt;= 32) &amp;&amp; (b &lt;= 32)) {</span>
+<span class="fc" id="L2428">                int avg = (r + g + b)/3;</span>
+<span class="fc" id="L2429">                avgL.add(Integer.valueOf(avg));</span>
+<span class="fc bfc" id="L2430" title="All 6 branches covered.">            } else if ((r &gt; 191) &amp;&amp; (g &gt; 191) &amp;&amp; (b &gt; 191)) {</span>
+<span class="fc" id="L2431">                int avg = (r + g + b)/3;</span>
+<span class="fc" id="L2432">                avgH.add(Integer.valueOf(avg));</span>
+            }
+        }
+        
+<span class="fc" id="L2436">        int[] limits = new int[2];</span>
+        
+<span class="fc bfc" id="L2438" title="All 2 branches covered.">        if (avgL.size() &gt; 30) {</span>
+<span class="fc" id="L2439">            HistogramHolder hist = Histogram.createSimpleHistogram(avgL);</span>
+<span class="pc bpc" id="L2440" title="1 of 2 branches missed.">            if (hist == null) {</span>
+<span class="nc" id="L2441">                limits[0] = 32;</span>
+            } else {
+<span class="fc" id="L2443">                List&lt;Integer&gt; indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);</span>
+<span class="pc bpc" id="L2444" title="2 of 4 branches missed.">                if (indexes == null || indexes.isEmpty()) {</span>
+<span class="nc" id="L2445">                    limits[0] = 32;</span>
+                } else {
+<span class="fc" id="L2447">                    limits[0] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);</span>
+                }
+            }
+<span class="fc" id="L2450">        } else {</span>
+<span class="fc" id="L2451">            limits[0] = 32;</span>
+        }
+        
+<span class="pc bpc" id="L2454" title="1 of 2 branches missed.">        if (avgH.size() &gt; 30) {</span>
+<span class="fc" id="L2455">            HistogramHolder hist = Histogram.createSimpleHistogram(avgH);</span>
+<span class="pc bpc" id="L2456" title="1 of 2 branches missed.">            if (hist == null) {</span>
+<span class="nc" id="L2457">                limits[1] = 191;</span>
+            } else {
+<span class="fc" id="L2459">                List&lt;Integer&gt; indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);</span>
+<span class="pc bpc" id="L2460" title="2 of 4 branches missed.">                if (indexes == null || indexes.isEmpty()) {</span>
+<span class="nc" id="L2461">                    limits[1] = 191;</span>
+                } else {
+<span class="fc" id="L2463">                    limits[1] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);</span>
+                }
+            }
+<span class="fc" id="L2466">        } else {</span>
+<span class="nc" id="L2467">            limits[1] = 191;</span>
+        }
+        
+<span class="fc" id="L2470">        return limits;</span>
+    }
+
+<span class="fc" id="L2473">    public static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {</span>
 
         int pixIdx;
 

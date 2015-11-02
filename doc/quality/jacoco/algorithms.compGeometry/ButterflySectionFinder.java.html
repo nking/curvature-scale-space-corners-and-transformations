@@ -596,8 +596,8 @@ import java.util.Set;
 <span class="fc" id="L596">                    } else {</span>
 <span class="fc" id="L597">                        int added = addEndpointsForHorizVertPatternOppos(x0, y0,</span>
                             pattern, routes, endPoints, useVert);
-<span class="pc bpc" id="L599" title="1 of 2 branches missed.">                        if (added == 0) {</span>
-<span class="nc" id="L600">                            routes = null;</span>
+<span class="fc bfc" id="L599" title="All 2 branches covered.">                        if (added == 0) {</span>
+<span class="fc" id="L600">                            routes = null;</span>
                         }
                     }
 <span class="fc" id="L603">                    break;</span>
@@ -1271,8 +1271,8 @@ import java.util.Set;
 <span class="pc bpc" id="L1271" title="1 of 2 branches missed.">        if (endPoints.size() &lt; 2) {</span>
 <span class="nc" id="L1272">            throw new IllegalStateException(&quot;error in algorithm&quot;);</span>
         }
-<span class="pc bpc" id="L1274" title="2 of 4 branches missed.">        if ((routes.ep0 != null) || (routes.ep1End != null)) {</span>
-<span class="nc" id="L1275">            return 0;</span>
+<span class="pc bpc" id="L1274" title="1 of 4 branches missed.">        if ((routes.ep0 != null) || (routes.ep1End != null)) {</span>
+<span class="fc" id="L1275">            return 0;</span>
         }
         //assert(routes.ep0 == null);
         //assert(routes.ep1End == null);

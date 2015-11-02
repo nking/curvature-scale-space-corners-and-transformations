@@ -31,21 +31,21 @@ import java.util.logging.Logger;
         List&lt;CurvatureScaleSpaceContour&gt; contours,
         PairIntArray closedCurve, Set&lt;PairInt&gt; blob) {
         
-<span class="fc" id="L34">        List&lt;BlobPerimeterRegion&gt; bprList = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
+<span class="nc" id="L34">        List&lt;BlobPerimeterRegion&gt; bprList = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
                 
-<span class="fc bfc" id="L36" title="All 2 branches covered.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
             
-<span class="fc" id="L38">            CurvatureScaleSpaceContour c = contours.get(i);</span>
+<span class="nc" id="L38">            CurvatureScaleSpaceContour c = contours.get(i);</span>
             
-<span class="pc bpc" id="L40" title="3 of 4 branches missed.">            assert(c.getPeakDetails().length == 1);</span>
+<span class="nc bnc" id="L40" title="All 4 branches missed.">            assert(c.getPeakDetails().length == 1);</span>
             
-<span class="fc" id="L42">            BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, </span>
-<span class="fc" id="L43">                c.getPeakDetails()[0], closedCurve, blob);</span>
+<span class="nc" id="L42">            BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, </span>
+<span class="nc" id="L43">                c.getPeakDetails()[0], closedCurve, blob);</span>
                         
-<span class="fc" id="L45">            bprList.add(bpr);</span>
+<span class="nc" id="L45">            bprList.add(bpr);</span>
         }
         
-<span class="fc" id="L48">        return bprList;</span>
+<span class="nc" id="L48">        return bprList;</span>
     }
 
     /**
@@ -180,8 +180,8 @@ import java.util.logging.Logger;
         
 <span class="fc" id="L181">        removeIntensityOutliers(compStats);</span>
         
-<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (compStats.size() &lt; 2) {</span>
-<span class="fc" id="L184">            return null;</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (compStats.size() &lt; 2) {</span>
+<span class="nc" id="L184">            return null;</span>
         }
         
 <span class="fc" id="L187">        MatchedPointsTransformationCalculator tc = </span>
@@ -346,8 +346,8 @@ import java.util.logging.Logger;
 
     protected void removeDiscrepantThetaDiff(List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="pc bpc" id="L349" title="1 of 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
-<span class="fc" id="L350">            return;</span>
+<span class="pc bpc" id="L349" title="2 of 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
+<span class="nc" id="L350">            return;</span>
         }
         
 <span class="fc" id="L353">        float[] values = calculateThetaDiff(compStats);</span>
@@ -515,10 +515,10 @@ import java.util.logging.Logger;
             }
 <span class="fc" id="L516">            float diffY = params0.getTranslationY() - params1.getTranslationY();</span>
 <span class="pc bpc" id="L517" title="1 of 2 branches missed.">            if (Math.abs(diffY) &gt; toleranceTranslation) {</span>
-<span class="nc" id="L518">                return false;</span>
+<span class="fc" id="L518">                return false;</span>
             }
 
-<span class="fc" id="L521">            return true;</span>
+<span class="nc" id="L521">            return true;</span>
         }
         
 <span class="fc" id="L524">        return false;</span>
