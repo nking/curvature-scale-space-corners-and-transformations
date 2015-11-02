@@ -169,11 +169,11 @@
     </target>
 
     <target name="coverage">
-        <record name="${logfile}" append="yes" loglevel="info"/>
+        <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="coverage"/>
         <jacoco:coverage enabled="true" classdumpdir="${classes.dir}/instr-classes"
             destfile="${classes.dir}/merged.exec">
-            <junit fork="true" forkmode="once" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <junit fork="true" forkmode="once" showoutput="true" printsummary="yes" haltonerror="true" haltonfailure="true">
                 <formatter type="plain" usefile="true"/>
                 <sysproperty key="java.util.logging.config.file"
                     value="${src.out.dir}/logging.properties"/>

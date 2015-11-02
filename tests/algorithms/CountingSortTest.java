@@ -65,7 +65,7 @@ public class CountingSortTest extends TestCase {
         int max = Integer.MIN_VALUE;
         
         for (int i = 0; i < n; i++) {
-            int r = sr.nextInt(67_000_000);
+            int r = sr.nextInt(67_000);
             while (r < 0) {
                 r = sr.nextInt();
             }

@@ -236,6 +236,9 @@ public class BlobScaleFindersTest extends TestCase {
     public void test6() throws Exception {
 
         boolean useBinned = false;
+        
+        SegmentationType type1 = SegmentationType.GREYSCALE_KMPP;
+        SegmentationType type2 = SegmentationType.GREYSCALE_KMPP;
 
         String filePath1 = ResourceFinder.findFileInTestResources("brown_lowe_2003_image1.jpg");
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
@@ -244,17 +247,14 @@ public class BlobScaleFindersTest extends TestCase {
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
-        bph1.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
+        bph1.applySegmentation(type1, useBinned);
         BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
-
-        bch1.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
-            useBinned);
+        bch1.generatePerimeterCorners(type1, useBinned);
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
-        bph2.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
+        bph2.applySegmentation(type2, useBinned);
         BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
-        bch2.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
-            useBinned);
+        bch2.generatePerimeterCorners(type2, useBinned);
 
         BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
 
@@ -264,15 +264,14 @@ public class BlobScaleFindersTest extends TestCase {
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         TransformationParameters params = bsFinder.solveForScale(
-            bch1, features1,
-            SegmentationType.GREYSCALE_KMPP, useBinned,
-            bch2, features2,
-            SegmentationType.GREYSCALE_KMPP, useBinned,
+            bch1, features1, type1, useBinned,
+            bch2, features2, type2, useBinned,
             outputScaleRotTransXYStDev);
 
         assertNotNull(params);
 
         log.info("params=" + params);
+        System.out.println(params.toString());
         
         assertTrue(Math.abs(params.getScale() - 1) < 0.15);
 
