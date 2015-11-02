@@ -409,7 +409,7 @@ public class ImageProcessor {
     public GreyscaleImage computeTheta360(final GreyscaleImage convolvedX,
         final GreyscaleImage convolvedY) {
 
-        GreyscaleImage output = convolvedX.createWithDimensions();
+        GreyscaleImage output = convolvedX.createFullRangeIntWithDimensions();
 
         for (int i = 0; i < convolvedX.getWidth(); i++) {
             for (int j = 0; j < convolvedX.getHeight(); j++) {
