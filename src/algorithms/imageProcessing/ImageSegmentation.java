@@ -53,9 +53,122 @@ public class ImageSegmentation {
         
         KMeansPlusPlus instance = new KMeansPlusPlus();
         instance.computeMeans(kBands, input);
+        
+        assignToNearestCluster(input, instance.getCenters());
+    }
+    
+    /**
+     * applies binary algorithm (simple thresholding) to the values in input 
+     * (greyscale intensities) to create pixels given above or below highest
+     * frequency value.  Note that some images may need to be pre-processed
+     * in order to use this one (for example, correct for illumination and
+     * remove items like sky if main objects are not sky).
+     * (operates on input).
+     * @param input
+     */
+    public void applyBinaryUsingFrequency(GreyscaleImage input) {
+        
+        PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(
+            input);
+        
+        if (valueCounts == null || valueCounts.getN() == 0) {
+            return;
+        }
+        
+        //96, 30
+        int divider = valueCounts.getX(0);
+        int v0 = 255/4;
+        int v1 = 3*v0;
+        
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            if (input.getValue(i) < divider) {
+                input.setValue(i, v0);
+            } else {
+                input.setValue(i, v1);
+            }
+        }
+        
+    }
+    
+    /**
+     * applies DTClustering algorithm to the values in input 
+     * (greyscale intensities) to create kBands of clustered pixels 
+     * (operates on input).
+     * (This one is competitive with applyUsingPolarCIEXYAndFrequency
+     * with lowFreqLimit 0.1f)
+     * @param input
+     * @param kBands
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public void applyUsingDTClustering(GreyscaleImage input, int kBands)
+        throws IOException, NoSuchAlgorithmException {
+        
+        PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(
+            input);
+        
+        // first, trying clustering by value and frequency,
+        // second, compare that to clustering just by giving points as value,value
+        //    which is effectivly a 1D clustering
+        //Set<PairInt> points = new HashSet<PairInt>();
+        Set<com.climbwithyourfeet.clustering.util.PairInt> points = 
+            new HashSet<com.climbwithyourfeet.clustering.util.PairInt>();
+        
+        for (int i = 0; i < valueCounts.getN(); ++i) {
+            com.climbwithyourfeet.clustering.util.PairInt p = new
+                com.climbwithyourfeet.clustering.util.PairInt(
+                    valueCounts.getX(i), valueCounts.getY(i));
+            
+            points.add(p);
+        }
 
-        int[] binCenters = instance.getCenters();
-
+        DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt> cFinder 
+            = new DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt>(
+                points, input.getWidth(), input.getHeight());
+        
+        cFinder.calculateCriticalDensity();
+        
+        cFinder.findClusters();
+        
+        int n = cFinder.getNumberOfClusters();
+        
+        int[] centers = new int[n];
+        for (int i = 0; i < n; ++i) {
+            
+            Set<com.climbwithyourfeet.clustering.util.PairInt> set = cFinder.getCluster(i);
+            
+            // find centeroid for x
+            double xc = 0;
+            for (com.climbwithyourfeet.clustering.util.PairInt p : set) {
+                double x1 = p.getX();
+                xc += x1;
+            }
+            
+            centers[i] = (int)Math.round(xc/(double)set.size());
+        }
+        
+        if (n > kBands) {
+            n = kBands;
+        }
+                
+        Arrays.sort(centers);
+        int[] kCenters = new int[n];
+        int count = 0;
+        for (int i = (centers.length - 1); i > (centers.length - 1 - n); --i) {
+            kCenters[count] = centers[i];
+            count++;
+        }
+        
+        assignToNearestCluster(input, kCenters);
+    }
+    
+    /**
+     * places points by their proximity to cluster centers
+     * @param input
+     * @param binCenters
+     */
+    public void assignToNearestCluster(GreyscaleImage input, int[] binCenters) {
+        
         for (int col = 0; col < input.getWidth(); col++) {
 
             for (int row = 0; row < input.getHeight(); row++) {

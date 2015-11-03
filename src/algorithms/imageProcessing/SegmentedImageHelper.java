@@ -196,7 +196,8 @@ public class SegmentedImageHelper {
     protected void applySegmentationToBinned(SegmentationType type) throws
         IOException, NoSuchAlgorithmException {
 
-        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        if (type.equals(SegmentationType.GREYSCALE_KMPP) || 
+            type.equals(SegmentationType.DT_CLUSTERING)) {
             applySegmentationToBinned(type, 2);
         } else {
             applySegmentationToBinned(type, -1);
@@ -214,7 +215,8 @@ public class SegmentedImageHelper {
     protected void applySegmentation(SegmentationType type) throws IOException,
         NoSuchAlgorithmException {
 
-        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        if (type.equals(SegmentationType.GREYSCALE_KMPP) || 
+            type.equals(SegmentationType.DT_CLUSTERING)) {
             applySegmentation(type, 2);
         } else {
             applySegmentation(type, -1);
@@ -239,8 +241,11 @@ public class SegmentedImageHelper {
 
         GreyscaleImage segImg = getBinnedSegmentationImage(type);
 
-        ImageProcessor imageProcessor = new ImageProcessor();
+        if (segImg != null) {
+            return;
+        }
         
+        ImageProcessor imageProcessor = new ImageProcessor();
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
@@ -250,6 +255,14 @@ public class SegmentedImageHelper {
             
             segImg = gsImg.copyImage();
             imageSegmentation.applyUsingKMPP(segImg, k);
+            imgBinnedSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.DT_CLUSTERING)) {
+            
+            segImg = imgGrey.copyImage();
+            // expecting k=2
+            imageSegmentation.applyUsingDTClustering(segImg, k);
+            
             imgBinnedSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
@@ -305,6 +318,10 @@ public class SegmentedImageHelper {
         
         GreyscaleImage segImg = getSegmentationImage(type);
         
+        if (segImg != null) {
+            return;
+        }
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
@@ -314,7 +331,15 @@ public class SegmentedImageHelper {
             segImg = imgGrey.copyImage();
             // expecting k=2
             imageSegmentation.applyUsingKMPP(segImg, k);
-                        
+            
+            imgSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.DT_CLUSTERING)) {
+            
+            segImg = imgGrey.copyImage();
+            // expecting k=2
+            imageSegmentation.applyUsingDTClustering(segImg, k);
+            
             imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.COLOR_POLARCIEXY_ADAPT)) {
