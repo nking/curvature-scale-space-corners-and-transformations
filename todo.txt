@@ -1,12 +1,3 @@
--- consider making a segmentation algorithm with similar results as
-   GREYSCALE_KMPP but without using random, so using my cluster code
-   instead.
-
--- for scale calculator, consider exiting early with a good answer if
-   st.dev. in params is low and number of matching points is high.
-   for some images, a good solution is found early on, but the algorithm
-   calculates a solution for each blob match (n < 20 blobs times n < 20 blobs)
-
 -- finish w/ changes to feature matcher to use scale
    and finish changes to PointMatcher and stereo projection 
 

@@ -16,12 +16,24 @@ public class TransformationParameters {
     private float originX = 0;
     
     private float originY = 0;
+    
+    private float[] standardDeviationsScaleRotTransXY = null;
 
     /**
      * @return the rotation in units of degrees
      */
     public float getRotationInDegrees() {
         return (float)(rotationInRadians * 180./Math.PI);
+    }
+    
+    public void setStandardDeviations(float[] stDevsScaleRotTransXY) {
+        standardDeviationsScaleRotTransXY = new float[4];
+        System.arraycopy(stDevsScaleRotTransXY, 0, 
+            standardDeviationsScaleRotTransXY, 0, stDevsScaleRotTransXY.length);
+    }
+    
+    public float[] getStandardDeviations() {
+        return standardDeviationsScaleRotTransXY;
     }
 
     /**

@@ -50,6 +50,12 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         
         Map<Integer, TransformationParameters> 
             index1BestParamsMap = new HashMap<Integer, TransformationParameters>();
+        
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        
+        Map<Integer, TransformationParameters> pMap = new HashMap<Integer,
+            TransformationParameters>();
 
         for (int idx1 = 0; idx1 < blobs1.size(); ++idx1) {
 
@@ -118,19 +124,42 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                     continue;
                 }
                 
+    removeDiscrepantThetaDiff(compStats);
+
+    if (compStats.size() < 3) {
+        continue;
+    }
+
                 IntensityFeatureComparisonStats stats = new 
                     IntensityFeatureComparisonStats(index1.intValue(), 
                     index2.intValue(), mapper.getSolvedCost(), 
                     params.getScale());
                 
                 stats.addAll(compStats);
-                
+                                
                 int comp = -1;
                 if (bestStats != null) {
 //TODO: revise the comparison
                     comp = stats.compareTo(bestStats);
                 }
                 if (comp == -1) {
+                    
+                    float[] scaleRotTransXYStDev00 = new float[4];
+                    params = calculateTransformation(
+                        binFactor1, binFactor2, compStats, 
+                        scaleRotTransXYStDev00);
+                    params.setStandardDeviations(scaleRotTransXYStDev00);
+
+                    if (compStats.size() > 3) {
+                        if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
+                            System.arraycopy(scaleRotTransXYStDev00, 0, 
+                                outputScaleRotTransXYStDev, 0, 
+                                scaleRotTransXYStDev00.length);
+
+                            return params;
+                        }
+                    }
+                
                     bestStats = stats;
                     bestParams = params;                
                     log.info("  added to best for [" + index1.toString() + "] ["
@@ -145,7 +174,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             
             index1BestMap.put(index1, bestStats);
             
-            index1BestParamsMap.put(index1, bestParams);
+            index1BestParamsMap.put(index1, bestParams);            
         }
 
         List<FeatureComparisonStat> bestOverall = null;

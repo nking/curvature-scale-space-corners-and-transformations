@@ -35,7 +35,10 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
         GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
             
         GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
-
+        
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        
         List<List<CurvatureScaleSpaceContour>> contours1List = 
             img1Helper.getPerimeterContours(type1, useBinned1);
         
@@ -50,6 +53,9 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
         Map<PairInt, CSSContourMatcherWrapper> singleSolnMap =
             new HashMap<PairInt,  CSSContourMatcherWrapper>();
 
+        Map<Integer, TransformationParameters> pMap = new HashMap<Integer,
+            TransformationParameters>();
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         /*
@@ -214,6 +220,26 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             }
 
             index1BestMap.put(index1, bestStats);
+            
+            IntensityFeatureComparisonStats bestMatches = bestStats.getArray()[0];
+            
+            float[] scaleRotTransXYStDev00 = new float[4];
+            TransformationParameters params = calculateTransformation(
+                binFactor1, binFactor2, bestMatches.getComparisonStats(), 
+                scaleRotTransXYStDev00);
+            params.setStandardDeviations(scaleRotTransXYStDev00);
+            
+            if (bestMatches.getComparisonStats().size() > 3) {
+                if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
+                    System.arraycopy(scaleRotTransXYStDev00, 0, 
+                        outputScaleRotTransXYStDev, 0, 
+                        scaleRotTransXYStDev00.length);
+
+                    return params;
+                }
+            }
+            
+            pMap.put(index1, params);
         }
         
         List<FeatureComparisonStat> bestOverall = null;

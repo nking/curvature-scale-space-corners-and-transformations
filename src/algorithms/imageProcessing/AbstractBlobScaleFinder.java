@@ -524,4 +524,25 @@ public abstract class AbstractBlobScaleFinder {
         return false;
     }
 
+    protected boolean stDevsAreSmall(TransformationParameters params,
+        float[] scaleRotTransXYStDev) {
+        
+        // TODO: consider returning the number of points used in the
+        // calculation
+        float tS = (scaleRotTransXYStDev[0]/params.getScale());
+        float tR = (float)(2.*Math.PI/scaleRotTransXYStDev[1]);
+
+        // consider comparing stdev in translations to a fraction of the image
+        float tTx = scaleRotTransXYStDev[2];
+        float tTy = scaleRotTransXYStDev[3];
+
+        //TODO: review these limits
+        if ((tS < 0.2) && (tR >= 18.) && (tTx < 30)
+            && (tTy < 30)) {
+
+            return true;
+        }
+        
+        return false;
+    }
 }

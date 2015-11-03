@@ -90,6 +90,9 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
         GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
         
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        
         Map<Integer, List<BlobPerimeterRegion>> contours1PointMaps = 
             new HashMap<Integer, List<BlobPerimeterRegion>>();
 
@@ -100,6 +103,9 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         int n2 = contours2List.size();
         
         Map<Integer, TransformationPair3> trMap = new HashMap<Integer, TransformationPair3>();
+        
+        Map<Integer, TransformationParameters> pMap = new HashMap<Integer,
+            TransformationParameters>();
         
         for (int i = 0; i < n1; ++i) {
             
@@ -197,51 +203,29 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
             }
             
             if (bestMatches != null) {
+                
                 trMap.put(Integer.valueOf(i), bestMatches);
+                
+                float[] scaleRotTransXYStDev00 = new float[4];
+                TransformationParameters params = calculateTransformation(
+                    binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
+                    scaleRotTransXYStDev00);
+                params.setStandardDeviations(scaleRotTransXYStDev00);
+                
+                if (bestMatches.getMatchedContourRegions1().size() > 3) {
+                    if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
+                        System.arraycopy(scaleRotTransXYStDev00, 0, 
+                            outputScaleRotTransXYStDev, 0, 
+                            scaleRotTransXYStDev00.length);
+                        
+                        return params;
+                    }
+                }
+                
+                pMap.put(Integer.valueOf(i), params);
             }
         }
-        
- /*
- MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-  
-int idx1 = 0;
-Integer index1 = Integer.valueOf(idx1);
-Set<PairInt> blob1 = blobs1.get(idx1);
-double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
-List<BlobPerimeterRegion> cr1 = new ArrayList<BlobPerimeterRegion>(
-    contours1PointMaps.get(Integer.valueOf(index1)));                
-ClosedCurveContourMatcher0.sortRegion(cr1);
-        
-int idx2 = 5;
-Integer index2 = Integer.valueOf(idx2);
-Set<PairInt> blob2 = blobs2.get(idx2);
-double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
-List<BlobPerimeterRegion> cr2 = new ArrayList<BlobPerimeterRegion>(
-    contours2PointMaps.get(Integer.valueOf(index2)));                
-ClosedCurveContourMatcher0.sortRegion(cr2);
-
-log.info("index1=" + index1.toString() + " index2=" + index2.toString()
-+ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
-
-try {
-ImageExt img1C = img1.copyToColorGreyscaleExt();
-ImageExt img2C = img2.copyToColorGreyscaleExt();
-//ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
-ImageIOHelper.addAlternatingColorRegionsToImage(cr1, img1C, 0, 0, 1);
-           
-//ImageIOHelper.addCurveToImage(perimeter2, img2C, 1, 0, 0, 255);
-ImageIOHelper.addAlternatingColorRegionsToImage(cr2, img2C, 0, 0, 1);
-
-String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/debug_contours_1.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/debug_contours_2.png", img2C);
-
-ImageIOHelper.writeLabeledRegions(cr1, 0, 0, "/debug_labeled_contours_1.png");
-ImageIOHelper.writeLabeledRegions(cr2, 0, 0, "/debug_labeled_contours_2.png");
-
-int z = 1;//1,3 in contours2 should be averaged?
-} catch(IOException e) {
-} */       
+              
         if (trMap.isEmpty()) {
             return null;
         }
@@ -258,9 +242,6 @@ int z = 1;//1,3 in contours2 should be averaged?
             }
         }
         
-        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
-        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
-        
         TransformationPair3 minCostTR = trMap.remove(minCostKey);
                 
         TransformationParameters minCostParams = calculateTransformation(
@@ -275,10 +256,7 @@ int z = 1;//1,3 in contours2 should be averaged?
             
             if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {
                 
-                float[] outputScaleRotTransXYStDev00 = new float[4];
-                TransformationParameters params = calculateTransformation(
-                    binFactor1, binFactor2, tr.getMatchedCompStats(), 
-                    outputScaleRotTransXYStDev00);
+                TransformationParameters params = pMap.get(entry.getKey());
                 
                 if (params != null) {
                     if (areSimilar(minCostParams, params, 25)) {

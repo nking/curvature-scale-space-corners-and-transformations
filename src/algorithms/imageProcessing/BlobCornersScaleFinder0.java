@@ -128,49 +128,15 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         int n1 = corners1List.size();
         int n2 = corners2List.size();
         
-/*
-MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-  
-int idx1 = 14;
-Integer index1 = Integer.valueOf(idx1);
-Set<PairInt> blob1 = blobs1.get(idx1);
-double[] xyCen1 = curveHelper.calculateXYCentroids(blob1);
-List<CornerRegion> cr1 = new ArrayList<CornerRegion>(
-    corners1List.get(Integer.valueOf(index1)));                
-        
-int idx2 = 13;
-Integer index2 = Integer.valueOf(idx2);
-Set<PairInt> blob2 = blobs2.get(idx2);
-double[] xyCen2 = curveHelper.calculateXYCentroids(blob2);
-List<CornerRegion> cr2 = new ArrayList<CornerRegion>(
-    corners2List.get(Integer.valueOf(index2))); 
-
-log.info("index1=" + index1.toString() + " index2=" + index2.toString()
-+ " xyCen1=" + Arrays.toString(xyCen1) + " xyCen2=" + Arrays.toString(xyCen2));
-
-try {
-ImageExt img1C = img1.copyToColorGreyscaleExt();
-ImageExt img2C = img2.copyToColorGreyscaleExt();
-//ImageIOHelper.addCurveToImage(perimeter1, img1C, 0, 0, 0, 255);
-ImageIOHelper.addAlternatingColorCornerRegionsToImage(cr1, img1C, 0, 0, 1);
-           
-//ImageIOHelper.addCurveToImage(perimeter2, img2C, 1, 0, 0, 255);
-ImageIOHelper.addAlternatingColorCornerRegionsToImage(cr2, img2C, 0, 0, 1);
-
-String bin = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(bin + "/debug_corners_1.png", img1C);
-ImageIOHelper.writeOutputImage(bin + "/debug_corners_2.png", img2C);
-
-ImageIOHelper.writeLabeledCornerRegions(cr1, 0, 0, "/debug_labeled_corners_1.png");
-ImageIOHelper.writeLabeledCornerRegions(cr2, 0, 0, "/debug_labeled_corners_2.png");
-
-int z = 1;//1,3 in contours2 should be averaged?
-} catch(IOException e) {
-}
-*/
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         Map<Integer, TransformationPair4> trMap = new HashMap<Integer, TransformationPair4>();
+        
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        
+        Map<Integer, TransformationParameters> pMap = new HashMap<Integer,
+            TransformationParameters>();
         
         for (int i = 0; i < n1; ++i) {
                         
@@ -246,7 +212,26 @@ int z = 1;//1,3 in contours2 should be averaged?
             }
             
             if (bestMatches != null) {
+                
                 trMap.put(Integer.valueOf(i), bestMatches);
+                
+                float[] scaleRotTransXYStDev00 = new float[4];
+                TransformationParameters params = calculateTransformation(
+                    binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
+                    scaleRotTransXYStDev00);
+                params.setStandardDeviations(scaleRotTransXYStDev00);
+                
+                if (bestMatches.getMatchedCompStats().size() > 3) {
+                    if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
+                        System.arraycopy(scaleRotTransXYStDev00, 0, 
+                            outputScaleRotTransXYStDev, 0, 
+                            scaleRotTransXYStDev00.length);
+                        
+                        return params;
+                    }
+                }
+                
+                pMap.put(Integer.valueOf(i), params);
             }
         }
         
@@ -255,9 +240,6 @@ int z = 1;//1,3 in contours2 should be averaged?
         }
         
         long t10 = System.currentTimeMillis();
-        
-        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
-        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
         
         // find best (lowest cost) and combine others with it if similar
         double minCost = Double.MAX_VALUE;
@@ -285,11 +267,7 @@ int z = 1;//1,3 in contours2 should be averaged?
             
             if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {
                 
-                float[] outputScaleRotTransXYStDev00 = new float[4];
-                TransformationParameters params = calculateTransformation(
-                    binFactor1, binFactor2, tr.getMatchedCompStats(), 
-                    outputScaleRotTransXYStDev00);
-                
+                TransformationParameters params = pMap.get(entry.getKey());
                 if (params != null) {
                     if (areSimilar(minCostParams, params, 25)) {
                         combine.addAll(tr.getMatchedCompStats());
