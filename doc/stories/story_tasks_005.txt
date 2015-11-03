@@ -1,0 +1,84 @@
+========================================================================
+Story: Write wrappers to handle the steps from scale calculation,
+       to correspondence list, to epipolar projection for a pair
+       of images.  Also need to remove unused experimental code.
+ 
+    summary: the experimental code is ready to be included in
+       testable methods so wrappers for all of the steps are 
+       needed.
+
+    time estimate: min 1 days, max 4 days (FTE)
+
+    amount of time used: 
+
+    state of completion: 
+
+    comments regarding state:
+
+    comments:
+
+------------------------------------------------------------------
+Task 1: new class FeatureMatcherWrapper
+      
+    details:  
+       new class FeatureMatcherWrapper is needed to encapsulate
+       the steps of scale calculation and generatioon of 
+       correspondence lists (for input to epipolar solve).
+
+       -- default is determine scale
+       -- can be overridden to assume scale (presumably '1') and/or rotation (presumably '0')
+          steps for it are:
+           -- determine scale if not overridden
+           -- get corner regions w/CurvatureScaleSpaceCornerDetector
+           -- create a higher quality theta image: imageProcessor.computeTheta360
+           -- sort the corner regions
+           -- use FeatureMatcher
+               -- findSimilarFeatures accepts scale
+               --> need to create a version of the method which accepts params
+                   and tolerances to reduce match attempts
+                   findMatchingFeatures is the method
+       -- the result is a correspondence list
+
+    time estimate: min 1 days, max 2 days
+  
+    amount of time used:
+
+    state of completion: 
+
+    comments:
+              
+---------------------------------------------------------------------
+Task 2: new class EpipolarSolver
+      
+    details:  
+       new class EpipolarSolver is needed to encapsulate the steps 
+       from FeatureMatcherWrapper to StereoProjectionTransformer
+
+       the settable fields of FeatureMatcherWrapper should be
+       present as settings for this class too.
+
+    time estimate: < 1 day
+  
+    amount of time used:
+
+    state of completion: 
+
+    comments:
+              
+---------------------------------------------------------------------
+Task 3: tidy up PointMatcher
+      
+    details:  
+        unused code in PointMatcher should be discarded, and if the
+        downhill simplex algorithms are kept, they need tests to
+        show their utility.
+
+    time estimate:  1 day
+  
+    amount of time used:
+
+    state of completion: 
+
+    comments:
+              
+---------------------------------------------------------------------
