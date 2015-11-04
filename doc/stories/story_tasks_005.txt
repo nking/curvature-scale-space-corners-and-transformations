@@ -7,7 +7,7 @@ Story: Write wrappers to handle the steps from scale calculation,
        testable methods so wrappers for all of the steps are 
        needed.
 
-    time estimate: min 1 days, max 4 days (FTE)
+    time estimate: min 4 days, max 2 weeks (FTE)
 
     amount of time used: 
 
@@ -39,13 +39,13 @@ Task 1: new class FeatureMatcherWrapper
                    findMatchingFeatures is the method
        -- the result is a correspondence list
 
-    time estimate: min 1 days, max 2 days
+    time estimate: min 3 days, max 1 week and 1 day
   
     amount of time used:
         1 day so far
 
     state of completion: 
-        in progress, not yet tested
+        in progress, changing methods to improve them with products from scale calculator
 
     comments:
               
@@ -59,7 +59,7 @@ Task 2: new class EpipolarSolver
        the settable fields of FeatureMatcherWrapper should be
        present as settings for this class too.
 
-    time estimate: < 1 day
+    time estimate: min < 1 day, max 3 days
   
     amount of time used:
 
