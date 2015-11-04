@@ -79,6 +79,10 @@ public class BlobPerimeterHelper {
     public void applyEqualization() {
         imgHelper.applyEqualization();
     }
+    
+    public boolean didApplyHistEq() {
+        return imgHelper.didApplyHistEq();
+    }
 
     /**
      * apply segmentation type type to the greyscale or color binned image

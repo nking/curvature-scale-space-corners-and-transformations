@@ -1,15 +1,9 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -357,7 +351,8 @@ public class FeatureMatcherTest extends TestCase {
         FeatureMatcher matcher = new FeatureMatcher();
         
         final float scale = 1.0f;
-        
+        final float scaleTol = 0.2f;
+
         CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
             cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
             gsImg2, gXY2, theta2,

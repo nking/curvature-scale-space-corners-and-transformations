@@ -15,6 +15,8 @@ public class BlobScaleFinderWrapper {
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     protected boolean debug = true;
+    
+    private String debugTag = "";
 
     protected final int binnedImageMaxDimension = 300;
 
@@ -68,11 +70,43 @@ public class BlobScaleFinderWrapper {
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {
 
-        debug = true;
+        debug = false;
         
         img1Helper = new BlobPerimeterHelper(img1, "1");
 
         img2Helper = new BlobPerimeterHelper(img2, "2");
+
+        features1 = new IntensityFeatures(5, true);
+
+        features2 = new IntensityFeatures(5, true);
+        
+        skipBinnedImages = true;
+        useBinned1 = false;
+        useBinned2 = false;
+
+        featuresBinned1 = null;
+        featuresBinned2 = null;
+    }
+    
+    /**
+     *
+     * @param img1 the first image holding objects for which a Euclidean
+     * transformation is found that can be applied to put it in
+     * the same scale reference frame as image2.
+     * @param img2 the second image representing the reference frame that
+     * image1 is transformed to using the resulting parameters,
+     * @param debugTagPrefix
+     */
+    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, 
+        String debugTagPrefix) {
+
+        debug = true;
+        
+        debugTag = debugTagPrefix;
+        
+        img1Helper = new BlobPerimeterHelper(img1, debugTagPrefix + "_1");
+
+        img2Helper = new BlobPerimeterHelper(img2, debugTagPrefix + "_2");
 
         features1 = new IntensityFeatures(5, true);
 
@@ -99,7 +133,7 @@ public class BlobScaleFinderWrapper {
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
         startWithBinnedImages) {
 
-        debug = true;
+        debug = false;
         
         img1Helper = new BlobPerimeterHelper(img1, "1");
 
@@ -271,18 +305,18 @@ public class BlobScaleFinderWrapper {
         */
 
         SegmentationType[] seg1 = new SegmentationType[]{
-            //SegmentationType.COLOR_POLARCIEXY,
+            ////SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.DT_CLUSTERING,
             SegmentationType.GREYSCALE_KMPP,
             SegmentationType.COLOR_POLARCIEXY_LARGE,
-            //SegmentationType.ADAPTIVE_MEAN
+            ////SegmentationType.ADAPTIVE_MEAN
         };
         SegmentationType[] seg2 = new SegmentationType[]{
-            //SegmentationType.COLOR_POLARCIEXY,
+            ////SegmentationType.COLOR_POLARCIEXY,
             SegmentationType.DT_CLUSTERING,
             SegmentationType.GREYSCALE_KMPP,
             SegmentationType.COLOR_POLARCIEXY_LARGE,
-            //SegmentationType.ADAPTIVE_MEAN
+            ////SegmentationType.ADAPTIVE_MEAN
         };
         
         int ordered1Idx = 0;

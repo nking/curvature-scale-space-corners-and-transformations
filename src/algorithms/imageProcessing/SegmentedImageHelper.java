@@ -165,6 +165,10 @@ public class SegmentedImageHelper {
             didApplyHistEq = true;
         }
     }
+    
+    public boolean didApplyHistEq() {
+        return didApplyHistEq;
+    }
 
     /**
      * apply segmentation type type to the greyscale or color binned image

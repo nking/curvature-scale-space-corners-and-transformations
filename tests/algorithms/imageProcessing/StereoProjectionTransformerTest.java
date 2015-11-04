@@ -43,10 +43,10 @@ public class StereoProjectionTransformerTest extends TestCase {
         SimpleMatrix right7XY =
             StereoProjectionTransformer.rewriteInto3ColumnMatrix(right7);
         
-         List<SimpleMatrix> fits = spTr.calculateEpipolarProjectionFor7Points(
+        List<SimpleMatrix> fits = spTr.calculateEpipolarProjectionFor7Points(
             left7XY, right7XY);
          
-         assertTrue(fits.size() == 1);
+        assertTrue(fits.size() == 1);
         
         SimpleMatrix fit = fits.get(0);
                         

@@ -42,8 +42,10 @@ Task 1: new class FeatureMatcherWrapper
     time estimate: min 1 days, max 2 days
   
     amount of time used:
+        1 day so far
 
     state of completion: 
+        in progress, not yet tested
 
     comments:
               

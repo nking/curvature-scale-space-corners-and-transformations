@@ -1,14 +1,18 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import thirdparty.HungarianAlgorithm;
 
 public class FeatureMatcher {
 
@@ -337,6 +342,122 @@ public class FeatureMatcher {
                 }
                 for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
                     if (!features1.isWithinYBounds(y1d)) {
+                        continue;
+                    }
+                    
+                    GradientDescriptor gDesc1 = features1.extractGradient(x1d, 
+                        y1d, rotD1);
+                    
+                    if (gDesc1 == null) {
+                        continue;
+                    }
+                       
+                    FeatureComparisonStat stat = Features.calculateGradientStats(
+                        gDesc1, x1d, y1d, gDesc2, x2, y2);
+                   
+                    if (stat.getSumGradientSqDiff() < stat.getImg2PointGradientErr()) {
+                       
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
+                        } else {
+                            if (best.getSumGradientSqDiff() > stat.getSumGradientSqDiff()) {
+                                best = stat;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
+     * @param features1
+     * @param features2
+     * @param cornerRegion1
+     * @param cornerRegion2
+     * @param rotationInRadians
+     * @param tolRotationInRadians
+     * @param dither
+     * @return
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
+     */
+    protected FeatureComparisonStat ditherAndRotateForCorner1Location(
+        Features features1, Features features2, CornerRegion cornerRegion1, 
+        CornerRegion cornerRegion2, 
+        float rotationInRadians, float tolRotationInRadians, int dither) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        final float expectedRotationInDegrees = rotationInRadians 
+            * (float)(180./Math.PI);
+        final float rotTol = tolRotationInRadians * (float)(180./Math.PI);
+                
+        int kMaxIdx1 = cornerRegion1.getKMaxIdx();
+        final int x1 = cornerRegion1.getX()[kMaxIdx1];
+        final int y1 = cornerRegion1.getY()[kMaxIdx1];
+        int rot1 = Math.round(
+            cornerRegion1.getRelativeOrientationInDegrees());
+        
+        int kMaxIdx2 = cornerRegion2.getKMaxIdx();
+        final int x2 = cornerRegion2.getX()[kMaxIdx2];
+        final int y2 = cornerRegion2.getY()[kMaxIdx2];
+        int rot2 = Math.round(
+            cornerRegion2.getRelativeOrientationInDegrees());
+        
+        FeatureComparisonStat best = null;
+                
+        GradientDescriptor gDesc2 = features2.extractGradient(x2, y2, rot2);
+        
+        if (gDesc2 == null) {
+            return null;
+        }
+        
+        // TODO: could decide not to find best rotation here and just discard
+        // false matches due to wrong orientation at end of comparisons
+        int[] rotations = new int[10];
+        int i = 0;
+        for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
+            rotations[i] = rotD1;
+            i++;
+        }
+        rotations[i] = rot1 + 90;
+        i++;
+        rotations[i] = rot1 + 180;
+        i++;
+        rotations[i] = rot1 + 270;
+        i++;
+        
+        for (int rotD1 : rotations) {
+            if (rotD1 > 359) {
+                rotD1 = rotD1 - 360;
+            } else if (rotD1 < 0) {
+                rotD1 += 360;
+            }
+            for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+                if (!features1.isWithinXBounds(x1d)) {
+                    continue;
+                }
+                for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                    if (!features1.isWithinYBounds(y1d)) {
+                        continue;
+                    }
+                    
+                    // only try rotations within expected rotation limits
+                    float rotDescriptors = AngleUtil.getAngleDifference(rotD1, rot2);
+                    if (rotDescriptors < 0) {
+                        rotDescriptors += 360;
+                    }
+                    float rotDiff = AngleUtil.getAngleDifference(
+                        expectedRotationInDegrees, rotDescriptors);
+                    if (Math.abs(rotDiff) > rotTol) {
                         continue;
                     }
                     
@@ -1292,7 +1413,97 @@ public class FeatureMatcher {
                 FeatureComparisonStat stat = ditherAndRotateForCorner1Location(
                     features1, features2, cornerRegion1, cornerRegion2,
                     dither);
-                
+               
+                if (stat != null) {
+
+                    stat = populateOtherDescriptors(features1, features2, stat,
+                        cornerRegion2);
+                    
+                    if (stat == null) {
+                        continue;
+                    }
+
+                    int rotD1 = Math.round(stat.getImg1PointRotInDegrees());
+
+                    int rotD2 = Math.round(
+                        cornerRegion2.getRelativeOrientationInDegrees());
+
+//float diffRot = AngleUtil.getAngleDifference(rotD1, rotD2);
+//log.info("diffRot=" + diffRot + " stat=" + stat.toString());
+
+                    if (fitIsBetter(best, stat)) {
+                        best = stat;
+                        best.setImg1PointRotInDegrees(rotD1);
+                        best.setImg2PointRotInDegrees(rotD2);
+                    }
+                    
+                    if (fitIsBetter3(best3, stat)) {
+                        best3 = stat;
+                        best3.setImg1PointRotInDegrees(rotD1);
+                        best3.setImg2PointRotInDegrees(rotD2);
+                    }
+                }
+            } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                //log.log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        int n = 0;
+        if (best != null) {
+            n++;
+        }
+        if (best3 != null) {
+            n++;
+        }
+        FeatureComparisonStat[] result = new FeatureComparisonStat[n];
+        n = 0;
+        if (best != null) {
+            result[n] = best;
+            n++;
+        }
+        if (best3 != null) {
+            result[n] = best3;
+            n++;
+        }
+
+        return result;
+    }
+    
+    protected FeatureComparisonStat[] findBestMatch(Features features1, 
+        Features features2, CornerRegion cornerRegion1, 
+        CornerRegion[] cornerRegions2, 
+        float rotationInRadians, float tolRotationInRadians, int dither) {
+        
+        FeatureComparisonStat best = null;
+        
+        /*
+        best3 ranks by intensity ssd only.  sometimes matches areas where
+        projection has cause foreground or background changes that appear
+        much more strongly in gradient and theta, so intensity alone may
+        match, but the other two might not.
+        */
+        FeatureComparisonStat best3 = null;
+        
+        for (int idx2 = 0; idx2 < cornerRegions2.length; ++idx2) {
+
+            CornerRegion cornerRegion2 = cornerRegions2[idx2];
+
+            if (cornerRegion2 == null) {
+                continue;
+            }
+
+            try {
+
+                /*
+                 for the given corner region1,
+                 dither and make small rotation changes to find the 
+                 best centering and rotation to minimize the differences
+                 in gradient descriptors between cornerRegion1 and cornerRegion2.
+                */
+                FeatureComparisonStat stat = ditherAndRotateForCorner1Location(
+                    features1, features2, cornerRegion1, cornerRegion2,
+                    rotationInRadians, tolRotationInRadians, dither);
+
                 if (stat != null) {
 
                     //compare all descriptors to find best
@@ -1524,6 +1735,40 @@ public class FeatureMatcher {
         
         return comparisonMap;
     }
+        
+    protected Map<PairInt, Map<PairInt, Set<FeatureComparisonStat>>> 
+        findMatchingFeatures(Features features1, Features features2, 
+        CornerRegion[] cornerRegions1, CornerRegion[] cornerRegions2, 
+        float rotationInRadians, float tolRotationInRadians,
+        int blockHalfWidth, boolean useNormalizedIntensities) {
+        
+        Map<PairInt, Map<PairInt, Set<FeatureComparisonStat>>>
+            comparisonMap = new HashMap<PairInt, Map<PairInt, 
+            Set<FeatureComparisonStat>>>();
+                    
+        final int dither = 1;
+                
+        for (int idx1 = 0; idx1 < cornerRegions1.length; ++idx1) {
+            
+            CornerRegion cornerRegion1 = cornerRegions1[idx1];
+            
+            if (cornerRegion1 == null) {
+                continue;
+            }
+
+            FeatureComparisonStat[] best = findBestMatch(features1, features2,
+                cornerRegion1, cornerRegions2, rotationInRadians, 
+                tolRotationInRadians, dither);
+            
+            if ((best != null) && (best.length > 0)) {
+                for (FeatureComparisonStat stat : best) {
+                    storeInMap(comparisonMap, stat);
+                }
+            }
+        }
+        
+        return comparisonMap;
+    }
 
     public static float[] calculateThetaDiff(List<FeatureComparisonStat> compStats) {
         
@@ -1613,6 +1858,489 @@ public class FeatureMatcher {
         }
         
         return (float) (sum / ((float) values.length));
+    }
+
+    public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
+        GreyscaleImage gXY1, GreyscaleImage theta1, CornerRegion[] cr1, 
+        GreyscaleImage gsImg2, GreyscaleImage gXY2, GreyscaleImage theta2, 
+        CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
+        float rotationInRadiansTol, int transXYTol) {
+        
+        /*
+        when transformation params are known ahead of time:
+        cr1 can be transformed into crTr1 (including the internal points).
+        then the matching is faster than n1 * n2 because can discard some 
+        possible matches immediately.
+        bipartite matching when points are present within tolerance.
+        
+        bipartite is n^3 but the n is < n1.
+        */
+        Transformer transformer = new Transformer();
+        
+        CornerRegion[] crTr1 = transformer.applyTransformation(params, cr1);
+        
+        final int dither = 1;
+        final int blockHalfWidth = 5;
+        final boolean useNormalizedIntensities = true;
+        
+        Features features1 = new Features(gsImg1, gXY1, theta1, blockHalfWidth, 
+            useNormalizedIntensities);
+        
+        Features features2 = new Features(gsImg2, gXY2, theta2, blockHalfWidth, 
+            useNormalizedIntensities);
+        
+        int n1 = crTr1.length;
+        int n2 = cr2.length;
+        
+        Map<PairInt, FeatureComparisonStat> statMap = new HashMap<PairInt, 
+            FeatureComparisonStat>();
+        
+        float[][] cost = new float[n1][n2];
+        
+        for (int i1 = 0; i1 < n1; ++i1) {
+            
+            cost[i1] = new float[n2];
+            Arrays.fill(cost[i1], Float.MAX_VALUE);
+            CornerRegion c1 = crTr1[i1];
+            
+            for (int i2 = 0; i2 < n2; ++i2) {
+                
+                CornerRegion c2 = cr2[i2];
+                
+                int diffX = Math.abs(c1.getX()[c1.getKMaxIdx()] - c2.getX()[c2.getKMaxIdx()]);
+                int diffY = Math.abs(c1.getY()[c1.getKMaxIdx()] - c2.getY()[c2.getKMaxIdx()]);
+                if (diffX > transXYTol || diffY > transXYTol) {
+                    continue;
+                }
+                
+                try {
+                    
+                    // use the untransformed cr1 to be able to filter by rotation
+                    FeatureComparisonStat stat = ditherAndRotateForCorner1Location(
+                        features1, features2, cr1[i1], c2,
+                        params.getRotationInRadians(), rotationInRadiansTol, dither);
+                
+                    if (stat != null) {
+
+                        stat = populateOtherDescriptors(features1, features2, stat,
+                            c2);
+
+                        if (stat == null) {
+                            continue;
+                        }
+                        
+                        PairInt p = new PairInt(i1, i2);
+                        
+                        statMap.put(p, stat);
+
+                        cost[i1][i2] = stat.getSumIntensitySqDiff();                        
+                    }
+                    
+                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                    log.fine(ex.getMessage());
+                }
+            }
+        }
+        
+        boolean transposed = false;
+        if (n1 > n2) {
+            cost = MatrixUtil.transpose(cost);
+            transposed = true;
+        }
+                
+        // one pass thru to count for array sizes
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(cost);
+
+        int nMatched = 0;
+        
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            PairInt pI = new PairInt(idx1, idx2);
+            if (!statMap.containsKey(pI)) {
+                continue;
+            }
+            nMatched++;
+        }
+        
+        MatchedPointsTransformationCalculator tc = 
+            new MatchedPointsTransformationCalculator();
+        
+        int centroidX1 = 0;
+        int centroidY1 = 0;
+        
+        PairIntArray matchedXY1 = new PairIntArray();
+        PairIntArray matchedXY2 = new PairIntArray();
+        
+        float[] weights = new float[nMatched];
+        
+        double sumW = 0;
+
+        int nc = 0;
+        
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+
+            PairInt pI = new PairInt(idx1, idx2);
+            FeatureComparisonStat stat = statMap.get(pI);
+            if (stat == null) {
+                continue;
+            }
+            
+            int x1 = stat.getImg1Point().getX();
+            int y1 = stat.getImg1Point().getY();
+            matchedXY1.add(x1, y1);
+            int x2 = stat.getImg2Point().getX();
+            int y2 = stat.getImg2Point().getY();
+            matchedXY2.add(x2, y2);
+            
+            float w = statMap.get(pI).getSumIntensitySqDiff();
+            weights[nc] = w;
+            
+            sumW += w;
+            
+            nc++;
+        }
+        
+        if (sumW > 0) {
+            double tot = 0;
+            for (int i = 0; i < nMatched; ++i) {
+                double div = (sumW - weights[i]) / ((nMatched - 1) * sumW);
+                weights[i] = (float)div;
+                tot += div;
+            }
+            assert(Math.abs(tot - 1.) < 0.03);            
+        } else {
+            float a = 1.f/(float)nMatched;
+            Arrays.fill(weights, a);
+        }
+        
+        float[] outputScaleRotTransXYStDev = new float[4];
+        TransformationParameters params2 = tc.calulateEuclidean(matchedXY1, 
+            matchedXY2, weights, centroidX1, centroidY1, 
+            outputScaleRotTransXYStDev);
+        
+        if (params2 == null) {
+            return null;
+        }
+        
+        params2.setStandardDeviations(outputScaleRotTransXYStDev);
+        
+        List<PairInt> matched1 = new ArrayList<PairInt>();
+        List<PairInt> matched2 = new ArrayList<PairInt>();
+        
+        //TODO: consider whether an eval step is needed here to further
+        // remove outliers
+        for (int i = 0; i < matchedXY1.getN(); ++i) {
+            matched1.add(new PairInt(matchedXY1.getX(i), matchedXY1.getY(i)));
+            matched2.add(new PairInt(matchedXY2.getX(i), matchedXY2.getY(i)));
+        }
+        
+        int rangeRotation = Math.round(outputScaleRotTransXYStDev[1]);
+        int rangeTranslationX = Math.round(outputScaleRotTransXYStDev[2]);
+        int rangeTranslationY = Math.round(outputScaleRotTransXYStDev[3]);
+        
+        CorrespondenceList cl = new CorrespondenceList(params.getScale(),
+            Math.round(params.getRotationInDegrees()), 
+            Math.round(params.getTranslationX()), Math.round(params.getTranslationY()), 
+            rangeRotation, rangeTranslationX, rangeTranslationY,
+            matched1, matched2);
+        
+        return cl;
+    }
+
+    public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
+        GreyscaleImage gXY1, GreyscaleImage theta1, CornerRegion[] cr1, 
+        GreyscaleImage gsImg2, GreyscaleImage gXY2, GreyscaleImage theta2, 
+        CornerRegion[] cr2, float scale, float rotationInRadians, 
+        float scaleTol, float rotationInRadiansTol) {
+        
+        /*
+        for this one, the rotation can be used in the feature matcher
+        to discard some pairs
+        */
+        
+        if (gsImg1 == null) {
+            throw new IllegalArgumentException("gsImg1 cannot be null");
+        }
+        if (gsImg2 == null) {
+            throw new IllegalArgumentException("gsImg2 cannot be null");
+        }
+        if (gXY1 == null) {
+            throw new IllegalArgumentException("gXY1 cannot be null");
+        }
+        if (gXY2 == null) {
+            throw new IllegalArgumentException("gXY2 cannot be null");
+        }
+        if (theta1 == null) {
+            throw new IllegalArgumentException("theta1 cannot be null");
+        }
+        if (theta2 == null) {
+            throw new IllegalArgumentException("theta2 cannot be null");
+        }
+        if (cr1 == null) {
+            throw new IllegalArgumentException("cr1 cannot be null");
+        }
+        if (cr2 == null) {
+            throw new IllegalArgumentException("cr2 cannot be null");
+        }
+        
+        int blockHalfWidth = 5;
+        boolean useNormalizedIntensities = true;
+        
+        //NOTE: scale was not used in the feature descriptors, but
+        // should be in the future.  For large scale factor, would want to
+        // scale the grid sizes in the descriptor
+        
+        Features features1 = new Features(gsImg1, gXY1, theta1, blockHalfWidth, 
+            useNormalizedIntensities);
+        
+        Features features2 = new Features(gsImg2, gXY2, theta2, blockHalfWidth, 
+            useNormalizedIntensities);
+        
+        Map<PairInt, Map<PairInt, Set<FeatureComparisonStat>>> matchingMap =
+            findMatchingFeatures(features1, features2, cr1, cr2, 
+            rotationInRadians, rotationInRadiansTol, blockHalfWidth, 
+            useNormalizedIntensities);
+        
+        // a quick rough look at the most frequent parameters of euclidean
+        // transformations.
+        
+        //TODO: this may need alot of adjustment, espec for histogram bin sizes.
+        
+        List<PairInt> points1 = new ArrayList<PairInt>();
+        List<PairInt> points2 = new ArrayList<PairInt>();
+        List<Integer> rotations = new ArrayList<Integer>();
+        List<Integer> translationsX = new ArrayList<Integer>();
+        List<Integer> translationsY = new ArrayList<Integer>();
+        
+        for (Entry<PairInt, Map<PairInt, Set<FeatureComparisonStat>>> entry 
+            : matchingMap.entrySet()) {
+            
+            PairInt p1 = entry.getKey();
+            
+            Map<PairInt, Set<FeatureComparisonStat>> p2Map = entry.getValue();
+            
+            for (Entry<PairInt, Set<FeatureComparisonStat>> entry2 : p2Map.entrySet()) {
+                
+                PairInt p2 = entry2.getKey();
+                
+                //TODO: consider only writing all best solutions if they
+                // are different here:
+                
+                for (FeatureComparisonStat stat : entry2.getValue()) {
+                   
+                    float rotation = AngleUtil.getAngleDifference(
+                        stat.getImg2PointRotInDegrees(), 
+                        stat.getImg1PointRotInDegrees());
+                    
+                    if (rotation < 0) {
+                        rotation += 360;
+                    }
+                    double rotationRadians = rotation * Math.PI/180.;
+                    
+                    double cosine = Math.cos(rotationRadians);
+                    double sine = Math.sin(rotationRadians);
+                    
+                    //given scale and rotation, can calculate implied rotation
+                    double xr = (p1.getX() * scale * cosine)
+                        + (p1.getY() * scale * sine);
+
+                    double yr = -(p1.getX() * scale * sine)
+                        + (p1.getY() * scale * cosine);
+
+                    int xt = Math.round(p2.getX() - (float)xr);
+                    int yt = Math.round(p2.getY() - (float)yr);
+                    
+                    rotations.add(Integer.valueOf(Math.round(rotation)));
+                    translationsX.add(Integer.valueOf(xt));
+                    translationsY.add(Integer.valueOf(yt));
+                    points1.add(p1);
+                    points2.add(p2);
+                }
+            }
+        }
+        
+        List<PairInt> matched1 = new ArrayList<PairInt>();
+        List<PairInt> matched2 = new ArrayList<PairInt>();
+        
+        HistogramHolder rHist = Histogram.createSimpleHistogram(20, rotations);
+        List<Integer> subsetRotation = new ArrayList<Integer>();
+        List<Integer> subsetTransX = new ArrayList<Integer>();
+        List<Integer> subsetTransY = new ArrayList<Integer>();
+        List<PairInt> subsetPoints1 = new ArrayList<PairInt>();
+        List<PairInt> subsetPoints2 = new ArrayList<PairInt>();
+        int yMaxIdx = MiscMath.findYMaxIndex(rHist.getYHist());
+        if (yMaxIdx != -1) {
+            float rotMax = rHist.getXHist()[yMaxIdx];
+            for (int i = 0; i < rotations.size(); ++i) {
+                float rot = rotations.get(i);
+                if (Math.abs(rot - rotMax) <= 20) {
+                    subsetRotation.add(Math.round(rot));
+                    subsetTransX.add(translationsX.get(i));
+                    subsetTransY.add(translationsY.get(i));
+                    subsetPoints1.add(points1.get(i));
+                    subsetPoints2.add(points2.get(i));
+                }
+            }
+            // A general euclidean transformation (possibly varying across
+            // image due to projection effects) is needed to determine if
+            // points are matched.
+            
+            // quick look at results to decide if need to use statistics of
+            // fit here (as weights) or whether frequency of values is enough.
+            
+            HistogramHolder txHist = Histogram.createSimpleHistogram(50, subsetTransX);
+            try {
+                txHist.plotHistogram("translationX", MiscDebug.getCurrentTimeFormatted());
+            } catch (IOException ex) {
+                Logger.getLogger(FeatureMatcher.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            int yMaxIdx2 = MiscMath.findYMaxIndex(txHist.getYHist());
+            if (yMaxIdx2 != -1) {
+                float txMax = txHist.getXHist()[yMaxIdx2];
+                float txFWHM = Histogram.measureFWHM(txHist, yMaxIdx2);
+                if (txFWHM < 50) {
+                    txFWHM = 50;
+                }
+                List<Integer> subset2Rotation = new ArrayList<Integer>();
+                List<Integer> subset2TransX = new ArrayList<Integer>();
+                List<Integer> subset2TransY = new ArrayList<Integer>();
+                List<PairInt> subset2Points1 = new ArrayList<PairInt>();
+                List<PairInt> subset2Points2 = new ArrayList<PairInt>();
+                for (int i = 0; i < subsetTransX.size(); ++i) {
+                    int tx = subsetTransX.get(i);
+                    if (Math.abs(tx - txMax) <= (txFWHM/2.f)) {
+                        subset2Rotation.add(subsetRotation.get(i));
+                        subset2TransX.add(tx);
+                        subset2TransY.add(subsetTransY.get(i));
+                        subset2Points1.add(subsetPoints1.get(i));
+                        subset2Points2.add(subsetPoints2.get(i));
+                    }
+                }
+                HistogramHolder tyHist = Histogram.createSimpleHistogram(50, subset2TransY);
+                try {
+                    tyHist.plotHistogram("translationY", MiscDebug.getCurrentTimeFormatted());
+                } catch (IOException ex) {
+                    Logger.getLogger(FeatureMatcher.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                int yMaxIdx3 = MiscMath.findYMaxIndex(tyHist.getYHist());
+                if (yMaxIdx3 != -1) {
+                    float tyMax = tyHist.getXHist()[yMaxIdx3];
+                    float tyFWHM = Histogram.measureFWHM(tyHist, yMaxIdx3);
+                    if (tyFWHM < 50) {
+                        tyFWHM = 50;
+                    }
+                    
+                    log.info("solution rotation=" + rotMax + "+-20 "
+                    + " translationX=" + txMax + "+-" + (txFWHM/2.)
+                    + " translationY=" + tyMax + "+=" + (tyFWHM/2.));
+                    for (int i = 0; i < subset2TransY.size(); ++i) {
+                        int ty = subset2TransY.get(i);
+                        if (Math.abs(ty - tyMax) <= (tyFWHM/2.f)) {
+                            matched1.add(subset2Points1.get(i));
+                            matched2.add(subset2Points2.get(i));
+                        }
+                    } 
+                   
+                    CorrespondenceList cl = new CorrespondenceList(
+                        scale, 
+                        Math.round(rotMax), Math.round(txMax), Math.round(tyMax),
+                        20, Math.round(txFWHM), Math.round(tyFWHM), 
+                        matched1, matched2);
+                    
+                    return cl;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    private FeatureComparisonStat populateOtherDescriptors(Features 
+        features1, Features features2, FeatureComparisonStat stat, 
+        CornerRegion cornerRegion2) throws CornerRegion.CornerRegionDegneracyException {
+
+        if (features1 == null) {
+            throw new IllegalArgumentException("features1 cannot be null");
+        }
+        if (features2 == null) {
+            throw new IllegalArgumentException("features2 cannot be null");
+        }
+        if (stat == null) {
+            throw new IllegalArgumentException("stat cannot be null");
+        }
+        if (cornerRegion2 == null) {
+            throw new IllegalArgumentException("cornerRegion2 cannot be null");
+        }
+        
+        //compare all descriptors to find best
+        int x1 = stat.getImg1Point().getX();
+        int y1 = stat.getImg1Point().getY();
+        int rotD1 = Math.round(stat.getImg1PointRotInDegrees());
+
+        int kMaxIdx2 = cornerRegion2.getKMaxIdx();
+        int x2 = cornerRegion2.getX()[kMaxIdx2];
+        int y2 = cornerRegion2.getY()[kMaxIdx2];
+        int rotD2 = Math.round(
+            cornerRegion2.getRelativeOrientationInDegrees());
+
+        IntensityDescriptor iDesc1 = features1.extractIntensity(
+            x1, y1, rotD1);
+        if (iDesc1 == null) {
+            return null;
+        }
+
+        ThetaDescriptor tDesc1 = features1.extractTheta(
+            x1, y1, rotD1);
+        if (tDesc1 == null) {
+            return null;
+        }
+
+        GradientDescriptor gDesc1 = features1.extractGradient(
+            x1, y1, rotD1);
+        if (gDesc1 == null) {
+            return null;
+        }
+
+        IntensityDescriptor iDesc2 = features2.extractIntensity(
+            x2, y2, rotD2);
+        if (iDesc2 == null) {
+            return null;
+        }
+
+        ThetaDescriptor tDesc2 = features2.extractTheta(
+            x2, y2, rotD2);
+        if (tDesc2 == null) {
+            return null;
+        }
+
+        GradientDescriptor gDesc2 = features2.extractGradient(
+            x2, y2, rotD2);
+        if (gDesc2 == null) {
+            return null;
+        }
+
+        return Features.calculateStats(iDesc1, gDesc1, tDesc1,
+            x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
     }
 
 }
