@@ -719,6 +719,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         params.setTranslationY(transYAvg);
         params.setOriginX((float)centroidX1);
         params.setOriginY((float)centroidY1);
+        if (outputScaleRotTransXYStDev != null) {
+            params.setStandardDeviations(outputScaleRotTransXYStDev);
+        }
      
         if (debug) {
             log.info("params: " + params.toString());

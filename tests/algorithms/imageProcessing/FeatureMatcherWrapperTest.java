@@ -1,0 +1,62 @@
+package algorithms.imageProcessing;
+
+import algorithms.util.ResourceFinder;
+import junit.framework.TestCase;
+import static org.junit.Assert.*;
+
+/**
+ *
+ * @author nichole
+ */
+public class FeatureMatcherWrapperTest extends TestCase {
+    
+    public FeatureMatcherWrapperTest() {
+    }
+    
+    public void test0() throws Exception {
+        
+        String fileName1, fileName2;
+        
+        for (int i = 0; i < 1;/*3;*/ ++i) {
+            switch(i) {
+                case 0: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    break;
+                }
+                default: {
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+            }
+            runCorrespondenceList(fileName1, fileName2);
+        }
+    }
+
+    private void runCorrespondenceList(String fileName1, String fileName2) 
+        throws Exception {
+        
+        int idx = fileName1.lastIndexOf(".");
+        String fileName1Root = fileName1.substring(0, idx);
+        idx = fileName2.lastIndexOf(".");
+        String fileName2Root = fileName2.substring(0, idx);
+        
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+            
+        FeatureMatcherWrapper wrapper = new FeatureMatcherWrapper(img1, img2,
+            fileName1Root);
+        
+        CorrespondenceList cl = wrapper.matchFeatures();
+        
+        assertNotNull(cl != null);
+    }
+}

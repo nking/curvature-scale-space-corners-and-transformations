@@ -6,6 +6,9 @@ package algorithms.imageProcessing;
  */
 public class TransformationPair2 {
     
+    private int cornerListIndex1 = -1;
+    private int cornerListIndex2 = -1;
+    
     private final CornerRegion corner1Curve1;
     private final CornerRegion corner1Curve2;
     private final CornerRegion corner2Curve1;
@@ -88,7 +91,23 @@ public class TransformationPair2 {
     public boolean scaleIsPossiblyAmbiguous() {
         return someScaleAreSmallerThanOne;
     }
+    
+    public void setCornerListIndex1(int idx) {
+        this.cornerListIndex1 = idx;
+    }
 
+    public void setCornerListIndex2(int idx) {
+        this.cornerListIndex2 = idx;
+    }
+    
+    public int getCornerListIndex1() {
+        return this.cornerListIndex1;
+    }
+
+    public int getCornerListIndex2() {
+        return this.cornerListIndex2;
+    }
+    
     @Override
     public String toString() {
         
@@ -99,6 +118,7 @@ public class TransformationPair2 {
         if (params != null) {
             sb.append(params.toString());
         }
+        
         if (nextCorner != null) {
             int n = nextCorner.getMatchedCornerIndexes1().size();
             sb.append(" nMatches=").append(Integer.toString(n)).append(" ");

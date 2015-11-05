@@ -27,10 +27,10 @@ public abstract class AbstractBlobScaleFinder {
         debug = true;
     }
     
-    protected List<BlobPerimeterRegion> extractBlobPerimeterRegions(int theEdgeIndex,
-        List<CurvatureScaleSpaceContour> contours,
+    protected List<BlobPerimeterRegion> extractBlobPerimeterRegions(
+        int theEdgeIndex, List<CurvatureScaleSpaceContour> contours,
         PairIntArray closedCurve, Set<PairInt> blob) {
-        
+
         List<BlobPerimeterRegion> bprList = new ArrayList<BlobPerimeterRegion>();
                 
         for (int i = 0; i < contours.size(); ++i) {
@@ -41,7 +41,7 @@ public abstract class AbstractBlobScaleFinder {
             
             BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, 
                 c.getPeakDetails()[0], closedCurve, blob);
-                        
+                      
             bprList.add(bpr);
         }
         
@@ -344,14 +344,19 @@ public abstract class AbstractBlobScaleFinder {
         return values;
     }
 
-    protected void removeDiscrepantThetaDiff(List<FeatureComparisonStat> compStats) {
+    /**
+     * remove discrepant compStats items and return the indexes removed
+     * @param compStats
+     * @return 
+     */
+    protected List<Integer> removeDiscrepantThetaDiff(List<FeatureComparisonStat> compStats) {
         
         if (compStats == null || compStats.isEmpty()) {
-            return;
+            return null;
         }
         
         float[] values = calculateThetaDiff(compStats);
-        
+
         // 20 degree wide bins
         HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, 
             Errors.populateYErrorsBySqrt(values));
@@ -380,6 +385,7 @@ public abstract class AbstractBlobScaleFinder {
             int idx = remove.get(i);
             compStats.remove(idx);
         }
+        return remove;
     }
 
     protected float[] calcIntensitySSDMeanAndStDev(List<FeatureComparisonStat> compStats) {

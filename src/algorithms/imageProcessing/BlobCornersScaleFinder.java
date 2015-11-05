@@ -3,7 +3,6 @@ package algorithms.imageProcessing;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,12 +17,11 @@ import java.util.Set;
  */
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
-    public TransformationParameters solveForScale(
+    public MatchingSolution solveForScale(
         BlobCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1, 
         BlobCornerHelper img2Helper, IntensityFeatures features2,
-        SegmentationType type2, boolean useBinned2,
-        float[] outputScaleRotTransXYStDev) {
+        SegmentationType type2, boolean useBinned2) {
         
         List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
             type1, useBinned1);
@@ -37,7 +35,6 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             type2, useBinned2);
         
         GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
-        
         GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
                 
         assert(blobs1.size() == perimeters1.size());
@@ -77,7 +74,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             IntensityFeatureComparisonStats bestStats = null;
             
             TransformationParameters bestParams = null;
-            
+                                    
             for (int idx2 = 0; idx2 < blobs2.size(); ++idx2) {
 
                 if (corners2List.get(idx2).size() < 3) {
@@ -104,6 +101,8 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 }
                 
                 TransformationPair2 transformationPair = mapper.getSolution();
+                transformationPair.setCornerListIndex1(idx1);
+                transformationPair.setCornerListIndex2(idx2);
                 
                 TransformationParameters params = 
                     transformationPair.getTransformationParameters();
@@ -150,18 +149,21 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                         scaleRotTransXYStDev00);
                     params.setStandardDeviations(scaleRotTransXYStDev00);
 
-                    if (compStats.size() > 3) {
+                    if ((compStats.size() > 4) && (idx1 < (blobs1.size() - 1))) {
                         if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
-                            System.arraycopy(scaleRotTransXYStDev00, 0, 
-                                outputScaleRotTransXYStDev, 0, 
-                                scaleRotTransXYStDev00.length);
+                            
+                            double c = calculateCombinedIntensityStat(compStats);
+                            log.info("MATCHED EARLY: combined compStat=" + c);
+                        
+                            MatchingSolution soln = new MatchingSolution(params,
+                                compStats);
 
-                            return params;
+                            return soln;
                         }
                     }
                 
                     bestStats = stats;
-                    bestParams = params;                
+                    bestParams = params;
                     log.info("  added to best for [" + index1.toString() + "] ["
                         + index2.toString() + "] cost=" + stats.getCost()
                         + " with n=" + stats.getComparisonStats().size());
@@ -173,14 +175,13 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             }
             
             index1BestMap.put(index1, bestStats);
-            
             index1BestParamsMap.put(index1, bestParams);            
         }
 
         List<FeatureComparisonStat> bestOverall = null;
         if (!index1BestMap.isEmpty()) {
             bestOverall = filterToBestConsistent(index1BestMap, 
-                index1BestParamsMap, corners1List, corners2List);
+                index1BestParamsMap, corners1List.size());
         }
 
         if (bestOverall == null) {
@@ -190,25 +191,26 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         TransformationParameters params = calculateTransformation(
             img1Helper.imgHelper.getBinFactor(useBinned1),
             img2Helper.imgHelper.getBinFactor(useBinned2),
-            bestOverall, outputScaleRotTransXYStDev);
+            bestOverall, new float[4]);
 
         if (params == null) {
             return null;
         }
 
-        return params;
+        MatchingSolution soln = new MatchingSolution(params, bestOverall);
+
+        return soln;        
     }
 
     private List<FeatureComparisonStat> filterToBestConsistent(
         Map<Integer, IntensityFeatureComparisonStats> index1BestMap, 
         Map<Integer, TransformationParameters> index1BestParamsMap, 
-        List<List<CornerRegion>> corners1List, 
-        List<List<CornerRegion>> corners2List) {
+        int nCorners1) {
         
         int bestCostIdx = -1;
         double bestCost = Double.MAX_VALUE;
                
-        for (int i = 0; i < corners1List.size(); ++i) {
+        for (int i = 0; i < nCorners1; ++i) {
             
             Integer key = Integer.valueOf(i);
         
@@ -235,7 +237,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
         
         Transformer transformer = new Transformer();
-        
+                
         /*
         params similar (by rot, scale, tx and ty) to the bestCost params can be 
         aggregated
@@ -251,7 +253,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             transformer.transformToOrigin(0, 0, bestCostParams);
         }
         
-        for (int i = 0; i < corners1List.size(); ++i) {
+        for (int i = 0; i < nCorners1; ++i) {
             
             if (bestCostIdx == i) {
                 continue;
@@ -283,9 +285,9 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 compStats.addAll(ifs.getComparisonStats());
             }            
         }
-        
-        removeDiscrepantThetaDiff(compStats);
-        
+
+        List<Integer> removed = removeDiscrepantThetaDiff(compStats);
+       
         return compStats;
     }
     

@@ -27,8 +27,8 @@ public class NextCorner {
      */
     protected final TreeSet<CornerRegion> remainingCorners;
     
-    protected final List<Integer> matchedCornerIndexes1;
-    protected final List<Integer> matchedCornerIndexes2;
+    private final List<Integer> matchedCornerIndexes1;
+    private final List<Integer> matchedCornerIndexes2;
     
     protected final List<FeatureComparisonStat> matchedStats;
     
@@ -56,8 +56,8 @@ public class NextCorner {
         }
 
         matchedCornerIndexes1 = new ArrayList<Integer>();
-        
         matchedCornerIndexes2 = new ArrayList<Integer>();
+        
     }
     
     public void addMatchedCorners(CornerRegion corner1, 
@@ -73,7 +73,7 @@ public class NextCorner {
         matchedCornerIndexes1.add(cornerIndex1);
         matchedCornerIndexes2.add(cornerIndex2);
         matchedStats.add(stat);
-
+        
         if (matchedEdgeNumber1 == -1) {
             matchedEdgeNumber1 = corner1.getEdgeIdx();
         } else {

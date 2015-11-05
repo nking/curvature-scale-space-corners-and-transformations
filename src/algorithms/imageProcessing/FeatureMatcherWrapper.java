@@ -49,7 +49,7 @@ public class FeatureMatcherWrapper {
     
     private float rotationInRadiansTol = (float)(20. * Math.PI/180.);
     
-    private int transXYTol = 30;
+    private int transXYTol = 70;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     

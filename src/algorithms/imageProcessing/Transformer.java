@@ -646,9 +646,7 @@ public class Transformer {
         double translationY = params.getTranslationY();
         double centroidX = params.getOriginX();
         double centroidY = params.getOriginY();
-        
-        CornerRegion tr = cr.copy();
-        
+                
         double cos = Math.cos(rotInRadians);
         double sin = Math.sin(rotInRadians);
                 
@@ -664,10 +662,12 @@ public class Transformer {
         yt_0 = yr_0 + transY = y1
         */
         
-        for (int i = 0; i < cr.getX().length; i++) {
+        CornerRegion tr = cr.copy();
+        
+        for (int i = 0; i < tr.getX().length; i++) {
 
-            double x = cr.getX()[i];
-            double y = cr.getY()[i];
+            double x = tr.getX()[i];
+            double y = tr.getY()[i];
 
             double xr = centroidX * scale + ((x - centroidX) * scale * cos) 
                 + ((y - centroidY) * scale * sin);
@@ -681,8 +681,8 @@ public class Transformer {
             int xte = (int) Math.round(xt);
             int yte = (int) Math.round(yt);
             
-            cr.getX()[i] = xte;
-            cr.getY()[i] = yte;
+            tr.getX()[i] = xte;
+            tr.getY()[i] = yte;
         }
           
         return tr;

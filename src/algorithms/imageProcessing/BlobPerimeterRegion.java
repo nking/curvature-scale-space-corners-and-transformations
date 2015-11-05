@@ -27,7 +27,10 @@ public class BlobPerimeterRegion {
 
     private final int nextY;
     
-    protected final Set<PairInt> blob;
+    /**
+     * this is released after the orientation is calculated.
+     */
+    protected Set<PairInt> blob = null;
     
     protected double orientation = Double.MIN_VALUE;
     
@@ -51,6 +54,28 @@ public class BlobPerimeterRegion {
         nextY = nextYCoord;
         
         blob = theBlob;
+    }
+    
+    public BlobPerimeterRegion(final int theEdgeIndex, final int prevXCoord, 
+        final int prevYCoord, final int xCoord, final int yCoord, 
+        final int nextXCoord, final int nextYCoord,
+        double theOrientation) {
+        
+        edgeListIdx = theEdgeIndex;
+        
+        prevX = prevXCoord;
+        
+        prevY = prevYCoord;
+        
+        x = xCoord;
+        
+        y = yCoord;
+        
+        nextX = nextXCoord;
+        
+        nextY = nextYCoord;
+        
+        orientation = theOrientation;
     }
     
     /**
@@ -77,6 +102,7 @@ public class BlobPerimeterRegion {
 
         if (orientation == Double.MIN_VALUE) {
             orientation = calculateOrientation();
+            blob = null;
         }
 
         return orientation;
@@ -194,15 +220,17 @@ public class BlobPerimeterRegion {
 
     public BlobPerimeterRegion copy() {
         
-        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, 
-            prevY, x, y, nextX, nextY, blob);
-        
-        if (orientation != Double.MIN_VALUE) {
-            c.orientation = orientation;
+        if (blob == null) {
+            
+            BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, 
+                prevY, x, y, nextX, nextY, orientation);
+            
+            return c;
         }
         
-        c.setIndexWithinCurve(idxWithinCurve);
-        
+        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, 
+            prevY, x, y, nextX, nextY, blob);
+                    
         return c;
     }
 }

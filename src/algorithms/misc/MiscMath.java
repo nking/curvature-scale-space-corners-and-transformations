@@ -2,6 +2,7 @@ package algorithms.misc;
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
+import algorithms.imageProcessing.CornerRegion;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
@@ -143,6 +144,46 @@ public class MiscMath {
             }
         }
         return min;
+    }
+    
+    public static float[] findMaxXY(CornerRegion[] a, int len) {
+        
+        float maxX = Float.MIN_VALUE;
+        float maxY = Float.MIN_VALUE;
+        
+        for (int i = 0; i < len; i++) {
+            CornerRegion c = a[i];
+            float x = c.getX()[c.getKMaxIdx()];
+            float y = c.getY()[c.getKMaxIdx()];
+            if (x > maxX) {
+                maxX = x;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+        }
+        
+        return new float[]{maxX, maxY};
+    }
+    
+    public static float[] findMinXY(CornerRegion[] a, int len) {
+        
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        
+        for (int i = 0; i < len; i++) {
+            CornerRegion c = a[i];
+            float x = c.getX()[c.getKMaxIdx()];
+            float y = c.getY()[c.getKMaxIdx()];
+            if (x < minX) {
+                minX = x;
+            }
+            if (y < minY) {
+                minY = y;
+            }
+        }
+        
+        return new float[]{minX, minY};
     }
     
     public static float findMin(float[] a, int nIndexes) {

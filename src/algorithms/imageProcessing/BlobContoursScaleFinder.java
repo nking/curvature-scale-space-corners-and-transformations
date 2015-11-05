@@ -2,13 +2,10 @@ package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,12 +22,11 @@ import java.util.TreeMap;
  */
 public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
 
-    public TransformationParameters solveForScale(
+    public MatchingSolution solveForScale(
         BlobContourHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
         BlobContourHelper img2Helper, IntensityFeatures features2,
-        SegmentationType type2, boolean useBinned2,
-        float[] outputScaleRotTransXYStDev) {
+        SegmentationType type2, boolean useBinned2) {
 
         GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
             
@@ -229,13 +225,19 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                 scaleRotTransXYStDev00);
             params.setStandardDeviations(scaleRotTransXYStDev00);
             
-            if (bestMatches.getComparisonStats().size() > 3) {
+            if ((bestMatches.getComparisonStats().size() > 3) 
+                && (idx1 < (blobs1.size() - 1))) {
+                
                 if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
-                    System.arraycopy(scaleRotTransXYStDev00, 0, 
-                        outputScaleRotTransXYStDev, 0, 
-                        scaleRotTransXYStDev00.length);
-
-                    return params;
+                    
+                    double c = calculateCombinedIntensityStat(
+                        bestMatches.getComparisonStats());
+                    log.info("MATCHED EARLY: combined compStat=" + c);
+                        
+                    MatchingSolution soln = new MatchingSolution(params,
+                        bestMatches.getComparisonStats());
+                        
+                    return soln;
                 }
             }
             
@@ -268,13 +270,15 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
         TransformationParameters params = calculateTransformation(
             img1Helper.imgHelper.getBinFactor(useBinned1),
             img2Helper.imgHelper.getBinFactor(useBinned2),
-            bestOverall, outputScaleRotTransXYStDev);
+            bestOverall, new float[4]);
 
         if (params == null) {
             return null;
         }
 
-        return params;
+        MatchingSolution soln = new MatchingSolution(params, bestOverall);
+            
+        return soln;
     }
 
     protected List<FeatureComparisonStat> filterContourPointsByFeatures(

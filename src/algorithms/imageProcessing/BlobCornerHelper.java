@@ -65,10 +65,10 @@ public class BlobCornerHelper {
     protected List<List<CornerRegion>> 
         generatePerimeterCornersUnbinned(SegmentationType type) {
         
-        List<List<CornerRegion>> contours = segCornersMap.get(type);
+        List<List<CornerRegion>> corners = segCornersMap.get(type);
 
-        if (contours != null) {
-            return contours;
+        if (corners != null) {
+            return corners;
         }
         
         GreyscaleImage segImg = imgHelper.getSegmentationImage(type);
@@ -87,13 +87,13 @@ public class BlobCornerHelper {
         
         final float factorIncreaseForCurvatureMinimum = 1.f;
         
-        contours = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,
+        corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,
             outdoorMode, enableJaggedLineCorrections, 
             factorIncreaseForCurvatureMinimum);
        
-        segCornersMap.put(type, contours);
+        segCornersMap.put(type, corners);
         
-        return contours;
+        return corners;
     }
     
     protected List<List<CornerRegion>> 

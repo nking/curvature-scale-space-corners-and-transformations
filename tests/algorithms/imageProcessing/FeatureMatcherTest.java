@@ -18,7 +18,7 @@ public class FeatureMatcherTest extends TestCase {
     public FeatureMatcherTest() {
     }
 
-    public void testFeatureMatching() throws Exception {
+    public void estFeatureMatching() throws Exception {
         PairIntArray points1, points2;
         String fileName1, fileName2;
         
@@ -270,7 +270,7 @@ public class FeatureMatcherTest extends TestCase {
         PairIntArray points1, points2;
         String fileName1, fileName2;
         
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 1; ++i) {
             points1 = new PairIntArray();
             points2 = new PairIntArray();
             switch(i) {

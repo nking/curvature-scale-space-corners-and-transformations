@@ -103,12 +103,11 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         return close;
     }
   
-    public TransformationParameters solveForScale(
+    public MatchingSolution solveForScale(
         BlobCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
         BlobCornerHelper img2Helper, IntensityFeatures features2,
-        SegmentationType type2, boolean useBinned2,
-        float[] outputScaleRotTransXYStDev) {
+        SegmentationType type2, boolean useBinned2) {
 
         GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
             
@@ -127,8 +126,21 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         
         int n1 = corners1List.size();
         int n2 = corners2List.size();
-        
+           
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+/*
+float[][] xy1 = new float[corners1List.size()][2];
+for (int i = 0; i < corners1List.size(); ++i) {
+CornerRegion cr = corners1List.get(i).get(0);
+xy1[i] = new float[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
+}
+float[][] xy2 = new float[corners2List.size()][2];
+for (int i = 0; i < corners2List.size(); ++i) {
+CornerRegion cr = corners2List.get(i).get(0);
+xy2[i] = new float[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
+}
+*/
         
         Map<Integer, TransformationPair4> trMap = new HashMap<Integer, TransformationPair4>();
         
@@ -159,7 +171,11 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
                 int minN = Math.min(nc1, nc2);
                 int diffNC = Math.abs(nc1 - nc2);
                 
-                if (((minN > 10) && (diffNC > 3)) || ((minN <= 10) && (diffNC > 2))){
+                if (minN >= 9) {
+                    if (diffNC > 4) {
+                        continue;
+                    }
+                } else if ((minN < 9) && (diffNC > 2)){
                     continue;
                 }
                 
@@ -219,15 +235,20 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
                 TransformationParameters params = calculateTransformation(
                     binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
                     scaleRotTransXYStDev00);
-                params.setStandardDeviations(scaleRotTransXYStDev00);
-                
-                if (bestMatches.getMatchedCompStats().size() > 3) {
+
+                if ((bestMatches.getMatchedCompStats().size() > 4) 
+                    && (i < (n1 - 1))) {
+                    
                     if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
-                        System.arraycopy(scaleRotTransXYStDev00, 0, 
-                            outputScaleRotTransXYStDev, 0, 
-                            scaleRotTransXYStDev00.length);
+               
+                        double c = calculateCombinedIntensityStat(
+                            bestMatches.getMatchedCompStats());
+                        log.info("MATCHED EARLY: combined compStat=" + c);
                         
-                        return params;
+                        MatchingSolution soln = new MatchingSolution(params,
+                            bestMatches.getMatchedCompStats());
+                        
+                        return soln;
                     }
                 }
                 
@@ -254,10 +275,10 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         }
         
         TransformationPair4 minCostTR = trMap.remove(minCostKey);
-                
+        
         TransformationParameters minCostParams = calculateTransformation(
             binFactor1, binFactor2, minCostTR.getMatchedCompStats(), 
-            outputScaleRotTransXYStDev);
+            new float[4]);
         
         List<FeatureComparisonStat> combine = new ArrayList<FeatureComparisonStat>();
         
@@ -277,19 +298,26 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         }
         
         if (combine.isEmpty()) {
-            return minCostParams;
+
+            MatchingSolution soln = new MatchingSolution(minCostParams,
+                minCostTR.getMatchedCompStats());
+            
+            return soln;
         }
         
         combine.addAll(minCostTR.getMatchedCompStats());
         
         TransformationParameters combinedParams = calculateTransformation(
-            binFactor1, binFactor2, combine, outputScaleRotTransXYStDev);
+            binFactor1, binFactor2, combine, new float[4]);
         
         long t11 = System.currentTimeMillis();
         long t1Sec = (t10 - t11)/1000;
         log.info("    compare and combine matches(sec)=" + t1Sec);
         
-        return combinedParams;
+        MatchingSolution soln = new MatchingSolution(combinedParams,
+            combine);
+            
+        return soln;
     }
 
 }

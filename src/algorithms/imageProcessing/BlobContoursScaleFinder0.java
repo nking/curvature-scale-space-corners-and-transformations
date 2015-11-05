@@ -2,11 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,12 +65,11 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         return c;
     }
     
-    public TransformationParameters solveForScale(
+    public MatchingSolution solveForScale(
         BlobContourHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
         BlobContourHelper img2Helper, IntensityFeatures features2,
-        SegmentationType type2, boolean useBinned2,
-        float[] outputScaleRotTransXYStDev) {
+        SegmentationType type2, boolean useBinned2) {
 
         List<List<CurvatureScaleSpaceContour>> contours1List = 
             img1Helper.getPerimeterContours(type1, useBinned1);
@@ -210,15 +205,19 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                 TransformationParameters params = calculateTransformation(
                     binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
                     scaleRotTransXYStDev00);
-                params.setStandardDeviations(scaleRotTransXYStDev00);
                 
-                if (bestMatches.getMatchedContourRegions1().size() > 3) {
+                if ((bestMatches.getMatchedContourRegions1().size() > 4) && 
+                    (i < (n1 - 1))) {
                     if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
-                        System.arraycopy(scaleRotTransXYStDev00, 0, 
-                            outputScaleRotTransXYStDev, 0, 
-                            scaleRotTransXYStDev00.length);
                         
-                        return params;
+                        double c = calculateCombinedIntensityStat(
+                            bestMatches.getMatchedCompStats());
+                        log.info("MATCHED EARLY: combined compStat=" + c);
+                        
+                        MatchingSolution soln = new MatchingSolution(params,
+                            bestMatches.getMatchedCompStats());
+                        
+                        return soln;
                     }
                 }
                 
@@ -246,10 +245,10 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                 
         TransformationParameters minCostParams = calculateTransformation(
             binFactor1, binFactor2, minCostTR.getMatchedCompStats(), 
-            outputScaleRotTransXYStDev);
+            new float[4]);
         
         List<FeatureComparisonStat> combine = new ArrayList<FeatureComparisonStat>();
-        
+    
         for (Entry<Integer, TransformationPair3> entry : trMap.entrySet()) {
             
             TransformationPair3 tr = entry.getValue();
@@ -267,15 +266,22 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         }
         
         if (combine.isEmpty()) {
-            return minCostParams;
+
+            MatchingSolution soln = new MatchingSolution(minCostParams,
+                minCostTR.getMatchedCompStats());
+            
+            return soln;
         }
         
         combine.addAll(minCostTR.getMatchedCompStats());
         
         TransformationParameters combinedParams = calculateTransformation(
-            binFactor1, binFactor2, combine, outputScaleRotTransXYStDev);
+            binFactor1, binFactor2, combine, new float[4]);
         
-        return combinedParams;
+        MatchingSolution soln = new MatchingSolution(combinedParams,
+            combine);
+        
+        return soln;
     }
 
     private List<BlobPerimeterRegion> copyRegions(List<BlobPerimeterRegion> 

@@ -39,17 +39,18 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1,
             SegmentationType.GREYSCALE_KMPP, useBinned,
             bch2, features2,
-            SegmentationType.GREYSCALE_KMPP, useBinned,
-            outputScaleRotTransXYStDev);
+            SegmentationType.GREYSCALE_KMPP, useBinned);
+        
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
 
         assertNotNull(params);
 
@@ -84,18 +85,19 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1,
             SegmentationType.COLOR_POLARCIEXY, useBinned,
             bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            outputScaleRotTransXYStDev);
+            SegmentationType.COLOR_POLARCIEXY, useBinned);
 
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
         assertNotNull(params);
 
         assertTrue(Math.abs(params.getScale() - 1) < 0.1);
@@ -125,18 +127,19 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1,
             SegmentationType.GREYSCALE_KMPP, useBinned,
             bch2, features2,
-            SegmentationType.GREYSCALE_KMPP, useBinned,
-            outputScaleRotTransXYStDev);
+            SegmentationType.GREYSCALE_KMPP, useBinned);
 
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
         assertNotNull(params);
 
         assertTrue(Math.abs(params.getScale() - 1) < 0.15);
@@ -169,18 +172,19 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1,
             SegmentationType.COLOR_POLARCIEXY, useBinned,
             bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            outputScaleRotTransXYStDev);
+            SegmentationType.COLOR_POLARCIEXY, useBinned);
 
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
         assertNotNull(params);
 
         assertTrue(Math.abs(params.getScale() - 1) < 0.1);
@@ -215,18 +219,19 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1,
             SegmentationType.COLOR_POLARCIEXY, useBinned,
             bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            outputScaleRotTransXYStDev);
+            SegmentationType.COLOR_POLARCIEXY, useBinned);
 
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
         assertNotNull(params);
 
         assertTrue(Math.abs(params.getScale() - 1) < 0.1);
@@ -260,16 +265,17 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1, type1, useBinned,
-            bch2, features2, type2, useBinned,
-            outputScaleRotTransXYStDev);
-
+            bch2, features2, type2, useBinned);
+        
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
         assertNotNull(params);
 
         log.info("params=" + params);
@@ -307,18 +313,19 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1,
             SegmentationType.COLOR_POLARCIEXY, useBinned,
             bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            outputScaleRotTransXYStDev);
+            SegmentationType.COLOR_POLARCIEXY, useBinned);
 
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
         assertNotNull(params);
         
         //log.info("params=" + params);
@@ -350,16 +357,17 @@ public class BlobScaleFindersTest extends TestCase {
 
         BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
 
-        float[] outputScaleRotTransXYStDev = new float[4];
-
         IntensityFeatures features1 = new IntensityFeatures(5, true);
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
-        TransformationParameters params = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1, type, useBinned,
-            bch2, features2, type, useBinned,
-            outputScaleRotTransXYStDev);
+            bch2, features2, type, useBinned);
 
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
         assertNotNull(params);
 
         assertTrue(Math.abs(params.getScale() - 1) < 0.1);

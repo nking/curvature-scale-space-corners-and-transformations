@@ -60,6 +60,10 @@ public class BlobScaleFinderWrapper {
 
     private boolean useSameSegmentation = false;
 
+    private AlgType solutionAlgType = null;
+    private SegmentationType solutionSegmentationType1 = null;
+    private SegmentationType solutionSegmentationType2 = null;
+    
     /**
      *
      * @param img1 the first image holding objects for which a Euclidean
@@ -328,11 +332,11 @@ public class BlobScaleFinderWrapper {
 
             SegmentationType segmentationType2 = seg2[ordered2Idx];
 
-            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1
-                + " useSameSegmentation=" + useSameSegmentation
+            log.info("for 1: " + segmentationType1.name() + " alg=" + algType.name()
+                + " binned=" + useBinned1 + " useSameSegmentation=" + useSameSegmentation
                 + " ordered1Idx=" + ordered1Idx);
-            log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2
-                + " ordered2Idx=" + ordered2Idx);
+            log.info("for 2: " + segmentationType2.name()
+                + " binned=" + useBinned2 + " ordered2Idx=" + ordered2Idx);
 
             IntensityFeatures f1;
             IntensityFeatures f2;
@@ -366,9 +370,7 @@ public class BlobScaleFinderWrapper {
             log.info("segmentation1(sec)=" + t1Sec 
                 + " segmentation2(sec)=" + t2Sec);
             
-            float[] outputScaleRotTransXYStDev = new float[4];
-
-            TransformationParameters params = null;
+            MatchingSolution soln = null;
 
             int n1 = 0;
             int n2 = 0;
@@ -427,9 +429,13 @@ public class BlobScaleFinderWrapper {
                 
                 BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
 
-                params = bsFinder.solveForScale(blobCornerHelper1, f1,
+                if (debug) {
+                    bsFinder.setToDebug();
+                }
+                
+                soln = bsFinder.solveForScale(blobCornerHelper1, f1,
                     segmentationType1, useBinned1, blobCornerHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
                 n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
@@ -438,9 +444,13 @@ public class BlobScaleFinderWrapper {
                 
                 BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();
 
-                params = bsFinder.solveForScale(blobContourHelper1, f1,
+                if (debug) {
+                    bsFinder.setToDebug();
+                }
+                
+                soln = bsFinder.solveForScale(blobContourHelper1, f1,
                     segmentationType1, useBinned1, blobContourHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
                 n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
@@ -449,9 +459,13 @@ public class BlobScaleFinderWrapper {
                 
                 BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
-                params = bsFinder.solveForScale(blobCornerHelper1, f1,
+                if (debug) {
+                    bsFinder.setToDebug();
+                }
+                
+                soln = bsFinder.solveForScale(blobCornerHelper1, f1,
                     segmentationType1, useBinned1, blobCornerHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
                 n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
@@ -460,9 +474,13 @@ public class BlobScaleFinderWrapper {
 
                 BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
-                params = bsFinder.solveForScale(blobContourHelper1, f1,
+                if (debug) {
+                    bsFinder.setToDebug();
+                }
+                
+                soln = bsFinder.solveForScale(blobContourHelper1, f1,
                     segmentationType1, useBinned1, blobContourHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
                 n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
                 n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
@@ -474,7 +492,9 @@ public class BlobScaleFinderWrapper {
             Logger.getLogger(this.getClass().getName()).info("matching(sec)=" 
                 + t1Sec);
                 
-            if (params != null) {
+            if (soln != null) {
+                
+                TransformationParameters params = soln.getParams();
 
                 log.info("params for type"
                     + " (" + segmentationType1.name() + ", binned=" + useBinned1 + ")"
@@ -483,22 +503,28 @@ public class BlobScaleFinderWrapper {
 
                 log.info(String.format(
                     "stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f",
-                    outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],
-                    outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));
+                    params.getStandardDeviations()[0], 
+                    params.getStandardDeviations()[1],
+                    params.getStandardDeviations()[2], 
+                    params.getStandardDeviations()[3]));
 
                 // TODO: consider returning the number of points used in the
                 // calculation
-                float tS = (outputScaleRotTransXYStDev[0]/params.getScale());
-                float tR = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);
+                float tS = (params.getStandardDeviations()[0]/params.getScale());
+                float tR = (float)(2.*Math.PI/params.getStandardDeviations()[1]);
 
                 // consider comparing stdev in translations to a fraction of the image
-                float tTx = outputScaleRotTransXYStDev[2];
-                float tTy = outputScaleRotTransXYStDev[3];
+                float tTx = params.getStandardDeviations()[2];
+                float tTy = params.getStandardDeviations()[3];
 
                 //TODO: review these limits
                 if ((tS < 0.2) && (tR >= 18.) && (tTx < 30)
                     && (tTy < 30)) {
 
+                    solutionAlgType = algType;
+                    solutionSegmentationType1 = segmentationType1;
+                    solutionSegmentationType2 = segmentationType2;
+                    
                     return params;
                 }
             }
