@@ -184,9 +184,9 @@ public class FeatureMatcherWrapper {
         NOTE: if extractAndMatch is needed below, and if polar ciexy was
         returned as the algorithm type here, consider using
         polar ciexy w/ k=8, 16 or 32 on the color image and extract
-        corners from that result. reason being that at least on image
-        that is bettter solved w/ polar cie xy, the Venturi test images,
-        have alot of texture in grass and ridgelines that is not present
+        corners from that result. reason being that at least one image set
+        that is better solved w/ polar cie xy, the Venturi test images,
+        has alot of texture in grass and ridgelines that is not present
         in the polar cie xy k=2 images...
         */
         params = scaleFinder.calculateScale();
@@ -224,7 +224,7 @@ public class FeatureMatcherWrapper {
             stats = matchRemainingBlobCornerPoints(scaleFinder, 
                 transformedFilteredC1, filteredC1, filteredC2);
             
-            if (statsCoverIntersection(stats, filteredC2)) {
+            if ((stats.size() >= 7) && statsCoverIntersection(stats, filteredC2)) {
                 
                 List<PairInt> matched1 = new ArrayList<PairInt>();
                 List<PairInt> matched2 = new ArrayList<PairInt>();
@@ -262,7 +262,7 @@ public class FeatureMatcherWrapper {
             stats = matchRemainingBlobContourPoints(scaleFinder, 
                 transformedFilteredC1, filteredC1, filteredC2);
             
-            if (statsCoverIntersection2(stats, filteredC2)) {
+            if ((stats.size() >= 7) && statsCoverIntersection2(stats, filteredC2)) {
                 
                 List<PairInt> matched1 = new ArrayList<PairInt>();
                 List<PairInt> matched2 = new ArrayList<PairInt>();
@@ -511,14 +511,13 @@ public class FeatureMatcherWrapper {
                     continue;
                 }
                 
-                //FeatureMatcher.removeIntensityOutliers(compStats2);
-                
+/*                
 int nm = compStats2.size();
 int x1 = compStats2.get(0).getImg1Point().getX();
 int y1 = compStats2.get(0).getImg1Point().getY();
 int x2 = compStats2.get(0).getImg2Point().getX();
 int y2 = compStats2.get(0).getImg2Point().getY();
-                
+*/                
                 IntensityFeatureComparisonStats stats2 = new 
                     IntensityFeatureComparisonStats(i1, i2,
                     mapper.getSolvedCost(), params.getScale());
@@ -766,11 +765,15 @@ int y2 = compStats2.get(0).getImg2Point().getY();
             }
         }
         
-        //TODO: revise while testing
+        int nq = 0;
+        for (int i = 0; i < counts.length; ++i) {
+            if (counts[i] > 0) {
+                nq++;
+            }
+        }
+        
         // check that there is at least 1 in each quadrant
-        if ((counts[0] > 0) && (counts[1] > 0) && (counts[2] > 0) && 
-            (counts[3] > 0)) {
-            
+        if (nq >= 3) {
             return true;
         }
         
