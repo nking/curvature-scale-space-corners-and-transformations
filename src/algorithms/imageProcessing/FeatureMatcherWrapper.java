@@ -179,6 +179,16 @@ public class FeatureMatcherWrapper {
             scaleFinder = new BlobScaleFinderWrapper(img1, img2);
         }
         
+        /*
+        TODO:
+        NOTE: if extractAndMatch is needed below, and if polar ciexy was
+        returned as the algorithm type here, consider using
+        polar ciexy w/ k=8, 16 or 32 on the color image and extract
+        corners from that result. reason being that at least on image
+        that is bettter solved w/ polar cie xy, the Venturi test images,
+        have alot of texture in grass and ridgelines that is not present
+        in the polar cie xy k=2 images...
+        */
         params = scaleFinder.calculateScale();
         
         if (params == null) {
@@ -433,6 +443,10 @@ public class FeatureMatcherWrapper {
         Map<Integer, IntensityFeatureComparisonStats> index1Map 
             = new HashMap<Integer, IntensityFeatureComparisonStats>();
         
+        Map<Integer, Set<Integer>> assignedIndex2 = new HashMap<Integer, Set<Integer>>();
+        
+        Set<Integer> redo = new HashSet<Integer>();
+        
         int tolXY = this.transXYTol;
         
         for (int i1 = 0; i1 < filteredC1Transformed.size(); ++i1) {
@@ -520,7 +534,61 @@ int y2 = compStats2.get(0).getImg2Point().getY();
             }
             
             if (best != null) {
+                
                 index1Map.put(Integer.valueOf(i1), best);
+                
+                Set<Integer> a1 = assignedIndex2.get(Integer.valueOf(best.getIndex2()));
+                if (a1 != null) {
+                    redo.add(Integer.valueOf(i1));
+                    for (Integer index1 : a1) {
+                        redo.add(index1);
+                    }
+                } else {
+                    a1 = new HashSet<Integer>();
+                    assignedIndex2.put(Integer.valueOf(best.getIndex2()), a1);
+                }
+                a1.add(Integer.valueOf(best.getIndex1()));
+            }
+        }
+        if (!redo.isEmpty()) {
+            //TODO: consider using all points except conflicted indexes to
+            // determine transformation params and then choose among conflict
+            // those with closer match to expected transformed coordinates.
+            // problem with this instead of SSD is it would perform worse for
+            // projection.
+             
+            Set<Integer> resolved1 = new HashSet<Integer>();
+            for (Integer redoIndex1 : redo) {
+                if (resolved1.contains(redoIndex1)) {
+                    continue;
+                }
+                Integer conflictIndex2 = null;
+                for (Entry<Integer, Set<Integer>> entry : assignedIndex2.entrySet()) {
+                    Set<Integer> indexes1 = entry.getValue();
+                    if (indexes1.contains(redoIndex1)) {
+                        conflictIndex2 = entry.getKey();
+                        break;
+                    }
+                }
+                Set<Integer> conflictIndexes1 = assignedIndex2.get(conflictIndex2);
+                //decide by SSD or by difference from transformed point 1's
+                assert(conflictIndexes1 != null);
+                double bestCost = Double.MAX_VALUE;
+                Integer bestCostIndex1 = null;
+                for (Integer index1 : conflictIndexes1) {
+                    IntensityFeatureComparisonStats st = index1Map.get(index1);
+                    if ((bestCostIndex1 == null) || (bestCost > st.getAdjustedCost())) {
+                        bestCost = st.getAdjustedCost();
+                        bestCostIndex1 = index1;
+                    }
+                    resolved1.add(index1);
+                }
+                for (Integer index1 : conflictIndexes1) {
+                    if (index1.equals(bestCostIndex1)) {
+                        continue;
+                    }
+                    index1Map.remove(index1);
+                }
             }
         }
         

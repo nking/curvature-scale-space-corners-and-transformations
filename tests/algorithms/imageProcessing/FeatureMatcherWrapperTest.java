@@ -1,7 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import java.util.Collection;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
 /**
@@ -44,6 +48,8 @@ public class FeatureMatcherWrapperTest extends TestCase {
         
         int idx = fileName1.lastIndexOf(".");
         String fileName1Root = fileName1.substring(0, idx);
+        idx = fileName2.lastIndexOf(".");
+        String fileName2Root = fileName2.substring(0, idx);
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
@@ -56,5 +62,13 @@ public class FeatureMatcherWrapperTest extends TestCase {
         CorrespondenceList cl = wrapper.matchFeatures();
         
         assertNotNull(cl != null);
+        
+        Collection<PairInt> m1 = cl.getPoints1();
+        Collection<PairInt> m2 = cl.getPoints2();
+        GreyscaleImage gsImg1 = img1.copyToGreyscale();
+        GreyscaleImage gsImg2 = img2.copyToGreyscale();
+        MiscDebug.plotCorners(gsImg1, m1, "1_" + fileName1Root  + "_matched", 2);
+        MiscDebug.plotCorners(gsImg2, m2, "2_" + fileName2Root + "_matched", 2);
+                
     }
 }
