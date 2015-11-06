@@ -38,7 +38,7 @@ public class ClosedCurveCornerMatcher {
     protected final int rotationTolerance = 20;
 
     //TODO: tune this
-    private int tolerance = 2;
+    private int tolerance = 4;
 
     private double solutionCost = Double.MAX_VALUE;
 

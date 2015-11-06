@@ -3,7 +3,6 @@ package algorithms.compGeometry;
 import algorithms.util.PairInt;
 import java.util.Set;
 import junit.framework.TestCase;
-import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
@@ -40,5 +39,21 @@ public class NearestPointsTest extends TestCase {
         assertTrue(results.contains(new PairInt(3, 2)));
         
         assertFalse(results.contains(new PairInt(7, 2)));
+    }
+    
+    public void testFindNeighbors2() throws Exception {
+        
+        int[] x = new int[]{80, 94, 118, 129, 131};
+        int[] y = new int[]{247, 244, 240, 268, 256};
+        
+        NearestPoints nearestPoints = new NearestPoints(x, y);
+         
+        int xsrch = 95;
+        int ysrch = 247;
+        int tol = 4;
+        Set<PairInt> results = nearestPoints.findNeighbors(xsrch, ysrch, tol);
+        assertTrue(results.size() == 1);
+        assertEquals(results.iterator().next().getX(), 94);
+        assertEquals(results.iterator().next().getY(), 244);
     }
 }

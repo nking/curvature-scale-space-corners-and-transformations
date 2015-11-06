@@ -489,7 +489,7 @@ public class FeatureMatcherWrapper {
                 FeatureMatcher.removeDiscrepantThetaDiff(compStats2, 
                     params.getRotationInDegrees());
                 
-                if (compStats.isEmpty()) {
+                if (compStats2.isEmpty()) {
                     continue;
                 }
                 

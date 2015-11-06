@@ -120,25 +120,25 @@ public class NearestPoints {
         // if it's negative, (-(insertion point) - 1)
         if (idx < 0) {
             // idx = -*idx2 - 1
-            idx = -1*(idx + 1);                
+            idx = -1*(idx + 1);
         }
         if (idx > (x.length - 1)) {
             idx = x.length - 1;
         }
         
         int startIdx = idx;
-        for (int i = idx; i > -1; --i) {
-            int x2 = x[i];
-            if (Math.abs(x2 - xCenter) > radius) {
+        for (int i = (idx - 1); i > -1; --i) {
+            int diffX = Math.abs(x[i] - xCenter);
+            if (diffX > radius) {
                 break;
             }
             startIdx = i;
         }
         
         int stopIdx = idx;
-        for (int i = (idx + 1); i < x.length; ++i) {
-            int x2 = x[i];
-            if (Math.abs(x2 - xCenter) > radius) {
+        for (int i = idx; i < x.length; ++i) {
+            int diffX = Math.abs(x[i] - xCenter);
+            if (diffX > radius) {
                 break;
             }
             stopIdx = i;
