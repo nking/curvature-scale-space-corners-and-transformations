@@ -48,7 +48,13 @@ public class ClosedCurveCornerMatcher {
 
     private boolean solutionHasSomeScalesSmallerThanOne = false;
 
+    private Float fixedRotationInDegrees = null;
+    
     public ClosedCurveCornerMatcher() {
+    }
+    
+    public void setFixedRotation(float rD) {
+        fixedRotationInDegrees = Float.valueOf(rD);
     }
 
     private void resetDefaults() {
@@ -397,9 +403,16 @@ public class ClosedCurveCornerMatcher {
 
                 try {
 
-                    compStat = featureMatcher.ditherAndRotateForBestLocation(
-                        features1, features2, region1, region2, dither, 
-                        img1, img2);
+                    if (fixedRotationInDegrees == null) {
+                        compStat = featureMatcher.ditherAndRotateForBestLocation(
+                            features1, features2, region1, region2, dither, 
+                            img1, img2);
+                    } else {
+                        compStat = featureMatcher.ditherAndRotateForBestLocation(
+                            features1, features2, region1, region2, dither, 
+                            fixedRotationInDegrees.intValue(), 20,
+                            img1, img2);
+                    }
 
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
                     log.fine("**CONSIDER using more points in corner region");
@@ -493,25 +506,25 @@ public class ClosedCurveCornerMatcher {
         MatchedPointsTransformationCalculator
             tc = new MatchedPointsTransformationCalculator();
 
-        for (int i = 0; i < indexes2.length; ++i) {
+        for (int i1_1 = 0; i1_1 < indexes2.length; ++i1_1) {
 
-            CornerRegion cr1C1 = c1.get(i);
+            CornerRegion cr1C1 = c1.get(i1_1);
 
-            if (indexes2[i] == null) {
+            if (indexes2[i1_1] == null) {
                 continue;
             }
 
-            CornerRegion cr1C2 = indexes2[i].cr2;
+            CornerRegion cr1C2 = indexes2[i1_1].cr2;
 
-            for (int j = (i + 1); j < c1.size(); ++j) {
+            for (int i1_2 = (i1_1 + 1); i1_2 < c1.size(); ++i1_2) {
 
-                CornerRegion cr2C1 = c1.get(j);
+                CornerRegion cr2C1 = c1.get(i1_2);
 
-                if (indexes2[j] == null) {
+                if (indexes2[i1_2] == null) {
                     continue;
                 }
 
-                CornerRegion cr2C2 = indexes2[j].cr2;
+                CornerRegion cr2C2 = indexes2[i1_2].cr2;
 
                 if (cr2C2.equals(cr1C2)) {
                     continue;
@@ -519,7 +532,7 @@ public class ClosedCurveCornerMatcher {
 
                 // temporarily, evaluating all corners for each starter solution:
                 insertNodeTMP(heap, c1, c2, np, features1, features2, 
-                    tc, indexes2[i], cr1C1, cr1C2, indexes2[j], cr2C1, cr2C2,
+                    tc, indexes2[i1_1], cr1C1, cr1C2, indexes2[i1_2], cr2C1, cr2C2,
                     img1, img2);
                
             }

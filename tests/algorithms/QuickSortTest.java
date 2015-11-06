@@ -64,6 +64,25 @@ public class QuickSortTest extends TestCase {
         assertTrue(a[3] == 4); assertTrue(b[3] == 6); assertTrue(c[3] == 7);
     }
     
+    public void testSortBy1stThen2nd_2() throws Exception {
+        
+        /*  a  b  c
+            4  5  6
+            4  6  7
+            4  3  1
+            1  2  3
+        */
+        float[] a = new float[]{4, 4, 4, 1};
+        float[] b = new float[]{5, 6, 3, 2};
+        
+        QuickSort.sortBy1stThen2nd(a, b, 0, a.length - 1);
+        
+        assertTrue(a[0] == 1); assertTrue(b[0] == 2);
+        assertTrue(a[1] == 4); assertTrue(b[1] == 3); 
+        assertTrue(a[2] == 4); assertTrue(b[2] == 5);
+        assertTrue(a[3] == 4); assertTrue(b[3] == 6);
+    }
+    
     public void testSortBy1stThen2nd() throws Exception {
         
         /*  a  b  c

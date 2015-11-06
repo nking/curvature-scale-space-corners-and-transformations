@@ -1791,57 +1791,6 @@ public class FeatureMatcher {
         return values;
     }
 
-    public static List<Integer> removeDiscrepantThetaDiff(
-        List<FeatureComparisonStat> compStats) {
-        
-        if (compStats == null || compStats.isEmpty()) {
-            return null;
-        }
-        
-        float[] values = calculateThetaDiff(compStats);
-        for (int i = 0; i < values.length; ++i) {
-            if (values[i] < 0) {
-                values[i] += 360;
-            }
-        }
-        
-        // 20 degree wide bins
-        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, 
-            Errors.populateYErrorsBySqrt(values));
-        
-        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
-        if ((yMaxIdx > -1) && (hist.getYHist()[yMaxIdx] == 1)) {
-            hist = Histogram.createSimpleHistogram(40.f, values, 
-                Errors.populateYErrorsBySqrt(values));
-            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
-        }
-        
-        float thetaDiff;
-        if (yMaxIdx == -1) {
-            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);
-            thetaDiff = thetaDiffMeanStDev[0];
-        } else {
-            thetaDiff = hist.getXHist()[yMaxIdx];
-        }
-        
-        //TODO: consider a bin larger than 20 degrees... 25
-        List<Integer> remove = new ArrayList<Integer>();
-        
-        for (int i = 0; i < values.length; ++i) {
-            float diffRot = AngleUtil.getAngleDifference(values[i], thetaDiff);
-            if (diffRot > 20) {
-                remove.add(Integer.valueOf(i));
-            }
-        }
-        
-        for (int i = remove.size() - 1; i > -1; --i) {
-            int idx = remove.get(i);
-            compStats.remove(idx);
-        }
-        
-        return remove;
-    }
-    
     public static float calculateDiffThetaMean(List<FeatureComparisonStat> 
         comparisonStats) {
         
@@ -2352,6 +2301,153 @@ public class FeatureMatcher {
         return Features.calculateStats(iDesc1, gDesc1, tDesc1,
             x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
     }
+    
+    public static void filterForIntersection(TransformationParameters params, 
+        float toleranceXY,
+        List<List<CornerRegion>> c1, List<List<CornerRegion>> c2, 
+        List<List<CornerRegion>> outFilteredTransformedC1,
+        List<List<CornerRegion>> outFilteredC1, 
+        List<List<CornerRegion>> outFilteredC2) {
+        
+        float[] minXY2 = MiscMath.findMinXY(c2);
+        float[] maxXY2 = MiscMath.findMaxXY(c2);
+        
+        Transformer transformer = new Transformer();
+        
+        float[] minXY1 = new float[]{Float.MAX_VALUE, Float.MAX_VALUE};
+        float[] maxXY1 = new float[]{Float.MIN_VALUE, Float.MIN_VALUE};
+        
+        for (int i = 0; i < c1.size(); ++i) {
+            List<CornerRegion> outList = new ArrayList<CornerRegion>();
+            List<CornerRegion> listTr = new ArrayList<CornerRegion>();
+            List<CornerRegion> list = c1.get(i);
+            for (int j = 0; j < list.size(); ++j) {
+                
+                CornerRegion ctr = transformer.applyTransformation(params, 
+                    list.get(j));
+                
+                int x = ctr.getX()[ctr.getKMaxIdx()];
+                int y = ctr.getY()[ctr.getKMaxIdx()];
+                
+                if ((x < (minXY2[0] - toleranceXY)) || (x > (maxXY2[0] + toleranceXY))) {
+                    continue;
+                }
+                if ((y < (minXY2[1] - toleranceXY)) || (y > (maxXY2[1] + toleranceXY))) {
+                    continue;
+                }
+                listTr.add(ctr);
+                outList.add(list.get(j));
+                
+                if (x < minXY1[0]) {
+                    minXY1[0] = x;
+                }
+                if (y < minXY1[1]) {
+                    minXY1[1] = y;
+                }
+                if (x > maxXY1[0]) {
+                    maxXY1[0] = x;
+                }
+                if (y > maxXY1[1]) {
+                    maxXY1[1] = y;
+                }
+            }
+            outFilteredTransformedC1.add(listTr);
+            outFilteredC1.add(outList);
+        }
+
+        for (int i = 0; i < c2.size(); ++i) {
+            List<CornerRegion> outList = new ArrayList<CornerRegion>();
+            List<CornerRegion> list = c2.get(i);
+            for (int j = 0; j < list.size(); ++j) {
+                CornerRegion c = list.get(j);
+                int x = c.getX()[c.getKMaxIdx()];
+                int y = c.getY()[c.getKMaxIdx()];
+                
+                if ((x < (minXY1[0] - toleranceXY)) || (x > (maxXY1[0] + toleranceXY))) {
+                    continue;
+                }
+                if ((y < (minXY1[1] - toleranceXY)) || (y > (maxXY1[1] + toleranceXY))) {
+                    continue;
+                }
+                outList.add(list.get(j));
+            }
+            outFilteredC2.add(outList);
+        }        
+    }
+    
+    public static void filterForIntersection2(TransformationParameters params, 
+        int transXYTol, 
+        List<List<CurvatureScaleSpaceContour>> c1, 
+        List<List<CurvatureScaleSpaceContour>> c2, 
+        List<List<CurvatureScaleSpaceContour>> outFilteredTransformedC1, 
+        List<List<CurvatureScaleSpaceContour>> outFilteredC1, 
+        List<List<CurvatureScaleSpaceContour>> outFilteredC2) {
+        
+        float[] minXY2 = MiscMath.findMinXY2(c2);
+        float[] maxXY2 = MiscMath.findMaxXY2(c2);
+        
+        Transformer transformer = new Transformer();
+        
+        float[] minXY1 = new float[]{Float.MAX_VALUE, Float.MAX_VALUE};
+        float[] maxXY1 = new float[]{Float.MIN_VALUE, Float.MIN_VALUE};
+        
+        for (int i = 0; i < c1.size(); ++i) {
+            List<CurvatureScaleSpaceContour> outList = new ArrayList<CurvatureScaleSpaceContour>();
+            List<CurvatureScaleSpaceContour> listTr = new ArrayList<CurvatureScaleSpaceContour>();
+            List<CurvatureScaleSpaceContour> list = c1.get(i);
+            for (int j = 0; j < list.size(); ++j) {
+                
+                CurvatureScaleSpaceContour ctr = transformer.applyTransformation(params, 
+                    list.get(j));
+                
+                int x = ctr.getPeakDetails()[0].getXCoord();
+                int y = ctr.getPeakDetails()[0].getYCoord();
+                
+                if ((x < (minXY2[0] - transXYTol)) || (x > (maxXY2[0] + transXYTol))) {
+                    continue;
+                }
+                if ((y < (minXY2[1] - transXYTol)) || (y > (maxXY2[1] + transXYTol))) {
+                    continue;
+                }
+                listTr.add(ctr);
+                outList.add(list.get(j));
+                
+                if (x < minXY1[0]) {
+                    minXY1[0] = x;
+                }
+                if (y < minXY1[1]) {
+                    minXY1[1] = y;
+                }
+                if (x > maxXY1[0]) {
+                    maxXY1[0] = x;
+                }
+                if (y > maxXY1[1]) {
+                    maxXY1[1] = y;
+                }
+            }
+            outFilteredTransformedC1.add(listTr);
+            outFilteredC1.add(outList);
+        }
+
+        for (int i = 0; i < c2.size(); ++i) {
+            List<CurvatureScaleSpaceContour> outList = new ArrayList<CurvatureScaleSpaceContour>();
+            List<CurvatureScaleSpaceContour> list = c2.get(i);
+            for (int j = 0; j < list.size(); ++j) {
+                CurvatureScaleSpaceContour c = list.get(j);
+                int x = c.getPeakDetails()[0].getXCoord();
+                int y = c.getPeakDetails()[0].getYCoord();
+                
+                if ((x < (minXY1[0] - transXYTol)) || (x > (maxXY1[0] + transXYTol))) {
+                    continue;
+                }
+                if ((y < (minXY1[1] - transXYTol)) || (y > (maxXY1[1] + transXYTol))) {
+                    continue;
+                }
+                outList.add(list.get(j));
+            }
+            outFilteredC2.add(outList);
+        }        
+    }
 
     private List<List<Integer>> reduceToIntersection(
         CornerRegion[] transformedCR1, CornerRegion[] cr2, int transXYTol) {
@@ -2418,6 +2514,137 @@ public class FeatureMatcher {
         filtered.add(filtered2Indexes);
         
         return filtered;
+    }
+
+    public static List<Integer> removeDiscrepantThetaDiff(
+        List<FeatureComparisonStat> compStats) {
+        
+        if (compStats == null || compStats.isEmpty()) {
+            return null;
+        }
+        
+        float[] values = calculateThetaDiff(compStats);
+        for (int i = 0; i < values.length; ++i) {
+            if (values[i] < 0) {
+                values[i] += 360;
+            }
+        }
+        
+        // 20 degree wide bins
+        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, 
+            Errors.populateYErrorsBySqrt(values));
+        
+        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        if ((yMaxIdx > -1) && (hist.getYHist()[yMaxIdx] == 1)) {
+            hist = Histogram.createSimpleHistogram(40.f, values, 
+                Errors.populateYErrorsBySqrt(values));
+            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        }
+        
+        float thetaDiff;
+        if (yMaxIdx == -1) {
+            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);
+            thetaDiff = thetaDiffMeanStDev[0];
+        } else {
+            thetaDiff = hist.getXHist()[yMaxIdx];
+        }
+        
+        //TODO: consider a bin larger than 20 degrees... 25
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int i = 0; i < values.length; ++i) {
+            float diffRot = AngleUtil.getAngleDifference(values[i], thetaDiff);
+            if (diffRot > 20) {
+                remove.add(Integer.valueOf(i));
+            }
+        }
+        
+        for (int i = remove.size() - 1; i > -1; --i) {
+            int idx = remove.get(i);
+            compStats.remove(idx);
+        }
+        
+        return remove;
+    }
+    
+    public static List<Integer> removeDiscrepantThetaDiff(
+        List<FeatureComparisonStat> compStats, float rotationInDegrees) {
+        
+        if (compStats == null || compStats.isEmpty()) {
+            return null;
+        }
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        float[] values = calculateThetaDiff(compStats);
+        for (int i = 0; i < values.length; ++i) {
+            
+            if (values[i] < 0) {
+                values[i] += 360;
+            }
+            
+            int diffRot = Math.round(AngleUtil.getAngleDifference(values[i], 
+                rotationInDegrees));
+            if (diffRot > 20) {
+                remove.add(Integer.valueOf(i));
+            }
+        }
+        
+        for (int i = remove.size() - 1; i > -1; --i) {
+            int idx = remove.get(i);
+            compStats.remove(idx);
+        }
+        
+        return remove;
+    }
+    
+    public static float[] calcIntensitySSDMeanAndStDev(List<FeatureComparisonStat> compStats) {
+        
+        int n = compStats.size();
+        
+        float[] ssds = new float[n];
+        
+        for (int i = 0; i < n; ++i) {
+            
+            FeatureComparisonStat stat = compStats.get(i);
+            
+            ssds[i] = stat.getSumIntensitySqDiff();
+        }
+        
+        float[] meanStDv = MiscMath.getAvgAndStDev(ssds);
+        
+        return meanStDv;
+    }
+
+    public static void removeIntensityOutliers(List<FeatureComparisonStat> compStats) {
+        
+        if (compStats.size() < 3) {
+            return;
+        }
+        
+        int n = compStats.size();
+        
+        float[] meanStDv = calcIntensitySSDMeanAndStDev(compStats);
+        
+        List<Integer> rm = new ArrayList<Integer>();
+        
+        for (int i = 0; i < n; ++i) {
+            
+            FeatureComparisonStat stat = compStats.get(i);
+            
+            float diff = Math.abs(stat.getSumIntensitySqDiff() - meanStDv[0]);
+            
+            if (diff > (1.25 * meanStDv[1])) {
+                rm.add(Integer.valueOf(i));
+            }
+        }
+        
+        for (int i = rm.size() - 1; i > -1; --i) {
+            
+            int idx = rm.get(i).intValue();
+            
+            compStats.remove(idx);
+        }
     }
 
 }

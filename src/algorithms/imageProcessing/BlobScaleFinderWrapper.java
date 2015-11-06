@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -32,7 +33,7 @@ public class BlobScaleFinderWrapper {
 
     should try (3) and/or (4) first then (2) and (1)
     */
-    private enum AlgType {
+    public static enum AlgType {
         CONTOURS_ORDERED, CORNERS_ORDERED,
         CORNERS_COMBINATIONS, CONTOURS_COMBINATIONS
     }
@@ -60,9 +61,12 @@ public class BlobScaleFinderWrapper {
 
     private boolean useSameSegmentation = false;
 
+    private MatchingSolution solution = null;
     private AlgType solutionAlgType = null;
     private SegmentationType solutionSegmentationType1 = null;
     private SegmentationType solutionSegmentationType2 = null;
+    private boolean solutionUsedBinned1 = false;
+    private boolean solutionUsedBinned2 = false;
     
     /**
      *
@@ -524,6 +528,9 @@ public class BlobScaleFinderWrapper {
                     solutionAlgType = algType;
                     solutionSegmentationType1 = segmentationType1;
                     solutionSegmentationType2 = segmentationType2;
+                    solutionUsedBinned1 = useBinned1;
+                    solutionUsedBinned2 = useBinned2;
+                    solution = soln;
                     
                     return params;
                 }
@@ -567,4 +574,82 @@ public class BlobScaleFinderWrapper {
 
         return null;
     }
+    
+    public MatchingSolution getSolution() {
+        return solution;
+    }
+    public AlgType getSolutionAlgType() {
+        return solutionAlgType;
+    }
+    public SegmentationType getSolutionSegmentationType1() {
+        return solutionSegmentationType1;
+    }
+    public SegmentationType getSolutionSegmentationType2() {
+        return solutionSegmentationType2;
+    }
+    public boolean getSolutionUsedBinned1() {
+        return solutionUsedBinned1;
+    }
+    public boolean getSolutionUsedBinned2() {
+        return solutionUsedBinned2;
+    }
+    
+    public List<List<CornerRegion>> getAllCornerRegions1OfSolution() {
+        
+        if (algType.equals(AlgType.CONTOURS_COMBINATIONS) ||
+            algType.equals(AlgType.CONTOURS_ORDERED)) {
+            return null;
+        }
+        
+        return blobCornerHelper1.generatePerimeterCorners(
+            solutionSegmentationType1, solutionUsedBinned1);
+    }
+    
+    public List<List<CornerRegion>> getAllCornerRegions2OfSolution() {
+        
+        if (algType.equals(AlgType.CONTOURS_COMBINATIONS) ||
+            algType.equals(AlgType.CONTOURS_ORDERED)) {
+            return null;
+        }
+        
+        return blobCornerHelper2.generatePerimeterCorners(
+            solutionSegmentationType2, solutionUsedBinned2);
+    }
+    
+    public List<List<CurvatureScaleSpaceContour>> getAllContours1OfSolution() {
+        
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
+            algType.equals(AlgType.CORNERS_ORDERED)) {
+            return null;
+        }
+        
+        return blobContourHelper1.generatePerimeterContours(
+            solutionSegmentationType1, solutionUsedBinned1);
+    }
+    
+    public List<List<CurvatureScaleSpaceContour>> getAllContours2OfSolution() {
+        
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
+            algType.equals(AlgType.CORNERS_ORDERED)) {
+            return null;
+        }
+        
+        return blobContourHelper2.generatePerimeterContours(
+            solutionSegmentationType2, solutionUsedBinned2);
+    }
+    
+    public IntensityFeatures getSolutionFeatures1() {
+        if (solutionUsedBinned1) {
+            return featuresBinned1;
+        }
+        return features1;
+    }
+    
+    public IntensityFeatures getSolutionFeatures2() {
+        if (solutionUsedBinned2) {
+            return featuresBinned2;
+        }
+        return features2;
+    }
+    
 }

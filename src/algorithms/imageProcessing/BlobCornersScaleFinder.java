@@ -117,13 +117,13 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 log.fine("theta diff filtered: " + printToString(compStats) 
                     + " combinedStat=" + calculateCombinedIntensityStat(compStats));
             
-                removeIntensityOutliers(compStats);
+                FeatureMatcher.removeIntensityOutliers(compStats);
                 
                 if (compStats.size() < 3) {
                     continue;
                 }
                 
-    removeDiscrepantThetaDiff(compStats);
+    FeatureMatcher.removeDiscrepantThetaDiff(compStats);
 
     if (compStats.size() < 3) {
         continue;
@@ -286,7 +286,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             }            
         }
 
-        List<Integer> removed = removeDiscrepantThetaDiff(compStats);
+        List<Integer> removed = FeatureMatcher.removeDiscrepantThetaDiff(compStats);
        
         return compStats;
     }

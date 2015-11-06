@@ -412,12 +412,12 @@ redoStats = true;
             log.fine("redone: " + printToString(compStats) + " combinedStat="
                 + calculateCombinedIntensityStat(compStats));
        
-            removeDiscrepantThetaDiff(compStats);
+            FeatureMatcher.removeDiscrepantThetaDiff(compStats);
 
             log.fine("theta diff filtered: " + printToString(compStats) + " combinedStat="
                 + calculateCombinedIntensityStat(compStats));
             
-            removeIntensityOutliers(compStats);
+            FeatureMatcher.removeIntensityOutliers(compStats);
         }
 
         return compStats;
@@ -897,7 +897,7 @@ log.info("WARNING: processing single solutions... may remove these in future");
         Also, looks like it's necessary to filter for the difference in theta
         when it's much larger than the top difference in theta.
         */
-        float[] ssdMeanStDv = calcIntensitySSDMeanAndStDev(
+        float[] ssdMeanStDv = FeatureMatcher.calcIntensitySSDMeanAndStDev(
             ics[lookupIndexes[0]].getComparisonStats());
         
         float diffInThetaMean = calculateDiffThetaMean(ics[lookupIndexes[0]].getComparisonStats());

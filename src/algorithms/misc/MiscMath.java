@@ -3,6 +3,7 @@ package algorithms.misc;
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.CornerRegion;
+import algorithms.imageProcessing.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
@@ -1699,4 +1700,89 @@ public class MiscMath {
         
         return min;
     }
+
+    public static float[] findMinXY(List<List<CornerRegion>> crLists) {
+        
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        
+        for (List<CornerRegion> list : crLists) {
+            for (CornerRegion cr : list) {
+                float x = cr.getX()[cr.getKMaxIdx()];
+                float y = cr.getY()[cr.getKMaxIdx()];
+                if (x < minX) {
+                    minX = x;
+                }
+                if (y < minY) {
+                    minY = y;
+                }
+            }
+        }
+        
+        return new float[]{minX, minY};
+    }
+    
+    public static float[] findMaxXY(List<List<CornerRegion>> crLists) {
+        
+        float maxX = Float.MIN_VALUE;
+        float maxY = Float.MIN_VALUE;
+        
+        for (List<CornerRegion> list : crLists) {
+            for (CornerRegion cr : list) {
+                float x = cr.getX()[cr.getKMaxIdx()];
+                float y = cr.getY()[cr.getKMaxIdx()];
+                if (x > maxX) {
+                    maxX = x;
+                }
+                if (y > maxY) {
+                    maxY = y;
+                }
+            }
+        }
+        
+        return new float[]{maxX, maxY};
+    }
+    
+    public static float[] findMinXY2(List<List<CurvatureScaleSpaceContour>> crLists) {
+        
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        
+        for (List<CurvatureScaleSpaceContour> list : crLists) {
+            for (CurvatureScaleSpaceContour cr : list) {
+                float x = cr.getPeakDetails()[0].getXCoord();
+                float y = cr.getPeakDetails()[0].getYCoord();
+                if (x < minX) {
+                    minX = x;
+                }
+                if (y < minY) {
+                    minY = y;
+                }
+            }
+        }
+        
+        return new float[]{minX, minY};
+    }
+
+    public static float[] findMaxXY2(List<List<CurvatureScaleSpaceContour>> crLists) {
+        
+        float maxX = Float.MIN_VALUE;
+        float maxY = Float.MIN_VALUE;
+        
+        for (List<CurvatureScaleSpaceContour> list : crLists) {
+            for (CurvatureScaleSpaceContour cr : list) {
+                float x = cr.getPeakDetails()[0].getXCoord();
+                float y = cr.getPeakDetails()[0].getYCoord();
+                if (x > maxX) {
+                    maxX = x;
+                }
+                if (y > maxY) {
+                    maxY = y;
+                }
+            }
+        }
+        
+        return new float[]{maxX, maxY};
+    }
+
 }

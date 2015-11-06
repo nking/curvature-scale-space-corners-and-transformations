@@ -688,6 +688,63 @@ public class Transformer {
         return tr;
     }
     
+    public CurvatureScaleSpaceContour applyTransformation(
+        TransformationParameters params, CurvatureScaleSpaceContour cr) {
+        
+        double scale = params.getScale();
+        double rotInRadians = params.getRotationInRadians();
+        double translationX = params.getTranslationX();
+        double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
+                
+        double cos = Math.cos(rotInRadians);
+        double sin = Math.sin(rotInRadians);
+                
+        /*
+        scale, rotate, then translate.
+        
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        
+        CurvatureScaleSpaceContour tr = cr.copy();
+        
+        for (int i = 0; i < tr.getPeakDetails().length; ++i) {
+
+            CurvatureScaleSpaceImagePoint cip = tr.getPeakDetails()[i];
+
+            double x = cip.getXCoord();
+            double y = cip.getYCoord();
+
+            double xr = centroidX * scale + ((x - centroidX) * scale * cos) 
+                + ((y - centroidY) * scale * sin);
+
+            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) 
+                + ((y - centroidY) * scale * cos);
+
+            double xt = xr + translationX;
+            double yt = yr + translationY;
+
+            int xte = (int) Math.round(xt);
+            int yte = (int) Math.round(yt);
+            
+            CurvatureScaleSpaceImagePoint cipC = 
+                new CurvatureScaleSpaceImagePoint(cip.getSigma(), 
+                    cip.getScaleFreeLength(), xte, yte, cip.getCoordIdx()
+                );
+            
+            tr.getPeakDetails()[i] = cipC;
+        }
+          
+        return tr;
+    }
+    
     /**
      * apply the scale transformation to the existing transformation 
      * parameters params and return the result.

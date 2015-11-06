@@ -435,8 +435,6 @@ public class QuickSort {
     /**
      * sort a from index idxLo to idxHi, inclusive, with next sorting by b and c
      * and all swap operations performed on all 3 arrays.  
-     * Uses the optimized
-     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
      * @param a
      * @param b
      * @param c
@@ -471,12 +469,46 @@ public class QuickSort {
         }
     }
     
+    public static void sortBy1stThen2nd(float[] a, float[] b) {
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length < 2) {
+            return;
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("a and b must be same length");
+        }
+        sortBy1stThen2nd(a, b, 0, a.length - 1);
+    }
+    
+    public static void sortBy1stThen2nd(float[] a, float[] b, int idxLo, int idxHi) {
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length < 2) {
+            return;
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("a and b must be same length");
+        }
+        if (idxLo < idxHi) {
+            int idxMid = partitionBy1stThen2nd(a, b, idxLo, idxHi);
+            sortBy1stThen2nd(a, b, idxLo, idxMid - 1);
+            sortBy1stThen2nd(a, b, idxMid + 1, idxHi);
+        }
+    }
+    
     /**
      * sort a from index idxLo to idxHi, inclusive, with ties sorted by b
      * and all swap operations performed on all arrays. The sorts are
      * ascending.
-     * Uses the optimized
-     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
      * @param a
      * @param b
      * @param c
@@ -606,6 +638,41 @@ public class QuickSort {
         return store;
     }
     
+    private static int partitionBy1stThen2nd(float[] a, float[] b,
+        int idxLo, int idxHi) {
+        
+        float x = a[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a[i] < x) {
+                doSwap = true;
+            } else if (a[i] == x) {
+                if (b[i] < b[idxHi]) {
+                    doSwap = true;
+                }
+            }
+            if (doSwap) {
+                store++;
+                float swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+                float swap2 = b[store];
+                b[store] = b[i];
+                b[i] = swap2;
+            }
+        }
+        store++;
+        float swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
+        float swap2 = b[store];
+        b[store] = b[idxHi];
+        b[idxHi] = swap2;
+        return store;
+    }
+    
     private static int partitionBy1stThen2nd(double[] a, double[] b, int[] c,
         int[] d, int idxLo, int idxHi) {
         
@@ -652,4 +719,5 @@ public class QuickSort {
         d[idxHi] = swap2;        
         return store;
     }
+
 }

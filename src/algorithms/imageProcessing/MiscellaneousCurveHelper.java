@@ -559,6 +559,23 @@ public class MiscellaneousCurveHelper {
 
         return xMinIdx;
     }
+    
+    public double[] calculateXYCentroids0(List<CornerRegion> list) {
+        
+        double xc = 0;
+        double yc = 0;
+
+        for (CornerRegion cr : list) {
+            double x = cr.getX()[cr.getKMaxIdx()];
+            double y = cr.getY()[cr.getKMaxIdx()];
+            xc += x;
+            yc += y;
+        }
+        xc /= (double)list.size();
+        yc /= (double)list.size();
+
+        return new double[]{xc, yc};
+    }
 
     public double[] calculateXYCentroids(PairIntArray xy, float[] weights) {
 

@@ -178,7 +178,7 @@ public abstract class AbstractBlobScaleFinder {
         
         assert (compStats.isEmpty() == false);
         
-        removeIntensityOutliers(compStats);
+        FeatureMatcher.removeIntensityOutliers(compStats);
         
         if (compStats.size() < 2) {
             return null;
@@ -342,99 +342,6 @@ public abstract class AbstractBlobScaleFinder {
         }
         
         return values;
-    }
-
-    /**
-     * remove discrepant compStats items and return the indexes removed
-     * @param compStats
-     * @return 
-     */
-    protected List<Integer> removeDiscrepantThetaDiff(List<FeatureComparisonStat> compStats) {
-        
-        if (compStats == null || compStats.isEmpty()) {
-            return null;
-        }
-        
-        float[] values = calculateThetaDiff(compStats);
-
-        // 20 degree wide bins
-        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, 
-            Errors.populateYErrorsBySqrt(values));
-        
-        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
-        
-        float thetaDiff;
-        if (yMaxIdx == -1) {
-            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);
-            thetaDiff = thetaDiffMeanStDev[0];
-        } else {
-            thetaDiff = hist.getXHist()[yMaxIdx];
-        }
-        
-        //TODO: consider a bin larger than 20 degrees... 25
-        List<Integer> remove = new ArrayList<Integer>();
-        
-        for (int i = 0; i < values.length; ++i) {
-            float diffRot = Math.abs(values[i] - thetaDiff);
-            if (diffRot > 20) {
-                remove.add(Integer.valueOf(i));
-            }
-        }
-        
-        for (int i = remove.size() - 1; i > -1; --i) {
-            int idx = remove.get(i);
-            compStats.remove(idx);
-        }
-        return remove;
-    }
-
-    protected float[] calcIntensitySSDMeanAndStDev(List<FeatureComparisonStat> compStats) {
-        
-        int n = compStats.size();
-        
-        float[] ssds = new float[n];
-        
-        for (int i = 0; i < n; ++i) {
-            
-            FeatureComparisonStat stat = compStats.get(i);
-            
-            ssds[i] = stat.getSumIntensitySqDiff();
-        }
-        
-        float[] meanStDv = MiscMath.getAvgAndStDev(ssds);
-        
-        return meanStDv;
-    }
-
-    protected void removeIntensityOutliers(List<FeatureComparisonStat> compStats) {
-        
-        if (compStats.size() < 3) {
-            return;
-        }
-        
-        int n = compStats.size();
-        
-        float[] meanStDv = calcIntensitySSDMeanAndStDev(compStats);
-        
-        List<Integer> rm = new ArrayList<Integer>();
-        
-        for (int i = 0; i < n; ++i) {
-            
-            FeatureComparisonStat stat = compStats.get(i);
-            
-            float diff = Math.abs(stat.getSumIntensitySqDiff() - meanStDv[0]);
-            
-            if (diff > (1.25 * meanStDv[1])) {
-                rm.add(Integer.valueOf(i));
-            }
-        }
-        
-        for (int i = rm.size() - 1; i > -1; --i) {
-            
-            int idx = rm.get(i).intValue();
-            
-            compStats.remove(idx);
-        }
     }
 
     protected float calculateDiffThetaMean(List<FeatureComparisonStat> 
