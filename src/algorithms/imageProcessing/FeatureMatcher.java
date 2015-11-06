@@ -380,6 +380,131 @@ public class FeatureMatcher {
      * comparison of descriptors to tune the center of cornerRegion1 and the
      * orientation.  This doesn't compare the other descriptors to get overall
      * best.
+     * @param gsImg1
+     * @param gsImg2
+     * @param features1
+     * @param features2
+     * @param cornerRegion1
+     * @param cornerRegion2
+     * @param rotationInRadians
+     * @param tolRotationInRadians
+     * @param dither
+     * @return
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
+     */
+    protected FeatureComparisonStat ditherAndRotateForCorner1Location(
+        GreyscaleImage gsImg1, GreyscaleImage gsImg2, 
+        IntensityFeatures features1, IntensityFeatures features2, 
+        CornerRegion cornerRegion1, CornerRegion cornerRegion2, 
+        float rotationInRadians, float tolRotationInRadians, 
+        int dither) throws CornerRegion.CornerRegionDegneracyException {
+                
+        float expectedRotationInDegrees = rotationInRadians 
+            * (float)(180./Math.PI);
+        final float rotTol = tolRotationInRadians * (float)(180./Math.PI);
+                
+        int kMaxIdx1 = cornerRegion1.getKMaxIdx();
+        final int x1 = cornerRegion1.getX()[kMaxIdx1];
+        final int y1 = cornerRegion1.getY()[kMaxIdx1];
+        int rot1 = Math.round(
+            cornerRegion1.getRelativeOrientationInDegrees());
+        
+        int kMaxIdx2 = cornerRegion2.getKMaxIdx();
+        final int x2 = cornerRegion2.getX()[kMaxIdx2];
+        final int y2 = cornerRegion2.getY()[kMaxIdx2];
+        int rot2 = Math.round(
+            cornerRegion2.getRelativeOrientationInDegrees());
+        
+        FeatureComparisonStat best = null;
+                
+        IntensityDescriptor desc2 = features2.extractIntensity(gsImg2, x2, y2, rot2);
+        
+        if (desc2 == null) {
+            return null;
+        }
+        
+        // because anglediff compares closest angles:
+        if (expectedRotationInDegrees > 180.) {
+            expectedRotationInDegrees = 360 - expectedRotationInDegrees;
+        }
+        
+        // TODO: could decide not to find best rotation here and just discard
+        // false matches due to wrong orientation at end of comparisons
+        int[] rotations = new int[11];
+        rotations[0] = angleForResultDiff(rot2, Math.round(expectedRotationInDegrees));
+        int i = 1;
+        for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
+            rotations[i] = rotD1;
+            i++;
+        }
+        rotations[i] = rot1 + 90;
+        i++;
+        rotations[i] = rot1 + 180;
+        i++;
+        rotations[i] = rot1 + 270;
+        i++;
+        
+        for (int rotD1 : rotations) {
+            if (rotD1 > 359) {
+                rotD1 = rotD1 - 360;
+            } else if (rotD1 < 0) {
+                rotD1 += 360;
+            }
+            for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+                if (!features1.isWithinXBounds(gsImg1, x1d)) {
+                    continue;
+                }
+                for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                    if (!features1.isWithinYBounds(gsImg1, y1d)) {
+                        continue;
+                    }
+                    
+                    // only try rotations within expected rotation limits
+                    float rotDescriptors = AngleUtil.getAngleDifference(rotD1, rot2);
+                    if (rotDescriptors < 0) {
+                        rotDescriptors += 360;
+                    }
+                    float rotDiff = AngleUtil.getAngleDifference(
+                        expectedRotationInDegrees, rotDescriptors);
+                    if (Math.abs(rotDiff) > rotTol) {
+                        continue;
+                    }
+                    
+                    IntensityDescriptor desc1 = features1.extractIntensity(
+                        gsImg1, x1d, y1d, rotD1);
+        
+                    if (desc1 == null) {
+                        return null;
+                    }
+                    
+                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(
+                        desc1, x1d, y1d, desc2, x2, y2);
+                    
+                    if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {
+                       
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
+                        } else {
+                            if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                                best = stat;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
+    }
+    
+    /**
+     * comparison of descriptors to tune the center of cornerRegion1 and the
+     * orientation.  This doesn't compare the other descriptors to get overall
+     * best.
      * @param features1
      * @param features2
      * @param cornerRegion1
@@ -1826,24 +1951,42 @@ public class FeatureMatcher {
         
         return (float) (sum / ((float) values.length));
     }
+    
+    public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
+        GreyscaleImage gXY1, GreyscaleImage theta1, CornerRegion[] cr1, 
+        GreyscaleImage gsImg2, GreyscaleImage gXY2, GreyscaleImage theta2, 
+        CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
+        float rotationInRadiansTol, int transXYTol) { 
+        
+        int dither = 1;
+        
+        return findSimilarFeatures(gsImg1, gXY1, theta1, cr1, 
+            gsImg2, gXY2, theta2, cr2, params, scaleTol, rotationInRadiansTol, 
+            transXYTol, dither);
+    }
 
     public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
         GreyscaleImage gXY1, GreyscaleImage theta1, CornerRegion[] cr1, 
         GreyscaleImage gsImg2, GreyscaleImage gXY2, GreyscaleImage theta2, 
         CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
-        float rotationInRadiansTol, int transXYTol) {
+        float rotationInRadiansTol, int transXYTol, int dither) {
         
-        Transformer transformer = new Transformer();
+        List<CornerRegion> filteredTransformedC1 = new ArrayList<CornerRegion>();
+        List<CornerRegion> filteredC1 = new ArrayList<CornerRegion>();
+        List<CornerRegion> filteredC2 = new ArrayList<CornerRegion>();
         
-        CornerRegion[] crTr1 = transformer.applyTransformation(params, cr1);
+        filterForIntersection3(params, transXYTol, 
+            cr1, cr2, filteredTransformedC1, filteredC1, filteredC2);
         
-        // reduce point sets to the intersection 
-        List<List<Integer>> filtered = reduceToIntersection(crTr1, cr2, 
-            transXYTol);
-
-        List<Integer> filteredIndexesCR1 = filtered.get(0);
-        List<Integer> filteredIndexesCR2 = filtered.get(1);
-       
+        if (true) {
+            try {
+                MiscDebug.writeImage(filteredC1, gsImg1.copyToColorGreyscale(), "filtered_1_corners_");
+                MiscDebug.writeImage(filteredC2, gsImg2.copyToColorGreyscale(), "filtered_2_corners_");
+            } catch (IOException ex) {
+                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
         /*
         when transformation params are known ahead of time:
         cr1 can be transformed into crTr1 (including the internal points).
@@ -1854,63 +1997,75 @@ public class FeatureMatcher {
         bipartite is n^3 but the n is < n1.
         */
        
-        final int dither = 1;
         final int blockHalfWidth = 5;
         final boolean useNormalizedIntensities = true;
         
-        Features features1 = new Features(gsImg1, gXY1, theta1, blockHalfWidth, 
+        IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, 
             useNormalizedIntensities);
         
-        Features features2 = new Features(gsImg2, gXY2, theta2, blockHalfWidth, 
+        IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth,
             useNormalizedIntensities);
         
-        int n1 = filteredIndexesCR1.size();
-        int n2 = filteredIndexesCR2.size();
+        //Features features1 = new Features(gsImg1, gXY1, theta1, blockHalfWidth, 
+        //    useNormalizedIntensities);
+        //
+        //Features features2 = new Features(gsImg2, gXY2, theta2, blockHalfWidth, 
+        //    useNormalizedIntensities);
+        
+        int n1 = filteredC1.size();
+        int n2 = filteredC2.size();
         
         Map<PairInt, FeatureComparisonStat> statMap = new HashMap<PairInt, 
             FeatureComparisonStat>();
         
         float[][] cost = new float[n1][n2];
         
+        int count = 0;
+        
         for (int i1 = 0; i1 < n1; ++i1) {
             
             cost[i1] = new float[n2];
             Arrays.fill(cost[i1], Float.MAX_VALUE);
-            int idx1 = filteredIndexesCR1.get(i1).intValue();
-            CornerRegion c1 = crTr1[idx1];
+            
+            CornerRegion c1Tr = filteredTransformedC1.get(i1);
+            CornerRegion c1 = filteredC1.get(i1);
+            
+            int x1Tr = c1Tr.getX()[c1Tr.getKMaxIdx()];
+            int y1Tr = c1Tr.getY()[c1Tr.getKMaxIdx()];
+            
+            int x1 = c1.getX()[c1.getKMaxIdx()];
+            int y1 = c1.getY()[c1.getKMaxIdx()];
             
             for (int i2 = 0; i2 < n2; ++i2) {
                 
-                int idx2 = filteredIndexesCR2.get(i2).intValue();
-                CornerRegion c2 = cr2[idx2];
+                CornerRegion c2 = filteredC2.get(i2);
                 
-                int diffX = Math.abs(c1.getX()[c1.getKMaxIdx()] - c2.getX()[c2.getKMaxIdx()]);
-                int diffY = Math.abs(c1.getY()[c1.getKMaxIdx()] - c2.getY()[c2.getKMaxIdx()]);
+                int x2 = c2.getX()[c2.getKMaxIdx()];
+                int y2 = c2.getY()[c2.getKMaxIdx()];
+                
+                int diffX = Math.abs(x1Tr - x2);
+                int diffY = Math.abs(y1Tr - y2);
                 if (diffX > transXYTol || diffY > transXYTol) {
                     continue;
                 }
                 
                 try {
-                    
+                  
                     // use the untransformed cr1 to be able to filter by rotation
                     FeatureComparisonStat stat = ditherAndRotateForCorner1Location(
-                        features1, features2, cr1[idx1], c2,
+                        gsImg1, gsImg2, features1, features2, c1, c2,
                         params.getRotationInRadians(), rotationInRadiansTol, dither);
                     
-                    if (stat != null) {
+                    if (stat != null && 
+                        (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr())) {
 
-                        stat = populateOtherDescriptors(features1, features2, stat,
-                            c2);
-
-                        if (stat == null) {
-                            continue;
-                        }
-                        
                         PairInt p = new PairInt(i1, i2);
                         
                         statMap.put(p, stat);
 
-                        cost[i1][i2] = stat.getSumIntensitySqDiff();                        
+                        cost[i1][i2] = stat.getSumIntensitySqDiff();  
+                        
+                        count++;
                     }
                     
                 } catch (CornerRegion.CornerRegionDegneracyException ex) {
@@ -1919,6 +2074,8 @@ public class FeatureMatcher {
             }
         }
         
+//for count > 300 or 400, should use a greedy matching, else bipartite below
+            
         boolean transposed = false;
         if (n1 > n2) {
             cost = MatrixUtil.transpose(cost);
@@ -1997,6 +2154,10 @@ public class FeatureMatcher {
             nc++;
         }
         
+        if (matchedXY2.getN() < 7) {
+            return null;
+        }
+        
         if (sumW > 0) {
             double tot = 0;
             for (int i = 0; i < nMatched; ++i) {
@@ -2009,7 +2170,7 @@ public class FeatureMatcher {
             float a = 1.f/(float)nMatched;
             Arrays.fill(weights, a);
         }
-        
+                
         float[] outputScaleRotTransXYStDev = new float[4];
         TransformationParameters params2 = tc.calulateEuclidean(matchedXY1, 
             matchedXY2, weights, centroidX1, centroidY1, 
@@ -2035,9 +2196,9 @@ public class FeatureMatcher {
         int rangeTranslationX = Math.round(outputScaleRotTransXYStDev[2]);
         int rangeTranslationY = Math.round(outputScaleRotTransXYStDev[3]);
         
-        CorrespondenceList cl = new CorrespondenceList(params.getScale(),
-            Math.round(params.getRotationInDegrees()), 
-            Math.round(params.getTranslationX()), Math.round(params.getTranslationY()), 
+        CorrespondenceList cl = new CorrespondenceList(params2.getScale(),
+            Math.round(params2.getRotationInDegrees()), 
+            Math.round(params2.getTranslationX()), Math.round(params2.getTranslationY()), 
             rangeRotation, rangeTranslationX, rangeTranslationY,
             matched1, matched2);
         
@@ -2467,71 +2628,63 @@ public class FeatureMatcher {
         }        
     }
 
-    private List<List<Integer>> reduceToIntersection(
-        CornerRegion[] transformedCR1, CornerRegion[] cr2, int transXYTol) {
+    public static void filterForIntersection3(TransformationParameters params, 
+        int transXYTol, CornerRegion[] c1, CornerRegion[] c2, 
+        List<CornerRegion> outFilteredTransformedC1, 
+        List<CornerRegion> outFilteredC1, 
+        List<CornerRegion> outFilteredC2) {
+        
+        int[] minXY2 = MiscMath.findMinXY2(c2);
+        int[] maxXY2 = MiscMath.findMaxXY2(c2);
+        
+        Transformer transformer = new Transformer();
+        
+        float[] minXY1 = new float[]{Float.MAX_VALUE, Float.MAX_VALUE};
+        float[] maxXY1 = new float[]{Float.MIN_VALUE, Float.MIN_VALUE};
+        
+        for (int i = 0; i < c1.length; ++i) {
                 
-        /*
-        determine minima and maxima of outputSet2
+            CornerRegion ctr = transformer.applyTransformation(params, c1[i]);
+                
+            int x = ctr.getX()[ctr.getKMaxIdx()];
+            int y = ctr.getY()[ctr.getKMaxIdx()];
 
-        filter set1 to place in outputSet1 only the intersection with set2
-           +- tolerances
-
-        determine minima and maxima of outputSet1
-
-        filter set2 to place in outputSet1 only the intersection with outputSet1
-           +- tolerances
-        */
-
-        float[] minXY2 = MiscMath.findMinXY(cr2, cr2.length);
-        float[] maxXY2 = MiscMath.findMaxXY(cr2, cr2.length);
-
-        CornerRegion[] filtered1 = new CornerRegion[transformedCR1.length];
-        List<Integer> filtered1Indexes = new ArrayList<Integer>();
-        int count = 0;
-        for (int i = 0; i < transformedCR1.length; ++i) {
-            CornerRegion tr1 = transformedCR1[i];
-            float x = tr1.getX()[tr1.getKMaxIdx()];
-            float y = tr1.getY()[tr1.getKMaxIdx()];
             if ((x < (minXY2[0] - transXYTol)) || (x > (maxXY2[0] + transXYTol))) {
                 continue;
             }
-            if ((y < (maxXY2[1] - transXYTol)) || (y > (maxXY2[1] + transXYTol))) {
+            if ((y < (minXY2[1] - transXYTol)) || (y > (maxXY2[1] + transXYTol))) {
                 continue;
             }
-            filtered1[count] = tr1;
-            count++;
-            filtered1Indexes.add(Integer.valueOf(i));
+            outFilteredTransformedC1.add(ctr);
+            outFilteredC1.add(c1[i]);
+                
+            if (x < minXY1[0]) {
+                minXY1[0] = x;
+            }
+            if (y < minXY1[1]) {
+                minXY1[1] = y;
+            }
+            if (x > maxXY1[0]) {
+                maxXY1[0] = x;
+            }
+            if (y > maxXY1[1]) {
+                maxXY1[1] = y;
+            }
         }
-        
-        float[] minXY1 = MiscMath.findMinXY(filtered1, count);
-        float[] maxXY1 = MiscMath.findMaxXY(filtered1, count);
 
-        CornerRegion[] filtered2 = new CornerRegion[cr2.length];
-        List<Integer> filtered2Indexes = new ArrayList<Integer>();
-        int count2 = 0;
-        
-        for (int i = 0; i < cr2.length; ++i) {
-            CornerRegion c2 = cr2[i];
-            float x = c2.getX()[c2.getKMaxIdx()];
-            float y = c2.getY()[c2.getKMaxIdx()];
+        for (int i = 0; i < c2.length; ++i) {
+            CornerRegion c = c2[i];
+            int x = c.getX()[c.getKMaxIdx()];
+            int y = c.getY()[c.getKMaxIdx()];
+                
             if ((x < (minXY1[0] - transXYTol)) || (x > (maxXY1[0] + transXYTol))) {
                 continue;
             }
-            if ((y < (maxXY1[1] - transXYTol)) || (y > (maxXY1[1] + transXYTol))) {
+            if ((y < (minXY1[1] - transXYTol)) || (y > (maxXY1[1] + transXYTol))) {
                 continue;
             }
-            filtered2[count2] = c2;
-            count2++;
-            filtered2Indexes.add(Integer.valueOf(i));
-        }
-        
-        List<List<Integer>> filtered = new ArrayList<List<Integer>>();
-        
-        filtered.add(filtered1Indexes);
-        
-        filtered.add(filtered2Indexes);
-        
-        return filtered;
+            outFilteredC2.add(c);
+        }        
     }
 
     public static List<Integer> removeDiscrepantThetaDiff(

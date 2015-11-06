@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -377,17 +378,37 @@ public class FeatureMatcherWrapper {
         theta2 = imageProcessor.computeTheta360(
             detector.getEdgeFilterProducts().getGradientX(), 
             detector.getEdgeFilterProducts().getGradientY());
+        
+        if (debug) {
+            try {
+                MiscDebug.writeImage(cornerRegions1, img1, debugTagPrefix + "_1_corners_");
+                MiscDebug.writeImage(cornerRegions2, img2, debugTagPrefix + "_2_corners_");
+            } catch (IOException ex) {
+                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     private CorrespondenceList findCorrespondence(TransformationParameters parameters) {
         
         FeatureMatcher matcher = new FeatureMatcher();
         
+        int dither = 1;
+        int tolXY = 3;
+        
+        //TODO: revise this
+        if (params.getStandardDeviations()[2] > 3 || 
+            params.getStandardDeviations()[3] > 3) {
+            dither = 4;
+            tolXY = 50;
+        }
+        
         CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
             cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
             gsImg2, gXY2, theta2,
             cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
-            parameters, scaleTol, rotationInRadiansTol, transXYTol);
+            parameters, scaleTol, rotationInRadiansTol, tolXY,
+            dither);
 
         return cl;
     }
@@ -773,7 +794,8 @@ int y2 = compStats2.get(0).getImg2Point().getY();
         }
         
         // check that there is at least 1 in each quadrant
-        if (nq >= 3) {
+        //if (nq >= 3) {
+        if (nq == 4) {
             return true;
         }
         

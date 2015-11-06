@@ -951,7 +951,7 @@ public class MiscDebug {
         int z = 1;
     }
     
-    public static void writeImage(Set<CornerRegion> cornerRegions, 
+    public static void writeImage(Collection<CornerRegion> cornerRegions, 
         Image img, String fileSuffix) throws IOException {
        
         int rClr = 255;
@@ -963,7 +963,7 @@ public class MiscDebug {
             int x = cr.getX()[kMaxIdx];
             int y = cr.getY()[kMaxIdx];
             float k = cr.getK()[kMaxIdx];
-            int pointSize = 1 + Math.round((k - 0.1f)/0.1f);
+            int pointSize = 1;//+ Math.round((k - 0.1f)/0.1f);
             if (pointSize < 0) {
                 pointSize = 1;
             }

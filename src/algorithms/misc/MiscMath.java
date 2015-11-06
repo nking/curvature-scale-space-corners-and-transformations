@@ -1785,4 +1785,42 @@ public class MiscMath {
         return new float[]{maxX, maxY};
     }
 
+    public static int[] findMinXY2(CornerRegion[] cr) {
+        
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        
+        for (CornerRegion c : cr) {
+            int x = c.getX()[c.getKMaxIdx()];
+            int y = c.getY()[c.getKMaxIdx()];
+            if (x < minX) {
+                minX = x;
+            }
+            if (y < minY) {
+                minY = y;
+            }
+        }
+        
+        return new int[]{minX, minY};
+    }
+    
+    public static int[] findMaxXY2(CornerRegion[] cr) {
+        
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        
+        for (CornerRegion c : cr) {
+            int x = c.getX()[c.getKMaxIdx()];
+            int y = c.getY()[c.getKMaxIdx()];
+            if (x > maxX) {
+                maxX = x;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+        }
+        
+        return new int[]{maxX, maxY};
+    }
+
 }
