@@ -247,7 +247,8 @@ public class ClosedCurveCornerMatcher {
             transformationPair.setTransformationParameters(params);
 
             NextCorner nc = new NextCorner(c1);
-            for (int i = 2; i < combinedIndexes1.size(); ++i) {
+            //for (int i = 2; i < combinedIndexes1.size(); ++i) {
+            for (int i = 0; i < combinedIndexes1.size(); ++i) {
                 int idx1 = combinedIndexes1.get(i).intValue();
                 int idx2 = combinedIndexes2.get(i).intValue();
                 FeatureComparisonStat stat = fcsList.get(i);
@@ -385,6 +386,12 @@ public class ClosedCurveCornerMatcher {
         // if no match, contains a null
         CornersAndFeatureStat[] indexes2 = new CornersAndFeatureStat[c1.size()];
 
+        // store by index2 number so a later index1 with a worse match to index2
+        // will not be assigned index2.  (note, not using bipartite matching
+        // because the method would increase from approx O(N^2) to approx O(N^3)
+        Map<Integer, CornersAndFeatureStat> index2Map = new HashMap<Integer,
+            CornersAndFeatureStat>();
+        
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
         for (int i = 0; i < c1.size(); ++i) {
@@ -422,17 +429,21 @@ public class ClosedCurveCornerMatcher {
                     continue;
                 }
 
-                if (best == null) {
-                    if (compStat.getSumIntensitySqDiff() < 
-                        compStat.getImg2PointIntensityErr()) {
-                        
-                        best = compStat;
-                        bestIdx2 = j;
-                    }
+                if (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr()) {
                     continue;
                 }
+                
+                CornersAndFeatureStat existing = index2Map.get(Integer.valueOf(j));
 
-                if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
+                if ((existing != null) && (existing.stat.getSumIntensitySqDiff() <
+                    compStat.getSumIntensitySqDiff())) {
+                    continue;
+                }
+                
+                if (best == null) {
+                    best = compStat;
+                    bestIdx2 = j;
+                } else {
                     if (compStat.getSumIntensitySqDiff() < best.getSumIntensitySqDiff()) {
                         best = compStat;
                         bestIdx2 = j;
@@ -445,6 +456,7 @@ public class ClosedCurveCornerMatcher {
                     c2.get(bestIdx2), best);
                 indexes2[i].idx1 = i;
                 indexes2[i].idx2 = bestIdx2;
+                index2Map.put(Integer.valueOf(bestIdx2), indexes2[i]);
             }
         }
 

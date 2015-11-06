@@ -396,7 +396,7 @@ public class FeatureMatcher {
         float rotationInRadians, float tolRotationInRadians, int dither) throws 
         CornerRegion.CornerRegionDegneracyException {
         
-        final float expectedRotationInDegrees = rotationInRadians 
+        float expectedRotationInDegrees = rotationInRadians 
             * (float)(180./Math.PI);
         final float rotTol = tolRotationInRadians * (float)(180./Math.PI);
                 
@@ -420,10 +420,16 @@ public class FeatureMatcher {
             return null;
         }
         
+        // because anglediff compares closest angles:
+        if (expectedRotationInDegrees > 180.) {
+            expectedRotationInDegrees = 360 - expectedRotationInDegrees;
+        }
+        
         // TODO: could decide not to find best rotation here and just discard
         // false matches due to wrong orientation at end of comparisons
-        int[] rotations = new int[10];
-        int i = 0;
+        int[] rotations = new int[11];
+        rotations[0] = angleForResultDiff(rot2, Math.round(expectedRotationInDegrees));
+        int i = 1;
         for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
             rotations[i] = rotD1;
             i++;
@@ -1069,7 +1075,7 @@ public class FeatureMatcher {
         IntensityFeatures features1, IntensityFeatures features2, 
         final int x1, final int y1, final int rot1,
         final int x2, final int y2, final int rot2,        
-        int dither, final int expectedRotationInDegrees, final int rotationTol) {
+        int dither, int expectedRotationInDegrees, final int rotationTol) {
         
         FeatureComparisonStat best = null;
         
@@ -1079,13 +1085,19 @@ public class FeatureMatcher {
             return null;
         }
         
+        // because anglediff compares closest angles:
+        if (expectedRotationInDegrees > 180.) {
+            expectedRotationInDegrees = 360 - expectedRotationInDegrees;
+        }
+        
         /*
         NOTE: best distinguisher for improved rotation angle is usually 
         the gradient images because these are on edges.
         */
         
-        int[] rotations = new int[10];
-        int i = 0;
+        int[] rotations = new int[11];
+        rotations[0] = angleForResultDiff(rot2, expectedRotationInDegrees);
+        int i = 1;
         for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
             rotations[i] = rotD1;
             i++;
@@ -1175,7 +1187,7 @@ public class FeatureMatcher {
         IntensityFeatures features1, IntensityFeatures features2, 
         final int x1, final int y1, final int rot1,
         final int x2, final int y2, final int rot2,        
-        int dither, final int expectedRotationInDegrees, final int rotationTol,
+        int dither, int expectedRotationInDegrees, final int rotationTol,
         GreyscaleImage img1, GreyscaleImage img2) {
         
         FeatureComparisonStat best = null;
@@ -1187,13 +1199,19 @@ public class FeatureMatcher {
             return null;
         }
         
+        // because anglediff compares closest angles:
+        if (expectedRotationInDegrees > 180.) {
+            expectedRotationInDegrees = 360 - expectedRotationInDegrees;
+        }
+        
         /*
         NOTE: best distinguisher for improved rotation angle is usually 
         the gradient images because these are on edges.
         */
-        
-        int[] rotations = new int[10];
-        int i = 0;
+                
+        int[] rotations = new int[11];
+        rotations[0] = angleForResultDiff(rot2, expectedRotationInDegrees);
+        int i = 1;
         for (int rotD1 = (rot1 - 30); rotD1 <= (rot1 + 30); rotD1 += 10) {
             rotations[i] = rotD1;
             i++;
@@ -2586,6 +2604,9 @@ public class FeatureMatcher {
             int diffRot = Math.round(AngleUtil.getAngleDifference(values[i], 
                 rotationInDegrees));
             if (diffRot > 20) {
+                if ((diffRot < 30) && compStats.get(i).getSumIntensitySqDiff() < 100) {
+                    continue;
+                }
                 remove.add(Integer.valueOf(i));
             }
         }
@@ -2645,6 +2666,26 @@ public class FeatureMatcher {
             
             compStats.remove(idx);
         }
+    }
+
+    private int angleForResultDiff(int rot2, int expectedRotationInDegrees) {
+                
+        int r0 = rot2 - expectedRotationInDegrees;
+        if (r0 < 0) {
+            r0 += 360;
+        }
+        
+        int r = Math.abs(Math.round(AngleUtil.getAngleDifference(r0, rot2)));
+        
+        if (r != expectedRotationInDegrees) {
+            r0 = expectedRotationInDegrees - rot2;
+            if (r0 < 0) {
+                r0 += 360;
+            }
+            r = Math.abs(Math.round(AngleUtil.getAngleDifference(r0, rot2)));
+        }
+        
+        return r0;
     }
 
 }

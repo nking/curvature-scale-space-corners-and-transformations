@@ -44,14 +44,12 @@ public class FeatureMatcherWrapperTest extends TestCase {
         
         int idx = fileName1.lastIndexOf(".");
         String fileName1Root = fileName1.substring(0, idx);
-        idx = fileName2.lastIndexOf(".");
-        String fileName2Root = fileName2.substring(0, idx);
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-            
+        
         FeatureMatcherWrapper wrapper = new FeatureMatcherWrapper(img1, img2,
             fileName1Root);
         

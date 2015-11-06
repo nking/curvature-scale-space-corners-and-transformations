@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -472,6 +471,11 @@ public class FeatureMatcherWrapper {
                     continue;
                 }
                 
+                //TODO: this should to be revised to scale w/ errors
+                if (mapper.getSolvedCost() > 800) {
+                    continue;
+                }
+                
                 TransformationPair2 transformationPair = mapper.getSolution();
                 transformationPair.setCornerListIndex1(i1);
                 transformationPair.setCornerListIndex2(i2);
@@ -489,23 +493,23 @@ public class FeatureMatcherWrapper {
                 FeatureMatcher.removeDiscrepantThetaDiff(compStats2, 
                     params.getRotationInDegrees());
                 
-                if (compStats2.isEmpty()) {
+                if (compStats2.size() < 2) {
                     continue;
                 }
                 
                 //FeatureMatcher.removeIntensityOutliers(compStats2);
                 
+int nm = compStats2.size();
+int x1 = compStats2.get(0).getImg1Point().getX();
+int y1 = compStats2.get(0).getImg1Point().getY();
+int x2 = compStats2.get(0).getImg2Point().getX();
+int y2 = compStats2.get(0).getImg2Point().getY();
+                
                 IntensityFeatureComparisonStats stats2 = new 
                     IntensityFeatureComparisonStats(i1, i2,
                     mapper.getSolvedCost(), params.getScale());
                 stats2.addAll(compStats2);
-                
-int nm = stats2.getComparisonStats().size();
-int x1 = stats2.getComparisonStats().get(0).getImg1Point().getX();
-int y1 = stats2.getComparisonStats().get(0).getImg1Point().getY();
-int x2 = stats2.getComparisonStats().get(0).getImg2Point().getX();
-int y2 = stats2.getComparisonStats().get(0).getImg2Point().getY();
-
+    
                 int comp = -1;
                 if (best != null) {
                     comp = stats2.compareTo(best);
@@ -519,9 +523,7 @@ int y2 = stats2.getComparisonStats().get(0).getImg2Point().getY();
                 index1Map.put(Integer.valueOf(i1), best);
             }
         }
-//[0],      
-//wrong: [1],
-                
+        
         List<FeatureComparisonStat> add = new ArrayList<FeatureComparisonStat>();
         for (Entry<Integer, IntensityFeatureComparisonStats> entry : index1Map.entrySet()) {
             // make sure not already in compStats
