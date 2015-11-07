@@ -52,14 +52,13 @@ public class FeatureMatcherWrapper {
     private final String debugTagPrefix;
     
     private TransformationParameters params = null;
-    
-    private float scaleSetByUser = Float.MIN_VALUE;
-        
+            
     private float scaleTol = 0.2f;
     
     private float rotationInRadiansTol = (float)(20. * Math.PI/180.);
     
-    private int transXYTol = 70;
+    //TODO: revise this...
+    private int transXYTol = 20;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -80,25 +79,14 @@ public class FeatureMatcherWrapper {
         this.debugTagPrefix = debugTagPrefix;
     }
     
-    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, float scale) {
-        img1 = image1;
-        img2 = image2;
-        doDetermineScale = false;
-        scaleSetByUser = scale;
-        debug = false;
-        debugTagPrefix = "";
-    }
-    
-    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, float scale,
-        String debugTagPrefix) {
-        img1 = image1;
-        img2 = image2;
-        doDetermineScale = false;
-        scaleSetByUser = scale;
-        debug = true;
-        this.debugTagPrefix = debugTagPrefix;
-    }
-    
+    /**
+     * constructor accepting transformation parameters.  Note, for best results,
+     * the standard deviations within parameters should be populated because they
+     * are used as tolerances in matching.
+     * @param image1
+     * @param image2
+     * @param parameters 
+     */
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
         TransformationParameters parameters) {
         img1 = image1;
@@ -106,9 +94,19 @@ public class FeatureMatcherWrapper {
         doDetermineScale = false;
         params = parameters;
         debug = false;
-        this.debugTagPrefix = "";
+        debugTagPrefix = "";
     }
     
+    /**
+     * constructor accepting transformation parameters and a debugging tag for
+     * image names.  Note, for best results, the standard deviations within 
+     * parameters should be populated because they are used as tolerances in 
+     * matching.
+     * @param image1
+     * @param image2
+     * @param parameters
+     * @param debugTagPrefix 
+     */
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
         TransformationParameters parameters, String debugTagPrefix) {
         img1 = image1;
@@ -119,7 +117,8 @@ public class FeatureMatcherWrapper {
         this.debugTagPrefix = debugTagPrefix;
     }
     
-    public CorrespondenceList matchFeatures() throws IOException, NoSuchAlgorithmException {
+    public CorrespondenceList matchFeatures() throws IOException, 
+        NoSuchAlgorithmException {
         
         /*
         options:
@@ -137,27 +136,15 @@ public class FeatureMatcherWrapper {
         
         if (doDetermineScale) {
             cl = solveForScale();
-            if (cl != null) {
-                return cl;
-            }
+            return cl;
         }
-        
-        if (stateSet.contains(State.COULD_NOT_DETERMINE_SCALE)) {
-            return null;
-        }
-                
-        if (cl == null) {
-            applyHistEqIfNeeded();
-        }
+               
+        applyHistEqIfNeeded();
         
         extractCornerRegions();
                 
-        if (params != null) {
-            cl = findCorrespondence(params);
-        } else {
-            cl = findCorrespondence(this.scaleSetByUser);
-        }
-        
+        cl = extractAndMatch(params);
+                
         if (debug && (cl != null)) {
             Collection<PairInt> m1 = cl.getPoints1();
             Collection<PairInt> m2 = cl.getPoints2();
@@ -209,10 +196,15 @@ public class FeatureMatcherWrapper {
         
         CorrespondenceList cl = null;
         
-        int tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
-            params.getStandardDeviations()[3]));
-        if (tolXY < 3) {
-            tolXY = 3;
+        int tolXY;
+        if (params.getStandardDeviations() != null) {
+            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
+                params.getStandardDeviations()[3]));
+            if (tolXY < 3) {
+                tolXY = 3;
+            }
+        } else {
+            tolXY = 10;
         }
            
         // try to match the remaining points created in the scale finder
@@ -269,7 +261,7 @@ public class FeatureMatcherWrapper {
                 return cl;
             }
             
-            cl = extractAndMatch(params, stats);
+            cl = extractAndMatch(params);
             
         } else {
             
@@ -322,7 +314,7 @@ public class FeatureMatcherWrapper {
                 return cl;
             }
             
-            cl = extractAndMatch(params, stats);
+            cl = extractAndMatch(params);
         }
         
         if (cl != null) {
@@ -434,10 +426,15 @@ public class FeatureMatcherWrapper {
         
         FeatureMatcher matcher = new FeatureMatcher();
         
-        int tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
-            params.getStandardDeviations()[3]));
-        if (tolXY < 3) {
-            tolXY = 3;
+        int tolXY;
+        if (params.getStandardDeviations() != null) {
+            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
+                params.getStandardDeviations()[3]));
+            if (tolXY < 3) {
+                tolXY = 3;
+            }
+        } else {
+            tolXY = transXYTol;
         }
         
         int dither = 1;
@@ -453,19 +450,6 @@ public class FeatureMatcherWrapper {
             cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
             parameters, scaleTol, rotationInRadiansTol, tolXY,
             dither);
-
-        return cl;
-    }
-    
-    private CorrespondenceList findCorrespondence(float scale) {
-        
-        FeatureMatcher matcher = new FeatureMatcher();
-        
-        CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
-            cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
-            gsImg2, gXY2, theta2,
-            cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
-            scale);
 
         return cl;
     }
@@ -512,12 +496,17 @@ public class FeatureMatcherWrapper {
         
         Set<Integer> redo = new HashSet<Integer>();
         
-        int tolXY = Math.round(Math.max(params.getStandardDeviations()[2],
-            params.getStandardDeviations()[3]));
-        if (tolXY < 3) {
-            tolXY = 3;
+        int tolXY;
+        if (params.getStandardDeviations() != null) {
+            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
+                params.getStandardDeviations()[3]));
+            if (tolXY < 3) {
+                tolXY = 3;
+            } else {
+                tolXY += 2;
+            }
         } else {
-            tolXY *= 2;
+            tolXY = 10;
         }
         
         for (int i1 = 0; i1 < filteredC1Transformed.size(); ++i1) {
@@ -869,7 +858,7 @@ int y2 = compStats2.get(0).getImg2Point().getY();
     }
     
     private CorrespondenceList extractAndMatch(
-        TransformationParameters parameters, List<FeatureComparisonStat> stats) {
+        TransformationParameters parameters) {
         
         extractCornerRegions();
 

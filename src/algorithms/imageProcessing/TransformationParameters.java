@@ -182,6 +182,12 @@ public class TransformationParameters {
             .append(" originX=").append(originX)
             .append(" originY=").append(originY)
             ;
+        if (standardDeviationsScaleRotTransXY != null) {
+            sb.append(" stDevScale=").append(standardDeviationsScaleRotTransXY[0]);
+            sb.append(" stDevRot=").append(standardDeviationsScaleRotTransXY[1]);
+            sb.append(" stDevTransX=").append(standardDeviationsScaleRotTransXY[2]);
+            sb.append(" stDevTransY=").append(standardDeviationsScaleRotTransXY[3]);
+        }
         
         return sb.toString();
     }
