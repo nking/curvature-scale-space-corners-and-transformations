@@ -30,16 +30,10 @@ public class FeatureMatcherWrapper {
     
     private GreyscaleImage gsImg1 = null;
     private GreyscaleImage gsImg2 = null;
-    
-    private GreyscaleImage gXY1 = null;
-    private GreyscaleImage gXY2 = null;
-    
+        
     private Set<CornerRegion> cornerRegions1 = null;
     private Set<CornerRegion> cornerRegions2 = null;
     
-    private GreyscaleImage theta1 = null;
-    private GreyscaleImage theta2 = null;
-
     private enum State {
         DID_APPLY_HIST_EQ, COULD_NOT_DETERMINE_SCALE
     }
@@ -378,18 +372,9 @@ public class FeatureMatcherWrapper {
             CurvatureScaleSpaceCornerDetector(gsImg1);
         detector.doNotPerformHistogramEqualization();
         detector.findCorners();
+ //TODO: revisit to make sure coordinate systems are consistent:       
         cornerRegions1 = detector.getEdgeCornerRegions(true);
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-        gXY1 = detector.getEdgeFilterProducts().getGradientXY();
-        //GreyscaleImage img1Grey = gsImg1.copyImage();
-        //imageProcessor.shrinkImage(img1Grey, 
-        //    new int[]{gXY1.getXRelativeOffset(), gXY1.getYRelativeOffset(),
-        //        gXY1.getWidth(), gXY1.getHeight()
-        //    });
-        
-        theta1 = imageProcessor.computeTheta360(
-            detector.getEdgeFilterProducts().getGradientX(), 
-            detector.getEdgeFilterProducts().getGradientY());
         
         //-------
         
@@ -401,16 +386,6 @@ public class FeatureMatcherWrapper {
         detector.findCorners();
         cornerRegions2 = detector.getEdgeCornerRegions(true);
         //cornerRegions2 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-        gXY2 = detector.getEdgeFilterProducts().getGradientXY();
-        //GreyscaleImage img2Grey = gsImg2.copyImage();
-        //imageProcessor.shrinkImage(img1Grey, 
-        //    new int[]{gXY1.getXRelativeOffset(), gXY1.getYRelativeOffset(),
-        //        gXY1.getWidth(), gXY1.getHeight()
-        //    });
-        
-        theta2 = imageProcessor.computeTheta360(
-            detector.getEdgeFilterProducts().getGradientX(), 
-            detector.getEdgeFilterProducts().getGradientY());
         
         if (debug) {
             try {
