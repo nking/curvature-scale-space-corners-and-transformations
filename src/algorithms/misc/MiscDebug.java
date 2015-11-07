@@ -5,7 +5,6 @@ import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CornerRegion;
 import algorithms.imageProcessing.CurvatureScaleSpaceContour;
-import algorithms.imageProcessing.CurvatureScaleSpaceImagePoint;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;

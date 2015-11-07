@@ -381,8 +381,8 @@ public class FeatureMatcherWrapper {
         
         if (debug) {
             try {
-                MiscDebug.writeImage(cornerRegions1, img1, debugTagPrefix + "_1_corners_");
-                MiscDebug.writeImage(cornerRegions2, img2, debugTagPrefix + "_2_corners_");
+                MiscDebug.writeImage(cornerRegions1, img1.copyImage(), debugTagPrefix + "_1_corners_");
+                MiscDebug.writeImage(cornerRegions2, img2.copyImage(), debugTagPrefix + "_2_corners_");
             } catch (IOException ex) {
                 Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
             }

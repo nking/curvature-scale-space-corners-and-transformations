@@ -2117,7 +2117,7 @@ public class FeatureMatcher {
         }
         
         if (useBipartite) {
-            return useBipartiteMatching(cost, statMap);
+            return useBipartiteMatching(cost, statMap, params);
         }
         
         // resolve any double matchings, but discard the higher cost matches
@@ -2192,30 +2192,6 @@ public class FeatureMatcher {
             float a = 1.f / (float) nc;
             Arrays.fill(weights, a);
         }
-        
-        /*
-        MatchedPointsTransformationCalculator tc
-            = new MatchedPointsTransformationCalculator();
-
-        int centroidX1 = 0;
-        int centroidY1 = 0;
-
-        float[] outputScaleRotTransXYStDev = new float[4];
-        TransformationParameters params2 = tc.calulateEuclidean(matchedXY1,
-            matchedXY2, weights, centroidX1, centroidY1,
-            outputScaleRotTransXYStDev);
-
-        if (params2 == null) {
-            return null;
-        }
-   
-        //TODO: consider whether an eval step is needed here to further
-        // remove outliers
-        for (int i = 0; i < matchedXY1.getN(); ++i) {
-            matched1.add(new PairInt(matchedXY1.getX(i), matchedXY1.getY(i)));
-            matched2.add(new PairInt(matchedXY2.getX(i), matchedXY2.getY(i)));
-        }
-        */
 
         int rangeRotation = Math.round(params.getStandardDeviations()[1]);
         int rangeTranslationX = Math.round(params.getStandardDeviations()[2]);
