@@ -42,10 +42,10 @@ Task 1: new class FeatureMatcherWrapper
     time estimate: min 3 days, max 1 week and 1 day
   
     amount of time used:
-        1 day so far
+        3 days
 
     state of completion: 
-        in progress, changing methods to improve them with products from scale calculator
+        complete, but may be opened again to make improvements for speed
 
     comments:
               
