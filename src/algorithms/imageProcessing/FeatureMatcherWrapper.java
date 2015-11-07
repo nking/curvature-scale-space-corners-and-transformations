@@ -794,8 +794,8 @@ int y2 = compStats2.get(0).getImg2Point().getY();
         }
         
         // check that there is at least 1 in each quadrant
-        //if (nq >= 3) {
-        if (nq == 4) {
+        if (nq >= 3) {
+        //if (nq == 4) {
             return true;
         }
         
