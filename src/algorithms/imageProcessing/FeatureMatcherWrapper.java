@@ -394,7 +394,7 @@ public class FeatureMatcherWrapper {
         FeatureMatcher matcher = new FeatureMatcher();
         
         int dither = 1;
-        int tolXY = 3;
+        int tolXY = 5;//3
         
         //TODO: revise this
         if (params.getStandardDeviations()[2] > 3 || 
@@ -403,9 +403,9 @@ public class FeatureMatcherWrapper {
             tolXY = 50;
         }
         
-        CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1, gXY1, theta1,
+        CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1,
             cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
-            gsImg2, gXY2, theta2,
+            gsImg2,
             cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
             parameters, scaleTol, rotationInRadiansTol, tolXY,
             dither);

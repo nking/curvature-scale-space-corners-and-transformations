@@ -8,6 +8,9 @@ import algorithms.util.PairInt;
  */
 public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> {
 
+    private int index1 = -1;
+    private int index2 = -1;
+    
     private PairInt img1Point = null;
     private PairInt img2Point = null;
     private float sumIntensitySqDiff = Float.POSITIVE_INFINITY;
@@ -26,6 +29,22 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         return img1Point;
     }
 
+    public void setIndex1(int theIndex) {
+        index1 = theIndex;
+    }
+    
+    public void setIndex2(int theIndex) {
+        index2 = theIndex;
+    }
+    
+    public int getIndex1() {
+        return index1;
+    }
+    
+    public int getIndex2() {
+        return index2;
+    }
+    
     /**
      * @param img1Point the img1Point to set
      */

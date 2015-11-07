@@ -1953,21 +1953,18 @@ public class FeatureMatcher {
     }
     
     public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
-        GreyscaleImage gXY1, GreyscaleImage theta1, CornerRegion[] cr1, 
-        GreyscaleImage gsImg2, GreyscaleImage gXY2, GreyscaleImage theta2, 
-        CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
+        CornerRegion[] cr1, GreyscaleImage gsImg2, CornerRegion[] cr2, 
+        TransformationParameters params, float scaleTol, 
         float rotationInRadiansTol, int transXYTol) { 
         
         int dither = 1;
         
-        return findSimilarFeatures(gsImg1, gXY1, theta1, cr1, 
-            gsImg2, gXY2, theta2, cr2, params, scaleTol, rotationInRadiansTol, 
-            transXYTol, dither);
+        return findSimilarFeatures(gsImg1, cr1, gsImg2, cr2, params, scaleTol, 
+            rotationInRadiansTol, transXYTol, dither);
     }
 
     public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
-        GreyscaleImage gXY1, GreyscaleImage theta1, CornerRegion[] cr1, 
-        GreyscaleImage gsImg2, GreyscaleImage gXY2, GreyscaleImage theta2, 
+        CornerRegion[] cr1, GreyscaleImage gsImg2, 
         CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
         float rotationInRadiansTol, int transXYTol, int dither) {
         
@@ -1980,10 +1977,13 @@ public class FeatureMatcher {
         
         if (true) {
             try {
-                MiscDebug.writeImage(filteredC1, gsImg1.copyToColorGreyscale(), "filtered_1_corners_");
-                MiscDebug.writeImage(filteredC2, gsImg2.copyToColorGreyscale(), "filtered_2_corners_");
+                MiscDebug.writeImage(filteredC1, gsImg1.copyToColorGreyscale(),
+                    "filtered_1_corners_");
+                MiscDebug.writeImage(filteredC2, gsImg2.copyToColorGreyscale(), 
+                    "filtered_2_corners_");
             } catch (IOException ex) {
-                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(
+                    Level.SEVERE, null, ex);
             }
         }
         
@@ -2014,18 +2014,34 @@ public class FeatureMatcher {
         
         int n1 = filteredC1.size();
         int n2 = filteredC2.size();
+        int nMaxMatchable = Math.min(n1, n2);
         
-        Map<PairInt, FeatureComparisonStat> statMap = new HashMap<PairInt, 
-            FeatureComparisonStat>();
+        Map<PairInt, FeatureComparisonStat> statMap = null;
+        float[][] cost = null;
+                
+        final boolean useBipartite = (nMaxMatchable < 251);
         
-        float[][] cost = new float[n1][n2];
+        Map<Integer, Integer> index1Map = null;
+        Map<Integer, Set<Integer>> index2Map = null;
+        Map<Integer, FeatureComparisonStat> index1StatMap = null;
         
+        if (useBipartite) {
+            cost = new float[n1][n2];
+            statMap = new HashMap<PairInt, FeatureComparisonStat>();
+        } else {
+            index1Map = new HashMap<Integer, Integer>();
+            index2Map = new HashMap<Integer, Set<Integer>>();
+            index1StatMap = new HashMap<Integer, FeatureComparisonStat>();
+        }
+                
         int count = 0;
         
         for (int i1 = 0; i1 < n1; ++i1) {
             
-            cost[i1] = new float[n2];
-            Arrays.fill(cost[i1], Float.MAX_VALUE);
+            if (useBipartite) {
+                cost[i1] = new float[n2];
+                Arrays.fill(cost[i1], Float.MAX_VALUE);
+            }
             
             CornerRegion c1Tr = filteredTransformedC1.get(i1);
             CornerRegion c1 = filteredC1.get(i1);
@@ -2036,13 +2052,17 @@ public class FeatureMatcher {
             int x1 = c1.getX()[c1.getKMaxIdx()];
             int y1 = c1.getY()[c1.getKMaxIdx()];
             
+            double bestCost = Double.MAX_VALUE;
+            int bestIdx2 = -1;
+            FeatureComparisonStat bestStat = null;
+            
             for (int i2 = 0; i2 < n2; ++i2) {
                 
                 CornerRegion c2 = filteredC2.get(i2);
                 
                 int x2 = c2.getX()[c2.getKMaxIdx()];
                 int y2 = c2.getY()[c2.getKMaxIdx()];
-                
+                                
                 int diffX = Math.abs(x1Tr - x2);
                 int diffY = Math.abs(y1Tr - y2);
                 if (diffX > transXYTol || diffY > transXYTol) {
@@ -2059,11 +2079,19 @@ public class FeatureMatcher {
                     if (stat != null && 
                         (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr())) {
 
-                        PairInt p = new PairInt(i1, i2);
-                        
-                        statMap.put(p, stat);
-
-                        cost[i1][i2] = stat.getSumIntensitySqDiff();  
+                        if (useBipartite) {
+                            cost[i1][i2] = stat.getSumIntensitySqDiff();
+                            PairInt p = new PairInt(i1, i2);
+                            statMap.put(p, stat);
+                        } else {
+                            if ((bestIdx2 == -1) || (bestCost > stat.getSumIntensitySqDiff())) {
+                                bestIdx2 = i2;
+                                bestCost = stat.getSumIntensitySqDiff();
+                                bestStat = stat;
+                                bestStat.setIndex1(i1);
+                                bestStat.setIndex2(i2);
+                            }
+                        }
                         
                         count++;
                     }
@@ -2072,136 +2100,133 @@ public class FeatureMatcher {
                     log.fine(ex.getMessage());
                 }
             }
-        }
-        
-//for count > 300 or 400, should use a greedy matching, else bipartite below
             
-        boolean transposed = false;
-        if (n1 > n2) {
-            cost = MatrixUtil.transpose(cost);
-            transposed = true;
-        }
+            if (!useBipartite && (bestStat != null)) {
+                Integer key1 = Integer.valueOf(i1);
+                Integer key2 = Integer.valueOf(bestIdx2);
+                index1Map.put(key1, key2);
+                Set<Integer> set = index2Map.get(key2);
+                if (set == null) {
+                    set = new HashSet<Integer>();
+                    index2Map.put(key2, set);
+                }
+                set.add(key1);
                 
-        // one pass thru to count for array sizes
-        HungarianAlgorithm b = new HungarianAlgorithm();
-        int[][] match = b.computeAssignments(cost);
-
-        int nMatched = 0;
-        
-        for (int i = 0; i < match.length; i++) {
-            int idx1 = match[i][0];
-            int idx2 = match[i][1];
-            if (idx1 == -1 || idx2 == -1) {
-                continue;
+                index1StatMap.put(key1, bestStat);
             }
-            if (transposed) {
-                int swap = idx1;
-                idx1 = idx2;
-                idx2 = swap;
-            }
-            PairInt pI = new PairInt(idx1, idx2);
-            if (!statMap.containsKey(pI)) {
-                continue;
-            }
-            nMatched++;
         }
         
-        MatchedPointsTransformationCalculator tc = 
-            new MatchedPointsTransformationCalculator();
-        
-        int centroidX1 = 0;
-        int centroidY1 = 0;
-        
-        PairIntArray matchedXY1 = new PairIntArray();
-        PairIntArray matchedXY2 = new PairIntArray();
-        
-        float[] weights = new float[nMatched];
-        
-        double sumW = 0;
-
-        int nc = 0;
-        
-        for (int i = 0; i < match.length; i++) {
-            int idx1 = match[i][0];
-            int idx2 = match[i][1];
-            if (idx1 == -1 || idx2 == -1) {
-                continue;
-            }
-            if (transposed) {
-                int swap = idx1;
-                idx1 = idx2;
-                idx2 = swap;
-            }
-
-            PairInt pI = new PairInt(idx1, idx2);
-            FeatureComparisonStat stat = statMap.get(pI);
-            if (stat == null) {
-                continue;
-            }
-            
-            int x1 = stat.getImg1Point().getX();
-            int y1 = stat.getImg1Point().getY();
-            matchedXY1.add(x1, y1);
-            int x2 = stat.getImg2Point().getX();
-            int y2 = stat.getImg2Point().getY();
-            matchedXY2.add(x2, y2);
-            
-            float w = statMap.get(pI).getSumIntensitySqDiff();
-            weights[nc] = w;
-            
-            sumW += w;
-            
-            nc++;
+        if (useBipartite) {
+            return useBipartiteMatching(cost, statMap);
         }
         
-        if (matchedXY2.getN() < 7) {
+        // resolve any double matchings, but discard the higher cost matches
+        //   from conflicted matches rather than re-trying a solution for them
+        
+        Set<Integer> resolved = new HashSet<Integer>();
+        for (Entry<Integer, Set<Integer>> entry : index2Map.entrySet()) {
+            if (resolved.contains(entry.getKey())) {
+                continue;
+            }
+            Set<Integer> set = entry.getValue();
+            if (set.size() > 1) {
+                double bestCost = Double.MAX_VALUE;
+                Integer bestIndex1 = -1;
+                for (Integer index1 : set) {
+                    FeatureComparisonStat fcs = index1StatMap.get(index1);
+                    assert(fcs != null);
+                    double cost2 = fcs.getSumIntensitySqDiff();
+                    if (cost2 < bestCost) {
+                        bestCost = cost2;
+                        bestIndex1 = index1;
+                    }
+                    resolved.add(index1);
+                }
+                for (Integer index1 : set) {
+                    if (index1.equals(bestIndex1)) {
+                        continue;
+                    }
+                    index1Map.remove(index1);
+                    index1StatMap.remove(index1);
+                }
+            }
+        }
+        
+        int nc = index1StatMap.size();
+        
+        if (nc < 7) {
             return null;
         }
         
-        if (sumW > 0) {
-            double tot = 0;
-            for (int i = 0; i < nMatched; ++i) {
-                double div = (sumW - weights[i]) / ((nMatched - 1) * sumW);
-                weights[i] = (float)div;
-                tot += div;
-            }
-            assert(Math.abs(tot - 1.) < 0.03);            
-        } else {
-            float a = 1.f/(float)nMatched;
-            Arrays.fill(weights, a);
-        }
-                
-        float[] outputScaleRotTransXYStDev = new float[4];
-        TransformationParameters params2 = tc.calulateEuclidean(matchedXY1, 
-            matchedXY2, weights, centroidX1, centroidY1, 
-            outputScaleRotTransXYStDev);
-        
-        if (params2 == null) {
-            return null;
-        }
-        
-        params2.setStandardDeviations(outputScaleRotTransXYStDev);
+        //PairIntArray matchedXY1 = new PairIntArray(nc);
+        //PairIntArray matchedXY2 = new PairIntArray(nc);
         
         List<PairInt> matched1 = new ArrayList<PairInt>();
         List<PairInt> matched2 = new ArrayList<PairInt>();
+
+        float[] weights = new float[nc];
+        double sumW = 0;
+
+        nc = 0;
+        for (Entry<Integer, FeatureComparisonStat> entry : index1StatMap.entrySet()) {
+            FeatureComparisonStat fcs = entry.getValue();
+            int idx1 = fcs.getIndex1();
+            int idx2 = fcs.getIndex2();
+            PairInt p1 = fcs.getImg1Point();
+            PairInt p2 = fcs.getImg2Point();
+            matched1.add(p1.copy());
+            matched2.add(p2.copy());
+            weights[nc] = fcs.getSumIntensitySqDiff();
+            sumW += weights[nc];
+            nc++;
+        }
+        if (sumW > 0) {
+            double tot = 0;
+            for (int i = 0; i < nc; ++i) {
+                double div = (sumW - weights[i]) / ((nc - 1) * sumW);
+                weights[i] = (float) div;
+                tot += div;
+            }
+            assert (Math.abs(tot - 1.) < 0.03);
+        } else {
+            float a = 1.f / (float) nc;
+            Arrays.fill(weights, a);
+        }
         
+        /*
+        MatchedPointsTransformationCalculator tc
+            = new MatchedPointsTransformationCalculator();
+
+        int centroidX1 = 0;
+        int centroidY1 = 0;
+
+        float[] outputScaleRotTransXYStDev = new float[4];
+        TransformationParameters params2 = tc.calulateEuclidean(matchedXY1,
+            matchedXY2, weights, centroidX1, centroidY1,
+            outputScaleRotTransXYStDev);
+
+        if (params2 == null) {
+            return null;
+        }
+   
         //TODO: consider whether an eval step is needed here to further
         // remove outliers
         for (int i = 0; i < matchedXY1.getN(); ++i) {
             matched1.add(new PairInt(matchedXY1.getX(i), matchedXY1.getY(i)));
             matched2.add(new PairInt(matchedXY2.getX(i), matchedXY2.getY(i)));
         }
-        
-        int rangeRotation = Math.round(outputScaleRotTransXYStDev[1]);
-        int rangeTranslationX = Math.round(outputScaleRotTransXYStDev[2]);
-        int rangeTranslationY = Math.round(outputScaleRotTransXYStDev[3]);
-        
-        CorrespondenceList cl = new CorrespondenceList(params2.getScale(),
-            Math.round(params2.getRotationInDegrees()), 
-            Math.round(params2.getTranslationX()), Math.round(params2.getTranslationY()), 
+        */
+
+        int rangeRotation = Math.round(params.getStandardDeviations()[1]);
+        int rangeTranslationX = Math.round(params.getStandardDeviations()[2]);
+        int rangeTranslationY = Math.round(params.getStandardDeviations()[3]);
+
+        CorrespondenceList cl = new CorrespondenceList(params.getScale(),
+            Math.round(params.getRotationInDegrees()),
+            Math.round(params.getTranslationX()), Math.round(params.getTranslationY()),
             rangeRotation, rangeTranslationX, rangeTranslationY,
             matched1, matched2);
-        
+
         return cl;
     }
 
@@ -2839,6 +2864,91 @@ public class FeatureMatcher {
         }
         
         return r0;
+    }
+
+    private CorrespondenceList useBipartiteMatching(float[][] cost,
+        Map<PairInt, FeatureComparisonStat> statMap, 
+        TransformationParameters params) {
+
+        if (cost == null) {
+            return null;
+        }
+        
+        boolean transposed = false;
+        if (cost.length > cost[0].length) {
+            cost = MatrixUtil.transpose(cost);
+            transposed = true;
+        }
+
+        // one pass thru to count for array sizes
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(cost);
+
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            PairInt pI = new PairInt(idx1, idx2);
+            if (!statMap.containsKey(pI)) {
+                continue;
+            }
+        }
+
+        List<PairInt> matched1 = new ArrayList<PairInt>();
+        List<PairInt> matched2 = new ArrayList<PairInt>();
+
+        int nc = 0;
+
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+
+            PairInt pI = new PairInt(idx1, idx2);
+            FeatureComparisonStat stat = statMap.get(pI);
+            if (stat == null) {
+                continue;
+            }
+
+            int x1 = stat.getImg1Point().getX();
+            int y1 = stat.getImg1Point().getY();
+            matched1.add(new PairInt(x1, y1));
+            int x2 = stat.getImg2Point().getX();
+            int y2 = stat.getImg2Point().getY();
+            matched2.add(new PairInt(x2, y2));
+
+            nc++;
+        }
+
+        if (matched1.size() < 7) {
+            return null;
+        }
+        
+        int rangeRotation = Math.round(params.getStandardDeviations()[1]);
+        int rangeTranslationX = Math.round(params.getStandardDeviations()[2]);
+        int rangeTranslationY = Math.round(params.getStandardDeviations()[3]);
+
+        CorrespondenceList cl = new CorrespondenceList(params.getScale(),
+            Math.round(params.getRotationInDegrees()),
+            Math.round(params.getTranslationX()), Math.round(params.getTranslationY()),
+            rangeRotation, rangeTranslationX, rangeTranslationY,
+            matched1, matched2);
+
+        return cl;
     }
 
 }

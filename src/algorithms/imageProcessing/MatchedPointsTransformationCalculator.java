@@ -501,6 +501,8 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             }
         }
 
+        //TODO: need a version of this method that uses matching < O(N^3)
+    
         HungarianAlgorithm b = new HungarianAlgorithm();
         int[][] match = b.computeAssignments(invDist);
         
