@@ -21,7 +21,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         
         String fileName1, fileName2;
         
-        for (int i = 0; i < 1;/*3;*/ ++i) {
+        for (int i = 0; i < 4;/*3;*/ ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -33,9 +33,14 @@ public class FeatureMatcherWrapperTest extends TestCase {
                     fileName2 = "venturi_mountain_j6_0010.png";
                     break;
                 }
-                default: {
+                case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+                default: {
+                    fileName1 = "campus_010.jpg";
+                    fileName2 = "campus_011.jpg";
                     break;
                 }
             }
@@ -61,7 +66,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         
         CorrespondenceList cl = wrapper.matchFeatures();
         
-        assertNotNull(cl != null);
+        assertNotNull(cl);
         
         Collection<PairInt> m1 = cl.getPoints1();
         Collection<PairInt> m2 = cl.getPoints2();

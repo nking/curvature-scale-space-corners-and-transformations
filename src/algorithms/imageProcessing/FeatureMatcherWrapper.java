@@ -158,7 +158,7 @@ public class FeatureMatcherWrapper {
             cl = findCorrespondence(this.scaleSetByUser);
         }
         
-        if (debug) {
+        if (debug && (cl != null)) {
             Collection<PairInt> m1 = cl.getPoints1();
             Collection<PairInt> m2 = cl.getPoints2();
 
@@ -196,7 +196,7 @@ public class FeatureMatcherWrapper {
             stateSet.add(State.COULD_NOT_DETERMINE_SCALE);
             return null;
         }
-         
+        
         boolean didApplyHist = scaleFinder.img1Helper.didApplyHistEq();
         this.gsImg1 = scaleFinder.img1Helper.getGreyscaleImage().copyImage();
         this.gsImg2 = scaleFinder.img2Helper.getGreyscaleImage().copyImage();
@@ -209,6 +209,12 @@ public class FeatureMatcherWrapper {
         
         CorrespondenceList cl = null;
         
+        int tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
+            params.getStandardDeviations()[3]));
+        if (tolXY < 3) {
+            tolXY = 3;
+        }
+           
         // try to match the remaining points created in the scale finder
         if (scaleFinder.getAllCornerRegions1OfSolution() != null) {
             
@@ -216,15 +222,35 @@ public class FeatureMatcherWrapper {
                 = new ArrayList<List<CornerRegion>>();
             List<List<CornerRegion>> filteredC1 = new ArrayList<List<CornerRegion>>();
             List<List<CornerRegion>> filteredC2 = new ArrayList<List<CornerRegion>>();
-            
-            FeatureMatcher.filterForIntersection(params, transXYTol,
+             
+            FeatureMatcher.filterForIntersection(params, tolXY,
                 scaleFinder.getAllCornerRegions1OfSolution(),
                 scaleFinder.getAllCornerRegions2OfSolution(),
                 transformedFilteredC1, filteredC1, filteredC2);
             
+            if (debug) {
+                try {
+                    Collection<CornerRegion> set1 = new HashSet<CornerRegion>();
+                    Collection<CornerRegion> set2 = new HashSet<CornerRegion>();
+                    for (List<CornerRegion> list : filteredC1) {
+                        set1.addAll(list);
+                    }
+                    for (List<CornerRegion> list : filteredC2) {
+                        set2.addAll(list);
+                    }
+                    MiscDebug.writeImage(set1, gsImg1.copyToColorGreyscale(),
+                        debugTagPrefix + "_filtered_1_corners_");
+                    MiscDebug.writeImage(set2, gsImg2.copyToColorGreyscale(), 
+                        debugTagPrefix + "_filtered_2_corners_");
+                } catch (IOException ex) {
+                    Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(
+                        Level.SEVERE, null, ex);
+                }
+            }
+            
             stats = matchRemainingBlobCornerPoints(scaleFinder, 
                 transformedFilteredC1, filteredC1, filteredC2);
-            
+ 
             if ((stats.size() >= 7) && statsCoverIntersection(stats, filteredC2)) {
                 
                 List<PairInt> matched1 = new ArrayList<PairInt>();
@@ -255,10 +281,25 @@ public class FeatureMatcherWrapper {
             List<List<CurvatureScaleSpaceContour>> filteredC2 = 
                 new ArrayList<List<CurvatureScaleSpaceContour>>();
             
-            FeatureMatcher.filterForIntersection2(params, transXYTol,
+            FeatureMatcher.filterForIntersection2(params, tolXY,
                 scaleFinder.getAllContours1OfSolution(),
                 scaleFinder.getAllContours2OfSolution(),
                 transformedFilteredC1, filteredC1, filteredC2);
+            
+            if (debug) {
+                List<CurvatureScaleSpaceContour> set1 = new ArrayList<CurvatureScaleSpaceContour>();
+                List<CurvatureScaleSpaceContour> set2 = new ArrayList<CurvatureScaleSpaceContour>();
+                for (List<CurvatureScaleSpaceContour> list : filteredC1) {
+                    set1.addAll(list);
+                }
+                for (List<CurvatureScaleSpaceContour> list : filteredC2) {
+                    set2.addAll(list);
+                }
+                MiscDebug.debugPlot(set1, img1.copyToImageExt(), 0, 0,
+                    debugTagPrefix + "_filtered_1_corners_");
+                MiscDebug.debugPlot(set2, img2.copyToImageExt(), 0, 0,
+                    debugTagPrefix + "_filtered_2_corners_");
+            }
             
             stats = matchRemainingBlobContourPoints(scaleFinder, 
                 transformedFilteredC1, filteredC1, filteredC2);
@@ -393,14 +434,17 @@ public class FeatureMatcherWrapper {
         
         FeatureMatcher matcher = new FeatureMatcher();
         
+        int tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
+            params.getStandardDeviations()[3]));
+        if (tolXY < 3) {
+            tolXY = 3;
+        }
+        
         int dither = 1;
-        int tolXY = 5;//3
         
         //TODO: revise this
-        if (params.getStandardDeviations()[2] > 3 || 
-            params.getStandardDeviations()[3] > 3) {
+        if (tolXY > 3) {
             dither = 4;
-            tolXY = 50;
         }
         
         CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1,
@@ -468,7 +512,13 @@ public class FeatureMatcherWrapper {
         
         Set<Integer> redo = new HashSet<Integer>();
         
-        int tolXY = this.transXYTol;
+        int tolXY = Math.round(Math.max(params.getStandardDeviations()[2],
+            params.getStandardDeviations()[3]));
+        if (tolXY < 3) {
+            tolXY = 3;
+        } else {
+            tolXY *= 2;
+        }
         
         for (int i1 = 0; i1 < filteredC1Transformed.size(); ++i1) {
             List<CornerRegion> trC1List = filteredC1Transformed.get(i1);
