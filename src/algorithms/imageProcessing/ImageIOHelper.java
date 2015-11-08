@@ -627,7 +627,7 @@ public class ImageIOHelper {
         
         for (int i = 0; i < regions.size(); ++i) {
             BlobPerimeterRegion bpr = regions.get(i);
-            xy.add(bpr.getX(), bpr.getY());
+            xy.add(bpr.getX()[1], bpr.getY()[1]);
         }
         
         writeLabeledPoints(xy, xOffset, yOffset, "infl pts", fileName);
@@ -1603,8 +1603,8 @@ int z1 = 1;
             
             int[] c = getNextRGB(i);
 
-            int x = br.getX();
-            int y = br.getY();
+            int x = br.getX()[1];
+            int y = br.getY()[1];
             
             addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 
                 c[0], c[1], c[2]);

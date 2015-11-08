@@ -950,14 +950,14 @@ public class MiscDebug {
         int z = 1;
     }
     
-    public static void writeImage(Collection<CornerRegion> cornerRegions, 
+    public static <T extends CornerRegion> void writeImage(Collection<T> cornerRegions, 
         Image img, String fileSuffix) throws IOException {
        
         int rClr = 255;
         int gClr = 0;
         int bClr = 0;
         
-        for (CornerRegion cr : cornerRegions) {
+        for (T cr : cornerRegions) {
             int kMaxIdx = cr.getKMaxIdx();
             int x = cr.getX()[kMaxIdx];
             int y = cr.getY()[kMaxIdx];

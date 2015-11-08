@@ -287,7 +287,7 @@ public class BlobScaleFinderWrapper {
                 algType = AlgType.CORNERS_COMBINATIONS;
                 params = calculateScaleImpl();
             }
-
+            
             if (params == null) {
                 algType = AlgType.CONTOURS_COMBINATIONS;
                 params = calculateScaleImpl();
@@ -613,6 +613,28 @@ public class BlobScaleFinderWrapper {
         }
         
         return blobCornerHelper2.generatePerimeterCorners(
+            solutionSegmentationType2, solutionUsedBinned2);
+    }
+    
+    public List<List<BlobPerimeterRegion>> getAllBlobRegions1OfSolution() {
+        
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
+            algType.equals(AlgType.CORNERS_ORDERED)) {
+            return null;
+        }
+        
+        return blobContourHelper1.generatePerimeterRegions(
+            solutionSegmentationType1, solutionUsedBinned1);
+    }
+    
+    public List<List<BlobPerimeterRegion>> getAllBlobRegions2OfSolution() {
+        
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
+            algType.equals(AlgType.CORNERS_ORDERED)) {
+            return null;
+        }
+        
+        return blobContourHelper2.generatePerimeterRegions(
             solutionSegmentationType2, solutionUsedBinned2);
     }
     

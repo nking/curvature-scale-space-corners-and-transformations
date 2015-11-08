@@ -636,14 +636,15 @@ public class FeatureMatcher {
      */
     public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
-        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) {
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) 
+        throws CornerRegion.CornerRegionDegneracyException {
      
-        final int x1 = region1.getX();
-        final int y1 = region1.getY();
+        final int x1 = region1.getX()[1];
+        final int y1 = region1.getY()[1];
         int rot1 = Math.round(region1.getRelativeOrientationInDegrees());
         
-        final int x2 = region2.getX();
-        final int y2 = region2.getY();
+        final int x2 = region2.getX()[1];
+        final int y2 = region2.getY()[1];
         int rot2 = Math.round(region2.getRelativeOrientationInDegrees());
         
         return ditherAndRotateForBestLocation(features1, features2,
@@ -666,14 +667,15 @@ public class FeatureMatcher {
     public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
         BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither,
-        GreyscaleImage img1, GreyscaleImage img2) {
+        GreyscaleImage img1, GreyscaleImage img2) 
+        throws CornerRegion.CornerRegionDegneracyException {
      
-        final int x1 = region1.getX();
-        final int y1 = region1.getY();
+        final int x1 = region1.getX()[1];
+        final int y1 = region1.getY()[1];
         int rot1 = Math.round(region1.getRelativeOrientationInDegrees());
         
-        final int x2 = region2.getX();
-        final int y2 = region2.getY();
+        final int x2 = region2.getX()[1];
+        final int y2 = region2.getY()[1];
         int rot2 = Math.round(region2.getRelativeOrientationInDegrees());
         
         return ditherAndRotateForBestLocation(features1, features2,
@@ -775,14 +777,14 @@ public class FeatureMatcher {
     public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
         BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither,
-        int degreeIntervals) {
+        int degreeIntervals) throws CornerRegion.CornerRegionDegneracyException {
      
-        final int x1 = region1.getX();
-        final int y1 = region1.getY();
+        final int x1 = region1.getX()[1];
+        final int y1 = region1.getY()[1];
         int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
         
-        final int x2 = region2.getX();
-        final int y2 = region2.getY();
+        final int x2 = region2.getX()[1];
+        final int y2 = region2.getY()[1];
         int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
         
         int n = 360/degreeIntervals;
@@ -817,14 +819,15 @@ public class FeatureMatcher {
     public FeatureComparisonStat ditherAndRotateForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
         BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither,
-        GreyscaleImage img1, GreyscaleImage img2, int degreeIntervals) {
+        GreyscaleImage img1, GreyscaleImage img2, int degreeIntervals) 
+        throws CornerRegion.CornerRegionDegneracyException {
      
-        final int x1 = region1.getX();
-        final int y1 = region1.getY();
+        final int x1 = region1.getX()[1];
+        final int y1 = region1.getY()[1];
         int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());
         
-        final int x2 = region2.getX();
-        final int y2 = region2.getY();
+        final int x2 = region2.getX()[1];
+        final int y2 = region2.getY()[1];
         int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());
         
         int n = 360/degreeIntervals;
@@ -1418,14 +1421,15 @@ public class FeatureMatcher {
      */
     public FeatureComparisonStat ditherForBestLocation(
         IntensityFeatures features1, IntensityFeatures features2, 
-        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) {
+        BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) 
+        throws CornerRegion.CornerRegionDegneracyException {
         
-        final int x1 = region1.getX();
-        final int y1 = region1.getY();
+        final int x1 = region1.getX()[1];
+        final int y1 = region1.getY()[1];
         int rot1 = Math.round(region1.getRelativeOrientationInDegrees());
         
-        final int x2 = region2.getX();
-        final int y2 = region2.getY();
+        final int x2 = region2.getX()[1];
+        final int y2 = region2.getY()[1];
         int rot2 = Math.round(region2.getRelativeOrientationInDegrees());
         
         return ditherForBestLocation(features1, features2,
@@ -2482,12 +2486,12 @@ public class FeatureMatcher {
             x1, y1, iDesc2, gDesc2, tDesc2, x2, y2);
     }
     
-    public static void filterForIntersection(TransformationParameters params, 
-        float toleranceXY,
-        List<List<CornerRegion>> c1, List<List<CornerRegion>> c2, 
-        List<List<CornerRegion>> outFilteredTransformedC1,
-        List<List<CornerRegion>> outFilteredC1, 
-        List<List<CornerRegion>> outFilteredC2) {
+    public static <T extends CornerRegion> void filterForIntersection(
+        TransformationParameters params, float toleranceXY,
+        List<List<T>> c1, List<List<T>> c2, 
+        List<List<T>> outFilteredTransformedC1,
+        List<List<T>> outFilteredC1, 
+        List<List<T>> outFilteredC2) {
         
         float[] minXY2 = MiscMath.findMinXY(c2);
         float[] maxXY2 = MiscMath.findMaxXY(c2);
@@ -2496,14 +2500,14 @@ public class FeatureMatcher {
         
         float[] minXY1 = new float[]{Float.MAX_VALUE, Float.MAX_VALUE};
         float[] maxXY1 = new float[]{Float.MIN_VALUE, Float.MIN_VALUE};
-        
+   
         for (int i = 0; i < c1.size(); ++i) {
-            List<CornerRegion> outList = new ArrayList<CornerRegion>();
-            List<CornerRegion> listTr = new ArrayList<CornerRegion>();
-            List<CornerRegion> list = c1.get(i);
+            List<T> outList = new ArrayList<T>();
+            List<T> listTr = new ArrayList<T>();
+            List<T> list = c1.get(i);
             for (int j = 0; j < list.size(); ++j) {
                 
-                CornerRegion ctr = transformer.applyTransformation(params, 
+                T ctr = transformer.applyTransformation(params, 
                     list.get(j));
                 
                 int x = ctr.getX()[ctr.getKMaxIdx()];
@@ -2536,10 +2540,10 @@ public class FeatureMatcher {
         }
 
         for (int i = 0; i < c2.size(); ++i) {
-            List<CornerRegion> outList = new ArrayList<CornerRegion>();
-            List<CornerRegion> list = c2.get(i);
+            List<T> outList = new ArrayList<T>();
+            List<T> list = c2.get(i);
             for (int j = 0; j < list.size(); ++j) {
-                CornerRegion c = list.get(j);
+                T c = list.get(j);
                 int x = c.getX()[c.getKMaxIdx()];
                 int y = c.getY()[c.getKMaxIdx()];
                 

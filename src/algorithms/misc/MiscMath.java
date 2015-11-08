@@ -1701,12 +1701,12 @@ public class MiscMath {
         return min;
     }
 
-    public static float[] findMinXY(List<List<CornerRegion>> crLists) {
+    public static <T extends CornerRegion> float[] findMinXY(List<List<T>> crLists) {
         
         float minX = Float.MAX_VALUE;
         float minY = Float.MAX_VALUE;
         
-        for (List<CornerRegion> list : crLists) {
+        for (List<T> list : crLists) {
             for (CornerRegion cr : list) {
                 float x = cr.getX()[cr.getKMaxIdx()];
                 float y = cr.getY()[cr.getKMaxIdx()];
@@ -1722,12 +1722,12 @@ public class MiscMath {
         return new float[]{minX, minY};
     }
     
-    public static float[] findMaxXY(List<List<CornerRegion>> crLists) {
+    public static <T extends CornerRegion> float[] findMaxXY(List<List<T>> crLists) {
         
         float maxX = Float.MIN_VALUE;
         float maxY = Float.MIN_VALUE;
         
-        for (List<CornerRegion> list : crLists) {
+        for (List<T> list : crLists) {
             for (CornerRegion cr : list) {
                 float x = cr.getX()[cr.getKMaxIdx()];
                 float y = cr.getY()[cr.getKMaxIdx()];

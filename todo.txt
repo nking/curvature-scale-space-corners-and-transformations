@@ -1,6 +1,12 @@
--- finish w/ changes to feature matcher to use scale
-   and finish changes to PointMatcher and stereo projection 
+-- Look at the scale finder and feature matcher tests for merton college in detail
+   to make sure it's matching the correct features.
+   it will be easier to see in the feature matcher wrapper test.
 
+   -- need to adjust the combining of results to handle patterns
+      and small projection differences.
+
+   reopen story 5 for this.
+   
 -- implement the recursive methods for the gaussian and it's derivatives
 
 -- update aspects if needed and considering replacing them

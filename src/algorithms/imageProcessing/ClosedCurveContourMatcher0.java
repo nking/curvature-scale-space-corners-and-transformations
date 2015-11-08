@@ -62,7 +62,7 @@ public class ClosedCurveContourMatcher0 {
         PairIntArray points = new PairIntArray(regions.size());
         
         for (BlobPerimeterRegion bpr : regions) {
-            points.add(bpr.getX(), bpr.getY());
+            points.add(bpr.getX()[1], bpr.getY()[1]);
         }
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -139,11 +139,16 @@ public class ClosedCurveContourMatcher0 {
                 //TODO: if create blob edges with a canny edge detector instead of perimeters,
                 // may have better defined perimeters and angles so can reduce
                 // the number of rotation tries here (use the default instead of 20)
-                FeatureComparisonStat compStat = 
-                    featureMatcher.ditherAndRotateForBestLocation(
-                    features1, features2, region1, region2, dither, 
-                    img1, img2, degreeIntervals);
-               
+                FeatureComparisonStat compStat = null;
+                
+                try {
+                    compStat =
+                        featureMatcher.ditherAndRotateForBestLocation(
+                        features1, features2, region1, region2, dither, 
+                        img1, img2, degreeIntervals);
+                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                }
+                
                 if (compStat != null) {
                     if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
                         transformationPair.addMatched(region1, region2, compStat);

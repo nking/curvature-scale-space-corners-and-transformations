@@ -3,55 +3,36 @@ package algorithms.imageProcessing;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
  *
  * @author nichole
  */
-public class BlobPerimeterRegion {
-    
-    protected final int edgeListIdx;
-    
-    private int idxWithinCurve = -1;
-
-    private final int prevX;
-    
-    private final int x;
-    
-    private final int nextX;
-
-    private final int prevY;
-    
-    private final int y;
-
-    private final int nextY;
+public class BlobPerimeterRegion extends CornerRegion {
     
     /**
      * this is released after the orientation is calculated.
-     */
+    */
     protected Set<PairInt> blob = null;
-    
-    protected double orientation = Double.MIN_VALUE;
-    
+        
     public BlobPerimeterRegion(final int theEdgeIndex, final int prevXCoord, 
         final int prevYCoord, final int xCoord, final int yCoord, 
         final int nextXCoord, final int nextYCoord,
-        Set<PairInt> theBlob) {
+        Set<PairInt> theBlob, final float sigma) {
         
-        edgeListIdx = theEdgeIndex;
+        super(theEdgeIndex, 3, 1);
+
+        dummyValuesInKNeighbors = true;
         
-        prevX = prevXCoord;
+        float dummyKValue = -99;
         
-        prevY = prevYCoord;
+        set(0, dummyKValue, prevXCoord, prevYCoord);
         
-        x = xCoord;
+        set(1, sigma, xCoord, yCoord);
         
-        y = yCoord;
-        
-        nextX = nextXCoord;
-        
-        nextY = nextYCoord;
+        set(2, dummyKValue, nextXCoord, nextYCoord);
         
         blob = theBlob;
     }
@@ -59,58 +40,28 @@ public class BlobPerimeterRegion {
     public BlobPerimeterRegion(final int theEdgeIndex, final int prevXCoord, 
         final int prevYCoord, final int xCoord, final int yCoord, 
         final int nextXCoord, final int nextYCoord,
-        double theOrientation) {
+        double theOrientation, final float sigma) {
         
-        edgeListIdx = theEdgeIndex;
+        super(theEdgeIndex, 3, 1);
+
+        dummyValuesInKNeighbors = true;
         
-        prevX = prevXCoord;
+        float dummyKValue = -99;
         
-        prevY = prevYCoord;
+        set(0, dummyKValue, prevXCoord, prevYCoord);
         
-        x = xCoord;
+        set(1, sigma, xCoord, yCoord);
         
-        y = yCoord;
-        
-        nextX = nextXCoord;
-        
-        nextY = nextYCoord;
+        set(2, dummyKValue, nextXCoord, nextYCoord);
         
         orientation = theOrientation;
-    }
-    
-    /**
-     * get the angle tangent to the point (a.k.a. dominant orientation)
-     * (units are radians).
-     * @return the angle perpendicular to the point location along the perimeter
-     * of the blob in units of degrees.
-     */
-    public float getRelativeOrientationInDegrees() {
-
-        double rotRadians = getRelativeOrientation();
-
-        return (float)(rotRadians * 180./Math.PI);
-    }
-    
-    /**
-     * get the relative angle of this corner (a.k.a. dominant orientation)
-     * that represents the angle perpendicular to the corner along the edge it
-     * was extracted from (units are radians)
-     * @return the angle perpendicular to the maximum of curvature at the
-     * location along the edge in units of radians.
-     */
-    public double getRelativeOrientation() {
-
-        if (orientation == Double.MIN_VALUE) {
-            orientation = calculateOrientation();
-            blob = null;
-        }
-
-        return orientation;
     }
     
     public void overrideRelativeOrientation(final double thetaInRadians) {
         
         this.orientation = thetaInRadians;
+        
+        this.blob = null;
     }
     
     /**
@@ -122,18 +73,19 @@ public class BlobPerimeterRegion {
      * @return the angle perpendicular to the maximum of curvature at the
      * location along the edge in units of radians.
      */
+    @Override
     protected double calculateOrientation() {
         
-        int dx0 = x - prevX;
-        int dy0 = y - prevY;
+        int dx0 = x[1] - x[0];
+        int dy0 = y[1] - y[0];
 
         double theta0 = AngleUtil.polarAngleCCW(dx0, dy0);
         if (theta0 != 0) {
             theta0 = (2.*Math.PI) - theta0;
         }
 
-        int dx1 = nextX - x;
-        int dy1 = nextY - y;
+        int dx1 = x[2] - x[1];
+        int dy1 = y[2] - y[1];
 
         double theta1 = AngleUtil.polarAngleCCW(dx1, dy1);
         if (theta1 != 0) {
@@ -147,9 +99,9 @@ public class BlobPerimeterRegion {
         */
 
         PairIntArray xy = new PairIntArray(3);
-        xy.add(prevX, prevY);
-        xy.add(x, y);
-        xy.add(nextX, nextY);
+        xy.add(x[0], y[0]);
+        xy.add(x[1], y[1]);
+        xy.add(x[2], y[2]);
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
@@ -163,74 +115,56 @@ public class BlobPerimeterRegion {
         double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);
                 
         double perp = curveHelper.calculatePerpendicularAngleAwayFromCentroid(
-            theta, prevX, prevY, x, y, centroidXY, blob);
+            theta, x[0], y[0], x[1], y[1], centroidXY, blob);
 
         return perp;
     }
-
-    /**
-     * @return the prevX
-     */
-    public int getPrevX() {
-        return prevX;
-    }
-
-    /**
-     * @return the x
-     */
-    public int getX() {
-        return x;
-    }
-
-    /**
-     * @return the nextX
-     */
-    public int getNextX() {
-        return nextX;
-    }
-
-    /**
-     * @return the prevY
-     */
-    public int getPrevY() {
-        return prevY;
-    }
-
-    /**
-     * @return the y
-     */
-    public int getY() {
-        return y;
-    }
-
-    /**
-     * @return the nextY
-     */
-    public int getNextY() {
-        return nextY;
+    
+    @Override
+    public boolean equals(Object obj) {
+        
+        if (!(obj instanceof BlobPerimeterRegion)) {
+            return false;
+        }
+            
+        BlobPerimeterRegion other = (BlobPerimeterRegion)obj;
+            
+        if (x.length != other.getX().length) {
+            return false;
+        }
+        
+        if (!Arrays.equals(x, other.getX())) {
+            return false;
+        }
+     
+        return Arrays.equals(y, other.getY());
     }
     
-    public void setIndexWithinCurve(int theIndex) {
-        idxWithinCurve = theIndex;
+    public float getSigma() {
+        return k[1];
     }
     
-    public int getIndexWithinCurve() {
-        return idxWithinCurve;
-    }
-
+    @Override
     public BlobPerimeterRegion copy() {
         
         if (blob == null) {
             
-            BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, 
-                prevY, x, y, nextX, nextY, orientation);
-            
+            BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, 
+                x[0], y[0], x[1], y[1], x[2], y[2], orientation, k[1]);
+            c.setIndexWithinCurve(this.getIndexWithinCurve());
+            if (dummyValuesInKNeighbors) {
+                c.setFlagThatNeighborsHoldDummyValues();
+            }
             return c;
         }
         
-        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, 
-            prevY, x, y, nextX, nextY, blob);
-                    
+        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, 
+            x[0], y[0], x[1], y[1], x[2], y[2], blob, k[1]);
+        c.setIndexWithinCurve(this.getIndexWithinCurve());
+        if (dummyValuesInKNeighbors) {
+            c.setFlagThatNeighborsHoldDummyValues();
+        }
+        
         return c;
     }
 }

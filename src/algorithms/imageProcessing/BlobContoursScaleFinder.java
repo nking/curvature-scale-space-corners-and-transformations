@@ -321,6 +321,9 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
 
         FeatureComparisonStat bestCompStat = null;
 
+//TODO: refactor this to be able to reuse blob perimeter regions
+//  from the invoker, the blob scale finer wrapper
+        
         for (int j = 0; j < matcher.getSolutionMatchedContours1().size(); ++j) {
 
             CurvatureScaleSpaceContour c1 = matcher.getSolutionMatchedContours1().get(j);
@@ -334,25 +337,36 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
 
             for (int jj = 0; jj < details1.length; ++jj) {
 
-                BlobPerimeterRegion region1 = extractBlobPerimeterRegion(
+                BlobPerimeterRegion region1 = 
+                    BlobsAndContours.extractBlobPerimeterRegion(
                     index1.intValue(), details1[jj], curve1, blob1
                 );
+                region1.setIndexWithinCurve(details1[jj].getCoordIdx());
 
-                BlobPerimeterRegion region2 = extractBlobPerimeterRegion(
+                BlobPerimeterRegion region2 = 
+                    BlobsAndContours.extractBlobPerimeterRegion(
                     index2.intValue(), details2[jj], curve2, blob2
                 );
+                region1.setIndexWithinCurve(details2[jj].getCoordIdx());
    
-                FeatureComparisonStat compStat =
-                    featureMatcher.ditherAndRotateForBestLocation(
-                    features1, features2, region1, region2, dither, img1, img2);
+                FeatureComparisonStat compStat = null;
+                
+                try {
+                    
+                    compStat =
+                        featureMatcher.ditherAndRotateForBestLocation(
+                        features1, features2, region1, region2, dither, img1, img2);
 
 sb.append(
     String.format(" (%d,%d) theta1=%d   (%d,%d) theta2=%d",
-    region1.getX(), region1.getY(),
+    region1.getX()[1], region1.getY()[1],
     Math.round(region1.getRelativeOrientationInDegrees()),
-    region2.getX(), region2.getY(),
+    region2.getX()[1], region2.getY()[1],
     Math.round(region2.getRelativeOrientationInDegrees())));
 
+                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                }
+                
                 if (compStat != null) {
                     float sumIntSqDiff = compStat.getSumIntensitySqDiff();
                     float intErrDiff = compStat.getImg2PointIntensityErr();
@@ -469,20 +483,29 @@ redoStats = true;
 
             for (int jj = 0; jj < details1.length; ++jj) {
 
-                BlobPerimeterRegion region1 = extractBlobPerimeterRegion(
+                BlobPerimeterRegion region1 = 
+                    BlobsAndContours.extractBlobPerimeterRegion(
                     index1.intValue(), details1[jj], curve1, blob1
                 );
+                region1.setIndexWithinCurve(details1[jj].getCoordIdx());
                 region1.overrideRelativeOrientation(theta1Radians);
 
-                BlobPerimeterRegion region2 = extractBlobPerimeterRegion(
+                BlobPerimeterRegion region2 = 
+                    BlobsAndContours.extractBlobPerimeterRegion(
                     index2.intValue(), details2[jj], curve2, blob2
                 );
+                region2.setIndexWithinCurve(details2[jj].getCoordIdx());
                 region2.overrideRelativeOrientation(theta2Radians);
 
-                FeatureComparisonStat compStat =
-                    featureMatcher.ditherAndRotateForBestLocation(
-                    features1, features2, region1, region2, dither);
-
+                FeatureComparisonStat compStat = null;
+                
+                try {
+                    compStat =
+                        featureMatcher.ditherAndRotateForBestLocation(
+                        features1, features2, region1, region2, dither);
+                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                }
+                
                 if (compStat != null) {
 
                     float sumIntSqDiff = compStat.getSumIntensitySqDiff();
@@ -541,7 +564,8 @@ redoStats = true;
 
         int count = 0;
         
-        for (Map.Entry<Double, List<IntensityFeatureComparisonStats>> entry : bestMatches.entrySet()) {
+        for (Map.Entry<Double, List<IntensityFeatureComparisonStats>> entry : 
+            bestMatches.entrySet()) {
 
             Double adjustedCost = entry.getKey();
             
@@ -580,7 +604,9 @@ redoStats = true;
                 similarParamsIndexes1.add(Integer.valueOf(idx1));
                 
                 // count the number of solutions similar in diffTheta and scale
-                for (Map.Entry<Double, List<IntensityFeatureComparisonStats>> entry2 : bestMatches.entrySet()) {
+                for (Map.Entry<Double, List<IntensityFeatureComparisonStats>> 
+                    entry2 : bestMatches.entrySet()) {
+                    
                     Double adjustedCost2 = entry2.getKey();
                     if (adjustedCost2.equals(adjustedCost)) {
                         continue;
@@ -614,7 +640,8 @@ redoStats = true;
                 
                 // store for sort and combine
                 nSimilarSummary[count] = similarParamsIndexes1.size();
-                indexesSummary[count] = similarParamsIndexes1.toArray(new Integer[similarParamsIndexes1.size()]);
+                indexesSummary[count] = similarParamsIndexes1.toArray(
+                    new Integer[similarParamsIndexes1.size()]);
                 costsSummary[count] = adjustedCost;
                 mainIndexSummary[count] = idx1;
                 
@@ -628,11 +655,14 @@ redoStats = true;
         mainIndexSummary = Arrays.copyOf(mainIndexSummary, count);
         
         // sort to prefer the solution w/ largest number of similar solutions:
-        //MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, costsSummary, indexesSummary, mainIndexSummary);
+        //MultiArrayMergeSort.sortBy1stDescThen2ndAsc(nSimilarSummary, 
+        //   costsSummary, indexesSummary, mainIndexSummary);
 
         // OR sort to refer the solution w/ best cost and any it is similar to:
         //--- these are still sorted by costs already, so no need to resort again ---
-        // MultiArrayMergeSort.sortBy1stAscThen2ndDesc(costsSummary, nSimilarSummary, indexesSummary, mainIndexSummary, 0, costsSummary.length - 1);
+        // MultiArrayMergeSort.sortBy1stAscThen2ndDesc(costsSummary, 
+        //    nSimilarSummary, indexesSummary, mainIndexSummary, 0, 
+        //    costsSummary.length - 1);
 
         Integer[] indexes = indexesSummary[0];
        

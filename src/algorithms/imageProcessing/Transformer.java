@@ -637,8 +637,9 @@ public class Transformer {
         return crTr;
     }
     
-    public CornerRegion applyTransformation(TransformationParameters params,
-        CornerRegion cr) {
+    @SuppressWarnings({"unchecked"})
+    public <T extends CornerRegion> T applyTransformation(
+        TransformationParameters params, T cr) {
         
         double scale = params.getScale();
         double rotInRadians = params.getRotationInRadians();
@@ -662,7 +663,7 @@ public class Transformer {
         yt_0 = yr_0 + transY = y1
         */
         
-        CornerRegion tr = cr.copy();
+        T tr = (T)cr.copy();
         
         for (int i = 0; i < tr.getX().length; i++) {
 

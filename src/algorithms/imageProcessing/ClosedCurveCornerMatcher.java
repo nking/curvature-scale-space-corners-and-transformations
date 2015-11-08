@@ -75,9 +75,10 @@ public class ClosedCurveCornerMatcher {
      * @param img2 image from which to extract descriptors for features2
      * @return 
      */
-    public boolean matchCorners(final IntensityFeatures features1,
-        final IntensityFeatures features2, final List<CornerRegion> corners1,
-        final List<CornerRegion> corners2, boolean cornersAreAlreadySorted,
+    public <T extends CornerRegion> boolean matchCorners(
+        final IntensityFeatures features1, final IntensityFeatures features2, 
+        final List<T> corners1,final List<T> corners2, 
+        boolean cornersAreAlreadySorted, 
         GreyscaleImage img1, GreyscaleImage img2) {
 
         if (solverHasFinished) {

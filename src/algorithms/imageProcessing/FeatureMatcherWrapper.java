@@ -259,38 +259,38 @@ public class FeatureMatcherWrapper {
             
         } else {
             
-            // solve for contours
-            List<List<CurvatureScaleSpaceContour>> transformedFilteredC1 
-                = new ArrayList<List<CurvatureScaleSpaceContour>>();
-            List<List<CurvatureScaleSpaceContour>> filteredC1 = 
-                new ArrayList<List<CurvatureScaleSpaceContour>>();
-            List<List<CurvatureScaleSpaceContour>> filteredC2 = 
-                new ArrayList<List<CurvatureScaleSpaceContour>>();
-            
-            FeatureMatcher.filterForIntersection2(params, tolXY,
-                scaleFinder.getAllContours1OfSolution(),
-                scaleFinder.getAllContours2OfSolution(),
+            // solve for contours, blob perimeter regions
+            List<List<BlobPerimeterRegion>> transformedFilteredC1 
+                = new ArrayList<List<BlobPerimeterRegion>>();
+            List<List<BlobPerimeterRegion>> filteredC1 = 
+                new ArrayList<List<BlobPerimeterRegion>>();
+            List<List<BlobPerimeterRegion>> filteredC2 = 
+                new ArrayList<List<BlobPerimeterRegion>>();
+                     
+            FeatureMatcher.filterForIntersection(params, tolXY,
+                scaleFinder.getAllBlobRegions1OfSolution(),
+                scaleFinder.getAllBlobRegions2OfSolution(),
                 transformedFilteredC1, filteredC1, filteredC2);
-            
+
             if (debug) {
-                List<CurvatureScaleSpaceContour> set1 = new ArrayList<CurvatureScaleSpaceContour>();
-                List<CurvatureScaleSpaceContour> set2 = new ArrayList<CurvatureScaleSpaceContour>();
-                for (List<CurvatureScaleSpaceContour> list : filteredC1) {
+                List<BlobPerimeterRegion> set1 = new ArrayList<BlobPerimeterRegion>();
+                List<BlobPerimeterRegion> set2 = new ArrayList<BlobPerimeterRegion>();
+                for (List<BlobPerimeterRegion> list : filteredC1) {
                     set1.addAll(list);
                 }
-                for (List<CurvatureScaleSpaceContour> list : filteredC2) {
+                for (List<BlobPerimeterRegion> list : filteredC2) {
                     set2.addAll(list);
                 }
-                MiscDebug.debugPlot(set1, img1.copyToImageExt(), 0, 0,
-                    debugTagPrefix + "_filtered_1_corners_");
-                MiscDebug.debugPlot(set2, img2.copyToImageExt(), 0, 0,
-                    debugTagPrefix + "_filtered_2_corners_");
+                MiscDebug.writeImage(set1, img1.copyToImageExt(),
+                    debugTagPrefix + "_filtered_1_contour_regions_");
+                MiscDebug.writeImage(set2, img2.copyToImageExt(),
+                    debugTagPrefix + "_filtered_2_contour_regions_");
             }
-            
-            stats = matchRemainingBlobContourPoints(scaleFinder, 
+                        
+            stats = matchRemainingBlobCornerPoints(scaleFinder, 
                 transformedFilteredC1, filteredC1, filteredC2);
             
-            if ((stats.size() >= 7) && statsCoverIntersection2(stats, filteredC2)) {
+            if ((stats.size() >= 7) && statsCoverIntersection(stats, filteredC2)) {
                 
                 List<PairInt> matched1 = new ArrayList<PairInt>();
                 List<PairInt> matched2 = new ArrayList<PairInt>();
@@ -429,10 +429,11 @@ public class FeatureMatcherWrapper {
         return cl;
     }
     
-    private List<FeatureComparisonStat> matchRemainingBlobCornerPoints(
-        BlobScaleFinderWrapper scaleFinder, 
-        List<List<CornerRegion>> filteredC1Transformed,
-        List<List<CornerRegion>> filteredC1, List<List<CornerRegion>> filteredC2) {
+    private <T extends CornerRegion> List<FeatureComparisonStat> 
+        matchRemainingBlobCornerPoints(BlobScaleFinderWrapper scaleFinder, 
+        List<List<T>> filteredC1Transformed,
+        List<List<T>> filteredC1, 
+        List<List<T>> filteredC2) {
         
         if (filteredC1Transformed.size() != filteredC1.size()) {
             throw new IllegalArgumentException("filteredC1Transformed and "
@@ -485,22 +486,22 @@ public class FeatureMatcherWrapper {
         }
         
         for (int i1 = 0; i1 < filteredC1Transformed.size(); ++i1) {
-            List<CornerRegion> trC1List = filteredC1Transformed.get(i1);
+            List<T> trC1List = filteredC1Transformed.get(i1);
             if (trC1List.isEmpty()) {
                 continue;
             }
-            List<CornerRegion> c1List = filteredC1.get(i1);
+            List<T> c1List = filteredC1.get(i1);
             
-            double[] xyCen1 = curveHelper.calculateXYCentroids0(trC1List);
+            double[] xyCen1 = curveHelper.<T>calculateXYCentroids0(trC1List);
             
             IntensityFeatureComparisonStats best = null;
             
             for (int i2 = 0; i2 < filteredC2.size(); ++i2) {
-                List<CornerRegion> c2List = filteredC2.get(i2);
+                List<T> c2List = filteredC2.get(i2);
                 if (c2List.isEmpty()) {
                     continue;
                 }
-                double[] xyCen2 = curveHelper.calculateXYCentroids0(c2List);
+                double[] xyCen2 = curveHelper.<T>calculateXYCentroids0(c2List);
                 
                 double diffX = Math.abs(xyCen1[0] - xyCen2[0]);
                 double diffY = Math.abs(xyCen1[1] - xyCen2[1]);
@@ -664,15 +665,6 @@ int y2 = compStats2.get(0).getImg2Point().getY();
         return compStats;
     }
     
-    private List<FeatureComparisonStat> matchRemainingBlobContourPoints(
-        BlobScaleFinderWrapper scaleFinder, 
-        List<List<CurvatureScaleSpaceContour>> transformedFilteredC1, 
-        List<List<CurvatureScaleSpaceContour>> filteredC1, 
-        List<List<CurvatureScaleSpaceContour>> filteredC2) {
-//<>       
-        throw new UnsupportedOperationException("Not supported yet."); 
-    }
-
     private boolean statsCoverIntersection2(List<FeatureComparisonStat> stats, 
         List<List<CurvatureScaleSpaceContour>> filteredC2) {
                 
@@ -701,23 +693,23 @@ int y2 = compStats2.get(0).getImg2Point().getY();
         return statsCoverIntersection(stats, xPoints, yPoints);
     }
     
-    private boolean statsCoverIntersection(List<FeatureComparisonStat> stats, 
-        List<List<CornerRegion>> filteredC2) {
+    private <T extends CornerRegion> boolean statsCoverIntersection(
+        List<FeatureComparisonStat> stats, List<List<T>> filteredC2) {
                 
         /*
         dividing the range in filteredC2 by 2 in x and 2 in y and returning
         true if at least one point2 in stats is found in each division.             
         */
         int n = 0;
-        for (List<CornerRegion> list : filteredC2) {
+        for (List<T> list : filteredC2) {
             n += list.size();
         }
         float[] xPoints = new float[n];
         float[] yPoints = new float[n];
         
         n = 0;
-        for (List<CornerRegion> list : filteredC2) {
-            for (CornerRegion cr : list) {
+        for (List<T> list : filteredC2) {
+            for (T cr : list) {
                 float x = cr.getX()[cr.getKMaxIdx()];
                 float y = cr.getY()[cr.getKMaxIdx()];
                 xPoints[n] = x;

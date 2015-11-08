@@ -560,7 +560,7 @@ public class MiscellaneousCurveHelper {
         return xMinIdx;
     }
     
-    public double[] calculateXYCentroids0(List<CornerRegion> list) {
+    public <T extends CornerRegion> double[] calculateXYCentroids0(List<T> list) {
         
         double xc = 0;
         double yc = 0;
@@ -568,6 +568,23 @@ public class MiscellaneousCurveHelper {
         for (CornerRegion cr : list) {
             double x = cr.getX()[cr.getKMaxIdx()];
             double y = cr.getY()[cr.getKMaxIdx()];
+            xc += x;
+            yc += y;
+        }
+        xc /= (double)list.size();
+        yc /= (double)list.size();
+
+        return new double[]{xc, yc};
+    }
+    
+    public double[] calculateXYCentroids1(List<CurvatureScaleSpaceContour> list) {
+        
+        double xc = 0;
+        double yc = 0;
+
+        for (CurvatureScaleSpaceContour cr : list) {
+            double x = cr.getPeakDetails()[0].getXCoord();
+            double y = cr.getPeakDetails()[0].getYCoord();
             xc += x;
             yc += y;
         }

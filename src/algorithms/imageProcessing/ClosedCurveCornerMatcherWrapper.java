@@ -45,18 +45,18 @@ public class ClosedCurveCornerMatcherWrapper {
      * @param img2 image from which to extract descriptors for features2
      * @return
      */
-    public boolean matchCorners(final IntensityFeatures features1,
-        final IntensityFeatures features2, final List<CornerRegion> corners1,
-        final List<CornerRegion> corners2, boolean cornersAreAlreadySorted,
+    public <T extends CornerRegion> boolean matchCorners(final IntensityFeatures features1,
+        final IntensityFeatures features2, final List<T> corners1,
+        final List<T> corners2, boolean cornersAreAlreadySorted,
         GreyscaleImage img1, GreyscaleImage img2) {
 
         if (solverHasFinished) {
             resetDefaults();
         }
         
-        List<CornerRegion> c1 = new ArrayList<CornerRegion>(corners1);
+        List<T> c1 = new ArrayList<T>(corners1);
 
-        List<CornerRegion> c2 = new ArrayList<CornerRegion>(corners2);
+        List<T> c2 = new ArrayList<T>(corners2);
     
         if (!cornersAreAlreadySorted) {
             // sort by descending |k|

@@ -18,6 +18,14 @@ public class BlobContourHelper {
         segBinnedContoursMap = new HashMap<SegmentationType, 
         List<List<CurvatureScaleSpaceContour>>>();
     
+    protected Map<SegmentationType, List<List<BlobPerimeterRegion>>> 
+        segBPRMap = new HashMap<SegmentationType, 
+        List<List<BlobPerimeterRegion>>>();
+    
+    protected Map<SegmentationType, List<List<BlobPerimeterRegion>>>
+        segBinnedBPRMap = new HashMap<SegmentationType, 
+        List<List<BlobPerimeterRegion>>>();
+    
     protected final BlobPerimeterHelper imgHelper;
     
     protected boolean debug = false;
@@ -134,4 +142,93 @@ public class BlobContourHelper {
         return n;
     }
 
+    // ---------------------------------
+    /**
+     * generate (or retrieve cached) for blob perimeter regions from 
+     * segmented images of type type and binned or not binned.
+     * @param type
+     * @param applyToBinnedImage 
+     * @return  
+     */
+    public List<List<BlobPerimeterRegion>> generatePerimeterRegions(
+        SegmentationType type, boolean applyToBinnedImage) {
+         
+        if (applyToBinnedImage) {
+            return generatePerimeterRegionsForBinned(type);
+        } else {
+            return generatePerimeterRegionsUnbinned(type);
+        }
+    }
+    
+    /**
+     * generate (or retrieve cached) for blob perimeter regions from 
+     * segmented images of type type and binned or not binned.
+     * @param type
+     * @param applyToBinnedImage 
+     * @return  
+     */
+    public List<List<BlobPerimeterRegion>> getPerimeterRegions(
+        SegmentationType type, boolean applyToBinnedImage) {
+         
+        return generatePerimeterRegions(type, applyToBinnedImage);
+    }
+    
+    protected List<List<BlobPerimeterRegion>> 
+        generatePerimeterRegionsUnbinned(SegmentationType type) {
+        
+        List<List<BlobPerimeterRegion>> bprs = segBPRMap.get(type);
+
+        if (bprs != null) {
+            return bprs;
+        }
+        
+        GreyscaleImage segImg = imgHelper.getSegmentationImage(type);
+        
+        if (segImg == null) {
+            //TODO: consider changing logic to perform this if needed
+            throw new IllegalArgumentException("segmented image hasn't been created yet.  error?");
+        }
+        
+        boolean useBinned = false;
+        
+        List<List<CurvatureScaleSpaceContour>> contours = getPerimeterContours(
+            type, useBinned);
+        
+        bprs = BlobsAndContours.populateRegions(imgHelper, contours, type, 
+            useBinned);
+        
+        segBPRMap.put(type, bprs);
+        
+        return bprs;
+    }
+    
+    protected List<List<BlobPerimeterRegion>> 
+        generatePerimeterRegionsForBinned(SegmentationType type) {
+        
+        List<List<BlobPerimeterRegion>> bprs = segBinnedBPRMap.get(type);
+
+        if (bprs != null) {
+            return bprs;
+        }
+        
+        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);
+        
+        if (segImg == null) {
+            //TODO: consider changing logic to perform this if needed
+            throw new IllegalArgumentException(
+            "segmented image hasn't been created yet.  error?");
+        }
+        
+        boolean useBinned = true;
+        
+        List<List<CurvatureScaleSpaceContour>> contours = getPerimeterContours(
+            type, useBinned);
+        
+        bprs = BlobsAndContours.populateRegions(imgHelper, contours, type, 
+            useBinned);
+        
+        segBinnedBPRMap.put(type, bprs);
+        
+        return bprs;
+    }
 }
