@@ -2,6 +2,7 @@ package algorithms.imageProcessing.util;
 
 import algorithms.MergeSort;
 import algorithms.MultiArrayMergeSort;
+import java.util.List;
 
 /**
  *
@@ -184,8 +185,21 @@ public class AngleUtil {
         return theta;  
     }
     
-    protected static double[] correctForQuadrants(double rot0, double rot1, 
+    public static double[] correctForQuadrants(double rot0, double rot1, 
         boolean useRadians) {
+        
+        if (rot0 < 0 || rot1 < 0) {
+            throw new IllegalArgumentException(
+                "rot0 and rot1 cannot be negative numbers");
+        }
+       
+        double[] corrected = new double[2];
+        correctForQuadrants(rot0, rot1, useRadians, corrected);
+        return corrected;
+    }
+    
+    public static void correctForQuadrants(double rot0, double rot1, 
+        boolean useRadians, double[] outputCorrectedForQuadrants) {
         
         if (rot0 < 0 || rot1 < 0) {
             throw new IllegalArgumentException(
@@ -200,19 +214,27 @@ public class AngleUtil {
                    90
         */
         
+        double twoPI = 2. * Math.PI;
+
         // prefer to keep 360 instead of 0 because some of the invokers of this
         // method might prefer a fraction times results to be > 0
-        if (rot0 != 360) {
-            rot0 = rot0 % 360;
-        }
-        if (rot1 != 360) {
-            rot1 = rot1 % 360;
-        }
-        
-        double twoPI;
-        int q0, q1;
         if (useRadians) {
-            twoPI = 2. * Math.PI;
+            if (rot0 != twoPI) {
+                rot0 = rot0 % twoPI;
+            }
+            if (rot1 != twoPI) {
+                rot1 = rot1 % twoPI;
+            }
+        } else {
+            if (rot0 != 360) {
+                rot0 = rot0 % 360;
+            }
+            if (rot1 != 360) {
+                rot1 = rot1 % 360;
+            }
+        }
+        int q0, q1;
+        if (useRadians) {            
             q0 = getClockwiseQuadrantForRadians(rot0);
             q1 = getClockwiseQuadrantForRadians(rot1);
         } else {
@@ -220,7 +242,7 @@ public class AngleUtil {
             q0 = getClockwiseQuadrantForDegrees(rot0);
             q1 = getClockwiseQuadrantForDegrees(rot1);
         }
-       
+        
         /*
                   270
                III | IV
@@ -283,7 +305,128 @@ public class AngleUtil {
                 }
             }
         }
-        return new double[]{rot0, rot1};
+        
+        outputCorrectedForQuadrants[0] = rot0;
+        outputCorrectedForQuadrants[1] = rot1;
+    }
+    
+    private static void correctForQuadrantsWithoutMod(double rot0, double rot1, 
+        boolean useRadians, double[] outputCorrectedForQuadrants) {
+        
+        if (rot0 < 0 || rot1 < 0) {
+            throw new IllegalArgumentException("angles must be non negative");
+        }
+        
+        /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+
+        double twoPI;
+        int q0, q1;
+        if (useRadians) {
+            twoPI = 2. * Math.PI;
+            q0 = (int)(rot0/(0.5 * Math.PI)) + 1;
+            q1 = (int)(rot1/(0.5 * Math.PI)) + 1;
+        } else {
+            twoPI = 360.;
+            q0 = (int)(rot0/90.f) + 1;
+            q1 = (int)(rot1/90.f) + 1;
+        }
+        
+        /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+        */
+        
+        //TODO: revisit these and consider only editing rot1, and adding to
+        // method comments that only rot1 will be corrected w.r.t rot0
+        
+        if (q0 == 1) {
+            if (q1 == 3) {
+                double diff = rot1 - rot0;
+                if (diff > Math.PI) {
+                    rot0 += twoPI;
+                }
+            } else if (q1 == 4) {
+                rot0 += twoPI;
+            } else if (q1 == 5) {
+                //double diff = rot1 - Math.PI - rot0;
+                rot0 += twoPI;
+            }
+        } else if (q0 == 2) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 4) {
+                double diff = rot1 - rot0;
+                if (diff > Math.PI) {
+                    rot0 += twoPI;
+                }
+            } else if (q1 == 5) {
+                rot1 -= twoPI;
+            }
+        } else if (q0 == 3) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                double diff = rot0 - rot1;
+                if (diff > Math.PI) {
+                    rot1 += twoPI;
+                }
+            } else if (q1 == 5) {
+                rot1 -= twoPI;
+            }
+        } else if (q0 == 4) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I
+                   90
+            */
+            if (q1 == 1) {
+                rot1 += twoPI;
+            } else if (q1 == 2) {
+                double diff = (rot0 - rot1);
+                if (diff > Math.PI) {
+                    rot1 += twoPI;
+                }
+            }
+        } else if (q0 == 5) {
+            /*
+                  270
+               III | IV
+          180  --------- 0
+               II  |  I  <---V too
+                   90
+            */
+            if (q1 == 1) {
+                rot1 += twoPI;
+            } else if (q1 == 2) {
+                rot0 -= twoPI;
+            } else if (q1 == 3) {  
+                rot0 -= twoPI;
+            }
+        }
+        
+        outputCorrectedForQuadrants[0] = rot0;
+        outputCorrectedForQuadrants[1] = rot1;
     }
     
     public static float getAngleDifference(float rotDegrees0, float rotDegrees1) {
@@ -703,6 +846,103 @@ public class AngleUtil {
         }
 
         return (float)mean;
+    }
+    
+    /**
+     Runtime complexity is O(N*lg2N) for sort plus O(N).
+     * Note, may change to use CountingSort for N > 80 and max(angles) ~ 360
+     * in the future.
+                       
+     * @param angles angles in units of radians or degrees.  Note that this array
+     * is modified by use here so pass a copy if it should not be.
+     * @param lastIndex last index to use in array angles, inclusive
+     * @return 
+     */
+    public static float calculateWeightedAverageWithQuadrantCorrections(
+        Double[] angles, Float[] weights, int lastIndex, boolean useRadians) {
+      
+        //TODO: because 360 is usually the max value, if N is > 80, can
+        // use CountingSort here for better performance.
+        // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
+        MultiArrayMergeSort.sortByDecr(angles, weights, 0, lastIndex);
+      
+        double[] corr = new double[2];
+        
+        for (int i = 0; i < angles.length; ++i) {
+            double a0 = angles[i];
+            double a1;
+            if (i == (angles.length - 1)) {
+                a1 = angles[0];
+            } else {
+                a1 = angles[i + 1];
+            }
+            correctForQuadrants(a0, a1, useRadians, corr);
+            angles[i] = corr[0];
+            if (i == (angles.length - 1)) {
+                angles[0] = corr[1];
+            } else {
+                angles[i + 1] = corr[1];
+            }
+        }
+                   
+        // redo the mean using the quadrant corrected angles and the weights
+        double mean = 0;
+
+        for (int i = 0; i <= lastIndex; ++i) {
+            double v = angles[i] * weights[i];
+            mean += v;
+        }
+
+        return (float)mean;
+    }
+    
+    /**
+     Runtime complexity is O(N*lg2N) for sort plus O(N).
+     * Note, may change to use CountingSort for N > 80 and max(angles) ~ 360
+     * in the future.
+              
+     */
+    public static void correctForQuadrants(List<Double> thetas, 
+        boolean useRadians) {
+        
+        if (thetas == null || thetas.size() < 2) {
+            return;
+        }
+        
+        double[] angles = new double[thetas.size()];
+        int[] indexes = new int[thetas.size()];
+        
+        for (int i = 0; i < thetas.size(); ++i) {
+            angles[i] = thetas.get(i).doubleValue();
+            indexes[i] = i;
+        }
+        
+        MultiArrayMergeSort.sortByDecr(angles, indexes);
+      
+        double[] corr = new double[2];
+        
+        for (int i = 0; i < angles.length; ++i) {
+            double a0 = angles[i];
+            double a1;
+            if (i == (angles.length - 1)) {
+                a1 = angles[0];
+            } else {
+                a1 = angles[i + 1];
+            }
+            correctForQuadrantsWithoutMod(a0, a1, useRadians, corr);
+            angles[i] = corr[0];
+            if (i == (angles.length - 1)) {
+                angles[0] = corr[1];
+            } else {
+                angles[i + 1] = corr[1];
+            }
+        }
+        
+        for (int i = 0; i < angles.length; ++i) {
+            int idx = indexes[i];
+            double v = angles[i];
+            thetas.set(idx, v);
+        }        
     }
     
     protected static int getClockwiseQuadrant(float rotationInDegrees) {

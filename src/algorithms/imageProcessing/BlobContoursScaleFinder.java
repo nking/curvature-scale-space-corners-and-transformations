@@ -204,13 +204,13 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                         blobs2.get(stats.getIndex2()));
                     StringBuilder sb = new StringBuilder();
                     sb.append(String.format(
-                        "==>[%d](%d,%d) [%d](%d,%d) cost=%.2f scale=%.2f nMatched=%d(%d,%d) intSqDiff=%.1f",
+                        "==>[%d](%d,%d) [%d](%d,%d) cost=%.2f scale=%.2f nMatched=(%d,%d) intSqDiff=%.1f",
                         stats.getIndex1(), (int)Math.round(xyCen1[0]), (int)Math.round(xyCen1[1]),
                         stats.getIndex2(), (int)Math.round(xyCen2[0]), (int)Math.round(xyCen2[1]),
                         (float)stats.getCost(), (float)stats.getScale(), 
                         stats.getComparisonStats().size(),
                         contours1List.get(stats.getIndex1()).size(), 
-                        calculateCombinedIntensityStat(stats.getComparisonStats())));
+                        (float)calculateCombinedIntensityStat(stats.getComparisonStats())));
                     log.info(sb.toString());
                 }
             }
@@ -223,7 +223,10 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             TransformationParameters params = calculateTransformation(
                 binFactor1, binFactor2, bestMatches.getComparisonStats(), 
                 scaleRotTransXYStDev00);
-            params.setStandardDeviations(scaleRotTransXYStDev00);
+            
+            if (params == null) {
+                continue;
+            }
             
             if ((bestMatches.getComparisonStats().size() > 3) 
                 && (idx1 < (blobs1.size() - 1))) {

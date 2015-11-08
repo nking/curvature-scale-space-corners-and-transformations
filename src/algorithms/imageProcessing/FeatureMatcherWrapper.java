@@ -372,7 +372,7 @@ public class FeatureMatcherWrapper {
             CurvatureScaleSpaceCornerDetector(gsImg1);
         detector.doNotPerformHistogramEqualization();
         detector.findCorners();
- //TODO: revisit to make sure coordinate systems are consistent:       
+//TODO: revisit to make sure coordinate systems are consistent:       
         cornerRegions1 = detector.getEdgeCornerRegions(true);
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         
@@ -669,7 +669,7 @@ int y2 = compStats2.get(0).getImg2Point().getY();
         List<List<CurvatureScaleSpaceContour>> transformedFilteredC1, 
         List<List<CurvatureScaleSpaceContour>> filteredC1, 
         List<List<CurvatureScaleSpaceContour>> filteredC2) {
-        
+//<>       
         throw new UnsupportedOperationException("Not supported yet."); 
     }
 

@@ -129,18 +129,16 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
            
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-/*
-float[][] xy1 = new float[corners1List.size()][2];
+double[][] xy1 = new double[corners1List.size()][2];
 for (int i = 0; i < corners1List.size(); ++i) {
-CornerRegion cr = corners1List.get(i).get(0);
-xy1[i] = new float[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
+List<CornerRegion> cr = corners1List.get(i);
+xy1[i] = curveHelper.calculateXYCentroids0(cr);
 }
-float[][] xy2 = new float[corners2List.size()][2];
+double[][] xy2 = new double[corners2List.size()][2];
 for (int i = 0; i < corners2List.size(); ++i) {
-CornerRegion cr = corners2List.get(i).get(0);
-xy2[i] = new float[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
+List<CornerRegion> cr = corners2List.get(i);
+xy2[i] = curveHelper.calculateXYCentroids0(cr);
 }
-*/
         
         Map<Integer, TransformationPair4> trMap = new HashMap<Integer, TransformationPair4>();
         
@@ -235,6 +233,10 @@ xy2[i] = new float[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
                 TransformationParameters params = calculateTransformation(
                     binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
                     scaleRotTransXYStDev00);
+                
+                if (params == null) {
+                    continue;
+                }
 
                 if ((bestMatches.getMatchedCompStats().size() > 4) 
                     && (i < (n1 - 1))) {
@@ -280,6 +282,10 @@ xy2[i] = new float[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
             binFactor1, binFactor2, minCostTR.getMatchedCompStats(), 
             new float[4]);
         
+        if (minCostParams == null) {
+            return null;
+        }
+        
         List<FeatureComparisonStat> combine = new ArrayList<FeatureComparisonStat>();
         
         for (Entry<Integer, TransformationPair4> entry : trMap.entrySet()) {
@@ -309,6 +315,10 @@ xy2[i] = new float[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
         
         TransformationParameters combinedParams = calculateTransformation(
             binFactor1, binFactor2, combine, new float[4]);
+        
+        if (combinedParams != null) {
+            return null;
+        }
         
         long t11 = System.currentTimeMillis();
         long t1Sec = (t10 - t11)/1000;

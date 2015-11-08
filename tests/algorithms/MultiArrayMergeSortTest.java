@@ -372,6 +372,29 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(Arrays.equals(expectedB, b));
     }
     
+    
+    public void testSortByDecr1() throws Exception {
+        
+        Double[] a = new Double[]{Double.valueOf(1), Double.valueOf(2), 
+            Double.valueOf(3), Double.valueOf(4), Double.valueOf(5), Double.valueOf(6)};
+    	Float[] b = new Float[]{Float.valueOf(0), Float.valueOf(1), 
+            Float.valueOf(2), Float.valueOf(3), Float.valueOf(4), 
+            Float.valueOf(5)};
+
+    	MultiArrayMergeSort.sortByDecr(a, b);
+    	assertTrue(a.length == b.length);
+
+        Double[] expectedA = new Double[]{Double.valueOf(6), Double.valueOf(5), 
+            Double.valueOf(4), Double.valueOf(3), Double.valueOf(2), Double.valueOf(1)};
+        
+        Float[] expectedB = new Float[]{Float.valueOf(5), Float.valueOf(4), 
+            Float.valueOf(3), Float.valueOf(2), Float.valueOf(1), 
+            Float.valueOf(0)};
+                
+        assertTrue(Arrays.equals(expectedA, a));
+        assertTrue(Arrays.equals(expectedB, b));
+    }
+    
     public void testSortByDecr2() throws Exception {
         
         double[] a = new double[]{1, 2, 3, 4, 5, 6};

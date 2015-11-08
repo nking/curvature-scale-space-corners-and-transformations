@@ -206,6 +206,10 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                     binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
                     scaleRotTransXYStDev00);
                 
+                if (params == null) {
+                    continue;
+                }
+                
                 if ((bestMatches.getMatchedContourRegions1().size() > 4) && 
                     (i < (n1 - 1))) {
                     if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
@@ -249,23 +253,25 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         
         List<FeatureComparisonStat> combine = new ArrayList<FeatureComparisonStat>();
     
-        for (Entry<Integer, TransformationPair3> entry : trMap.entrySet()) {
-            
-            TransformationPair3 tr = entry.getValue();
-            
-            if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {
-                
-                TransformationParameters params = pMap.get(entry.getKey());
-                
-                if (params != null) {
-                    if (areSimilar(minCostParams, params, 25)) {
-                        combine.addAll(tr.getMatchedCompStats());
+        if (combine != null) {
+            for (Entry<Integer, TransformationPair3> entry : trMap.entrySet()) {
+
+                TransformationPair3 tr = entry.getValue();
+
+                if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {
+
+                    TransformationParameters params = pMap.get(entry.getKey());
+
+                    if (params != null) {
+                        if (areSimilar(minCostParams, params, 25)) {
+                            combine.addAll(tr.getMatchedCompStats());
+                        }
                     }
                 }
             }
         }
         
-        if (combine.isEmpty()) {
+        if (combine == null || combine.isEmpty()) {
 
             MatchingSolution soln = new MatchingSolution(minCostParams,
                 minCostTR.getMatchedCompStats());
@@ -277,6 +283,10 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         
         TransformationParameters combinedParams = calculateTransformation(
             binFactor1, binFactor2, combine, new float[4]);
+        
+        if (combinedParams == null) {
+            return null;
+        }
         
         MatchingSolution soln = new MatchingSolution(combinedParams,
             combine);

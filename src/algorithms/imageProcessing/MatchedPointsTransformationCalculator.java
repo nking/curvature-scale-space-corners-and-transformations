@@ -1,9 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -624,34 +626,74 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             transYs.add((float)transY);
         }
                 
-        List<Double> thetaCorr = new ArrayList<Double>(thetas);        
-        double[] quadrantCorrectedTheta = new double[2];
-        for (int i = 0; i < (thetaCorr.size() - 1); ++i) {
-            AngleUtil.calcAngleAddition(thetaCorr.get(i), thetaCorr.get(i + 1), true, 
-                quadrantCorrectedTheta);
-            if (quadrantCorrectedTheta[0] > 2.*Math.PI) {
-                quadrantCorrectedTheta[0] = (quadrantCorrectedTheta[0] % (2.*Math.PI));
-            }
-            thetaCorr.set(i, quadrantCorrectedTheta[0]);
-            if (quadrantCorrectedTheta[1] > 2.*Math.PI) {
-                quadrantCorrectedTheta[1] = (quadrantCorrectedTheta[1] % (2.*Math.PI));
-            }
-            thetaCorr.set(i + 1, quadrantCorrectedTheta[1]);
-        }
+        boolean useRadians = true;
+        List<Double> thetaCorr = new ArrayList<Double>(thetas); 
+        
+        AngleUtil.correctForQuadrants(thetaCorr, useRadians);
         
         double thetaAvg = 0;
         for (int i = 0; i < thetaCorr.size(); ++i) {
             thetaAvg += thetaCorr.get(i) * pairWeights2.get(i);
         }
         
+        // remove discrepant scale ?  defeats use of weights?
+        float unwScaleAvg = 0;
+        for (Float s : scales) {
+            unwScaleAvg += s.floatValue();
+        }
+        unwScaleAvg /= (float)scales.size();
+        double unwScaleStDev = 0;
+        for (Float s : scales) {
+            float diff = s.floatValue() - unwScaleAvg;
+            unwScaleStDev += (diff * diff);
+        }
+        unwScaleStDev = Math.sqrt(unwScaleStDev/((double)scales.size() - 1.));
+        
+        if (unwScaleStDev > (0.2*unwScaleAvg)) {
+            // filter using the median of all possible differences of scale
+            // this requires O(N^2/2) in space
+            List<Integer> remove = findOutliersUsingMedianOfDifferences(scales);
+          
+            if (!remove.isEmpty()) {
+                for (int i = (remove.size() - 1); i > -1; --i) {
+                    int idx = remove.get(i).intValue();
+                    scales.remove(idx);
+                    thetaCorr.remove(idx);
+                    transXs.remove(idx);
+                    transYs.remove(idx);
+                    pairWeights2.remove(idx);
+                }
+                // rebalance the remaining weights
+                float ws = 0;
+                for (Float pw : pairWeights2) {
+                    ws += pw.floatValue();
+                }
+                for (int i = 0; i < pairWeights2.size(); ++i) {
+                    float v = pairWeights2.get(i)/ws;
+                    pairWeights2.set(i, v);
+                }
+                AngleUtil.correctForQuadrants(thetaCorr, useRadians);
+            }
+        }
+        
+        double tolTheta = 20. * Math.PI/180.;
+        
         // remove those w/ discrepant thetas
         List<Integer> remove = new ArrayList<Integer>();
         for (int i = 0; i < thetaCorr.size(); ++i) {
-            double diff = Math.abs(thetaCorr.get(i) - thetaAvg);
-            if (diff > 20) {
+            double diffT = Math.abs(thetaCorr.get(i) - thetaAvg);
+            double diffS = Math.abs(scales.get(i) - unwScaleAvg);
+            if (diffT > tolTheta) {
+                remove.add(Integer.valueOf(i));
+            } else if (diffS > (1.5*unwScaleStDev)) {
                 remove.add(Integer.valueOf(i));
             }
         }
+        
+        if (remove.size() == scales.size()) {
+            return null;
+        }
+        
         if (!remove.isEmpty()) {
             for (int i = (remove.size() - 1); i > -1; --i) {
                 int idx = remove.get(i).intValue();
@@ -670,6 +712,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
                 float v = pairWeights2.get(i)/ws;
                 pairWeights2.set(i, v);
             }
+            AngleUtil.correctForQuadrants(thetaCorr, useRadians);
         }
         
         float scaleAvg = 0;
@@ -683,9 +726,10 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             transXAvg += transXs.get(i) * w;
             transYAvg += transYs.get(i) * w;
         }
-               
+            
         // ----- determine standard deviations ----
         if (outputScaleRotTransXYStDev != null) {
+            Arrays.fill(outputScaleRotTransXYStDev, Float.MAX_VALUE);
             double scaleSum = 0;
             double thetaSum = 0;
             double transXSum = 0;
@@ -713,6 +757,10 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             outputScaleRotTransXYStDev[2] = (float)transXStDv;
             outputScaleRotTransXYStDev[3] = (float)transYStDv;
         }
+        
+        if (thetaAvg >= (2. * Math.PI)) {
+            thetaAvg -= (2. * Math.PI);
+        }          
                 
         TransformationParameters params = new TransformationParameters();
         params.setRotationInRadians((float)thetaAvg);
@@ -886,5 +934,71 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         }
         
         return sMap;
+    }
+
+    private List<Integer> findOutliersUsingMedianOfDifferences(
+        List<? extends Number> values) {
+        
+        if (values.size() < 3) {
+            return new ArrayList<Integer>();
+        }
+        
+        // number of permutations = n!/(2!*(n-2)! = n*(n-1)/2
+        int n = (values.size() * (values.size() - 1))/2;
+        
+        double[] diffs = new double[n];
+        
+        int count = 0;
+        for (int i = 0; i < values.size(); ++i) {
+            double v1 = values.get(i).doubleValue();
+            for (int j = (i + 1); j < values.size(); ++j) {
+                double v2 = values.get(j).doubleValue();
+                diffs[count] = v1 - v2;
+                count++;
+            }
+        }
+        
+        Arrays.sort(diffs);
+        
+        int idx = diffs.length/2;
+        double median;
+        if ((idx & 1) == 0) {
+            median = (diffs[idx] + diffs[idx - 1])/2.f;
+        } else {
+            median = diffs[idx];
+        }
+        median = Math.abs(median);
+        if (median == 0) {
+            // widen to central 2 or 3 values
+            if ((idx & 1) == 0) {
+                median = (Math.abs(diffs[idx]) + Math.abs(diffs[idx - 1]))/2.f;
+            } else {
+                median = (Math.abs(diffs[idx]) + Math.abs(diffs[idx - 1]) +
+                    Math.abs(diffs[idx + 1]))/3.;
+            }
+        }
+        
+        Set<Integer> keepIndexes = new HashSet<Integer>();
+        for (int i = 0; i < values.size(); ++i) {
+            double v1 = values.get(i).doubleValue();
+            for (int j = (i + 1); j < values.size(); ++j) {
+                double v2 = values.get(j).doubleValue();
+                double diff = Math.abs(v1 - v2);
+                if (diff <= median) {
+                    keepIndexes.add(Integer.valueOf(i));
+                    keepIndexes.add(Integer.valueOf(j));
+                }
+            }
+        }
+       
+        List<Integer> remove = new ArrayList<Integer>();
+        for (int i = 0; i < values.size(); ++i) {
+            Integer key = Integer.valueOf(i);
+            if (!keepIndexes.contains(key)) {
+                remove.add(key);
+            }
+        }
+        
+        return remove;
     }
 }

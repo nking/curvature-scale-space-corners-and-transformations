@@ -147,8 +147,11 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                     params = calculateTransformation(
                         binFactor1, binFactor2, compStats, 
                         scaleRotTransXYStDev00);
-                    params.setStandardDeviations(scaleRotTransXYStDev00);
 
+                    if (params == null) {
+                        continue;
+                    }
+                    
                     if ((compStats.size() > 4) && (idx1 < (blobs1.size() - 1))) {
                         if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
                             

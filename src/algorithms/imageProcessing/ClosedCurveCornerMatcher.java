@@ -601,6 +601,10 @@ public class ClosedCurveCornerMatcher {
         TransformationParameters params = tc.calulateEuclidean(
             x1C1, y1C1, x2C1, y2C1,
             x1C2, y1C2, x2C2, y2C2, 0, 0);
+        
+        if (params == null) {
+            return;
+        }
 
         TransformationPair2 transformationPair =
             new TransformationPair2(cr1C1, cr1C2, cr2C1, cr2C2);
