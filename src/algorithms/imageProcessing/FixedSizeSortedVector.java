@@ -30,6 +30,12 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
     protected int availSlot;
 
     public FixedSizeSortedVector(int fixedCapacity, Class<T> classTypeToHold) {
+        
+        if (fixedCapacity < 1) {
+            throw new IllegalArgumentException(
+            "fixedCapacity must be a positive non zero (arg was " 
+            + fixedCapacity + ")");
+        }
 
         size = fixedCapacity;
 
@@ -56,28 +62,34 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
             return false;
         }
 
-        if (n < a.length) {
+        if (n < size) {
 
             availSlot = n;
             
             insertIntoOpenSlot(value);
             
         } else {
-
-            // compare to last item in array and return if this is a worse fit
-            int comp = value.compareTo(a[n - 1]);
-
+            
+            int compareIdx = n - 1;
+            
+            if ((n == 1) && (size == 1)) {
+                compareIdx = 0;
+            }
+            
+            int comp = value.compareTo(a[compareIdx]);
+            
             if (comp != -1) {
                 return false;
             }
-
+            
             // free up the last slot
-            availSlot = n - 1;
+            availSlot = compareIdx;
 
             n--;
 
             // insert value into array at position found by binarySearch
             insertIntoOpenSlot(value);
+            
         }
         
         return true;
