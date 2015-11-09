@@ -42,12 +42,14 @@ Task 1: new class FeatureMatcherWrapper
     time estimate: min 3 days, max 1 week and 1 day
   
     amount of time used:
-        3 days
+        4.5 days
 
     state of completion: 
         complete, but may be opened again to make improvements for speed
 
     comments:
+        re-opened to change matching analysis to handle repeated patterns.
+        Also increased the accuracy requirement.
               
 ---------------------------------------------------------------------
 Task 2: new class EpipolarSolver

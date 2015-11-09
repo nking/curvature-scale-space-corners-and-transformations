@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.CountingSort;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
@@ -11,7 +12,6 @@ import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.io.IOException;
@@ -903,7 +903,7 @@ public class ImageSegmentation {
             int x = p.getX() - minCIEX;
             int y = p.getY() - minCIEY;
 
-            PairIntWithIndex p2 = new PairIntWithIndex(x, y, p.pixIdx);
+            PairIntWithIndex p2 = new PairIntWithIndex(x, y, p.getPixIndex());
             List<PairIntWithIndex> list2 = pointsMap.get(p2);
             if (list2 == null) {
                 list2 = new ArrayList<PairIntWithIndex>();
@@ -914,7 +914,7 @@ public class ImageSegmentation {
 
             for (PairIntWithIndex p0 : pointsMap0.get(p)) {
                 PairIntWithIndex p3 = new PairIntWithIndex(
-                    p0.getX() - minCIEX, p0.getY() - minCIEY, p0.pixIdx);
+                    p0.getX() - minCIEX, p0.getY() - minCIEY, p0.getPixIndex());
                 list2.add(p3);
             }
         }
@@ -984,7 +984,7 @@ public class ImageSegmentation {
 
             for (PairIntWithIndex p : group) {
 
-                int idx = p.pixIdx;
+                int idx = p.getPixIndex();
                 int xCoord = input.getCol(idx);
                 int yCoord = input.getRow(idx);
 
@@ -995,7 +995,7 @@ public class ImageSegmentation {
                 List<PairIntWithIndex> list = pointsMap.get(p);
                 assert(list != null);
                 for (PairIntWithIndex p3 : list) {
-                    int idx3 = p3.pixIdx;
+                    int idx3 = p3.getPixIndex();
                     int xCoord3 = input.getCol(idx3);
                     int yCoord3 = input.getRow(idx3);
                     pCoord = new PairInt(xCoord3, yCoord3);
@@ -1247,7 +1247,7 @@ public class ImageSegmentation {
                     List<PairIntWithIndex> list = thetaFreqMapI.get(pThetaFreq);
                     assert (list != null);
                     for (PairIntWithIndex p3 : list) {
-                        int idx3 = p3.pixIdx;
+                        int idx3 = p3.getPixIndex();
                         int xCoord3 = input.getCol(idx3);
                         int yCoord3 = input.getRow(idx3);
                         PairInt pCoord = new PairInt(xCoord3, yCoord3);
@@ -2583,50 +2583,4 @@ public class ImageSegmentation {
         return limits;
     }
 
-    public static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
-
-        int pixIdx;
-
-        public PairIntWithIndex(int xPoint, int yPoint, int thePixIndex) {
-            super(xPoint, yPoint);
-            pixIdx = thePixIndex;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-
-            if (!(obj instanceof com.climbwithyourfeet.clustering.util.PairInt)) {
-                return false;
-            }
-
-            com.climbwithyourfeet.clustering.util.PairInt other
-                = (com.climbwithyourfeet.clustering.util.PairInt) obj;
-
-            return (x == other.getX()) && (y == other.getY());
-        }
-
-        @Override
-        public int hashCode() {
-
-            int hash = fnvHashCode(this.x, this.y);
-
-            return hash;
-        }
-
-        @Override
-        public com.climbwithyourfeet.clustering.util.PairInt copy() {
-             return new PairIntWithIndex(x, y, pixIdx);
-        }
-
-        @Override
-        public String toString() {
-
-            StringBuilder sb = new StringBuilder(super.toString());
-            sb.append(" pixIdx=").append(Integer.toString(pixIdx));
-
-            return sb.toString();
-        }
-
-    }
-    
 }

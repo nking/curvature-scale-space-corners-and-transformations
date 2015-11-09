@@ -103,7 +103,7 @@ public class FeatureMatcherTest extends TestCase {
         Set<CornerRegion> cornerRegions1 = helper.getCornerRegions1();
         Set<CornerRegion> cornerRegions2 = helper.getCornerRegions2();
 
-        int dither = 1;// 1 is fine for B&L2003
+        int dither = 1;
 
         Features features1 = new Features(gsImg1, gXY1, theta1, blockHalfWidth, 
             useNormalizedIntensities);

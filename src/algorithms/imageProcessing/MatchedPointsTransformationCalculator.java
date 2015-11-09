@@ -270,6 +270,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         params.setTranslationY((float)theTranslationY);
         params.setOriginX((float)centroidX1);
         params.setOriginY((float)centroidY1);
+        params.setNumberOfPointsUsed(matchedXY1.getN());
 
         if (debug) {
             log.info("params: " + params.toString());
@@ -772,6 +773,8 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         if (outputScaleRotTransXYStDev != null) {
             params.setStandardDeviations(outputScaleRotTransXYStDev);
         }
+        // this is the number of data points as the number of pairs
+        params.setNumberOfPointsUsed(scales.size());
      
         if (debug) {
             log.info("params: " + params.toString());
@@ -826,6 +829,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         paramsRev.setTranslationY(0);
         paramsRev.setOriginX((float)transformedXC);
         paramsRev.setOriginY((float)transformedYC);
+        paramsRev.setNumberOfPointsUsed(params.getNumberOfPointsUsed());
 
         // transform the new origin, then the new translation is what is needed for it to equal the params origin
         Transformer transformer = new Transformer();

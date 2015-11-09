@@ -334,9 +334,16 @@ public abstract class AbstractBlobScaleFinder {
         float tTx = scaleRotTransXYStDev[2];
         float tTy = scaleRotTransXYStDev[3];
 
+        float tXConstraint = 20;
+        float tYConstraint = 20;
+        if (params.getNumberOfPointsUsed() < 3) {
+            tXConstraint = 10;
+            tYConstraint = 10;
+        }
+                
         //TODO: review these limits
-        if ((tS < 0.2) && (tR >= 18.) && (tTx < 30)
-            && (tTy < 30)) {
+        if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
+            && (tTy < tYConstraint)) {
 
             return true;
         }

@@ -152,7 +152,9 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                     c1p, c2p, img1, img2);
                 
                 if (solved) {
-                    
+
+                    assert(matcher.getTransformationPair3() != null);
+
                     if (bestMatches == null) {
                         
                         bestMatches = matcher.getTransformationPair3();
@@ -181,10 +183,9 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                 
                 trMap.put(Integer.valueOf(i), bestMatches);
                 
-                float[] scaleRotTransXYStDev00 = new float[4];
                 TransformationParameters params = calculateTransformation(
                     binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
-                    scaleRotTransXYStDev00);
+                    new float[4]);
                 
                 if (params == null) {
                     continue;
@@ -192,7 +193,7 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
                 
                 if ((bestMatches.getMatchedContourRegions1().size() > 4) && 
                     (i < (n1 - 1))) {
-                    if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
+                    if (stDevsAreSmall(params, params.getStandardDeviations())) {
                         
                         double c = calculateCombinedIntensityStat(
                             bestMatches.getMatchedCompStats());
@@ -225,6 +226,8 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
             }
         }
         
+        assert(minCostKey != null);
+        
         TransformationPair3 minCostTR = trMap.remove(minCostKey);
                 
         TransformationParameters minCostParams = calculateTransformation(
@@ -251,8 +254,12 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
             }
         }
         
-        if (combine == null || combine.isEmpty()) {
+        if (combine.isEmpty()) {
 
+            if (minCostParams == null) {
+                return null;
+            }
+            
             MatchingSolution soln = new MatchingSolution(minCostParams,
                 minCostTR.getMatchedCompStats());
             

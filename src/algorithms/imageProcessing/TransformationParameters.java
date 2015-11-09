@@ -1,4 +1,7 @@
 package algorithms.imageProcessing;
+
+import java.util.Arrays;
+
 /**
  *
  * @author nichole
@@ -17,6 +20,11 @@ public class TransformationParameters {
     
     private float originY = 0;
     
+    /**
+     * the number of points that went into the solution
+     */
+    private int n = -1;
+    
     private float[] standardDeviationsScaleRotTransXY = null;
 
     /**
@@ -34,6 +42,14 @@ public class TransformationParameters {
     
     public float[] getStandardDeviations() {
         return standardDeviationsScaleRotTransXY;
+    }
+    
+    public void setNumberOfPointsUsed(int numberOfPoints) {
+        n = numberOfPoints;
+    }
+    
+    public int getNumberOfPointsUsed() {
+        return n;
     }
 
     /**
@@ -136,6 +152,10 @@ public class TransformationParameters {
         cp.setScale(scale);
         cp.setOriginX(originX);
         cp.setOriginY(originY);
+        cp.setNumberOfPointsUsed(n);
+        if (standardDeviationsScaleRotTransXY != null) {
+            cp.setStandardDeviations(standardDeviationsScaleRotTransXY);
+        }
         
         return cp;
     }
@@ -149,12 +169,35 @@ public class TransformationParameters {
         
         TransformationParameters other = (TransformationParameters)obj;
         
-        return ((other.rotationInRadians == rotationInRadians) &&
+        boolean paramsEqual = ((other.rotationInRadians == rotationInRadians) &&
             (other.translationX == translationX) && 
             (other.translationY == translationY) &&
             (other.scale == scale) &&
             (other.originX == originX) && (other.originY == originY)
             );
+        
+        if (!paramsEqual) {
+            return false;
+        }
+                
+        if ((standardDeviationsScaleRotTransXY != null) && 
+            (other.getStandardDeviations() == null)) {
+            return false;
+        } else if ((standardDeviationsScaleRotTransXY == null) && 
+            (other.getStandardDeviations() != null)) {
+            return false;
+        } else if ((standardDeviationsScaleRotTransXY != null) && 
+            (other.getStandardDeviations() != null)) {
+            boolean sEquals = Arrays.equals(standardDeviationsScaleRotTransXY, 
+                other.getStandardDeviations());
+            if (!sEquals) {
+                return false;
+            }
+        }
+
+        //TODO: revist hashCode and equals w.r.t. standardDeviationsScaleRotTransXY and n
+        
+        return (n == other.getNumberOfPointsUsed());
     }
 
     @Override
@@ -180,13 +223,17 @@ public class TransformationParameters {
             .append("\ntranslationX=").append(translationX)
             .append(" translationY=").append(translationY)
             .append(" originX=").append(originX)
-            .append(" originY=").append(originY)
-            ;
+            .append(" originY=").append(originY);
+        
         if (standardDeviationsScaleRotTransXY != null) {
-            sb.append(" stDevScale=").append(standardDeviationsScaleRotTransXY[0]);
+            sb.append("\nstDevScale=").append(standardDeviationsScaleRotTransXY[0]);
             sb.append(" stDevRot=").append(standardDeviationsScaleRotTransXY[1]);
             sb.append(" stDevTransX=").append(standardDeviationsScaleRotTransXY[2]);
             sb.append(" stDevTransY=").append(standardDeviationsScaleRotTransXY[3]);
+        }
+        
+        if (n != -1) {
+            sb.append("\nn=").append(n);
         }
         
         return sb.toString();

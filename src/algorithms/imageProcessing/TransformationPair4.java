@@ -7,7 +7,7 @@ import java.util.List;
  *
  * @author nichole
  */
-public class TransformationPair4 {
+public class TransformationPair4 implements Comparable<TransformationPair4> {
     
     private final int startIdx1;
     
@@ -96,6 +96,38 @@ public class TransformationPair4 {
 
     public void setCornerListIndex2(int idx) {
         this.cornerListIndex2 = idx;
+    }
+
+    @Override
+    public int compareTo(TransformationPair4 other) {
+        
+        int tN = matchedCompStats.size();
+        double tCost = cost;
+        
+        int oN = other.getMatchedCompStats().size();
+        double oCost = other.getCost();
+        
+        if (((tN >= oN) && (tCost < oCost)) || ((oCost == tCost) && (tN > oN))) {
+            return -1;
+        } else if ((tN == oN) && (oCost == tCost)) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    /**
+     * @return the cornerListIndex1
+     */
+    public int getCornerListIndex1() {
+        return cornerListIndex1;
+    }
+
+    /**
+     * @return the cornerListIndex2
+     */
+    public int getCornerListIndex2() {
+        return cornerListIndex2;
     }
     
 }

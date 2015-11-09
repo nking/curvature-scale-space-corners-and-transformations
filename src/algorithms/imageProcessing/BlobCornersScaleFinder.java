@@ -143,17 +143,16 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 }
                 if (comp == -1) {
                     
-                    float[] scaleRotTransXYStDev00 = new float[4];
                     params = calculateTransformation(
                         binFactor1, binFactor2, compStats, 
-                        scaleRotTransXYStDev00);
+                        new float[4]);
 
                     if (params == null) {
                         continue;
                     }
                     
                     if ((compStats.size() > 4) && (idx1 < (blobs1.size() - 1))) {
-                        if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
+                        if (stDevsAreSmall(params, params.getStandardDeviations())) {
                             
                             double c = calculateCombinedIntensityStat(compStats);
                             log.info("MATCHED EARLY: combined compStat=" + c);

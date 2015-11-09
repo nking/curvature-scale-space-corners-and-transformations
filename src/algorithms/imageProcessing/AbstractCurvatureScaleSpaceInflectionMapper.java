@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -464,7 +465,9 @@ try {
                         continue;
                     }
                     if (Math.abs(params.getScale() - paramsP.getScale()) < 0.05) {
-                        if (Math.abs(params.getRotationInDegrees() - paramsP.getRotationInDegrees()) < 10) {
+                        float angleDiff = AngleUtil.getAngleAverageInDegrees(
+                            params.getRotationInDegrees(), paramsP.getRotationInDegrees());
+                        if (Math.abs(angleDiff) < 10) {
                             if (Math.abs(params.getTranslationX() - paramsP.getTranslationX()) < 10) {
                                 if (Math.abs(params.getTranslationY() - paramsP.getTranslationY()) < 10) {
                                     similarParamsIndexes1.add(index1P);

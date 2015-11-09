@@ -436,7 +436,7 @@ public class BlobScaleFinderWrapper {
                 if (debug) {
                     bsFinder.setToDebug();
                 }
-                
+         
                 soln = bsFinder.solveForScale(blobCornerHelper1, f1,
                     segmentationType1, useBinned1, blobCornerHelper2, f2,
                     segmentationType2, useBinned2);
@@ -451,7 +451,7 @@ public class BlobScaleFinderWrapper {
                 if (debug) {
                     bsFinder.setToDebug();
                 }
-                
+        
                 soln = bsFinder.solveForScale(blobContourHelper1, f1,
                     segmentationType1, useBinned1, blobContourHelper2, f2,
                     segmentationType2, useBinned2);
@@ -466,7 +466,7 @@ public class BlobScaleFinderWrapper {
                 if (debug) {
                     bsFinder.setToDebug();
                 }
-                
+        
                 soln = bsFinder.solveForScale(blobCornerHelper1, f1,
                     segmentationType1, useBinned1, blobCornerHelper2, f2,
                     segmentationType2, useBinned2);
@@ -490,7 +490,7 @@ public class BlobScaleFinderWrapper {
                 n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
                 
             }
-            
+       
             t1 = System.currentTimeMillis();
             t1Sec = (t1 - t0)/1000;
             Logger.getLogger(this.getClass().getName()).info("matching(sec)=" 
@@ -500,6 +500,10 @@ public class BlobScaleFinderWrapper {
                 
                 TransformationParameters params = soln.getParams();
 
+if (params == null) {
+    int z = 1;
+}
+                
                 log.info("params for type"
                     + " (" + segmentationType1.name() + ", binned=" + useBinned1 + ")"
                     + " (" + segmentationType2.name() + ", binned=" + useBinned2 + ")"
@@ -520,10 +524,17 @@ public class BlobScaleFinderWrapper {
                 // consider comparing stdev in translations to a fraction of the image
                 float tTx = params.getStandardDeviations()[2];
                 float tTy = params.getStandardDeviations()[3];
+                
+                float tXConstraint = 20;
+                float tYConstraint = 20;
+                if (params.getNumberOfPointsUsed() < 3) {
+                    tXConstraint = 10;
+                    tYConstraint = 10;
+                }
 
                 //TODO: review these limits
-                if ((tS < 0.2) && (tR >= 18.) && (tTx < 30)
-                    && (tTy < 30)) {
+                if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
+                    && (tTy < tYConstraint)) {
 
                     solutionAlgType = algType;
                     solutionSegmentationType1 = segmentationType1;

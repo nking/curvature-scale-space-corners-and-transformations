@@ -1,15 +1,31 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.imageProcessing.FixedSizeSortedVector;
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import com.climbwithyourfeet.clustering.DTClusterFinder;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import thirdparty.HungarianAlgorithm;
 
 /**
  * class to attempt to find Euclidean scale transformation between image1
@@ -123,40 +139,217 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, useBinned2);
         List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);
-        
-        int n1 = corners1List.size();
-        int n2 = corners2List.size();
-           
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-double[][] xy1 = new double[corners1List.size()][2];
-for (int i = 0; i < corners1List.size(); ++i) {
-List<CornerRegion> cr = corners1List.get(i);
-xy1[i] = curveHelper.calculateXYCentroids0(cr);
-}
-double[][] xy2 = new double[corners2List.size()][2];
-for (int i = 0; i < corners2List.size(); ++i) {
-List<CornerRegion> cr = corners2List.get(i);
-xy2[i] = curveHelper.calculateXYCentroids0(cr);
-}
-        
-        Map<Integer, TransformationPair4> trMap = new HashMap<Integer, TransformationPair4>();
-        
+
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+                
+        int n1 = corners1List.size();
+        int n2 = corners2List.size();
+                   
+        /*
+        for some images, there is a repetitive pattern.  projection effects
+        such as shadows or occlusion may lead to a false match with a lower
+        cost than the true match.
         
-        Map<Integer, TransformationParameters> pMap = new HashMap<Integer,
-            TransformationParameters>();
-        
-        for (int i = 0; i < n1; ++i) {
+        so the frequency of similar transformation solutions has to be considered.
+
+        The matches are kept in a sorted vector until all matches are tried.
+        */
+
+        Map<Integer, FixedSizeSortedVector<TransformationPair4>> mMap =
+            match(features1, features2, img1, img2, 
+                perimeters1, perimeters2, corners1List, corners2List);
                         
+        if (mMap.isEmpty()) {
+            return null;
+        }
+        
+        MatchingSolution soln = checkForNonDegenerateSolution(mMap, binFactor1, 
+            binFactor2);
+       
+        if (soln != null) {
+            return soln;
+        }
+        
+        float[][] cost = new float[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            cost[i] = new float[n2];
+            Arrays.fill(cost[i], Float.MAX_VALUE);
+        }
+        
+        int nMaxMatchable = countMaxMatchable(corners1List, corners2List);
+        
+        Set<PairInt> present = new HashSet<PairInt>();
+        List<TransformationPair4> tpList = new ArrayList<TransformationPair4>();
+        List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
+        int tolTransXY = 10;
+        for (Entry<Integer, FixedSizeSortedVector<TransformationPair4>> entry 
+            : mMap.entrySet()) {
+            FixedSizeSortedVector<TransformationPair4> vector = entry.getValue();
+            TransformationPair4[] ind1To2Pairs = vector.getArray();            
+            for (int i = 0; i < vector.getNumberOfItems(); ++i) {
+                TransformationPair4 tp4 = ind1To2Pairs[i];              
+                
+                TransformationParameters params = calculateTransformation(
+                    binFactor1, binFactor2, tp4.getMatchedCompStats(),
+                    new float[4]);
+                if (params == null) {
+                    continue;
+                }
+                int idx1 = tp4.getCornerListIndex1();
+                int idx2 = tp4.getCornerListIndex2();
+                PairInt p = new PairInt(idx1, idx2);
+                int nEval = evaluate(params, corners1List, corners2List, tolTransXY);
+                cost[idx1][idx2] = (float)nMaxMatchable/(float)nEval;
+                present.add(p);
+                
+                tpList.add(tp4);
+                paramsList.add(params);                
+            }
+        }
+        
+        boolean transposed = false;
+        if (n1 > n2) {
+            cost = MatrixUtil.transpose(cost);
+            transposed = true;
+        }
+
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(cost);
+        
+        Set<PairInt> matched = new HashSet<PairInt>();
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            PairInt p = new PairInt(idx1, idx2);
+            if (present.contains(p)) {
+                 matched.add(p);
+            }
+        }
+        
+        int n = tpList.size();
+        int i = 0;
+        while (i < n) {
+            TransformationPair4 tp4 = tpList.get(i);
+            PairInt p = new PairInt(tp4.getCornerListIndex1(), tp4.getCornerListIndex2());
+            if (matched.contains(p)) {
+                ++i;
+                continue;
+            }
+            tpList.remove(i);
+            paramsList.remove(i);
+            n = tpList.size();
+        }
+        
+        /*
+        several ways to determine the most frequent transformation parameters.
+        
+        (1) (a) use my clustering code on (x,y) as (scale, rotation).
+            want scale and rotation to occupy the same
+            range of values, so scale should be altered by a factor and an offset
+            to have the same min and max range as the rotations in degrees do.
+            -- get the largest cluster and from that filter the         
+               tpList and paramsList by it.
+               (b) use similar methods on the filtered transX and transY.
+                   offsets to make them all positive are necessary for the clustering
+                   code.
+                   -- get the largest cluster and from that, filter the remaining
+                      tpList and paramsList.
+        
+        OR
+        (2) use histograms to perform same functions as in (1)
+        */
+        
+        // to correct for wrap around from 360 to 0, repeating same calc with shifterd values
+        
+        int[] indexesToKeep = filterForScaleAndRotation(paramsList, 0);
+        
+        int[] indexesToKeepShifted = filterForScaleAndRotation(paramsList, 30);
+        
+        if (indexesToKeepShifted.length > indexesToKeep.length) {
+            indexesToKeep = indexesToKeepShifted;
+        }
+        
+        filter(tpList, paramsList, indexesToKeep);
+        
+        indexesToKeep = filterForTranslation(paramsList);
+        
+        filter(tpList, paramsList, indexesToKeep);
+        
+        if (paramsList.size() == 0) {
+            return null;
+        }
+        
+        List<FeatureComparisonStat> combined = new ArrayList<FeatureComparisonStat>();
+        for (i = 0; i < tpList.size(); ++i) {
+            TransformationPair4 tp4 = tpList.get(i);
+            combined.addAll(tp4.getMatchedCompStats());
+        }
+        
+        TransformationParameters combinedParams = calculateTransformation(
+            binFactor1, binFactor2, combined, new float[4]);
+        
+        if (combinedParams == null) {
+            return null;
+        }
+        
+        soln = new MatchingSolution(combinedParams, combined);
+            
+        return soln;
+    }
+
+    private Map<Integer, FixedSizeSortedVector<TransformationPair4>> match(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        GreyscaleImage img1, GreyscaleImage img2, 
+        List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
+        List<List<CornerRegion>> corners1List, 
+        List<List<CornerRegion>> corners2List) {
+        
+        Map<Integer, FixedSizeSortedVector<TransformationPair4>> trMap 
+            = new HashMap<Integer, FixedSizeSortedVector<TransformationPair4>>();
+
+        int n1 = corners1List.size();
+        int n2 = corners2List.size();
+        
+        if (n1 == 0 || n2 == 0) {
+            return trMap;
+        }
+        
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+double[][] xy1 = new double[perimeters1.size()][2];
+for (int i = 0; i < perimeters1.size(); ++i) {
+xy1[i] = curveHelper.calculateXYCentroids(perimeters1.get(i));
+}
+double[][] xy2 = new double[perimeters2.size()][2];
+for (int i = 0; i < perimeters2.size(); ++i) {
+xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
+}
+
+        for (int i = 0; i < n1; ++i) {
+                                    
             List<CornerRegion> corners1 = corners1List.get(i);
             int nc1 = corners1.size();
             if (nc1 < 3) {
                 continue;
             }
             
-            TransformationPair4 bestMatches = null;
+            //TODO: for extreme case of image full of repeated patterns, may need nTop=n2
+            int nTop = n2/2;
+            if (nTop == 0) {
+                nTop = n2;
+            }
+            
+            FixedSizeSortedVector<TransformationPair4> bestMatches = 
+                new FixedSizeSortedVector<TransformationPair4>(nTop, 
+                TransformationPair4.class);
             
             for (int j = 0; j < n2; ++j) {
                                 
@@ -196,138 +389,449 @@ xy2[i] = curveHelper.calculateXYCentroids0(cr);
                 
                 ClosedCurveCornerMatcher0 matcher = new ClosedCurveCornerMatcher0();
                 
+                // discrepant thetas are removed from these results:
                 boolean solved = matcher.matchCorners(features1, features2, c1, 
                     c2, true, img1, img2);
                 
                 if (solved) {
                     
-                    if (bestMatches == null) {
-                        
-                        bestMatches = matcher.getTransformationPair();
-                        bestMatches.setCornerListIndex1(i);
-                        bestMatches.setCornerListIndex2(j);
-                        
-                    } else {
-                        
-                        TransformationPair4 tr = matcher.getTransformationPair();
-                        tr.setCornerListIndex1(i);
-                        tr.setCornerListIndex2(j);
-                        
-                        int bN = bestMatches.getMatchedCornerRegions1().size();
-                        int cN = tr.getMatchedCornerRegions1().size();
-                        
-                        if (((cN >= bN) && (tr.getCost() < bestMatches.getCost()))
-                            || ((tr.getCost() == bestMatches.getCost()) && (cN > bN))) {
-                            
-                            bestMatches = tr;
-                        }
+                    TransformationPair4 tr = matcher.getTransformationPair();
+                    tr.setCornerListIndex1(i);
+                    tr.setCornerListIndex2(j);
+                    
+                    if (tr.getCost() < 2000) {
+                        boolean added = bestMatches.add(tr); 
                     }
                 }
             }
             
-            if (bestMatches != null) {
-                
+            if (bestMatches.getNumberOfItems() > 0) {
                 trMap.put(Integer.valueOf(i), bestMatches);
+            }
+        }
                 
-                float[] scaleRotTransXYStDev00 = new float[4];
-                TransformationParameters params = calculateTransformation(
-                    binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
-                    scaleRotTransXYStDev00);
-                
-                if (params == null) {
-                    continue;
-                }
+        return trMap;
+    }
 
-                if ((bestMatches.getMatchedCompStats().size() > 4) 
-                    && (i < (n1 - 1))) {
-                    
-                    if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
-               
-                        double c = calculateCombinedIntensityStat(
-                            bestMatches.getMatchedCompStats());
-                        log.info("MATCHED EARLY: combined compStat=" + c);
-                        
-                        MatchingSolution soln = new MatchingSolution(params,
-                            bestMatches.getMatchedCompStats());
-                        
-                        return soln;
-                    }
-                }
-                
-                pMap.put(Integer.valueOf(i), params);
+    private int[] filterForScaleAndRotation(
+        List<TransformationParameters> paramsList, int shiftRotation) {
+        
+        if (paramsList.size() < 4) {
+            return new int[0];
+        }
+        
+        float minRD = Float.MAX_VALUE;
+        float maxRD = Float.MIN_VALUE;
+        float[] rotations = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            float r = shiftRotation + paramsList.get(i).getRotationInDegrees();
+            if (r >= 360) {
+                r = 360 - r;
+            }
+            rotations[i] = r;
+            if (r < minRD) {
+                minRD = r;
+            }
+            if (r > maxRD) {
+                maxRD = r;
             }
         }
+
+        float minS = Float.MAX_VALUE;
+        float maxS = Float.MIN_VALUE;
+        float[] scales = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            scales[i] = paramsList.get(i).getScale();
+            if (scales[i] < minS) {
+                minS = scales[i];
+            }
+            if (scales[i] > maxS) {
+                maxS = scales[i];
+            }
+        }
+        int diffS = (int)(maxS - minS);
+        if (diffS == 0) {
+            diffS = 1;
+        }
+        // cluster finder scale by O(dimension * lg2(dimension)), so start at 0
+        float factor = (int)(maxRD - minRD)/diffS;
+        float offset = -1 * (minRD * factor);
+        maxS = Float.MIN_VALUE;
+        for (int i = 0; i < scales.length; ++i) {
+            float s = scales[i];
+            scales[i] = (s * factor) + offset;
+            if (scales[i] > maxS) {
+                maxS = scales[i];
+            }
+        }
+
+        Set<PairIntWithIndex> points = new HashSet<PairIntWithIndex>();
+
+        for (int i = 0; i < scales.length; ++i) {
+            float x = rotations[i];
+            float y = scales[i];
+            PairIntWithIndex p = new PairIntWithIndex(Math.round(x),
+                    Math.round(y), i);
+            points.add(p);
+        }
+
+        int dimen1 = (int)(Math.ceil(maxRD) + 1);
+        int dimen2 = (int)(Math.ceil(maxS) + 1);
+
+        DTClusterFinder<PairIntWithIndex> cFinder 
+            = new DTClusterFinder<PairIntWithIndex>(points, dimen1, dimen2);
+cFinder.setToDebug();
+        cFinder.calculateCriticalDensity();
+
+        cFinder.findClusters();
+
+        int n = cFinder.getNumberOfClusters();
         
-        if (trMap.isEmpty()) {
-            return null;
+        if (n == 0) {
+            return new int[0];
         }
         
-        long t10 = System.currentTimeMillis();
+        int maxN = Integer.MIN_VALUE;
+        int maxNIdx = -1;
+        for (int i = 0; i < n; ++i) {
+            int ns = cFinder.getCluster(i).size();
+            if (ns > maxN) {
+                maxN = ns;
+                maxNIdx = i;
+            }
+        }
+        int[] indexes = new int[maxN];
+        int count = 0;
+        for (PairIntWithIndex p : cFinder.getCluster(maxNIdx)) {
+            indexes[count] = p.getPixIndex();
+            count++;
+        }
         
-        // find best (lowest cost) and combine others with it if similar
+        return indexes;
+    }
+
+    private void filter(List<TransformationPair4> tpList, 
+        List<TransformationParameters> paramsList, int[] indexesToKeep) {
+        
+        if (indexesToKeep.length < 2) {
+            return;
+        }
+        
+        List<TransformationPair4> tpList2 = 
+            new ArrayList<TransformationPair4>(indexesToKeep.length);
+        
+        List<TransformationParameters> paramsList2 = 
+            new ArrayList<TransformationParameters>();
+        
+        for (int i = 0; i < indexesToKeep.length;++i) {
+            int idx = indexesToKeep[i];
+            tpList2.add(tpList.get(idx));
+            paramsList2.add(paramsList.get(idx));
+        }
+        
+        tpList.clear();
+        tpList.addAll(tpList2);
+        
+        paramsList.clear();
+        paramsList.addAll(paramsList2);
+    }
+
+    private int[] filterForTranslation(List<TransformationParameters> paramsList) {
+        
+        if (paramsList.size() < 4) {
+            return new int[0];
+        }
+        
+        float minTX = Float.MAX_VALUE;
+        float maxTX = Float.MIN_VALUE;
+        float[] transX = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            float v = paramsList.get(i).getTranslationX();
+            transX[i] = v;
+            if (v < minTX) {
+                minTX = v;
+            }
+            if (v > maxTX) {
+                maxTX = v;
+            }
+        }
+        if (minTX != 0) {
+            // shift the values so that '1' is the lowest value... 
+            // dt in clustering runtime is O(dimension * lg_2(dimension))
+            float offset = -1*minTX;
+            for (int i = 0; i < transX.length; ++i) {
+                transX[i] += (offset + 1);
+            }
+            minTX += (offset + 1);
+            maxTX += (offset + 1);
+        }
+        
+        float minTY = Float.MAX_VALUE;
+        float maxTY = Float.MIN_VALUE;
+        float[] transY = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            float v = paramsList.get(i).getTranslationY();
+            transY[i] = v;
+            if (v < minTY) {
+                minTY = v;
+            }
+            if (v > maxTY) {
+                maxTY = v;
+            }
+        }
+        if (minTY != 0) {
+            // shift the values so that '1' is the lowest value... 
+            // dt in clustering runtime is O(dimension * lg_2(dimension))
+            float offset = -1*minTY;
+            for (int i = 0; i < transY.length; ++i) {
+                transY[i] += (offset + 1);
+            }
+            minTY += (offset + 1);
+            maxTY += (offset + 1);
+        }
+        
+        if ((maxTX > 1000) || (maxTY > 1000)) {
+            //TODO: implement a histogram version
+        }
+        
+        Set<PairIntWithIndex> points = new HashSet<PairIntWithIndex>();
+
+        for (int i = 0; i < transX.length; ++i) {
+            float x = transX[i];
+            float y = transY[i];
+            PairIntWithIndex p = new PairIntWithIndex(Math.round(x),
+                Math.round(y), i);
+            points.add(p);
+        }
+
+        int dimen1 = (int)(Math.ceil(maxTX) + 1);
+        int dimen2 = (int)(Math.ceil(maxTY) + 1);
+
+        DTClusterFinder<PairIntWithIndex> cFinder 
+            = new DTClusterFinder<PairIntWithIndex>(points, dimen1, dimen2);
+cFinder.setToDebug();
+        cFinder.setThreshholdFactor(0.75f);
+        cFinder.calculateCriticalDensity();
+
+        cFinder.findClusters();
+
+        int n = cFinder.getNumberOfClusters();
+        
+        if (n == 0) {
+            return new int[0];
+        }
+        
+        int maxN = Integer.MIN_VALUE;
+        int maxNIdx = -1;
+        for (int i = 0; i < n; ++i) {
+            int ns = cFinder.getCluster(i).size();
+            if (ns > maxN) {
+                maxN = ns;
+                maxNIdx = i;
+            }
+        }
+        int[] indexes = new int[maxN];
+        int count = 0;
+        for (PairIntWithIndex p : cFinder.getCluster(maxNIdx)) {
+            indexes[count] = p.getPixIndex();
+            count++;
+        }
+        
+        return indexes;
+    }
+
+    /**
+     * checking for case where each key has only 1 value in the vector,
+     * and each index1 has a unique mapping to index2, and if found,
+     * choosing the lowest cost solution and adding similar solutions
+     * to it.
+     * @param mMap
+     * @return 
+     */
+    private MatchingSolution checkForNonDegenerateSolution(
+        Map<Integer, FixedSizeSortedVector<TransformationPair4>> mMap,
+        int binFactor1, int binFactor2) {
+        
+        List<TransformationPair4> tpList = new ArrayList<TransformationPair4>();
+        
+        Set<Integer> indexes2 = new HashSet<Integer>();
+        
+        for (Entry<Integer, FixedSizeSortedVector<TransformationPair4>> entry :
+            mMap.entrySet()) {
+            
+            FixedSizeSortedVector<TransformationPair4> vector = entry.getValue();
+            
+            if (vector.getArray().length > 1) {
+                return null;
+            }
+            assert(vector.getArray().length == 1);
+            
+            TransformationPair4 tp4 = vector.getArray()[0];
+            
+            Integer key2 = Integer.valueOf(tp4.getCornerListIndex2());
+            
+            if (indexes2.contains(key2)) {
+                return null;
+            }
+            
+            indexes2.add(key2);
+            
+            tpList.add(tp4);
+        }
+        
+        // the matches are unique, so will look for the smallest cost
+        // and then add similar to it
+        
         double minCost = Double.MAX_VALUE;
-        Integer minCostKey = null;
-        
-        for (Entry<Integer, TransformationPair4> entry : trMap.entrySet()) {
-            TransformationPair4 tr = entry.getValue();
-            if (tr.getCost() < minCost) {
-                minCost = tr.getCost();
-                minCostKey = entry.getKey();
+        int minCostIdx = -1;
+        for (int i = 0; i < tpList.size(); ++i) {
+            TransformationPair4 tp4 = tpList.get(i);
+            if (tp4.getCost() < minCost) {
+                minCost = tp4.getCost();
+                minCostIdx = i;
             }
         }
-        
-        TransformationPair4 minCostTR = trMap.remove(minCostKey);
         
         TransformationParameters minCostParams = calculateTransformation(
-            binFactor1, binFactor2, minCostTR.getMatchedCompStats(), 
+            binFactor1, binFactor2, tpList.get(minCostIdx).getMatchedCompStats(),
             new float[4]);
         
         if (minCostParams == null) {
             return null;
         }
         
-        List<FeatureComparisonStat> combine = new ArrayList<FeatureComparisonStat>();
+        List<FeatureComparisonStat> combined = new ArrayList<FeatureComparisonStat>();
+        combined.addAll(tpList.get(minCostIdx).getMatchedCompStats());
         
-        for (Entry<Integer, TransformationPair4> entry : trMap.entrySet()) {
+        for (int i = 0; i < tpList.size(); ++i) {
+            if (i == minCostIdx) {
+                continue;
+            }
+            TransformationPair4 tp4 = tpList.get(i);
+            TransformationParameters params = calculateTransformation(
+               binFactor1, binFactor2, tp4.getMatchedCompStats(),
+                new float[4]);
             
-            TransformationPair4 tr = entry.getValue();
+            if (params == null) {
+                continue;
+            }
             
-            if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {
-                
-                TransformationParameters params = pMap.get(entry.getKey());
-                if (params != null) {
-                    if (areSimilar(minCostParams, params, 25)) {
-                        combine.addAll(tr.getMatchedCompStats());
+            if (Math.abs(params.getScale() - minCostParams.getScale()) < 0.05) {
+                float angleDiff = AngleUtil.getAngleAverageInDegrees(
+                    params.getRotationInDegrees(), minCostParams.getRotationInDegrees());
+                if (Math.abs(angleDiff) < 10) {
+                    if (Math.abs(params.getTranslationX() - minCostParams.getTranslationX()) < 10) {
+                        if (Math.abs(params.getTranslationY() - minCostParams.getTranslationY()) < 10) {
+                            combined.addAll(tp4.getMatchedCompStats());
+                        }
                     }
                 }
             }
         }
         
-        if (combine.isEmpty()) {
-
-            MatchingSolution soln = new MatchingSolution(minCostParams,
-                minCostTR.getMatchedCompStats());
-            
-            return soln;
-        }
-        
-        combine.addAll(minCostTR.getMatchedCompStats());
-        
         TransformationParameters combinedParams = calculateTransformation(
-            binFactor1, binFactor2, combine, new float[4]);
+            binFactor1, binFactor2, combined, new float[4]);
         
-        if (combinedParams != null) {
+        if (combinedParams == null) {
             return null;
         }
         
-        long t11 = System.currentTimeMillis();
-        long t1Sec = (t10 - t11)/1000;
-        log.info("    compare and combine matches(sec)=" + t1Sec);
+        MatchingSolution soln = new MatchingSolution(combinedParams, combined);
         
-        MatchingSolution soln = new MatchingSolution(combinedParams,
-            combine);
-            
         return soln;
     }
 
+    private int evaluate(TransformationParameters params, 
+        List<List<CornerRegion>> corners1List, List<List<CornerRegion>> corners2List, 
+        int tolTransXY) {
+        
+        //TODO: move this method to a class for utility methods
+        
+        int nMatched = 0;
+        
+        int[] xPoints = convertToXPoints(corners2List);
+        int[] yPoints = convertToYPoints(corners2List);
+        
+        Transformer transformer = new Transformer();
+        
+        NearestPoints np = new NearestPoints(xPoints, yPoints);
+        
+        for (int i = 0; i < corners1List.size(); ++i) {
+            
+            List<CornerRegion> corners1 = corners1List.get(i);
+            
+            for (int ii = 0; ii < corners1.size(); ++ii) {
+                
+                CornerRegion cr = corners1.get(ii);
+                
+                double[] xyTr = transformer.applyTransformation(params, 
+                    cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
+                
+                Set<Integer> indexes = np.findNeighborIndexes(
+                    (int)Math.round(xyTr[0]), (int)Math.round(xyTr[1]), 
+                    tolTransXY);
+                
+                if (indexes != null && indexes.size() > 0) {
+                    nMatched++;
+                }
+            }
+        }
+        
+        return nMatched;
+    }
+    
+    private int[] convertToXPoints(List<List<CornerRegion>> cornersList) {
+        
+        int n = 0;
+        for (List<CornerRegion> list : cornersList) {
+            n += list.size();
+        }
+        
+        int[] x = new int[n];
+        n = 0;
+        for (List<CornerRegion> list : cornersList) {
+            for (CornerRegion cr : list) {
+                x[n] = cr.getX()[cr.getKMaxIdx()];
+                n++;
+            }
+        }
+        
+        return x;
+    }
+    
+    private int[] convertToYPoints(List<List<CornerRegion>> cornersList) {
+        
+        int n = 0;
+        for (List<CornerRegion> list : cornersList) {
+            n += list.size();
+        }
+        
+        int[] y = new int[n];
+        n = 0;
+        for (List<CornerRegion> list : cornersList) {
+            for (CornerRegion cr : list) {
+                y[n] = cr.getY()[cr.getKMaxIdx()];
+                n++;
+            }
+        }
+        
+        return y;
+    }
+
+    private int countMaxMatchable(List<List<CornerRegion>> corners1List, 
+        List<List<CornerRegion>> corners2List) {
+        
+        int n1 = 0;
+        int n2 = 0;
+        
+        for (List<CornerRegion> list : corners1List) {
+            n1 += list.size();
+        }
+        
+        for (List<CornerRegion> list : corners2List) {
+            n2 += list.size();
+        }
+        
+        return Math.max(n1, n2);
+    }
 }
