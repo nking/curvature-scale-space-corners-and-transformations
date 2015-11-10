@@ -12,11 +12,11 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class FeatureMatcherWrapperTest extends TestCase {
+public class EpipolarSolverTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public FeatureMatcherWrapperTest() {
+    public EpipolarSolverTest() {
     }
     
     public void test0() throws Exception {
@@ -55,11 +55,11 @@ public class FeatureMatcherWrapperTest extends TestCase {
                     break;
                 }
             }
-            runCorrespondenceList(fileName1, fileName2, false, false);
+            runEpipolarSolver(fileName1, fileName2, false, false);
         }
     }
     
-    public void testRot90() throws Exception {
+    public void estRot90() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -86,11 +86,11 @@ public class FeatureMatcherWrapperTest extends TestCase {
                     break;
                 }
             }
-            runCorrespondenceList(fileName1, fileName2, true, false);
+            runEpipolarSolver(fileName1, fileName2, true, false);
         }
     }
     
-    public void testParameters() throws Exception {
+    public void estParameters() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -117,11 +117,11 @@ public class FeatureMatcherWrapperTest extends TestCase {
                     break;
                 }
             }
-            runCorrespondenceList(fileName1, fileName2, false, true);
+            runEpipolarSolver(fileName1, fileName2, false, true);
         }
     }
 
-    private void runCorrespondenceList(String fileName1, String fileName2, 
+    private void runEpipolarSolver(String fileName1, String fileName2, 
         boolean rotateBy90, boolean useScale) throws Exception {
         
         int idx = fileName1.lastIndexOf(".");
@@ -147,9 +147,9 @@ public class FeatureMatcherWrapperTest extends TestCase {
             int z = 1;
         }
         
-        FeatureMatcherWrapper wrapper = null;
+        EpipolarSolver solver = null;
         if (!useScale) {
-            wrapper = new FeatureMatcherWrapper(img1, img2, fileName1Root);
+            solver = new EpipolarSolver(img1, img2, fileName1Root);
         } else {
             TransformationParameters parameters = new TransformationParameters();
             parameters.setOriginX(0);
@@ -184,40 +184,12 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 float[] stdevs = new float[]{0.02f, 0.013f, 4.67f, 5.29f};
                 parameters.setStandardDeviations(stdevs);
             }
-            wrapper = new FeatureMatcherWrapper(img1, img2, parameters, fileName1Root);
+            solver = new EpipolarSolver(img1, img2, parameters, fileName1Root);
         }
         
-        CorrespondenceList cl = wrapper.matchFeatures();
+        StereoProjectionTransformerFit fit = solver.solve();
         
-        assertNotNull(cl);
+        assertNotNull(fit);
         
-        Collection<PairInt> m1 = cl.getPoints1();
-        Collection<PairInt> m2 = cl.getPoints2();
-        GreyscaleImage gsImg1 = img1.copyToGreyscale();
-        GreyscaleImage gsImg2 = img2.copyToGreyscale();
-        String name1 = "1_" + fileName1Root;
-        String name2 = "2_" + fileName2Root;
-        if (rotateBy90) {
-            name1 = name1 + "_r90";
-            name2 = name2 + "_r90";
-        }
-        name1 = name1 + "_matched";
-        name2 = name2 + "_matched";
-        MiscDebug.plotCorners(gsImg1, m1, name1, 2);
-        MiscDebug.plotCorners(gsImg2, m2, name2, 2);
-        
-        float scale = cl.getScale();
-        int rotationInDegrees = cl.getRotationInDegrees();
-        
-        log.info("scale for " + fileName1 + " =" + scale + " rotationDeg=" + 
-            rotationInDegrees);
-
-        if (fileName1.contains("brown_lowe_2003_image1")) {
-            // one portion of image scale is ~ 0.9
-            assertTrue(Math.abs(scale - 1) < 0.15);
-        } else {
-            assertTrue(Math.abs(scale - 1) < 0.12);
-        }
-
     }
 }
