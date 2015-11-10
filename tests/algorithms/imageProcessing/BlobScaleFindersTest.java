@@ -14,7 +14,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void test0() throws Exception {
+    public void testBL2003_1() throws Exception {
 
         boolean useBinned = false;
 
@@ -24,18 +24,18 @@ public class BlobScaleFindersTest extends TestCase {
         String filePath2 = ResourceFinder.findFileInTestResources("brown_lowe_2003_image2.jpg");
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
+        SegmentationType type = SegmentationType.GREYSCALE_KMPP;
+        
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
-        bph1.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
+        bph1.applySegmentation(type, useBinned);
         BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
 
-        bch1.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
-            useBinned);
+        bch1.generatePerimeterCorners(type, useBinned);
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
-        bph2.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
+        bph2.applySegmentation(type, useBinned);
         BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
-        bch2.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
-            useBinned);
+        bch2.generatePerimeterCorners(type, useBinned);
 
         BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
@@ -43,10 +43,8 @@ public class BlobScaleFindersTest extends TestCase {
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1,
-            SegmentationType.GREYSCALE_KMPP, useBinned,
-            bch2, features2,
-            SegmentationType.GREYSCALE_KMPP, useBinned);
+            bch1, features1, type, useBinned,
+            bch2, features2, type, useBinned);
         
         assertNotNull(soln);
         
@@ -58,187 +56,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void test1() throws Exception {
-
-        boolean useBinned = false;
-
-        String filePath1 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0001.png");
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-
-        String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
-        bph1.applyEqualization();
-        bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
-
-        bch1.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
-
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
-        bph2.applyEqualization();
-        bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
-        bch2.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
-
-        BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
-
-        IntensityFeatures features1 = new IntensityFeatures(5, true);
-        IntensityFeatures features2 = new IntensityFeatures(5, true);
-
-        MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned);
-
-        assertNotNull(soln);
-        
-        TransformationParameters params = soln.getParams();
-        
-        assertNotNull(params);
-
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
-    }
-
-    public void test2() throws Exception {
-
-        boolean useBinned = false;
-
-        String filePath1 = ResourceFinder.findFileInTestResources("brown_lowe_2003_image1.jpg");
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-
-        String filePath2 = ResourceFinder.findFileInTestResources("brown_lowe_2003_image2.jpg");
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
-        bph1.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
-        BlobContourHelper bch1 = new BlobContourHelper(bph1, "1");
-        bch1.generatePerimeterContours(SegmentationType.GREYSCALE_KMPP,
-            useBinned);
-
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
-        bph2.applySegmentation(SegmentationType.GREYSCALE_KMPP, useBinned);
-        BlobContourHelper bch2 = new BlobContourHelper(bph2, "2");
-        bch2.generatePerimeterContours(SegmentationType.GREYSCALE_KMPP,
-            useBinned);
-
-        BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
-
-        IntensityFeatures features1 = new IntensityFeatures(5, true);
-        IntensityFeatures features2 = new IntensityFeatures(5, true);
-
-        MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1,
-            SegmentationType.GREYSCALE_KMPP, useBinned,
-            bch2, features2,
-            SegmentationType.GREYSCALE_KMPP, useBinned);
-
-        assertNotNull(soln);
-        
-        TransformationParameters params = soln.getParams();
-        
-        assertNotNull(params);
-
-        assertTrue(Math.abs(params.getScale() - 1) < 0.15);
-
-    }
-
-    public void test3() throws Exception {
-
-        boolean useBinned = false;
-
-        String filePath1 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0001.png");
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-
-        String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
-        bph1.applyEqualization();
-        bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobContourHelper bch1 = new BlobContourHelper(bph1, "1");
-        bch1.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
-
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
-        bph2.applyEqualization();
-        bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobContourHelper bch2 = new BlobContourHelper(bph2, "2");
-        bch2.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
-
-        BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
-
-        IntensityFeatures features1 = new IntensityFeatures(5, true);
-        IntensityFeatures features2 = new IntensityFeatures(5, true);
-
-        MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned);
-
-        assertNotNull(soln);
-        
-        TransformationParameters params = soln.getParams();
-        
-        assertNotNull(params);
-
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
-
-    }
-
-    public void test4() throws Exception {
-
-        boolean useBinned = true;
-
-        String filePath1 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0001.png");
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-
-        String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
-        bph1.applyEqualization();
-        bph1.createBinnedGreyscaleImage(300);
-        bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobContourHelper bch1 = new BlobContourHelper(bph1, "1");
-        bch1.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
-
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
-        bph2.applyEqualization();
-        bph2.createBinnedGreyscaleImage(300);
-        bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobContourHelper bch2 = new BlobContourHelper(bph2, "2");
-        bch2.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
-
-        BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
-
-        IntensityFeatures features1 = new IntensityFeatures(5, true);
-        IntensityFeatures features2 = new IntensityFeatures(5, true);
-
-        MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned);
-
-        assertNotNull(soln);
-        
-        TransformationParameters params = soln.getParams();
-        
-        assertNotNull(params);
-
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
-
-    }
-    
-    public void test6() throws Exception {
+    public void testBL2003_0() throws Exception {
 
         boolean useBinned = false;
         
@@ -285,7 +103,95 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void test7() throws Exception {
+    public void testVenturi_Corners() throws Exception {
+
+        boolean useBinned = false;
+
+        String filePath1 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0001.png");
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+
+        String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+
+        SegmentationType type = SegmentationType.COLOR_POLARCIEXY;
+        
+        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        bph1.applyEqualization();
+        bph1.applySegmentation(type, useBinned);
+        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
+
+        bch1.generatePerimeterCorners(type, useBinned);
+
+        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        bph2.applyEqualization();
+        bph2.applySegmentation(type, useBinned);
+        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
+        bch2.generatePerimeterCorners(type, useBinned);
+
+        BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
+
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
+
+        MatchingSolution soln = bsFinder.solveForScale(
+            bch1, features1, type, useBinned,
+            bch2, features2, type, useBinned);
+
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
+        assertNotNull(params);
+
+        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+    }
+
+    public void testVenturi_Contours() throws Exception {
+
+        boolean useBinned = false;
+
+        String filePath1 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0001.png");
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+
+        String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+
+        SegmentationType type = SegmentationType.COLOR_POLARCIEXY;
+        
+        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "ven_1");
+        bph1.applyEqualization();
+        bph1.applySegmentation(type, useBinned);
+        BlobContourHelper bch1 = new BlobContourHelper(bph1, "ven_1");
+        bch1.generatePerimeterContours(type, useBinned);
+
+        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "ven_2");
+        bph2.applyEqualization();
+        bph2.applySegmentation(type, useBinned);
+        BlobContourHelper bch2 = new BlobContourHelper(bph2, "ven_2");
+        bch2.generatePerimeterContours(type, useBinned);
+
+        BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
+
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
+
+        MatchingSolution soln = bsFinder.solveForScale(
+            bch1, features1, type, useBinned,
+            bch2, features2, type, useBinned);
+
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
+        assertNotNull(params);
+        
+        log.info("PARAMS=" + params);
+
+        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+
+    }
+
+    public void testVenturi_Corners0() throws Exception {
 
         boolean useBinned = false;
 
@@ -295,21 +201,21 @@ public class BlobScaleFindersTest extends TestCase {
 
         String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+        
+        SegmentationType type = SegmentationType.COLOR_POLARCIEXY;
 
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "venturi1_7");
+        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "venturi0_1");
         bph1.applyEqualization();
-        bph1.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "venturi1_7");
+        bph1.applySegmentation(type, useBinned);
+        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "venturi0_1");
 
-        bch1.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
+        bch1.generatePerimeterCorners(type, useBinned);
 
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "venturi2_7");
+        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "venturi0_2");
         bph2.applyEqualization();
-        bph2.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "venturi2_7");
-        bch2.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
-            useBinned);
+        bph2.applySegmentation(type, useBinned);
+        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "venturi0_2");
+        bch2.generatePerimeterCorners(type, useBinned);
 
         BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
 
@@ -317,10 +223,8 @@ public class BlobScaleFindersTest extends TestCase {
         IntensityFeatures features2 = new IntensityFeatures(5, true);
 
         MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1,
-            SegmentationType.COLOR_POLARCIEXY, useBinned,
-            bch2, features2,
-            SegmentationType.COLOR_POLARCIEXY, useBinned);
+            bch1, features1, type, useBinned,
+            bch2, features2, type, useBinned);
 
         assertNotNull(soln);
         
@@ -331,6 +235,49 @@ public class BlobScaleFindersTest extends TestCase {
         //log.info("params=" + params);
 
         assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+    }
+    
+    public void testVenturi_Contours0() throws Exception {
+
+        boolean useBinned = false;
+
+        String filePath1 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0001.png");
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+
+        String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+
+        SegmentationType type = SegmentationType.COLOR_POLARCIEXY;
+        
+        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        bph1.applyEqualization();
+        bph1.applySegmentation(type, useBinned);
+        BlobContourHelper bch1 = new BlobContourHelper(bph1, "1");
+        bch1.generatePerimeterContours(type, useBinned);
+
+        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        bph2.applyEqualization();
+        bph2.applySegmentation(type, useBinned);
+        BlobContourHelper bch2 = new BlobContourHelper(bph2, "2");
+        bch2.generatePerimeterContours(type, useBinned);
+
+        BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();
+
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
+
+        MatchingSolution soln = bsFinder.solveForScale(
+            bch1, features1, type, useBinned,
+            bch2, features2, type, useBinned);
+
+        assertNotNull(soln);
+        
+        TransformationParameters params = soln.getParams();
+        
+        assertNotNull(params);
+
+        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+
     }
     
     public void test8() throws Exception {
