@@ -27,7 +27,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         //    with small projection effects.
         //    need to use matching of top k solutions...
         
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 5; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";

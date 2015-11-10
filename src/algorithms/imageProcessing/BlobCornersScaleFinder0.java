@@ -4,16 +4,10 @@ import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.PairIntWithIndex;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 
 /**
@@ -322,7 +314,7 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         if (n1 == 0 || n2 == 0) {
             return trMap;
         }
-        
+/*        
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 double[][] xy1 = new double[perimeters1.size()][2];
 for (int i = 0; i < perimeters1.size(); ++i) {
@@ -332,7 +324,7 @@ double[][] xy2 = new double[perimeters2.size()][2];
 for (int i = 0; i < perimeters2.size(); ++i) {
 xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
 }
-
+*/
         for (int i = 0; i < n1; ++i) {
                                     
             List<CornerRegion> corners1 = corners1List.get(i);
@@ -399,7 +391,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
                     tr.setCornerListIndex1(i);
                     tr.setCornerListIndex2(j);
                     
-                    if (tr.getCost() < 2000) {
+                    if (tr.getCost() < 1500) {
                         boolean added = bestMatches.add(tr); 
                     }
                 }
@@ -453,7 +445,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
         if (diffS == 0) {
             diffS = 1;
         }
-        // cluster finder scale by O(dimension * lg2(dimension)), so start at 0
+        // cluster finder scales by O(dimension * lg2(dimension)), so start at 0
         float factor = (int)(maxRD - minRD)/diffS;
         float offset = -1 * (minRD * factor);
         maxS = Float.MIN_VALUE;
@@ -480,7 +472,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
 
         DTClusterFinder<PairIntWithIndex> cFinder 
             = new DTClusterFinder<PairIntWithIndex>(points, dimen1, dimen2);
-cFinder.setToDebug();
+        //cFinder.setToDebug();
         cFinder.calculateCriticalDensity();
 
         cFinder.findClusters();
@@ -609,7 +601,7 @@ cFinder.setToDebug();
 
         DTClusterFinder<PairIntWithIndex> cFinder 
             = new DTClusterFinder<PairIntWithIndex>(points, dimen1, dimen2);
-cFinder.setToDebug();
+        //cFinder.setToDebug();
         cFinder.setThreshholdFactor(0.75f);
         cFinder.calculateCriticalDensity();
 

@@ -219,10 +219,9 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             
             IntensityFeatureComparisonStats bestMatches = bestStats.getArray()[0];
             
-            float[] scaleRotTransXYStDev00 = new float[4];
             TransformationParameters params = calculateTransformation(
                 binFactor1, binFactor2, bestMatches.getComparisonStats(), 
-                scaleRotTransXYStDev00);
+                new float[4]);
             
             if (params == null) {
                 continue;
@@ -231,7 +230,7 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             if ((bestMatches.getComparisonStats().size() > 3) 
                 && (idx1 < (blobs1.size() - 1))) {
                 
-                if (stDevsAreSmall(params, scaleRotTransXYStDev00)) {
+                if (stDevsAreSmall(params, params.getStandardDeviations())) {
                     
                     double c = calculateCombinedIntensityStat(
                         bestMatches.getComparisonStats());

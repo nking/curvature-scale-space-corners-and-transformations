@@ -24,10 +24,6 @@ public class ClosedCurveCornerMatcher0 {
 
     protected final int dither = 3;//6
     
-    //protected final int degreeIntervals = 20;
-
-    //protected final int rotationTolerance = 20;
-
     private TransformationPair4 solutionTransformationPair = null;
     
     public ClosedCurveCornerMatcher0() {
@@ -193,7 +189,6 @@ public class ClosedCurveCornerMatcher0 {
             int n = corners.size();
             if (n > 1) {
                 int end = n >> 1;
-                // 0 1 2 3 4
                 for (int ii = 0; ii < end; ii++) {
                     int idx2 = n - ii - 1;
                     CornerRegion swap = corners.get(ii);

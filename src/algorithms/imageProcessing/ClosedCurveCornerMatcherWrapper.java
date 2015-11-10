@@ -36,6 +36,7 @@ public class ClosedCurveCornerMatcherWrapper {
      * match corners from the first list to the second.  the best scale can
      * be retrieved with getSolutionParameters().  if a solution was found, 
      * returns true, else returns false.
+     * @param <T> T extends CornerRegion
      * @param features1
      * @param features2
      * @param corners1

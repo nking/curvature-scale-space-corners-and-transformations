@@ -33,13 +33,12 @@ public class ClosedCurveContourMatcher0 {
        the euclidean transformation with.
     */
 
-    protected final int dither = 6;//3
+    protected final int dither = 3;//6;//3
     
     protected final int degreeIntervals = 20;
 
     protected final int rotationTolerance = 20;
 
-    //TODO: tune this
     private int tolerance = 2;
 
     private TransformationPair3 solutionTransformationPair = null;

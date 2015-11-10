@@ -33,12 +33,12 @@ public class ClosedCurveCornerMatcher {
 
     protected TransformationPair2 solution = null;
     
-    protected final int dither = 3;
+    protected final int dither = 4;//3;
 
     protected final int rotationTolerance = 20;
 
     //TODO: tune this
-    private int tolerance = 4;
+    private int tolerance = 2;//4;
 
     private double solutionCost = Double.MAX_VALUE;
 
@@ -66,6 +66,7 @@ public class ClosedCurveCornerMatcher {
     
     /**
      * 
+     * @param <T> T extends CornerRegion
      * @param features1
      * @param features2
      * @param corners1
