@@ -26,6 +26,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
         for (int i = 0; i < 5; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
+            rotate = true;
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -91,13 +92,8 @@ public class BlobScaleFinderWrapperTest extends TestCase {
             assertNotNull(params);
             
             log.info("FINAL PARAMS for " + fileName1 + " " + params.toString());
-
-            if (fileName1.contains("brown_lowe_2003_image1")) {
-                // one portion of image scale is ~ 0.9
-                assertTrue(Math.abs(params.getScale() - 1) < 0.15);
-            } else {
-                assertTrue(Math.abs(params.getScale() - 1) < 0.12);
-            }
+            
+            assertTrue(Math.abs(params.getScale() - 1) < 0.2);
             
             scaleFinder = null;
             System.gc();

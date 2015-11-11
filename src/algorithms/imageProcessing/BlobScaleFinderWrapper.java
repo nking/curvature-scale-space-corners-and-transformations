@@ -273,25 +273,28 @@ public class BlobScaleFinderWrapper {
             useBinned1 = ub;
             useBinned2 = ub;
         
+            /*
             if (params == null) {
                 algType = AlgType.CORNERS_ORDERED;
                 params = calculateScaleImpl();
-            }
+            }*/
             
+            /*
             if (params == null) {
                 algType = AlgType.CONTOURS_ORDERED;
                 params = calculateScaleImpl();
-            }
+            }*/
 
             if (params == null) {
                 algType = AlgType.CORNERS_COMBINATIONS;
                 params = calculateScaleImpl();
             }
             
+            /*
             if (params == null) {
                 algType = AlgType.CONTOURS_COMBINATIONS;
                 params = calculateScaleImpl();
-            }
+            }*/
         }
         
         return params;
@@ -314,16 +317,16 @@ public class BlobScaleFinderWrapper {
 
         SegmentationType[] seg1 = new SegmentationType[]{
             ////SegmentationType.COLOR_POLARCIEXY,
-            SegmentationType.DT_CLUSTERING,
+      //      SegmentationType.DT_CLUSTERING,
             SegmentationType.GREYSCALE_KMPP,
-            SegmentationType.COLOR_POLARCIEXY_LARGE,
+      //      SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };
         SegmentationType[] seg2 = new SegmentationType[]{
             ////SegmentationType.COLOR_POLARCIEXY,
-            SegmentationType.DT_CLUSTERING,
+       //     SegmentationType.DT_CLUSTERING,
             SegmentationType.GREYSCALE_KMPP,
-            SegmentationType.COLOR_POLARCIEXY_LARGE,
+       //     SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };
         
@@ -499,10 +502,6 @@ public class BlobScaleFinderWrapper {
             if (soln != null) {
                 
                 TransformationParameters params = soln.getParams();
-
-if (params == null) {
-    int z = 1;
-}
                 
                 log.info("params for type"
                     + " (" + segmentationType1.name() + ", binned=" + useBinned1 + ")"

@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ScatterPointPlotterPNG;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -97,6 +98,37 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         int n1 = bpr1List.size();
         int n2 = bpr2List.size();
         
+/*        
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+float[] xPoints1 = new float[perimeters1.size()];
+float[] yPoints1 = new float[perimeters1.size()];
+double[][] xy1 = new double[perimeters1.size()][2];
+for (int i = 0; i < perimeters1.size(); ++i) {
+xy1[i] = curveHelper.calculateXYCentroids(perimeters1.get(i));
+xPoints1[i] = (float)xy1[i][0];
+yPoints1[i] = (float)xy1[i][1];
+}
+float[] xPoints2 = new float[perimeters2.size()];
+float[] yPoints2 = new float[perimeters2.size()];
+double[][] xy2 = new double[perimeters2.size()][2];
+for (int i = 0; i < perimeters2.size(); ++i) {
+xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
+xPoints2[i] = (float)xy2[i][0];
+yPoints2[i] = (float)xy2[i][1];
+}
+ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+plotter.plotLabeledPoints(0, img1.getWidth(), 0, img1.getHeight(), xPoints1, yPoints1,
+"img1", "X", "Y");
+ScatterPointPlotterPNG plotter2 = new ScatterPointPlotterPNG();
+plotter2.plotLabeledPoints(0, img2.getWidth(), 0, img2.getHeight(), xPoints2, yPoints2,
+"img2", "X", "Y");
+try {
+    plotter.writeToFile("img1_labelled.png");
+    plotter2.writeToFile("img2_labelled.png");
+} catch (IOException ex) {
+    Logger.getLogger(BlobContoursScaleFinder0.class.getName()).log(Level.SEVERE, null, ex);
+}
+*/
         Map<Integer, TransformationPair3> trMap = new HashMap<Integer, TransformationPair3>();
         
         Map<Integer, TransformationParameters> pMap = new HashMap<Integer,
@@ -213,6 +245,8 @@ public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {
         if (trMap.isEmpty()) {
             return null;
         }
+        
+//TODO: consider changing to the biparite matching then most frequent params filter
         
         // find best (lowest cost) and combine others with it if similar
         double minCost = Double.MAX_VALUE;

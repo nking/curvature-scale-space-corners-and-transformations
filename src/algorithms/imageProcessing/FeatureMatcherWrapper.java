@@ -509,8 +509,8 @@ public class FeatureMatcherWrapper {
                     continue;
                 }
                 
-                ClosedCurveCornerMatcherWrapper mapper =
-                    new ClosedCurveCornerMatcherWrapper();
+                ClosedCurveCornerMatcherWrapper<T> mapper =
+                    new ClosedCurveCornerMatcherWrapper<T>();
                 
                 boolean matched = mapper.matchCorners(
                     scaleFinder.getSolutionFeatures1(), 
@@ -526,7 +526,7 @@ public class FeatureMatcherWrapper {
                     continue;
                 }
                 
-                TransformationPair2 transformationPair = mapper.getSolution();
+                TransformationPair2<T> transformationPair = mapper.getSolution();
                 transformationPair.setCornerListIndex1(i1);
                 transformationPair.setCornerListIndex2(i2);
                 

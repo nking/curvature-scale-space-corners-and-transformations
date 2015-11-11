@@ -11,12 +11,12 @@ import java.util.TreeSet;
  * 
  * @author nichole
  */
-public class NextCorner {
+public class NextCorner<T extends CornerRegion> {
     
     /**
      * a list of corners extracted from a closed curve in a digital image
      */
-    protected final TreeSet<CornerRegion> origCorners;
+    protected final TreeSet<T> origCorners;
     
     /**
      * A list of indexes to origCorners carrying corner regions from the curve, 
@@ -25,7 +25,7 @@ public class NextCorner {
      * Note that the lists are ordered by descending peak sigma.   Note also 
      * that the List<Integer> indexes are referred to as corner indexes.
      */
-    protected final TreeSet<CornerRegion> remainingCorners;
+    protected final TreeSet<T> remainingCorners;
     
     private final List<Integer> matchedCornerIndexes1;
     private final List<Integer> matchedCornerIndexes2;
@@ -35,20 +35,19 @@ public class NextCorner {
     protected int matchedEdgeNumber1 = -1;
     protected int matchedEdgeNumber2 = -1;
     
-    public NextCorner(final List<CornerRegion> corners) {
+    public NextCorner(final List<T> corners) {
                 
-        origCorners = new TreeSet<CornerRegion>(
-            new DescendingKComparator());
+        origCorners = new TreeSet<T>(new DescendingKComparator());
                         
         // populate with contours that haven't been visited
-        remainingCorners = new TreeSet<CornerRegion>(
+        remainingCorners = new TreeSet<T>(
             new DescendingKComparator());
         
         matchedStats = new ArrayList<FeatureComparisonStat>();
         
         for (int i = 0; i < corners.size(); i++) {
             
-            CornerRegion corner = corners.get(i);
+            T corner = corners.get(i);
             
             origCorners.add(corner);
             
@@ -60,8 +59,7 @@ public class NextCorner {
         
     }
     
-    public void addMatchedCorners(CornerRegion corner1, 
-        CornerRegion corner2, Integer cornerIndex1, 
+    public void addMatchedCorners(T corner1, T corner2, Integer cornerIndex1, 
         Integer cornerIndex2, FeatureComparisonStat stat) {
         
         markAsVisited(corner1);
@@ -94,13 +92,13 @@ public class NextCorner {
      * 
      * @return 
      */
-    public CornerRegion findStrongestRemainingCorner() {
+    public T findStrongestRemainingCorner() {
         
         if (remainingCorners.isEmpty()) {
             return null;
         }
         
-        CornerRegion corner = remainingCorners.first();
+        T corner = remainingCorners.first();
         
         boolean removed = remainingCorners.remove(corner);
                 
@@ -129,13 +127,13 @@ public class NextCorner {
      * 
      * @return 
      */
-    public CornerRegion findTheNextSmallestUnvisitedSibling(CornerRegion target) { 
+    public T findTheNextSmallestUnvisitedSibling(T target) { 
 
         if (target == null) {
             return null;
         }
         
-        CornerRegion nextLower = origCorners.higher(target);
+        T nextLower = origCorners.higher(target);
         
         while ((nextLower != null) && !remainingCorners.contains(nextLower)) {
             nextLower = origCorners.higher(nextLower);

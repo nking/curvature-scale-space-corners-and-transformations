@@ -1,6 +1,10 @@
 package algorithms.imageProcessing.util;
 
 import algorithms.imageProcessing.TransformationParameters;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +20,11 @@ public class MiscStats {
         List<TransformationParameters> paramsList, int shiftRotation) {
         
         if (paramsList.size() < 4) {
-            return new int[0];
+            int[] indexes = new int[paramsList.size()];
+            for (int i = 0; i < paramsList.size(); ++i) {
+                indexes[i] = i;
+            }
+            return indexes;
         }
         
         float minRD = Float.MAX_VALUE;
@@ -54,7 +62,7 @@ public class MiscStats {
         }
         // cluster finder scales by O(dimension * lg2(dimension)), so start at 0
         float factor = (int)(maxRD - minRD)/diffS;
-        float offset = -1 * (minRD * factor);
+        float offset = -1 * (minS * factor);
         maxS = Float.MIN_VALUE;
         for (int i = 0; i < scales.length; ++i) {
             float s = scales[i];
@@ -70,7 +78,7 @@ public class MiscStats {
             float x = rotations[i];
             float y = scales[i];
             PairIntWithIndex p = new PairIntWithIndex(Math.round(x),
-                    Math.round(y), i);
+                Math.round(y), i);
             points.add(p);
         }
 
@@ -109,10 +117,351 @@ public class MiscStats {
         return indexes;
     }
 
+    public static int[] filterForScaleAndRotationUsingHist(
+        List<TransformationParameters> paramsList, int shiftRotation) {
+        
+        if (paramsList.size() < 4) {
+            int[] indexes = new int[paramsList.size()];
+            for (int i = 0; i < paramsList.size(); ++i) {
+                indexes[i] = i;
+            }
+            return indexes;
+        }
+        
+        float minRD = Float.MAX_VALUE;
+        float maxRD = Float.MIN_VALUE;
+        float[] rotations = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            float r = shiftRotation + paramsList.get(i).getRotationInDegrees();
+            if (r >= 360) {
+                r = 360 - r;
+            }
+            rotations[i] = r;
+            if (r < minRD) {
+                minRD = r;
+            }
+            if (r > maxRD) {
+                maxRD = r;
+            }
+        }
+
+        float minS = Float.MAX_VALUE;
+        float maxS = Float.MIN_VALUE;
+        float[] scales = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            scales[i] = paramsList.get(i).getScale();
+            if (scales[i] < minS) {
+                minS = scales[i];
+            }
+            if (scales[i] > maxS) {
+                maxS = scales[i];
+            }
+        }
+        int diffS = (int)(maxS - minS);
+        if (diffS == 0) {
+            diffS = 1;
+        }
+        // cluster finder scales by O(dimension * lg2(dimension)), so start at 0
+        float factor = (int)(maxRD - minRD)/diffS;
+        float offset = -1 * (minS * factor);
+        maxS = Float.MIN_VALUE;
+        for (int i = 0; i < scales.length; ++i) {
+            float s = scales[i];
+            scales[i] = (s * factor) + offset;
+            if (scales[i] > maxS) {
+                maxS = scales[i];
+            }
+        }
+
+        HistogramHolder rHist = Histogram.createSimpleHistogram(25.f, rotations, 
+            Errors.populateYErrorsBySqrt(rotations));
+        
+        HistogramHolder sHist = Histogram.createSimpleHistogram(25.f, scales, 
+            Errors.populateYErrorsBySqrt(scales));
+        
+        int[] rYMaxIdx = MiscMath.findYMaxIndexes(rHist.getYHist());
+        
+        int[] sYMaxIdx = MiscMath.findYMaxIndexes(sHist.getYHist());
+        
+        Set<Integer> keep = new HashSet<Integer>();
+        
+        if (rYMaxIdx != null) {
+            for (int vIdx : rYMaxIdx) {
+                float v = rHist.getXHist()[vIdx];
+                for (int i = 0; i < rotations.length; ++i) {
+                    float diff = Math.abs(rotations[i] - v);
+                    if (diff <= 20) {
+                        keep.add(Integer.valueOf(i));
+                    }
+                }
+            }
+        }
+        
+        if (sYMaxIdx != null) {
+            for (int vIdx : sYMaxIdx) {
+                float v = sHist.getXHist()[vIdx];
+                for (int i = 0; i < scales.length; ++i) {
+                    float diff = Math.abs(scales[i] - v);
+                    if (diff <= 20) {
+                        keep.add(Integer.valueOf(i));
+                    }
+                }
+            }
+        }
+        
+        int[] indexes = new int[keep.size()];
+        int count = 0;
+        for (Integer index : keep) {
+            indexes[count] = index.intValue();
+            count++;
+        }
+        
+        return indexes;
+    }
+    
+    public static int[] filterForRotationUsingHist(
+        List<TransformationParameters> paramsList, int shiftRotation) {
+        
+        if (paramsList.size() < 4) {
+            int[] indexes = new int[paramsList.size()];
+            for (int i = 0; i < paramsList.size(); ++i) {
+                indexes[i] = i;
+            }
+            return indexes;
+        }
+        
+        float minRD = Float.MAX_VALUE;
+        float maxRD = Float.MIN_VALUE;
+        float[] rotations = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            float r = shiftRotation + paramsList.get(i).getRotationInDegrees();
+            if (r >= 360) {
+                r = 360 - r;
+            }
+            rotations[i] = r;
+            if (r < minRD) {
+                minRD = r;
+            }
+            if (r > maxRD) {
+                maxRD = r;
+            }
+        }
+
+        HistogramHolder rHist = Histogram.createSimpleHistogram(25.f, rotations, 
+            Errors.populateYErrorsBySqrt(rotations));
+        
+        int[] rYMaxIdx = MiscMath.findYMaxIndexes(rHist.getYHist());
+        
+        Set<Integer> keep = new HashSet<Integer>();
+        
+        if (rYMaxIdx != null) {
+            for (int vIdx : rYMaxIdx) {
+                float v = rHist.getXHist()[vIdx];
+                for (int i = 0; i < rotations.length; ++i) {
+                    float diff = Math.abs(rotations[i] - v);
+                    if (diff <= 20) {
+                        keep.add(Integer.valueOf(i));
+                    }
+                }
+            }
+        }
+        
+        int[] indexes = new int[keep.size()];
+        int count = 0;
+        for (Integer index : keep) {
+            indexes[count] = index.intValue();
+            count++;
+        }
+        
+        return indexes;
+    }
+
+    public static int[] filterForScaleUsingHist(
+        List<TransformationParameters> paramsList) {
+        
+        if (paramsList.size() < 3) {
+            int[] indexes = new int[paramsList.size()];
+            for (int i = 0; i < paramsList.size(); ++i) {
+                indexes[i] = i;
+            }
+            return indexes;
+        }
+        
+        float minS = Float.MAX_VALUE;
+        float maxS = Float.MIN_VALUE;
+        float[] scales = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            scales[i] = paramsList.get(i).getScale();
+            if (scales[i] < minS) {
+                minS = scales[i];
+            }
+            if (scales[i] > maxS) {
+                maxS = scales[i];
+            }
+        }
+        int diffS = (int)(maxS - minS);
+        if (diffS == 0) {
+            diffS = 1;
+        }
+        // cluster finder scales by O(dimension * lg2(dimension)), so start at 0
+        float factor = 360/diffS;
+        float offset = -1 * (minS * factor);
+        maxS = Float.MIN_VALUE;
+        for (int i = 0; i < scales.length; ++i) {
+            float s = scales[i];
+            scales[i] = (s * factor) + offset;
+            if (scales[i] > maxS) {
+                maxS = scales[i];
+            }
+        }
+
+        HistogramHolder sHist = Histogram.createSimpleHistogram(25.f, scales, 
+            Errors.populateYErrorsBySqrt(scales));
+                
+        int[] sYMaxIdx = MiscMath.findYMaxIndexes(sHist.getYHist());
+        
+        Set<Integer> keep = new HashSet<Integer>();
+        
+        if (sYMaxIdx != null) {
+            for (int vIdx : sYMaxIdx) {
+                float v = sHist.getXHist()[vIdx];
+                for (int i = 0; i < scales.length; ++i) {
+                    float diff = Math.abs(scales[i] - v);
+                    if (diff <= 20) {
+                        keep.add(Integer.valueOf(i));
+                    }
+                }
+            }
+        }
+        
+        int[] indexes = new int[keep.size()];
+        int count = 0;
+        for (Integer index : keep) {
+            indexes[count] = index.intValue();
+            count++;
+        }
+        
+        return indexes;
+    }
+    
+    public static int[] filterForTranslationXUsingHist(
+        List<TransformationParameters> paramsList) {
+        
+        if (paramsList.size() < 3) {
+            int[] indexes = new int[paramsList.size()];
+            for (int i = 0; i < paramsList.size(); ++i) {
+                indexes[i] = i;
+            }
+            return indexes;
+        }
+        
+        float minX = Float.MAX_VALUE;
+        float maxX = Float.MIN_VALUE;
+        float[] translationXs = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            translationXs[i] = paramsList.get(i).getTranslationX();
+            if (translationXs[i] < minX) {
+                minX = translationXs[i];
+            }
+            if (translationXs[i] > maxX) {
+                maxX = translationXs[i];
+            }
+        }
+        
+        HistogramHolder tXHist = Histogram.createSimpleHistogram(translationXs, 
+            Errors.populateYErrorsBySqrt(translationXs));
+                
+        int[] txMaxIdx = MiscMath.findYMaxIndexes(tXHist.getYHist());
+        
+        float binSize = tXHist.getXHist()[1] - tXHist.getXHist()[0];
+        
+        Set<Integer> keep = new HashSet<Integer>();
+        
+        if (txMaxIdx != null) {
+            for (int vIdx : txMaxIdx) {
+                float v = tXHist.getXHist()[vIdx];
+                for (int i = 0; i < translationXs.length; ++i) {
+                    float diff = Math.abs(translationXs[i] - v);
+                    if (diff <= binSize) {
+                        keep.add(Integer.valueOf(i));
+                    }
+                }
+            }
+        }
+        
+        int[] indexes = new int[keep.size()];
+        int count = 0;
+        for (Integer index : keep) {
+            indexes[count] = index.intValue();
+            count++;
+        }
+        
+        return indexes;
+    }
+    
+    public static int[] filterForTranslationYUsingHist(
+        List<TransformationParameters> paramsList) {
+        
+        if (paramsList.size() < 3) {
+            int[] indexes = new int[paramsList.size()];
+            for (int i = 0; i < paramsList.size(); ++i) {
+                indexes[i] = i;
+            }
+            return indexes;
+        }
+        
+        float minY = Float.MAX_VALUE;
+        float maxY = Float.MIN_VALUE;
+        float[] translationYs = new float[paramsList.size()];
+        for (int i = 0; i < paramsList.size(); ++i) {
+            translationYs[i] = paramsList.get(i).getTranslationY();
+            if (translationYs[i] < minY) {
+                minY = translationYs[i];
+            }
+            if (translationYs[i] > maxY) {
+                maxY = translationYs[i];
+            }
+        }
+        
+        HistogramHolder tYHist = Histogram.createSimpleHistogram(translationYs, 
+            Errors.populateYErrorsBySqrt(translationYs));
+                
+        int[] tyMaxIdx = MiscMath.findYMaxIndexes(tYHist.getYHist());
+        
+        float binSize = tYHist.getXHist()[1] - tYHist.getXHist()[0];
+        
+        Set<Integer> keep = new HashSet<Integer>();
+        
+        if (tyMaxIdx != null) {
+            for (int vIdx : tyMaxIdx) {
+                float v = tYHist.getXHist()[vIdx];
+                for (int i = 0; i < translationYs.length; ++i) {
+                    float diff = Math.abs(translationYs[i] - v);
+                    if (diff <= binSize) {
+                        keep.add(Integer.valueOf(i));
+                    }
+                }
+            }
+        }
+        
+        int[] indexes = new int[keep.size()];
+        int count = 0;
+        for (Integer index : keep) {
+            indexes[count] = index.intValue();
+            count++;
+        }
+        
+        return indexes;
+    }
+    
     public static int[] filterForTranslation(List<TransformationParameters> paramsList) {
         
         if (paramsList.size() < 4) {
-            return new int[0];
+            int[] indexes = new int[paramsList.size()];
+            for (int i = 0; i < paramsList.size(); ++i) {
+                indexes[i] = i;
+            }
+            return indexes;
         }
         
         float minTX = Float.MAX_VALUE;

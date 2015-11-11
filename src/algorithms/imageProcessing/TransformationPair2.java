@@ -4,15 +4,15 @@ package algorithms.imageProcessing;
  *
  * @author nichole
  */
-public class TransformationPair2 {
+public class TransformationPair2<T extends CornerRegion> {
     
     private int cornerListIndex1 = -1;
     private int cornerListIndex2 = -1;
     
-    private final CornerRegion corner1Curve1;
-    private final CornerRegion corner1Curve2;
-    private final CornerRegion corner2Curve1;
-    private final CornerRegion corner2Curve2;
+    private final T corner1Curve1;
+    private final T corner1Curve2;
+    private final T corner2Curve1;
+    private final T corner2Curve2;
     
     private TransformationParameters params = null;
     
@@ -27,9 +27,8 @@ public class TransformationPair2 {
      */
     private NextCorner nextCorner;
    
-    public TransformationPair2(CornerRegion corner1Curve1, 
-        CornerRegion corner1Curve2, CornerRegion corner2Curve1, 
-        CornerRegion corner2Curve2) {
+    public TransformationPair2(T corner1Curve1, T corner1Curve2, T corner2Curve1, 
+        T corner2Curve2) {
         
         this.corner1Curve1 = corner1Curve1;
         

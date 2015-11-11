@@ -11,11 +11,11 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-public class ClosedCurveCornerMatcherWrapper {
+public class ClosedCurveCornerMatcherWrapper<T extends CornerRegion> {
     
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
-    protected TransformationPair2 solution = null;
+    protected TransformationPair2<T> solution = null;
     
     private double solutionCost = Double.MAX_VALUE;
 
@@ -46,7 +46,7 @@ public class ClosedCurveCornerMatcherWrapper {
      * @param img2 image from which to extract descriptors for features2
      * @return
      */
-    public <T extends CornerRegion> boolean matchCorners(final IntensityFeatures features1,
+    public boolean matchCorners(final IntensityFeatures features1,
         final IntensityFeatures features2, final List<T> corners1,
         final List<T> corners2, boolean cornersAreAlreadySorted,
         GreyscaleImage img1, GreyscaleImage img2) {
@@ -70,7 +70,7 @@ public class ClosedCurveCornerMatcherWrapper {
 
         solverHasFinished = true;
         
-        ClosedCurveCornerMatcher mDefault = new ClosedCurveCornerMatcher();
+        ClosedCurveCornerMatcher<T> mDefault = new ClosedCurveCornerMatcher<T>();
 
         boolean solved = mDefault.matchCorners(features1, features2, corners1, 
             corners2, cornersAreAlreadySorted, img1, img2) &&
@@ -91,7 +91,7 @@ public class ClosedCurveCornerMatcherWrapper {
         return false;
     }
 
-    public TransformationPair2 getSolution() {
+    public TransformationPair2<T> getSolution() {
         return solution;
     }
     

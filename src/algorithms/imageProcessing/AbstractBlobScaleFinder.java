@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.NearestPoints;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -350,4 +351,139 @@ public abstract class AbstractBlobScaleFinder {
         
         return false;
     }
+    
+    protected <T extends CornerRegion> int countMaxMatchable(
+        List<List<T>> corners1List, List<List<T>> corners2List) {
+        
+        int n1 = 0;
+        int n2 = 0;
+        
+        for (List<T> list : corners1List) {
+            n1 += list.size();
+        }
+        
+        for (List<T> list : corners2List) {
+            n2 += list.size();
+        }
+        
+        return Math.max(n1, n2);
+    }
+    
+    protected <T extends CornerRegion> int[] convertToXPoints(
+        List<List<T>> cornersList) {
+        
+        int n = 0;
+        for (List<T> list : cornersList) {
+            n += list.size();
+        }
+        
+        int[] x = new int[n];
+        n = 0;
+        for (List<T> list : cornersList) {
+            for (T cr : list) {
+                x[n] = cr.getX()[cr.getKMaxIdx()];
+                n++;
+            }
+        }
+        
+        return x;
+    }
+    
+    protected <T extends CornerRegion> int[] convertToYPoints(
+        List<List<T>> cornersList) {
+        
+        int n = 0;
+        for (List<T> list : cornersList) {
+            n += list.size();
+        }
+        
+        int[] y = new int[n];
+        n = 0;
+        for (List<T> list : cornersList) {
+            for (T cr : list) {
+                y[n] = cr.getY()[cr.getKMaxIdx()];
+                n++;
+            }
+        }
+        
+        return y;
+    }
+
+    protected <T extends CornerRegion> int evaluate(TransformationParameters params, 
+        List<List<T>> corners1List, List<List<T>> corners2List, 
+        int tolTransXY) {
+        
+        //TODO: move this method to a class for utility methods
+        
+        int nMatched = 0;
+        
+        int[] xPoints = convertToXPoints(corners2List);
+        int[] yPoints = convertToYPoints(corners2List);
+        
+        Transformer transformer = new Transformer();
+        
+        NearestPoints np = new NearestPoints(xPoints, yPoints);
+        
+        for (int i = 0; i < corners1List.size(); ++i) {
+            
+            List<T> corners1 = corners1List.get(i);
+            
+            for (int ii = 0; ii < corners1.size(); ++ii) {
+                
+                T cr = corners1.get(ii);
+                
+                double[] xyTr = transformer.applyTransformation(params, 
+                    cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
+                
+                Set<Integer> indexes = np.findNeighborIndexes(
+                    (int)Math.round(xyTr[0]), (int)Math.round(xyTr[1]), 
+                    tolTransXY);
+                
+                if (indexes != null && indexes.size() > 0) {
+                    nMatched++;
+                }
+            }
+        }
+        
+        return nMatched;
+    }
+    
+    protected int[] convertToXPoints2(List<List<CurvatureScaleSpaceContour>> cList) {
+        
+        int n = 0;
+        for (List<CurvatureScaleSpaceContour> list : cList) {
+            n += list.size();
+        }
+        
+        int[] x = new int[n];
+        n = 0;
+        for (List<CurvatureScaleSpaceContour> list : cList) {
+            for (CurvatureScaleSpaceContour cr : list) {
+                x[n] = cr.getPeakDetails()[0].getXCoord();
+                n++;
+            }
+        }
+        
+        return x;
+    }
+    
+    protected int[] convertToYPoints2(List<List<CurvatureScaleSpaceContour>> cList) {
+        
+        int n = 0;
+        for (List<CurvatureScaleSpaceContour> list : cList) {
+            n += list.size();
+        }
+        
+        int[] y = new int[n];
+        n = 0;
+        for (List<CurvatureScaleSpaceContour> list : cList) {
+            for (CurvatureScaleSpaceContour cr : list) {
+                y[n] = cr.getPeakDetails()[0].getYCoord();
+                n++;
+            }
+        }
+        
+        return y;
+    }
+
 }

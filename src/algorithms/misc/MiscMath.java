@@ -265,6 +265,36 @@ public class MiscMath {
         }
         return index;
     }
+    
+    public static int[] findYMaxIndexes(int[] a) {
+        if (a == null || a.length == 0) {
+            return null;
+        }
+        int max = Integer.MIN_VALUE;
+        for (int i = 0; i < a.length; i++) {
+            if ((a[i] > max) && (a[i] < Integer.MAX_VALUE)) {
+                max = a[i];
+            }
+        }
+        if (max == Integer.MIN_VALUE) {
+            return null;
+        }
+        int count = 0;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == max) {
+                count++;
+            }
+        }
+        int[] indexes = new int[count];
+        count = 0;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == max) {
+                indexes[count] = i;
+                count++;
+            }
+        }
+        return indexes;
+    }
 
     public static float[] calculateOuterRoundedMinAndMax(float[] a) {
 

@@ -7,8 +7,6 @@ import algorithms.util.PairIntArray;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.MiscStats;
-import algorithms.imageProcessing.util.PairIntWithIndex;
-import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -170,8 +168,24 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
             Arrays.fill(cost[i], Float.MAX_VALUE);
         }
         
-        int nMaxMatchable = countMaxMatchable(corners1List, corners2List);
+        /* for the cost, need to consider the evaluation of the parameters,
+            and the SSD of the point.
+            The score for the evaluation is nMaxMatchable/nEval and its range is
+            1 to nMaxMatchable.
+            The SSD is filtered above to a max of 1500.  Will add '1' to it
+            to avoid a zero for a perfect match, then the score for SSD ranges
+            from 1 to 1500.
+            Can make the cost the multiplication of the two scores as long as
+            the value (nMaxMatchable/1500) stays below ((1<<31)-1).
+            
+            have normalized both scores by their maximum values so that their
+            contributions to the cost are equal.
+            */
         
+        int nMaxMatchable = countMaxMatchable(corners1List, corners2List);
+                
+        Map<PairInt, Float> indexScore = new HashMap<PairInt, Float>();
+
         Set<PairInt> present = new HashSet<PairInt>();
         List<TransformationPair4> tpList = new ArrayList<TransformationPair4>();
         List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
@@ -192,8 +206,18 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
                 int idx1 = tp4.getCornerListIndex1();
                 int idx2 = tp4.getCornerListIndex2();
                 PairInt p = new PairInt(idx1, idx2);
+                
                 int nEval = evaluate(params, corners1List, corners2List, tolTransXY);
-                cost[idx1][idx2] = (float)nMaxMatchable/(float)nEval;
+                if (nEval == 0) {
+                    continue;
+                }
+                float score1 = (float)nMaxMatchable/(float)nEval;
+                float score2 = (float)tp4.getCost() + 1;
+                float score = score1 * score2;
+                float normalizedScore = (score2/(float)nEval)/1500.f;
+                cost[idx1][idx2] = normalizedScore;
+                indexScore.put(p, Float.valueOf(normalizedScore));
+                
                 present.add(p);
                 
                 tpList.add(tp4);
@@ -242,30 +266,15 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
             n = tpList.size();
         }
         
-        /*
-        several ways to determine the most frequent transformation parameters.
+        // to correct for wrap around from 360 to 0, repeating same calc with shifted values
         
-        (1) (a) use my clustering code on (x,y) as (scale, rotation).
-            want scale and rotation to occupy the same
-            range of values, so scale should be altered by a factor and an offset
-            to have the same min and max range as the rotations in degrees do.
-            -- get the largest cluster and from that filter the         
-               tpList and paramsList by it.
-               (b) use similar methods on the filtered transX and transY.
-                   offsets to make them all positive are necessary for the clustering
-                   code.
-                   -- get the largest cluster and from that, filter the remaining
-                      tpList and paramsList.
+        //int[] indexesToKeep = MiscStats.filterForScaleAndRotationUsingHist(paramsList, 0);
+        //int[] indexesToKeep2 = MiscStats.filterForScaleAndRotation(paramsList, 0);
+        //int[] indexesToKeepShifted = MiscStats.filterForScaleAndRotationUsingHist(paramsList, 30);
         
-        OR
-        (2) use histograms to perform same functions as in (1)
-        */
+        int[] indexesToKeep = MiscStats.filterForRotationUsingHist(paramsList, 0);
         
-        // to correct for wrap around from 360 to 0, repeating same calc with shifterd values
-        
-        int[] indexesToKeep = MiscStats.filterForScaleAndRotation(paramsList, 0);
-        
-        int[] indexesToKeepShifted = MiscStats.filterForScaleAndRotation(paramsList, 30);
+        int[] indexesToKeepShifted = MiscStats.filterForRotationUsingHist(paramsList, 30);
         
         if (indexesToKeepShifted.length > indexesToKeep.length) {
             indexesToKeep = indexesToKeepShifted;
@@ -273,7 +282,17 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         
         filter(tpList, paramsList, indexesToKeep);
         
-        indexesToKeep = MiscStats.filterForTranslation(paramsList);
+        indexesToKeep = MiscStats.filterForScaleUsingHist(paramsList);
+        
+        filter(tpList, paramsList, indexesToKeep);
+        
+        //indexesToKeep = MiscStats.filterForTranslation(paramsList);
+        
+        indexesToKeep = MiscStats.filterForTranslationXUsingHist(paramsList);
+        
+        filter(tpList, paramsList, indexesToKeep);
+        
+        indexesToKeep = MiscStats.filterForTranslationYUsingHist(paramsList);
         
         filter(tpList, paramsList, indexesToKeep);
         
@@ -283,8 +302,8 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         
         List<FeatureComparisonStat> combined = new ArrayList<FeatureComparisonStat>();
         for (i = 0; i < tpList.size(); ++i) {
-            TransformationPair4 tp4 = tpList.get(i);
-            combined.addAll(tp4.getMatchedCompStats());
+            TransformationPair4 ifs = tpList.get(i);
+            combined.addAll(ifs.getMatchedCompStats());
         }
         
         TransformationParameters combinedParams = calculateTransformation(
@@ -294,9 +313,53 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
             return null;
         }
         
+        // pre-check for delta tx, deltaty essentially
+        boolean check = true;
+        while (check && (paramsList.size() > 1)) {
+            float tS = (combinedParams.getStandardDeviations()[0]/combinedParams.getScale());
+            float tR = (float)(2.*Math.PI/combinedParams.getStandardDeviations()[1]);
+            float tTx = combinedParams.getStandardDeviations()[2];
+            float tTy = combinedParams.getStandardDeviations()[3];
+            float tXConstraint = 20;
+            float tYConstraint = 20;
+            if (combinedParams.getNumberOfPointsUsed() < 3) {
+                tXConstraint = 10;
+                tYConstraint = 10;
+            }
+            if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
+                && (tTy < tYConstraint)) {
+                check = false;
+            } else {
+                // --- either keep only smallest SSD or remove highest SSD ---
+                double maxCost = Double.MIN_VALUE;
+                int maxCostIdx = -1;
+                for (int ii = 0; ii < tpList.size(); ++ii) {
+                    TransformationPair4 ifs = tpList.get(ii);
+                    PairInt p = new PairInt(ifs.getCornerListIndex1(), ifs.getCornerListIndex2());
+                    float score1 = indexScore.get(p).floatValue();
+                    if (score1 > maxCost) {
+                        maxCost = score1;
+                        maxCostIdx = ii;
+                    }
+                }
+                tpList.remove(maxCostIdx);
+                paramsList.remove(maxCostIdx);
+                combined.clear();
+                for (i = 0; i < tpList.size(); ++i) {
+                    TransformationPair4 ifs = tpList.get(i);
+                    combined.addAll(ifs.getMatchedCompStats());
+                }
+                combinedParams = calculateTransformation(
+                    binFactor1, binFactor2, combined, new float[4]);
+                if (combinedParams == null) {
+                    return null;
+                }
+            }
+        }
+        
         soln = new MatchingSolution(combinedParams, combined);
             
-        return soln;
+        return soln;    
     }
 
     private Map<Integer, FixedSizeSortedVector<TransformationPair4>> match(
@@ -533,97 +596,4 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
         return soln;
     }
 
-    private int evaluate(TransformationParameters params, 
-        List<List<CornerRegion>> corners1List, List<List<CornerRegion>> corners2List, 
-        int tolTransXY) {
-        
-        //TODO: move this method to a class for utility methods
-        
-        int nMatched = 0;
-        
-        int[] xPoints = convertToXPoints(corners2List);
-        int[] yPoints = convertToYPoints(corners2List);
-        
-        Transformer transformer = new Transformer();
-        
-        NearestPoints np = new NearestPoints(xPoints, yPoints);
-        
-        for (int i = 0; i < corners1List.size(); ++i) {
-            
-            List<CornerRegion> corners1 = corners1List.get(i);
-            
-            for (int ii = 0; ii < corners1.size(); ++ii) {
-                
-                CornerRegion cr = corners1.get(ii);
-                
-                double[] xyTr = transformer.applyTransformation(params, 
-                    cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
-                
-                Set<Integer> indexes = np.findNeighborIndexes(
-                    (int)Math.round(xyTr[0]), (int)Math.round(xyTr[1]), 
-                    tolTransXY);
-                
-                if (indexes != null && indexes.size() > 0) {
-                    nMatched++;
-                }
-            }
-        }
-        
-        return nMatched;
-    }
-    
-    private int[] convertToXPoints(List<List<CornerRegion>> cornersList) {
-        
-        int n = 0;
-        for (List<CornerRegion> list : cornersList) {
-            n += list.size();
-        }
-        
-        int[] x = new int[n];
-        n = 0;
-        for (List<CornerRegion> list : cornersList) {
-            for (CornerRegion cr : list) {
-                x[n] = cr.getX()[cr.getKMaxIdx()];
-                n++;
-            }
-        }
-        
-        return x;
-    }
-    
-    private int[] convertToYPoints(List<List<CornerRegion>> cornersList) {
-        
-        int n = 0;
-        for (List<CornerRegion> list : cornersList) {
-            n += list.size();
-        }
-        
-        int[] y = new int[n];
-        n = 0;
-        for (List<CornerRegion> list : cornersList) {
-            for (CornerRegion cr : list) {
-                y[n] = cr.getY()[cr.getKMaxIdx()];
-                n++;
-            }
-        }
-        
-        return y;
-    }
-
-    private int countMaxMatchable(List<List<CornerRegion>> corners1List, 
-        List<List<CornerRegion>> corners2List) {
-        
-        int n1 = 0;
-        int n2 = 0;
-        
-        for (List<CornerRegion> list : corners1List) {
-            n1 += list.size();
-        }
-        
-        for (List<CornerRegion> list : corners2List) {
-            n2 += list.size();
-        }
-        
-        return Math.max(n1, n2);
-    }
 }

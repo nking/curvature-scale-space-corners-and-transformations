@@ -224,12 +224,28 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             Arrays.fill(cost[i], Float.MAX_VALUE);
         }
      
-        int nMaxMatchable = countMaxMatchable(contours1List, contours2List);
+        int nMaxMatchable = countMaxMatchable2(contours1List, contours2List);
 
         Set<PairInt> present = new HashSet<PairInt>();
-        List<IntensityFeatureComparisonStats> ifcsList = new ArrayList<IntensityFeatureComparisonStats>();
+        List<IntensityFeatureComparisonStats> ifsList = new ArrayList<IntensityFeatureComparisonStats>();
         List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
 
+        Map<PairInt, Float> indexScore = new HashMap<PairInt, Float>();
+
+        /* for the cost, need to consider the evaluation of the parameters,
+            and the SSD of the point.
+            The score for the evaluation is nMaxMatchable/nEval and its range is
+            1 to nMaxMatchable.
+            The SSD is filtered above to a max of 1500.  Will add '1' to it
+            to avoid a zero for a perfect match, then the score for SSD ranges
+            from 1 to 1500.
+            Can make the cost the multiplication of the two scores as long as
+            the value (nMaxMatchable/1500) stays below ((1<<31)-1).
+            
+            have normalized both scores by their maximum values so that their
+            contributions to the cost are equal.
+            */
+        
         int tolTransXY = 10;
 
         for (Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> entry 
@@ -252,11 +268,20 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                 int idx2 = ifcs.getIndex2();
                 
                 PairInt p = new PairInt(idx1, idx2);
-                int nEval = evaluate(params, contours1List, contours2List, tolTransXY);
-                cost[idx1][idx2] = (float)nMaxMatchable/(float)nEval;
-                present.add(p);
                 
-                ifcsList.add(ifcs);
+                int nEval = evaluate2(params, contours1List, contours2List, tolTransXY);
+                if (nEval == 0) {
+                    continue;
+                }
+                float score1 = (float)nMaxMatchable/(float)nEval;
+                float score2 = (float)ifcs.getCost() + 1;
+                float score = score1 * score2;
+                float normalizedScore = (score2/(float)nEval)/1500.f;
+                cost[idx1][idx2] = normalizedScore;
+                indexScore.put(p, Float.valueOf(normalizedScore));
+                
+                present.add(p);                
+                ifsList.add(ifcs);
                 paramsList.add(params);                
             }
         }
@@ -288,63 +313,54 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             }
         }
         
-        int n = ifcsList.size();
+        int n = ifsList.size();
         int i = 0;
         while (i < n) {
-            IntensityFeatureComparisonStats ifcs = ifcsList.get(i);
+            IntensityFeatureComparisonStats ifcs = ifsList.get(i);
             PairInt p = new PairInt(ifcs.getIndex1(), ifcs.getIndex2());
             if (matched.contains(p)) {
                 ++i;
                 continue;
             }
-            ifcsList.remove(i);
+            ifsList.remove(i);
             paramsList.remove(i);
-            n = ifcsList.size();
+            n = ifsList.size();
         }
         
-        /*
-        several ways to determine the most frequent transformation parameters.
+        // to correct for wrap around from 360 to 0, repeating same calc with shifted values
         
-        (1) (a) use my clustering code on (x,y) as (scale, rotation).
-            want scale and rotation to occupy the same
-            range of values, so scale should be altered by a factor and an offset
-            to have the same min and max range as the rotations in degrees do.
-            -- get the largest cluster and from that filter the         
-               tpList and paramsList by it.
-               (b) use similar methods on the filtered transX and transY.
-                   offsets to make them all positive are necessary for the clustering
-                   code.
-                   -- get the largest cluster and from that, filter the remaining
-                      tpList and paramsList.
+        int[] indexesToKeep = MiscStats.filterForRotationUsingHist(paramsList, 0);
         
-        OR
-        (2) use histograms to perform same functions as in (1)
-        */
-        
-        // to correct for wrap around from 360 to 0, repeating same calc with shifterd values
-        
-        int[] indexesToKeep = MiscStats.filterForScaleAndRotation(paramsList, 0);
-        
-        int[] indexesToKeepShifted = MiscStats.filterForScaleAndRotation(paramsList, 30);
+        int[] indexesToKeepShifted = MiscStats.filterForRotationUsingHist(paramsList, 30);
         
         if (indexesToKeepShifted.length > indexesToKeep.length) {
             indexesToKeep = indexesToKeepShifted;
         }
         
-        filter(ifcsList, paramsList, indexesToKeep);
+        filter(ifsList, paramsList, indexesToKeep);
         
-        indexesToKeep = MiscStats.filterForTranslation(paramsList);
+        indexesToKeep = MiscStats.filterForScaleUsingHist(paramsList);
         
-        filter(ifcsList, paramsList, indexesToKeep);
+        filter(ifsList, paramsList, indexesToKeep);
+        
+        //indexesToKeep = MiscStats.filterForTranslation(paramsList);
+        
+        indexesToKeep = MiscStats.filterForTranslationXUsingHist(paramsList);
+        
+        filter(ifsList, paramsList, indexesToKeep);
+        
+        indexesToKeep = MiscStats.filterForTranslationYUsingHist(paramsList);
+        
+        filter(ifsList, paramsList, indexesToKeep);
         
         if (paramsList.size() == 0) {
             return null;
         }
         
         List<FeatureComparisonStat> combined = new ArrayList<FeatureComparisonStat>();
-        for (i = 0; i < ifcsList.size(); ++i) {
-            IntensityFeatureComparisonStats ifcs = ifcsList.get(i);
-            combined.addAll(ifcs.getComparisonStats());
+        for (i = 0; i < ifsList.size(); ++i) {
+            IntensityFeatureComparisonStats ifs = ifsList.get(i);
+            combined.addAll(ifs.getComparisonStats());
         }
         
         TransformationParameters combinedParams = calculateTransformation(
@@ -354,9 +370,53 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             return null;
         }
         
+        // pre-check for delta tx, deltaty essentially
+        boolean check = true;
+        while (check && (paramsList.size() > 1)) {
+            float tS = (combinedParams.getStandardDeviations()[0]/combinedParams.getScale());
+            float tR = (float)(2.*Math.PI/combinedParams.getStandardDeviations()[1]);
+            float tTx = combinedParams.getStandardDeviations()[2];
+            float tTy = combinedParams.getStandardDeviations()[3];
+            float tXConstraint = 20;
+            float tYConstraint = 20;
+            if (combinedParams.getNumberOfPointsUsed() < 3) {
+                tXConstraint = 10;
+                tYConstraint = 10;
+            }
+            if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
+                && (tTy < tYConstraint)) {
+                check = false;
+            } else {
+                // --- either keep only smallest SSD or remove highest SSD ---
+                double maxCost = Double.MIN_VALUE;
+                int maxCostIdx = -1;
+                for (int ii = 0; ii < ifsList.size(); ++ii) {
+                    IntensityFeatureComparisonStats ifs = ifsList.get(ii);
+                    PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
+                    float score1 = indexScore.get(p).floatValue();
+                    if (score1 > maxCost) {
+                        maxCost = score1;
+                        maxCostIdx = ii;
+                    }
+                }
+                ifsList.remove(maxCostIdx);
+                paramsList.remove(maxCostIdx);
+                combined.clear();
+                for (i = 0; i < ifsList.size(); ++i) {
+                    IntensityFeatureComparisonStats ifs = ifsList.get(i);
+                    combined.addAll(ifs.getComparisonStats());
+                }
+                combinedParams = calculateTransformation(
+                    binFactor1, binFactor2, combined, new float[4]);
+                if (combinedParams == null) {
+                    return null;
+                }
+            }
+        }
+        
         soln = new MatchingSolution(combinedParams, combined);
             
-        return soln;
+        return soln;      
     }
 
     protected List<FeatureComparisonStat> filterContourPointsByFeatures(
@@ -698,7 +758,7 @@ redoStats = true;
         return soln;
     }
 
-    private int countMaxMatchable(List<List<CurvatureScaleSpaceContour>> c1List, 
+    private int countMaxMatchable2(List<List<CurvatureScaleSpaceContour>> c1List, 
         List<List<CurvatureScaleSpaceContour>> c2List) {
         
         int n1 = 0;
@@ -715,7 +775,7 @@ redoStats = true;
         return Math.max(n1, n2);
     }
     
-    private int evaluate(TransformationParameters params, 
+    private int evaluate2(TransformationParameters params, 
         List<List<CurvatureScaleSpaceContour>> c1List, 
         List<List<CurvatureScaleSpaceContour>> c2List, int tolTransXY) {
         
@@ -723,8 +783,8 @@ redoStats = true;
         
         int nMatched = 0;
         
-        int[] xPoints = convertToXPoints(c2List);
-        int[] yPoints = convertToYPoints(c2List);
+        int[] xPoints = convertToXPoints2(c2List);
+        int[] yPoints = convertToYPoints2(c2List);
         
         Transformer transformer = new Transformer();
         
@@ -753,44 +813,6 @@ redoStats = true;
         }
         
         return nMatched;
-    }
-
-    private int[] convertToXPoints(List<List<CurvatureScaleSpaceContour>> cList) {
-        
-        int n = 0;
-        for (List<CurvatureScaleSpaceContour> list : cList) {
-            n += list.size();
-        }
-        
-        int[] x = new int[n];
-        n = 0;
-        for (List<CurvatureScaleSpaceContour> list : cList) {
-            for (CurvatureScaleSpaceContour cr : list) {
-                x[n] = cr.getPeakDetails()[0].getXCoord();
-                n++;
-            }
-        }
-        
-        return x;
-    }
-    
-    private int[] convertToYPoints(List<List<CurvatureScaleSpaceContour>> cList) {
-        
-        int n = 0;
-        for (List<CurvatureScaleSpaceContour> list : cList) {
-            n += list.size();
-        }
-        
-        int[] y = new int[n];
-        n = 0;
-        for (List<CurvatureScaleSpaceContour> list : cList) {
-            for (CurvatureScaleSpaceContour cr : list) {
-                y[n] = cr.getPeakDetails()[0].getYCoord();
-                n++;
-            }
-        }
-        
-        return y;
     }
 
     private void filter(List<IntensityFeatureComparisonStats> ifcsList, 
