@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import thirdparty.HungarianAlgorithm;
 
@@ -64,115 +65,19 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             return soln;
         }
         
-        int n1 = perimeters1.size();
-        int n2 = perimeters2.size();
-        
-        float[][] cost = new float[n1][n2];
-        for (int i = 0; i < n1; ++i) {
-            cost[i] = new float[n2];
-            Arrays.fill(cost[i], Float.MAX_VALUE);
-        }
-        
-        int nMaxMatchable = countMaxMatchable(corners1List, corners2List);
-        
-        Set<PairInt> present = new HashSet<PairInt>();
         List<IntensityFeatureComparisonStats> ifsList = new ArrayList<IntensityFeatureComparisonStats>();
         List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
-        
         Map<PairInt, Float> indexScore = new HashMap<PairInt, Float>();
         
-        int tolTransXY = 5;//10;
+        boolean useBipartite = true;
         
-        for (Map.Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> entry 
-            : mMap.entrySet()) {
-            
-            FixedSizeSortedVector<IntensityFeatureComparisonStats> vector = entry.getValue();
-            
-            IntensityFeatureComparisonStats[] ind1To2Pairs = vector.getArray();            
-            
-            /* for the cost, need to consider the evaluation of the parameters,
-            and the SSD of the point.
-            The score for the evaluation is nMaxMatchable/nEval and its range is
-            1 to nMaxMatchable.
-            The SSD is filtered above to a max of 1500.  Will add '1' to it
-            to avoid a zero for a perfect match, then the score for SSD ranges
-            from 1 to 1500.
-            Can make the cost the multiplication of the two scores as long as
-            the value (nMaxMatchable/1500) stays below ((1<<31)-1).
-            
-            have normalized both scores by their maximum values so that their
-            contributions to the cost are equal.
-            */
-            
-            for (int i = 0; i < vector.getNumberOfItems(); ++i) {
-                
-                IntensityFeatureComparisonStats ifs = ind1To2Pairs[i];              
-                
-                TransformationParameters params = calculateTransformation(
-                    binFactor1, binFactor2, ifs.getComparisonStats(),
-                    new float[4]);
-                if (params == null) {
-                    continue;
-                }
-                int idx1 = ifs.getIndex1();
-                int idx2 = ifs.getIndex2();
-                PairInt p = new PairInt(idx1, idx2);
-                int nEval = evaluate(params, corners1List, corners2List, tolTransXY);
-                if (nEval == 0) {
-                    continue;
-                }
-                float score1 = (float)nMaxMatchable/(float)nEval;
-                float score2 = (float)ifs.getCost() + 1;
-                float score = score1 * score2;
-                float normalizedScore = (score2/(float)nEval)/1500.f;
-                cost[idx1][idx2] = normalizedScore;
-                indexScore.put(p, Float.valueOf(normalizedScore));
-                present.add(p);
-                ifsList.add(ifs);
-                paramsList.add(params); 
-            }
-        }
-        
-        boolean transposed = false;
-        if (n1 > n2) {
-            cost = MatrixUtil.transpose(cost);
-            transposed = true;
-        }
-
-        HungarianAlgorithm b = new HungarianAlgorithm();
-        int[][] match = b.computeAssignments(cost);
-        
-        Set<PairInt> matched = new HashSet<PairInt>();
-        for (int i = 0; i < match.length; i++) {
-            int idx1 = match[i][0];
-            int idx2 = match[i][1];
-            if (idx1 == -1 || idx2 == -1) {
-                continue;
-            }
-            if (transposed) {
-                int swap = idx1;
-                idx1 = idx2;
-                idx2 = swap;
-            }
-            PairInt p = new PairInt(idx1, idx2);
-            if (present.contains(p)) {
-                 matched.add(p);
-            }
-        }
-        
-        int n = ifsList.size();
-        int i = 0;
-        while (i < n) {
-            IntensityFeatureComparisonStats ifs = ifsList.get(i);
-            PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
-            if (matched.contains(p)) {
-                ++i;
-                continue;
-            }
-            ifsList.remove(i);
-            paramsList.remove(i);
-            n = ifsList.size();
-        }
+        //if (useBipartite) {
+            resolveUsingBipartite(mMap, corners1List, corners2List, binFactor1,
+                binFactor2, ifsList, paramsList, indexScore);
+        //} else {
+        //    resolveWithoutBipartite(mMap, corners1List, corners2List, binFactor1,
+        //        binFactor2, ifsList, paramsList, indexScore);
+        //}
         
         // to correct for wrap around from 360 to 0, repeating same calc with shifted values
        
@@ -203,7 +108,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         }
         
         List<FeatureComparisonStat> combined = new ArrayList<FeatureComparisonStat>();
-        for (i = 0; i < ifsList.size(); ++i) {
+        for (int i = 0; i < ifsList.size(); ++i) {
             IntensityFeatureComparisonStats ifs = ifsList.get(i);
             combined.addAll(ifs.getComparisonStats());
         }
@@ -238,7 +143,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 ifsList.remove(maxCostIdx);
                 paramsList.remove(maxCostIdx);
                 combined.clear();
-                for (i = 0; i < ifsList.size(); ++i) {
+                for (int i = 0; i < ifsList.size(); ++i) {
                     IntensityFeatureComparisonStats ifs = ifsList.get(i);
                     combined.addAll(ifs.getComparisonStats());
                 }
@@ -255,7 +160,8 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         return soln;      
     }
 
-    private <T extends CornerRegion> Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
+    private <T extends CornerRegion> Map<Integer, 
+        FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
         match(IntensityFeatures features1, IntensityFeatures features2, 
         GreyscaleImage img1, GreyscaleImage img2, 
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
@@ -336,11 +242,11 @@ try {
                 Collections.sort(corners2, new DescendingKComparator());
 
                 ClosedCurveCornerMatcherWrapper<T> mapper =
-                    new ClosedCurveCornerMatcherWrapper<>();
+                    new ClosedCurveCornerMatcherWrapper<T>();
                 
                 boolean matched = mapper.matchCorners(features1, features2, 
                     corners1, corners2, true, img1, img2);
-              
+
                 if (!matched) {
                     continue;
                 }
@@ -515,5 +421,248 @@ try {
         paramsList.clear();
         paramsList.addAll(paramsList2);
     }
+
+    private void resolveUsingBipartite(Map<Integer, 
+        FixedSizeSortedVector<IntensityFeatureComparisonStats>> mMap, 
+        List<List<CornerRegion>> corners1List, 
+        List<List<CornerRegion>> corners2List, 
+        int binFactor1, int binFactor2,
+        List<IntensityFeatureComparisonStats> ifsList, 
+        List<TransformationParameters> paramsList,
+        Map<PairInt, Float> indexScore) {
+        
+        int n1 = corners1List.size();
+        int n2 = corners2List.size();
+        
+        float[][] cost = new float[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            cost[i] = new float[n2];
+            Arrays.fill(cost[i], Float.MAX_VALUE);
+        }
+        
+        int nMaxMatchable = countMaxMatchable(corners1List, corners2List);
+        
+        Set<PairInt> present = new HashSet<PairInt>();
+        
+        int tolTransXY = 5;//10;
+        
+        for (Map.Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> entry 
+            : mMap.entrySet()) {
+            
+            FixedSizeSortedVector<IntensityFeatureComparisonStats> vector = entry.getValue();
+            
+            IntensityFeatureComparisonStats[] ind1To2Pairs = vector.getArray();            
+            
+            /* for the cost, need to consider the evaluation of the parameters,
+            and the SSD of the point.
+            The score for the evaluation is nMaxMatchable/nEval and its range is
+            1 to nMaxMatchable.
+            The SSD is filtered above to a max of 1500.  Will add '1' to it
+            to avoid a zero for a perfect match, then the score for SSD ranges
+            from 1 to 1500.
+            Can make the cost the multiplication of the two scores as long as
+            the value (nMaxMatchable/1500) stays below ((1<<31)-1).
+            
+            have normalized both scores by their maximum values so that their
+            contributions to the cost are equal.
+            */
+            
+            for (int i = 0; i < vector.getNumberOfItems(); ++i) {
+                
+                IntensityFeatureComparisonStats ifs = ind1To2Pairs[i];              
+                
+                TransformationParameters params = calculateTransformation(
+                    binFactor1, binFactor2, ifs.getComparisonStats(),
+                    new float[4]);
+                if (params == null) {
+                    continue;
+                }
+                int idx1 = ifs.getIndex1();
+                int idx2 = ifs.getIndex2();
+                PairInt p = new PairInt(idx1, idx2);
+                int nEval = evaluate(params, corners1List, corners2List, tolTransXY);
+                if (nEval == 0) {
+                    continue;
+                }
+                float score1 = (float)nMaxMatchable/(float)nEval;
+                float score2 = (float)ifs.getCost() + 1;
+                float score = score1 * score2;
+                float normalizedScore = (score2/(float)nEval)/1500.f;
+                cost[idx1][idx2] = normalizedScore;
+                indexScore.put(p, Float.valueOf(normalizedScore));
+                present.add(p);
+                ifsList.add(ifs);
+                paramsList.add(params); 
+            }
+        }
+
+        boolean transposed = false;
+        if (n1 > n2) {
+            cost = MatrixUtil.transpose(cost);
+            transposed = true;
+        }
+
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(cost);
+        
+        Set<PairInt> matched = new HashSet<PairInt>();
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            PairInt p = new PairInt(idx1, idx2);
+            if (present.contains(p)) {
+                 matched.add(p);
+            }
+        }
+        
+        int n = ifsList.size();
+        int i = 0;
+        while (i < n) {
+            IntensityFeatureComparisonStats ifs = ifsList.get(i);
+            PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
+            if (matched.contains(p)) {
+                ++i;
+                continue;
+            }
+            ifsList.remove(i);
+            paramsList.remove(i);
+            n = ifsList.size();
+        }
+        
+    }
+
+    /*
+    private void resolveWithoutBipartite(Map<Integer, 
+        FixedSizeSortedVector<IntensityFeatureComparisonStats>> mMap, 
+        List<List<CornerRegion>> corners1List, 
+        List<List<CornerRegion>> corners2List, 
+        int binFactor1, int binFactor2, 
+        List<IntensityFeatureComparisonStats> ifsList, 
+        List<TransformationParameters> paramsList, 
+        Map<PairInt, Float> indexScore) {
+                
+        Map<Integer, Integer> index1Map = new HashMap<Integer, Integer>();
+        Map<Integer, Set<Integer>> index2Map = new HashMap<Integer, Set<Integer>>();
+        Map<Integer, IntensityFeatureComparisonStats> index1StatMap = new HashMap<Integer, IntensityFeatureComparisonStats>();
+        Map<Integer, Double> index1ScoreMap = new HashMap<Integer, Double>();
+        
+        Map<PairInt, TransformationParameters> index12ParamsMap = new HashMap<PairInt, TransformationParameters>();
+                
+        int tolTransXY = 5;//10;
+        
+        for (Map.Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> entry 
+            : mMap.entrySet()) {
+            
+            FixedSizeSortedVector<IntensityFeatureComparisonStats> vector = entry.getValue();
+            
+            IntensityFeatureComparisonStats[] ind1To2Pairs = vector.getArray();            
+          
+            for (int i = 0; i < vector.getNumberOfItems(); ++i) {
+                
+                IntensityFeatureComparisonStats ifs = ind1To2Pairs[i];              
+                
+                TransformationParameters params = calculateTransformation(
+                    binFactor1, binFactor2, ifs.getComparisonStats(),
+                    new float[4]);
+                if (params == null) {
+                    continue;
+                }
+                int idx1 = ifs.getIndex1();
+                int idx2 = ifs.getIndex2();
+                PairInt p = new PairInt(idx1, idx2);
+                
+                int nEval = evaluate(params, corners1List, corners2List, tolTransXY);
+                if (nEval == 0) {
+                    continue;
+                }
+                //double score1 = (double)nMaxMatchable/(double)nEval;
+                double score2 = (double)ifs.getCost() + 1.;
+                //float score = score1 * score2;
+                double normalizedScore = (score2/(double)nEval)/1500.;
+                
+                Integer key1 = Integer.valueOf(idx1);
+                Double bestCost = index1ScoreMap.get(key1);
+                
+                if ((bestCost == null) || (bestCost.doubleValue()> normalizedScore)) {
+                    index1StatMap.put(key1, ifs);
+                    index1ScoreMap.put(key1, Double.valueOf(normalizedScore));
+                    index12ParamsMap.put(p, params);
+                }
+            }
+        }
+        
+        for (Entry<Integer, IntensityFeatureComparisonStats> entry :
+            index1StatMap.entrySet()) {
+            
+            IntensityFeatureComparisonStats ifs = entry.getValue();
+            
+            Integer index1 = entry.getKey();
+            Integer index2 = Integer.valueOf(ifs.getIndex2());
+            assert(ifs.getIndex1() == index1.intValue());
+            
+            index1Map.put(index1, index2);
+            
+            Set<Integer> indexes1 = index2Map.get(index2);
+            if (indexes1 == null) {
+                indexes1 = new HashSet<Integer>();
+                index2Map.put(index2, indexes1);
+            }
+            indexes1.add(index1);
+        }
+        
+        // resolve any double matchings, but discard the higher cost matches
+        //   from conflicted matches rather than re-trying a solution for them
+        
+        Set<Integer> resolved = new HashSet<Integer>();
+        for (Entry<Integer, Set<Integer>> entry : index2Map.entrySet()) {
+            if (resolved.contains(entry.getKey())) {
+                continue;
+            }
+            Set<Integer> set = entry.getValue();
+            if (set.size() > 1) {
+                double bestCost = Double.MAX_VALUE;
+                Integer bestIndex1 = -1;
+                for (Integer index1 : set) {
+                    Double cost = index1ScoreMap.get(index1);
+                    assert(cost != null);
+                    if (cost < bestCost) {
+                        bestCost = cost;
+                        bestIndex1 = index1;
+                    }
+                    resolved.add(index1);
+                }
+                for (Integer index1 : set) {
+                    if (index1.equals(bestIndex1)) {
+                        continue;
+                    }
+                    index1Map.remove(index1);
+                    index1StatMap.remove(index1);
+                }
+            }
+        }
+        
+        for (Entry<Integer, IntensityFeatureComparisonStats> entry :
+            index1StatMap.entrySet()) {
+            
+            IntensityFeatureComparisonStats ifs = entry.getValue();
+            PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
+            
+            TransformationParameters params = index12ParamsMap.get(p);
+            
+            Double score = index1ScoreMap.get(entry.getKey());
+            
+            ifsList.add(ifs);
+            paramsList.add(params);
+            indexScore.put(p, Float.valueOf(score.floatValue()));
+        }
+    }*/
     
 }
