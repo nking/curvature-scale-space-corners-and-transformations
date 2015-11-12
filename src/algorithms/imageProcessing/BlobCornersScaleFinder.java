@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import thirdparty.HungarianAlgorithm;
 
@@ -69,7 +68,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
         Map<PairInt, Float> indexScore = new HashMap<PairInt, Float>();
         
-        boolean useBipartite = true;
+        //boolean useBipartite = true;
         
         //if (useBipartite) {
             resolveUsingBipartite(mMap, corners1List, corners2List, binFactor1,
@@ -243,7 +242,7 @@ try {
 
                 ClosedCurveCornerMatcherWrapper<T> mapper =
                     new ClosedCurveCornerMatcherWrapper<T>();
-                
+
                 boolean matched = mapper.matchCorners(features1, features2, 
                     corners1, corners2, true, img1, img2);
 

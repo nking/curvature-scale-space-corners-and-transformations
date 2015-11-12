@@ -282,7 +282,7 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
     }
 
     private CornersAndFeatureStat findBestMatchWithinTolerance(
-        List<T> c1, List<T> c2, NearestPoints np,
+        List<T> c2, NearestPoints np,
         IntensityFeatures features1, IntensityFeatures features2,
         int corner1Idx, T cornerCurve1, double[] predictedXYCurve2,
         int rotationInDegrees, int rotationTolerance,
@@ -320,16 +320,9 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
                 continue;
             }
 
-            if (bestStat == null) {
-                if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
-                    bestStat = compStat;
-                    bestIdx2 = idx2;
-                }
-                continue;
-            }
-
             if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
-                if (compStat.getSumIntensitySqDiff() < bestStat.getSumIntensitySqDiff()) {
+                if ((bestStat == null) ||
+                    (compStat.getSumIntensitySqDiff() < bestStat.getSumIntensitySqDiff())) {
                     bestStat = compStat;
                     bestIdx2 = idx2;
                 }
@@ -442,14 +435,10 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
                     continue;
                 }
                 
-                if (best == null) {
+                if ((best == null) || 
+                    (compStat.getSumIntensitySqDiff() < best.getSumIntensitySqDiff())) {
                     best = compStat;
                     bestIdx2 = j;
-                } else {
-                    if (compStat.getSumIntensitySqDiff() < best.getSumIntensitySqDiff()) {
-                        best = compStat;
-                        bestIdx2 = j;
-                    }
                 }
             }
 
@@ -639,12 +628,11 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
             }
 
             double[] xy3C2 = applyTransformation(c3C1, params);
-            CornersAndFeatureStat<T> cfs = findBestMatchWithinTolerance(c1, c2, np,
+            CornersAndFeatureStat<T> cfs = findBestMatchWithinTolerance(c2, np,
                 features1, features2,
                 i, c3C1, xy3C2, Math.round(params.getRotationInDegrees()), 
                 rotationTolerance, img1, img2);
             
-   //TODO: consider discarding already chosen in findBestMatchWithinTolerance
             if ((cfs == null) || cfs.cr2.equals(cr1C2) || cfs.cr2.equals(cr2C2)) {
                 continue;
             }

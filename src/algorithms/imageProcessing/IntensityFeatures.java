@@ -489,43 +489,56 @@ public class IntensityFeatures {
             -4 -3 -2 -1  0  1  2  3
         */
         float sentinel = GsIntensityDescriptor.sentinel;
+        /*
+        defaults: cellDim=2, nCellsAcross=6
+        same range in dx, dy could be achieved w/ coarser cellDim=6, nCellsAcross=2
+        */
         int cellDim = 2;
         int nCellsAcross = 6;
-        int range0 = (int) (cellDim * ((float) nCellsAcross / 2.f));
         int nColsHalf = nCellsAcross / 2;
+        int range0 = cellDim * nColsHalf;
+        //index of center pixel in array of descriptor:
         int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;
+                
+        double rotationInRadians = rotation * Math.PI/180.;
+        double mc = Math.cos(rotationInRadians);
+        double ms = Math.sin(rotationInRadians);
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
         float[] output = new float[nCellsAcross * nCellsAcross];
-        float[] xT = new float[cellDim * cellDim];
-        float[] yT = new float[xT.length];
         
         int count = 0;
         
+        //TODO: can reduce the Math.round calls by using symmetry of the offsets to reuse calculations
+        
         for (int dx = -range0; dx < range0; dx += cellDim) {
             for (int dy = -range0; dy < range0; dy += cellDim) {
-                
-                // --- calculate values for the cell ---
-                boolean withinBounds = transformCellCoordinates(rotation, 
-                    xCenter, yCenter, dx, dy, cellDim, img.getWidth(), 
-                    img.getHeight(), xT, yT);
-                
-                if (!withinBounds) {
+                boolean withinBounds = true;
+                int v = 0;
+                int cCount = 0;
+                for (int dxc = 0; dxc < cellDim; ++dxc) {
+                    for (int dyc = 0; dyc < cellDim; ++dyc) {
+                        double xt = xCenter + (((dx + dxc) * mc) + ((dy + dyc) * ms));
+                        double yt = yCenter + (-((dx + dxc) * ms) + ((dy + dyc) * mc));                
+                        if ((xt < 0) || (Math.ceil(xt) > (w - 1)) || 
+                            (yt < 0) || (Math.ceil(yt) > (h - 1))) {
+                            withinBounds = false;
+                            break;
+                        }
+                        int v0 = img.getValue((int)Math.round(xt), (int)Math.round(yt));
+                        v += v0;
+                        cCount++;
+                    }
+                    if (!withinBounds) {
+                        break;
+                    }
+                }
+                if (!withinBounds || (cCount == 0)) {
                     if (count == centralPixelIndex) {
                         return null;
                     }
-                    output[count] = sentinel;
-                    count++;
-                    continue;
-                }
-                int cCount = 0;
-                int v = 0;
-                for (int i = 0; i < xT.length; ++i) {
-                    int x = Math.round(xT[i]);
-                    int y = Math.round(yT[i]);
-                    int v0 = img.getValue(x, y);
-                    v += v0;
-                    cCount++;
-                }
-                if (cCount == 0) {
                     output[count] = sentinel;
                     count++;
                     continue;
