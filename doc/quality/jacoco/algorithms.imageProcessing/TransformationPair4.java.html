@@ -7,7 +7,7 @@ import java.util.List;
  *
  * @author nichole
  */
-public class TransformationPair4 {
+public class TransformationPair4 implements Comparable&lt;TransformationPair4&gt; {
     
     private final int startIdx1;
     
@@ -97,6 +97,38 @@ public class TransformationPair4 {
     public void setCornerListIndex2(int idx) {
 <span class="fc" id="L98">        this.cornerListIndex2 = idx;</span>
 <span class="fc" id="L99">    }</span>
+
+    @Override
+    public int compareTo(TransformationPair4 other) {
+        
+<span class="fc" id="L104">        int tN = matchedCompStats.size();</span>
+<span class="fc" id="L105">        double tCost = cost;</span>
+        
+<span class="fc" id="L107">        int oN = other.getMatchedCompStats().size();</span>
+<span class="fc" id="L108">        double oCost = other.getCost();</span>
+        
+<span class="pc bpc" id="L110" title="3 of 8 branches missed.">        if (((tN &gt;= oN) &amp;&amp; (tCost &lt; oCost)) || ((oCost == tCost) &amp;&amp; (tN &gt; oN))) {</span>
+<span class="fc" id="L111">            return -1;</span>
+<span class="pc bpc" id="L112" title="3 of 4 branches missed.">        } else if ((tN == oN) &amp;&amp; (oCost == tCost)) {</span>
+<span class="nc" id="L113">            return 0;</span>
+        } else {
+<span class="fc" id="L115">            return 1;</span>
+        }
+    }
+
+    /**
+     * @return the cornerListIndex1
+     */
+    public int getCornerListIndex1() {
+<span class="fc" id="L123">        return cornerListIndex1;</span>
+    }
+
+    /**
+     * @return the cornerListIndex2
+     */
+    public int getCornerListIndex2() {
+<span class="fc" id="L130">        return cornerListIndex2;</span>
+    }
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

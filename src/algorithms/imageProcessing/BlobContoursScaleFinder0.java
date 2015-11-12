@@ -1,9 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ScatterPointPlotterPNG;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -225,7 +223,7 @@ try {
                 
                 if ((bestMatches.getMatchedContourRegions1().size() > 4) && 
                     (i < (n1 - 1))) {
-                    if (stDevsAreSmall(params, params.getStandardDeviations())) {
+                    if (MiscStats.standardDeviationsAreSmall(params)) {
                         
                         double c = calculateCombinedIntensityStat(
                             bestMatches.getMatchedCompStats());

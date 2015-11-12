@@ -562,4 +562,31 @@ public class MiscStats {
         return indexes;
     }
 
+    public static boolean standardDeviationsAreSmall(TransformationParameters params) {
+
+        // calculation
+        float tS = (params.getStandardDeviations()[0] / params.getScale());
+        float tR = (float) (2. * Math.PI / params.getStandardDeviations()[1]);
+
+        // consider comparing stdev in translations to a fraction of the image
+        float tTx = params.getStandardDeviations()[2];
+        float tTy = params.getStandardDeviations()[3];
+
+        float tXConstraint = 20;
+        float tYConstraint = 20;
+        if (params.getNumberOfPointsUsed() < 3) {
+            tXConstraint = 10;
+            tYConstraint = 10;
+        }
+
+        //TODO: review these limits
+        if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
+            && (tTy < tYConstraint)) {
+
+            return true;
+        }
+
+        return false;
+    }
+
 }

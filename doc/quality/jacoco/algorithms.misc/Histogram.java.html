@@ -372,52 +372,52 @@ import java.util.logging.Logger;
     public static HistogramHolder createSimpleHistogram(int binWidth, 
         List&lt;Integer&gt; theValues) {
 
-<span class="pc bpc" id="L375" title="2 of 4 branches missed.">        if (theValues == null || theValues.isEmpty()) {</span>
+<span class="nc bnc" id="L375" title="All 4 branches missed.">        if (theValues == null || theValues.isEmpty()) {</span>
             
 <span class="nc" id="L377">            throw new IllegalArgumentException(</span>
                 &quot;values and valueErrors cannot be null and must be the same length&quot;);
         }
         
-<span class="fc" id="L381">        float[] values = new float[theValues.size()];</span>
-<span class="fc bfc" id="L382" title="All 2 branches covered.">        for (int i = 0; i &lt; theValues.size(); ++i) {</span>
-<span class="fc" id="L383">            int v = theValues.get(i).intValue();</span>
-<span class="fc" id="L384">            values[i] = v;</span>
+<span class="nc" id="L381">        float[] values = new float[theValues.size()];</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        for (int i = 0; i &lt; theValues.size(); ++i) {</span>
+<span class="nc" id="L383">            int v = theValues.get(i).intValue();</span>
+<span class="nc" id="L384">            values[i] = v;</span>
         }
         
-<span class="fc" id="L387">        float[] valueErrors = Errors.populateYErrorsBySqrt(values);</span>
+<span class="nc" id="L387">        float[] valueErrors = Errors.populateYErrorsBySqrt(values);</span>
         
-<span class="fc" id="L389">        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);</span>
+<span class="nc" id="L389">        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);</span>
                 
-<span class="fc" id="L391">        int nBins = (int)Math.ceil(((minMax[1] - minMax[0]))/binWidth);</span>
-<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        if (nBins &lt; 0) {</span>
+<span class="nc" id="L391">        int nBins = (int)Math.ceil(((minMax[1] - minMax[0]))/binWidth);</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (nBins &lt; 0) {</span>
 <span class="nc" id="L393">            nBins *= -1;</span>
         }
         
-<span class="fc" id="L396">        float[] xHist = new float[nBins];</span>
-<span class="fc" id="L397">        int[] yHist = new int[nBins];</span>
+<span class="nc" id="L396">        float[] xHist = new float[nBins];</span>
+<span class="nc" id="L397">        int[] yHist = new int[nBins];</span>
         
-<span class="fc" id="L399">        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], </span>
+<span class="nc" id="L399">        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], </span>
             xHist, yHist, binWidth);
 
-<span class="fc" id="L402">        float[] yHistFloat = new float[yHist.length];</span>
-<span class="fc bfc" id="L403" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
-<span class="fc" id="L404">            yHistFloat[i] = (float) yHist[i];</span>
+<span class="nc" id="L402">        float[] yHistFloat = new float[yHist.length];</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+<span class="nc" id="L404">            yHistFloat[i] = (float) yHist[i];</span>
         }
 
-<span class="fc" id="L407">        float[] yErrors = new float[xHist.length];</span>
-<span class="fc" id="L408">        float[] xErrors = new float[xHist.length];</span>
+<span class="nc" id="L407">        float[] yErrors = new float[xHist.length];</span>
+<span class="nc" id="L408">        float[] xErrors = new float[xHist.length];</span>
 
-<span class="fc" id="L410">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, </span>
+<span class="nc" id="L410">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, </span>
             yErrors);
 
-<span class="fc" id="L413">        HistogramHolder histogram = new HistogramHolder();</span>
-<span class="fc" id="L414">        histogram.setXHist(xHist);</span>
-<span class="fc" id="L415">        histogram.setYHist(yHist);</span>
-<span class="fc" id="L416">        histogram.setYHistFloat(yHistFloat);</span>
-<span class="fc" id="L417">        histogram.setYErrors(yErrors);</span>
-<span class="fc" id="L418">        histogram.setXErrors(xErrors);</span>
+<span class="nc" id="L413">        HistogramHolder histogram = new HistogramHolder();</span>
+<span class="nc" id="L414">        histogram.setXHist(xHist);</span>
+<span class="nc" id="L415">        histogram.setYHist(yHist);</span>
+<span class="nc" id="L416">        histogram.setYHistFloat(yHistFloat);</span>
+<span class="nc" id="L417">        histogram.setYErrors(yErrors);</span>
+<span class="nc" id="L418">        histogram.setXErrors(xErrors);</span>
         
-<span class="fc" id="L420">        return histogram;</span>
+<span class="nc" id="L420">        return histogram;</span>
     }
 
     public static HistogramHolder createSimpleHistogram(
@@ -1207,71 +1207,71 @@ import java.util.logging.Logger;
     
     public static float measureFWHM(HistogramHolder hist, int yPeakIndex) {
         
-<span class="pc bpc" id="L1210" title="1 of 2 branches missed.">        if (hist == null) {</span>
+<span class="nc bnc" id="L1210" title="All 2 branches missed.">        if (hist == null) {</span>
 <span class="nc" id="L1211">            throw new IllegalArgumentException(&quot;hist cannot be null&quot;);</span>
         }
                 
-<span class="pc bpc" id="L1214" title="2 of 4 branches missed.">        if ((yPeakIndex == -1) || (yPeakIndex &gt; (hist.getXHist().length - 1))) {</span>
+<span class="nc bnc" id="L1214" title="All 4 branches missed.">        if ((yPeakIndex == -1) || (yPeakIndex &gt; (hist.getXHist().length - 1))) {</span>
 <span class="nc" id="L1215">            return 0;</span>
         }
         
-<span class="fc" id="L1218">        float halfPeak = hist.getYHist()[yPeakIndex]/2.f;</span>
+<span class="nc" id="L1218">        float halfPeak = hist.getYHist()[yPeakIndex]/2.f;</span>
         
-<span class="fc" id="L1220">        float x0 = Float.MIN_VALUE;</span>
-<span class="pc bpc" id="L1221" title="1 of 2 branches missed.">        if (yPeakIndex == 0) {</span>
+<span class="nc" id="L1220">        float x0 = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L1221" title="All 2 branches missed.">        if (yPeakIndex == 0) {</span>
 <span class="nc" id="L1222">            x0 = hist.getXHist()[0];</span>
         } else {
-<span class="pc bpc" id="L1224" title="1 of 2 branches missed.">            for (int i = 0; i &lt;= yPeakIndex; i++) {</span>
-<span class="fc" id="L1225">                float y = hist.getYHistFloat()[i];</span>
-<span class="pc bpc" id="L1226" title="1 of 2 branches missed.">                if (y == halfPeak) {</span>
+<span class="nc bnc" id="L1224" title="All 2 branches missed.">            for (int i = 0; i &lt;= yPeakIndex; i++) {</span>
+<span class="nc" id="L1225">                float y = hist.getYHistFloat()[i];</span>
+<span class="nc bnc" id="L1226" title="All 2 branches missed.">                if (y == halfPeak) {</span>
 <span class="nc" id="L1227">                    x0 = hist.getXHist()[i];</span>
-<span class="fc bfc" id="L1228" title="All 2 branches covered.">                } else if (y &gt; halfPeak) {</span>
-<span class="pc bpc" id="L1229" title="1 of 2 branches missed.">                    if (i == 0) {</span>
+<span class="nc bnc" id="L1228" title="All 2 branches missed.">                } else if (y &gt; halfPeak) {</span>
+<span class="nc bnc" id="L1229" title="All 2 branches missed.">                    if (i == 0) {</span>
 <span class="nc" id="L1230">                        x0 = hist.getXHist()[0];</span>
                     } else {
                         // interpret between i and i-1
-<span class="fc" id="L1233">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
-<span class="fc" id="L1234">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
-<span class="fc" id="L1235">                        float dy0h = y - halfPeak;</span>
-<span class="fc" id="L1236">                        float ratio = dy0h/dy01;</span>
-<span class="fc" id="L1237">                        x0 = hist.getXHist()[i] - (dx01 * ratio);</span>
+<span class="nc" id="L1233">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
+<span class="nc" id="L1234">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
+<span class="nc" id="L1235">                        float dy0h = y - halfPeak;</span>
+<span class="nc" id="L1236">                        float ratio = dy0h/dy01;</span>
+<span class="nc" id="L1237">                        x0 = hist.getXHist()[i] - (dx01 * ratio);</span>
                     }
-<span class="fc" id="L1239">                    break;</span>
+<span class="nc" id="L1239">                    break;</span>
                 }
             }
         }
         
-<span class="fc" id="L1244">        float x1 = Float.MIN_VALUE;</span>
-<span class="pc bpc" id="L1245" title="1 of 2 branches missed.">        if (yPeakIndex == (hist.getYHist().length - 1)) {</span>
+<span class="nc" id="L1244">        float x1 = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L1245" title="All 2 branches missed.">        if (yPeakIndex == (hist.getYHist().length - 1)) {</span>
 <span class="nc" id="L1246">            x1 = hist.getXHist()[(hist.getYHist().length - 1)];</span>
         } else {
-<span class="pc bpc" id="L1248" title="1 of 2 branches missed.">            for (int i = (yPeakIndex + 1); i &lt; hist.getYHist().length; i++) {    </span>
-<span class="fc" id="L1249">                float y = hist.getYHist()[i];</span>
-<span class="pc bpc" id="L1250" title="1 of 2 branches missed.">                if (y == halfPeak) {</span>
+<span class="nc bnc" id="L1248" title="All 2 branches missed.">            for (int i = (yPeakIndex + 1); i &lt; hist.getYHist().length; i++) {    </span>
+<span class="nc" id="L1249">                float y = hist.getYHist()[i];</span>
+<span class="nc bnc" id="L1250" title="All 2 branches missed.">                if (y == halfPeak) {</span>
 <span class="nc" id="L1251">                    x1 = hist.getXHist()[i];</span>
-<span class="fc bfc" id="L1252" title="All 2 branches covered.">                } else if (y &lt; halfPeak) {</span>
-<span class="pc bpc" id="L1253" title="1 of 2 branches missed.">                    if (i == (hist.getYHist().length - 1)) {</span>
+<span class="nc bnc" id="L1252" title="All 2 branches missed.">                } else if (y &lt; halfPeak) {</span>
+<span class="nc bnc" id="L1253" title="All 2 branches missed.">                    if (i == (hist.getYHist().length - 1)) {</span>
 <span class="nc" id="L1254">                        x1 = hist.getXHist()[(hist.getYHist().length - 1)];</span>
                     } else {
                         // interpret between i and i-1
-<span class="fc" id="L1257">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
-<span class="fc" id="L1258">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
-<span class="fc" id="L1259">                        float dy0h = y - halfPeak;</span>
-<span class="fc" id="L1260">                        float ratio = dy0h/dy01;</span>
-<span class="fc" id="L1261">                        x1 = hist.getXHist()[i] - (dx01 * ratio);</span>
+<span class="nc" id="L1257">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
+<span class="nc" id="L1258">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
+<span class="nc" id="L1259">                        float dy0h = y - halfPeak;</span>
+<span class="nc" id="L1260">                        float ratio = dy0h/dy01;</span>
+<span class="nc" id="L1261">                        x1 = hist.getXHist()[i] - (dx01 * ratio);</span>
                     }
-<span class="fc" id="L1263">                    break;</span>
+<span class="nc" id="L1263">                    break;</span>
                 }
             }
         }
         
-<span class="pc bpc" id="L1268" title="2 of 4 branches missed.">        if ((x0 == Float.MIN_VALUE) || (x1 == Float.MIN_VALUE)) {</span>
+<span class="nc bnc" id="L1268" title="All 4 branches missed.">        if ((x0 == Float.MIN_VALUE) || (x1 == Float.MIN_VALUE)) {</span>
 <span class="nc" id="L1269">            return 0;</span>
         }
         
-<span class="fc" id="L1272">        float fwhm = x1 - x0;</span>
+<span class="nc" id="L1272">        float fwhm = x1 - x0;</span>
             
-<span class="fc" id="L1274">        return fwhm;</span>
+<span class="nc" id="L1274">        return fwhm;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

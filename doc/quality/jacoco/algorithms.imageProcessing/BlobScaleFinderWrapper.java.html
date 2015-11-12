@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BlobScaleFinderWrapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">BlobScaleFinderWrapper.java</span></div><h1>BlobScaleFinderWrapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MiscStats;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -12,11 +14,13 @@ import java.util.logging.Logger;
  */
 public class BlobScaleFinderWrapper {
 
-<span class="pc" id="L15">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L17">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="pc" id="L17">    protected boolean debug = true;</span>
+<span class="fc" id="L19">    protected boolean debug = true;</span>
+    
+<span class="fc" id="L21">    private String debugTag = &quot;&quot;;</span>
 
-<span class="pc" id="L19">    protected final int binnedImageMaxDimension = 300;</span>
+<span class="fc" id="L23">    protected final int binnedImageMaxDimension = 300;</span>
 
     /*
     choices for solutions:
@@ -30,20 +34,20 @@ public class BlobScaleFinderWrapper {
 
     should try (3) and/or (4) first then (2) and (1)
     */
-    private enum AlgType {
+    public static enum AlgType {
         CONTOURS_ORDERED, CORNERS_ORDERED,
         CORNERS_COMBINATIONS, CONTOURS_COMBINATIONS
     }
-<span class="pc" id="L37">    protected AlgType algType = AlgType.CORNERS_ORDERED;</span>
+<span class="fc" id="L41">    protected AlgType algType = AlgType.CORNERS_ORDERED;</span>
 
     protected final BlobPerimeterHelper img1Helper;
     protected final BlobPerimeterHelper img2Helper;
 
-<span class="pc" id="L42">    protected BlobCornerHelper blobCornerHelper1 = null;</span>
-<span class="pc" id="L43">    protected BlobCornerHelper blobCornerHelper2 = null;</span>
+<span class="fc" id="L46">    protected BlobCornerHelper blobCornerHelper1 = null;</span>
+<span class="fc" id="L47">    protected BlobCornerHelper blobCornerHelper2 = null;</span>
 
-<span class="pc" id="L45">    protected BlobContourHelper blobContourHelper1 = null;</span>
-<span class="pc" id="L46">    protected BlobContourHelper blobContourHelper2 = null;</span>
+<span class="fc" id="L49">    protected BlobContourHelper blobContourHelper1 = null;</span>
+<span class="fc" id="L50">    protected BlobContourHelper blobContourHelper2 = null;</span>
 
     // use with img1Helper.getImage() or getGreyscaleImage(), but not both
     protected final IntensityFeatures features1;
@@ -53,11 +57,18 @@ public class BlobScaleFinderWrapper {
     protected final IntensityFeatures featuresBinned2;
 
     private final boolean skipBinnedImages;
-<span class="pc" id="L56">    private boolean useBinned1 = false;</span>
-<span class="pc" id="L57">    private boolean useBinned2 = false;</span>
+<span class="fc" id="L60">    private boolean useBinned1 = false;</span>
+<span class="fc" id="L61">    private boolean useBinned2 = false;</span>
 
-<span class="pc" id="L59">    private boolean useSameSegmentation = false;</span>
+<span class="fc" id="L63">    private boolean useSameSegmentation = false;</span>
 
+<span class="fc" id="L65">    private MatchingSolution solution = null;</span>
+<span class="fc" id="L66">    private AlgType solutionAlgType = null;</span>
+<span class="fc" id="L67">    private SegmentationType solutionSegmentationType1 = null;</span>
+<span class="fc" id="L68">    private SegmentationType solutionSegmentationType2 = null;</span>
+<span class="fc" id="L69">    private boolean solutionUsedBinned1 = false;</span>
+<span class="fc" id="L70">    private boolean solutionUsedBinned2 = false;</span>
+    
     /**
      *
      * @param img1 the first image holding objects for which a Euclidean
@@ -66,25 +77,57 @@ public class BlobScaleFinderWrapper {
      * @param img2 the second image representing the reference frame that
      * image1 is transformed to using the resulting parameters,
      */
-<span class="fc" id="L69">    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {</span>
+<span class="fc" id="L80">    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {</span>
 
-<span class="fc" id="L71">        debug = true;</span>
+<span class="fc" id="L82">        debug = false;</span>
         
-<span class="fc" id="L73">        img1Helper = new BlobPerimeterHelper(img1, &quot;1&quot;);</span>
+<span class="fc" id="L84">        img1Helper = new BlobPerimeterHelper(img1, &quot;1&quot;);</span>
 
-<span class="fc" id="L75">        img2Helper = new BlobPerimeterHelper(img2, &quot;2&quot;);</span>
+<span class="fc" id="L86">        img2Helper = new BlobPerimeterHelper(img2, &quot;2&quot;);</span>
 
-<span class="fc" id="L77">        features1 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L88">        features1 = new IntensityFeatures(5, true);</span>
 
-<span class="fc" id="L79">        features2 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L90">        features2 = new IntensityFeatures(5, true);</span>
         
-<span class="fc" id="L81">        skipBinnedImages = true;</span>
-<span class="fc" id="L82">        useBinned1 = false;</span>
-<span class="fc" id="L83">        useBinned2 = false;</span>
+<span class="fc" id="L92">        skipBinnedImages = true;</span>
+<span class="fc" id="L93">        useBinned1 = false;</span>
+<span class="fc" id="L94">        useBinned2 = false;</span>
 
-<span class="fc" id="L85">        featuresBinned1 = null;</span>
-<span class="fc" id="L86">        featuresBinned2 = null;</span>
-<span class="fc" id="L87">    }</span>
+<span class="fc" id="L96">        featuresBinned1 = null;</span>
+<span class="fc" id="L97">        featuresBinned2 = null;</span>
+<span class="fc" id="L98">    }</span>
+    
+    /**
+     *
+     * @param img1 the first image holding objects for which a Euclidean
+     * transformation is found that can be applied to put it in
+     * the same scale reference frame as image2.
+     * @param img2 the second image representing the reference frame that
+     * image1 is transformed to using the resulting parameters,
+     * @param debugTagPrefix
+     */
+    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, 
+<span class="fc" id="L110">        String debugTagPrefix) {</span>
+
+<span class="fc" id="L112">        debug = true;</span>
+        
+<span class="fc" id="L114">        debugTag = debugTagPrefix;</span>
+        
+<span class="fc" id="L116">        img1Helper = new BlobPerimeterHelper(img1, debugTagPrefix + &quot;_1&quot;);</span>
+
+<span class="fc" id="L118">        img2Helper = new BlobPerimeterHelper(img2, debugTagPrefix + &quot;_2&quot;);</span>
+
+<span class="fc" id="L120">        features1 = new IntensityFeatures(5, true);</span>
+
+<span class="fc" id="L122">        features2 = new IntensityFeatures(5, true);</span>
+        
+<span class="fc" id="L124">        skipBinnedImages = true;</span>
+<span class="fc" id="L125">        useBinned1 = false;</span>
+<span class="fc" id="L126">        useBinned2 = false;</span>
+
+<span class="fc" id="L128">        featuresBinned1 = null;</span>
+<span class="fc" id="L129">        featuresBinned2 = null;</span>
+<span class="fc" id="L130">    }</span>
     
     /**
      *
@@ -97,47 +140,47 @@ public class BlobScaleFinderWrapper {
      * with images binned to 300 pixels or less per dimension.
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
-<span class="nc" id="L100">        startWithBinnedImages) {</span>
+<span class="fc" id="L143">        startWithBinnedImages) {</span>
 
-<span class="nc" id="L102">        debug = true;</span>
+<span class="fc" id="L145">        debug = false;</span>
         
-<span class="nc" id="L104">        img1Helper = new BlobPerimeterHelper(img1, &quot;1&quot;);</span>
+<span class="fc" id="L147">        img1Helper = new BlobPerimeterHelper(img1, &quot;1&quot;);</span>
 
-<span class="nc" id="L106">        img2Helper = new BlobPerimeterHelper(img2, &quot;2&quot;);</span>
+<span class="fc" id="L149">        img2Helper = new BlobPerimeterHelper(img2, &quot;2&quot;);</span>
 
-<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (startWithBinnedImages) {</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (startWithBinnedImages) {</span>
          
-<span class="nc" id="L110">            skipBinnedImages = true;</span>
-<span class="nc" id="L111">            useBinned1 = false;</span>
-<span class="nc" id="L112">            useBinned2 = false;</span>
+<span class="fc" id="L153">            skipBinnedImages = true;</span>
+<span class="fc" id="L154">            useBinned1 = false;</span>
+<span class="fc" id="L155">            useBinned2 = false;</span>
         
-<span class="nc" id="L114">            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+<span class="fc" id="L157">            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
 
-<span class="nc" id="L116">            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+<span class="fc" id="L159">            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
             
-<span class="nc" id="L118">            featuresBinned1 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L161">            featuresBinned1 = new IntensityFeatures(5, true);</span>
             
-<span class="nc" id="L120">            featuresBinned2 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L163">            featuresBinned2 = new IntensityFeatures(5, true);</span>
             
         } else {
             
-<span class="nc" id="L124">            skipBinnedImages = true;</span>
-<span class="nc" id="L125">            useBinned1 = false;</span>
-<span class="nc" id="L126">            useBinned2 = false;</span>
-<span class="nc" id="L127">            featuresBinned1 = null;</span>
-<span class="nc" id="L128">            featuresBinned2 = null;</span>
+<span class="nc" id="L167">            skipBinnedImages = true;</span>
+<span class="nc" id="L168">            useBinned1 = false;</span>
+<span class="nc" id="L169">            useBinned2 = false;</span>
+<span class="nc" id="L170">            featuresBinned1 = null;</span>
+<span class="nc" id="L171">            featuresBinned2 = null;</span>
             
         }
 
-<span class="nc" id="L132">        features1 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L175">        features1 = new IntensityFeatures(5, true);</span>
 
-<span class="nc" id="L134">        features2 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L177">        features2 = new IntensityFeatures(5, true);</span>
 
-<span class="nc" id="L136">    }</span>
+<span class="fc" id="L179">    }</span>
 
     public void setToDebug() {
-<span class="fc" id="L139">        debug = true;</span>
-<span class="fc" id="L140">    }</span>
+<span class="fc" id="L182">        debug = true;</span>
+<span class="fc" id="L183">    }</span>
 
     /**
      * NOT READY FOR USE YET.
@@ -188,71 +231,74 @@ public class BlobScaleFinderWrapper {
         }
         */
 
-<span class="fc" id="L191">        ImageStatistics statsR1 = ImageStatisticsHelper.examine(</span>
-<span class="fc" id="L192">            img1Helper.getImage().getRValues(), true);</span>
-<span class="fc" id="L193">        ImageStatistics statsB1 = ImageStatisticsHelper.examine(</span>
-<span class="fc" id="L194">            img1Helper.getImage().getBValues(), true);</span>
-<span class="fc" id="L195">        ImageStatistics statsG1 = ImageStatisticsHelper.examine(</span>
-<span class="fc" id="L196">            img1Helper.getImage().getGValues(), true);</span>
+<span class="fc" id="L234">        ImageStatistics statsR1 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L235">            img1Helper.getImage().getRValues(), true);</span>
+<span class="fc" id="L236">        ImageStatistics statsB1 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L237">            img1Helper.getImage().getBValues(), true);</span>
+<span class="fc" id="L238">        ImageStatistics statsG1 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L239">            img1Helper.getImage().getGValues(), true);</span>
 
-<span class="fc" id="L198">        ImageStatistics statsR2 = ImageStatisticsHelper.examine(</span>
-<span class="fc" id="L199">            img2Helper.getImage().getRValues(), true);</span>
-<span class="fc" id="L200">        ImageStatistics statsB2 = ImageStatisticsHelper.examine(</span>
-<span class="fc" id="L201">            img2Helper.getImage().getBValues(), true);</span>
-<span class="fc" id="L202">        ImageStatistics statsG2 = ImageStatisticsHelper.examine(</span>
-<span class="fc" id="L203">            img2Helper.getImage().getGValues(), true);</span>
+<span class="fc" id="L241">        ImageStatistics statsR2 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L242">            img2Helper.getImage().getRValues(), true);</span>
+<span class="fc" id="L243">        ImageStatistics statsB2 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L244">            img2Helper.getImage().getBValues(), true);</span>
+<span class="fc" id="L245">        ImageStatistics statsG2 = ImageStatisticsHelper.examine(</span>
+<span class="fc" id="L246">            img2Helper.getImage().getGValues(), true);</span>
 
-<span class="fc" id="L205">        log.info(&quot;stats R1=&quot; + statsR1.toString());</span>
-<span class="fc" id="L206">        log.info(&quot;stats G1=&quot; + statsG1.toString());</span>
-<span class="fc" id="L207">        log.info(&quot;stats B1=&quot; + statsB1.toString());</span>
+<span class="fc" id="L248">        log.info(&quot;stats R1=&quot; + statsR1.toString());</span>
+<span class="fc" id="L249">        log.info(&quot;stats G1=&quot; + statsG1.toString());</span>
+<span class="fc" id="L250">        log.info(&quot;stats B1=&quot; + statsB1.toString());</span>
 
-<span class="fc" id="L209">        log.info(&quot;stats R2=&quot; + statsR2.toString());</span>
-<span class="fc" id="L210">        log.info(&quot;stats G2=&quot; + statsG2.toString());</span>
-<span class="fc" id="L211">        log.info(&quot;stats B2=&quot; + statsB2.toString());</span>
+<span class="fc" id="L252">        log.info(&quot;stats R2=&quot; + statsR2.toString());</span>
+<span class="fc" id="L253">        log.info(&quot;stats G2=&quot; + statsG2.toString());</span>
+<span class="fc" id="L254">        log.info(&quot;stats B2=&quot; + statsB2.toString());</span>
 
-<span class="fc" id="L213">        int limit = 20;</span>
-<span class="fc" id="L214">        useSameSegmentation = false;</span>
-<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if ((Math.abs(statsR1.getMode() - statsR2.getMode()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L216" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMode() - statsG2.getMode()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMode() - statsB2.getMode()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">            (Math.abs(statsR1.getMedian() - statsR2.getMedian()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMedian() - statsG2.getMedian()) &lt; limit) &amp;&amp;</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMedian() - statsB2.getMedian()) &lt; limit)) {</span>
-<span class="fc" id="L221">            useSameSegmentation = true;</span>
+<span class="fc" id="L256">        int limit = 20;</span>
+<span class="fc" id="L257">        useSameSegmentation = false;</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        if ((Math.abs(statsR1.getMode() - statsR2.getMode()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMode() - statsG2.getMode()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMode() - statsB2.getMode()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">            (Math.abs(statsR1.getMedian() - statsR2.getMedian()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">            (Math.abs(statsG1.getMedian() - statsG2.getMedian()) &lt; limit) &amp;&amp;</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">            (Math.abs(statsB1.getMedian() - statsB2.getMedian()) &lt; limit)) {</span>
+<span class="fc" id="L264">            useSameSegmentation = true;</span>
         }
         
-<span class="fc" id="L224">        TransformationParameters params = null;</span>
+<span class="fc" id="L267">        TransformationParameters params = null;</span>
         
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">        boolean[] useBinned = skipBinnedImages ? </span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">        boolean[] useBinned = skipBinnedImages ? </span>
             new boolean[]{false} : new boolean[]{true, false};
         
-<span class="fc bfc" id="L229" title="All 2 branches covered.">        for (boolean ub : useBinned) {</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        for (boolean ub : useBinned) {</span>
             
-<span class="fc" id="L231">            useBinned1 = ub;</span>
-<span class="fc" id="L232">            useBinned2 = ub;</span>
+<span class="fc" id="L274">            useBinned1 = ub;</span>
+<span class="fc" id="L275">            useBinned2 = ub;</span>
         
-<span class="pc bpc" id="L234" title="1 of 2 branches missed.">            if (params == null) {</span>
-<span class="fc" id="L235">                algType = AlgType.CORNERS_ORDERED;</span>
-<span class="fc" id="L236">                params = calculateScaleImpl();</span>
+            /*
+            if (params == null) {
+                algType = AlgType.CORNERS_ORDERED;
+                params = calculateScaleImpl();
+            }*/
+            
+            /*
+            if (params == null) {
+                algType = AlgType.CONTOURS_ORDERED;
+                params = calculateScaleImpl();
+            }*/
+
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="fc" id="L290">                algType = AlgType.CORNERS_COMBINATIONS;</span>
+<span class="fc" id="L291">                params = calculateScaleImpl();</span>
             }
             
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">            if (params == null) {</span>
-<span class="nc" id="L240">                algType = AlgType.CONTOURS_ORDERED;</span>
-<span class="nc" id="L241">                params = calculateScaleImpl();</span>
-            }
-
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">            if (params == null) {</span>
-<span class="nc" id="L245">                algType = AlgType.CORNERS_COMBINATIONS;</span>
-<span class="nc" id="L246">                params = calculateScaleImpl();</span>
-            }
-
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            if (params == null) {</span>
-<span class="nc" id="L250">                algType = AlgType.CONTOURS_COMBINATIONS;</span>
-<span class="nc" id="L251">                params = calculateScaleImpl();</span>
-            }
+            /*
+            if (params == null) {
+                algType = AlgType.CONTOURS_COMBINATIONS;
+                params = calculateScaleImpl();
+            }*/
         }
         
-<span class="fc" id="L255">        return params;</span>
+<span class="fc" id="L301">        return params;</span>
     }
 
     private TransformationParameters calculateScaleImpl() throws IOException,
@@ -270,240 +316,358 @@ public class BlobScaleFinderWrapper {
         easily cache all of these images and products.
         */
 
-<span class="fc" id="L273">        SegmentationType[] seg1 = new SegmentationType[]{</span>
-            SegmentationType.COLOR_POLARCIEXY,
+<span class="fc" id="L319">        SegmentationType[] seg1 = new SegmentationType[]{</span>
+            ////SegmentationType.COLOR_POLARCIEXY,
+      //      SegmentationType.DT_CLUSTERING,
             SegmentationType.GREYSCALE_KMPP,
-            SegmentationType.COLOR_POLARCIEXY_LARGE,
-            //SegmentationType.ADAPTIVE_MEAN
+      //      SegmentationType.COLOR_POLARCIEXY_LARGE,
+            ////SegmentationType.ADAPTIVE_MEAN
         };
-<span class="fc" id="L279">        SegmentationType[] seg2 = new SegmentationType[]{</span>
-            SegmentationType.COLOR_POLARCIEXY,
+<span class="fc" id="L326">        SegmentationType[] seg2 = new SegmentationType[]{</span>
+            ////SegmentationType.COLOR_POLARCIEXY,
+       //     SegmentationType.DT_CLUSTERING,
             SegmentationType.GREYSCALE_KMPP,
-            SegmentationType.COLOR_POLARCIEXY_LARGE,
-            //SegmentationType.ADAPTIVE_MEAN
+       //     SegmentationType.COLOR_POLARCIEXY_LARGE,
+            ////SegmentationType.ADAPTIVE_MEAN
         };
         
-<span class="fc" id="L286">        int ordered1Idx = 0;</span>
-<span class="fc" id="L287">        int ordered2Idx = 0;</span>
+<span class="fc" id="L334">        int ordered1Idx = 0;</span>
+<span class="fc" id="L335">        int ordered2Idx = 0;</span>
 
-<span class="pc bpc" id="L289" title="2 of 4 branches missed.">        while ((ordered1Idx &lt; seg1.length) &amp;&amp; (ordered2Idx &lt; seg2.length)) {</span>
+<span class="pc bpc" id="L337" title="2 of 4 branches missed.">        while ((ordered1Idx &lt; seg1.length) &amp;&amp; (ordered2Idx &lt; seg2.length)) {</span>
 
-<span class="fc" id="L291">            SegmentationType segmentationType1 = seg1[ordered1Idx];</span>
+<span class="fc" id="L339">            SegmentationType segmentationType1 = seg1[ordered1Idx];</span>
 
-<span class="fc" id="L293">            SegmentationType segmentationType2 = seg2[ordered2Idx];</span>
+<span class="fc" id="L341">            SegmentationType segmentationType2 = seg2[ordered2Idx];</span>
 
-<span class="fc" id="L295">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; binned=&quot; + useBinned1</span>
-                + &quot; useSameSegmentation=&quot; + useSameSegmentation
+<span class="fc" id="L343">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; alg=&quot; + algType.name()</span>
+                + &quot; binned=&quot; + useBinned1 + &quot; useSameSegmentation=&quot; + useSameSegmentation
                 + &quot; ordered1Idx=&quot; + ordered1Idx);
-<span class="fc" id="L298">            log.info(&quot;for 2: &quot; + segmentationType2.name() + &quot; binned=&quot; + useBinned2</span>
-                + &quot; ordered2Idx=&quot; + ordered2Idx);
+<span class="fc" id="L346">            log.info(&quot;for 2: &quot; + segmentationType2.name()</span>
+                + &quot; binned=&quot; + useBinned2 + &quot; ordered2Idx=&quot; + ordered2Idx);
 
             IntensityFeatures f1;
             IntensityFeatures f2;
 
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">            if (useBinned1) {</span>
-<span class="nc" id="L305">                img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
-<span class="nc" id="L306">                f1 = featuresBinned1;</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">            if (useBinned1) {</span>
+<span class="nc" id="L353">                img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+<span class="nc" id="L354">                f1 = featuresBinned1;</span>
             } else {
-<span class="fc" id="L308">                f1 = features1;</span>
+<span class="fc" id="L356">                f1 = features1;</span>
             }
 
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">            if (useBinned2) {</span>
-<span class="nc" id="L312">                img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
-<span class="nc" id="L313">                f2 = featuresBinned2;</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">            if (useBinned2) {</span>
+<span class="nc" id="L360">                img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);</span>
+<span class="nc" id="L361">                f2 = featuresBinned2;</span>
             } else {
-<span class="fc" id="L315">                f2 = features2;</span>
+<span class="fc" id="L363">                f2 = features2;</span>
             }
 
-<span class="fc" id="L318">            long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L366">            long t0 = System.currentTimeMillis();</span>
             
-<span class="fc" id="L320">            img1Helper.applySegmentation(segmentationType1, useBinned1);</span>
+<span class="fc" id="L368">            img1Helper.applySegmentation(segmentationType1, useBinned1);</span>
 
-<span class="fc" id="L322">            long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L370">            long t1 = System.currentTimeMillis();</span>
             
-<span class="fc" id="L324">            img2Helper.applySegmentation(segmentationType2, useBinned2);</span>
+<span class="fc" id="L372">            img2Helper.applySegmentation(segmentationType2, useBinned2);</span>
 
-<span class="fc" id="L326">            long t2 = System.currentTimeMillis();</span>
+<span class="fc" id="L374">            long t2 = System.currentTimeMillis();</span>
             
-<span class="fc" id="L328">            long t1Sec = (t1 - t0)/1000;</span>
-<span class="fc" id="L329">            long t2Sec = (t2 - t1)/1000;</span>
-<span class="fc" id="L330">            log.info(&quot;segmentation1(sec)=&quot; + t1Sec </span>
+<span class="fc" id="L376">            long t1Sec = (t1 - t0)/1000;</span>
+<span class="fc" id="L377">            long t2Sec = (t2 - t1)/1000;</span>
+<span class="fc" id="L378">            log.info(&quot;segmentation1(sec)=&quot; + t1Sec </span>
                 + &quot; segmentation2(sec)=&quot; + t2Sec);
             
-<span class="fc" id="L333">            float[] outputScaleRotTransXYStDev = new float[4];</span>
+<span class="fc" id="L381">            MatchingSolution soln = null;</span>
 
-<span class="fc" id="L335">            TransformationParameters params = null;</span>
+<span class="fc" id="L383">            int n1 = 0;</span>
+<span class="fc" id="L384">            int n2 = 0;</span>
 
-<span class="fc" id="L337">            int n1 = 0;</span>
-<span class="fc" id="L338">            int n2 = 0;</span>
-
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">            if (algType.equals(AlgType.CONTOURS_ORDERED) || </span>
-<span class="pc bpc" id="L341" title="1 of 2 branches missed.">                algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">            if (algType.equals(AlgType.CONTOURS_ORDERED) || </span>
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">                algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
                 
-<span class="nc bnc" id="L343" title="All 2 branches missed.">                if (blobContourHelper1 == null) {</span>
-<span class="nc bnc" id="L344" title="All 2 branches missed.">                    if (debug) {</span>
-<span class="nc" id="L345">                        blobContourHelper1 = new BlobContourHelper(img1Helper, &quot;1&quot;);</span>
-<span class="nc" id="L346">                        blobContourHelper2 = new BlobContourHelper(img2Helper, &quot;2&quot;);</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">                if (blobContourHelper1 == null) {</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">                    if (debug) {</span>
+<span class="nc" id="L391">                        blobContourHelper1 = new BlobContourHelper(img1Helper, &quot;1&quot;);</span>
+<span class="nc" id="L392">                        blobContourHelper2 = new BlobContourHelper(img2Helper, &quot;2&quot;);</span>
                     } else {
-<span class="nc" id="L348">                        blobContourHelper1 = new BlobContourHelper(img1Helper);</span>
-<span class="nc" id="L349">                        blobContourHelper2 = new BlobContourHelper(img2Helper);</span>
+<span class="nc" id="L394">                        blobContourHelper1 = new BlobContourHelper(img1Helper);</span>
+<span class="nc" id="L395">                        blobContourHelper2 = new BlobContourHelper(img2Helper);</span>
                     }
                 }
 
-<span class="nc" id="L353">                blobContourHelper1.generatePerimeterContours(</span>
+<span class="nc" id="L399">                blobContourHelper1.generatePerimeterContours(</span>
                     segmentationType1, useBinned1);
-<span class="nc" id="L355">                blobContourHelper2.generatePerimeterContours(</span>
+<span class="nc" id="L401">                blobContourHelper2.generatePerimeterContours(</span>
                     segmentationType2, useBinned2);
                 
-<span class="pc bpc" id="L358" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_ORDERED) || </span>
-<span class="nc bnc" id="L359" title="All 2 branches missed.">                algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_ORDERED) || </span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">                algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
 
-<span class="fc bfc" id="L361" title="All 2 branches covered.">                if (blobCornerHelper1 == null) {</span>
-<span class="pc bpc" id="L362" title="1 of 2 branches missed.">                    if (debug) {</span>
-<span class="fc" id="L363">                        blobCornerHelper1 = new BlobCornerHelper(img1Helper, &quot;!&quot;);</span>
-<span class="fc" id="L364">                        blobCornerHelper2 = new BlobCornerHelper(img2Helper, &quot;2&quot;);</span>
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">                if (blobCornerHelper1 == null) {</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">                    if (debug) {</span>
+<span class="fc" id="L409">                        blobCornerHelper1 = new BlobCornerHelper(img1Helper, &quot;!&quot;);</span>
+<span class="fc" id="L410">                        blobCornerHelper2 = new BlobCornerHelper(img2Helper, &quot;2&quot;);</span>
                     } else {
-<span class="nc" id="L366">                        blobCornerHelper1 = new BlobCornerHelper(img1Helper);</span>
-<span class="nc" id="L367">                        blobCornerHelper2 = new BlobCornerHelper(img2Helper);</span>
+<span class="nc" id="L412">                        blobCornerHelper1 = new BlobCornerHelper(img1Helper);</span>
+<span class="nc" id="L413">                        blobCornerHelper2 = new BlobCornerHelper(img2Helper);</span>
                     }
                 }
 
-<span class="fc" id="L371">                t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L417">                t0 = System.currentTimeMillis();</span>
                 
-<span class="fc" id="L373">                blobCornerHelper1.generatePerimeterCorners(</span>
+<span class="fc" id="L419">                blobCornerHelper1.generatePerimeterCorners(</span>
                     segmentationType1, useBinned1);
                 
-<span class="fc" id="L376">                t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L422">                t1 = System.currentTimeMillis();</span>
                 
-<span class="fc" id="L378">                blobCornerHelper2.generatePerimeterCorners(</span>
+<span class="fc" id="L424">                blobCornerHelper2.generatePerimeterCorners(</span>
                     segmentationType2, useBinned2);
 
-<span class="fc" id="L381">                t2 = System.currentTimeMillis();</span>
-<span class="fc" id="L382">                t1Sec = (t1 - t0)/1000;</span>
-<span class="fc" id="L383">                t2Sec = (t2 - t1)/1000;</span>
-<span class="fc" id="L384">                Logger.getLogger(this.getClass().getName()).info(&quot;corners1(sec)=&quot; </span>
+<span class="fc" id="L427">                t2 = System.currentTimeMillis();</span>
+<span class="fc" id="L428">                t1Sec = (t1 - t0)/1000;</span>
+<span class="fc" id="L429">                t2Sec = (t2 - t1)/1000;</span>
+<span class="fc" id="L430">                Logger.getLogger(this.getClass().getName()).info(&quot;corners1(sec)=&quot; </span>
                     + t1Sec + &quot; corners1(sec)=&quot; + t2Sec);
             }
 
-<span class="fc" id="L388">            t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L434">            t0 = System.currentTimeMillis();</span>
                 
-<span class="pc bpc" id="L390" title="1 of 2 branches missed.">            if (algType.equals(AlgType.CORNERS_ORDERED)) {</span>
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">            if (algType.equals(AlgType.CORNERS_ORDERED)) {</span>
                 
-<span class="fc" id="L392">                BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();</span>
+<span class="nc" id="L438">                BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();</span>
 
-<span class="fc" id="L394">                params = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L441">                    bsFinder.setToDebug();</span>
+                }
+         
+<span class="nc" id="L444">                soln = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
                     segmentationType1, useBinned1, blobCornerHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
-<span class="fc" id="L398">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
-<span class="fc" id="L399">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+<span class="nc" id="L448">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="nc" id="L449">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
                 
-<span class="pc bnc" id="L401" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_ORDERED)) {</span>
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_ORDERED)) {</span>
                 
-<span class="nc" id="L403">                BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();</span>
+<span class="nc" id="L453">                BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();</span>
 
-<span class="nc" id="L405">                params = bsFinder.solveForScale(blobContourHelper1, f1,</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L456">                    bsFinder.setToDebug();</span>
+                }
+        
+<span class="nc" id="L459">                soln = bsFinder.solveForScale(blobContourHelper1, f1,</span>
                     segmentationType1, useBinned1, blobContourHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
-<span class="nc" id="L409">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
-<span class="nc" id="L410">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+<span class="nc" id="L463">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="nc" id="L464">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
                 
-<span class="nc bnc" id="L412" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
+<span class="pc bpc" id="L466" title="1 of 2 branches missed.">            } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {</span>
                 
-<span class="nc" id="L414">                BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();</span>
+<span class="fc" id="L468">                BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();</span>
 
-<span class="nc" id="L416">                params = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">                if (debug) {</span>
+<span class="fc" id="L471">                    bsFinder.setToDebug();</span>
+                }
+        
+<span class="fc" id="L474">                soln = bsFinder.solveForScale(blobCornerHelper1, f1,</span>
                     segmentationType1, useBinned1, blobCornerHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
-<span class="nc" id="L420">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
-<span class="nc" id="L421">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+<span class="fc" id="L478">                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="fc" id="L479">                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
 
-<span class="nc bnc" id="L423" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
+<span class="pc bnc" id="L481" title="All 2 branches missed.">            } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {</span>
 
-<span class="nc" id="L425">                BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();</span>
+<span class="nc" id="L483">                BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();</span>
 
-<span class="nc" id="L427">                params = bsFinder.solveForScale(blobContourHelper1, f1,</span>
+<span class="nc bnc" id="L485" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L486">                    bsFinder.setToDebug();</span>
+                }
+                
+<span class="nc" id="L489">                soln = bsFinder.solveForScale(blobContourHelper1, f1,</span>
                     segmentationType1, useBinned1, blobContourHelper2, f2,
-                    segmentationType2, useBinned2, outputScaleRotTransXYStDev);
+                    segmentationType2, useBinned2);
 
-<span class="nc" id="L431">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
-<span class="nc" id="L432">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
+<span class="nc" id="L493">                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);</span>
+<span class="nc" id="L494">                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);</span>
                 
             }
-            
-<span class="fc" id="L436">            t1 = System.currentTimeMillis();</span>
-<span class="fc" id="L437">            t1Sec = (t1 - t0)/1000;</span>
-<span class="fc" id="L438">            Logger.getLogger(this.getClass().getName()).info(&quot;matching(sec)=&quot; </span>
+       
+<span class="fc" id="L498">            t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L499">            t1Sec = (t1 - t0)/1000;</span>
+<span class="fc" id="L500">            Logger.getLogger(this.getClass().getName()).info(&quot;matching(sec)=&quot; </span>
                 + t1Sec);
                 
-<span class="pc bpc" id="L441" title="1 of 2 branches missed.">            if (params != null) {</span>
+<span class="pc bpc" id="L503" title="1 of 2 branches missed.">            if (soln != null) {</span>
+                
+<span class="fc" id="L505">                TransformationParameters params = soln.getParams();</span>
+                
+<span class="fc" id="L507">                log.info(&quot;params for type&quot;</span>
+<span class="fc" id="L508">                    + &quot; (&quot; + segmentationType1.name() + &quot;, binned=&quot; + useBinned1 + &quot;)&quot;</span>
+<span class="fc" id="L509">                    + &quot; (&quot; + segmentationType2.name() + &quot;, binned=&quot; + useBinned2 + &quot;)&quot;</span>
+<span class="fc" id="L510">                    + &quot; : &quot; + params.toString());</span>
 
-<span class="fc" id="L443">                log.info(&quot;params for type&quot;</span>
-<span class="fc" id="L444">                    + &quot; (&quot; + segmentationType1.name() + &quot;, binned=&quot; + useBinned1 + &quot;)&quot;</span>
-<span class="fc" id="L445">                    + &quot; (&quot; + segmentationType2.name() + &quot;, binned=&quot; + useBinned2 + &quot;)&quot;</span>
-<span class="fc" id="L446">                    + &quot; : &quot; + params.toString());</span>
-
-<span class="fc" id="L448">                log.info(String.format(</span>
+<span class="fc" id="L512">                log.info(String.format(</span>
                     &quot;stDev scale=%.1f  stDev rot=%.0f  stDev tX=%.0f  stDev tY=%.0f&quot;,
-<span class="fc" id="L450">                    outputScaleRotTransXYStDev[0], outputScaleRotTransXYStDev[1],</span>
-<span class="fc" id="L451">                    outputScaleRotTransXYStDev[2], outputScaleRotTransXYStDev[3]));</span>
+<span class="fc" id="L514">                    params.getStandardDeviations()[0], </span>
+<span class="fc" id="L515">                    params.getStandardDeviations()[1],</span>
+<span class="fc" id="L516">                    params.getStandardDeviations()[2], </span>
+<span class="fc" id="L517">                    params.getStandardDeviations()[3]));</span>
 
-                // TODO: consider returning the number of points used in the
-                // calculation
-<span class="fc" id="L455">                float tS = (outputScaleRotTransXYStDev[0]/params.getScale());</span>
-<span class="fc" id="L456">                float tR = (float)(2.*Math.PI/outputScaleRotTransXYStDev[1]);</span>
+<span class="fc" id="L519">                boolean small = MiscStats.standardDeviationsAreSmall(params);</span>
+                
+<span class="pc bpc" id="L521" title="1 of 2 branches missed.">                if (small) {</span>
 
-                // consider comparing stdev in translations to a fraction of the image
-<span class="fc" id="L459">                float tTx = outputScaleRotTransXYStDev[2];</span>
-<span class="fc" id="L460">                float tTy = outputScaleRotTransXYStDev[3];</span>
-
-                //TODO: review these limits
-<span class="pc bpc" id="L463" title="3 of 8 branches missed.">                if ((tS &lt; 0.2) &amp;&amp; (tR &gt;= 18.) &amp;&amp; (tTx &lt; 30)</span>
-                    &amp;&amp; (tTy &lt; 30)) {
-
-<span class="fc" id="L466">                    return params;</span>
+<span class="fc" id="L523">                    solutionAlgType = algType;</span>
+<span class="fc" id="L524">                    solutionSegmentationType1 = segmentationType1;</span>
+<span class="fc" id="L525">                    solutionSegmentationType2 = segmentationType2;</span>
+<span class="fc" id="L526">                    solutionUsedBinned1 = useBinned1;</span>
+<span class="fc" id="L527">                    solutionUsedBinned2 = useBinned2;</span>
+<span class="fc" id="L528">                    solution = soln;</span>
+                    
+<span class="fc" id="L530">                    return params;</span>
                 }
             }
 
             // if arrive here, have to decide to keep current segmentation and
             // binning or increment.  at least one index has to change
 
-<span class="fc" id="L473">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; binned=&quot; + useBinned1</span>
+<span class="nc" id="L537">            log.info(&quot;for 1: &quot; + segmentationType1.name() + &quot; binned=&quot; + useBinned1</span>
                 + &quot; nC1=&quot; + n1);
-<span class="fc" id="L475">            log.info(&quot;for 2: &quot; + segmentationType2.name() + &quot; binned=&quot; + useBinned2</span>
+<span class="nc" id="L539">            log.info(&quot;for 2: &quot; + segmentationType2.name() + &quot; binned=&quot; + useBinned2</span>
                 + &quot; nC2=&quot; + n2);
 
-<span class="pc bpc" id="L478" title="1 of 2 branches missed.">            if (useSameSegmentation) {</span>
-<span class="fc" id="L479">                ordered1Idx++;</span>
-<span class="fc" id="L480">                ordered2Idx++;</span>
-<span class="fc" id="L481">                continue;</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">            if (useSameSegmentation) {</span>
+<span class="nc" id="L543">                ordered1Idx++;</span>
+<span class="nc" id="L544">                ordered2Idx++;</span>
+<span class="nc" id="L545">                continue;</span>
             }
 
-<span class="nc bnc" id="L484" title="All 2 branches missed.">            if (n1 &gt; 10) {</span>
-<span class="nc bnc" id="L485" title="All 2 branches missed.">                if (n2 &gt; 10) {</span>
-<span class="nc bnc" id="L486" title="All 2 branches missed.">                    if (n1 &gt; n2) {</span>
-<span class="nc" id="L487">                        ordered2Idx++;</span>
+<span class="nc bnc" id="L548" title="All 2 branches missed.">            if (n1 &gt; 10) {</span>
+<span class="nc bnc" id="L549" title="All 2 branches missed.">                if (n2 &gt; 10) {</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">                    if (n1 &gt; n2) {</span>
+<span class="nc" id="L551">                        ordered2Idx++;</span>
                     } else {
-<span class="nc" id="L489">                        ordered1Idx++;</span>
+<span class="nc" id="L553">                        ordered1Idx++;</span>
                     }
                 } else {
-<span class="nc" id="L492">                    ordered1Idx++;</span>
+<span class="nc" id="L556">                    ordered1Idx++;</span>
                 }
-<span class="nc" id="L494">                continue;</span>
+<span class="nc" id="L558">                continue;</span>
             }
 
-<span class="nc bnc" id="L497" title="All 2 branches missed.">            if (n2 &gt; 10) {</span>
-<span class="nc" id="L498">                ordered1Idx++;</span>
-<span class="nc" id="L499">                continue;</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">            if (n2 &gt; 10) {</span>
+<span class="nc" id="L562">                ordered1Idx++;</span>
+<span class="nc" id="L563">                continue;</span>
             }
 
-<span class="nc" id="L502">            ordered1Idx++;</span>
-<span class="nc" id="L503">            ordered2Idx++;</span>
-<span class="nc" id="L504">        }</span>
+<span class="nc" id="L566">            ordered1Idx++;</span>
+<span class="nc" id="L567">            ordered2Idx++;</span>
+<span class="nc" id="L568">        }</span>
 
-<span class="nc" id="L506">        return null;</span>
+<span class="nc" id="L570">        return null;</span>
     }
+    
+    public MatchingSolution getSolution() {
+<span class="fc" id="L574">        return solution;</span>
+    }
+    public AlgType getSolutionAlgType() {
+<span class="nc" id="L577">        return solutionAlgType;</span>
+    }
+    public SegmentationType getSolutionSegmentationType1() {
+<span class="nc" id="L580">        return solutionSegmentationType1;</span>
+    }
+    public SegmentationType getSolutionSegmentationType2() {
+<span class="nc" id="L583">        return solutionSegmentationType2;</span>
+    }
+    public boolean getSolutionUsedBinned1() {
+<span class="nc" id="L586">        return solutionUsedBinned1;</span>
+    }
+    public boolean getSolutionUsedBinned2() {
+<span class="nc" id="L589">        return solutionUsedBinned2;</span>
+    }
+    
+    public List&lt;List&lt;CornerRegion&gt;&gt; getAllCornerRegions1OfSolution() {
+        
+<span class="pc bpc" id="L594" title="1 of 2 branches missed.">        if (algType.equals(AlgType.CONTOURS_COMBINATIONS) ||</span>
+<span class="pc bpc" id="L595" title="1 of 2 branches missed.">            algType.equals(AlgType.CONTOURS_ORDERED)) {</span>
+<span class="nc" id="L596">            return null;</span>
+        }
+        
+<span class="fc" id="L599">        return blobCornerHelper1.generatePerimeterCorners(</span>
+            solutionSegmentationType1, solutionUsedBinned1);
+    }
+    
+    public List&lt;List&lt;CornerRegion&gt;&gt; getAllCornerRegions2OfSolution() {
+        
+<span class="pc bpc" id="L605" title="1 of 2 branches missed.">        if (algType.equals(AlgType.CONTOURS_COMBINATIONS) ||</span>
+<span class="pc bpc" id="L606" title="1 of 2 branches missed.">            algType.equals(AlgType.CONTOURS_ORDERED)) {</span>
+<span class="nc" id="L607">            return null;</span>
+        }
+        
+<span class="fc" id="L610">        return blobCornerHelper2.generatePerimeterCorners(</span>
+            solutionSegmentationType2, solutionUsedBinned2);
+    }
+    
+    public List&lt;List&lt;BlobPerimeterRegion&gt;&gt; getAllBlobRegions1OfSolution() {
+        
+<span class="nc bnc" id="L616" title="All 2 branches missed.">        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">            algType.equals(AlgType.CORNERS_ORDERED)) {</span>
+<span class="nc" id="L618">            return null;</span>
+        }
+        
+<span class="nc" id="L621">        return blobContourHelper1.generatePerimeterRegions(</span>
+            solutionSegmentationType1, solutionUsedBinned1);
+    }
+    
+    public List&lt;List&lt;BlobPerimeterRegion&gt;&gt; getAllBlobRegions2OfSolution() {
+        
+<span class="nc bnc" id="L627" title="All 2 branches missed.">        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">            algType.equals(AlgType.CORNERS_ORDERED)) {</span>
+<span class="nc" id="L629">            return null;</span>
+        }
+        
+<span class="nc" id="L632">        return blobContourHelper2.generatePerimeterRegions(</span>
+            solutionSegmentationType2, solutionUsedBinned2);
+    }
+    
+    public List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; getAllContours1OfSolution() {
+        
+<span class="nc bnc" id="L638" title="All 2 branches missed.">        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">            algType.equals(AlgType.CORNERS_ORDERED)) {</span>
+<span class="nc" id="L640">            return null;</span>
+        }
+        
+<span class="nc" id="L643">        return blobContourHelper1.generatePerimeterContours(</span>
+            solutionSegmentationType1, solutionUsedBinned1);
+    }
+    
+    public List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; getAllContours2OfSolution() {
+        
+<span class="nc bnc" id="L649" title="All 2 branches missed.">        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||</span>
+<span class="nc bnc" id="L650" title="All 2 branches missed.">            algType.equals(AlgType.CORNERS_ORDERED)) {</span>
+<span class="nc" id="L651">            return null;</span>
+        }
+        
+<span class="nc" id="L654">        return blobContourHelper2.generatePerimeterContours(</span>
+            solutionSegmentationType2, solutionUsedBinned2);
+    }
+    
+    public IntensityFeatures getSolutionFeatures1() {
+<span class="pc bpc" id="L659" title="1 of 2 branches missed.">        if (solutionUsedBinned1) {</span>
+<span class="nc" id="L660">            return featuresBinned1;</span>
+        }
+<span class="fc" id="L662">        return features1;</span>
+    }
+    
+    public IntensityFeatures getSolutionFeatures2() {
+<span class="pc bpc" id="L666" title="1 of 2 branches missed.">        if (solutionUsedBinned2) {</span>
+<span class="nc" id="L667">            return featuresBinned2;</span>
+        }
+<span class="fc" id="L669">        return features2;</span>
+    }
+    
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

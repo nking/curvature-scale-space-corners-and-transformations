@@ -204,7 +204,7 @@ public class BlobScaleFindersTest extends TestCase {
         
         assertNotNull(params);
 
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(params.getScale() - 1) < 0.15);
     }
 
     public void testVenturi_Contours() throws Exception {
@@ -248,7 +248,7 @@ public class BlobScaleFindersTest extends TestCase {
         
         log.info("PARAMS=" + params);
 
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(params.getScale() - 1) < 0.15);
 
     }
 
@@ -295,7 +295,7 @@ public class BlobScaleFindersTest extends TestCase {
         
         //log.info("params=" + params);
 
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(params.getScale() - 1) < 0.15);
     }
     
     public void testVenturi_Contours0() throws Exception {
@@ -337,7 +337,7 @@ public class BlobScaleFindersTest extends TestCase {
         
         assertNotNull(params);
 
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(params.getScale() - 1) < 0.15);
 
     }
     
@@ -378,6 +378,6 @@ public class BlobScaleFindersTest extends TestCase {
         
         assertNotNull(params);
 
-        assertTrue(Math.abs(params.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(params.getScale() - 1) < 0.15);
     }
 }

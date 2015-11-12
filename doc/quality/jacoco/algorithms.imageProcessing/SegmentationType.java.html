@@ -3,6 +3,7 @@
 /**
 &lt;pre&gt;
     GREYSCALE_KMPP = KMPP for k=2;
+    DT_CLUSTERING = density based clustering filtered for top k results
     COLOR_POLARCIEXY_ADAPT = color to greyscale using polar theta of CIEXY 
         scale space followed by adaptive mean thresholding (scl=4?);
     COLOR_POLARCIEXY = color to greyscale using polar theta of CIEXY;
@@ -12,13 +13,14 @@
 &lt;/pre&gt;
 @author nichole
  */
-<span class="pc" id="L15">public enum SegmentationType {</span>
+<span class="pc" id="L16">public enum SegmentationType {</span>
 
-<span class="fc" id="L17">    GREYSCALE_KMPP,</span>
-<span class="fc" id="L18">    COLOR_POLARCIEXY_LARGE,</span>
-<span class="fc" id="L19">    COLOR_POLARCIEXY_ADAPT,</span>
-<span class="fc" id="L20">    COLOR_POLARCIEXY,</span>
-<span class="fc" id="L21">    ADAPTIVE_MEAN;</span>
+<span class="fc" id="L18">    GREYSCALE_KMPP,</span>
+<span class="fc" id="L19">    DT_CLUSTERING,</span>
+<span class="fc" id="L20">    COLOR_POLARCIEXY_LARGE,</span>
+<span class="fc" id="L21">    COLOR_POLARCIEXY_ADAPT,</span>
+<span class="fc" id="L22">    COLOR_POLARCIEXY,</span>
+<span class="fc" id="L23">    ADAPTIVE_MEAN;</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

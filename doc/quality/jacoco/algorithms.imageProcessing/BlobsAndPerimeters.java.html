@@ -262,30 +262,30 @@ import java.util.logging.Logger;
 <span class="fc" id="L262">            Integer index = Integer.valueOf(i);</span>
             
             //keep larger dimension blob
-<span class="fc bfc" id="L265" title="All 2 branches covered.">            if (blobCenters.containsKey(p)) {</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">            if (blobCenters.containsKey(p)) {</span>
                 
                 // compare and keep exterior perimeter
-<span class="fc" id="L268">                int mapIdx = blobCenters.get(p).intValue();</span>
+<span class="nc" id="L268">                int mapIdx = blobCenters.get(p).intValue();</span>
                 
-<span class="fc" id="L270">                Set&lt;PairInt&gt; mapBlob = outputBlobs.get(mapIdx);</span>
+<span class="nc" id="L270">                Set&lt;PairInt&gt; mapBlob = outputBlobs.get(mapIdx);</span>
                 
                 //xMin, xMax, yMin, yMax
-<span class="fc" id="L273">                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob);</span>
-<span class="fc" id="L274">                int[] minMaxXY2 = MiscMath.findMinMaxXY(mapBlob);</span>
-<span class="fc" id="L275">                int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
-<span class="fc" id="L276">                int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
-<span class="fc" id="L277">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
-<span class="fc" id="L278">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
+<span class="nc" id="L273">                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob);</span>
+<span class="nc" id="L274">                int[] minMaxXY2 = MiscMath.findMinMaxXY(mapBlob);</span>
+<span class="nc" id="L275">                int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
+<span class="nc" id="L276">                int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
+<span class="nc" id="L277">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
+<span class="nc" id="L278">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
                 
-<span class="pc bpc" id="L280" title="9 of 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
+<span class="nc bnc" id="L280" title="All 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
                     (!preferExterior &amp;&amp; (w1 &gt; w2) &amp;&amp; (h1 &gt; h2))) {
 <span class="nc" id="L282">                    remove.add(Integer.valueOf(i));</span>
 <span class="nc" id="L283">                    continue;</span>
                 }
-<span class="fc" id="L285">                remove.add(Integer.valueOf(mapIdx));</span>
-<span class="fc" id="L286">                blobCenters.put(p, index);</span>
+<span class="nc" id="L285">                remove.add(Integer.valueOf(mapIdx));</span>
+<span class="nc" id="L286">                blobCenters.put(p, index);</span>
                 
-<span class="fc" id="L288">            } else {</span>
+<span class="nc" id="L288">            } else {</span>
 <span class="fc" id="L289">                blobCenters.put(p, index);</span>
             }
         }

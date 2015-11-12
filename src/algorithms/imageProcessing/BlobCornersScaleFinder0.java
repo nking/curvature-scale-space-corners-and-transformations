@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -316,18 +315,8 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
         // pre-check for delta tx, deltaty essentially
         boolean check = true;
         while (check && (paramsList.size() > 1)) {
-            float tS = (combinedParams.getStandardDeviations()[0]/combinedParams.getScale());
-            float tR = (float)(2.*Math.PI/combinedParams.getStandardDeviations()[1]);
-            float tTx = combinedParams.getStandardDeviations()[2];
-            float tTy = combinedParams.getStandardDeviations()[3];
-            float tXConstraint = 20;
-            float tYConstraint = 20;
-            if (combinedParams.getNumberOfPointsUsed() < 3) {
-                tXConstraint = 10;
-                tYConstraint = 10;
-            }
-            if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
-                && (tTy < tYConstraint)) {
+            boolean small = MiscStats.standardDeviationsAreSmall(combinedParams);
+            if (small) {
                 check = false;
             } else {
                 // --- either keep only smallest SSD or remove highest SSD ---

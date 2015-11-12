@@ -5,8 +5,6 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ScatterPointPlotterPNG;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,8 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 
 /**
@@ -179,11 +175,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         }
         
         // to correct for wrap around from 360 to 0, repeating same calc with shifted values
-        
-        //int[] indexesToKeep = MiscStats.filterForScaleAndRotationUsingHist(paramsList, 0);
-        //int[] indexesToKeep2 = MiscStats.filterForScaleAndRotation(paramsList, 0);
-        //int[] indexesToKeepShifted = MiscStats.filterForScaleAndRotationUsingHist(paramsList, 30);
-        
+       
         int[] indexesToKeep = MiscStats.filterForRotationUsingHist(paramsList, 0);
         
         int[] indexesToKeepShifted = MiscStats.filterForRotationUsingHist(paramsList, 30);
@@ -197,9 +189,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         indexesToKeep = MiscStats.filterForScaleUsingHist(paramsList);
         
         filter(ifsList, paramsList, indexesToKeep);
-        
-        //indexesToKeep = MiscStats.filterForTranslation(paramsList);
-        
+                
         indexesToKeep = MiscStats.filterForTranslationXUsingHist(paramsList);
         
         filter(ifsList, paramsList, indexesToKeep);
@@ -225,21 +215,12 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             return null;
         }
         
-        // pre-check for delta tx, deltaty essentially
+        // pre-check for delta tx, delta ty essentially.  the parameter limits
+        // are hard wired and the same as used elsewhere.
         boolean check = true;
         while (check && (paramsList.size() > 1)) {
-            float tS = (combinedParams.getStandardDeviations()[0]/combinedParams.getScale());
-            float tR = (float)(2.*Math.PI/combinedParams.getStandardDeviations()[1]);
-            float tTx = combinedParams.getStandardDeviations()[2];
-            float tTy = combinedParams.getStandardDeviations()[3];
-            float tXConstraint = 20;
-            float tYConstraint = 20;
-            if (combinedParams.getNumberOfPointsUsed() < 3) {
-                tXConstraint = 10;
-                tYConstraint = 10;
-            }
-            if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
-                && (tTy < tYConstraint)) {
+            boolean small = MiscStats.standardDeviationsAreSmall(combinedParams);
+            if (small) {
                 check = false;
             } else {
                 // --- either keep only smallest SSD or remove highest SSD ---
@@ -374,6 +355,7 @@ try {
                     continue;
                 }
                 
+                @SuppressWarnings({"unchecked"})
                 List<FeatureComparisonStat> compStats = 
                     transformationPair.getNextCorner().getMatchedFeatureComparisonStats();
                                     

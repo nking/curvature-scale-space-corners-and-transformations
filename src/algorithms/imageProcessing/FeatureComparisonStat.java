@@ -231,15 +231,30 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         if (img2Point != null) {
             sb.append(img2Point.toString()).append(" ");
         }
-        sb.append(String.format(" ssdInt=%.4f", sumIntensitySqDiff))
-            .append(String.format(" err2Int=%.4f", img2PointIntensityErr))
-            .append(String.format(" ssdGrd=%.4f", sumGradientSqDiff))
-            .append(String.format(" err2Grd=%.4f", img2PointGradientErr))            
-            .append(String.format(" thtDf=%.4f", sumThetaSqDiff))
-            .append(String.format(" thtErr=%.4f", img2PointThetaErr))
-            .append(String.format(" rot1D=%.4f", img1PointRotInDegrees))
-            .append(String.format(" rot2D=%.4f", img2PointRotInDegrees))
-        ;
+        if (Float.isFinite(sumIntensitySqDiff)) {
+            sb.append(String.format(" ssdInt=%.4f", sumIntensitySqDiff));
+        }
+        if (Float.isFinite(img2PointIntensityErr)) {
+            sb.append(String.format(" err2Int=%.4f", img2PointIntensityErr));
+        }
+        if (Float.isFinite(sumGradientSqDiff)) {
+            sb.append(String.format(" ssdGrd=%.4f", sumGradientSqDiff));
+        }
+        if (Float.isFinite(img2PointGradientErr)) {
+            sb.append(String.format(" err2Grd=%.4f", img2PointGradientErr));
+        }
+        if (Float.isFinite(sumThetaSqDiff)) {
+            sb.append(String.format(" thtDf=%.4f", sumThetaSqDiff));
+        }
+        if (Float.isFinite(img2PointThetaErr)) {
+            sb.append(String.format(" thtErr=%.4f", img2PointThetaErr));
+        }
+        if (Float.isFinite(img1PointRotInDegrees)) {
+            sb.append(String.format(" rot1D=%.4f", img1PointRotInDegrees));
+        } 
+        if (Float.isFinite(img2PointRotInDegrees)) {
+            sb.append(String.format(" rot2D=%.4f", img2PointRotInDegrees));
+        }
         
         return sb.toString();
     }

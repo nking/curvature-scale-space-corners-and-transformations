@@ -627,7 +627,7 @@ import javax.imageio.ImageIO;
         
 <span class="nc bnc" id="L628" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
 <span class="nc" id="L629">            BlobPerimeterRegion bpr = regions.get(i);</span>
-<span class="nc" id="L630">            xy.add(bpr.getX(), bpr.getY());</span>
+<span class="nc" id="L630">            xy.add(bpr.getX()[1], bpr.getY()[1]);</span>
         }
         
 <span class="nc" id="L633">        writeLabeledPoints(xy, xOffset, yOffset, &quot;infl pts&quot;, fileName);</span>
@@ -1044,7 +1044,7 @@ import javax.imageio.ImageIO;
 
 <span class="fc" id="L1045">            int xx = Math.round(x + dx);</span>
 
-<span class="pc bpc" id="L1047" title="2 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="pc bpc" id="L1047" title="1 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="nc" id="L1048">                continue;</span>
             }
 <span class="fc bfc" id="L1050" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
@@ -1603,8 +1603,8 @@ import javax.imageio.ImageIO;
             
 <span class="nc" id="L1604">            int[] c = getNextRGB(i);</span>
 
-<span class="nc" id="L1606">            int x = br.getX();</span>
-<span class="nc" id="L1607">            int y = br.getY();</span>
+<span class="nc" id="L1606">            int x = br.getX()[1];</span>
+<span class="nc" id="L1607">            int y = br.getY()[1];</span>
             
 <span class="nc" id="L1609">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
                 c[0], c[1], c[2]);

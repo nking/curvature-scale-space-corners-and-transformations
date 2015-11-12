@@ -12,7 +12,7 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
     
     protected final int[] a;
     
-<span class="fc" id="L15">    protected float sumSquaredError = Float.NaN;</span>
+<span class="nc" id="L15">    protected float sumSquaredError = Float.NaN;</span>
         
     /**
      * the index within array a that the central pixel
@@ -20,58 +20,58 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
      */
     protected final int centralIndex;
     
-<span class="fc" id="L23">    public PixelThetaDescriptor(int[] intensities, int centralPixelIndex) {</span>
-<span class="fc" id="L24">        this.a = intensities;</span>
-<span class="fc" id="L25">        this.centralIndex = centralPixelIndex;</span>
-<span class="fc" id="L26">    }</span>
+<span class="nc" id="L23">    public PixelThetaDescriptor(int[] intensities, int centralPixelIndex) {</span>
+<span class="nc" id="L24">        this.a = intensities;</span>
+<span class="nc" id="L25">        this.centralIndex = centralPixelIndex;</span>
+<span class="nc" id="L26">    }</span>
     
     @Override
     public float calculateDifference(ThetaDescriptor otherDesc) {
                 
-<span class="fc" id="L31">        return calculateSSD(otherDesc);</span>
+<span class="nc" id="L31">        return calculateSSD(otherDesc);</span>
     }
     
     @Override
     public float calculateError() {
-<span class="fc" id="L36">        return sumSquaredError();</span>
+<span class="nc" id="L36">        return sumSquaredError();</span>
     }
     
     @Override
     public float calculateSSD(IDescriptor otherDesc) {
         
-<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        if (otherDesc == null) {</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        if (otherDesc == null) {</span>
 <span class="nc" id="L43">            throw new IllegalArgumentException(&quot;otherDesc cannot be null&quot;);</span>
         }
         
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (!(otherDesc instanceof PixelThetaDescriptor)) {</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (!(otherDesc instanceof PixelThetaDescriptor)) {</span>
 <span class="nc" id="L47">            throw new IllegalArgumentException(</span>
             &quot;otherDesc has to be type ThetaDescriptor&quot;);
         }
         
-<span class="fc" id="L51">        PixelThetaDescriptor other = (PixelThetaDescriptor)otherDesc;</span>
+<span class="nc" id="L51">        PixelThetaDescriptor other = (PixelThetaDescriptor)otherDesc;</span>
         
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (this.a.length != other.a.length) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (this.a.length != other.a.length) {</span>
 <span class="nc" id="L54">            throw new IllegalArgumentException(</span>
             &quot;this and other arrays must have the same lengths&quot;);
         }
          
-<span class="fc" id="L58">        float ssd = MiscMath.calculateAngular360SSD(a, other.a, sentinel);</span>
+<span class="nc" id="L58">        float ssd = MiscMath.calculateAngular360SSD(a, other.a, sentinel);</span>
                 
-<span class="fc" id="L60">        return ssd;</span>
+<span class="nc" id="L60">        return ssd;</span>
     }
 
     @Override
     public float sumSquaredError() {
         
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (!Float.isNaN(sumSquaredError)) {</span>
-<span class="fc" id="L67">            return sumSquaredError;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (!Float.isNaN(sumSquaredError)) {</span>
+<span class="nc" id="L67">            return sumSquaredError;</span>
         }
         
-<span class="fc" id="L70">        int cIdx = centralIndex;</span>
+<span class="nc" id="L70">        int cIdx = centralIndex;</span>
                 
-<span class="fc" id="L72">        int vc = a[cIdx];</span>
+<span class="nc" id="L72">        int vc = a[cIdx];</span>
         
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (vc == sentinel) {</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (vc == sentinel) {</span>
             // sometimes arrive here because the gradient for center pixel
             // was too low intensity, so workaround is to reassign a nearby value
             // if possible
@@ -87,11 +87,11 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
             }
         }
         
-<span class="fc" id="L90">        float sqErr = MiscMath.sumSquaredAngular360Error(a, sentinel, cIdx);</span>
+<span class="nc" id="L90">        float sqErr = MiscMath.sumSquaredAngular360Error(a, sentinel, cIdx);</span>
             
-<span class="fc" id="L92">        this.sumSquaredError = sqErr;</span>
+<span class="nc" id="L92">        this.sumSquaredError = sqErr;</span>
         
-<span class="fc" id="L94">        return sumSquaredError;</span>
+<span class="nc" id="L94">        return sumSquaredError;</span>
     }
     
     public float[] calculateMeanAndStDev(ThetaDescriptor otherDesc) {

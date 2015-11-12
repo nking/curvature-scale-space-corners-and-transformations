@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MiscStats;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -515,25 +516,9 @@ public class BlobScaleFinderWrapper {
                     params.getStandardDeviations()[2], 
                     params.getStandardDeviations()[3]));
 
-                // TODO: consider returning the number of points used in the
-                // calculation
-                float tS = (params.getStandardDeviations()[0]/params.getScale());
-                float tR = (float)(2.*Math.PI/params.getStandardDeviations()[1]);
-
-                // consider comparing stdev in translations to a fraction of the image
-                float tTx = params.getStandardDeviations()[2];
-                float tTy = params.getStandardDeviations()[3];
+                boolean small = MiscStats.standardDeviationsAreSmall(params);
                 
-                float tXConstraint = 20;
-                float tYConstraint = 20;
-                if (params.getNumberOfPointsUsed() < 3) {
-                    tXConstraint = 10;
-                    tYConstraint = 10;
-                }
-
-                //TODO: review these limits
-                if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
-                    && (tTy < tYConstraint)) {
+                if (small) {
 
                     solutionAlgType = algType;
                     solutionSegmentationType1 = segmentationType1;

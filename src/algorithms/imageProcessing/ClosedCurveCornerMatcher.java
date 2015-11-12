@@ -75,6 +75,7 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
      * @param img2 image from which to extract descriptors for features2
      * @return 
      */
+    @SuppressWarnings({"unchecked"})
     public boolean matchCorners(
         final IntensityFeatures features1, final IntensityFeatures features2, 
         final List<T> corners1,final List<T> corners2, 
@@ -379,19 +380,19 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
      * @param img2 image from which to extract descriptors for features2
      * @return
      */
-    protected CornersAndFeatureStat[] getBestSSDC1ToC2(
+    protected CornersAndFeatureStat<T>[] getBestSSDC1ToC2(
         List<T> c1, List<T> c2,
         IntensityFeatures features1, IntensityFeatures features2, 
         GreyscaleImage img1, GreyscaleImage img2) {
 
         // if no match, contains a null
-        CornersAndFeatureStat[] indexes2 = new CornersAndFeatureStat[c1.size()];
+        CornersAndFeatureStat<T>[] indexes2 = new CornersAndFeatureStat[c1.size()];
 
         // store by index2 number so a later index1 with a worse match to index2
         // will not be assigned index2.  (note, not using bipartite matching
         // because the method would increase from approx O(N^2) to approx O(N^3)
-        Map<Integer, CornersAndFeatureStat> index2Map = new HashMap<Integer,
-            CornersAndFeatureStat>();
+        Map<Integer, CornersAndFeatureStat<T>> index2Map = new HashMap<Integer,
+            CornersAndFeatureStat<T>>();
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
 

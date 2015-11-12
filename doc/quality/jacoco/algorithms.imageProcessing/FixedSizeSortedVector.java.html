@@ -30,16 +30,22 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
     protected int availSlot;
 
 <span class="fc" id="L32">    public FixedSizeSortedVector(int fixedCapacity, Class&lt;T&gt; classTypeToHold) {</span>
+        
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (fixedCapacity &lt; 1) {</span>
+<span class="nc" id="L35">            throw new IllegalArgumentException(</span>
+            &quot;fixedCapacity must be a positive non zero (arg was &quot; 
+            + fixedCapacity + &quot;)&quot;);
+        }
 
-<span class="fc" id="L34">        size = fixedCapacity;</span>
+<span class="fc" id="L40">        size = fixedCapacity;</span>
 
-<span class="fc" id="L36">        n = 0;</span>
+<span class="fc" id="L42">        n = 0;</span>
 
-<span class="fc" id="L38">        availSlot = -1;</span>
+<span class="fc" id="L44">        availSlot = -1;</span>
 
-<span class="fc" id="L40">        a = (T[]) Array.newInstance(classTypeToHold, size);</span>
+<span class="fc" id="L46">        a = (T[]) Array.newInstance(classTypeToHold, size);</span>
 
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L48">    }</span>
 
     /**
      * add value to the fixed size sorted list using (T).compareTo to order
@@ -52,35 +58,41 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
      */
     public boolean add(T value) {
 
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (value == null) {</span>
-<span class="nc" id="L56">            return false;</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (value == null) {</span>
+<span class="nc" id="L62">            return false;</span>
         }
 
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (n &lt; a.length) {</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (n &lt; size) {</span>
 
-<span class="fc" id="L61">            availSlot = n;</span>
+<span class="fc" id="L67">            availSlot = n;</span>
             
-<span class="fc" id="L63">            insertIntoOpenSlot(value);</span>
+<span class="fc" id="L69">            insertIntoOpenSlot(value);</span>
             
         } else {
-
-            // compare to last item in array and return if this is a worse fit
-<span class="fc" id="L68">            int comp = value.compareTo(a[n - 1]);</span>
-
-<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (comp != -1) {</span>
-<span class="fc" id="L71">                return false;</span>
+            
+<span class="fc" id="L73">            int compareIdx = n - 1;</span>
+            
+<span class="pc bpc" id="L75" title="3 of 4 branches missed.">            if ((n == 1) &amp;&amp; (size == 1)) {</span>
+<span class="nc" id="L76">                compareIdx = 0;</span>
             }
-
+            
+<span class="fc" id="L79">            int comp = value.compareTo(a[compareIdx]);</span>
+            
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (comp != -1) {</span>
+<span class="fc" id="L82">                return false;</span>
+            }
+            
             // free up the last slot
-<span class="fc" id="L75">            availSlot = n - 1;</span>
+<span class="fc" id="L86">            availSlot = compareIdx;</span>
 
-<span class="fc" id="L77">            n--;</span>
+<span class="fc" id="L88">            n--;</span>
 
             // insert value into array at position found by binarySearch
-<span class="fc" id="L80">            insertIntoOpenSlot(value);</span>
+<span class="fc" id="L91">            insertIntoOpenSlot(value);</span>
+            
         }
         
-<span class="fc" id="L83">        return true;</span>
+<span class="fc" id="L95">        return true;</span>
     }
 
     /**
@@ -90,42 +102,42 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
      */
     private void insertIntoOpenSlot(T value) {
 
-<span class="fc" id="L93">        int insIdx = Arrays.binarySearch(a, 0, n, value);</span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (insIdx &lt; 0) {</span>
-<span class="fc" id="L95">            insIdx *= -1;</span>
-<span class="fc" id="L96">            insIdx--;</span>
+<span class="fc" id="L105">        int insIdx = Arrays.binarySearch(a, 0, n, value);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (insIdx &lt; 0) {</span>
+<span class="fc" id="L107">            insIdx *= -1;</span>
+<span class="fc" id="L108">            insIdx--;</span>
         }
 
-<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (insIdx == availSlot) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (insIdx == availSlot) {</span>
 
-<span class="fc" id="L101">            a[availSlot] = value;</span>
+<span class="fc" id="L113">            a[availSlot] = value;</span>
 
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        } else if (insIdx &lt; availSlot) {</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        } else if (insIdx &lt; availSlot) {</span>
 
             // move all items from insIdx to availSlot down by 1
-<span class="fc bfc" id="L106" title="All 2 branches covered.">            for (int i = (availSlot - 1); i &gt;= insIdx; i--) {</span>
-<span class="fc" id="L107">                a[i + 1] = a[i];</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            for (int i = (availSlot - 1); i &gt;= insIdx; i--) {</span>
+<span class="fc" id="L119">                a[i + 1] = a[i];</span>
             }
 
-<span class="fc" id="L110">            a[insIdx] = value;</span>
+<span class="fc" id="L122">            a[insIdx] = value;</span>
 
         } else {
 
-<span class="nc" id="L114">            int end = insIdx - 1;</span>
+<span class="nc" id="L126">            int end = insIdx - 1;</span>
 
             // move items up from availSlot +1 to insIdx - 1
             // then insert value into insIdx - 1
-<span class="nc bnc" id="L118" title="All 2 branches missed.">            for (int i = availSlot; i &lt; end; i++) {</span>
-<span class="nc" id="L119">                a[i] = a[i + 1];</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            for (int i = availSlot; i &lt; end; i++) {</span>
+<span class="nc" id="L131">                a[i] = a[i + 1];</span>
             }
 
-<span class="nc" id="L122">            a[insIdx - 1] = value;</span>
+<span class="nc" id="L134">            a[insIdx - 1] = value;</span>
         }
 
-<span class="fc" id="L125">        n++;</span>
+<span class="fc" id="L137">        n++;</span>
 
-<span class="fc" id="L127">        availSlot = -1;</span>
-<span class="fc" id="L128">    }</span>
+<span class="fc" id="L139">        availSlot = -1;</span>
+<span class="fc" id="L140">    }</span>
 
     /**
      * get the internal array for the sorted list.  note this is not a copy in
@@ -138,7 +150,7 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
      */
     public T[] getArray() {
 
-<span class="fc" id="L141">        return a;</span>
+<span class="fc" id="L153">        return a;</span>
     }
     
     /**
@@ -148,7 +160,7 @@ public class FixedSizeSortedVector&lt;T extends Comparable&lt;T&gt;&gt; {
      * @return 
      */
     public int getNumberOfItems() {
-<span class="fc" id="L151">        return n;</span>
+<span class="fc" id="L163">        return n;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

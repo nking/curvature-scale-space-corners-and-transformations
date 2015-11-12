@@ -161,16 +161,6 @@ public class FeatureMatcherWrapper {
             scaleFinder = new BlobScaleFinderWrapper(img1, img2);
         }
         
-        /*
-        TODO:
-        NOTE: if extractAndMatch is needed below, and if polar ciexy was
-        returned as the algorithm type here, consider using
-        polar ciexy w/ k=8, 16 or 32 on the color image and extract
-        corners from that result. reason being that at least one image set
-        that is better solved w/ polar cie xy, the Venturi test images,
-        has alot of texture in grass and ridgelines that is not present
-        in the polar cie xy k=2 images...
-        */
         params = scaleFinder.calculateScale();
         
         if (params == null) {
@@ -663,34 +653,6 @@ int y2 = compStats2.get(0).getImg2Point().getY();
         compStats.addAll(add);
             
         return compStats;
-    }
-    
-    private boolean statsCoverIntersection2(List<FeatureComparisonStat> stats, 
-        List<List<CurvatureScaleSpaceContour>> filteredC2) {
-                
-        /*
-        dividing the range in filteredC2 by 2 in x and 2 in y and returning
-        true if at least one point2 in stats is found in each division.             
-        */
-        int n = 0;
-        for (List<CurvatureScaleSpaceContour> list : filteredC2) {
-            n += list.size();
-        }
-        float[] xPoints = new float[n];
-        float[] yPoints = new float[n];
-        
-        n = 0;
-        for (List<CurvatureScaleSpaceContour> list : filteredC2) {
-            for (CurvatureScaleSpaceContour cr : list) {
-                float x = cr.getPeakDetails()[0].getXCoord();
-                float y = cr.getPeakDetails()[0].getYCoord();
-                xPoints[n] = x;
-                yPoints[n] = y;
-                ++n;
-            }
-        }
-        
-        return statsCoverIntersection(stats, xPoints, yPoints);
     }
     
     private <T extends CornerRegion> boolean statsCoverIntersection(

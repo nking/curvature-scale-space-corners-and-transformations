@@ -15,27 +15,27 @@ public class TransformationPair3 {
     
     private final int nMaxMatchable;
         
-<span class="nc" id="L18">    private double cost = Double.MAX_VALUE;</span>
+<span class="fc" id="L18">    private double cost = Double.MAX_VALUE;</span>
     
-<span class="nc" id="L20">    private List&lt;BlobPerimeterRegion&gt; matchedContourRegions1 = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
+<span class="fc" id="L20">    private List&lt;BlobPerimeterRegion&gt; matchedContourRegions1 = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
     
-<span class="nc" id="L22">    private List&lt;BlobPerimeterRegion&gt; matchedContourRegions2 = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
+<span class="fc" id="L22">    private List&lt;BlobPerimeterRegion&gt; matchedContourRegions2 = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
     
-<span class="nc" id="L24">    private List&lt;FeatureComparisonStat&gt; matchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="fc" id="L24">    private List&lt;FeatureComparisonStat&gt; matchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
     
-<span class="nc" id="L26">    private int contourIndex1 = -1;</span>
+<span class="fc" id="L26">    private int contourIndex1 = -1;</span>
     
-<span class="nc" id="L28">    private int contourIndex2 = -1;</span>
+<span class="fc" id="L28">    private int contourIndex2 = -1;</span>
            
     public TransformationPair3(int startRegionIndex1, int startRegionIndex2,
-<span class="nc" id="L31">        int size) {</span>
+<span class="fc" id="L31">        int size) {</span>
         
-<span class="nc" id="L33">        this.startIdx1 = startRegionIndex1;</span>
+<span class="fc" id="L33">        this.startIdx1 = startRegionIndex1;</span>
         
-<span class="nc" id="L35">        this.startIdx2 = startRegionIndex2;</span>
+<span class="fc" id="L35">        this.startIdx2 = startRegionIndex2;</span>
         
-<span class="nc" id="L37">        this.nMaxMatchable = size;</span>
-<span class="nc" id="L38">    }</span>
+<span class="fc" id="L37">        this.nMaxMatchable = size;</span>
+<span class="fc" id="L38">    }</span>
 
     /**
      * @return the startRegionIndex1
@@ -54,53 +54,53 @@ public class TransformationPair3 {
     public void addMatched(BlobPerimeterRegion region1, BlobPerimeterRegion region2,
         FeatureComparisonStat stat) {
         
-<span class="nc" id="L57">        matchedContourRegions1.add(region1);</span>
-<span class="nc" id="L58">        matchedContourRegions2.add(region2);</span>
-<span class="nc" id="L59">        matchedCompStats.add(stat);</span>
-<span class="nc" id="L60">    }</span>
+<span class="fc" id="L57">        matchedContourRegions1.add(region1);</span>
+<span class="fc" id="L58">        matchedContourRegions2.add(region2);</span>
+<span class="fc" id="L59">        matchedCompStats.add(stat);</span>
+<span class="fc" id="L60">    }</span>
 
     /**
      * @return the cost
      */
     public double getCost() {
-<span class="nc" id="L66">        return cost;</span>
+<span class="fc" id="L66">        return cost;</span>
     }
 
     /**
      * @param cost the cost to set
      */
     public void setCost(double cost) {
-<span class="nc" id="L73">        this.cost = cost;</span>
-<span class="nc" id="L74">    }</span>
+<span class="fc" id="L73">        this.cost = cost;</span>
+<span class="fc" id="L74">    }</span>
 
     /**
      * @return the matchedContourRegions1
      */
     public List&lt;BlobPerimeterRegion&gt; getMatchedContourRegions1() {
-<span class="nc" id="L80">        return matchedContourRegions1;</span>
+<span class="fc" id="L80">        return matchedContourRegions1;</span>
     }
 
     /**
      * @return the matchedContourRegions2
      */
     public List&lt;BlobPerimeterRegion&gt; getMatchedContourRegions2() {
-<span class="nc" id="L87">        return matchedContourRegions2;</span>
+<span class="fc" id="L87">        return matchedContourRegions2;</span>
     }
 
     /**
      * @return the matchedCompStats
      */
     public List&lt;FeatureComparisonStat&gt; getMatchedCompStats() {
-<span class="nc" id="L94">        return matchedCompStats;</span>
+<span class="fc" id="L94">        return matchedCompStats;</span>
     }
 
     public void setContourIndex1(int idx) {
-<span class="nc" id="L98">        this.contourIndex1 = idx;</span>
-<span class="nc" id="L99">    }</span>
+<span class="fc" id="L98">        this.contourIndex1 = idx;</span>
+<span class="fc" id="L99">    }</span>
 
     public void setContourIndex2(int idx) {
-<span class="nc" id="L102">        this.contourIndex2 = idx;</span>
-<span class="nc" id="L103">    }</span>
+<span class="fc" id="L102">        this.contourIndex2 = idx;</span>
+<span class="fc" id="L103">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

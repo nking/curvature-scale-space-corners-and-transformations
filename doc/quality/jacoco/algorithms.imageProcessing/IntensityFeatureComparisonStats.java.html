@@ -89,9 +89,9 @@ public class IntensityFeatureComparisonStats implements
 <span class="fc" id="L89">            return compareByCombinedIntStat(other);</span>
         }
         
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (compareByCost) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (compareByCost) {</span>
             
-<span class="nc" id="L94">            return compareByCost(other);</span>
+<span class="fc" id="L94">            return compareByCost(other);</span>
             
         } else {
             
@@ -159,8 +159,8 @@ public class IntensityFeatureComparisonStats implements
     }
     
     public void setAdjustedCost(double adjCost) {
-<span class="fc" id="L162">        adjustedCost = adjCost;</span>
-<span class="fc" id="L163">    }</span>
+<span class="nc" id="L162">        adjustedCost = adjCost;</span>
+<span class="nc" id="L163">    }</span>
     
     public double getAdjustedCost() {
 <span class="nc" id="L166">        return adjustedCost;</span>
@@ -170,7 +170,7 @@ public class IntensityFeatureComparisonStats implements
      * @return the scale
      */
     public double getScale() {
-<span class="fc" id="L173">        return scale;</span>
+<span class="nc" id="L173">        return scale;</span>
     }
     
     public int getIndex1() {

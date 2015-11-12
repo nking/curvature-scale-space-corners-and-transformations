@@ -351,11 +351,11 @@ import java.util.Arrays;
 <span class="nc" id="L351">            width = 1;</span>
 <span class="pc bpc" id="L352" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
 <span class="nc" id="L353">            width = 5;</span>
-<span class="pc bpc" id="L354" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">        } else if (input.getWidth() &lt; 1000) {</span>
 <span class="fc" id="L355">            width = 10;</span>
         } else {
             // choose 5 percent of image width or a default of 100 pixels?
-<span class="nc" id="L358">            width = 100;</span>
+<span class="fc" id="L358">            width = 100;</span>
         }
         
 <span class="fc" id="L361">        return examineImageBorders(input, width, useSturges);</span>

@@ -3,89 +3,66 @@
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
  *
  * @author nichole
  */
-public class BlobPerimeterRegion {
+public class BlobPerimeterRegion extends CornerRegion {
     
-    protected final int edgeListIdx;
-    
-<span class="fc" id="L16">    private int idxWithinCurve = -1;</span>
+    /**
+     * this is released after the orientation is calculated.
+    */
+<span class="pc" id="L18">    protected Set&lt;PairInt&gt; blob = null;</span>
+        
+    public BlobPerimeterRegion(final int theEdgeIndex, final int prevXCoord, 
+        final int prevYCoord, final int xCoord, final int yCoord, 
+        final int nextXCoord, final int nextYCoord,
+        Set&lt;PairInt&gt; theBlob, final float sigma) {
+        
+<span class="fc" id="L25">        super(theEdgeIndex, 3, 1);</span>
 
-    private final int prevX;
-    
-    private final int x;
-    
-    private final int nextX;
-
-    private final int prevY;
-    
-    private final int y;
-
-    private final int nextY;
-    
-    protected final Set&lt;PairInt&gt; blob;
-    
-<span class="fc" id="L32">    protected double orientation = Double.MIN_VALUE;</span>
+<span class="fc" id="L27">        dummyValuesInKNeighbors = true;</span>
+        
+<span class="fc" id="L29">        float dummyKValue = -99;</span>
+        
+<span class="fc" id="L31">        set(0, dummyKValue, prevXCoord, prevYCoord);</span>
+        
+<span class="fc" id="L33">        set(1, sigma, xCoord, yCoord);</span>
+        
+<span class="fc" id="L35">        set(2, dummyKValue, nextXCoord, nextYCoord);</span>
+        
+<span class="fc" id="L37">        blob = theBlob;</span>
+<span class="fc" id="L38">    }</span>
     
     public BlobPerimeterRegion(final int theEdgeIndex, final int prevXCoord, 
         final int prevYCoord, final int xCoord, final int yCoord, 
         final int nextXCoord, final int nextYCoord,
-<span class="fc" id="L37">        Set&lt;PairInt&gt; theBlob) {</span>
+        double theOrientation, final float sigma) {
         
-<span class="fc" id="L39">        edgeListIdx = theEdgeIndex;</span>
-        
-<span class="fc" id="L41">        prevX = prevXCoord;</span>
-        
-<span class="fc" id="L43">        prevY = prevYCoord;</span>
-        
-<span class="fc" id="L45">        x = xCoord;</span>
-        
-<span class="fc" id="L47">        y = yCoord;</span>
-        
-<span class="fc" id="L49">        nextX = nextXCoord;</span>
-        
-<span class="fc" id="L51">        nextY = nextYCoord;</span>
-        
-<span class="fc" id="L53">        blob = theBlob;</span>
-<span class="fc" id="L54">    }</span>
-    
-    /**
-     * get the angle tangent to the point (a.k.a. dominant orientation)
-     * (units are radians).
-     * @return the angle perpendicular to the point location along the perimeter
-     * of the blob in units of degrees.
-     */
-    public float getRelativeOrientationInDegrees() {
+<span class="nc" id="L45">        super(theEdgeIndex, 3, 1);</span>
 
-<span class="fc" id="L64">        double rotRadians = getRelativeOrientation();</span>
-
-<span class="fc" id="L66">        return (float)(rotRadians * 180./Math.PI);</span>
-    }
-    
-    /**
-     * get the relative angle of this corner (a.k.a. dominant orientation)
-     * that represents the angle perpendicular to the corner along the edge it
-     * was extracted from (units are radians)
-     * @return the angle perpendicular to the maximum of curvature at the
-     * location along the edge in units of radians.
-     */
-    public double getRelativeOrientation() {
-
-<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (orientation == Double.MIN_VALUE) {</span>
-<span class="fc" id="L79">            orientation = calculateOrientation();</span>
-        }
-
-<span class="fc" id="L82">        return orientation;</span>
-    }
+<span class="nc" id="L47">        dummyValuesInKNeighbors = true;</span>
+        
+<span class="nc" id="L49">        float dummyKValue = -99;</span>
+        
+<span class="nc" id="L51">        set(0, dummyKValue, prevXCoord, prevYCoord);</span>
+        
+<span class="nc" id="L53">        set(1, sigma, xCoord, yCoord);</span>
+        
+<span class="nc" id="L55">        set(2, dummyKValue, nextXCoord, nextYCoord);</span>
+        
+<span class="nc" id="L57">        orientation = theOrientation;</span>
+<span class="nc" id="L58">    }</span>
     
     public void overrideRelativeOrientation(final double thetaInRadians) {
         
-<span class="fc" id="L87">        this.orientation = thetaInRadians;</span>
-<span class="fc" id="L88">    }</span>
+<span class="fc" id="L62">        this.orientation = thetaInRadians;</span>
+        
+<span class="fc" id="L64">        this.blob = null;</span>
+<span class="fc" id="L65">    }</span>
     
     /**
      * NOT READY FOR USE YET.  NEEDs MORE TESTING
@@ -96,22 +73,23 @@ public class BlobPerimeterRegion {
      * @return the angle perpendicular to the maximum of curvature at the
      * location along the edge in units of radians.
      */
+    @Override
     protected double calculateOrientation() {
         
-<span class="fc" id="L101">        int dx0 = x - prevX;</span>
-<span class="fc" id="L102">        int dy0 = y - prevY;</span>
+<span class="fc" id="L79">        int dx0 = x[1] - x[0];</span>
+<span class="fc" id="L80">        int dy0 = y[1] - y[0];</span>
 
-<span class="fc" id="L104">        double theta0 = AngleUtil.polarAngleCCW(dx0, dy0);</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (theta0 != 0) {</span>
-<span class="fc" id="L106">            theta0 = (2.*Math.PI) - theta0;</span>
+<span class="fc" id="L82">        double theta0 = AngleUtil.polarAngleCCW(dx0, dy0);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (theta0 != 0) {</span>
+<span class="fc" id="L84">            theta0 = (2.*Math.PI) - theta0;</span>
         }
 
-<span class="fc" id="L109">        int dx1 = nextX - x;</span>
-<span class="fc" id="L110">        int dy1 = nextY - y;</span>
+<span class="fc" id="L87">        int dx1 = x[2] - x[1];</span>
+<span class="fc" id="L88">        int dy1 = y[2] - y[1];</span>
 
-<span class="fc" id="L112">        double theta1 = AngleUtil.polarAngleCCW(dx1, dy1);</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (theta1 != 0) {</span>
-<span class="fc" id="L114">            theta1 = (2.*Math.PI) - theta1;</span>
+<span class="fc" id="L90">        double theta1 = AngleUtil.polarAngleCCW(dx1, dy1);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (theta1 != 0) {</span>
+<span class="fc" id="L92">            theta1 = (2.*Math.PI) - theta1;</span>
         }
 
         /* determine whether to add or subtract 90 for each vector:
@@ -120,90 +98,74 @@ public class BlobPerimeterRegion {
         opposite side of the vector pointing outwards from the edge.
         */
 
-<span class="fc" id="L123">        PairIntArray xy = new PairIntArray(3);</span>
-<span class="fc" id="L124">        xy.add(prevX, prevY);</span>
-<span class="fc" id="L125">        xy.add(x, y);</span>
-<span class="fc" id="L126">        xy.add(nextX, nextY);</span>
+<span class="fc" id="L101">        PairIntArray xy = new PairIntArray(3);</span>
+<span class="fc" id="L102">        xy.add(x[0], y[0]);</span>
+<span class="fc" id="L103">        xy.add(x[1], y[1]);</span>
+<span class="fc" id="L104">        xy.add(x[2], y[2]);</span>
 
-<span class="fc" id="L128">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L106">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
 
-<span class="fc" id="L130">        double[] centroidXY = curveHelper.calculateXYCentroids(xy);</span>
+<span class="fc" id="L108">        double[] centroidXY = curveHelper.calculateXYCentroids(xy);</span>
 
         // may need special handling for ((dx1 == dx0) &amp;&amp; (dy1 == dy0))
 
         // determine weighted average theta first, then calculate the perpendicular
         // angle pointing out from the edge at the maximum of curvature:
         
-<span class="fc" id="L137">        double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);</span>
+<span class="fc" id="L115">        double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);</span>
                 
-<span class="fc" id="L139">        double perp = curveHelper.calculatePerpendicularAngleAwayFromCentroid(</span>
-            theta, prevX, prevY, x, y, centroidXY, blob);
+<span class="fc" id="L117">        double perp = curveHelper.calculatePerpendicularAngleAwayFromCentroid(</span>
+            theta, x[0], y[0], x[1], y[1], centroidXY, blob);
 
-<span class="fc" id="L142">        return perp;</span>
-    }
-
-    /**
-     * @return the prevX
-     */
-    public int getPrevX() {
-<span class="nc" id="L149">        return prevX;</span>
-    }
-
-    /**
-     * @return the x
-     */
-    public int getX() {
-<span class="fc" id="L156">        return x;</span>
-    }
-
-    /**
-     * @return the nextX
-     */
-    public int getNextX() {
-<span class="nc" id="L163">        return nextX;</span>
-    }
-
-    /**
-     * @return the prevY
-     */
-    public int getPrevY() {
-<span class="nc" id="L170">        return prevY;</span>
-    }
-
-    /**
-     * @return the y
-     */
-    public int getY() {
-<span class="fc" id="L177">        return y;</span>
-    }
-
-    /**
-     * @return the nextY
-     */
-    public int getNextY() {
-<span class="nc" id="L184">        return nextY;</span>
+<span class="fc" id="L120">        return perp;</span>
     }
     
-    public void setIndexWithinCurve(int theIndex) {
-<span class="fc" id="L188">        idxWithinCurve = theIndex;</span>
-<span class="fc" id="L189">    }</span>
-    
-    public int getIndexWithinCurve() {
-<span class="nc" id="L192">        return idxWithinCurve;</span>
-    }
-
-    public BlobPerimeterRegion copy() {
+    @Override
+    public boolean equals(Object obj) {
         
-<span class="nc" id="L197">        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, prevX, </span>
-            prevY, x, y, nextX, nextY, blob);
-        
-<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (orientation != Double.MIN_VALUE) {</span>
-<span class="nc" id="L201">            c.orientation = orientation;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (!(obj instanceof BlobPerimeterRegion)) {</span>
+<span class="nc" id="L127">            return false;</span>
+        }
+            
+<span class="nc" id="L130">        BlobPerimeterRegion other = (BlobPerimeterRegion)obj;</span>
+            
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (x.length != other.getX().length) {</span>
+<span class="nc" id="L133">            return false;</span>
         }
         
-<span class="nc" id="L204">        c.setIndexWithinCurve(idxWithinCurve);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (!Arrays.equals(x, other.getX())) {</span>
+<span class="nc" id="L137">            return false;</span>
+        }
+     
+<span class="nc" id="L140">        return Arrays.equals(y, other.getY());</span>
+    }
+    
+    public float getSigma() {
+<span class="fc" id="L144">        return k[1];</span>
+    }
+    
+    @Override
+    public BlobPerimeterRegion copy() {
         
-<span class="nc" id="L206">        return c;</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (blob == null) {</span>
+            
+<span class="nc" id="L152">            BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, </span>
+                x[0], y[0], x[1], y[1], x[2], y[2], orientation, k[1]);
+<span class="nc" id="L154">            c.setIndexWithinCurve(this.getIndexWithinCurve());</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            if (dummyValuesInKNeighbors) {</span>
+<span class="nc" id="L156">                c.setFlagThatNeighborsHoldDummyValues();</span>
+            }
+<span class="nc" id="L158">            return c;</span>
+        }
+        
+<span class="fc" id="L161">        BlobPerimeterRegion c = new BlobPerimeterRegion(edgeListIdx, </span>
+            x[0], y[0], x[1], y[1], x[2], y[2], blob, k[1]);
+<span class="fc" id="L163">        c.setIndexWithinCurve(this.getIndexWithinCurve());</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (dummyValuesInKNeighbors) {</span>
+<span class="fc" id="L165">            c.setFlagThatNeighborsHoldDummyValues();</span>
+        }
+        
+<span class="fc" id="L168">        return c;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

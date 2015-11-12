@@ -65,10 +65,10 @@ public class BlobCornerHelper {
     protected List&lt;List&lt;CornerRegion&gt;&gt; 
         generatePerimeterCornersUnbinned(SegmentationType type) {
         
-<span class="fc" id="L68">        List&lt;List&lt;CornerRegion&gt;&gt; contours = segCornersMap.get(type);</span>
+<span class="fc" id="L68">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segCornersMap.get(type);</span>
 
-<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (contours != null) {</span>
-<span class="fc" id="L71">            return contours;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (corners != null) {</span>
+<span class="fc" id="L71">            return corners;</span>
         }
         
 <span class="fc" id="L74">        GreyscaleImage segImg = imgHelper.getSegmentationImage(type);</span>
@@ -87,13 +87,13 @@ public class BlobCornerHelper {
         
 <span class="fc" id="L88">        final float factorIncreaseForCurvatureMinimum = 1.f;</span>
         
-<span class="fc" id="L90">        contours = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,</span>
+<span class="fc" id="L90">        corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,</span>
             outdoorMode, enableJaggedLineCorrections, 
             factorIncreaseForCurvatureMinimum);
        
-<span class="fc" id="L94">        segCornersMap.put(type, contours);</span>
+<span class="fc" id="L94">        segCornersMap.put(type, corners);</span>
         
-<span class="fc" id="L96">        return contours;</span>
+<span class="fc" id="L96">        return corners;</span>
     }
     
     protected List&lt;List&lt;CornerRegion&gt;&gt; 

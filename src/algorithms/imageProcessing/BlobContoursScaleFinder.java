@@ -1,12 +1,9 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.NearestPoints;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.MiscStats;
-import algorithms.misc.MiscMath;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
@@ -17,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 import thirdparty.HungarianAlgorithm;
 
 /**
@@ -55,9 +51,6 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
         Map<PairInt, CSSContourMatcherWrapper> singleSolnMap =
             new HashMap<PairInt,  CSSContourMatcherWrapper>();
 
-        Map<Integer, TransformationParameters> pMap = new HashMap<Integer,
-            TransformationParameters>();
-        
         /*
         Note that the matching contours are improved and filtered by using 
         feature descriptors.
@@ -183,7 +176,7 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                 IntensityFeatureComparisonStats stats = new 
                     IntensityFeatureComparisonStats(index1.intValue(), 
                     index2.intValue(), mapper.getMatcher().getSolvedCost(), 
-                        mapper.getMatcher().getSolvedScale());
+                    mapper.getMatcher().getSolvedScale());
                 stats.addAll(compStats);
                 
                 // bestStats keeps the top '2' smallest cost solutions added to it
@@ -373,18 +366,10 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
         // pre-check for delta tx, deltaty essentially
         boolean check = true;
         while (check && (paramsList.size() > 1)) {
-            float tS = (combinedParams.getStandardDeviations()[0]/combinedParams.getScale());
-            float tR = (float)(2.*Math.PI/combinedParams.getStandardDeviations()[1]);
-            float tTx = combinedParams.getStandardDeviations()[2];
-            float tTy = combinedParams.getStandardDeviations()[3];
-            float tXConstraint = 20;
-            float tYConstraint = 20;
-            if (combinedParams.getNumberOfPointsUsed() < 3) {
-                tXConstraint = 10;
-                tYConstraint = 10;
-            }
-            if ((tS < 0.2) && (tR >= 18.) && (tTx < tXConstraint)
-                && (tTy < tYConstraint)) {
+            
+            boolean small = MiscStats.standardDeviationsAreSmall(combinedParams);
+            
+            if (small) {
                 check = false;
             } else {
                 // --- either keep only smallest SSD or remove highest SSD ---

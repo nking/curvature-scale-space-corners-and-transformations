@@ -120,25 +120,25 @@ public class NearestPoints {
         // if it's negative, (-(insertion point) - 1)
 <span class="fc bfc" id="L121" title="All 2 branches covered.">        if (idx &lt; 0) {</span>
             // idx = -*idx2 - 1
-<span class="fc" id="L123">            idx = -1*(idx + 1);                </span>
+<span class="fc" id="L123">            idx = -1*(idx + 1);</span>
         }
 <span class="fc bfc" id="L125" title="All 2 branches covered.">        if (idx &gt; (x.length - 1)) {</span>
 <span class="fc" id="L126">            idx = x.length - 1;</span>
         }
         
 <span class="fc" id="L129">        int startIdx = idx;</span>
-<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (int i = idx; i &gt; -1; --i) {</span>
-<span class="fc" id="L131">            int x2 = x[i];</span>
-<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (Math.abs(x2 - xCenter) &gt; radius) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L131">            int diffX = Math.abs(x[i] - xCenter);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (diffX &gt; radius) {</span>
 <span class="fc" id="L133">                break;</span>
             }
 <span class="fc" id="L135">            startIdx = i;</span>
         }
         
 <span class="fc" id="L138">        int stopIdx = idx;</span>
-<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int i = (idx + 1); i &lt; x.length; ++i) {</span>
-<span class="fc" id="L140">            int x2 = x[i];</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (Math.abs(x2 - xCenter) &gt; radius) {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int i = idx; i &lt; x.length; ++i) {</span>
+<span class="fc" id="L140">            int diffX = Math.abs(x[i] - xCenter);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (diffX &gt; radius) {</span>
 <span class="fc" id="L142">                break;</span>
             }
 <span class="fc" id="L144">            stopIdx = i;</span>

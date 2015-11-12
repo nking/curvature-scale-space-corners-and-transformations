@@ -33,57 +33,56 @@ public class ClosedCurveContourMatcher0 {
        the euclidean transformation with.
     */
 
-<span class="nc" id="L36">    protected final int dither = 6;//3</span>
+<span class="fc" id="L36">    protected final int dither = 3;//6;//3</span>
     
-<span class="nc" id="L38">    protected final int degreeIntervals = 20;</span>
+<span class="fc" id="L38">    protected final int degreeIntervals = 20;</span>
 
-<span class="nc" id="L40">    protected final int rotationTolerance = 20;</span>
+<span class="fc" id="L40">    protected final int rotationTolerance = 20;</span>
 
-    //TODO: tune this
-<span class="nc" id="L43">    private int tolerance = 2;</span>
+<span class="fc" id="L42">    private int tolerance = 2;</span>
 
-<span class="nc" id="L45">    private TransformationPair3 solutionTransformationPair = null;</span>
+<span class="fc" id="L44">    private TransformationPair3 solutionTransformationPair = null;</span>
 
-<span class="nc" id="L47">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L46">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="nc" id="L49">    private boolean solverHasFinished = false;</span>
+<span class="fc" id="L48">    private boolean solverHasFinished = false;</span>
 
-<span class="nc" id="L51">    public ClosedCurveContourMatcher0() {</span>
-<span class="nc" id="L52">    }</span>
+<span class="fc" id="L50">    public ClosedCurveContourMatcher0() {</span>
+<span class="fc" id="L51">    }</span>
 
     public static void sortRegion(List&lt;BlobPerimeterRegion&gt; regions) {
     
-<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (regions.size() &lt; 2) {</span>
-<span class="nc" id="L57">            return;</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (regions.size() &lt; 2) {</span>
+<span class="nc" id="L56">            return;</span>
         }
         
-<span class="nc" id="L60">        Collections.sort(regions, new AsscendingIndexComparator());</span>
+<span class="fc" id="L59">        Collections.sort(regions, new AsscendingIndexComparator());</span>
 
-<span class="nc" id="L62">        PairIntArray points = new PairIntArray(regions.size());</span>
+<span class="fc" id="L61">        PairIntArray points = new PairIntArray(regions.size());</span>
         
-<span class="nc bnc" id="L64" title="All 2 branches missed.">        for (BlobPerimeterRegion bpr : regions) {</span>
-<span class="nc" id="L65">            points.add(bpr.getX(), bpr.getY());</span>
-<span class="nc" id="L66">        }</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (BlobPerimeterRegion bpr : regions) {</span>
+<span class="fc" id="L64">            points.add(bpr.getX()[1], bpr.getY()[1]);</span>
+<span class="fc" id="L65">        }</span>
         
-<span class="nc" id="L68">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L67">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
         // making clockwise to be consistent with contours
-<span class="nc" id="L71">        boolean isCW = curveHelper.curveIsOrderedClockwise(points);</span>
-<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (isCW) {</span>
-<span class="nc" id="L73">            int n = regions.size();</span>
-<span class="nc bnc" id="L74" title="All 2 branches missed.">            if (n &lt; 2) {</span>
-<span class="nc" id="L75">                return;</span>
+<span class="fc" id="L70">        boolean isCW = curveHelper.curveIsOrderedClockwise(points);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (isCW) {</span>
+<span class="fc" id="L72">            int n = regions.size();</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (n &lt; 2) {</span>
+<span class="nc" id="L74">                return;</span>
             }
-<span class="nc" id="L77">            int end = n &gt;&gt; 1;</span>
+<span class="fc" id="L76">            int end = n &gt;&gt; 1;</span>
             // 0 1 2 3 4
-<span class="nc bnc" id="L79" title="All 2 branches missed.">            for (int i = 0; i &lt; end; i++) {</span>
-<span class="nc" id="L80">                int idx2 = n - i - 1;</span>
-<span class="nc" id="L81">                BlobPerimeterRegion swap = regions.get(i);</span>
-<span class="nc" id="L82">                regions.set(i, regions.get(idx2));</span>
-<span class="nc" id="L83">                regions.set(idx2, swap);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            for (int i = 0; i &lt; end; i++) {</span>
+<span class="fc" id="L79">                int idx2 = n - i - 1;</span>
+<span class="fc" id="L80">                BlobPerimeterRegion swap = regions.get(i);</span>
+<span class="fc" id="L81">                regions.set(i, regions.get(idx2));</span>
+<span class="fc" id="L82">                regions.set(idx2, swap);</span>
             }
         }
-<span class="nc" id="L86">    }</span>
+<span class="fc" id="L85">    }</span>
     
     public boolean matchCorners(final IntensityFeatures features1,
         final IntensityFeatures features2, 
@@ -91,136 +90,141 @@ public class ClosedCurveContourMatcher0 {
         final List&lt;BlobPerimeterRegion&gt; regions2,
         final GreyscaleImage img1, final GreyscaleImage img2) {
 
-<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (solverHasFinished) {</span>
-<span class="nc" id="L95">            throw new IllegalStateException(</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="nc" id="L94">            throw new IllegalStateException(</span>
             &quot;matchContours cannot be invoked more than once&quot;);
         }
         
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (regions1.size() != regions2.size()) {</span>
-<span class="nc" id="L100">            throw new IllegalArgumentException(&quot;region lists must be same size&quot;);</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (regions1.size() != regions2.size()) {</span>
+<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;region lists must be same size&quot;);</span>
         }
 
-<span class="nc" id="L103">        List&lt;BlobPerimeterRegion&gt; cr1 = new ArrayList&lt;BlobPerimeterRegion&gt;(</span>
-<span class="nc" id="L104">            regions1.size());</span>
+<span class="fc" id="L102">        List&lt;BlobPerimeterRegion&gt; cr1 = new ArrayList&lt;BlobPerimeterRegion&gt;(</span>
+<span class="fc" id="L103">            regions1.size());</span>
     
-<span class="nc" id="L106">        List&lt;BlobPerimeterRegion&gt; cr2 = new ArrayList&lt;BlobPerimeterRegion&gt;(</span>
-<span class="nc" id="L107">            regions2.size());</span>
+<span class="fc" id="L105">        List&lt;BlobPerimeterRegion&gt; cr2 = new ArrayList&lt;BlobPerimeterRegion&gt;(</span>
+<span class="fc" id="L106">            regions2.size());</span>
 
-<span class="nc" id="L109">        cr1.addAll(regions1);</span>
+<span class="fc" id="L108">        cr1.addAll(regions1);</span>
         
-<span class="nc" id="L111">        cr2.addAll(regions2);</span>
+<span class="fc" id="L110">        cr2.addAll(regions2);</span>
         
         // sort regions by ascending indexes, idx and order CW
-<span class="nc" id="L114">        sortRegion(cr1);</span>
-<span class="nc" id="L115">        sortRegion(cr2);</span>
+<span class="fc" id="L113">        sortRegion(cr1);</span>
+<span class="fc" id="L114">        sortRegion(cr2);</span>
         
-<span class="nc" id="L117">        int deltaIdx = 0;</span>
+<span class="fc" id="L116">        int deltaIdx = 0;</span>
         
-<span class="nc" id="L119">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+<span class="fc" id="L118">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
         
-<span class="nc" id="L121">        List&lt;TransformationPair3&gt; trList = new ArrayList&lt;TransformationPair3&gt;();        </span>
+<span class="fc" id="L120">        List&lt;TransformationPair3&gt; trList = new ArrayList&lt;TransformationPair3&gt;();        </span>
         
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        while (deltaIdx &lt; cr1.size()) {</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        while (deltaIdx &lt; cr1.size()) {</span>
             
-<span class="nc" id="L125">            TransformationPair3 transformationPair </span>
-<span class="nc" id="L126">                = new TransformationPair3(0, deltaIdx, cr1.size());</span>
+<span class="fc" id="L124">            TransformationPair3 transformationPair </span>
+<span class="fc" id="L125">                = new TransformationPair3(0, deltaIdx, cr1.size());</span>
             
             // store matched and cost
-<span class="nc bnc" id="L129" title="All 2 branches missed.">            for (int i = 0; i &lt; cr1.size(); ++i) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            for (int i = 0; i &lt; cr1.size(); ++i) {</span>
                 
-<span class="nc" id="L131">                int j = i + deltaIdx;</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">                if (j &gt; (cr2.size() - 1)) {</span>
-<span class="nc" id="L133">                    j = j - cr2.size();</span>
+<span class="fc" id="L130">                int j = i + deltaIdx;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">                if (j &gt; (cr2.size() - 1)) {</span>
+<span class="fc" id="L132">                    j = j - cr2.size();</span>
                 }
                 
-<span class="nc" id="L136">                BlobPerimeterRegion region1 = cr1.get(i);</span>
-<span class="nc" id="L137">                BlobPerimeterRegion region2 = cr2.get(j);</span>
+<span class="fc" id="L135">                BlobPerimeterRegion region1 = cr1.get(i);</span>
+<span class="fc" id="L136">                BlobPerimeterRegion region2 = cr2.get(j);</span>
                
                 //TODO: if create blob edges with a canny edge detector instead of perimeters,
                 // may have better defined perimeters and angles so can reduce
                 // the number of rotation tries here (use the default instead of 20)
-<span class="nc" id="L142">                FeatureComparisonStat compStat = </span>
-<span class="nc" id="L143">                    featureMatcher.ditherAndRotateForBestLocation(</span>
-                    features1, features2, region1, region2, dither, 
-                    img1, img2, degreeIntervals);
-               
-<span class="nc bnc" id="L147" title="All 2 branches missed.">                if (compStat != null) {</span>
-<span class="nc bnc" id="L148" title="All 2 branches missed.">                    if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
-<span class="nc" id="L149">                        transformationPair.addMatched(region1, region2, compStat);</span>
+<span class="fc" id="L141">                FeatureComparisonStat compStat = null;</span>
+                
+                try {
+<span class="fc" id="L144">                    compStat =</span>
+<span class="fc" id="L145">                        featureMatcher.ditherAndRotateForBestLocation(</span>
+                        features1, features2, region1, region2, dither, 
+                        img1, img2, degreeIntervals);
+<span class="nc" id="L148">                } catch (CornerRegion.CornerRegionDegneracyException ex) {</span>
+<span class="fc" id="L149">                }</span>
+                
+<span class="fc bfc" id="L151" title="All 2 branches covered.">                if (compStat != null) {</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">                    if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
+<span class="fc" id="L153">                        transformationPair.addMatched(region1, region2, compStat);</span>
                     }
                 }                
             }
             
             // need at least 3 point for a cost evaluation
-<span class="nc bnc" id="L155" title="All 2 branches missed.">            if (transformationPair.getMatchedContourRegions1().size() &gt; 2) {</span>
-<span class="nc" id="L156">                trList.add(transformationPair);</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            if (transformationPair.getMatchedContourRegions1().size() &gt; 2) {</span>
+<span class="fc" id="L160">                trList.add(transformationPair);</span>
             }
             
-<span class="nc" id="L159">            deltaIdx++;</span>
-<span class="nc" id="L160">        }</span>
+<span class="fc" id="L163">            deltaIdx++;</span>
+<span class="fc" id="L164">        }</span>
         
         // chose best solution if there are more than 1
-<span class="nc" id="L163">        int nMaxMatched = Integer.MIN_VALUE;</span>
-<span class="nc" id="L164">        double minCost = Double.MAX_VALUE;</span>
-<span class="nc" id="L165">        int minCostIdx = -1;</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">        for (int i = 0; i &lt; trList.size(); ++i) {</span>
+<span class="fc" id="L167">        int nMaxMatched = Integer.MIN_VALUE;</span>
+<span class="fc" id="L168">        double minCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L169">        int minCostIdx = -1;</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        for (int i = 0; i &lt; trList.size(); ++i) {</span>
             
-<span class="nc" id="L168">            TransformationPair3 transP = trList.get(i);</span>
+<span class="fc" id="L172">            TransformationPair3 transP = trList.get(i);</span>
             
-<span class="nc" id="L170">            List&lt;Integer&gt; removedIndexes = </span>
-<span class="nc" id="L171">                FeatureMatcher.removeDiscrepantThetaDiff(</span>
-<span class="nc" id="L172">                    transP.getMatchedCompStats());</span>
+<span class="fc" id="L174">            List&lt;Integer&gt; removedIndexes = </span>
+<span class="fc" id="L175">                FeatureMatcher.removeDiscrepantThetaDiff(</span>
+<span class="fc" id="L176">                    transP.getMatchedCompStats());</span>
             
-<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (!removedIndexes.isEmpty()) {</span>
-<span class="nc bnc" id="L175" title="All 2 branches missed.">                for (int ii = removedIndexes.size() - 1; ii &gt; -1; --ii) {</span>
-<span class="nc" id="L176">                    int idx = removedIndexes.get(ii);</span>
-<span class="nc" id="L177">                    transP.getMatchedContourRegions1().remove(idx);</span>
-<span class="nc" id="L178">                    transP.getMatchedContourRegions2().remove(idx);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (!removedIndexes.isEmpty()) {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">                for (int ii = removedIndexes.size() - 1; ii &gt; -1; --ii) {</span>
+<span class="fc" id="L180">                    int idx = removedIndexes.get(ii);</span>
+<span class="fc" id="L181">                    transP.getMatchedContourRegions1().remove(idx);</span>
+<span class="fc" id="L182">                    transP.getMatchedContourRegions2().remove(idx);</span>
                 }
             }
             
-<span class="nc bnc" id="L182" title="All 2 branches missed.">            if (transP.getMatchedCompStats().size() &lt; 3) {</span>
-<span class="nc" id="L183">                continue;</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            if (transP.getMatchedCompStats().size() &lt; 3) {</span>
+<span class="fc" id="L187">                continue;</span>
             }
             
-<span class="nc" id="L186">            double cost = calculateCombinedIntensityStat(transP.getMatchedCompStats());</span>
-<span class="nc" id="L187">            transP.setCost(cost);</span>
+<span class="fc" id="L190">            double cost = calculateCombinedIntensityStat(transP.getMatchedCompStats());</span>
+<span class="fc" id="L191">            transP.setCost(cost);</span>
             
-<span class="nc bnc" id="L189" title="All 6 branches missed.">            if (((transP.getMatchedContourRegions1().size() &gt;= nMaxMatched) &amp;&amp;</span>
+<span class="pc bpc" id="L193" title="1 of 6 branches missed.">            if (((transP.getMatchedContourRegions1().size() &gt;= nMaxMatched) &amp;&amp;</span>
                 (cost &lt; minCost)) ||
                 ((cost == minCost) 
-<span class="nc bnc" id="L192" title="All 2 branches missed.">                &amp;&amp; (transP.getMatchedContourRegions1().size() &gt; nMaxMatched))) {</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                &amp;&amp; (transP.getMatchedContourRegions1().size() &gt; nMaxMatched))) {</span>
                 
-<span class="nc" id="L194">                minCost = cost;</span>
-<span class="nc" id="L195">                minCostIdx = i;</span>
-<span class="nc" id="L196">                nMaxMatched = transP.getMatchedContourRegions1().size();</span>
+<span class="fc" id="L198">                minCost = cost;</span>
+<span class="fc" id="L199">                minCostIdx = i;</span>
+<span class="fc" id="L200">                nMaxMatched = transP.getMatchedContourRegions1().size();</span>
             }
         }
         
-<span class="nc" id="L200">        solverHasFinished = true;</span>
+<span class="fc" id="L204">        solverHasFinished = true;</span>
         
-<span class="nc bnc" id="L202" title="All 2 branches missed.">        if (minCostIdx &gt; -1) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (minCostIdx &gt; -1) {</span>
             
-<span class="nc" id="L204">            solutionTransformationPair = trList.get(minCostIdx);</span>
+<span class="fc" id="L208">            solutionTransformationPair = trList.get(minCostIdx);</span>
             
-<span class="nc" id="L206">            return true;</span>
+<span class="fc" id="L210">            return true;</span>
         }
         
-<span class="nc" id="L209">        return false;</span>
+<span class="fc" id="L213">        return false;</span>
     }
     
     protected double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; 
         compStats) {
         
-<span class="nc" id="L215">        double sum = 0;</span>
+<span class="fc" id="L219">        double sum = 0;</span>
         
-<span class="nc bnc" id="L217" title="All 2 branches missed.">        for (FeatureComparisonStat compStat : compStats) {</span>
-<span class="nc" id="L218">            sum += compStat.getSumIntensitySqDiff();</span>
-<span class="nc" id="L219">        }</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="fc" id="L222">            sum += compStat.getSumIntensitySqDiff();</span>
+<span class="fc" id="L223">        }</span>
         
-<span class="nc" id="L221">        sum /= (double) compStats.size();</span>
+<span class="fc" id="L225">        sum /= (double) compStats.size();</span>
         
-<span class="nc" id="L223">        return sum;</span>
+<span class="fc" id="L227">        return sum;</span>
     }
 
     /**
@@ -229,7 +233,7 @@ public class ClosedCurveContourMatcher0 {
      * @return
      */
     public TransformationPair3 getTransformationPair3() {
-<span class="nc" id="L232">        return solutionTransformationPair;</span>
+<span class="fc" id="L236">        return solutionTransformationPair;</span>
     }
 
 }

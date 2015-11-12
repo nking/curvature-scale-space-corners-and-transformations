@@ -311,18 +311,18 @@ public class IntensityFeatures {
     }
     
     protected void checkBounds(int x, int y) {
-<span class="pc bpc" id="L314" title="2 of 4 branches missed.">        if (clrImg == null &amp;&amp; gsImg == null) {</span>
+<span class="nc bnc" id="L314" title="All 4 branches missed.">        if (clrImg == null &amp;&amp; gsImg == null) {</span>
 <span class="nc" id="L315">            throw new IllegalStateException(&quot;no images were provided at &quot;</span>
             + &quot;construction so &quot; 
             + &quot;extractIntensity(image, xCenter, yCenter, rotatation) &quot;
             + &quot;must be used instead&quot;);
         }
-<span class="pc bpc" id="L320" title="1 of 2 branches missed.">        if (clrImg != null) {</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">        if (clrImg != null) {</span>
 <span class="nc" id="L321">            checkBounds(clrImg, x, y);</span>
         } else {
-<span class="fc" id="L323">            checkBounds(gsImg, x, y);</span>
+<span class="nc" id="L323">            checkBounds(gsImg, x, y);</span>
         }
-<span class="fc" id="L325">    }</span>
+<span class="nc" id="L325">    }</span>
     
     protected void checkBounds(GreyscaleImage img, int x, int y) {
 <span class="pc bpc" id="L328" title="1 of 2 branches missed.">        if (!isWithinXBounds(img, x)) {</span>
