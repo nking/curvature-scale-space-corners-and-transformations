@@ -291,6 +291,7 @@ try {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
 } 
 */
+
         Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> trMap 
             = new HashMap<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>>();
 
