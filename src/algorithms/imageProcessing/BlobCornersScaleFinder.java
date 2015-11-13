@@ -483,9 +483,9 @@ try {
                 if (nEval == 0) {
                     continue;
                 }
-                float score1 = (float)nMaxMatchable/(float)nEval;
+                //float score1 = (float)nMaxMatchable/(float)nEval;
                 float score2 = (float)ifs.getCost() + 1;
-                float score = score1 * score2;
+                //float score = score1 * score2;
                 float normalizedScore = (score2/(float)nEval)/1500.f;
                 cost[idx1][idx2] = normalizedScore;
                 indexScore.put(p, Float.valueOf(normalizedScore));

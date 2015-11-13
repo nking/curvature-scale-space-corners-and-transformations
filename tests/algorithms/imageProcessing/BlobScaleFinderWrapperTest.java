@@ -23,7 +23,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
         
         String fileName1, fileName2;
 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 4; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             rotate = true;
@@ -104,7 +104,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
      * Test suite
      * @return static Test
     */
-    public static Test suite(){
+    public static Test suite() {
         return new TestSuite(BlobScaleFinderWrapperTest.class);
     }
 

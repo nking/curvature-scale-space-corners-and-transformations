@@ -382,7 +382,7 @@ public class MiscStats {
                 float v = tXHist.getXHist()[vIdx];
                 for (int i = 0; i < translationXs.length; ++i) {
                     float diff = Math.abs(translationXs[i] - v);
-                    if (diff <= binSize) {
+                    if (diff <= 1.1*binSize) {
                         keep.add(Integer.valueOf(i));
                     }
                 }
@@ -437,7 +437,7 @@ public class MiscStats {
                 float v = tYHist.getXHist()[vIdx];
                 for (int i = 0; i < translationYs.length; ++i) {
                     float diff = Math.abs(translationYs[i] - v);
-                    if (diff <= binSize) {
+                    if (diff <= 1.1*binSize) {
                         keep.add(Integer.valueOf(i));
                     }
                 }

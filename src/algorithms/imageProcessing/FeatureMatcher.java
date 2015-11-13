@@ -102,6 +102,15 @@ public class FeatureMatcher {
             } else if (rotD1 < 0) {
                 rotD1 += 360;
             }
+                        
+            int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
+            float[] xTrq0 = new float[len];
+            float[] yTrq0 = new float[xTrq0.length];
+            int cellDim = IntensityFeatures.getDefaultCellDimForExtract();
+            int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
+            IntensityFeatures.populateRotationOffsetsQ0(cellDim, nCellsAcross, 
+                rotD1, xTrq0, yTrq0);
+            
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
                 if (!features1.isWithinXBounds(gsImg1, x1d)) {
                     continue;
@@ -122,8 +131,11 @@ public class FeatureMatcher {
                         continue;
                     }
                     
-                    IntensityDescriptor desc1 = features1.extractIntensity(
-                        gsImg1, x1d, y1d, rotD1);
+                    //IntensityDescriptor desc1 = features1.extractIntensity(
+                    //    gsImg1, x1d, y1d, rotD1);
+                    
+                    IntensityDescriptor desc1 = features1.extractIntensityCellDesc(
+                        gsImg1, x1d, y1d, rotD1, xTrq0, yTrq0);
         
                     if (desc1 == null) {
                         return null;
@@ -638,6 +650,15 @@ public class FeatureMatcher {
             } else if (rotD1 < 0) {
                 rotD1 += 360;
             }
+            
+            int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
+            float[] xTrq0 = new float[len];
+            float[] yTrq0 = new float[xTrq0.length];
+            int cellDim = IntensityFeatures.getDefaultCellDimForExtract();
+            int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
+            IntensityFeatures.populateRotationOffsetsQ0(cellDim, nCellsAcross, rotD1, 
+                xTrq0, yTrq0);
+            
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
                 if (!features1.isWithinXBounds(img1, x1d)) {
                     continue;
@@ -647,9 +668,12 @@ public class FeatureMatcher {
                         continue;
                     }
                     
-                    IntensityDescriptor desc1 = features1.extractIntensity(img1, 
-                        x1d, y1d, rotD1);
+                    //IntensityDescriptor desc1 = features1.extractIntensity(img1, 
+                    //    x1d, y1d, rotD1);
         
+                    IntensityDescriptor desc1 = features1.extractIntensityCellDesc(
+                        img1, x1d, y1d, rotD1, xTrq0, yTrq0);
+                    
                     if (desc1 == null) {
                         return null;
                     }
@@ -921,6 +945,13 @@ public class FeatureMatcher {
                 continue;
             }
             
+            int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
+            float[] xTrq0 = new float[len];
+            float[] yTrq0 = new float[xTrq0.length];
+            int cellDim = IntensityFeatures.getDefaultCellDimForExtract();
+            int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
+            IntensityFeatures.populateRotationOffsetsQ0(cellDim, nCellsAcross, rotD1, xTrq0, yTrq0);
+            
             for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
                 if (!features1.isWithinXBounds(img1, x1d)) {
                     continue;
@@ -930,8 +961,11 @@ public class FeatureMatcher {
                         continue;
                     }
                     
-                    IntensityDescriptor desc1 = features1.extractIntensity(img1, 
-                        x1d, y1d, rotD1);
+                    //IntensityDescriptor desc1 = features1.extractIntensity(img1, 
+                    //    x1d, y1d, rotD1);
+                    
+                    IntensityDescriptor desc1 = features1.extractIntensityCellDesc(
+                        img1, x1d, y1d, rotD1, xTrq0, yTrq0);
         
                     if (desc1 == null) {
                         return null;

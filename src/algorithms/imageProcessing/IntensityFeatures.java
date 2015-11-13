@@ -104,7 +104,62 @@ public class IntensityFeatures {
             return extractIntensity(gsImg, xCenter, yCenter, rotation);
         }
     }
-
+        
+    /**
+     * extract the intensity from the image for the given block center and
+     * return it in a descriptor.  Note, this method is a short cut for
+     * use when the known internal type extract is by cells.
+     * @param img greyscale image which needs a descriptor for given location
+     * and orientation.  note that because the instance caches previous
+     * calculations, the invoker must supply the same image each time.
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return
+     */
+    IntensityDescriptor extractIntensityCellDesc(GreyscaleImage img, 
+        final int xCenter, final int yCenter, final int rotation, 
+        final float[] xTrq0, float[] yTrq0) {
+        
+        if (img == null) {
+            throw new IllegalStateException("img cannot be null");
+        }
+                
+        checkBounds(img, xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        Map<Integer, IntensityDescriptor> descriptors = intensityBlocks.get(p);
+        
+        IntensityDescriptor descriptor = null;
+        
+        if (descriptors != null) {
+            descriptor = descriptors.get(rotationKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        } else {
+            descriptors = new HashMap<Integer, IntensityDescriptor>();
+            intensityBlocks.put(p, descriptors);
+        }
+        
+        descriptor = extractGsIntensityForCells2(img, xCenter, yCenter, 
+            xTrq0, yTrq0);
+        
+        if (useNormalizedIntensities && (descriptor != null)) {
+            descriptor.applyNormalization();
+        }
+        
+        if (descriptor != null) {
+            descriptors.put(rotationKey, descriptor);
+        }
+        
+        return descriptor;
+    }
+    
     /**
      * extract the intensity from the image for the given block center and
      * return it in a descriptor.
@@ -489,56 +544,43 @@ public class IntensityFeatures {
             -4 -3 -2 -1  0  1  2  3
         */
         float sentinel = GsIntensityDescriptor.sentinel;
-        /*
-        defaults: cellDim=2, nCellsAcross=6
-        same range in dx, dy could be achieved w/ coarser cellDim=6, nCellsAcross=2
-        */
         int cellDim = 2;
         int nCellsAcross = 6;
         int nColsHalf = nCellsAcross / 2;
         int range0 = cellDim * nColsHalf;
-        //index of center pixel in array of descriptor:
         int centralPixelIndex = (nColsHalf * nCellsAcross) + nColsHalf;
-                
-        double rotationInRadians = rotation * Math.PI/180.;
-        double mc = Math.cos(rotationInRadians);
-        double ms = Math.sin(rotationInRadians);
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
         float[] output = new float[nCellsAcross * nCellsAcross];
+        float[] xT = new float[cellDim * cellDim];
+        float[] yT = new float[xT.length];
         
         int count = 0;
         
-        //TODO: can reduce the Math.round calls by using symmetry of the offsets to reuse calculations
-        
         for (int dx = -range0; dx < range0; dx += cellDim) {
             for (int dy = -range0; dy < range0; dy += cellDim) {
-                boolean withinBounds = true;
-                int v = 0;
-                int cCount = 0;
-                for (int dxc = 0; dxc < cellDim; ++dxc) {
-                    for (int dyc = 0; dyc < cellDim; ++dyc) {
-                        double xt = xCenter + (((dx + dxc) * mc) + ((dy + dyc) * ms));
-                        double yt = yCenter + (-((dx + dxc) * ms) + ((dy + dyc) * mc));                
-                        if ((xt < 0) || (Math.ceil(xt) > (w - 1)) || 
-                            (yt < 0) || (Math.ceil(yt) > (h - 1))) {
-                            withinBounds = false;
-                            break;
-                        }
-                        int v0 = img.getValue((int)Math.round(xt), (int)Math.round(yt));
-                        v += v0;
-                        cCount++;
-                    }
-                    if (!withinBounds) {
-                        break;
-                    }
-                }
-                if (!withinBounds || (cCount == 0)) {
+                
+                // --- calculate values for the cell ---
+                boolean withinBounds = transformCellCoordinates(rotation, 
+                    xCenter, yCenter, dx, dy, cellDim, img.getWidth(), 
+                    img.getHeight(), xT, yT);
+                
+                if (!withinBounds) {
                     if (count == centralPixelIndex) {
                         return null;
                     }
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                int cCount = 0;
+                int v = 0;
+                for (int i = 0; i < xT.length; ++i) {
+                    int x = Math.round(xT[i]);
+                    int y = Math.round(yT[i]);
+                    int v0 = img.getValue(x, y);
+                    v += v0;
+                    cCount++;
+                }
+                if (cCount == 0) {
                     output[count] = sentinel;
                     count++;
                     continue;
@@ -698,7 +740,7 @@ public class IntensityFeatures {
         return desc;
     }
 
-    protected boolean transformCellCoordinates(int rotation, int x0, int y0, 
+    static boolean transformCellCoordinates(int rotation, int x0, int y0, 
         int dx, int dy, int cellDim, int imageWidth, int imageHeight, 
         float[] outputX, float[] outputY) {
         
@@ -771,5 +813,197 @@ public class IntensityFeatures {
         stat.setImg2PointIntensityErr(err2SqIntensity);
 
         return stat;
+    }
+    
+    static void populateRotationOffsetsQ0(final int cellDim,
+        final int nCellsAcross, final int rotation,
+        float[] outTrX, float[] outTrY) {
+
+        int nColsHalf = nCellsAcross / 2;
+        int range0 = cellDim * nColsHalf;
+
+        int nTot = 4 * nCellsAcross * nCellsAcross;
+
+        if (outTrX.length != nTot) {
+            throw new IllegalArgumentException("expected outTrX to be length "
+            + nTot);
+        }
+        if (outTrY.length != nTot) {
+            throw new IllegalArgumentException("expected outTrY to be length "
+            + nTot);
+        }
+        
+        double rotationInRadians = rotation * Math.PI/180.;
+        double mc = Math.cos(rotationInRadians);
+        double ms = Math.sin(rotationInRadians);
+                
+        int count = 0;
+        for (int dx = -range0; dx < range0; dx += cellDim) {
+            for (int dy = -range0; dy < range0; dy += cellDim) {
+                for (int dxc = 0; dxc < cellDim; ++dxc) {
+                    for (int dyc = 0; dyc < cellDim; ++dyc) {
+                        double xt = (((dx + dxc) * mc) + ((dy + dyc) * ms));
+                        double yt = (-((dx + dxc) * ms)) + ((dy + dyc) * mc);
+                        outTrX[count] = (float)xt;
+                        outTrY[count] = (float)yt;
+                        count++;
+                    }
+                }
+            }
+        }
+        
+    /* for future pre-processed arrays
+      could consider spatial indexing (quad) for zoom order=2 for cellDim=2 for example
+     *    Zoom=1                   Zoom=2                         
+     *    ORDER                    ORDER                          
+     *      2                        4                      
+     *
+     *   --- ---           -------------------------      
+     *  | 1 | 3 |          |     |     |     |     |      
+     * 1|01 |11 |         3|  5  |  7  | 13  | 15  |  
+     *   -------           |0101 |0111 |1101 |1111 |    
+     *  | 0 | 2 |          |-----------|-----------|   
+     * 0|00 |10 |          |     |     |     |     |   
+     *   --- ---          2|  4  |  6  | 12  | 14  |   
+     *    0   1            |0100 |0110 |1100 |1110 |   
+     *                     -------------------------    
+     *                     |     |     |     |     |  
+     *                    1|  1  |  3  |  9  | 11  |   
+     *                     |00+01|00+11|10+01|10+11|   
+     *                     |-----------|-----------|    
+     *                     |     |     |     |     |  
+     *                    0|  0  |  2  |  8  | 10  |  
+     *                     |00+00|00+10|10+00|10+10|  
+     *                     ------------------------- 
+     *                        0     1     2     3 
+        */
+    }
+    
+    /**
+     * extract the intensity from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param img
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     * @return
+     */
+    protected IntensityDescriptor extractGsIntensityForCells2(GreyscaleImage img,
+        int xCenter, int yCenter, int rotation) {
+        
+        int len = getDefaultLengthForCellExtractOffsets();
+        float[] xTrq0 = new float[len];
+        float[] yTrq0 = new float[xTrq0.length];
+        
+        int cellDim = getDefaultCellDimForExtract();
+        
+        int nCellsAcross = getDefaultNCellsAcrossForExtract();
+        
+        populateRotationOffsetsQ0(cellDim, nCellsAcross, rotation, xTrq0, yTrq0);
+
+        return extractGsIntensityForCells2(img, xCenter, yCenter, xTrq0, yTrq0);
+    }
+    
+    public static int getDefaultCellDimForExtract() {
+        int cellDim = 2;
+        return cellDim;
+    }
+    public static int getDefaultNCellsAcrossForExtract() {
+        int nCellsAcross = 6;
+        return nCellsAcross;
+    }
+    public static int getDefaultLengthForCellExtractOffsets() {
+        int nCellsAcross = getDefaultNCellsAcrossForExtract();
+        int len = 2*nCellsAcross;
+        return len * len;
+    }
+    
+    /**
+     * extract the intensity from the image in 2X2 cells surrounding
+     * (xCenter, yCenter) for 16 cells.
+     * @param img
+     * @param xCenter
+     * @param yCenter
+     * @param xTrq0
+     * @param yTrq0
+     * @return
+     */
+    public IntensityDescriptor extractGsIntensityForCells2(GreyscaleImage img,
+        int xCenter, int yCenter, float[] xTrq0, float[] yTrq0) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+        if (xTrq0 == null) {
+            throw new IllegalArgumentException("xTrq0 cannot be null");
+        }
+        if (yTrq0 == null) {
+            throw new IllegalArgumentException("yTrq0 cannot be null");
+        }
+     
+        float sentinel = GsIntensityDescriptor.sentinel;
+        /*
+        defaults: cellDim=2, nCellsAcross=6
+        same range in dx, dy could be achieved w/ coarser cellDim=6, nCellsAcross=2
+        */
+        int cellDim = getDefaultCellDimForExtract();        
+        int nCellsAcross = getDefaultNCellsAcrossForExtract();
+        int nColsHalf = nCellsAcross / 2;
+        int range0 = cellDim * nColsHalf;
+
+        int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
+        
+        if ((xTrq0.length != len) || (yTrq0.length != len)) {
+            throw new IllegalArgumentException(
+                "xTrq0 and/or yTrq0 has incorrect length");
+        }
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        float[] output = new float[nCellsAcross * nCellsAcross];
+
+        int n2 = cellDim * cellDim;
+        
+        //index of center pixel in array of descriptor:
+        int centralPixelIndex = (nCellsAcross*nColsHalf) + nColsHalf;
+        
+        int count = 0;
+        int idx = 0;
+        for (int dx = -range0; dx < range0; dx += cellDim) {
+            for (int dy = -range0; dy < range0; dy += cellDim) {
+                boolean withinBounds = true;
+                int cCount = 0;
+                // ---- sum within the cell ----
+                int v = 0;
+                for (int i = 0; i < n2; ++i) {
+                    float xOff = xTrq0[idx];
+                    float yOff = yTrq0[idx];
+                    idx++;
+                    int x = Math.round(xOff + xCenter);
+                    int y = Math.round(yOff + yCenter);
+                    if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
+                        withinBounds = false;
+                        break;
+                    }
+                    v += img.getValue(x, y);
+                    cCount++;
+                }
+                if (!withinBounds || (cCount == 0)) {
+                    if (count == centralPixelIndex) {
+                        return null;
+                    }
+                    output[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                v /= (float) cCount;
+                output[count] = v;
+                count++;
+            }
+        }
+
+        IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);
+        return desc;
     }
 }

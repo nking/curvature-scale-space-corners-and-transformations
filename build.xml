@@ -488,7 +488,7 @@
     
     <target name="runTest" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
 
-        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <record name="${logfile}" append="yes" loglevel="info"/>
 
         <fail unless="test">
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
