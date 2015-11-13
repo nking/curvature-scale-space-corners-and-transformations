@@ -25,7 +25,7 @@ public class TransformationPair2&lt;T extends CornerRegion&gt; {
     /**
      * object used to track visits and help choose the next contour.
      */
-    private NextCorner nextCorner;
+    private NextCorner&lt;T&gt; nextCorner;
    
     public TransformationPair2(T corner1Curve1, T corner1Curve2, T corner2Curve1, 
 <span class="fc" id="L31">        T corner2Curve2) {</span>
@@ -72,14 +72,14 @@ public class TransformationPair2&lt;T extends CornerRegion&gt; {
     /**
      * @return the nextContour
      */
-    public NextCorner getNextCorner() {
+    public NextCorner&lt;T&gt; getNextCorner() {
 <span class="fc" id="L76">        return nextCorner;</span>
     }
 
     /**
      * @param theNextCorner the theNextCorner to set
      */
-    public void setNextCorner(NextCorner theNextCorner) {
+    public void setNextCorner(NextCorner&lt;T&gt; theNextCorner) {
 <span class="fc" id="L83">        this.nextCorner = theNextCorner;</span>
 <span class="fc" id="L84">    }</span>
 

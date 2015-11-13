@@ -84,22 +84,22 @@ import java.util.logging.Logger;
         CannyEdgeFilterSettings edgeSettings) throws IOException, 
         NoSuchAlgorithmException {        
       
-<span class="fc" id="L87">        PairIntArray outputSkyCentroid = new PairIntArray();</span>
+<span class="nc" id="L87">        PairIntArray outputSkyCentroid = new PairIntArray();</span>
         
-<span class="fc" id="L89">        GreyscaleImage mask = createBestSkyMask(theta, gradientXY, originalImage, </span>
+<span class="nc" id="L89">        GreyscaleImage mask = createBestSkyMask(theta, gradientXY, originalImage, </span>
             edgeSettings, outputSkyCentroid);
        
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (mask == null) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (mask == null) {</span>
 <span class="nc" id="L93">            return null;</span>
         }
         
-<span class="fc" id="L96">        ImageExt output = (ImageExt) originalImage.copyImage();</span>
+<span class="nc" id="L96">        ImageExt output = (ImageExt) originalImage.copyImage();</span>
         
-<span class="fc" id="L98">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L98">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="fc" id="L100">        imageProcessor.multiplyBinary(output, mask);</span>
+<span class="nc" id="L100">        imageProcessor.multiplyBinary(output, mask);</span>
         
-<span class="fc" id="L102">        return output;</span>
+<span class="nc" id="L102">        return output;</span>
     }
     
      /**

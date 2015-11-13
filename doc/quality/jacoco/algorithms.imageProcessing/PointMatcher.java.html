@@ -1903,7 +1903,7 @@ private void writeTransformed(TransformationParameters parameters,
 
 <span class="fc" id="L1904">        TransformationParameters[] lastParams = extractParameters(fits);</span>
 
-<span class="fc bfc" id="L1906" title="All 4 branches covered.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+<span class="pc bpc" id="L1906" title="1 of 4 branches missed.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
 
 <span class="pc bpc" id="L1908" title="1 of 2 branches missed.">            if (fits.length == 0) {</span>
 <span class="nc" id="L1909">                break;</span>
@@ -2252,15 +2252,15 @@ private void writeTransformed(TransformationParameters parameters,
 
 <span class="fc" id="L2253">            nIter++;</span>
 <span class="fc" id="L2254">            lastAlt++;</span>
-<span class="pc bpc" id="L2255" title="1 of 4 branches missed.">            if (searchScaleToo &amp;&amp; (lastAlt &gt; 3)) {</span>
+<span class="pc bpc" id="L2255" title="3 of 4 branches missed.">            if (searchScaleToo &amp;&amp; (lastAlt &gt; 3)) {</span>
 <span class="nc" id="L2256">                lastAlt = 0;</span>
-<span class="fc bfc" id="L2257" title="All 4 branches covered.">            } else if (!searchScaleToo &amp;&amp; (lastAlt &gt; 2)) {</span>
+<span class="pc bpc" id="L2257" title="1 of 4 branches missed.">            } else if (!searchScaleToo &amp;&amp; (lastAlt &gt; 2)) {</span>
 <span class="fc" id="L2258">                lastAlt = 0;</span>
             }
 
-<span class="fc bfc" id="L2261" title="All 2 branches covered.">            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)</span>
-<span class="pc bpc" id="L2262" title="1 of 2 branches missed.">                &amp;&amp; (fits[bestFitIdx].getMeanDistFromModel() &lt; eps)) {</span>
-<span class="fc" id="L2263">                go = false;</span>
+<span class="pc bpc" id="L2261" title="1 of 2 branches missed.">            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)</span>
+<span class="nc bnc" id="L2262" title="All 2 branches missed.">                &amp;&amp; (fits[bestFitIdx].getMeanDistFromModel() &lt; eps)) {</span>
+<span class="nc" id="L2263">                go = false;</span>
 <span class="pc bpc" id="L2264" title="2 of 4 branches missed.">            } else if ((transX &gt; txMax) || (transX &lt; txMin)) {</span>
 <span class="nc" id="L2265">                go = false;</span>
 <span class="pc bpc" id="L2266" title="2 of 4 branches missed.">            } else if ((transY &gt; tyMax) || (transY &lt; tyMin)) {</span>
@@ -2287,8 +2287,8 @@ private void writeTransformed(TransformationParameters parameters,
                 tolTransX, tolTransY, useGreedyMatching);
 
 <span class="fc" id="L2289">            int comp = compare(fits[bestFitIdx], fitAvg);</span>
-<span class="fc bfc" id="L2290" title="All 2 branches covered.">            if (comp == 1) {</span>
-<span class="fc" id="L2291">                fits[bestFitIdx] = fitAvg;</span>
+<span class="pc bpc" id="L2290" title="1 of 2 branches missed.">            if (comp == 1) {</span>
+<span class="nc" id="L2291">                fits[bestFitIdx] = fitAvg;</span>
             }
         }
 
@@ -3377,13 +3377,13 @@ private void writeTransformed(TransformationParameters parameters,
         }
 
 <span class="fc" id="L3379">        int nS = (int) Math.ceil(2*scaleHalfRange / scaleDelta);</span>
-<span class="fc bfc" id="L3380" title="All 2 branches covered.">        if (nS == 0) {</span>
+<span class="pc bpc" id="L3380" title="1 of 2 branches missed.">        if (nS == 0) {</span>
 <span class="fc" id="L3381">            nS = 1;</span>
         }
 <span class="fc" id="L3383">        float[] scales = new float[nS];</span>
 <span class="fc" id="L3384">        scales[0] = params.getScale() - scaleHalfRange;</span>
-<span class="fc bfc" id="L3385" title="All 2 branches covered.">        for (int i = 1; i &lt; nS; ++i) {</span>
-<span class="fc" id="L3386">            scales[i] = scales[i - 1] + scaleDelta;</span>
+<span class="pc bpc" id="L3385" title="1 of 2 branches missed.">        for (int i = 1; i &lt; nS; ++i) {</span>
+<span class="nc" id="L3386">            scales[i] = scales[i - 1] + scaleDelta;</span>
         }
 
 <span class="fc" id="L3389">        int nKeep = 10;</span>
@@ -3620,45 +3620,45 @@ private void writeTransformed(TransformationParameters parameters,
         float transYHalfRange, float transYDelta,
         boolean useGreedyMatching) {
 
-<span class="pc bpc" id="L3623" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc bnc" id="L3623" title="All 2 branches missed.">        if (params == null) {</span>
 <span class="nc" id="L3624">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L3626" title="1 of 2 branches missed.">        if (set1 == null) {</span>
+<span class="nc bnc" id="L3626" title="All 2 branches missed.">        if (set1 == null) {</span>
 <span class="nc" id="L3627">            throw new IllegalArgumentException(&quot;set1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L3629" title="1 of 2 branches missed.">        if (set2 == null) {</span>
+<span class="nc bnc" id="L3629" title="All 2 branches missed.">        if (set2 == null) {</span>
 <span class="nc" id="L3630">            throw new IllegalArgumentException(&quot;set2 cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L3633">        TransformationPointFit[] fits = boundedGridSearch(</span>
+<span class="nc" id="L3633">        TransformationPointFit[] fits = boundedGridSearch(</span>
             set1, set2, params,
             scaleHalfRange, scaleDelta,
             rotHalfRangeInDegrees, rotDeltaInDegrees,
             transXHalfRange, transXDelta,
             transYHalfRange, transYDelta, useGreedyMatching);
 
-<span class="pc bpc" id="L3640" title="1 of 2 branches missed.">        if (fits == null) {</span>
+<span class="nc bnc" id="L3640" title="All 2 branches missed.">        if (fits == null) {</span>
 <span class="nc" id="L3641">            return null;</span>
         }
 
-<span class="fc" id="L3644">        int nMaxMatchable = Math.min(set1.getN(), set2.getN());</span>
+<span class="nc" id="L3644">        int nMaxMatchable = Math.min(set1.getN(), set2.getN());</span>
 
-<span class="fc bfc" id="L3646" title="All 2 branches covered.">        if (hasConverged(fits[0], nMaxMatchable)) {</span>
-<span class="fc" id="L3647">            return fits[0];</span>
+<span class="nc bnc" id="L3646" title="All 2 branches missed.">        if (hasConverged(fits[0], nMaxMatchable)) {</span>
+<span class="nc" id="L3647">            return fits[0];</span>
         }
 
-<span class="fc" id="L3650">        boolean searchScaleToo = true;</span>
+<span class="nc" id="L3650">        boolean searchScaleToo = true;</span>
 
-<span class="fc" id="L3652">        TransformationPointFit[] fits2 =</span>
-<span class="fc" id="L3653">            refineTransformationWithDownhillSimplexWrapper(fits, set1, set2,</span>
+<span class="nc" id="L3652">        TransformationPointFit[] fits2 =</span>
+<span class="nc" id="L3653">            refineTransformationWithDownhillSimplexWrapper(fits, set1, set2,</span>
             searchScaleToo, useGreedyMatching);
 
-<span class="pc bpc" id="L3656" title="1 of 2 branches missed.">        if (fits2 == null) {</span>
+<span class="nc bnc" id="L3656" title="All 2 branches missed.">        if (fits2 == null) {</span>
 <span class="nc" id="L3657">            return null;</span>
         }
 
-<span class="pc bpc" id="L3660" title="1 of 2 branches missed.">        if (hasConverged(fits2[0], nMaxMatchable)) {</span>
-<span class="fc" id="L3661">            return fits2[0];</span>
+<span class="nc bnc" id="L3660" title="All 2 branches missed.">        if (hasConverged(fits2[0], nMaxMatchable)) {</span>
+<span class="nc" id="L3661">            return fits2[0];</span>
         }
 
         // TODO: may need a small fine grid search here

@@ -512,8 +512,8 @@ import java.util.logging.Logger;
                 }
                 
                 //TODO: this should to be revised to scale w/ errors
-<span class="fc bfc" id="L515" title="All 2 branches covered.">                if (mapper.getSolvedCost() &gt; 800) {</span>
-<span class="fc" id="L516">                    continue;</span>
+<span class="pc bpc" id="L515" title="1 of 2 branches missed.">                if (mapper.getSolvedCost() &gt; 800) {</span>
+<span class="nc" id="L516">                    continue;</span>
                 }
                 
 <span class="fc" id="L519">                TransformationPair2&lt;T&gt; transformationPair = mapper.getSolution();</span>
@@ -563,11 +563,11 @@ int y2 = compStats2.get(0).getImg2Point().getY();
 <span class="fc" id="L563">                index1Map.put(Integer.valueOf(i1), best);</span>
                 
 <span class="fc" id="L565">                Set&lt;Integer&gt; a1 = assignedIndex2.get(Integer.valueOf(best.getIndex2()));</span>
-<span class="pc bpc" id="L566" title="1 of 2 branches missed.">                if (a1 != null) {</span>
-<span class="nc" id="L567">                    redo.add(Integer.valueOf(i1));</span>
-<span class="nc bnc" id="L568" title="All 2 branches missed.">                    for (Integer index1 : a1) {</span>
-<span class="nc" id="L569">                        redo.add(index1);</span>
-<span class="nc" id="L570">                    }</span>
+<span class="fc bfc" id="L566" title="All 2 branches covered.">                if (a1 != null) {</span>
+<span class="fc" id="L567">                    redo.add(Integer.valueOf(i1));</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">                    for (Integer index1 : a1) {</span>
+<span class="fc" id="L569">                        redo.add(index1);</span>
+<span class="fc" id="L570">                    }</span>
                 } else {
 <span class="fc" id="L572">                    a1 = new HashSet&lt;Integer&gt;();</span>
 <span class="fc" id="L573">                    assignedIndex2.put(Integer.valueOf(best.getIndex2()), a1);</span>
@@ -575,46 +575,46 @@ int y2 = compStats2.get(0).getImg2Point().getY();
 <span class="fc" id="L575">                a1.add(Integer.valueOf(best.getIndex1()));</span>
             }
         }
-<span class="pc bpc" id="L578" title="1 of 2 branches missed.">        if (!redo.isEmpty()) {</span>
+<span class="fc bfc" id="L578" title="All 2 branches covered.">        if (!redo.isEmpty()) {</span>
             //TODO: consider using all points except conflicted indexes to
             // determine transformation params and then choose among conflict
             // those with closer match to expected transformed coordinates.
             // problem with this instead of SSD is it would perform worse for
             // projection.
              
-<span class="nc" id="L585">            Set&lt;Integer&gt; resolved1 = new HashSet&lt;Integer&gt;();</span>
-<span class="nc bnc" id="L586" title="All 2 branches missed.">            for (Integer redoIndex1 : redo) {</span>
-<span class="nc bnc" id="L587" title="All 2 branches missed.">                if (resolved1.contains(redoIndex1)) {</span>
-<span class="nc" id="L588">                    continue;</span>
+<span class="fc" id="L585">            Set&lt;Integer&gt; resolved1 = new HashSet&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L586" title="All 2 branches covered.">            for (Integer redoIndex1 : redo) {</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">                if (resolved1.contains(redoIndex1)) {</span>
+<span class="fc" id="L588">                    continue;</span>
                 }
-<span class="nc" id="L590">                Integer conflictIndex2 = null;</span>
-<span class="nc bnc" id="L591" title="All 2 branches missed.">                for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : assignedIndex2.entrySet()) {</span>
-<span class="nc" id="L592">                    Set&lt;Integer&gt; indexes1 = entry.getValue();</span>
-<span class="nc bnc" id="L593" title="All 2 branches missed.">                    if (indexes1.contains(redoIndex1)) {</span>
-<span class="nc" id="L594">                        conflictIndex2 = entry.getKey();</span>
-<span class="nc" id="L595">                        break;</span>
+<span class="fc" id="L590">                Integer conflictIndex2 = null;</span>
+<span class="pc bpc" id="L591" title="1 of 2 branches missed.">                for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : assignedIndex2.entrySet()) {</span>
+<span class="fc" id="L592">                    Set&lt;Integer&gt; indexes1 = entry.getValue();</span>
+<span class="fc bfc" id="L593" title="All 2 branches covered.">                    if (indexes1.contains(redoIndex1)) {</span>
+<span class="fc" id="L594">                        conflictIndex2 = entry.getKey();</span>
+<span class="fc" id="L595">                        break;</span>
                     }
-<span class="nc" id="L597">                }</span>
-<span class="nc" id="L598">                Set&lt;Integer&gt; conflictIndexes1 = assignedIndex2.get(conflictIndex2);</span>
+<span class="fc" id="L597">                }</span>
+<span class="fc" id="L598">                Set&lt;Integer&gt; conflictIndexes1 = assignedIndex2.get(conflictIndex2);</span>
                 //decide by SSD or by difference from transformed point 1's
-<span class="nc bnc" id="L600" title="All 4 branches missed.">                assert(conflictIndexes1 != null);</span>
-<span class="nc" id="L601">                double bestCost = Double.MAX_VALUE;</span>
-<span class="nc" id="L602">                Integer bestCostIndex1 = null;</span>
-<span class="nc bnc" id="L603" title="All 2 branches missed.">                for (Integer index1 : conflictIndexes1) {</span>
-<span class="nc" id="L604">                    IntensityFeatureComparisonStats st = index1Map.get(index1);</span>
-<span class="nc bnc" id="L605" title="All 4 branches missed.">                    if ((bestCostIndex1 == null) || (bestCost &gt; st.getAdjustedCost())) {</span>
-<span class="nc" id="L606">                        bestCost = st.getAdjustedCost();</span>
-<span class="nc" id="L607">                        bestCostIndex1 = index1;</span>
+<span class="pc bpc" id="L600" title="3 of 4 branches missed.">                assert(conflictIndexes1 != null);</span>
+<span class="fc" id="L601">                double bestCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L602">                Integer bestCostIndex1 = null;</span>
+<span class="fc bfc" id="L603" title="All 2 branches covered.">                for (Integer index1 : conflictIndexes1) {</span>
+<span class="fc" id="L604">                    IntensityFeatureComparisonStats st = index1Map.get(index1);</span>
+<span class="pc bpc" id="L605" title="1 of 4 branches missed.">                    if ((bestCostIndex1 == null) || (bestCost &gt; st.getAdjustedCost())) {</span>
+<span class="fc" id="L606">                        bestCost = st.getAdjustedCost();</span>
+<span class="fc" id="L607">                        bestCostIndex1 = index1;</span>
                     }
-<span class="nc" id="L609">                    resolved1.add(index1);</span>
-<span class="nc" id="L610">                }</span>
-<span class="nc bnc" id="L611" title="All 2 branches missed.">                for (Integer index1 : conflictIndexes1) {</span>
-<span class="nc bnc" id="L612" title="All 2 branches missed.">                    if (index1.equals(bestCostIndex1)) {</span>
-<span class="nc" id="L613">                        continue;</span>
+<span class="fc" id="L609">                    resolved1.add(index1);</span>
+<span class="fc" id="L610">                }</span>
+<span class="fc bfc" id="L611" title="All 2 branches covered.">                for (Integer index1 : conflictIndexes1) {</span>
+<span class="fc bfc" id="L612" title="All 2 branches covered.">                    if (index1.equals(bestCostIndex1)) {</span>
+<span class="fc" id="L613">                        continue;</span>
                     }
-<span class="nc" id="L615">                    index1Map.remove(index1);</span>
-<span class="nc" id="L616">                }</span>
-<span class="nc" id="L617">            }</span>
+<span class="fc" id="L615">                    index1Map.remove(index1);</span>
+<span class="fc" id="L616">                }</span>
+<span class="fc" id="L617">            }</span>
         }
         
 <span class="fc" id="L620">        List&lt;FeatureComparisonStat&gt; add = new ArrayList&lt;FeatureComparisonStat&gt;();</span>

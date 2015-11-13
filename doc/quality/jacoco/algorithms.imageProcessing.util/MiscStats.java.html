@@ -382,7 +382,7 @@ import java.util.Set;
 <span class="fc" id="L382">                float v = tXHist.getXHist()[vIdx];</span>
 <span class="fc bfc" id="L383" title="All 2 branches covered.">                for (int i = 0; i &lt; translationXs.length; ++i) {</span>
 <span class="fc" id="L384">                    float diff = Math.abs(translationXs[i] - v);</span>
-<span class="fc bfc" id="L385" title="All 2 branches covered.">                    if (diff &lt;= binSize) {</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">                    if (diff &lt;= 1.1*binSize) {</span>
 <span class="fc" id="L386">                        keep.add(Integer.valueOf(i));</span>
                     }
                 }
@@ -437,7 +437,7 @@ import java.util.Set;
 <span class="fc" id="L437">                float v = tYHist.getXHist()[vIdx];</span>
 <span class="fc bfc" id="L438" title="All 2 branches covered.">                for (int i = 0; i &lt; translationYs.length; ++i) {</span>
 <span class="fc" id="L439">                    float diff = Math.abs(translationYs[i] - v);</span>
-<span class="fc bfc" id="L440" title="All 2 branches covered.">                    if (diff &lt;= binSize) {</span>
+<span class="fc bfc" id="L440" title="All 2 branches covered.">                    if (diff &lt;= 1.1*binSize) {</span>
 <span class="fc" id="L441">                        keep.add(Integer.valueOf(i));</span>
                     }
                 }

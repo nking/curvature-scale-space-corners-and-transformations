@@ -598,20 +598,20 @@ public class ContourFinder {
 
 <span class="nc" id="L599">                contours.remove(right);</span>
 <span class="nc" id="L600">                resort = true;</span>
-<span class="fc bfc" id="L601" title="All 4 branches covered.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L601" title="1 of 4 branches missed.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
 
 <span class="fc" id="L603">                contours.remove(left);</span>
 <span class="fc" id="L604">                resort = true;</span>
             } else {
 
-<span class="pc bpc" id="L607" title="1 of 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L607" title="2 of 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
                     // left has 1 peak
 <span class="fc" id="L609">                    contours.remove(right);</span>
 <span class="fc" id="L610">                    resort = true;</span>
-<span class="pc bpc" id="L611" title="2 of 4 branches missed.">                } else if (rightIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
+<span class="nc bnc" id="L611" title="All 4 branches missed.">                } else if (rightIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
                     // right has 1 peak
-<span class="fc" id="L613">                    contours.remove(left);</span>
-<span class="fc" id="L614">                    resort = true;</span>
+<span class="nc" id="L613">                    contours.remove(left);</span>
+<span class="nc" id="L614">                    resort = true;</span>
 <span class="nc bnc" id="L615" title="All 4 branches missed.">                } else if (!rightIsTaller &amp;&amp; !leftIsTaller</span>
 <span class="nc bnc" id="L616" title="All 2 branches missed.">                    &amp;&amp; (right.getPeakDetails().length == 2)</span>
 <span class="nc bnc" id="L617" title="All 2 branches missed.">                    &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
@@ -698,8 +698,8 @@ public class ContourFinder {
     public boolean reverseIfClockwise(List&lt;CurvatureScaleSpaceContour&gt; result,
         PairIntArray edge) {
 
-<span class="fc bfc" id="L701" title="All 2 branches covered.">        if (result.isEmpty()) {</span>
-<span class="fc" id="L702">            return false;</span>
+<span class="pc bpc" id="L701" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
+<span class="nc" id="L702">            return false;</span>
         }
 
 <span class="pc bpc" id="L705" title="1 of 2 branches missed.">        if (edge == null) {</span>
@@ -729,9 +729,9 @@ public class ContourFinder {
 <span class="fc" id="L729">            int iMid = (i1 + i0) / 2;</span>
 <span class="fc" id="L730">            betweenInflectionIndexes.add(Integer.valueOf(iMid));</span>
         }
-<span class="fc bfc" id="L732" title="All 2 branches covered.">        boolean isClosedCurved = (edge instanceof PairIntArrayWithColor)</span>
+<span class="pc bpc" id="L732" title="1 of 2 branches missed.">        boolean isClosedCurved = (edge instanceof PairIntArrayWithColor)</span>
 <span class="pc bpc" id="L733" title="1 of 2 branches missed.">            &amp;&amp; (((PairIntArrayWithColor) edge).getColor() == 1);</span>
-<span class="fc bfc" id="L734" title="All 2 branches covered.">        if (isClosedCurved) {</span>
+<span class="pc bpc" id="L734" title="1 of 2 branches missed.">        if (isClosedCurved) {</span>
 <span class="fc" id="L735">            int n = indexes.size();</span>
 <span class="fc" id="L736">            int i0 = indexes.get(n - 1);</span>
 <span class="fc" id="L737">            int i1 = indexes.get(0);</span>

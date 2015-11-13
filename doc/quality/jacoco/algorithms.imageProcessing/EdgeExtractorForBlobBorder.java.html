@@ -547,16 +547,16 @@ try {
 <span class="fc" id="L547">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
                 imageHeight);
                 
-<span class="fc bfc" id="L550" title="All 2 branches covered.">            if (isASpur) {</span>
+<span class="pc bpc" id="L550" title="1 of 2 branches missed.">            if (isASpur) {</span>
                 
-<span class="fc" id="L552">                curve.removeRange(idx, idx);</span>
+<span class="nc" id="L552">                curve.removeRange(idx, idx);</span>
                 
-<span class="fc" id="L554">                edited = true;</span>
+<span class="nc" id="L554">                edited = true;</span>
                 
             } else {
                 break;
             }
-<span class="fc" id="L559">        }</span>
+<span class="nc" id="L559">        }</span>
         
 <span class="fc" id="L561">        return edited;</span>
     }

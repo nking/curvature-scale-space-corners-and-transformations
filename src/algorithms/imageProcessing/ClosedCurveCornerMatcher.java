@@ -281,7 +281,7 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
         return true;
     }
 
-    private CornersAndFeatureStat findBestMatchWithinTolerance(
+    private CornersAndFeatureStat<T> findBestMatchWithinTolerance(
         List<T> c2, NearestPoints np,
         IntensityFeatures features1, IntensityFeatures features2,
         int corner1Idx, T cornerCurve1, double[] predictedXYCurve2,

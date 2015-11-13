@@ -249,8 +249,8 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L250">                boolean didMatch = matcher.matchContours();</span>
 
-<span class="fc bfc" id="L252" title="All 2 branches covered.">                if (!didMatch) {</span>
-<span class="fc" id="L253">                    continue;</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">                if (!didMatch) {</span>
+<span class="nc" id="L253">                    continue;</span>
                 }
 
 <span class="fc" id="L256">                List&lt;CurvatureScaleSpaceContour&gt; m1 = matcher.getSolutionMatchedContours1();</span>
@@ -294,7 +294,7 @@ int z = 1;
 }
 */
 
-<span class="pc bpc" id="L297" title="2 of 8 branches missed.">                if ((cost &lt; minCost) || ((bestM1 != null) &amp;&amp; (m1.size() &gt; 2) &amp;&amp; (bestM1.size() &lt; 3))) {</span>
+<span class="pc bpc" id="L297" title="3 of 8 branches missed.">                if ((cost &lt; minCost) || ((bestM1 != null) &amp;&amp; (m1.size() &gt; 2) &amp;&amp; (bestM1.size() &lt; 3))) {</span>
 
                     // if i2 is already matched to the best of i1 and the
                     // cost there is smaller, cannot set to best here
@@ -664,8 +664,8 @@ try {
 <span class="nc" id="L664">            throw new IllegalArgumentException(&quot;contours cannot be null&quot;);</span>
         }
 
-<span class="fc bfc" id="L667" title="All 2 branches covered.">        if (contours.isEmpty()) {</span>
-<span class="fc" id="L668">            return;</span>
+<span class="pc bpc" id="L667" title="1 of 2 branches missed.">        if (contours.isEmpty()) {</span>
+<span class="nc" id="L668">            return;</span>
         }
 
         // the contours extracted from scale space images using a factor of

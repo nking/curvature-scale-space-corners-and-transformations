@@ -386,11 +386,11 @@ import java.io.IOException;
 
 <span class="fc" id="L387">        float fracMatched = (float)bestNMatches/(float)nMaxMatchable;</span>
 
-<span class="pc bpc" id="L389" title="1 of 4 branches missed.">        if ((bestAvg &lt; 1) &amp;&amp; (bestS &lt; 1)) {</span>
+<span class="pc bpc" id="L389" title="2 of 4 branches missed.">        if ((bestAvg &lt; 1) &amp;&amp; (bestS &lt; 1)) {</span>
 <span class="fc bfc" id="L390" title="All 2 branches covered.">            if (fracMatched &gt; 0.9) {</span>
 <span class="fc" id="L391">                return true;</span>
             }
-<span class="pc bpc" id="L393" title="3 of 4 branches missed.">        } else if ((bestAvg &lt; 0.5) &amp;&amp; (bestS &lt; 0.5)) {</span>
+<span class="nc bnc" id="L393" title="All 4 branches missed.">        } else if ((bestAvg &lt; 0.5) &amp;&amp; (bestS &lt; 0.5)) {</span>
 <span class="nc bnc" id="L394" title="All 4 branches missed.">            if (nMaxMatchable &gt; 10 &amp;&amp; bestNMatches &gt; 10) {</span>
 <span class="nc" id="L395">                return true;</span>
             }
