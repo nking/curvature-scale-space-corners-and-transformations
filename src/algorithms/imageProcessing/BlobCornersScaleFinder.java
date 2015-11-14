@@ -5,6 +5,8 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ScatterPointPlotterPNG;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,7 +14,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 
 /**
@@ -68,15 +73,15 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
         Map<PairInt, Float> indexScore = new HashMap<PairInt, Float>();
         
-        //boolean useBipartite = true;
+        boolean useBipartite = false;
         
-        //if (useBipartite) {
+        if (useBipartite) {
             resolveUsingBipartite(mMap, corners1List, corners2List, binFactor1,
                 binFactor2, ifsList, paramsList, indexScore);
-        //} else {
-        //    resolveWithoutBipartite(mMap, corners1List, corners2List, binFactor1,
-        //        binFactor2, ifsList, paramsList, indexScore);
-        //}
+        } else {
+            resolveWithoutBipartite(mMap, corners1List, corners2List, binFactor1,
+                binFactor2, ifsList, paramsList, indexScore);
+        }
         
         // to correct for wrap around from 360 to 0, repeating same calc with shifted values
        
@@ -194,9 +199,8 @@ try {
     plotter2.writeToFile("img2_labelled.png");
 } catch (IOException ex) {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
-} 
+}
 */
-
         Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> trMap 
             = new HashMap<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>>();
 
@@ -538,7 +542,6 @@ try {
         
     }
 
-    /*
     private void resolveWithoutBipartite(Map<Integer, 
         FixedSizeSortedVector<IntensityFeatureComparisonStats>> mMap, 
         List<List<CornerRegion>> corners1List, 
@@ -662,6 +665,6 @@ try {
             paramsList.add(params);
             indexScore.put(p, Float.valueOf(score.floatValue()));
         }
-    }*/
+    }
     
 }

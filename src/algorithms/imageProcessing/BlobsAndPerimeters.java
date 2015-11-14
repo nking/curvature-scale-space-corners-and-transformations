@@ -24,6 +24,13 @@ import java.util.logging.Logger;
 public class BlobsAndPerimeters {
     
     protected static boolean modifyBlobs = true;
+    
+    /**
+     * the number of largest extracted perimeters is limited to this and
+     * the number of blobs is subsequently trimmed to the same.  The variable
+     * may be adjusted to a higher number for larger images.
+     */
+    protected static int defaultNumberLimit = 20;
           
     public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
         SegmentedImageHelper imgHelper, SegmentationType type, 
@@ -146,13 +153,33 @@ public class BlobsAndPerimeters {
         int width = segImg.getWidth();
         int height = segImg.getHeight();
         
+        //TODO: consider increasing 'numberLimit' by some amount for image
+        // sizes >= 1024
+        int numberLimit = defaultNumberLimit;
+        
+        // sort by descending size
+        int[] indexes = new int[inOutBlobs.size()];
+        int[] lengths = new int[indexes.length];
+        for (int i = 0; i < inOutBlobs.size(); ++i) {
+            indexes[i] = i;
+            lengths[i] = inOutBlobs.get(i).size();
+        }
+        
+        MultiArrayMergeSort.sortByDecr(lengths, indexes);
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        List<Integer> remove = new ArrayList<Integer>();
+        List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
         
-        for (int i = 0; i < inOutBlobs.size(); ++i) {
+        log.info("nBlobs before filtered =" + inOutBlobs.size());
         
-            Set<PairInt> blob = inOutBlobs.get(i);
+        int count = 0;
+        int idx;
+        while ((outputBounds.size() < numberLimit) && (count < inOutBlobs.size())) {
+            
+            idx = indexes[count];
+            
+            Set<PairInt> blob = inOutBlobs.get(idx);
             
             EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();
             
@@ -164,43 +191,15 @@ public class BlobsAndPerimeters {
 
                 outputBounds.add(closedEdge);
                 
-            } else {
+                blobs2.add(blob);
                 
-                remove.add(Integer.valueOf(i));
             }
+            
+            count++;
         }
         
-        for (int i = remove.size() - 1; i > -1; --i) {
-            inOutBlobs.remove(remove.get(i).intValue());
-        }
-        
-        assert (inOutBlobs.size() == outputBounds.size());
-        
-        // sort by descending length
-        int[] indexes = new int[inOutBlobs.size()];
-        int[] lengths = new int[indexes.length];
-        for (int i = 0; i < inOutBlobs.size(); ++i) {
-            indexes[i] = i;
-            lengths[i] = outputBounds.get(i).getN();
-        }
-        
-        MultiArrayMergeSort.sortByDecr(lengths, indexes);
-        
-        List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
-        List<PairIntArray> curves = new ArrayList<PairIntArray>();
-        
-        log.info("nBlobs before filtered to top =" + inOutBlobs.size());
-        //TODO: note, results are sensitive to this limit:
-        int last = (inOutBlobs.size() > 20) ? 20 : inOutBlobs.size();
-        for (int i = 0; i < last; ++i) {
-            int idx = indexes[i];
-            blobs2.add(inOutBlobs.get(idx));
-            curves.add(outputBounds.get(idx));
-        }
         inOutBlobs.clear();
-        outputBounds.clear();
         inOutBlobs.addAll(blobs2);
-        outputBounds.addAll(curves);
         
         assert (inOutBlobs.size() == outputBounds.size());
         
