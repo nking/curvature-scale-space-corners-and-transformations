@@ -153,9 +153,10 @@ public class BlobsAndPerimeters {
         int width = segImg.getWidth();
         int height = segImg.getHeight();
         
-        //TODO: consider increasing 'numberLimit' by some amount for image
-        // sizes >= 1024
         int numberLimit = defaultNumberLimit;
+        if (width >= 1024 || height >= 1024) {
+            numberLimit = 30;
+        }
         
         // sort by descending size
         int[] indexes = new int[inOutBlobs.size()];
