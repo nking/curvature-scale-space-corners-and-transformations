@@ -499,6 +499,8 @@ public class FeatureMatcherWrapper {
                     continue;
                 }
                 
+//TODO: replace here w/ revised matcher                 
+                
                 ClosedCurveCornerMatcherWrapper<T> mapper =
                     new ClosedCurveCornerMatcherWrapper<T>();
                 

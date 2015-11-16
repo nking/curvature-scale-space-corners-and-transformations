@@ -155,7 +155,7 @@ public class BlobsAndPerimeters {
         
         int numberLimit = defaultNumberLimit;
         if (width >= 1024 || height >= 1024) {
-            numberLimit = 30;
+            numberLimit = 40;
         }
         
         // sort by descending size

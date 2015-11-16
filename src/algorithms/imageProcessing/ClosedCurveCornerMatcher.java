@@ -38,6 +38,8 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
     protected final int rotationTolerance = 20;
 
     private int tolerance = 2;//4;
+    
+    private double ssdLimit = 1500;
 
     private double solutionCost = Double.MAX_VALUE;
 
@@ -65,7 +67,6 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
     
     /**
      * 
-     * @param <T> T extends CornerRegion
      * @param features1
      * @param features2
      * @param corners1
@@ -316,7 +317,7 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
                 log.fine(ex.getMessage());
             }
 
-            if (compStat == null) {
+            if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {
                 continue;
             }
 
@@ -420,11 +421,10 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
                     log.fine("**CONSIDER using more points in corner region");
                 }
 
-                if (compStat == null) {
-                    continue;
-                }
-
-                if (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr()) {
+                if ((compStat == null) 
+                    || (compStat.getSumIntensitySqDiff() >= ssdLimit) ||
+                    (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr())
+                    ) {
                     continue;
                 }
                 
@@ -616,7 +616,7 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
         float[][] cost = new float[c1.size()][c2.size()];
 
         // use bipartite matching on the remaining points.
-
+            
         for (int i = 0; i < c1.size(); ++i) {
 
             cost[i] = new float[c2.size()];
@@ -628,6 +628,7 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
             }
 
             double[] xy3C2 = applyTransformation(c3C1, params);
+            
             CornersAndFeatureStat<T> cfs = findBestMatchWithinTolerance(c2, np,
                 features1, features2,
                 i, c3C1, xy3C2, Math.round(params.getRotationInDegrees()), 
@@ -640,7 +641,7 @@ public class ClosedCurveCornerMatcher<T extends CornerRegion> {
             cfs.idx1 = i;
 
             assert(cfs.idx2 != -1);
-
+            
             double dist = distance(cfs.stat.getImg2Point().getX(),
                 cfs.stat.getImg2Point().getY(), xy3C2[0], xy3C2[1]);
 

@@ -44,6 +44,11 @@ public class IntensityFeatureComparisonStats implements
     @Override
     public int compareTo(IntensityFeatureComparisonStats other) {
         
+        return compareByCost(other);
+    }
+    
+    public int compareTo2(IntensityFeatureComparisonStats other) {
+        
         /*
         if the number of matches is high and the SSDs are low,
         comparison should be by combined intensity stats.

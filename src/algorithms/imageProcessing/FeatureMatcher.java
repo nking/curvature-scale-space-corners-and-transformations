@@ -1071,7 +1071,7 @@ public class FeatureMatcher {
         Map<PairInt, FeatureComparisonStat> statMap = null;
         float[][] cost = null;
                 
-        final boolean useBipartite = (nMaxMatchable < 251);
+        final boolean useBipartite = false;//(nMaxMatchable < 251);
         
         Map<Integer, Integer> index1Map = null;
         Map<Integer, Set<Integer>> index2Map = null;

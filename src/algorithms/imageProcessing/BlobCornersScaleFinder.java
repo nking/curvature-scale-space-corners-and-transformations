@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.NearestPoints;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.MiscStats;
@@ -27,6 +28,8 @@ import thirdparty.HungarianAlgorithm;
  * @author nichole
  */
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
+    
+    private double ssdLimit = 1500;
 
     public MatchingSolution solveForScale(
         BlobCornerHelper img1Helper, IntensityFeatures features1,
@@ -54,123 +57,19 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
         
-        Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
-            mMap = match(features1, features2, img1, img2, perimeters1, 
-            perimeters2, corners1List, corners2List);
-
-        if (mMap.isEmpty()) {
-            return null;
-        }
-        
-        MatchingSolution soln = checkForNonDegenerateSolution(mMap, binFactor1, 
-            binFactor2);
-       
-        if (soln != null) {
-            return soln;
-        }
-        
-        List<IntensityFeatureComparisonStats> ifsList = new ArrayList<IntensityFeatureComparisonStats>();
-        List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
-        Map<PairInt, Float> indexScore = new HashMap<PairInt, Float>();
-        
-        boolean useBipartite = false;
-        
-        if (useBipartite) {
-            resolveUsingBipartite(mMap, corners1List, corners2List, binFactor1,
-                binFactor2, ifsList, paramsList, indexScore);
-        } else {
-            resolveWithoutBipartite(mMap, corners1List, corners2List, binFactor1,
-                binFactor2, ifsList, paramsList, indexScore);
-        }
-        
-        // to correct for wrap around from 360 to 0, repeating same calc with shifted values
-       
-        int[] indexesToKeep = MiscStats.filterForRotationUsingHist(paramsList, 0);
-        
-        int[] indexesToKeepShifted = MiscStats.filterForRotationUsingHist(paramsList, 30);
-        
-        if (indexesToKeepShifted.length > indexesToKeep.length) {
-            indexesToKeep = indexesToKeepShifted;
-        }
-        
-        filter(ifsList, paramsList, indexesToKeep);
-        
-        indexesToKeep = MiscStats.filterForScaleUsingHist(paramsList);
-        
-        filter(ifsList, paramsList, indexesToKeep);
-                
-        indexesToKeep = MiscStats.filterForTranslationXUsingHist(paramsList);
-        
-        filter(ifsList, paramsList, indexesToKeep);
-        
-        indexesToKeep = MiscStats.filterForTranslationYUsingHist(paramsList);
-        
-        filter(ifsList, paramsList, indexesToKeep);
-        
-        if (paramsList.size() == 0) {
-            return null;
-        }
-        
-        List<FeatureComparisonStat> combined = new ArrayList<FeatureComparisonStat>();
-        for (int i = 0; i < ifsList.size(); ++i) {
-            IntensityFeatureComparisonStats ifs = ifsList.get(i);
-            combined.addAll(ifs.getComparisonStats());
-        }
-        
-        TransformationParameters combinedParams = calculateTransformation(
-            binFactor1, binFactor2, combined, new float[4]);
-        
-        if (combinedParams == null) {
-            return null;
-        }
-        
-        // pre-check for delta tx, delta ty essentially.  the parameter limits
-        // are hard wired and the same as used elsewhere.
-        boolean check = true;
-        while (check && (paramsList.size() > 1)) {
-            boolean small = MiscStats.standardDeviationsAreSmall(combinedParams);
-            if (small) {
-                check = false;
-            } else {
-                // --- either keep only smallest SSD or remove highest SSD ---
-                double maxCost = Double.MIN_VALUE;
-                int maxCostIdx = -1;
-                for (int ii = 0; ii < ifsList.size(); ++ii) {
-                    IntensityFeatureComparisonStats ifs = ifsList.get(ii);
-                    PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
-                    float score1 = indexScore.get(p).floatValue();
-                    if (score1 > maxCost) {
-                        maxCost = score1;
-                        maxCostIdx = ii;
-                    }
-                }
-                ifsList.remove(maxCostIdx);
-                paramsList.remove(maxCostIdx);
-                combined.clear();
-                for (int i = 0; i < ifsList.size(); ++i) {
-                    IntensityFeatureComparisonStats ifs = ifsList.get(i);
-                    combined.addAll(ifs.getComparisonStats());
-                }
-                combinedParams = calculateTransformation(
-                    binFactor1, binFactor2, combined, new float[4]);
-                if (combinedParams == null) {
-                    return null;
-                }
-            }
-        }
-        
-        soln = new MatchingSolution(combinedParams, combined);
+        MatchingSolution soln = match(features1, features2, img1, img2, perimeters1, 
+            perimeters2, corners1List, corners2List, binFactor1, binFactor2);
             
         return soln;      
     }
 
-    private <T extends CornerRegion> Map<Integer, 
-        FixedSizeSortedVector<IntensityFeatureComparisonStats>> 
-        match(IntensityFeatures features1, IntensityFeatures features2, 
+    private <T extends CornerRegion> MatchingSolution match(
+        IntensityFeatures features1, IntensityFeatures features2, 
         GreyscaleImage img1, GreyscaleImage img2, 
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
-        List<List<T>> corners1List, List<List<T>> corners2List) {
-/*        
+        List<List<T>> corners1List, List<List<T>> corners2List,
+        int binFactor1, int binFactor2) {
+/*            
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -200,16 +99,64 @@ try {
 } catch (IOException ex) {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
 }
+
+PairInt[] im1Chk = new PairInt[]{
+    new PairInt(68,78), new PairInt(96,84), new PairInt(122,91), 
+    new PairInt(180,240),
+    new PairInt(513,55),
+    new PairInt(838,105)
+};
+PairInt[] im2Chk = new PairInt[]{
+    new PairInt(42,72), new PairInt(73,80), new PairInt(103,87),
+    new PairInt(162,259),
+    new PairInt(490,55),
+    new PairInt(869,127)
+};
+int[] im1ChkIdxs = new int[im1Chk.length];
+int[] im2ChkIdxs = new int[im2Chk.length];
+for (int i = 0; i < im1Chk.length; ++i) {
+    PairInt p = im1Chk[i];
+    for (int j = 0; j < xy1.length; ++j) {
+        double diffX = p.getX() - xy1[j][0];
+        double diffY = p.getY() - xy1[j][1];
+        if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20) {
+            im1ChkIdxs[i] = j;
+            break;
+        }
+    }
+}
+for (int i = 0; i < im2Chk.length; ++i) {
+    PairInt p = im2Chk[i];
+    for (int j = 0; j < xy2.length; ++j) {
+        double diffX = p.getX() - xy2[j][0];
+        double diffY = p.getY() - xy2[j][1];
+        if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20) {
+            im2ChkIdxs[i] = j;
+            break;
+        }
+    }
+}
 */
-        Map<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> trMap 
-            = new HashMap<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>>();
+        Map<PairInt, TransformationParameters> trMap 
+            = new HashMap<PairInt, TransformationParameters>();
 
         int n1 = corners1List.size();
         int n2 = corners2List.size();
         
         if (n1 == 0 || n2 == 0) {
-            return trMap;
+            return null;
         }
+
+        /*
+        -- get best TransformationParameters for each idx1
+           (this is at most 40 of them)
+        -- consider combining similar parameters to reduce the eval step
+        -- evaluate each param against all points.
+            -- make 2 eval methods, hopefully the fastest is enough
+               -- (1) eval by finding an existing point within tolerance of predicted position
+               -- (2) eval by finding best SSD of points within tolerance of predicted and
+                      use nEval, SSD and dist to return a normalized score
+        */
         
         for (int idx1 = 0; idx1 < n1; ++idx1) {
 
@@ -217,21 +164,16 @@ try {
                 continue;
             }
 
-            Integer index1 = Integer.valueOf(idx1);
-
             List<T> corners1 = corners1List.get(idx1);
-            Collections.sort(corners1, new DescendingKComparator());
             
-            //TODO: for extreme case of image full of repeated patterns, may need nTop=n2
-            int nTop = n2/2;
-            if (nTop == 0) {
-                nTop = n2;
-            }
+            /*
+            first, see if nEval alone finds the true matches for curve to curve
+            */
+            int maxNEval = Integer.MIN_VALUE;
+            TransformationParameters maxNEvalParams = null;
+            Integer maxNEvalIndex2 = null;
+            double minCost = Double.MAX_VALUE;
             
-            FixedSizeSortedVector<IntensityFeatureComparisonStats> bestMatches = 
-                new FixedSizeSortedVector<IntensityFeatureComparisonStats>(nTop, 
-                IntensityFeatureComparisonStats.class);
-                                    
             for (int idx2 = 0; idx2 < n2; ++idx2) {
 
                 if (corners2List.get(idx2).size() < 3) {
@@ -242,429 +184,215 @@ try {
 
                 List<T> corners2 = corners2List.get(idx2);
                 
-                Collections.sort(corners2, new DescendingKComparator());
-
-                ClosedCurveCornerMatcherWrapper<T> mapper =
-                    new ClosedCurveCornerMatcherWrapper<T>();
+                ClosedCurveCornerMatcher2<T> mapper =
+                    new ClosedCurveCornerMatcher2<T>();
 
                 boolean matched = mapper.matchCorners(features1, features2, 
-                    corners1, corners2, true, img1, img2);
+                    corners1, corners2, img1, img2);
 
                 if (!matched) {
                     continue;
                 }
                 
-                TransformationPair2<T> transformationPair = mapper.getSolution();
-                transformationPair.setCornerListIndex1(idx1);
-                transformationPair.setCornerListIndex2(idx2);
+                TransformationParameters params = mapper.getSolution();
+                int nEval = mapper.getNEval();
+                double cost = mapper.getSolutionCost();
                 
-                TransformationParameters params = 
-                    transformationPair.getTransformationParameters();
-                
-                if (params == null) {
-                    continue;
+                if (cost < minCost) {
+                    maxNEval = nEval;
+                    maxNEvalParams = params;
+                    maxNEvalIndex2 = index2;
+                    minCost = cost;
                 }
-                
-                @SuppressWarnings({"unchecked"})
-                List<FeatureComparisonStat> compStats = 
-                    transformationPair.getNextCorner().getMatchedFeatureComparisonStats();
-                                    
-                log.fine("theta diff filtered: " + printToString(compStats) 
-                    + " combinedStat=" + calculateCombinedIntensityStat(compStats));
-            
-                FeatureMatcher.removeIntensityOutliers(compStats);
-                
-                if (compStats.size() < 3) {
-                    continue;
-                }
-                
-    FeatureMatcher.removeDiscrepantThetaDiff(compStats);
-
-    if (compStats.size() < 3) {
-        continue;
-    }
-    
-                if (mapper.getSolvedCost() >= 1500) {
-                    continue;
-                }
-
-                IntensityFeatureComparisonStats stats = new 
-                    IntensityFeatureComparisonStats(index1.intValue(), 
-                    index2.intValue(), mapper.getSolvedCost(), 
-                    params.getScale());
-              
-                stats.addAll(compStats);
-                         
-                boolean added = bestMatches.add(stats);
             }
             
-            if (bestMatches.getNumberOfItems() > 0) {
-                trMap.put(Integer.valueOf(idx1), bestMatches);
+            if (maxNEvalParams != null) {
+                trMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()), 
+                    maxNEvalParams);
             }            
         }
-
-        return trMap;
-    }
-
-    private MatchingSolution checkForNonDegenerateSolution(Map<Integer, 
-        FixedSizeSortedVector<IntensityFeatureComparisonStats>> mMap, 
-        int binFactor1, int binFactor2) {
         
-         List<IntensityFeatureComparisonStats> ifcsList = new ArrayList<IntensityFeatureComparisonStats>();
-        
-        Set<Integer> indexes2 = new HashSet<Integer>();
-        
-        for (Map.Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> entry :
-            mMap.entrySet()) {
-            
-            FixedSizeSortedVector<IntensityFeatureComparisonStats> vector = entry.getValue();
-            
-            if (vector.getArray().length > 1) {
-                return null;
-            }
-            assert(vector.getArray().length == 1);
-            
-            IntensityFeatureComparisonStats ifs = vector.getArray()[0];
-            
-            Integer key2 = Integer.valueOf(ifs.getIndex2());
-            
-            if (indexes2.contains(key2)) {
-                return null;
-            }
-            
-            indexes2.add(key2);
-            
-            ifcsList.add(ifs);
+        int n2c = 0;
+        for (List<T> corners2 : corners2List) {
+            n2c += corners2.size();
         }
         
-        // the matches are unique, so will look for the smallest cost
-        // and then add similar to it
-        
-        double minCost = Double.MAX_VALUE;
-        int minCostIdx = -1;
-        for (int i = 0; i < ifcsList.size(); ++i) {
-            IntensityFeatureComparisonStats ifs = ifcsList.get(i);
-            if (ifs.getCost() < minCost) {
-                minCost = ifs.getCost();
-                minCostIdx = i;
+        List<T> cr2List = new ArrayList<T>();
+        int[] xC2 = new int[n2c];
+        int[] yC2 = new int[n2c];
+        n2c = 0;
+        for (List<T> corners2 : corners2List) {
+            for (T cr2: corners2) {
+                xC2[n2c] = cr2.getX()[cr2.getKMaxIdx()];
+                yC2[n2c] = cr2.getY()[cr2.getKMaxIdx()];
+                cr2List.add(cr2);
+                n2c++;
             }
         }
         
-        TransformationParameters minCostParams = calculateTransformation(
-            binFactor1, binFactor2, ifcsList.get(minCostIdx).getComparisonStats(),
-            new float[4]);
+        NearestPoints np2 = new NearestPoints(xC2, yC2);
         
-        if (minCostParams == null) {
-            return null;
-        }
-        
-        List<FeatureComparisonStat> combined = new ArrayList<FeatureComparisonStat>();
-        combined.addAll(ifcsList.get(minCostIdx).getComparisonStats());
-        
-        for (int i = 0; i < ifcsList.size(); ++i) {
-            if (i == minCostIdx) {
-                continue;
-            }
-            IntensityFeatureComparisonStats ifs = ifcsList.get(i);
-            TransformationParameters params = calculateTransformation(
-               binFactor1, binFactor2, ifs.getComparisonStats(),
-                new float[4]);
-            
-            if (params == null) {
-                continue;
-            }
-            
-            if (Math.abs(params.getScale() - minCostParams.getScale()) < 0.05) {
-                float angleDiff = AngleUtil.getAngleAverageInDegrees(
-                    params.getRotationInDegrees(), minCostParams.getRotationInDegrees());
-                if (Math.abs(angleDiff) < 10) {
-                    if (Math.abs(params.getTranslationX() - minCostParams.getTranslationX()) < 10) {
-                        if (Math.abs(params.getTranslationY() - minCostParams.getTranslationY()) < 10) {
-                            combined.addAll(ifs.getComparisonStats());
-                        }
-                    }
-                }
-            }
-        }
-        
-        TransformationParameters combinedParams = calculateTransformation(
-            binFactor1, binFactor2, combined, new float[4]);
-        
-        if (combinedParams == null) {
-            return null;
-        }
-        
-        MatchingSolution soln = new MatchingSolution(combinedParams, combined);
+        MatchingSolution soln = evaluateForBestUsingFeatures(
+            features1, features2, img1, img2,
+            trMap, corners1List, cr2List, np2, binFactor1, binFactor2);
         
         return soln;
     }
 
-    private void filter(List<IntensityFeatureComparisonStats> ifsList,
-        List<TransformationParameters> paramsList, int[] indexesToKeep) {
+    private <T extends CornerRegion> MatchingSolution evaluateForBestUsingFeatures(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        GreyscaleImage img1, GreyscaleImage img2, 
+        Map<PairInt, TransformationParameters> paramsMap, 
+        List<List<T>> corners1List, List<T> corners2List, 
+        NearestPoints np2, int binFactor1, int binFactor2) {
+             
+        int tolTransXY = 5;//10;
         
-        if (indexesToKeep.length < 2) {
-            return;
-        }
-        
-        List<IntensityFeatureComparisonStats> ifsList2 = 
-            new ArrayList<IntensityFeatureComparisonStats>(indexesToKeep.length);
-        
-        List<TransformationParameters> paramsList2 = 
-            new ArrayList<TransformationParameters>();
-        
-        for (int i = 0; i < indexesToKeep.length;++i) {
-            int idx = indexesToKeep[i];
-            ifsList2.add(ifsList.get(idx));
-            paramsList2.add(paramsList.get(idx));
-        }
-        
-        ifsList.clear();
-        ifsList.addAll(ifsList2);
-        
-        paramsList.clear();
-        paramsList.addAll(paramsList2);
-    }
+        double maxDistance = Math.sqrt(2) * tolTransXY;
 
-    private void resolveUsingBipartite(Map<Integer, 
-        FixedSizeSortedVector<IntensityFeatureComparisonStats>> mMap, 
-        List<List<CornerRegion>> corners1List, 
-        List<List<CornerRegion>> corners2List, 
-        int binFactor1, int binFactor2,
-        List<IntensityFeatureComparisonStats> ifsList, 
-        List<TransformationParameters> paramsList,
-        Map<PairInt, Float> indexScore) {
+        /*
+        -- evaluate each param against all points.
+           -- (2) eval by finding best SSD of points within tolerance of predicted and
+              use nEval, SSD and dist to return a normalized score
+        */
         
-        int n1 = corners1List.size();
+        List<TransformationParameters> parameterList = MiscStats.filterToSimilarParamSets(
+            paramsMap);
+        
+        int n1 = 0;
+        for (List<T> corners1 : corners1List) {
+            n1 += corners1.size();
+        }
         int n2 = corners2List.size();
+        int nMaxMatchable = Math.min(n1, n2);
         
-        float[][] cost = new float[n1][n2];
-        for (int i = 0; i < n1; ++i) {
-            cost[i] = new float[n2];
-            Arrays.fill(cost[i], Float.MAX_VALUE);
-        }
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+        Transformer transformer = new Transformer();
         
-        int nMaxMatchable = countMaxMatchable(corners1List, corners2List);
+        final int rotationTolerance = 20;
+        final int dither = 4;
         
-        Set<PairInt> present = new HashSet<PairInt>();
+        TransformationParameters bestParams = null;
+        float bestScore = Float.MAX_VALUE;
+        List<FeatureComparisonStat> bestStats = null;
         
-        int tolTransXY = 5;//10;
+        for (TransformationParameters params : parameterList) {
+            
+            double rotInRadians = params.getRotationInRadians();
+            double cos = Math.cos(rotInRadians);
+            double sin = Math.sin(rotInRadians);
+            
+            int rotD = Math.round(params.getRotationInDegrees());
         
-        for (Map.Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> entry 
-            : mMap.entrySet()) {
+            int nEval = 0;
+            double sumSSD = 0;
+            double sumDist = 0;
+            List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
             
-            FixedSizeSortedVector<IntensityFeatureComparisonStats> vector = entry.getValue();
-            
-            IntensityFeatureComparisonStats[] ind1To2Pairs = vector.getArray();            
-            
-            /* for the cost, need to consider the evaluation of the parameters,
-            and the SSD of the point.
-            The score for the evaluation is nMaxMatchable/nEval and its range is
-            1 to nMaxMatchable.
-            The SSD is filtered above to a max of 1500.  Will add '1' to it
-            to avoid a zero for a perfect match, then the score for SSD ranges
-            from 1 to 1500.
-            Can make the cost the multiplication of the two scores as long as
-            the value (nMaxMatchable/1500) stays below ((1<<31)-1).
-            
-            have normalized both scores by their maximum values so that their
-            contributions to the cost are equal.
-            */
-            
-            for (int i = 0; i < vector.getNumberOfItems(); ++i) {
+            for (List<T> corners1 : corners1List) {
                 
-                IntensityFeatureComparisonStats ifs = ind1To2Pairs[i];              
+                for (T cr : corners1) {
+                    
+                    T crTr = transformer.applyTransformation(params, cr, cos, sin);
+
+                    Set<Integer> indexes2 = np2.findNeighborIndexes(
+                        crTr.getX()[crTr.getKMaxIdx()], 
+                        crTr.getY()[crTr.getKMaxIdx()], tolTransXY);
+
+                    for (Integer index : indexes2) {
+
+                        int idx2 = index.intValue();
+
+                        T corner2 = corners2List.get(idx2);
+
+                        FeatureComparisonStat compStat = null;
+
+                        try {
+                            compStat = featureMatcher.ditherAndRotateForBestLocation(
+                                features1, features2, cr, corner2, dither,
+                                rotD, rotationTolerance, img1, img2);
+                        } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                            log.fine(ex.getMessage());
+                        }
+                        if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {
+                            continue;
+                        }
+                        
+                        if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
+                            
+                            double xTr = (compStat.getImg1Point().getX() * 
+                                params.getScale() * cos) + 
+                                (compStat.getImg1Point().getY() * 
+                                params.getScale() * sin);
+                            xTr += params.getTranslationX();
+                            
+                            double yTr = (-compStat.getImg1Point().getX() * 
+                                params.getScale() * sin) + 
+                                (compStat.getImg1Point().getY() * 
+                                params.getScale()* cos);
+                            yTr += params.getTranslationY();
+                            
+                            double dist = distance(xTr, yTr, 
+                                compStat.getImg2Point().getX(), 
+                                compStat.getImg2Point().getY());
+
+                            stats.add(compStat);
+                            
+                            sumDist += Math.abs(dist);
+                            sumSSD += compStat.getSumIntensitySqDiff();
+                            nEval++;
+                        }
+                    }
+                }
+            }
+            
+            if (nEval == 0) {
+                continue;
+            }
+            
+            sumSSD /= (double)nEval;
+            sumDist /= (double)nEval;
+            
+            float score1Norm = 1.f/(float)nEval;
+            float score2Norm = (float)((sumSSD + 1)/ssdLimit);
+            float score3Norm = (float)(sumDist/maxDistance);
+            float normalizedScore = score1Norm * score2Norm * score3Norm;
+            
+            if (normalizedScore < bestScore) {
                 
-                TransformationParameters params = calculateTransformation(
-                    binFactor1, binFactor2, ifs.getComparisonStats(),
-                    new float[4]);
-                if (params == null) {
+                TransformationParameters combinedParams = 
+                    calculateTransformation(binFactor1, binFactor2,
+                        stats, new float[4]);
+                
+                if (combinedParams == null) {
                     continue;
                 }
-                int idx1 = ifs.getIndex1();
-                int idx2 = ifs.getIndex2();
-                PairInt p = new PairInt(idx1, idx2);
-                int nEval = evaluate(params, corners1List, corners2List, tolTransXY);
-                if (nEval == 0) {
+        
+                if (!MiscStats.standardDeviationsAreSmall(combinedParams)) {
                     continue;
                 }
-                //float score1 = (float)nMaxMatchable/(float)nEval;
-                float score2 = (float)ifs.getCost() + 1;
-                //float score = score1 * score2;
-                float normalizedScore = (score2/(float)nEval)/1500.f;
-                cost[idx1][idx2] = normalizedScore;
-                indexScore.put(p, Float.valueOf(normalizedScore));
-                present.add(p);
-                ifsList.add(ifs);
-                paramsList.add(params); 
+            
+                bestScore = normalizedScore;
+                bestParams = combinedParams;
+                bestStats = stats;
             }
         }
 
-        boolean transposed = false;
-        if (n1 > n2) {
-            cost = MatrixUtil.transpose(cost);
-            transposed = true;
-        }
-
-        HungarianAlgorithm b = new HungarianAlgorithm();
-        int[][] match = b.computeAssignments(cost);
-        
-        Set<PairInt> matched = new HashSet<PairInt>();
-        for (int i = 0; i < match.length; i++) {
-            int idx1 = match[i][0];
-            int idx2 = match[i][1];
-            if (idx1 == -1 || idx2 == -1) {
-                continue;
-            }
-            if (transposed) {
-                int swap = idx1;
-                idx1 = idx2;
-                idx2 = swap;
-            }
-            PairInt p = new PairInt(idx1, idx2);
-            if (present.contains(p)) {
-                 matched.add(p);
-            }
+        if (bestParams != null) {
+            MatchingSolution soln = new MatchingSolution(bestParams, bestStats);            
+            return soln;
         }
         
-        int n = ifsList.size();
-        int i = 0;
-        while (i < n) {
-            IntensityFeatureComparisonStats ifs = ifsList.get(i);
-            PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
-            if (matched.contains(p)) {
-                ++i;
-                continue;
-            }
-            ifsList.remove(i);
-            paramsList.remove(i);
-            n = ifsList.size();
-        }
-        
+        return null;
     }
 
-    private void resolveWithoutBipartite(Map<Integer, 
-        FixedSizeSortedVector<IntensityFeatureComparisonStats>> mMap, 
-        List<List<CornerRegion>> corners1List, 
-        List<List<CornerRegion>> corners2List, 
-        int binFactor1, int binFactor2, 
-        List<IntensityFeatureComparisonStats> ifsList, 
-        List<TransformationParameters> paramsList, 
-        Map<PairInt, Float> indexScore) {
-                
-        Map<Integer, Integer> index1Map = new HashMap<Integer, Integer>();
-        Map<Integer, Set<Integer>> index2Map = new HashMap<Integer, Set<Integer>>();
-        Map<Integer, IntensityFeatureComparisonStats> index1StatMap = new HashMap<Integer, IntensityFeatureComparisonStats>();
-        Map<Integer, Double> index1ScoreMap = new HashMap<Integer, Double>();
+    private double distance(double x1, double y1, double x2, double y2) {
         
-        Map<PairInt, TransformationParameters> index12ParamsMap = new HashMap<PairInt, TransformationParameters>();
-                
-        int tolTransXY = 5;//10;
+        double diffX = x1 - x2;
+        double diffY = y1 - y2;
         
-        for (Map.Entry<Integer, FixedSizeSortedVector<IntensityFeatureComparisonStats>> entry 
-            : mMap.entrySet()) {
-            
-            FixedSizeSortedVector<IntensityFeatureComparisonStats> vector = entry.getValue();
-            
-            IntensityFeatureComparisonStats[] ind1To2Pairs = vector.getArray();            
-          
-            for (int i = 0; i < vector.getNumberOfItems(); ++i) {
-                
-                IntensityFeatureComparisonStats ifs = ind1To2Pairs[i];              
-                
-                TransformationParameters params = calculateTransformation(
-                    binFactor1, binFactor2, ifs.getComparisonStats(),
-                    new float[4]);
-                if (params == null) {
-                    continue;
-                }
-                int idx1 = ifs.getIndex1();
-                int idx2 = ifs.getIndex2();
-                PairInt p = new PairInt(idx1, idx2);
-                
-                int nEval = evaluate(params, corners1List, corners2List, tolTransXY);
-                if (nEval == 0) {
-                    continue;
-                }
-                //double score1 = (double)nMaxMatchable/(double)nEval;
-                double score2 = (double)ifs.getCost() + 1.;
-                //float score = score1 * score2;
-                double normalizedScore = (score2/(double)nEval)/1500.;
-                
-                Integer key1 = Integer.valueOf(idx1);
-                Double bestCost = index1ScoreMap.get(key1);
-                
-                if ((bestCost == null) || (bestCost.doubleValue()> normalizedScore)) {
-                    index1StatMap.put(key1, ifs);
-                    index1ScoreMap.put(key1, Double.valueOf(normalizedScore));
-                    index12ParamsMap.put(p, params);
-                }
-            }
-        }
+        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
         
-        for (Entry<Integer, IntensityFeatureComparisonStats> entry :
-            index1StatMap.entrySet()) {
-            
-            IntensityFeatureComparisonStats ifs = entry.getValue();
-            
-            Integer index1 = entry.getKey();
-            Integer index2 = Integer.valueOf(ifs.getIndex2());
-            assert(ifs.getIndex1() == index1.intValue());
-            
-            index1Map.put(index1, index2);
-            
-            Set<Integer> indexes1 = index2Map.get(index2);
-            if (indexes1 == null) {
-                indexes1 = new HashSet<Integer>();
-                index2Map.put(index2, indexes1);
-            }
-            indexes1.add(index1);
-        }
-        
-        // resolve any double matchings, but discard the higher cost matches
-        //   from conflicted matches rather than re-trying a solution for them
-        
-        Set<Integer> resolved = new HashSet<Integer>();
-        for (Entry<Integer, Set<Integer>> entry : index2Map.entrySet()) {
-            if (resolved.contains(entry.getKey())) {
-                continue;
-            }
-            Set<Integer> set = entry.getValue();
-            if (set.size() > 1) {
-                double bestCost = Double.MAX_VALUE;
-                Integer bestIndex1 = -1;
-                for (Integer index1 : set) {
-                    Double cost = index1ScoreMap.get(index1);
-                    assert(cost != null);
-                    if (cost < bestCost) {
-                        bestCost = cost;
-                        bestIndex1 = index1;
-                    }
-                    resolved.add(index1);
-                }
-                for (Integer index1 : set) {
-                    if (index1.equals(bestIndex1)) {
-                        continue;
-                    }
-                    index1Map.remove(index1);
-                    index1StatMap.remove(index1);
-                }
-            }
-        }
-        
-        for (Entry<Integer, IntensityFeatureComparisonStats> entry :
-            index1StatMap.entrySet()) {
-            
-            IntensityFeatureComparisonStats ifs = entry.getValue();
-            PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
-            
-            TransformationParameters params = index12ParamsMap.get(p);
-            
-            Double score = index1ScoreMap.get(entry.getKey());
-            
-            ifsList.add(ifs);
-            paramsList.add(params);
-            indexScore.put(p, Float.valueOf(score.floatValue()));
-        }
+        return dist;
     }
-    
 }

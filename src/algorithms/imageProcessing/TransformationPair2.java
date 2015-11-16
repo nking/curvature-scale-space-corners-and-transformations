@@ -21,7 +21,7 @@ public class TransformationPair2<T extends CornerRegion> {
     private double costAsSSD = 0;
     
     private double costAsDist = 0;
-    
+        
     /**
      * object used to track visits and help choose the next contour.
      */
@@ -61,7 +61,7 @@ public class TransformationPair2<T extends CornerRegion> {
     public double getCostAsDistance() {
         return costAsDist;
     }
-
+    
     /**
      * @param theParameters
      */

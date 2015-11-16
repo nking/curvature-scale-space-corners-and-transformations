@@ -31,6 +31,7 @@ public class NextCorner<T extends CornerRegion> {
     private final List<Integer> matchedCornerIndexes2;
     
     protected final List<FeatureComparisonStat> matchedStats;
+    protected final List<Double> matchedDist;
     
     protected int matchedEdgeNumber1 = -1;
     protected int matchedEdgeNumber2 = -1;
@@ -44,6 +45,8 @@ public class NextCorner<T extends CornerRegion> {
             new DescendingKComparator());
         
         matchedStats = new ArrayList<FeatureComparisonStat>();
+        
+        matchedDist = new ArrayList<Double>();
         
         for (int i = 0; i < corners.size(); i++) {
             
@@ -62,6 +65,15 @@ public class NextCorner<T extends CornerRegion> {
     public void addMatchedCorners(T corner1, T corner2, Integer cornerIndex1, 
         Integer cornerIndex2, FeatureComparisonStat stat) {
         
+        double dist = Double.POSITIVE_INFINITY;
+        
+        addMatchedCorners(corner1, corner2, cornerIndex1, cornerIndex2, stat,
+            dist);
+    }
+    
+    public void addMatchedCorners(T corner1, T corner2, Integer cornerIndex1, 
+        Integer cornerIndex2, FeatureComparisonStat stat, double dist) {
+        
         markAsVisited(corner1);
         
         if (corner2 == null) {
@@ -71,6 +83,7 @@ public class NextCorner<T extends CornerRegion> {
         matchedCornerIndexes1.add(cornerIndex1);
         matchedCornerIndexes2.add(cornerIndex2);
         matchedStats.add(stat);
+        matchedDist.add(Double.valueOf(dist));
         
         if (matchedEdgeNumber1 == -1) {
             matchedEdgeNumber1 = corner1.getEdgeIdx();
@@ -83,6 +96,32 @@ public class NextCorner<T extends CornerRegion> {
         } else {
             assert(matchedEdgeNumber2 == corner2.getEdgeIdx());
         }    
+    }
+    
+    /**
+     * get cost as normalized sum of SSDs times normalized sums of distances
+     * @param maxSSD
+     * @param maxDistance
+     * @return
+     */
+    public double getNormalizedCost(double maxSSD, double maxDistance) {
+
+        double sumSSD = 0;
+        double sumDist = 0;
+        
+        for (int i = 0; i < matchedStats.size(); ++i) {
+            sumSSD += matchedStats.get(i).getSumIntensitySqDiff();
+            sumDist += matchedDist.get(i).doubleValue();
+        }
+        sumSSD /= (double)matchedStats.size();
+        sumDist /= (double)matchedStats.size();
+        
+        sumSSD /= maxSSD;
+        sumDist /= maxDistance;
+
+        double normalizedCost = sumSSD * sumDist;
+        
+        return normalizedCost;
     }
     
     /**
@@ -161,5 +200,9 @@ public class NextCorner<T extends CornerRegion> {
     
     public List<FeatureComparisonStat> getMatchedFeatureComparisonStats() {
         return matchedStats;
+    }
+    
+    public List<Double> getMatchedDistances() {
+        return matchedDist;
     }
 }

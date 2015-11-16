@@ -641,15 +641,23 @@ public class Transformer {
     public <T extends CornerRegion> T applyTransformation(
         TransformationParameters params, T cr) {
         
-        double scale = params.getScale();
         double rotInRadians = params.getRotationInRadians();
+        
+        double cos = Math.cos(rotInRadians);
+        double sin = Math.sin(rotInRadians);
+                
+        return applyTransformation(params, cr, cos, sin);
+    }
+    
+    @SuppressWarnings({"unchecked"})
+    public <T extends CornerRegion> T applyTransformation(
+        TransformationParameters params, T cr, double cos, double sin) {
+        
+        double scale = params.getScale();
         double translationX = params.getTranslationX();
         double translationY = params.getTranslationY();
         double centroidX = params.getOriginX();
         double centroidY = params.getOriginY();
-                
-        double cos = Math.cos(rotInRadians);
-        double sin = Math.sin(rotInRadians);
                 
         /*
         scale, rotate, then translate.

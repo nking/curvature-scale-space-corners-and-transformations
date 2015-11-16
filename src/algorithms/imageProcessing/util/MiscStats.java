@@ -5,9 +5,12 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
+import algorithms.util.PairInt;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -587,6 +590,62 @@ public class MiscStats {
         }
 
         return false;
+    }
+
+    /**
+     * comparing each parameter to others and keeping only if there are other
+     * similar params and among the similar, only returning one (though may
+     * revise that to take average or best of similar by n and stdev).
+     * 
+     * @param paramsMap
+     * @return 
+     */
+    public static List<TransformationParameters> filterToSimilarParamSets(
+        Map<PairInt, TransformationParameters> paramsMap) {
+        
+        List<TransformationParameters> combinedParams = 
+            new ArrayList<TransformationParameters>();
+        
+        Set<PairInt> alreadyCombined = new HashSet<PairInt>();
+        
+        for (Map.Entry<PairInt, TransformationParameters> entry : paramsMap.entrySet()) {
+            if (alreadyCombined.contains(entry.getKey())) {
+                continue;
+            }
+            
+            TransformationParameters params0 = entry.getValue();
+            
+            for (Map.Entry<PairInt, TransformationParameters> entry2 : paramsMap.entrySet()) {
+                if (entry2.getKey().equals(entry.getKey()) || 
+                    alreadyCombined.contains(entry2.getKey())) {
+                    continue;
+                }
+                TransformationParameters compare = entry2.getValue();
+                float diff = AngleUtil.getAngleDifference(
+                    params0.getRotationInDegrees(), compare.getRotationInDegrees());
+                if (Math.abs(diff) > 20) {
+                    continue;
+                }
+                float avg = (params0.getScale() + compare.getScale())/2.f;
+                if (Math.abs(params0.getScale() - compare.getScale()) > 0.2*avg) {
+                    continue;
+                }
+                //TODO: may need to revise translation tolerance
+                if (Math.abs(params0.getTranslationX()- compare.getTranslationX()) > 30) {
+                    continue;
+                }
+                if (Math.abs(params0.getTranslationY()- compare.getTranslationY()) > 30) {
+                    continue;
+                }
+                if (!alreadyCombined.contains(entry.getKey())) {
+                    combinedParams.add(params0);
+                    alreadyCombined.add(entry.getKey());
+                }
+                alreadyCombined.add(entry2.getKey());
+            }
+        }
+        
+        return combinedParams;
     }
 
 }
