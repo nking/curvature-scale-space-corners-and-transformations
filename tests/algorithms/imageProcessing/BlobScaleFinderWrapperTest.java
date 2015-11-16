@@ -19,11 +19,12 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
     public void test0() throws Exception {
 
-        boolean rotate = true;
+        boolean rotate = false;
+        boolean useBinning = false;
         
         String fileName1, fileName2;
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 5; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             switch(i) {
@@ -50,6 +51,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
                 default: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    useBinning = true;
                     break;
                 }
             }
@@ -76,7 +78,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
             
             BlobScaleFinderWrapper scaleFinder = null;
             
-            if (i == 3) {
+            if (useBinning) {
                 scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig, true);
             } else {
                 scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig);

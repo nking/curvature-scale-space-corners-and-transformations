@@ -20,7 +20,7 @@ public class BlobScaleFinderWrapper {
     
     private String debugTag = "";
 
-    protected final int binnedImageMaxDimension = 300;
+    protected final int binnedImageMaxDimension = 512;
 
     /*
     choices for solutions:
@@ -142,7 +142,8 @@ public class BlobScaleFinderWrapper {
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
         startWithBinnedImages) {
 
-        debug = false;
+        //TODO: change to not use debugging after testing
+        debug = debug;
         
         img1Helper = new BlobPerimeterHelper(img1, "1");
 
@@ -150,9 +151,9 @@ public class BlobScaleFinderWrapper {
 
         if (startWithBinnedImages) {
          
-            skipBinnedImages = true;
-            useBinned1 = false;
-            useBinned2 = false;
+            skipBinnedImages = false;
+            useBinned1 = true;
+            useBinned2 = true;
         
             img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
 

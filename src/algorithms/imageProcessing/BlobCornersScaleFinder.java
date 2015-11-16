@@ -188,12 +188,13 @@ for (int i = 0; i < im2Chk.length; ++i) {
                     new ClosedCurveCornerMatcher2<T>();
 
                 boolean matched = mapper.matchCorners(features1, features2, 
-                    corners1, corners2, img1, img2);
+                    corners1, corners2, img1, img2, binFactor1, binFactor2);
 
                 if (!matched) {
                     continue;
                 }
                 
+                // this instance does not have stDev of params
                 TransformationParameters params = mapper.getSolution();
                 int nEval = mapper.getNEval();
                 double cost = mapper.getSolutionCost();

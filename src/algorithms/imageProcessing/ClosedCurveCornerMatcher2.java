@@ -69,13 +69,16 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
      * @param corners2
      * @param img1 image from which to extract descriptors for features1
      * @param img2 image from which to extract descriptors for features2
+     * @param binFactor1
+     * @param binFactor2
      * @return 
      */
     @SuppressWarnings({"unchecked"})
     public boolean matchCorners(
         final IntensityFeatures features1, final IntensityFeatures features2, 
         final List<T> corners1,final List<T> corners2, 
-        GreyscaleImage img1, GreyscaleImage img2) {
+        GreyscaleImage img1, GreyscaleImage img2, 
+        int binFactor1, int binFactor2) {
 
         if (state != null) {
             resetDefaults();
@@ -98,7 +101,8 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         
         NearestPoints np = new NearestPoints(xC2, yC2);
 
-        findBestParameters(c1, c2, np, features1, features2, img1, img2);
+        findBestParameters(c1, c2, np, features1, features2, img1, img2, 
+            binFactor1, binFactor2);
 
         return state.equals(State.SOLVED);
        
@@ -151,6 +155,9 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         // because the method would increase from approx O(N^2) to approx O(N^3)
         Map<Integer, CornersAndFeatureStat<T>> index2Map = new HashMap<Integer,
             CornersAndFeatureStat<T>>();
+        
+//TODO: when there are more than 20 or so corners per curve,
+//        consider sorting by k and only matching the top
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
@@ -216,7 +223,8 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
      */
     private void findBestParameters(List<T> c1,
         List<T> c2, NearestPoints np, IntensityFeatures features1,
-        IntensityFeatures features2, GreyscaleImage img1, GreyscaleImage img2) {
+        IntensityFeatures features2, GreyscaleImage img1, GreyscaleImage img2,
+        int binFactor1, int binFactor2) {
         
         /*
         for each point in curve c1, the best matching point by features in c2 is given.
@@ -305,11 +313,11 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                 PairInt c1Pt2 = indexes2[ipt2].stat.getImg1Point();
                 PairInt c2Pt2 = indexes2[ipt2].stat.getImg2Point();
                 TransformationParameters params = tc.calulateEuclidean(
-                    c1Pt1.getX(), c1Pt1.getY(),
-                    c1Pt2.getX(), c1Pt2.getY(),
-                    c2Pt1.getX(), c2Pt1.getY(),
-                    c2Pt2.getX(), c2Pt2.getY(), 0, 0);
-
+                    c1Pt1.getX(), c1Pt1.getY() * binFactor1,
+                    c1Pt2.getX(), c1Pt2.getY() * binFactor1,
+                    c2Pt1.getX(), c2Pt1.getY() * binFactor2,
+                    c2Pt2.getX(), c2Pt2.getY() * binFactor2, 0, 0);
+                
                 paramsMap.put(new PairInt(ipt1, ipt2), params);
             }
         }
@@ -324,7 +332,51 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         //     of evaluations.
         List<TransformationParameters> combinedParams = 
             MiscStats.filterToSimilarParamSets(paramsMap);
-                
+        
+        Transformer transformer = new Transformer();
+        
+        // order params by summed distances, to later evaluate the top 2 or so
+        Heap orderedParams = new Heap();
+        for (TransformationParameters params : combinedParams) {
+            double sumDist = 0;
+            int nEval2 = 0;
+            for (int ipt1 = 0; ipt1 < c1.size(); ++ipt1) {
+                T pt1 = c1.get(ipt1);                
+                double[] xyTr = transformer.applyTransformation(params, 
+                    pt1.getX()[pt1.getKMaxIdx()], pt1.getY()[pt1.getKMaxIdx()]);
+                Set<PairInt> candidates = np.findNeighbors(
+                    (int) Math.round(xyTr[0]), (int) Math.round(xyTr[1]), 
+                    tolerance);
+                if (candidates != null && candidates.size() > 0) {
+                    for (PairInt p : candidates) {
+                        double diffX = xyTr[0] - p.getX();
+                        double diffY = xyTr[1] - p.getY();
+                        double dist = Math.sqrt(diffX*diffX + diffY*diffY);             
+                        nEval2++;
+                        sumDist += dist;
+                    }
+                }
+            }
+            if (nEval2 == 0) {
+                continue;
+            }
+            sumDist /= (double)nEval2;
+            // store in heap.  use nEval and dist as cost
+            float score1 = 1.f/(float)nEval2;
+            float score2 = (float) (sumDist/maxDistance);
+            float normalizedScore = score1 * score2;
+            
+            long costL = (long)(normalizedScore * heapKeyFactor);
+            HeapNode node = new HeapNode(costL);
+            node.setData(params);
+            orderedParams.insert(node);
+        }
+        
+        int topK = c2.size()/2;
+        if (topK == 0) {
+            topK = 1;
+        }
+        
         // --- evaluate the params: transform c1 and count matches to c2
         List<FeatureComparisonStat> bestStats = null;
         TransformationParameters bestParams = null;
@@ -333,12 +385,16 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         double minSSD = Double.MAX_VALUE;
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
-        Transformer transformer = new Transformer();
         
-//TODO: might need to keep the top k and then use feature matching to decide between them        
+        int count = 0;
         
-        for (TransformationParameters params : combinedParams) {
-                     
+        while ((orderedParams.getNumberOfNodes() > 0) && (count < topK)) {
+                
+            TransformationParameters params = (TransformationParameters)
+                orderedParams.extractMin().getData();
+            
+            count++;
+            
             List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
             int rotD = Math.round(params.getRotationInDegrees());
             double sumSSD = 0;
@@ -357,7 +413,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                     (int) Math.round(xyTr[0]), (int) Math.round(xyTr[1]), 
                     tolerance);
 
-                // for now, not caring if a point is double matched, just need to know general count
+                // for now, not caring if a point is double matched, just need general count
                 if (candidates != null && candidates.size() > 0) {
                     FeatureComparisonStat minStat = null;
                     T minStatC2 = null;
@@ -456,4 +512,5 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
 
         return xyT;
     }
+    
 }
