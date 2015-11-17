@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.io.IOException;
@@ -33,7 +34,7 @@ public class FeatureMatcherWrapper {
         
     private Set<CornerRegion> cornerRegions1 = null;
     private Set<CornerRegion> cornerRegions2 = null;
-    
+
     private enum State {
         DID_APPLY_HIST_EQ, COULD_NOT_DETERMINE_SCALE
     }
@@ -176,7 +177,8 @@ public class FeatureMatcherWrapper {
             stateSet.add(State.DID_APPLY_HIST_EQ);
         }
         
-        List<FeatureComparisonStat> stats = null;
+        List<FeatureComparisonStat> stats = 
+            scaleFinder.getSolution().getComparisonStats();
         
         CorrespondenceList cl = null;
         
@@ -190,117 +192,37 @@ public class FeatureMatcherWrapper {
         } else {
             tolXY = 10;
         }
-           
-        // try to match the remaining points created in the scale finder
-        if (scaleFinder.getAllCornerRegions1OfSolution() != null) {
+        
+        boolean extractMoreCorners = (stats.size() < 7);
+        
+        if (!extractMoreCorners) {
+            // look at the region that the points occupy compared to the
+            // intersecting pixel space
+            boolean covered = statsCoverIntersection(stats);
             
-            List<List<CornerRegion>> transformedFilteredC1 
-                = new ArrayList<List<CornerRegion>>();
-            List<List<CornerRegion>> filteredC1 = new ArrayList<List<CornerRegion>>();
-            List<List<CornerRegion>> filteredC2 = new ArrayList<List<CornerRegion>>();
-             
-            FeatureMatcher.filterForIntersection(params, tolXY,
-                scaleFinder.getAllCornerRegions1OfSolution(),
-                scaleFinder.getAllCornerRegions2OfSolution(),
-                transformedFilteredC1, filteredC1, filteredC2);
-            
-            if (debug) {
-                try {
-                    Collection<CornerRegion> set1 = new HashSet<CornerRegion>();
-                    Collection<CornerRegion> set2 = new HashSet<CornerRegion>();
-                    for (List<CornerRegion> list : filteredC1) {
-                        set1.addAll(list);
-                    }
-                    for (List<CornerRegion> list : filteredC2) {
-                        set2.addAll(list);
-                    }
-                    MiscDebug.writeImage(set1, gsImg1.copyToColorGreyscale(),
-                        debugTagPrefix + "_filtered_1_corners_");
-                    MiscDebug.writeImage(set2, gsImg2.copyToColorGreyscale(), 
-                        debugTagPrefix + "_filtered_2_corners_");
-                } catch (IOException ex) {
-                    Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(
-                        Level.SEVERE, null, ex);
-                }
-            }
-            
-            stats = matchRemainingBlobCornerPoints(scaleFinder, 
-                transformedFilteredC1, filteredC1, filteredC2);
- 
-            if ((stats.size() >= 7) && statsCoverIntersection(stats, filteredC2)) {
-                
-                List<PairInt> matched1 = new ArrayList<PairInt>();
-                List<PairInt> matched2 = new ArrayList<PairInt>();
-                populateLists(stats, matched1, matched2);
-                
-                cl = new CorrespondenceList(params.getScale(), 
-                    Math.round(params.getRotationInDegrees()), 
-                    Math.round(params.getTranslationX()),
-                    Math.round(params.getTranslationY()), 
-                    Math.round(params.getStandardDeviations()[0]),
-                    Math.round(params.getStandardDeviations()[2]),
-                    Math.round(params.getStandardDeviations()[3]),
-                    matched1, matched2);
-                
-                return cl;
-            }
-            
-            cl = extractAndMatch(params);
-            
-        } else {
-            
-            // solve for contours, blob perimeter regions
-            List<List<BlobPerimeterRegion>> transformedFilteredC1 
-                = new ArrayList<List<BlobPerimeterRegion>>();
-            List<List<BlobPerimeterRegion>> filteredC1 = 
-                new ArrayList<List<BlobPerimeterRegion>>();
-            List<List<BlobPerimeterRegion>> filteredC2 = 
-                new ArrayList<List<BlobPerimeterRegion>>();
-                     
-            FeatureMatcher.filterForIntersection(params, tolXY,
-                scaleFinder.getAllBlobRegions1OfSolution(),
-                scaleFinder.getAllBlobRegions2OfSolution(),
-                transformedFilteredC1, filteredC1, filteredC2);
-
-            if (debug) {
-                List<BlobPerimeterRegion> set1 = new ArrayList<BlobPerimeterRegion>();
-                List<BlobPerimeterRegion> set2 = new ArrayList<BlobPerimeterRegion>();
-                for (List<BlobPerimeterRegion> list : filteredC1) {
-                    set1.addAll(list);
-                }
-                for (List<BlobPerimeterRegion> list : filteredC2) {
-                    set2.addAll(list);
-                }
-                MiscDebug.writeImage(set1, img1.copyToImageExt(),
-                    debugTagPrefix + "_filtered_1_contour_regions_");
-                MiscDebug.writeImage(set2, img2.copyToImageExt(),
-                    debugTagPrefix + "_filtered_2_contour_regions_");
-            }
-                        
-            stats = matchRemainingBlobCornerPoints(scaleFinder, 
-                transformedFilteredC1, filteredC1, filteredC2);
-            
-            if ((stats.size() >= 7) && statsCoverIntersection(stats, filteredC2)) {
-                
-                List<PairInt> matched1 = new ArrayList<PairInt>();
-                List<PairInt> matched2 = new ArrayList<PairInt>();
-                populateLists(stats, matched1, matched2);
-                
-                cl = new CorrespondenceList(params.getScale(), 
-                    Math.round(params.getRotationInDegrees()), 
-                    Math.round(params.getTranslationX()),
-                    Math.round(params.getTranslationY()), 
-                    Math.round(params.getStandardDeviations()[0]),
-                    Math.round(params.getStandardDeviations()[2]),
-                    Math.round(params.getStandardDeviations()[3]),
-                    matched1, matched2);
-                
-                return cl;
-            }
-            
-            cl = extractAndMatch(params);
+            extractMoreCorners = !covered;
         }
         
+        if (!extractMoreCorners) {
+
+            List<PairInt> matched1 = new ArrayList<PairInt>();
+            List<PairInt> matched2 = new ArrayList<PairInt>();
+            populateLists(stats, matched1, matched2);
+
+            cl = new CorrespondenceList(params.getScale(), 
+                Math.round(params.getRotationInDegrees()), 
+                Math.round(params.getTranslationX()),
+                Math.round(params.getTranslationY()), 
+                Math.round(params.getStandardDeviations()[0]),
+                Math.round(params.getStandardDeviations()[2]),
+                Math.round(params.getStandardDeviations()[3]),
+                matched1, matched2);
+
+            return cl;
+        }
+            
+        cl = extractAndMatch(params);
+            
         if (cl != null) {
             return cl;
         }
@@ -387,7 +309,8 @@ public class FeatureMatcherWrapper {
         }
     }
 
-    private CorrespondenceList findCorrespondence(TransformationParameters parameters) {
+    private CorrespondenceList findCorrespondence(TransformationParameters 
+        parameters) {
         
         FeatureMatcher matcher = new FeatureMatcher();
         
@@ -417,359 +340,6 @@ public class FeatureMatcherWrapper {
             dither);
 
         return cl;
-    }
-    
-    private <T extends CornerRegion> List<FeatureComparisonStat> 
-        matchRemainingBlobCornerPoints(BlobScaleFinderWrapper scaleFinder, 
-        List<List<T>> filteredC1Transformed,
-        List<List<T>> filteredC1, 
-        List<List<T>> filteredC2) {
-        
-        if (filteredC1Transformed.size() != filteredC1.size()) {
-            throw new IllegalArgumentException("filteredC1Transformed and "
-            + "filteredC1 are expected to be same size");
-        }
-        
-        // use the association w/ tranformed blobs to make the matching faster
-
-        List<FeatureComparisonStat> compStats = 
-            new ArrayList<FeatureComparisonStat>(
-                scaleFinder.getSolution().getComparisonStats());
-        
-        /*
-        choose the best for each '1' and if a high quality exists, store
-        it for further quality check (theta and intensity) then add to compStats
-        
-        for transformedblob1
-            init storage for best match to blob1
-            for blob2
-                if centroid within tolerance,
-                    use features to match untransformed blob1 corners to blob2 corners
-                    (this is the curve matcher within corner matcher for combinations?)
-                    if results are high quality and better than best,
-                        assign it as best
-             store best in map for blob1
-        remove outliers by theta and by ssd
-        return combined results
-        */
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        Map<Integer, IntensityFeatureComparisonStats> index1Map 
-            = new HashMap<Integer, IntensityFeatureComparisonStats>();
-        
-        Map<Integer, Set<Integer>> assignedIndex2 = new HashMap<Integer, Set<Integer>>();
-        
-        Set<Integer> redo = new HashSet<Integer>();
-        
-        int tolXY;
-        if (params.getStandardDeviations() != null) {
-            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], 
-                params.getStandardDeviations()[3]));
-            if (tolXY < 3) {
-                tolXY = 3;
-            } else {
-                tolXY += 2;
-            }
-        } else {
-            tolXY = 10;
-        }
-        
-        for (int i1 = 0; i1 < filteredC1Transformed.size(); ++i1) {
-            List<T> trC1List = filteredC1Transformed.get(i1);
-            if (trC1List.isEmpty()) {
-                continue;
-            }
-            List<T> c1List = filteredC1.get(i1);
-            
-            double[] xyCen1 = curveHelper.<T>calculateXYCentroids0(trC1List);
-            
-            IntensityFeatureComparisonStats best = null;
-            
-            for (int i2 = 0; i2 < filteredC2.size(); ++i2) {
-                List<T> c2List = filteredC2.get(i2);
-                if (c2List.isEmpty()) {
-                    continue;
-                }
-                double[] xyCen2 = curveHelper.<T>calculateXYCentroids0(c2List);
-                
-                double diffX = Math.abs(xyCen1[0] - xyCen2[0]);
-                double diffY = Math.abs(xyCen1[1] - xyCen2[1]);
-                if ((diffX > tolXY) || (diffY > tolXY)) {
-                    continue;
-                }
-                
-//TODO: replace here w/ revised matcher                 
-                
-                ClosedCurveCornerMatcherWrapper<T> mapper =
-                    new ClosedCurveCornerMatcherWrapper<T>();
-                
-                boolean matched = mapper.matchCorners(
-                    scaleFinder.getSolutionFeatures1(), 
-                    scaleFinder.getSolutionFeatures2(),
-                    c1List, c2List, true, gsImg1, gsImg2);
-                
-                if (!matched) {
-                    continue;
-                }
-                
-                //TODO: this should to be revised to scale w/ errors
-                if (mapper.getSolvedCost() > 800) {
-                    continue;
-                }
-                
-                TransformationPair2<T> transformationPair = mapper.getSolution();
-                transformationPair.setCornerListIndex1(i1);
-                transformationPair.setCornerListIndex2(i2);
-                
-                TransformationParameters params2 = 
-                    transformationPair.getTransformationParameters();
-                
-                if (params2 == null) {
-                    continue;
-                }
-                
-                List<FeatureComparisonStat> compStats2 = 
-                    transformationPair.getNextCorner().getMatchedFeatureComparisonStats();
-               
-                FeatureMatcher.removeDiscrepantThetaDiff(compStats2, 
-                    params.getRotationInDegrees());
-                
-                if (compStats2.size() < 2) {
-                    continue;
-                }
-                
-/*                
-int nm = compStats2.size();
-int x1 = compStats2.get(0).getImg1Point().getX();
-int y1 = compStats2.get(0).getImg1Point().getY();
-int x2 = compStats2.get(0).getImg2Point().getX();
-int y2 = compStats2.get(0).getImg2Point().getY();
-*/                
-                IntensityFeatureComparisonStats stats2 = new 
-                    IntensityFeatureComparisonStats(i1, i2,
-                    mapper.getSolvedCost(), params.getScale());
-                stats2.addAll(compStats2);
-    
-                int comp = -1;
-                if (best != null) {
-                    comp = stats2.compareTo(best);
-                }
-                if (comp == -1) {
-                    best = stats2;
-                }
-            }
-            
-            if (best != null) {
-                
-                index1Map.put(Integer.valueOf(i1), best);
-                
-                Set<Integer> a1 = assignedIndex2.get(Integer.valueOf(best.getIndex2()));
-                if (a1 != null) {
-                    redo.add(Integer.valueOf(i1));
-                    for (Integer index1 : a1) {
-                        redo.add(index1);
-                    }
-                } else {
-                    a1 = new HashSet<Integer>();
-                    assignedIndex2.put(Integer.valueOf(best.getIndex2()), a1);
-                }
-                a1.add(Integer.valueOf(best.getIndex1()));
-            }
-        }
-        if (!redo.isEmpty()) {
-            //TODO: consider using all points except conflicted indexes to
-            // determine transformation params and then choose among conflict
-            // those with closer match to expected transformed coordinates.
-            // problem with this instead of SSD is it would perform worse for
-            // projection.
-             
-            Set<Integer> resolved1 = new HashSet<Integer>();
-            for (Integer redoIndex1 : redo) {
-                if (resolved1.contains(redoIndex1)) {
-                    continue;
-                }
-                Integer conflictIndex2 = null;
-                for (Entry<Integer, Set<Integer>> entry : assignedIndex2.entrySet()) {
-                    Set<Integer> indexes1 = entry.getValue();
-                    if (indexes1.contains(redoIndex1)) {
-                        conflictIndex2 = entry.getKey();
-                        break;
-                    }
-                }
-                Set<Integer> conflictIndexes1 = assignedIndex2.get(conflictIndex2);
-                //decide by SSD or by difference from transformed point 1's
-                assert(conflictIndexes1 != null);
-                double bestCost = Double.MAX_VALUE;
-                Integer bestCostIndex1 = null;
-                for (Integer index1 : conflictIndexes1) {
-                    IntensityFeatureComparisonStats st = index1Map.get(index1);
-                    if ((bestCostIndex1 == null) || (bestCost > st.getAdjustedCost())) {
-                        bestCost = st.getAdjustedCost();
-                        bestCostIndex1 = index1;
-                    }
-                    resolved1.add(index1);
-                }
-                for (Integer index1 : conflictIndexes1) {
-                    if (index1.equals(bestCostIndex1)) {
-                        continue;
-                    }
-                    index1Map.remove(index1);
-                }
-            }
-        }
-        
-        List<FeatureComparisonStat> add = new ArrayList<FeatureComparisonStat>();
-        for (Entry<Integer, IntensityFeatureComparisonStats> entry : index1Map.entrySet()) {
-            // make sure not already in compStats
-            for (FeatureComparisonStat stat : entry.getValue().getComparisonStats()) {
-                PairInt p1 = stat.getImg1Point();
-                PairInt p2 = stat.getImg2Point();
-                for (FeatureComparisonStat cStat : compStats) {
-                    boolean found = false;
-                    PairInt p1c = cStat.getImg1Point();
-                    PairInt p2c = cStat.getImg2Point();
-                    if (p1c.equals(p1) || p2c.equals(p2)) {
-                        found = true;
-                        break;
-                    }
-                    int diffX1 = Math.abs(p1c.getX() - p1.getX());
-                    int diffY1 = Math.abs(p1c.getY() - p1.getY());
-                    if ((diffX1 < 5) && (diffY1 < 5)) {
-                        found = true;
-                        break;
-                    }
-                    int diffX2 = Math.abs(p2c.getX() - p2.getX());
-                    int diffY2 = Math.abs(p2c.getY() - p2.getY());
-                    if ((diffX2 < 5) && (diffY2 < 5)) {
-                        found = true;
-                        break;
-                    }
-                    if (!found) {
-                        add.add(stat);
-                    }
-                }
-            }
-        }
-        
-        compStats.addAll(add);
-            
-        return compStats;
-    }
-    
-    private <T extends CornerRegion> boolean statsCoverIntersection(
-        List<FeatureComparisonStat> stats, List<List<T>> filteredC2) {
-                
-        /*
-        dividing the range in filteredC2 by 2 in x and 2 in y and returning
-        true if at least one point2 in stats is found in each division.             
-        */
-        int n = 0;
-        for (List<T> list : filteredC2) {
-            n += list.size();
-        }
-        float[] xPoints = new float[n];
-        float[] yPoints = new float[n];
-        
-        n = 0;
-        for (List<T> list : filteredC2) {
-            for (T cr : list) {
-                float x = cr.getX()[cr.getKMaxIdx()];
-                float y = cr.getY()[cr.getKMaxIdx()];
-                xPoints[n] = x;
-                yPoints[n] = y;
-                ++n;
-            }
-        }
-        
-        return statsCoverIntersection(stats, xPoints, yPoints);
-    }
-    
-    private boolean statsCoverIntersection(List<FeatureComparisonStat> stats, 
-        final float[] xPoints, final float[] yPoints) {
-               
-        int n = xPoints.length;
-        
-        QuickSort.sortBy1stThen2nd(xPoints, yPoints);
-        
-        float minX = xPoints[0];
-        float maxX = xPoints[n - 1];
-        float divX = (maxX + minX)/2.f;
-       
-        /*
-        Finding y min and max within each of these division.  The reason
-        for doing this separately from y min max over all of filteredC2 is that 
-        the geometry of matchable points might not be rectangular.
-        
-            |          |          |
-            |          |          |
-            |          |          |
-                 0           1
-        */
-        
-        float[] yMin = new float[2];
-        Arrays.fill(yMin, Float.MAX_VALUE);
-        float[] yMax = new float[2];
-        Arrays.fill(yMax, Float.MIN_VALUE);
-        
-        for (int i = 0; i < xPoints.length; ++i) {
-            float x = xPoints[i];
-            float y = yPoints[i];
-            int cIdx = 1;
-            if (x < divX) {
-                cIdx = 0;
-            }
-            if (y < yMin[cIdx]) {
-                yMin[cIdx] = y;
-            }
-            if (y > yMax[cIdx]) {
-                yMax[cIdx] = y;
-            }
-        }
-        
-        float yDiv12 = (yMax[0] + yMin[0])/2.f;
-        float yDiv03 = (yMax[1] + yMin[1])/2.f;
-        
-        /*
-             2       3
-        |        |        |
-             1       0
-        */
-        
-        int[] counts = new int[4];
-        for (FeatureComparisonStat stat : stats) {
-            PairInt p2 = stat.getImg2Point();
-            int x = p2.getX();
-            int y = p2.getY();
-            if (x < divX) {
-                if (y < yDiv12) {
-                    counts[1]++;
-                } else {
-                    counts[2]++;
-                }
-            } else {
-                if (y < yDiv03) {
-                    counts[0]++;
-                } else {
-                    counts[3]++;
-                }
-            }
-        }
-        
-        int nq = 0;
-        for (int i = 0; i < counts.length; ++i) {
-            if (counts[i] > 0) {
-                nq++;
-            }
-        }
-        
-        // check that there is at least 1 in each quadrant
-        //if (nq >= 3) {
-        if (nq == 4) {
-            return true;
-        }
-        
-        return false;
     }
     
     private void populateLists(List<FeatureComparisonStat> stats, 
@@ -803,4 +373,232 @@ int y2 = compStats2.get(0).getImg2Point().getY();
         return cl;
     }
     
+    private boolean statsCoverIntersection(List<FeatureComparisonStat> stats) {
+        
+        /*
+        calculate the intersection of the 2 images.
+        divide the region into 4 parts (2 vertical and 2 horizontal) by noting
+        the 4 boundary points for each and making a polygon for each.
+        
+        then use point in polygon tests to count the number of stats.point2's
+        in each of the 4 regions.        
+        */
+        
+        /*
+       / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
+        |
+        |                                 d2           d3             d4
+        |
+        0    ( tr )    ( tr )            (x2q1, y2q1)  d1   (x2q0, y2q0)
+          0 -->
+        */
+        
+        double[][] img2Intersection = getBoundsOfIntersectionInFrame2();
+        
+        float[] d1 = new float[]{
+            (float)((img2Intersection[0][0] + img2Intersection[1][0])/2.f),
+            (float)((img2Intersection[0][1] + img2Intersection[1][1])/2.f)};     
+        float[] d2 = new float[]{
+            (float)((img2Intersection[1][0] + img2Intersection[2][0])/2.f),
+            (float)((img2Intersection[1][1] + img2Intersection[2][1])/2.f)};
+        float[] d4 = new float[]{
+            (float)((img2Intersection[0][0] + img2Intersection[3][0])/2.f),
+            (float)((img2Intersection[0][1] + img2Intersection[3][1])/2.f)};
+        float[] d5 = new float[]{
+            (float)((img2Intersection[2][0] + img2Intersection[3][0])/2.f),
+            (float)((img2Intersection[2][1] + img2Intersection[3][1])/2.f)};
+        float[] d3 = new float[]{(d2[0] + d4[0])/2.f, (d1[1] + d5[1])/2.f};
+        
+        float[] xPoly0 = new float[5];
+        float[] yPoly0 = new float[5];
+        xPoly0[0] = (float)img2Intersection[0][0];
+        yPoly0[0] = (float)img2Intersection[0][1];
+        xPoly0[1] = d1[0];
+        yPoly0[1] = d1[1];
+        xPoly0[2] = d3[0];
+        yPoly0[2] = d3[1];
+        xPoly0[3] = d4[0];
+        yPoly0[3] = d4[1];
+        xPoly0[4] = xPoly0[0];
+        yPoly0[4] = yPoly0[1];
+
+        /*
+       / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
+        |
+        |                                 d2           d3             d4
+        |
+        0    ( tr )    ( tr )            (x2q1, y2q1)  d1   (x2q0, y2q0)
+          0 -->
+        */
+        
+        float[] xPoly1 = new float[5];
+        float[] yPoly1 = new float[5];
+        xPoly1[0] = d1[0];
+        yPoly1[0] = d1[1];
+        xPoly1[1] = (float)img2Intersection[1][0];
+        yPoly1[1] = (float)img2Intersection[1][1];
+        xPoly1[2] = d2[0];
+        yPoly1[2] = d2[1];
+        xPoly1[3] = d3[0];
+        yPoly1[3] = d3[1];
+        xPoly1[4] = xPoly1[0];
+        yPoly1[4] = yPoly1[1];
+        
+        float[] xPoly2 = new float[5];
+        float[] yPoly2 = new float[5];
+        xPoly2[0] = d3[0];
+        yPoly2[0] = d3[1];
+        xPoly2[1] = d2[0];
+        yPoly2[1] = d2[1];
+        xPoly2[2] = (float)img2Intersection[2][0];
+        yPoly2[2] = (float)img2Intersection[2][1];
+        xPoly2[3] = d5[0];
+        yPoly2[3] = d5[1];
+        xPoly2[4] = xPoly2[0];
+        yPoly2[4] = yPoly2[1];
+        
+        /*
+       / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
+        |
+        |                                 d2           d3             d4
+        |
+        0    ( tr )    ( tr )            (x2q1, y2q1)  d1   (x2q0, y2q0)
+          0 -->
+        */
+        
+        float[] xPoly3 = new float[5];
+        float[] yPoly3 = new float[5];
+        xPoly3[0] = d4[0];
+        yPoly3[0] = d4[1];
+        xPoly3[1] = d3[0];
+        yPoly3[1] = d3[1];
+        xPoly3[2] = d5[0];
+        yPoly3[2] = d5[1];
+        xPoly3[3] = (float)img2Intersection[3][0];
+        yPoly3[3] = (float)img2Intersection[3][1];
+        xPoly3[4] = xPoly3[0];
+        yPoly3[4] = yPoly3[1];
+        
+        PointInPolygon poly = new PointInPolygon();
+        
+        int[] count = new int[4];
+        for (FeatureComparisonStat stat : stats) {
+            int x = stat.getImg2Point().getX();
+            int y = stat.getImg2Point().getY();
+            boolean isIn = poly.isInSimpleCurve(x, y, xPoly0, yPoly0, 5);
+            if (isIn) {
+                count[0]++;
+            } else {
+                isIn = poly.isInSimpleCurve(x, y, xPoly1, yPoly1, 5);
+                if (isIn) {
+                    count[1]++;
+                } else {
+                    isIn = poly.isInSimpleCurve(x, y, xPoly2, yPoly2, 5);
+                    if (isIn) {
+                        count[2]++;
+                    } else {
+                        isIn = poly.isInSimpleCurve(x, y, xPoly3, yPoly3, 5);
+                        if (isIn) {
+                            count[3]++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        int nq = 0;
+        for (int c : count) {
+            if (c > 0) {
+                nq++;
+            }
+        }
+        
+        return (nq == 4);
+    }
+    
+    private double[][] getBoundsOfIntersectionInFrame2() {
+        
+        //calculate the intersection of the 2 images
+        
+        MatchedPointsTransformationCalculator tc = 
+            new MatchedPointsTransformationCalculator();
+        
+        Transformer transformer = new Transformer();
+        
+        TransformationParameters revParams = tc.swapReferenceFrames(params);
+        
+        /*
+        
+       / \   ( tr )    ( tr )            (x2q3, y2q3)      (x2q4, y2q4)
+        |
+        |
+        0    ( tr )    ( tr )            (x2q2, y2q2)      (x2q1, y2q1)
+          0 -->
+        
+        */
+        
+        // determine intersection of img2 with img1 in img1 reference frame
+        double[] q1Tr = transformer.applyTransformation(revParams, 
+            img2.getWidth() - 1, 0);
+        
+        double[] q2Tr = transformer.applyTransformation(revParams, 
+            0, 0);
+        
+        double[] q3Tr = transformer.applyTransformation(revParams, 
+            0, img2.getHeight() - 1);
+        
+        double[] q4Tr = transformer.applyTransformation(revParams, 
+            img2.getWidth() - 1, img2.getHeight() - 1);
+        
+        // if the transformed bounds are off image, reset the bounds to img1 bounds
+        double[][] img1Intersection = new double[4][2];
+        img1Intersection[0] = q1Tr;
+        img1Intersection[1] = q2Tr;
+        img1Intersection[2] = q3Tr;
+        img1Intersection[3] = q4Tr;
+        
+        for (double[] xyTr : img1Intersection) {
+            if (xyTr[0] < 0) {
+                xyTr[0] = 0;
+            } else if (xyTr[0] > (img1.getWidth() - 1)) {
+                xyTr[0] = (img1.getWidth() - 1);
+            }
+            if (xyTr[1] < 0) {
+                xyTr[1] = 0;
+            } else if (xyTr[1] > (img1.getHeight() - 1)) {
+                xyTr[1] = (img1.getHeight() - 1);
+            }
+        }
+        
+        // transform the img1 intersection into reference frame of img2
+        double[] q1TrTr = transformer.applyTransformation(params, q1Tr[0], q1Tr[1]);
+        
+        double[] q2TrTr = transformer.applyTransformation(params, q2Tr[0], q2Tr[1]);
+        
+        double[] q3TrTr = transformer.applyTransformation(params, q3Tr[0], q3Tr[1]);
+        
+        double[] q4TrTr = transformer.applyTransformation(params, q4Tr[0], q4Tr[1]);
+        
+        double[][] img2Intersection = new double[4][2];
+        img2Intersection[0] = q1TrTr;
+        img2Intersection[1] = q2TrTr;
+        img2Intersection[2] = q3TrTr;
+        img2Intersection[3] = q4TrTr;
+        
+        for (double[] xyTr : img2Intersection) {
+            if (xyTr[0] < 0) {
+                xyTr[0] = 0;
+            } else if (xyTr[0] > (img2.getWidth() - 1)) {
+                xyTr[0] = (img2.getWidth() - 1);
+            }
+            if (xyTr[1] < 0) {
+                xyTr[1] = 0;
+            } else if (xyTr[1] > (img2.getHeight() - 1)) {
+                xyTr[1] = (img2.getHeight() - 1);
+            }
+        }
+        
+        return img2Intersection;
+    }
+
 }
