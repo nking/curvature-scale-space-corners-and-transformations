@@ -196,7 +196,7 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
             for (int i = 0; i < vector.getNumberOfItems(); ++i) {
                 TransformationPair4 tp4 = ind1To2Pairs[i];              
                 
-                TransformationParameters params = calculateTransformation(
+                TransformationParameters params = MiscStats.calculateTransformation(
                     binFactor1, binFactor2, tp4.getMatchedCompStats(),
                     new float[4]);
                 if (params == null) {
@@ -305,7 +305,7 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
             combined.addAll(ifs.getMatchedCompStats());
         }
         
-        TransformationParameters combinedParams = calculateTransformation(
+        TransformationParameters combinedParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, combined, new float[4]);
         
         if (combinedParams == null) {
@@ -338,7 +338,7 @@ public class BlobCornersScaleFinder0 extends AbstractBlobScaleFinder {
                     TransformationPair4 ifs = tpList.get(i);
                     combined.addAll(ifs.getMatchedCompStats());
                 }
-                combinedParams = calculateTransformation(
+                combinedParams = MiscStats.calculateTransformation(
                     binFactor1, binFactor2, combined, new float[4]);
                 if (combinedParams == null) {
                     return null;
@@ -461,9 +461,9 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
     private void filter(List<TransformationPair4> tpList, 
         List<TransformationParameters> paramsList, int[] indexesToKeep) {
         
-        if (indexesToKeep.length < 2) {
+        /*if (indexesToKeep.length < 2) {
             return;
-        }
+        }*/
         
         List<TransformationPair4> tpList2 = 
             new ArrayList<TransformationPair4>(indexesToKeep.length);
@@ -536,7 +536,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
             }
         }
         
-        TransformationParameters minCostParams = calculateTransformation(
+        TransformationParameters minCostParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, tpList.get(minCostIdx).getMatchedCompStats(),
             new float[4]);
         
@@ -552,7 +552,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
                 continue;
             }
             TransformationPair4 tp4 = tpList.get(i);
-            TransformationParameters params = calculateTransformation(
+            TransformationParameters params = MiscStats.calculateTransformation(
                binFactor1, binFactor2, tp4.getMatchedCompStats(),
                 new float[4]);
             
@@ -573,7 +573,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
             }
         }
         
-        TransformationParameters combinedParams = calculateTransformation(
+        TransformationParameters combinedParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, combined, new float[4]);
         
         if (combinedParams == null) {

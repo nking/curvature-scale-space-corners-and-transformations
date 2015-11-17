@@ -251,7 +251,7 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                 
                 IntensityFeatureComparisonStats ifcs = ind1To2Pairs[i];   
                                 
-                TransformationParameters params = calculateTransformation(
+                TransformationParameters params = MiscStats.calculateTransformation(
                     binFactor1, binFactor2, ifcs.getComparisonStats(),
                     new float[4]);
                 if (params == null) {
@@ -356,7 +356,7 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
             combined.addAll(ifs.getComparisonStats());
         }
         
-        TransformationParameters combinedParams = calculateTransformation(
+        TransformationParameters combinedParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, combined, new float[4]);
         
         if (combinedParams == null) {
@@ -391,7 +391,7 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                     IntensityFeatureComparisonStats ifs = ifsList.get(i);
                     combined.addAll(ifs.getComparisonStats());
                 }
-                combinedParams = calculateTransformation(
+                combinedParams = MiscStats.calculateTransformation(
                     binFactor1, binFactor2, combined, new float[4]);
                 if (combinedParams == null) {
                     return null;
@@ -694,7 +694,7 @@ redoStats = true;
             }
         }
         
-        TransformationParameters minCostParams = calculateTransformation(
+        TransformationParameters minCostParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, ifcsList.get(minCostIdx).getComparisonStats(),
             new float[4]);
         
@@ -710,7 +710,7 @@ redoStats = true;
                 continue;
             }
             IntensityFeatureComparisonStats ifcs = ifcsList.get(i);
-            TransformationParameters params = calculateTransformation(
+            TransformationParameters params = MiscStats.calculateTransformation(
                binFactor1, binFactor2, ifcs.getComparisonStats(),
                 new float[4]);
             
@@ -731,7 +731,7 @@ redoStats = true;
             }
         }
         
-        TransformationParameters combinedParams = calculateTransformation(
+        TransformationParameters combinedParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, combined, new float[4]);
         
         if (combinedParams == null) {

@@ -1,13 +1,18 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.imageProcessing.FeatureComparisonStat;
+import algorithms.imageProcessing.FeatureMatcher;
+import algorithms.imageProcessing.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.TransformationParameters;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -348,7 +353,7 @@ public class MiscStats {
     }
     
     public static int[] filterForTranslationXUsingHist(
-        List<TransformationParameters> paramsList) {
+        List<TransformationParameters> paramsList) {        
         
         if (paramsList.size() < 3) {
             int[] indexes = new int[paramsList.size()];
@@ -572,8 +577,8 @@ public class MiscStats {
         float tR = (float) (2. * Math.PI / params.getStandardDeviations()[1]);
 
         // consider comparing stdev in translations to a fraction of the image
-        float tTx = params.getStandardDeviations()[2];
-        float tTy = params.getStandardDeviations()[3];
+        int tTx = Math.round(params.getStandardDeviations()[2]);
+        int tTy = Math.round(params.getStandardDeviations()[3]);
 
         float tXConstraint = 20;
         float tYConstraint = 20;
@@ -601,17 +606,26 @@ public class MiscStats {
      * @return 
      */
     public static List<TransformationParameters> filterToSimilarParamSets(
-        Map<PairInt, TransformationParameters> paramsMap) {
+        Map<PairInt, TransformationParameters> paramsMap, int binFactor1,
+        int binFactor2) {
         
-        List<TransformationParameters> combinedParams = 
-            new ArrayList<TransformationParameters>();
+        int transTol = 30;
+        if (binFactor1 != 1 || binFactor2 != 1) {
+            transTol /= (float)((binFactor1 + binFactor2)/2.f);
+        }
+        
+        List<Set<TransformationParameters>> similarSets = 
+            new ArrayList<Set<TransformationParameters>>();
         
         Set<PairInt> alreadyCombined = new HashSet<PairInt>();
         
         for (Map.Entry<PairInt, TransformationParameters> entry : paramsMap.entrySet()) {
+            
             if (alreadyCombined.contains(entry.getKey())) {
                 continue;
             }
+                      
+            Set<TransformationParameters> set = new HashSet<TransformationParameters>();
             
             TransformationParameters params0 = entry.getValue();
             
@@ -630,22 +644,145 @@ public class MiscStats {
                 if (Math.abs(params0.getScale() - compare.getScale()) > 0.2*avg) {
                     continue;
                 }
-                //TODO: may need to revise translation tolerance
-                if (Math.abs(params0.getTranslationX()- compare.getTranslationX()) > 30) {
-                    continue;
-                }
-                if (Math.abs(params0.getTranslationY()- compare.getTranslationY()) > 30) {
+                                
+                //TODO: may need to revise translation tolerance...
+                double diffX = Math.abs(params0.getTranslationX()- compare.getTranslationX());
+                double diffY = Math.abs(params0.getTranslationY()- compare.getTranslationY());
+                if ((diffX > transTol) || (diffY > transTol)){
                     continue;
                 }
                 if (!alreadyCombined.contains(entry.getKey())) {
-                    combinedParams.add(params0);
                     alreadyCombined.add(entry.getKey());
                 }
                 alreadyCombined.add(entry2.getKey());
+                
+                set.add(params0);
+                set.add(compare);
+            }
+            if (!set.isEmpty()) {
+                similarSets.add(set);
             }
         }
         
+        // use histograms to remove translation outliers in similar sets
+        
+        List<TransformationParameters> combinedParams = 
+            new ArrayList<TransformationParameters>();
+
+        for (Set<TransformationParameters> similarSet : similarSets) {
+            
+            List<TransformationParameters> similar = 
+                new ArrayList<TransformationParameters>(similarSet);
+            int[] keep = filterForTranslationXUsingHist(similar);
+            filter(similar, keep);
+            keep = filterForTranslationYUsingHist(similar);
+            filter(similar, keep);
+            
+            if (similar.isEmpty()) {
+                continue;
+            } else if (similar.size() == 1) {
+                combinedParams.add(similar.get(0));
+                continue;
+            }
+            
+            //average them
+            MatchedPointsTransformationCalculator
+                tc = new MatchedPointsTransformationCalculator();
+            TransformationParameters params =  tc.averageWithoutRemoval(similar);
+            combinedParams.add(params);
+        }
+        
         return combinedParams;
+    }
+
+    private static void filter(List<TransformationParameters> params, 
+        int[] indexesToKeep) {
+                
+        if (indexesToKeep.length < 2) {
+            return;
+        }
+        
+        List<TransformationParameters> paramsList2 = 
+            new ArrayList<TransformationParameters>();
+        
+        for (int i = 0; i < indexesToKeep.length;++i) {
+            int idx = indexesToKeep[i];
+            paramsList2.add(params.get(idx));
+        }
+                
+        params.clear();
+        params.addAll(paramsList2);
+    }
+    
+    public static TransformationParameters calculateTransformation(int binFactor1, 
+        int binFactor2, List<FeatureComparisonStat> compStats, 
+        float[] outputScaleRotTransXYStDev) {
+        
+        assert (compStats.isEmpty() == false);
+        
+        FeatureMatcher.removeIntensityOutliers(compStats);
+        
+        if (compStats.size() < 2) {
+            return null;
+        }
+        
+        MatchedPointsTransformationCalculator tc = 
+            new MatchedPointsTransformationCalculator();
+        
+        int centroidX1 = 0;
+        int centroidY1 = 0;
+        
+        PairIntArray matchedXY1 = new PairIntArray();
+        PairIntArray matchedXY2 = new PairIntArray();
+        
+        float[] weights = new float[compStats.size()];
+        
+        double sum = 0;
+        
+        for (int i = 0; i < compStats.size(); ++i) {
+            
+            FeatureComparisonStat compStat = compStats.get(i);
+            
+            int x1 = compStat.getImg1Point().getX() * binFactor1;
+            int y1 = compStat.getImg1Point().getY() * binFactor1;
+            
+            matchedXY1.add(x1, y1);
+            
+            int x2 = compStat.getImg2Point().getX() * binFactor2;
+            int y2 = compStat.getImg2Point().getY() * binFactor2;
+            
+            matchedXY2.add(x2, y2);
+            
+            weights[i] = compStat.getSumIntensitySqDiff();
+            
+            sum += weights[i];
+        }
+
+        if (sum > 0) {
+            
+            double tot = 0;
+
+            for (int i = 0; i < compStats.size(); ++i) {
+
+                double div = (sum - weights[i]) / ((compStats.size() - 1) * sum);
+
+                weights[i] = (float) div;
+
+                tot += div;
+            }
+ 
+            assert(Math.abs(tot - 1.) < 0.03);
+            
+        } else {
+            float a = 1.f/weights.length;
+            Arrays.fill(weights, a);
+        }
+        
+        TransformationParameters params = tc.calulateEuclidean(matchedXY1, 
+            matchedXY2, weights, centroidX1, centroidY1, 
+            outputScaleRotTransXYStDev);
+        
+        return params;
     }
 
 }

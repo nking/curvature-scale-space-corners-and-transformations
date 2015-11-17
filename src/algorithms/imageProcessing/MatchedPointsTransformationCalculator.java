@@ -939,6 +939,81 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         
         return sMap;
     }
+    
+    /**
+     * average the paramsList without using outlier removal.  Note, the
+     * standard deviations are not recalculated (later, if that's useful, they
+     * should be added in quadrature here and set in the result).
+     * NOTE that if the origins are not zero, this method cannot be used
+     * @param paramsList
+     * @return 
+     */
+    public TransformationParameters averageWithoutRemoval(
+        List<TransformationParameters> paramsList) {
+        
+        boolean useRadians = true;
+        List<Double> thetaCorr = new ArrayList<Double>(paramsList.size());
+        for (TransformationParameters params : paramsList) {
+            thetaCorr.add(Double.valueOf(params.getRotationInRadians()));
+            if (params.getOriginX() != 0) {
+                throw new IllegalArgumentException("originX must be 0");
+            }
+            if (params.getOriginY() != 0) {
+                throw new IllegalArgumentException("originY must be 0");
+            }
+        }
+
+        AngleUtil.correctForQuadrants(thetaCorr, useRadians);
+
+        double thetaAvg = 0;
+        float scaleAvg = 0;
+        float transXAvg = 0;
+        float transYAvg = 0;
+        for (int i = 0; i < thetaCorr.size(); ++i) {
+            thetaAvg += thetaCorr.get(i);
+            TransformationParameters params = paramsList.get(i);
+            scaleAvg += params.getScale();
+            transXAvg += params.getTranslationX();
+            transYAvg += params.getTranslationY();
+        }
+        float n = paramsList.size();
+        thetaAvg /= n;
+        scaleAvg /= n;
+        transXAvg /= n;
+        transYAvg /= n;
+        
+        double thetaStDev = 0;
+        double scaleStDev = 0;
+        double transXStDev = 0;
+        double transYStDev = 0;
+        for (int i = 0; i < thetaCorr.size(); ++i) {
+            thetaStDev += Math.pow((thetaCorr.get(i) - thetaAvg), 2);
+            TransformationParameters params = paramsList.get(i);
+            scaleStDev += Math.pow((params.getScale() - scaleAvg), 2);
+            transXStDev += Math.pow((params.getTranslationX() - transXAvg), 2);
+            transYStDev += Math.pow((params.getTranslationY() - transYAvg), 2);
+        }
+        thetaStDev = Math.sqrt(thetaStDev/(n - 1.));
+        scaleStDev = Math.sqrt(scaleStDev/(n - 1.));
+        transXStDev = Math.sqrt(transXStDev/(n - 1.));
+        transYStDev = Math.sqrt(transYStDev/(n - 1.));
+        
+        if (thetaAvg > (2. * Math.PI)) {
+            thetaAvg -= 2. * Math.PI;
+        }
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(0);
+        params.setOriginY(0);
+        params.setRotationInRadians((float)thetaAvg);
+        params.setScale(scaleAvg);
+        params.setTranslationX(transXAvg);
+        params.setTranslationY(transYAvg);
+        params.setStandardDeviations(new float[]{(float)scaleStDev, 
+            (float)thetaStDev, (float)transXStDev, (float)transYStDev});
+        
+        return params;
+    }
 
     private List<Integer> findOutliersUsingMedianOfDifferences(
         List<? extends Number> values) {

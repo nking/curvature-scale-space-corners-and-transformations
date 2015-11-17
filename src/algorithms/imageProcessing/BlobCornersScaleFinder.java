@@ -53,6 +53,8 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 
         assert(blobs1.size() == perimeters1.size());
         assert(blobs1.size() == corners1List.size());
+        assert(blobs2.size() == perimeters2.size());
+        assert(blobs2.size() == corners2List.size());
                  
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
@@ -69,7 +71,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
         List<List<T>> corners1List, List<List<T>> corners2List,
         int binFactor1, int binFactor2) {
-/*            
+/*
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -99,6 +101,17 @@ try {
 } catch (IOException ex) {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
 }
+StringBuilder sb = new StringBuilder("xy1:\n");
+for (int i = 0; i < xy1.length; ++i) {
+    sb.append(String.format("[%2d] (%3d, %3d)\n", i, 
+        (int)Math.round(xy1[i][0]), (int)Math.round(xy1[i][1])));
+}
+sb.append("xy2:\n");
+for (int i = 0; i < xy2.length; ++i) {
+    sb.append(String.format("[%2d] (%3d, %3d)\n", i, 
+        (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
+}
+System.out.println(sb.toString());
 
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(68,78), new PairInt(96,84), new PairInt(122,91), 
@@ -194,7 +207,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
                     continue;
                 }
                 
-                // this instance does not have stDev of params
+                // NOTE: if solving for binned, the params are in binned reference frame
                 TransformationParameters params = mapper.getSolution();
                 int nEval = mapper.getNEval();
                 double cost = mapper.getSolutionCost();
@@ -206,7 +219,10 @@ for (int i = 0; i < im2Chk.length; ++i) {
                     minCost = cost;
                 }
             }
-            
+//TODO: to speed up matches, could consider
+// not searching the longest corner lists until the
+// the others have been matched and evaluated, then if
+// needed, try to match the longest
             if (maxNEvalParams != null) {
                 trMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()), 
                     maxNEvalParams);
@@ -240,13 +256,31 @@ for (int i = 0; i < im2Chk.length; ++i) {
         return soln;
     }
 
+    /**
+     * given parameters map, evaluate the corner lists and return the solution.
+     * Note that if binFactors are not equal to '1', it's assumed that the
+     * paramsMap are in the binned reference frame and corrections to that
+     * are made for the returned solution.
+     * @param <T>
+     * @param features1
+     * @param features2
+     * @param img1
+     * @param img2
+     * @param paramsMap
+     * @param corners1List
+     * @param corners2List
+     * @param np2
+     * @param binFactor1
+     * @param binFactor2
+     * @return 
+     */
     private <T extends CornerRegion> MatchingSolution evaluateForBestUsingFeatures(
         IntensityFeatures features1, IntensityFeatures features2, 
         GreyscaleImage img1, GreyscaleImage img2, 
         Map<PairInt, TransformationParameters> paramsMap, 
         List<List<T>> corners1List, List<T> corners2List, 
         NearestPoints np2, int binFactor1, int binFactor2) {
-             
+        
         int tolTransXY = 5;//10;
         
         double maxDistance = Math.sqrt(2) * tolTransXY;
@@ -258,7 +292,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
         */
         
         List<TransformationParameters> parameterList = MiscStats.filterToSimilarParamSets(
-            paramsMap);
+            paramsMap, binFactor1, binFactor2);
         
         int n1 = 0;
         for (List<T> corners1 : corners1List) {
@@ -271,6 +305,8 @@ for (int i = 0; i < im2Chk.length; ++i) {
         Transformer transformer = new Transformer();
         
         final int rotationTolerance = 20;
+        
+//TODO: consider reducing by binFactor if not 1:        
         final int dither = 4;
         
         TransformationParameters bestParams = null;
@@ -362,7 +398,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
             if (normalizedScore < bestScore) {
                 
                 TransformationParameters combinedParams = 
-                    calculateTransformation(binFactor1, binFactor2,
+                    MiscStats.calculateTransformation(binFactor1, binFactor2,
                         stats, new float[4]);
                 
                 if (combinedParams == null) {
@@ -396,4 +432,5 @@ for (int i = 0; i < im2Chk.length; ++i) {
         
         return dist;
     }
+
 }

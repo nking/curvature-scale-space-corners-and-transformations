@@ -429,7 +429,7 @@ public class BlobScaleFinderWrapper {
                 t1Sec = (t1 - t0)/1000;
                 t2Sec = (t2 - t1)/1000;
                 Logger.getLogger(this.getClass().getName()).info("corners1(sec)=" 
-                    + t1Sec + " corners1(sec)=" + t2Sec);
+                    + t1Sec + " sec corners1(sec)=" + t2Sec + " sec");
             }
 
             t0 = System.currentTimeMillis();

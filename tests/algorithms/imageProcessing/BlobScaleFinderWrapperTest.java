@@ -19,8 +19,8 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
     public void test0() throws Exception {
 
-        boolean rotate = false;
-        boolean useBinning = false;
+        boolean rotate = true;
+        boolean useBinning = true;
         
         String fileName1, fileName2;
 

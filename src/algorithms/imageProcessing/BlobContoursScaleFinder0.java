@@ -213,7 +213,7 @@ try {
                 
                 trMap.put(Integer.valueOf(i), bestMatches);
                 
-                TransformationParameters params = calculateTransformation(
+                TransformationParameters params = MiscStats.calculateTransformation(
                     binFactor1, binFactor2, bestMatches.getMatchedCompStats(), 
                     new float[4]);
                 
@@ -262,7 +262,7 @@ try {
         
         TransformationPair3 minCostTR = trMap.remove(minCostKey);
                 
-        TransformationParameters minCostParams = calculateTransformation(
+        TransformationParameters minCostParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, minCostTR.getMatchedCompStats(), 
             new float[4]);
         
@@ -300,7 +300,7 @@ try {
         
         combine.addAll(minCostTR.getMatchedCompStats());
         
-        TransformationParameters combinedParams = calculateTransformation(
+        TransformationParameters combinedParams = MiscStats.calculateTransformation(
             binFactor1, binFactor2, combine, new float[4]);
         
         if (combinedParams == null) {

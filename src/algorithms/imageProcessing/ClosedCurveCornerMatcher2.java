@@ -1,16 +1,12 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -44,7 +40,10 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
     private static double ssdLimit = 1500;
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
+    
     private double solutionCost;
+    
+    private List<FeatureComparisonStat> solutionStats = null;;
 
     private enum State {
         INITIALIZED, FAILED, SOLVED
@@ -69,16 +68,14 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
      * @param corners2
      * @param img1 image from which to extract descriptors for features1
      * @param img2 image from which to extract descriptors for features2
-     * @param binFactor1
-     * @param binFactor2
      * @return 
      */
     @SuppressWarnings({"unchecked"})
     public boolean matchCorners(
         final IntensityFeatures features1, final IntensityFeatures features2, 
         final List<T> corners1,final List<T> corners2, 
-        GreyscaleImage img1, GreyscaleImage img2, 
-        int binFactor1, int binFactor2) {
+        GreyscaleImage img1, GreyscaleImage img2, int binFactor1, 
+        int binFactor2) {
 
         if (state != null) {
             resetDefaults();
@@ -96,12 +93,12 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             xC2[i] = cr.getX()[cr.getKMaxIdx()];
             yC2[i] = cr.getY()[cr.getKMaxIdx()];
         }
-        
+                
         state = State.INITIALIZED;
         
         NearestPoints np = new NearestPoints(xC2, yC2);
 
-        findBestParameters(c1, c2, np, features1, features2, img1, img2, 
+        findBestParameters(c1, c2, np, features1, features2, img1, img2,
             binFactor1, binFactor2);
 
         return state.equals(State.SOLVED);
@@ -155,9 +152,6 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         // because the method would increase from approx O(N^2) to approx O(N^3)
         Map<Integer, CornersAndFeatureStat<T>> index2Map = new HashMap<Integer,
             CornersAndFeatureStat<T>>();
-        
-//TODO: when there are more than 20 or so corners per curve,
-//        consider sorting by k and only matching the top
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
@@ -223,7 +217,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
      */
     private void findBestParameters(List<T> c1,
         List<T> c2, NearestPoints np, IntensityFeatures features1,
-        IntensityFeatures features2, GreyscaleImage img1, GreyscaleImage img2,
+        IntensityFeatures features2, GreyscaleImage img1, GreyscaleImage img2, 
         int binFactor1, int binFactor2) {
         
         /*
@@ -236,8 +230,14 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         // if want to filter by the best SSDs, could use a heap (inserts O(1))
         // and extract is O(1), and only extract the top 10 or so to make
         // combinations from.
-        int nTop = (indexes2.length < 11) ? indexes2.length : 10;
-        if (nTop > indexes2.length) {
+        int nIndexes2 = 0;
+        for (CornersAndFeatureStat<T> cfs : indexes2) {
+            if (cfs != null) {
+                nIndexes2++;
+            }
+        }
+        int nTop = (nIndexes2 < 11) ? nIndexes2 : 10;
+        if (nTop != nIndexes2) {
             Heap heap = new Heap();
             for (int i = 0; i < indexes2.length; ++i) {
                 CornersAndFeatureStat<T> cfs = indexes2[i];
@@ -310,13 +310,16 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                 if (indexes2[ipt1].cr2.equals(indexes2[ipt2].cr2)) {
                     continue;
                 }
+                
                 PairInt c1Pt2 = indexes2[ipt2].stat.getImg1Point();
                 PairInt c2Pt2 = indexes2[ipt2].stat.getImg2Point();
                 TransformationParameters params = tc.calulateEuclidean(
-                    c1Pt1.getX(), c1Pt1.getY() * binFactor1,
-                    c1Pt2.getX(), c1Pt2.getY() * binFactor1,
-                    c2Pt1.getX(), c2Pt1.getY() * binFactor2,
-                    c2Pt2.getX(), c2Pt2.getY() * binFactor2, 0, 0);
+                    c1Pt1.getX(), c1Pt1.getY(),
+                    c1Pt2.getX(), c1Pt2.getY(),
+                    c2Pt1.getX(), c2Pt1.getY(),
+                    c2Pt2.getX(), c2Pt2.getY(), 0, 0);
+                
+                params.setNumberOfPointsUsed(2);
                 
                 paramsMap.put(new PairInt(ipt1, ipt2), params);
             }
@@ -331,7 +334,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         //     before adding to combinedParams in order to reduce the number
         //     of evaluations.
         List<TransformationParameters> combinedParams = 
-            MiscStats.filterToSimilarParamSets(paramsMap);
+            MiscStats.filterToSimilarParamSets(paramsMap, binFactor1, binFactor2);
         
         Transformer transformer = new Transformer();
         
@@ -341,7 +344,8 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             double sumDist = 0;
             int nEval2 = 0;
             for (int ipt1 = 0; ipt1 < c1.size(); ++ipt1) {
-                T pt1 = c1.get(ipt1);                
+                T pt1 = c1.get(ipt1);  
+                
                 double[] xyTr = transformer.applyTransformation(params, 
                     pt1.getX()[pt1.getKMaxIdx()], pt1.getY()[pt1.getKMaxIdx()]);
                 Set<PairInt> candidates = np.findNeighbors(
@@ -393,10 +397,19 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             TransformationParameters params = (TransformationParameters)
                 orderedParams.extractMin().getData();
             
+            int tolXY = tolerance;
+            if (params.getStandardDeviations() != null) {
+                tolXY = (int)Math.ceil(Math.max(
+                    Math.abs(params.getStandardDeviations()[2]), 
+                    Math.abs(params.getStandardDeviations()[3])
+                    ));
+            }
+            
             count++;
             
             List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
             int rotD = Math.round(params.getRotationInDegrees());
+            
             double sumSSD = 0;
             double sumDist = 0;
             int nEval2 = 0;
@@ -411,7 +424,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                
                 Set<Integer> candidates = np.findNeighborIndexes(
                     (int) Math.round(xyTr[0]), (int) Math.round(xyTr[1]), 
-                    tolerance);
+                    tolXY);
 
                 // for now, not caring if a point is double matched, just need general count
                 if (candidates != null && candidates.size() > 0) {
@@ -483,11 +496,19 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         float normalizedScore = score1 * score2 * score3;
         
         solutionCost =  normalizedScore;
+        solutionStats = bestStats;
         state = State.SOLVED;
         solution = bestParams;
         nEval = maxNEval;
     }
 
+    /**
+     * get the transformation parameters calculated for the given datasets,
+     * but in the frame of the data (if binFactor1 or binFactor2 were not
+     * 1, then the this solution cannot be applied to the full frame unbinned 
+     * image).
+     * @return 
+     */
     public TransformationParameters getSolution() {
         return solution;
     }
@@ -497,6 +518,13 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
     
     public int getNEval() {
         return nEval;
+    }
+    
+    /**
+     * @return the solutionStats
+     */
+    public List<FeatureComparisonStat> getSolutionStats() {
+        return solutionStats;
     }
 
     protected double[] applyTransformation(T corner,
