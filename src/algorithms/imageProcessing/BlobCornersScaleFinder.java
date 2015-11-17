@@ -71,7 +71,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
         List<List<T>> corners1List, List<List<T>> corners2List,
         int binFactor1, int binFactor2) {
-/*
+
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -112,7 +112,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-
+/*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(68,78), new PairInt(96,84), new PairInt(122,91), 
     new PairInt(180,240),
@@ -290,9 +290,12 @@ for (int i = 0; i < im2Chk.length; ++i) {
            -- (2) eval by finding best SSD of points within tolerance of predicted and
               use nEval, SSD and dist to return a normalized score
         */
+                
+        //List<TransformationParameters> parameterList = 
+        //    MiscStats.filterToSimilarParamSets(paramsMap, binFactor1, binFactor2);
         
-        List<TransformationParameters> parameterList = MiscStats.filterToSimilarParamSets(
-            paramsMap, binFactor1, binFactor2);
+        List<TransformationParameters> parameterList = 
+            MiscStats.filterToSimilarParamSets2(paramsMap, binFactor1, binFactor2);
         
         int n1 = 0;
         for (List<T> corners1 : corners1List) {
@@ -306,7 +309,6 @@ for (int i = 0; i < im2Chk.length; ++i) {
         
         final int rotationTolerance = 20;
         
-//TODO: consider reducing by binFactor if not 1:        
         final int dither = 4;
         
         TransformationParameters bestParams = null;
@@ -320,6 +322,18 @@ for (int i = 0; i < im2Chk.length; ++i) {
             double sin = Math.sin(rotInRadians);
             
             int rotD = Math.round(params.getRotationInDegrees());
+            
+            int tolTransXY2 = Math.round(tolTransXY * params.getScale());
+            if (tolTransXY2 == 0) {
+                tolTransXY2 = 1;
+            }
+            int dither2 = Math.round(dither * params.getScale());
+            if (dither2 == 0) {
+                dither2 = 1;
+            } else if (dither2 > dither) {
+                // large dither makes runtime larger
+                dither2 = dither;
+            }
         
             int nEval = 0;
             double sumSSD = 0;
@@ -334,7 +348,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
 
                     Set<Integer> indexes2 = np2.findNeighborIndexes(
                         crTr.getX()[crTr.getKMaxIdx()], 
-                        crTr.getY()[crTr.getKMaxIdx()], tolTransXY);
+                        crTr.getY()[crTr.getKMaxIdx()], tolTransXY2);
 
                     for (Integer index : indexes2) {
 
@@ -346,7 +360,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
 
                         try {
                             compStat = featureMatcher.ditherAndRotateForBestLocation(
-                                features1, features2, cr, corner2, dither,
+                                features1, features2, cr, corner2, dither2,
                                 rotD, rotationTolerance, img1, img2);
                         } catch (CornerRegion.CornerRegionDegneracyException ex) {
                             log.fine(ex.getMessage());
@@ -386,6 +400,10 @@ for (int i = 0; i < im2Chk.length; ++i) {
             if (nEval == 0) {
                 continue;
             }
+            
+            // distance needs to be adjusted by scale, else the score prefers
+            // small scale solutions
+            sumDist /= params.getScale();
             
             sumSSD /= (double)nEval;
             sumDist /= (double)nEval;

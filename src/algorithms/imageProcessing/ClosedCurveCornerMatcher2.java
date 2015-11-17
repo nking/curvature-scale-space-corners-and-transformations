@@ -341,21 +341,37 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         // order params by summed distances, to later evaluate the top 2 or so
         Heap orderedParams = new Heap();
         for (TransformationParameters params : combinedParams) {
+            
             double sumDist = 0;
             int nEval2 = 0;
+            int tolTransXY = Math.round(tolerance * params.getScale());
+            if (params.getStandardDeviations() != null) {
+                tolTransXY = (int)Math.ceil(Math.max(
+                    Math.abs(params.getStandardDeviations()[2]), 
+                    Math.abs(params.getStandardDeviations()[3])
+                    ));
+            }
+            if (tolTransXY == 0) {
+                tolTransXY = 1;
+            }
+            
             for (int ipt1 = 0; ipt1 < c1.size(); ++ipt1) {
                 T pt1 = c1.get(ipt1);  
                 
                 double[] xyTr = transformer.applyTransformation(params, 
                     pt1.getX()[pt1.getKMaxIdx()], pt1.getY()[pt1.getKMaxIdx()]);
+                
                 Set<PairInt> candidates = np.findNeighbors(
                     (int) Math.round(xyTr[0]), (int) Math.round(xyTr[1]), 
-                    tolerance);
+                    tolTransXY);
+                
                 if (candidates != null && candidates.size() > 0) {
                     for (PairInt p : candidates) {
                         double diffX = xyTr[0] - p.getX();
                         double diffY = xyTr[1] - p.getY();
-                        double dist = Math.sqrt(diffX*diffX + diffY*diffY);             
+                        
+                        double dist = Math.sqrt(diffX*diffX + diffY*diffY);
+                        
                         nEval2++;
                         sumDist += dist;
                     }
@@ -364,6 +380,10 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             if (nEval2 == 0) {
                 continue;
             }
+            
+            // distance needs to be adjusted by scale, else the score prefers
+            // small scale solutions
+            sumDist /= params.getScale();
             sumDist /= (double)nEval2;
             // store in heap.  use nEval and dist as cost
             float score1 = 1.f/(float)nEval2;
@@ -397,12 +417,23 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             TransformationParameters params = (TransformationParameters)
                 orderedParams.extractMin().getData();
             
-            int tolXY = tolerance;
+            int tolXY = Math.round(tolerance * params.getScale());
             if (params.getStandardDeviations() != null) {
                 tolXY = (int)Math.ceil(Math.max(
                     Math.abs(params.getStandardDeviations()[2]), 
                     Math.abs(params.getStandardDeviations()[3])
                     ));
+            } else {
+                if (tolXY == 0) {
+                    tolXY = 1;
+                }
+            }
+            int dither2 = Math.round(dither * params.getScale());
+            if (dither2 == 0) {
+                dither2 = 1;
+            } else if (dither2 > dither) {
+                // large dither makes runtime larger
+                dither2 = dither;
             }
             
             count++;
@@ -435,7 +466,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                         FeatureComparisonStat compStat = null;
                         try {
                             compStat = featureMatcher.ditherAndRotateForBestLocation(
-                                features1, features2, pt1, corner2, dither,
+                                features1, features2, pt1, corner2, dither2,
                                 rotD, rotationTolerance, img1, img2);
                         } catch (CornerRegion.CornerRegionDegneracyException ex) {
                             log.fine(ex.getMessage());
@@ -470,6 +501,10 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             if (nEval2 == 0) {
                 continue;
             }
+            
+            // distance needs to be adjusted by scale, else the score prefers
+            // small scale solutions
+            sumDist /= params.getScale();
             
             sumSSD  /= (double)nEval2;
             sumDist /= (double)nEval2;

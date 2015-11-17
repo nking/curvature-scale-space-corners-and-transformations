@@ -599,8 +599,7 @@ public class MiscStats {
 
     /**
      * comparing each parameter to others and keeping only if there are other
-     * similar params and among the similar, only returning one (though may
-     * revise that to take average or best of similar by n and stdev).
+     * similar params and among the similar, only returning average of similar.
      * 
      * @param paramsMap
      * @return 
@@ -624,7 +623,7 @@ public class MiscStats {
             if (alreadyCombined.contains(entry.getKey())) {
                 continue;
             }
-                      
+                        
             Set<TransformationParameters> set = new HashSet<TransformationParameters>();
             
             TransformationParameters params0 = entry.getValue();
@@ -693,6 +692,129 @@ public class MiscStats {
         }
         
         return combinedParams;
+    }
+    
+    /**
+     * comparing each parameter to others and if there are other
+     * similar params, averaging those.
+     * 
+     * @param paramsMap
+     * @return 
+     */
+    public static List<TransformationParameters> filterToSimilarParamSets2(
+        Map<PairInt, TransformationParameters> paramsMap, int binFactor1,
+        int binFactor2) {
+        
+        int transTol = 30;
+        if (binFactor1 != 1 || binFactor2 != 1) {
+            transTol /= (float)((binFactor1 + binFactor2)/2.f);
+        }
+        
+        List<TransformationParameters> combinedParams = 
+            new ArrayList<TransformationParameters>();
+        
+        List<Set<TransformationParameters>> similarSets = 
+            new ArrayList<Set<TransformationParameters>>();
+        
+        Set<PairInt> alreadyCombined = new HashSet<PairInt>();
+        
+        for (Map.Entry<PairInt, TransformationParameters> entry : paramsMap.entrySet()) {
+            
+            if (alreadyCombined.contains(entry.getKey())) {
+                continue;
+            }
+                      
+            Set<TransformationParameters> set = new HashSet<TransformationParameters>();
+            
+            TransformationParameters params0 = entry.getValue();
+            
+            for (Map.Entry<PairInt, TransformationParameters> entry2 : paramsMap.entrySet()) {
+                if (entry2.getKey().equals(entry.getKey()) || 
+                    alreadyCombined.contains(entry2.getKey())) {
+                    continue;
+                }
+                TransformationParameters compare = entry2.getValue();
+                float diff = AngleUtil.getAngleDifference(
+                    params0.getRotationInDegrees(), compare.getRotationInDegrees());
+                if (Math.abs(diff) > 20) {
+                    continue;
+                }
+                float avg = (params0.getScale() + compare.getScale())/2.f;
+                if (Math.abs(params0.getScale() - compare.getScale()) > 0.2*avg) {
+                    continue;
+                }
+                                
+                //TODO: may need to revise translation tolerance...
+                double diffX = Math.abs(params0.getTranslationX()- compare.getTranslationX());
+                double diffY = Math.abs(params0.getTranslationY()- compare.getTranslationY());
+                if ((diffX > transTol) || (diffY > transTol)){
+                    continue;
+                }
+                if (!alreadyCombined.contains(entry.getKey())) {
+                    alreadyCombined.add(entry.getKey());
+                }
+                alreadyCombined.add(entry2.getKey());
+                
+                set.add(params0);
+                set.add(compare);
+            }
+            if (set.isEmpty()) {
+                combinedParams.add(params0);
+            } else {
+                similarSets.add(set);
+            }
+        }
+        
+        // use histograms to remove translation outliers in similar sets
+
+        for (Set<TransformationParameters> similarSet : similarSets) {
+            
+            List<TransformationParameters> similar = 
+                new ArrayList<TransformationParameters>(similarSet);
+            int[] keep = filterForTranslationXUsingHist(similar);
+            Set<Integer> unique = MiscStats.indexesNotPresent(keep, similar.size());
+            for (Integer ind : unique) {
+                combinedParams.add(similar.get(ind.intValue()));
+            }
+            
+            filter(similar, keep);
+            keep = filterForTranslationYUsingHist(similar);
+            unique = MiscStats.indexesNotPresent(keep, similar.size());
+            for (Integer ind : unique) {
+                combinedParams.add(similar.get(ind.intValue()));
+            }
+            filter(similar, keep);
+            
+            if (similar.isEmpty()) {
+                continue;
+            } else if (similar.size() == 1) {
+                combinedParams.add(similar.get(0));
+                continue;
+            }
+            
+            //average them
+            MatchedPointsTransformationCalculator
+                tc = new MatchedPointsTransformationCalculator();
+            TransformationParameters params =  tc.averageWithoutRemoval(similar);
+            combinedParams.add(params);
+        }
+        
+        return combinedParams;
+    }
+    
+    public static Set<Integer> indexesNotPresent(int[] indexes, int totalNumber) {
+        int n = totalNumber = indexes.length;
+        Set<Integer> set = new HashSet<Integer>();
+        for (int index : indexes) {
+            set.add(Integer.valueOf(index));
+        }
+        Set<Integer> diff = new HashSet<Integer>();
+        for (int i = 0; i < totalNumber; ++i) {
+            if (!set.contains(Integer.valueOf(i))) {
+                diff.add(Integer.valueOf(i));
+            }
+        }
+        return diff;
     }
 
     private static void filter(List<TransformationParameters> params, 
