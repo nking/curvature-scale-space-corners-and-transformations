@@ -59,6 +59,9 @@ public class BlobScaleFinderWrapper {
     private final boolean skipBinnedImages;
     private boolean useBinned1 = false;
     private boolean useBinned2 = false;
+    
+    private int binFactor1 = 1;
+    private int binFactor2 = 1;
 
     private boolean useSameSegmentation = false;
 
@@ -142,12 +145,11 @@ public class BlobScaleFinderWrapper {
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
         startWithBinnedImages) {
 
-        //TODO: change to not use debugging after testing
-        debug = debug;
+        debug = false;
         
-        img1Helper = new BlobPerimeterHelper(img1, "1");
+        img1Helper = new BlobPerimeterHelper(img1);
 
-        img2Helper = new BlobPerimeterHelper(img2, "2");
+        img2Helper = new BlobPerimeterHelper(img2);
 
         if (startWithBinnedImages) {
          
@@ -156,8 +158,68 @@ public class BlobScaleFinderWrapper {
             useBinned2 = true;
         
             img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            
+            binFactor1 = img1Helper.getBinFactor();
 
             img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            
+            binFactor2 = img2Helper.getBinFactor();
+            
+            featuresBinned1 = new IntensityFeatures(5, true);
+            
+            featuresBinned2 = new IntensityFeatures(5, true);
+            
+        } else {
+            
+            skipBinnedImages = true;
+            useBinned1 = false;
+            useBinned2 = false;
+            featuresBinned1 = null;
+            featuresBinned2 = null;
+            
+        }
+
+        features1 = new IntensityFeatures(5, true);
+
+        features2 = new IntensityFeatures(5, true);
+
+    }
+
+    /**
+     *
+     * @param img1 the first image holding objects for which a Euclidean
+     * transformation is found that can be applied to put it in
+     * the same scale reference frame as image2.
+     * @param img2 the second image representing the reference frame that
+     * image1 is transformed to using the resulting parameters,
+     * @param startWithBinnedImages if true, starts the image processing
+     * with images binned to 300 pixels or less per dimension.
+     * @param debugTag
+     */
+    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
+        startWithBinnedImages, String debugTag) {
+
+        debug = true;
+        
+        this.debugTag = debugTag;
+        
+        img1Helper = new BlobPerimeterHelper(img1, debugTag + "_1");
+
+        img2Helper = new BlobPerimeterHelper(img2, debugTag + "_2");
+
+        if (startWithBinnedImages) {
+         
+            skipBinnedImages = false;
+            useBinned1 = true;
+            useBinned2 = true;
+        
+            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            
+            binFactor1 = img1Helper.getBinFactor();
+
+            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            
+            binFactor2 = img2Helper.getBinFactor();
             
             featuresBinned1 = new IntensityFeatures(5, true);
             
@@ -588,6 +650,14 @@ public class BlobScaleFinderWrapper {
     }
     public boolean getSolutionUsedBinned2() {
         return solutionUsedBinned2;
+    }
+    
+    public int getBinFactor1() {
+        return binFactor1;
+    }
+    
+    public int getBinFactor2() {
+        return binFactor2;
     }
     
     public List<List<CornerRegion>> getAllCornerRegions1OfSolution() {

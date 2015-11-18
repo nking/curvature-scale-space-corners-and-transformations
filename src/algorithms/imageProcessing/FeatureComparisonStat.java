@@ -21,12 +21,33 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     private float img2PointThetaErr = Float.POSITIVE_INFINITY;
     private float img1PointRotInDegrees = Float.POSITIVE_INFINITY;
     private float img2PointRotInDegrees = Float.POSITIVE_INFINITY;
+    
+    /**
+     * bin factors for images which these properties were measured from.
+     * Note that these fields are recent and not always set by using
+     * class so check before using.
+     */
+    private int binFactor1 = 1;
+    private int binFactor2 = 1;
 
     /**
      * @return the img1Point
      */
     public PairInt getImg1Point() {
         return img1Point;
+    }
+    
+    public void setBinFactor1(int factor) {
+        binFactor1 = factor;
+    }
+    public void setBinFactor2(int factor) {
+        binFactor2 = factor;
+    }
+    public int getBinFactor1() {
+        return binFactor1;
+    }
+    public int getBinFactor2() {
+        return binFactor2;
     }
 
     public void setIndex1(int theIndex) {

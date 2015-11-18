@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.PointInPolygon;
+import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.io.IOException;
@@ -51,6 +52,8 @@ public class FeatureMatcherWrapper {
     private float scaleTol = 0.2f;
     
     private float rotationInRadiansTol = (float)(20. * Math.PI/180.);
+    
+    private double ssdLimit = 1500;
     
     //TODO: revise this...
     private int transXYTol = 20;
@@ -155,11 +158,14 @@ public class FeatureMatcherWrapper {
         NoSuchAlgorithmException {
         
         BlobScaleFinderWrapper scaleFinder = null;
+        
+        boolean useBinned = true;
             
         if (debug) {
-            scaleFinder = new BlobScaleFinderWrapper(img1, img2, debugTagPrefix);
+            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned, 
+                debugTagPrefix);
         } else {
-            scaleFinder = new BlobScaleFinderWrapper(img1, img2);
+            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned);
         }
         
         params = scaleFinder.calculateScale();
@@ -193,15 +199,41 @@ public class FeatureMatcherWrapper {
             tolXY = 10;
         }
         
+        int binFactor1 = scaleFinder.getBinFactor1();
+        int binFactor2 = scaleFinder.getBinFactor2();
+        
         boolean extractMoreCorners = (stats.size() < 7);
         
         if (!extractMoreCorners) {
-            // look at the region that the points occupy compared to the
-            // intersecting pixel space
-            boolean covered = statsCoverIntersection(stats);
             
-            extractMoreCorners = !covered;
+            //boolean covered = statsCoverIntersection(stats);
+            
+            if (binFactor1 != 1 || binFactor2 != 1) {
+                
+                //stats need to be revised for the location in the full size
+                //image in order to be usable for correspondence
+                List<FeatureComparisonStat> revisedStats = reviseStatsForFullImages(stats);
+                
+                stats = revisedStats;
+                
+                extractMoreCorners = (stats.size() < 7);
+                
+                if (extractMoreCorners) {
+                
+                    TransformationParameters revisedParams = 
+                        MiscStats.calculateTransformation(1, 1,
+                            stats, new float[4]);
+                    
+                    if (revisedParams != null) {
+                        params = revisedParams;
+                    } else {
+                        log.warning("possible ERROR in revision of stats");
+                    }
+                }
+            }            
         }
+        
+ //extractMoreCorners = true;
         
         if (!extractMoreCorners) {
 
@@ -373,6 +405,16 @@ public class FeatureMatcherWrapper {
         return cl;
     }
     
+    /**
+     * a method to determine the intersection of transformed image 1 with
+     * image 2 and then examine the distribution of stats's points in 
+     * 4 quadrants of the intersection to return whether stats are present in
+     * all quadrants.  A caveat of the method is that not all of the 
+     * intersection necessarily has image details which could be matched, for 
+     * example, clear sky does not have corners using the methods here.
+     * @param stats
+     * @return 
+     */
     private boolean statsCoverIntersection(List<FeatureComparisonStat> stats) {
         
         /*
@@ -420,7 +462,7 @@ public class FeatureMatcherWrapper {
         xPoly0[3] = d4[0];
         yPoly0[3] = d4[1];
         xPoly0[4] = xPoly0[0];
-        yPoly0[4] = yPoly0[1];
+        yPoly0[4] = yPoly0[0];
 
         /*
        / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
@@ -442,7 +484,7 @@ public class FeatureMatcherWrapper {
         xPoly1[3] = d3[0];
         yPoly1[3] = d3[1];
         xPoly1[4] = xPoly1[0];
-        yPoly1[4] = yPoly1[1];
+        yPoly1[4] = yPoly1[0];
         
         float[] xPoly2 = new float[5];
         float[] yPoly2 = new float[5];
@@ -455,7 +497,7 @@ public class FeatureMatcherWrapper {
         xPoly2[3] = d5[0];
         yPoly2[3] = d5[1];
         xPoly2[4] = xPoly2[0];
-        yPoly2[4] = yPoly2[1];
+        yPoly2[4] = yPoly2[0];
         
         /*
        / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
@@ -477,14 +519,14 @@ public class FeatureMatcherWrapper {
         xPoly3[3] = (float)img2Intersection[3][0];
         yPoly3[3] = (float)img2Intersection[3][1];
         xPoly3[4] = xPoly3[0];
-        yPoly3[4] = yPoly3[1];
+        yPoly3[4] = yPoly3[0];
         
         PointInPolygon poly = new PointInPolygon();
         
         int[] count = new int[4];
         for (FeatureComparisonStat stat : stats) {
-            int x = stat.getImg2Point().getX();
-            int y = stat.getImg2Point().getY();
+            int x = stat.getImg2Point().getX() * stat.getBinFactor2();
+            int y = stat.getImg2Point().getY() * stat.getBinFactor2();
             boolean isIn = poly.isInSimpleCurve(x, y, xPoly0, yPoly0, 5);
             if (isIn) {
                 count[0]++;
@@ -511,6 +553,29 @@ public class FeatureMatcherWrapper {
             if (c > 0) {
                 nq++;
             }
+        }
+        
+        if (debug) {
+            Image imcp = img2.copyImage();
+            for (int i = 0; i < xPoly0.length; ++i) {
+                ImageIOHelper.addPointToImage(xPoly0[i], yPoly0[i], imcp, 5, 0, 255, 255);
+            }
+            for (int i = 0; i < xPoly1.length; ++i) {
+                ImageIOHelper.addPointToImage(xPoly1[i], yPoly1[i], imcp, 5, 0, 255, 0);
+            }
+            for (int i = 0; i < xPoly2.length; ++i) {
+                ImageIOHelper.addPointToImage(xPoly2[i], yPoly2[i], imcp, 5, 0, 0, 255);
+            }
+            for (int i = 0; i < xPoly3.length; ++i) {
+                ImageIOHelper.addPointToImage(xPoly3[i], yPoly3[i], imcp, 5, 0, 125, 125);
+            }
+            for (int i = 0; i < stats.size(); ++i) {
+                FeatureComparisonStat stat = stats.get(i);
+                PairInt p2 = stat.getImg2Point();
+                ImageIOHelper.addPointToImage(p2.getX() * stat.getBinFactor2(), 
+                    p2.getY() * stat.getBinFactor2(), imcp, 2, 255, 0, 0);
+            }
+            MiscDebug.writeImage(imcp, debugTagPrefix + "_scale_points");
         }
         
         return (nq == 4);
@@ -599,6 +664,51 @@ public class FeatureMatcherWrapper {
         }
         
         return img2Intersection;
+    }
+
+    private List<FeatureComparisonStat> reviseStatsForFullImages(
+        List<FeatureComparisonStat> stats) {
+        
+        List<FeatureComparisonStat> revised = new ArrayList<FeatureComparisonStat>();
+        
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+        
+        IntensityFeatures features1 = new IntensityFeatures(5, true);
+
+        IntensityFeatures features2 = new IntensityFeatures(5, true);
+        
+        int rotD = Math.round(params.getRotationInDegrees());
+        
+        final int rotationTolerance = 20;
+        
+        final int dither = 4;
+        
+        for (int i = 0; i < stats.size(); ++i) {
+            
+            FeatureComparisonStat stat = stats.get(i);
+            
+            int x1 = stat.getImg1Point().getX() * stat.getBinFactor1();
+            int y1 = stat.getImg1Point().getY() * stat.getBinFactor1();
+            int x2 = stat.getImg2Point().getX() * stat.getBinFactor2();
+            int y2 = stat.getImg2Point().getY() * stat.getBinFactor2();
+            
+            FeatureComparisonStat compStat = 
+                featureMatcher.ditherAndRotateForBestLocation(
+                    features1, features2, 
+                    x1, y1, Math.round(stat.getImg1PointRotInDegrees()),
+                    x2, y2, Math.round(stat.getImg2PointRotInDegrees()),
+                    dither, rotD, rotationTolerance, gsImg1, gsImg2);
+           
+            if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {
+                continue;
+            }
+
+            if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
+                revised.add(compStat);
+            }
+        }
+        
+        return revised;
     }
 
 }

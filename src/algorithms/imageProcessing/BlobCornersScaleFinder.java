@@ -1,25 +1,18 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
-import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ScatterPointPlotterPNG;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import thirdparty.HungarianAlgorithm;
 
 /**
  * class to invoke methods needed to solve for euclidean scale between
@@ -434,6 +427,15 @@ for (int i = 0; i < im2Chk.length; ++i) {
         }
 
         if (bestParams != null) {
+            
+            if (binFactor1 != 1 || binFactor2 != 1) {
+                for (int i = 0; i < bestStats.size(); ++i) {
+                    FeatureComparisonStat stat = bestStats.get(i);
+                    stat.setBinFactor1(binFactor1);
+                    stat.setBinFactor2(binFactor2);
+                }
+            }
+            
             MatchingSolution soln = new MatchingSolution(bestParams, bestStats);            
             return soln;
         }

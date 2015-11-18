@@ -610,7 +610,7 @@ public class MiscStats {
         
         int transTol = 30;
         if (binFactor1 != 1 || binFactor2 != 1) {
-            transTol /= (float)((binFactor1 + binFactor2)/2.f);
+            transTol /= ((binFactor1 + binFactor2)/2.f);
         }
         
         List<Set<TransformationParameters>> similarSets = 
@@ -699,6 +699,8 @@ public class MiscStats {
      * similar params, averaging those.
      * 
      * @param paramsMap
+     * @param binFactor1
+     * @param binFactor2
      * @return 
      */
     public static List<TransformationParameters> filterToSimilarParamSets2(
@@ -707,7 +709,7 @@ public class MiscStats {
         
         int transTol = 30;
         if (binFactor1 != 1 || binFactor2 != 1) {
-            transTol /= (float)((binFactor1 + binFactor2)/2.f);
+            transTol /= ((binFactor1 + binFactor2)/2.f);
         }
         
         List<TransformationParameters> combinedParams = 
