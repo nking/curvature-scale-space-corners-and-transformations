@@ -21,10 +21,10 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
         boolean rotate = true;
         boolean useBinning = true;
-        
+
         String fileName1, fileName2;
 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 4; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             switch(i) {

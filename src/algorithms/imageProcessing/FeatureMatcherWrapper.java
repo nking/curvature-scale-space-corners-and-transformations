@@ -129,21 +129,18 @@ public class FeatureMatcherWrapper {
         
         if (doDetermineScale) {
             cl = solveForScale();
+            if (debug) {
+                printMatches(cl);
+            }
             return cl;
         }
                
         applyHistEqIfNeeded();
-        
-        extractCornerRegions();
-                
+                        
         cl = extractAndMatch(params);
-                
-        if (debug && (cl != null)) {
-            Collection<PairInt> m1 = cl.getPoints1();
-            Collection<PairInt> m2 = cl.getPoints2();
-
-            MiscDebug.plotCorners(gsImg1.copyImage(), m1, debugTagPrefix + "_1_matched", 2);
-            MiscDebug.plotCorners(gsImg2.copyImage(), m2, debugTagPrefix + "_2_matched", 2);
+        
+        if (debug) {
+            printMatches(cl);
         }
         
         return cl;
@@ -695,6 +692,23 @@ extractMoreCorners = true;
         }
         
         return revised;
+    }
+
+    private void printMatches(CorrespondenceList cl) {
+        if (cl == null) {
+            return;
+        }
+        int ts = MiscDebug.getCurrentTimeFormatted();
+        Collection<PairInt> m1 = cl.getPoints1();
+        Collection<PairInt> m2 = cl.getPoints2();
+        GreyscaleImage gsImg1 = img1.copyToGreyscale();
+        GreyscaleImage gsImg2 = img2.copyToGreyscale();
+        String name1 = "1_" + debugTagPrefix + "_" + ts;
+        String name2 = "2_" + debugTagPrefix + "_" + ts;
+        name1 = name1 + "_matched";
+        name2 = name2 + "_matched";
+        MiscDebug.plotCorners(gsImg1, m1, name1, 2);
+        MiscDebug.plotCorners(gsImg2, m2, name2, 2);
     }
 
 }

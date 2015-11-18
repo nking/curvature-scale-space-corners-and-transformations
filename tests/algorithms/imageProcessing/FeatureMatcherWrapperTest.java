@@ -63,7 +63,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 
         String fileName1, fileName2;
         
-        for (int i = 4; i < 5; ++i) {
+        for (int i = 0; i < 5; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -128,22 +128,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         CorrespondenceList cl = wrapper.matchFeatures();
         
         assertNotNull(cl);
-        
-        Collection<PairInt> m1 = cl.getPoints1();
-        Collection<PairInt> m2 = cl.getPoints2();
-        GreyscaleImage gsImg1 = img1.copyToGreyscale();
-        GreyscaleImage gsImg2 = img2.copyToGreyscale();
-        String name1 = "1_" + fileName1Root;
-        String name2 = "2_" + fileName2Root;
-        if (rotateBy90) {
-            name1 = name1 + "_r90";
-            name2 = name2 + "_r90";
-        }
-        name1 = name1 + "_matched";
-        name2 = name2 + "_matched";
-        MiscDebug.plotCorners(gsImg1, m1, name1, 2);
-        MiscDebug.plotCorners(gsImg2, m2, name2, 2);
-        
+                
         float scale = cl.getScale();
         int rotationInDegrees = cl.getRotationInDegrees();
         
