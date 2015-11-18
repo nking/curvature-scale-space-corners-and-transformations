@@ -1,19 +1,52 @@
+-- finish the PointMatchers and remove unused experimental code everywhere.
+-- update the command line runners.
+-- change any debugging code to not run by default and change log levels where needed
+-- finish implementing recursive gaussian and gaussian derivative filters
+
+-- for the offset arrays in the feature matcher, could make these improvements:
+    -- make the math.round changes to the feature offset arrays to speed up process 
+       (see next item's 3d bullet too)
+    -- for speeding up the transformations of feature descriptor offsets, consider 2 things:
+          -- round the numbers into integers:
+             use one extra bit to denote whether the result
+             has a fraction == 0.5.
+             then when the number is extracted and used, one would determine
+             whether to use that number of +1 or -1 based upon the value of the
+             number its being combined with (see 3rd bullet).
+          -- knowing descriptor range0, a maximum and minumum possible value can
+             be calculated: 
+             -- min and max of (-6 and +6?)
+                can store 6 in 3 bits.  
+                can multiply by 2 and add one for negative numbers (max value=12+1=13 so 4 bits), 
+                then another bit for ==0.5 for 5 total bits for each value.
+                so an int, being 32 bits could store 5 such numbers.
+                the 144 item array would then only be 24 items.
+          -- (note, that in processing the values which have a fraction 0.5
+                for example:
+                   if roundedXoff is < 0 and the number being added is >= -1*roundedXoff, add 1 to the result.
+                   else if roundedXOff is >= 0 and the number being added is < -1*roundedXoff, add -1 to the result
+             -- in the case that all 360 degrees were tried, that would be 8640 items
+                pre-computing all 360 degrees 
+                    would take that much space plus 32 bits for an array reference.
+                    = in array of size 8640 
+                    = 276480 bits = 4937 Bytes
+                -- if wanted to use symmetry, could reduce that space by 4 but would need
+                   to use logic for x *=-1 and/or y *=-1.
+                   result is an array that would take 1.234kB
+
 -- low priority: improve segmentation for scale and common object finding.
    kmpp is best all around, but sometimes results in slightly different results.
       for regions that are largely dark and bright only, such as BL2003, the kmpp works best
       but could possibly be replaced with a polar ciexy that does similar knowing image is
       mostly white and dark grey..
 
--- consider whether as part of very close corners, such as the result of aliasing 
-   at a junction, should average them to make a combined corner and remove the others
-   -- the smaller number of corners reduces the runtime
-
 -- update aspects if needed and considering replacing them
     -- consider replacing aspectj with something like nanning aop
 
 -- improve skyline extraction code
 
--- similarity that uses an exponential base?
+-- similarity that uses an exponential base?  can transform the numbers and use a distance
+   transform to make the calculations faster
 
 -- text recognition
    -- would like a class to extract and match text
@@ -37,10 +70,8 @@
 
 -- impl wavelets using "lifted wavelets".  see Sweldens 1996 and 1997
 
--- update the command line runners.
 -- begin outline for rectification code
 
--- finish the PointMatchers and remove unused experimental code everywhere.
 -- revisit kmeansplusplus...
 
 -- make the method to combine 2 skyline masks to decide what is sky and what
