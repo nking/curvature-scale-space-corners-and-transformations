@@ -121,28 +121,28 @@ import java.util.logging.Logger;
         CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid) 
         throws IOException, NoSuchAlgorithmException {        
       
-<span class="fc" id="L124">        GreyscaleImage mask = createBestSkyMask(theta, gradientXY, originalImage, </span>
+<span class="nc" id="L124">        GreyscaleImage mask = createBestSkyMask(theta, gradientXY, originalImage, </span>
             edgeSettings, outputSkyCentroid);
         
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (mask != null) {</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (mask != null) {</span>
             
             // TODO: NOTE, could just find the border pixels of the mask's sky 
             // points which are done already within createBestSkyMask
             // instead of running the mask through the CannyEdgeFilter
 
-<span class="fc" id="L133">            ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L133">            ImageProcessor imageProcessor = new ImageProcessor();</span>
             
-<span class="fc" id="L135">            mask.multiply(255);</span>
+<span class="nc" id="L135">            mask.multiply(255);</span>
             
-<span class="fc" id="L137">            CannyEdgeFilter filter = new CannyEdgeFilter();</span>
+<span class="nc" id="L137">            CannyEdgeFilter filter = new CannyEdgeFilter();</span>
             
-<span class="fc" id="L139">            filter.setFilterImageTrim(theta.getXRelativeOffset(), </span>
-<span class="fc" id="L140">                theta.getYRelativeOffset(), theta.getWidth(), </span>
-<span class="fc" id="L141">                theta.getHeight());</span>
+<span class="nc" id="L139">            filter.setFilterImageTrim(theta.getXRelativeOffset(), </span>
+<span class="nc" id="L140">                theta.getYRelativeOffset(), theta.getWidth(), </span>
+<span class="nc" id="L141">                theta.getHeight());</span>
             
-<span class="fc" id="L143">            filter.applyFilter(mask);</span>
+<span class="nc" id="L143">            filter.applyFilter(mask);</span>
             
-<span class="fc" id="L145">            return mask;</span>
+<span class="nc" id="L145">            return mask;</span>
         }
         
 <span class="nc" id="L148">        return null;</span>
@@ -3788,7 +3788,7 @@ try {
     }
     
     public List&lt;PairIntArray&gt; getSkylineEdges() {
-<span class="fc" id="L3791">        return skylineEdges;</span>
+<span class="nc" id="L3791">        return skylineEdges;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

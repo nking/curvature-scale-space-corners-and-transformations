@@ -44,6 +44,11 @@ public class IntensityFeatureComparisonStats implements
     @Override
     public int compareTo(IntensityFeatureComparisonStats other) {
         
+<span class="fc" id="L47">        return compareByCost(other);</span>
+    }
+    
+    public int compareTo2(IntensityFeatureComparisonStats other) {
+        
         /*
         if the number of matches is high and the SSDs are low,
         comparison should be by combined intensity stats.
@@ -53,65 +58,65 @@ public class IntensityFeatureComparisonStats implements
         so use SSD when possible.
         */
         
-<span class="fc" id="L56">        int n = comparisonStats.size();</span>
+<span class="nc" id="L61">        int n = comparisonStats.size();</span>
         
-<span class="fc" id="L58">        int nOther = other.comparisonStats.size();</span>
+<span class="nc" id="L63">        int nOther = other.comparisonStats.size();</span>
         
-<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (n == nOther) {</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (n == nOther) {</span>
                         
-<span class="fc" id="L62">            int cc = compareByCost(other);</span>
-<span class="fc" id="L63">            int ci = compareByCombinedIntStat(other);</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">            if (ci != cc) {</span>
-<span class="fc" id="L65">                Logger.getLogger(this.getClass().getName()).warning(</span>
+<span class="nc" id="L67">            int cc = compareByCost(other);</span>
+<span class="nc" id="L68">            int ci = compareByCombinedIntStat(other);</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">            if (ci != cc) {</span>
+<span class="nc" id="L70">                Logger.getLogger(this.getClass().getName()).warning(</span>
                     &quot;comparison by cost differs from comparison by intensity SSD&quot;
                     + &quot; cc=&quot; + cc + &quot; ci=&quot; + ci + 
-<span class="fc" id="L68">                    &quot; this.stat=&quot; + this.toString() +</span>
-<span class="fc" id="L69">                    &quot; other.stat=&quot; + other.toString()</span>
+<span class="nc" id="L73">                    &quot; this.stat=&quot; + this.toString() +</span>
+<span class="nc" id="L74">                    &quot; other.stat=&quot; + other.toString()</span>
                 );
             }
             
-<span class="fc" id="L73">            return ci;</span>
+<span class="nc" id="L78">            return ci;</span>
         }
         
-<span class="fc" id="L76">        boolean compareByCost = decideByCost(other);</span>
+<span class="nc" id="L81">        boolean compareByCost = decideByCost(other);</span>
 
-<span class="fc" id="L78">        double avgSSD = calculateCombinedIntensityStat(comparisonStats);</span>
+<span class="nc" id="L83">        double avgSSD = calculateCombinedIntensityStat(comparisonStats);</span>
         
-<span class="fc" id="L80">        double avgSSDOther = other.calculateCombinedIntensityStat(</span>
+<span class="nc" id="L85">        double avgSSDOther = other.calculateCombinedIntensityStat(</span>
             other.comparisonStats);
         
-<span class="fc bfc" id="L83" title="All 4 branches covered.">        if ((n &gt; nOther) &amp;&amp; (avgSSD &lt; avgSSDOther)) {</span>
+<span class="nc bnc" id="L88" title="All 4 branches missed.">        if ((n &gt; nOther) &amp;&amp; (avgSSD &lt; avgSSDOther)) {</span>
             
-<span class="fc" id="L85">            return compareByCombinedIntStat(other);</span>
+<span class="nc" id="L90">            return compareByCombinedIntStat(other);</span>
             
-<span class="fc bfc" id="L87" title="All 4 branches covered.">        } else if ((n &lt; nOther) &amp;&amp; (avgSSD &gt; avgSSDOther)) {</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        } else if ((n &lt; nOther) &amp;&amp; (avgSSD &gt; avgSSDOther)) {</span>
             
-<span class="fc" id="L89">            return compareByCombinedIntStat(other);</span>
+<span class="nc" id="L94">            return compareByCombinedIntStat(other);</span>
         }
         
-<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (compareByCost) {</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        if (compareByCost) {</span>
             
-<span class="fc" id="L94">            return compareByCost(other);</span>
+<span class="nc" id="L99">            return compareByCost(other);</span>
             
         } else {
             
-<span class="fc" id="L98">            return compareByCombinedIntStat(other);</span>
+<span class="nc" id="L103">            return compareByCombinedIntStat(other);</span>
         }
     }
     
     public int compareByCombinedIntStat(IntensityFeatureComparisonStats other) {
         
-<span class="fc" id="L104">        double otherCS = calculateCombinedIntensityStat(other.getComparisonStats());</span>
+<span class="nc" id="L109">        double otherCS = calculateCombinedIntensityStat(other.getComparisonStats());</span>
         
-<span class="fc" id="L106">        double cs = calculateCombinedIntensityStat(comparisonStats);</span>
+<span class="nc" id="L111">        double cs = calculateCombinedIntensityStat(comparisonStats);</span>
         
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (otherCS == cs) {</span>
-<span class="nc" id="L109">            return 0;</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        } else if (cs &lt; otherCS) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (otherCS == cs) {</span>
+<span class="nc" id="L114">            return 0;</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        } else if (cs &lt; otherCS) {</span>
             // prefer the smaller
-<span class="fc" id="L112">            return -1;</span>
+<span class="nc" id="L117">            return -1;</span>
         }
-<span class="fc" id="L114">        return 1;</span>
+<span class="nc" id="L119">        return 1;</span>
     }
     
     /**
@@ -123,88 +128,88 @@ public class IntensityFeatureComparisonStats implements
      */
     public int compareByCost(IntensityFeatureComparisonStats other) {
         
-<span class="fc" id="L126">        double otherCost = other.adjustedCost;</span>
+<span class="fc" id="L131">        double otherCost = other.adjustedCost;</span>
         
-<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (otherCost == adjustedCost) {</span>
-<span class="fc" id="L129">            return 0;</span>
-<span class="fc bfc" id="L130" title="All 2 branches covered.">        } else if (adjustedCost &lt; otherCost) {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (otherCost == adjustedCost) {</span>
+<span class="nc" id="L134">            return 0;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        } else if (adjustedCost &lt; otherCost) {</span>
             // prefer the smaller
-<span class="fc" id="L132">            return -1;</span>
+<span class="fc" id="L137">            return -1;</span>
         }
-<span class="fc" id="L134">        return 1;</span>
+<span class="fc" id="L139">        return 1;</span>
     }
     
     private double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; compStats) {
 
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (compStats.isEmpty()) {</span>
-<span class="nc" id="L140">            return Double.POSITIVE_INFINITY;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (compStats.isEmpty()) {</span>
+<span class="nc" id="L145">            return Double.POSITIVE_INFINITY;</span>
         }
         
-<span class="fc" id="L143">        double sum = 0;</span>
+<span class="nc" id="L148">        double sum = 0;</span>
 
-<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
-<span class="fc" id="L146">            sum += compStat.getSumIntensitySqDiff();</span>
-<span class="fc" id="L147">        }</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="nc" id="L151">            sum += compStat.getSumIntensitySqDiff();</span>
+<span class="nc" id="L152">        }</span>
 
-<span class="fc" id="L149">        sum /= (double)compStats.size();</span>
+<span class="nc" id="L154">        sum /= (double)compStats.size();</span>
 
-<span class="fc" id="L151">        return sum;</span>
+<span class="nc" id="L156">        return sum;</span>
     }
 
     /**
      * @return the cost
      */
     public double getCost() {
-<span class="fc" id="L158">        return cost;</span>
+<span class="fc" id="L163">        return cost;</span>
     }
     
     public void setAdjustedCost(double adjCost) {
-<span class="nc" id="L162">        adjustedCost = adjCost;</span>
-<span class="nc" id="L163">    }</span>
+<span class="nc" id="L167">        adjustedCost = adjCost;</span>
+<span class="nc" id="L168">    }</span>
     
     public double getAdjustedCost() {
-<span class="fc" id="L166">        return adjustedCost;</span>
+<span class="nc" id="L171">        return adjustedCost;</span>
     }
 
     /**
      * @return the scale
      */
     public double getScale() {
-<span class="nc" id="L173">        return scale;</span>
+<span class="nc" id="L178">        return scale;</span>
     }
     
     public int getIndex1() {
-<span class="fc" id="L177">        return idx1;</span>
+<span class="fc" id="L182">        return idx1;</span>
     }
     
     public int getIndex2() {
-<span class="fc" id="L181">        return idx2;</span>
+<span class="fc" id="L186">        return idx2;</span>
     }
 
     private boolean decideByCost(IntensityFeatureComparisonStats other) {
         
-<span class="fc bfc" id="L186" title="All 4 branches covered.">        if (other.getComparisonStats().size() &gt; 2 &amp;&amp; comparisonStats.size() &gt; 2) {</span>
-<span class="fc" id="L187">            return true;</span>
+<span class="nc bnc" id="L191" title="All 4 branches missed.">        if (other.getComparisonStats().size() &gt; 2 &amp;&amp; comparisonStats.size() &gt; 2) {</span>
+<span class="nc" id="L192">            return true;</span>
         }
         
-<span class="fc" id="L190">        return false;        </span>
+<span class="nc" id="L195">        return false;        </span>
     }
 
     @Override
     public String toString() {
         
-<span class="fc" id="L196">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L201">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L198">        sb.append(&quot;cost=&quot;).append(Double.toString(cost)).append(&quot; &quot;)</span>
-<span class="fc" id="L199">            .append(&quot;adjustedCost&quot;).append(Double.toString(adjustedCost))</span>
-<span class="fc" id="L200">            .append(&quot; &quot;).append(&quot; scale=&quot;).append(Double.toString(scale))</span>
-<span class="fc" id="L201">            .append(&quot; stats=[&quot;);</span>
-<span class="fc bfc" id="L202" title="All 2 branches covered.">        for (FeatureComparisonStat stat : comparisonStats) {</span>
-<span class="fc" id="L203">            sb.append(stat.toString()).append(&quot;, &quot;);</span>
-<span class="fc" id="L204">        }</span>
-<span class="fc" id="L205">        sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L203">        sb.append(&quot;cost=&quot;).append(Double.toString(cost)).append(&quot; &quot;)</span>
+<span class="nc" id="L204">            .append(&quot;adjustedCost&quot;).append(Double.toString(adjustedCost))</span>
+<span class="nc" id="L205">            .append(&quot; &quot;).append(&quot; scale=&quot;).append(Double.toString(scale))</span>
+<span class="nc" id="L206">            .append(&quot; stats=[&quot;);</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">        for (FeatureComparisonStat stat : comparisonStats) {</span>
+<span class="nc" id="L208">            sb.append(stat.toString()).append(&quot;, &quot;);</span>
+<span class="nc" id="L209">        }</span>
+<span class="nc" id="L210">        sb.append(&quot;]&quot;);</span>
             
-<span class="fc" id="L207">        return sb.toString();</span>
+<span class="nc" id="L212">        return sb.toString();</span>
     }
     
 }

@@ -44,9 +44,9 @@ import java.util.Map;
                 
 <span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int i = 0; i &lt; perimeterLists.size(); ++i) {</span>
 <span class="fc" id="L46">            List&lt;CornerRegion&gt; list = indexCornerRegionMap.get(Integer.valueOf(i));</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (list == null) {</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">            if (list == null) {</span>
                 // have to keep ordered, parallel indexes
-<span class="fc" id="L49">                cornerLists.add(new ArrayList&lt;CornerRegion&gt;());</span>
+<span class="nc" id="L49">                cornerLists.add(new ArrayList&lt;CornerRegion&gt;());</span>
             } else {
                 
                 // detailed check for ordering the perimeters.
@@ -70,7 +70,7 @@ import java.util.Map;
 <span class="fc" id="L70">                boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);</span>
 <span class="fc bfc" id="L71" title="All 2 branches covered.">                if (isCW) {</span>
 <span class="fc" id="L72">                    int n = list.size();</span>
-<span class="pc bpc" id="L73" title="1 of 2 branches missed.">                    if (n &gt; 1) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">                    if (n &gt; 1) {</span>
 <span class="fc" id="L74">                        int end = n &gt;&gt; 1;</span>
                         // 0 1 2 3 4
 <span class="fc bfc" id="L76" title="All 2 branches covered.">                        for (int ii = 0; ii &lt; end; ii++) {</span>
@@ -86,7 +86,7 @@ import java.util.Map;
             }
         }
         
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (blobPerimeterHelper.isInDebugMode()) {</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (blobPerimeterHelper.isInDebugMode()) {</span>
 <span class="fc" id="L90">            MiscDebug.writeEdgesAndCorners(perimeterLists, cornerLists,</span>
 <span class="fc" id="L91">                1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),</span>
 <span class="fc" id="L92">                &quot;blob_corners_&quot; + blobPerimeterHelper.getDebugTag() + &quot;_&quot; </span>

@@ -370,8 +370,8 @@ import java.util.List;
             */
 <span class="fc bfc" id="L371" title="All 2 branches covered.">            if (q1 == 4) {</span>
 <span class="fc" id="L372">                double diff = rot1 - rot0;</span>
-<span class="fc bfc" id="L373" title="All 2 branches covered.">                if (diff &gt; Math.PI) {</span>
-<span class="fc" id="L374">                    rot0 += twoPI;</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">                if (diff &gt; Math.PI) {</span>
+<span class="nc" id="L374">                    rot0 += twoPI;</span>
                 }
 <span class="pc bpc" id="L376" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
 <span class="nc" id="L377">                rot1 -= twoPI;</span>
@@ -420,8 +420,8 @@ import java.util.List;
 <span class="fc" id="L420">                rot1 += twoPI;</span>
 <span class="fc bfc" id="L421" title="All 2 branches covered.">            } else if (q1 == 2) {</span>
 <span class="fc" id="L422">                rot0 -= twoPI;</span>
-<span class="fc bfc" id="L423" title="All 2 branches covered.">            } else if (q1 == 3) {  </span>
-<span class="fc" id="L424">                rot0 -= twoPI;</span>
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">            } else if (q1 == 3) {  </span>
+<span class="nc" id="L424">                rot0 -= twoPI;</span>
             }
         }
         
@@ -645,7 +645,7 @@ import java.util.List;
 <span class="nc" id="L645">            angleSum += diff;</span>
 <span class="nc" id="L646">            outputQuadrantCorrected[0] += diff;</span>
         }
-<span class="pc bpc" id="L648" title="1 of 4 branches missed.">        if ((rot1 &gt; twoPI) &amp;&amp; (rot1 &lt; rot1Orig)) {</span>
+<span class="pc bpc" id="L648" title="3 of 4 branches missed.">        if ((rot1 &gt; twoPI) &amp;&amp; (rot1 &lt; rot1Orig)) {</span>
 <span class="nc" id="L649">            double diff = (rot1Orig - rot1);</span>
 <span class="nc" id="L650">            angleSum += diff;</span>
 <span class="nc" id="L651">            outputQuadrantCorrected[1] += diff;</span>
@@ -753,11 +753,11 @@ import java.util.List;
 <span class="fc" id="L753">                double r1 = avg;</span>
 <span class="fc" id="L754">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
                 
-<span class="fc bfc" id="L756" title="All 2 branches covered.">                if (quadrantCorrected[0] != r1) {</span>
+<span class="pc bpc" id="L756" title="1 of 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
                     // TODO: this branch might not occur...revisit logic
-<span class="fc" id="L758">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
+<span class="nc" id="L758">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
                 }
-<span class="fc bfc" id="L760" title="All 2 branches covered.">                if (quadrantCorrected[1] != v) {</span>
+<span class="pc bpc" id="L760" title="1 of 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
 <span class="fc" id="L761">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
                 }
             }

@@ -100,14 +100,14 @@ import java.util.Set;
     }
     
     public static float findMax(float[] a, int nIndexes) {
-<span class="fc" id="L103">        float max = Float.MIN_VALUE;</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="pc bpc" id="L105" title="3 of 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) </span>
+<span class="nc" id="L103">        float max = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="nc bnc" id="L105" title="All 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) </span>
                 &amp;&amp; (a[i] &lt; Float.MAX_VALUE)) {
-<span class="fc" id="L107">                max = a[i];</span>
+<span class="nc" id="L107">                max = a[i];</span>
             }
         }
-<span class="fc" id="L110">        return max;</span>
+<span class="nc" id="L110">        return max;</span>
     }
 
     /**
@@ -127,14 +127,14 @@ import java.util.Set;
     }
     
     public static int findMax(int[] a, int nIndexes) {
-<span class="fc" id="L130">        int max = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L131" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="pc bpc" id="L132" title="3 of 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) </span>
+<span class="nc" id="L130">        int max = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="nc bnc" id="L132" title="All 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) </span>
                 &amp;&amp; (a[i] &lt; Float.MAX_VALUE)) {
-<span class="fc" id="L134">                max = a[i];</span>
+<span class="nc" id="L134">                max = a[i];</span>
             }
         }
-<span class="fc" id="L137">        return max;</span>
+<span class="nc" id="L137">        return max;</span>
     }
 
     public static float findMin(float[] a) {
@@ -188,13 +188,13 @@ import java.util.Set;
     }
     
     public static float findMin(float[] a, int nIndexes) {
-<span class="fc" id="L191">        float min = Float.MAX_VALUE;</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="pc bpc" id="L193" title="1 of 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
-<span class="fc" id="L194">                min = a[i];</span>
+<span class="nc" id="L191">        float min = Float.MAX_VALUE;</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="nc bnc" id="L193" title="All 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
+<span class="nc" id="L194">                min = a[i];</span>
             }
         }
-<span class="fc" id="L197">        return min;</span>
+<span class="nc" id="L197">        return min;</span>
     }
 
     public static int findMin(int[] a) {
@@ -208,13 +208,13 @@ import java.util.Set;
     }
     
     public static int findMin(int[] a, int nIndexes) {
-<span class="fc" id="L211">        int min = Integer.MAX_VALUE;</span>
-<span class="fc bfc" id="L212" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="fc bfc" id="L213" title="All 2 branches covered.">            if (a[i] &lt; min) {</span>
-<span class="fc" id="L214">                min = a[i];</span>
+<span class="nc" id="L211">        int min = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">            if (a[i] &lt; min) {</span>
+<span class="nc" id="L214">                min = a[i];</span>
             }
         }
-<span class="fc" id="L217">        return min;</span>
+<span class="nc" id="L217">        return min;</span>
     }
     
     public static int findMin(GreyscaleImage img, Set&lt;PairInt&gt; points) {
@@ -1225,8 +1225,8 @@ import java.util.Set;
         
 <span class="fc" id="L1226">        int nRot = (int)((rotStopMinusStart/rotDelta) + 1);</span>
 <span class="fc" id="L1227">        int np = 0;</span>
-<span class="fc bfc" id="L1228" title="All 2 branches covered.">        if (((rotStopMinusStart + 1) % rotDelta) != 0) {</span>
-<span class="fc" id="L1229">            np++;</span>
+<span class="pc bpc" id="L1228" title="1 of 2 branches missed.">        if (((rotStopMinusStart + 1) % rotDelta) != 0) {</span>
+<span class="nc" id="L1229">            np++;</span>
         }
 <span class="fc" id="L1231">        float[] rotation = new float[nRot + np];</span>
 <span class="fc bfc" id="L1232" title="All 2 branches covered.">        for (int i = 0; i &lt; nRot; ++i) {</span>
@@ -1236,8 +1236,8 @@ import java.util.Set;
             }
 <span class="fc" id="L1237">            rotation[i] = (int)r;</span>
         }
-<span class="fc bfc" id="L1239" title="All 2 branches covered.">        if (np &gt; 0) {</span>
-<span class="fc" id="L1240">            rotation[rotation.length - 1] = rotStop;</span>
+<span class="pc bpc" id="L1239" title="1 of 2 branches missed.">        if (np &gt; 0) {</span>
+<span class="nc" id="L1240">            rotation[rotation.length - 1] = rotStop;</span>
         }
         
 <span class="fc" id="L1243">        return rotation;</span>
@@ -1310,27 +1310,27 @@ import java.util.Set;
      */
     public static PairIntArray shuffle(PairIntArray source) throws NoSuchAlgorithmException {
         
-<span class="fc" id="L1313">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
-<span class="fc" id="L1314">        long seed = System.currentTimeMillis();</span>
-<span class="fc" id="L1315">        sr.setSeed(seed);</span>
+<span class="nc" id="L1313">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="nc" id="L1314">        long seed = System.currentTimeMillis();</span>
+<span class="nc" id="L1315">        sr.setSeed(seed);</span>
         
-<span class="fc" id="L1317">        PairIntArray out = new PairIntArray();</span>
+<span class="nc" id="L1317">        PairIntArray out = new PairIntArray();</span>
         
-<span class="fc" id="L1319">        int n = source.getN();</span>
+<span class="nc" id="L1319">        int n = source.getN();</span>
         
-<span class="fc bfc" id="L1321" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L1321" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
              
-<span class="fc bfc" id="L1323" title="All 2 branches covered.">            int j = (i == 0) ? 0 : sr.nextInt(out.getN());</span>
+<span class="nc bnc" id="L1323" title="All 2 branches missed.">            int j = (i == 0) ? 0 : sr.nextInt(out.getN());</span>
             
-<span class="fc bfc" id="L1325" title="All 2 branches covered.">            if (j == out.getN()) {</span>
-<span class="fc" id="L1326">                out.add(source.getX(i), source.getY(i));</span>
+<span class="nc bnc" id="L1325" title="All 2 branches missed.">            if (j == out.getN()) {</span>
+<span class="nc" id="L1326">                out.add(source.getX(i), source.getY(i));</span>
             } else {
-<span class="fc" id="L1328">                out.add(out.getX(j), out.getY(j));</span>
-<span class="fc" id="L1329">                out.set(j, source.getX(i), source.getY(i));</span>
+<span class="nc" id="L1328">                out.add(out.getX(j), out.getY(j));</span>
+<span class="nc" id="L1329">                out.set(j, source.getX(i), source.getY(i));</span>
             }
         }
         
-<span class="fc" id="L1333">        return out;</span>
+<span class="nc" id="L1333">        return out;</span>
     }
     
     public static PairIntArray get20NeighborOffsets() {
@@ -1733,44 +1733,44 @@ import java.util.Set;
 
     public static &lt;T extends CornerRegion&gt; float[] findMinXY(List&lt;List&lt;T&gt;&gt; crLists) {
         
-<span class="fc" id="L1736">        float minX = Float.MAX_VALUE;</span>
-<span class="fc" id="L1737">        float minY = Float.MAX_VALUE;</span>
+<span class="nc" id="L1736">        float minX = Float.MAX_VALUE;</span>
+<span class="nc" id="L1737">        float minY = Float.MAX_VALUE;</span>
         
-<span class="fc bfc" id="L1739" title="All 2 branches covered.">        for (List&lt;T&gt; list : crLists) {</span>
-<span class="fc bfc" id="L1740" title="All 2 branches covered.">            for (CornerRegion cr : list) {</span>
-<span class="fc" id="L1741">                float x = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L1742">                float y = cr.getY()[cr.getKMaxIdx()];</span>
-<span class="fc bfc" id="L1743" title="All 2 branches covered.">                if (x &lt; minX) {</span>
-<span class="fc" id="L1744">                    minX = x;</span>
+<span class="nc bnc" id="L1739" title="All 2 branches missed.">        for (List&lt;T&gt; list : crLists) {</span>
+<span class="nc bnc" id="L1740" title="All 2 branches missed.">            for (CornerRegion cr : list) {</span>
+<span class="nc" id="L1741">                float x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="nc" id="L1742">                float y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="nc bnc" id="L1743" title="All 2 branches missed.">                if (x &lt; minX) {</span>
+<span class="nc" id="L1744">                    minX = x;</span>
                 }
-<span class="fc bfc" id="L1746" title="All 2 branches covered.">                if (y &lt; minY) {</span>
-<span class="fc" id="L1747">                    minY = y;</span>
+<span class="nc bnc" id="L1746" title="All 2 branches missed.">                if (y &lt; minY) {</span>
+<span class="nc" id="L1747">                    minY = y;</span>
                 }
-<span class="fc" id="L1749">            }</span>
-<span class="fc" id="L1750">        }</span>
+<span class="nc" id="L1749">            }</span>
+<span class="nc" id="L1750">        }</span>
         
-<span class="fc" id="L1752">        return new float[]{minX, minY};</span>
+<span class="nc" id="L1752">        return new float[]{minX, minY};</span>
     }
     
     public static &lt;T extends CornerRegion&gt; float[] findMaxXY(List&lt;List&lt;T&gt;&gt; crLists) {
         
-<span class="fc" id="L1757">        float maxX = Float.MIN_VALUE;</span>
-<span class="fc" id="L1758">        float maxY = Float.MIN_VALUE;</span>
+<span class="nc" id="L1757">        float maxX = Float.MIN_VALUE;</span>
+<span class="nc" id="L1758">        float maxY = Float.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1760" title="All 2 branches covered.">        for (List&lt;T&gt; list : crLists) {</span>
-<span class="fc bfc" id="L1761" title="All 2 branches covered.">            for (CornerRegion cr : list) {</span>
-<span class="fc" id="L1762">                float x = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L1763">                float y = cr.getY()[cr.getKMaxIdx()];</span>
-<span class="fc bfc" id="L1764" title="All 2 branches covered.">                if (x &gt; maxX) {</span>
-<span class="fc" id="L1765">                    maxX = x;</span>
+<span class="nc bnc" id="L1760" title="All 2 branches missed.">        for (List&lt;T&gt; list : crLists) {</span>
+<span class="nc bnc" id="L1761" title="All 2 branches missed.">            for (CornerRegion cr : list) {</span>
+<span class="nc" id="L1762">                float x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="nc" id="L1763">                float y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="nc bnc" id="L1764" title="All 2 branches missed.">                if (x &gt; maxX) {</span>
+<span class="nc" id="L1765">                    maxX = x;</span>
                 }
-<span class="fc bfc" id="L1767" title="All 2 branches covered.">                if (y &gt; maxY) {</span>
-<span class="fc" id="L1768">                    maxY = y;</span>
+<span class="nc bnc" id="L1767" title="All 2 branches missed.">                if (y &gt; maxY) {</span>
+<span class="nc" id="L1768">                    maxY = y;</span>
                 }
-<span class="fc" id="L1770">            }</span>
-<span class="fc" id="L1771">        }</span>
+<span class="nc" id="L1770">            }</span>
+<span class="nc" id="L1771">        }</span>
         
-<span class="fc" id="L1773">        return new float[]{maxX, maxY};</span>
+<span class="nc" id="L1773">        return new float[]{maxX, maxY};</span>
     }
     
     public static float[] findMinXY2(List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; crLists) {

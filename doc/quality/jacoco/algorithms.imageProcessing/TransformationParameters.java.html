@@ -58,9 +58,9 @@ import java.util.Arrays;
     public void setRotationInDegrees(float rotationInDegrees) {
 <span class="fc bfc" id="L59" title="All 2 branches covered.">        if (rotationInDegrees &lt; 0) {</span>
 <span class="fc" id="L60">            rotationInDegrees += 360;</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">        } else if (rotationInDegrees &gt; 360) {</span>
-<span class="fc" id="L62">            int m = (int)(rotationInDegrees/360)*360;</span>
-<span class="fc" id="L63">            rotationInDegrees -= m;</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        } else if (rotationInDegrees &gt; 360) {</span>
+<span class="nc" id="L62">            int m = (int)(rotationInDegrees/360) * 360;</span>
+<span class="nc" id="L63">            rotationInDegrees -= m;</span>
         }
 <span class="fc" id="L65">        this.rotationInRadians = (float) (rotationInDegrees * Math.PI/180.);</span>
 <span class="fc" id="L66">    }</span>
@@ -69,174 +69,175 @@ import java.util.Arrays;
      * @param theRotationInRadians the rotation to set in units of radians
      */
     public void setRotationInRadians(float theRotationInRadians) {
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (theRotationInRadians &lt; 0) {</span>
-<span class="nc" id="L73">            theRotationInRadians += 2.*Math.PI;</span>
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        } else if (theRotationInRadians &gt; 2.*Math.PI) {</span>
-<span class="nc" id="L75">            double m = (int)(theRotationInRadians/2*Math.PI)*2.*Math.PI;</span>
-<span class="nc" id="L76">            theRotationInRadians -= m;</span>
+<span class="fc" id="L72">        double twoPi = 2. * Math.PI;</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (theRotationInRadians &lt; 0) {</span>
+<span class="nc" id="L74">            theRotationInRadians += twoPi;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        } else if (theRotationInRadians &gt; twoPi) {</span>
+<span class="fc" id="L76">            double m = (int)(theRotationInRadians/twoPi) * twoPi;</span>
+<span class="fc" id="L77">            theRotationInRadians -= m;</span>
         }
-<span class="fc" id="L78">        this.rotationInRadians = theRotationInRadians;</span>
-<span class="fc" id="L79">    }</span>
+<span class="fc" id="L79">        this.rotationInRadians = theRotationInRadians;</span>
+<span class="fc" id="L80">    }</span>
 
     /**
      * @return the rotation in units of radians
      */
     public float getRotationInRadians() {
-<span class="fc" id="L85">        return rotationInRadians;</span>
+<span class="fc" id="L86">        return rotationInRadians;</span>
     }
     
     /**
      * @return the translationX
      */
     public float getTranslationX() {
-<span class="fc" id="L92">        return translationX;</span>
+<span class="fc" id="L93">        return translationX;</span>
     }
 
     /**
      * @param translationX the translationX to set
      */
     public void setTranslationX(float translationX) {
-<span class="fc" id="L99">        this.translationX = translationX;</span>
-<span class="fc" id="L100">    }</span>
+<span class="fc" id="L100">        this.translationX = translationX;</span>
+<span class="fc" id="L101">    }</span>
 
     /**
      * @return the translationY
      */
     public float getTranslationY() {
-<span class="fc" id="L106">        return translationY;</span>
+<span class="fc" id="L107">        return translationY;</span>
     }
 
     /**
      * @param translationY the translationY to set
      */
     public void setTranslationY(float translationY) {
-<span class="fc" id="L113">        this.translationY = translationY;</span>
-<span class="fc" id="L114">    }</span>
+<span class="fc" id="L114">        this.translationY = translationY;</span>
+<span class="fc" id="L115">    }</span>
 
     /**
      * @return the scale
      */
     public float getScale() {
-<span class="fc" id="L120">        return scale;</span>
+<span class="fc" id="L121">        return scale;</span>
     }
 
     /**
      * @param scale the scale to set
      */
     public void setScale(float scale) {
-<span class="fc" id="L127">        this.scale = scale;</span>
-<span class="fc" id="L128">    }</span>
+<span class="fc" id="L128">        this.scale = scale;</span>
+<span class="fc" id="L129">    }</span>
     
     public void setOriginX(float theXOrigin) {
-<span class="fc" id="L131">        originX = theXOrigin;</span>
-<span class="fc" id="L132">    }</span>
+<span class="fc" id="L132">        originX = theXOrigin;</span>
+<span class="fc" id="L133">    }</span>
     
     public void setOriginY(float theYOrigin) {
-<span class="fc" id="L135">        originY = theYOrigin;</span>
-<span class="fc" id="L136">    }</span>
+<span class="fc" id="L136">        originY = theYOrigin;</span>
+<span class="fc" id="L137">    }</span>
    
     public float getOriginX() {
-<span class="fc" id="L139">        return originX;</span>
+<span class="fc" id="L140">        return originX;</span>
     }
     
     public float getOriginY() {
-<span class="fc" id="L143">        return originY;</span>
+<span class="fc" id="L144">        return originY;</span>
     }
     
     public TransformationParameters copy() {
         
-<span class="fc" id="L148">        TransformationParameters cp = new TransformationParameters();</span>
-<span class="fc" id="L149">        cp.setRotationInRadians(rotationInRadians);</span>
-<span class="fc" id="L150">        cp.setTranslationX(translationX);</span>
-<span class="fc" id="L151">        cp.setTranslationY(translationY);</span>
-<span class="fc" id="L152">        cp.setScale(scale);</span>
-<span class="fc" id="L153">        cp.setOriginX(originX);</span>
-<span class="fc" id="L154">        cp.setOriginY(originY);</span>
-<span class="fc" id="L155">        cp.setNumberOfPointsUsed(n);</span>
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (standardDeviationsScaleRotTransXY != null) {</span>
-<span class="nc" id="L157">            cp.setStandardDeviations(standardDeviationsScaleRotTransXY);</span>
+<span class="fc" id="L149">        TransformationParameters cp = new TransformationParameters();</span>
+<span class="fc" id="L150">        cp.setRotationInRadians(rotationInRadians);</span>
+<span class="fc" id="L151">        cp.setTranslationX(translationX);</span>
+<span class="fc" id="L152">        cp.setTranslationY(translationY);</span>
+<span class="fc" id="L153">        cp.setScale(scale);</span>
+<span class="fc" id="L154">        cp.setOriginX(originX);</span>
+<span class="fc" id="L155">        cp.setOriginY(originY);</span>
+<span class="fc" id="L156">        cp.setNumberOfPointsUsed(n);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (standardDeviationsScaleRotTransXY != null) {</span>
+<span class="nc" id="L158">            cp.setStandardDeviations(standardDeviationsScaleRotTransXY);</span>
         }
         
-<span class="fc" id="L160">        return cp;</span>
+<span class="fc" id="L161">        return cp;</span>
     }
     
     @Override
     public boolean equals(Object obj) {
         
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (!(obj instanceof TransformationParameters)) {</span>
-<span class="nc" id="L167">            return false;</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (!(obj instanceof TransformationParameters)) {</span>
+<span class="nc" id="L168">            return false;</span>
         }
         
-<span class="fc" id="L170">        TransformationParameters other = (TransformationParameters)obj;</span>
+<span class="fc" id="L171">        TransformationParameters other = (TransformationParameters)obj;</span>
         
-<span class="pc bpc" id="L172" title="3 of 12 branches missed.">        boolean paramsEqual = ((other.rotationInRadians == rotationInRadians) &amp;&amp;</span>
+<span class="pc bpc" id="L173" title="5 of 12 branches missed.">        boolean paramsEqual = ((other.rotationInRadians == rotationInRadians) &amp;&amp;</span>
             (other.translationX == translationX) &amp;&amp; 
             (other.translationY == translationY) &amp;&amp;
             (other.scale == scale) &amp;&amp;
             (other.originX == originX) &amp;&amp; (other.originY == originY)
             );
         
-<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (!paramsEqual) {</span>
-<span class="fc" id="L180">            return false;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (!paramsEqual) {</span>
+<span class="fc" id="L181">            return false;</span>
         }
                 
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">            (other.getStandardDeviations() == null)) {</span>
-<span class="nc" id="L185">            return false;</span>
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY == null) &amp;&amp; </span>
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
-<span class="nc" id="L188">            return false;</span>
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
-<span class="nc bnc" id="L190" title="All 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
-<span class="nc" id="L191">            boolean sEquals = Arrays.equals(standardDeviationsScaleRotTransXY, </span>
-<span class="nc" id="L192">                other.getStandardDeviations());</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (!sEquals) {</span>
-<span class="nc" id="L194">                return false;</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">            (other.getStandardDeviations() == null)) {</span>
+<span class="nc" id="L186">            return false;</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY == null) &amp;&amp; </span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
+<span class="nc" id="L189">            return false;</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
+<span class="nc" id="L192">            boolean sEquals = Arrays.equals(standardDeviationsScaleRotTransXY, </span>
+<span class="nc" id="L193">                other.getStandardDeviations());</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">            if (!sEquals) {</span>
+<span class="nc" id="L195">                return false;</span>
             }
         }
 
         //TODO: revist hashCode and equals w.r.t. standardDeviationsScaleRotTransXY and n
         
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        return (n == other.getNumberOfPointsUsed());</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        return (n == other.getNumberOfPointsUsed());</span>
     }
 
     @Override
     public int hashCode() {
-<span class="nc" id="L205">        int hash = 7;</span>
-<span class="nc" id="L206">        hash = 31 * hash + Float.floatToIntBits(this.rotationInRadians);</span>
-<span class="nc" id="L207">        hash = 31 * hash + Float.floatToIntBits(this.translationX);</span>
-<span class="nc" id="L208">        hash = 31 * hash + Float.floatToIntBits(this.translationY);</span>
-<span class="nc" id="L209">        hash = 31 * hash + Float.floatToIntBits(this.scale);</span>
-<span class="nc" id="L210">        hash = 31 * hash + Float.floatToIntBits(this.originX);</span>
-<span class="nc" id="L211">        hash = 31 * hash + Float.floatToIntBits(this.originY);</span>
-<span class="nc" id="L212">        return hash;</span>
+<span class="fc" id="L206">        int hash = 7;</span>
+<span class="fc" id="L207">        hash = 31 * hash + Float.floatToIntBits(this.rotationInRadians);</span>
+<span class="fc" id="L208">        hash = 31 * hash + Float.floatToIntBits(this.translationX);</span>
+<span class="fc" id="L209">        hash = 31 * hash + Float.floatToIntBits(this.translationY);</span>
+<span class="fc" id="L210">        hash = 31 * hash + Float.floatToIntBits(this.scale);</span>
+<span class="fc" id="L211">        hash = 31 * hash + Float.floatToIntBits(this.originX);</span>
+<span class="fc" id="L212">        hash = 31 * hash + Float.floatToIntBits(this.originY);</span>
+<span class="fc" id="L213">        return hash;</span>
     }
 
     @Override
     public String toString() {
         
-<span class="fc" id="L218">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L219">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L220">        sb.append(&quot;rotationInRadians=&quot;).append(rotationInRadians)</span>
-<span class="fc" id="L221">            .append(&quot; rotationInDegrees=&quot;).append(rotationInRadians*180./Math.PI)</span>
-<span class="fc" id="L222">            .append(&quot; scale=&quot;).append(scale)</span>
-<span class="fc" id="L223">            .append(&quot;\ntranslationX=&quot;).append(translationX)</span>
-<span class="fc" id="L224">            .append(&quot; translationY=&quot;).append(translationY)</span>
-<span class="fc" id="L225">            .append(&quot; originX=&quot;).append(originX)</span>
-<span class="fc" id="L226">            .append(&quot; originY=&quot;).append(originY);</span>
+<span class="fc" id="L221">        sb.append(&quot;rotationInRadians=&quot;).append(rotationInRadians)</span>
+<span class="fc" id="L222">            .append(&quot; rotationInDegrees=&quot;).append(rotationInRadians*180./Math.PI)</span>
+<span class="fc" id="L223">            .append(&quot; scale=&quot;).append(scale)</span>
+<span class="fc" id="L224">            .append(&quot;\ntranslationX=&quot;).append(translationX)</span>
+<span class="fc" id="L225">            .append(&quot; translationY=&quot;).append(translationY)</span>
+<span class="fc" id="L226">            .append(&quot; originX=&quot;).append(originX)</span>
+<span class="fc" id="L227">            .append(&quot; originY=&quot;).append(originY);</span>
         
-<span class="fc bfc" id="L228" title="All 2 branches covered.">        if (standardDeviationsScaleRotTransXY != null) {</span>
-<span class="fc" id="L229">            sb.append(&quot;\nstDevScale=&quot;).append(standardDeviationsScaleRotTransXY[0]);</span>
-<span class="fc" id="L230">            sb.append(&quot; stDevRot=&quot;).append(standardDeviationsScaleRotTransXY[1]);</span>
-<span class="fc" id="L231">            sb.append(&quot; stDevTransX=&quot;).append(standardDeviationsScaleRotTransXY[2]);</span>
-<span class="fc" id="L232">            sb.append(&quot; stDevTransY=&quot;).append(standardDeviationsScaleRotTransXY[3]);</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (standardDeviationsScaleRotTransXY != null) {</span>
+<span class="fc" id="L230">            sb.append(&quot;\nstDevScale=&quot;).append(standardDeviationsScaleRotTransXY[0]);</span>
+<span class="fc" id="L231">            sb.append(&quot; stDevRot=&quot;).append(standardDeviationsScaleRotTransXY[1]);</span>
+<span class="fc" id="L232">            sb.append(&quot; stDevTransX=&quot;).append(standardDeviationsScaleRotTransXY[2]);</span>
+<span class="fc" id="L233">            sb.append(&quot; stDevTransY=&quot;).append(standardDeviationsScaleRotTransXY[3]);</span>
         }
         
-<span class="fc bfc" id="L235" title="All 2 branches covered.">        if (n != -1) {</span>
-<span class="fc" id="L236">            sb.append(&quot;\nn=&quot;).append(n);</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (n != -1) {</span>
+<span class="fc" id="L237">            sb.append(&quot;\nn=&quot;).append(n);</span>
         }
         
-<span class="fc" id="L239">        return sb.toString();</span>
+<span class="fc" id="L240">        return sb.toString();</span>
     }
 
 }

@@ -50,9 +50,9 @@ import java.util.Set;
                 
 <span class="fc" id="L51">                int index = sr.nextInt(n);</span>
                 
-<span class="fc bfc" id="L53" title="All 2 branches covered.">                while (output.get(index).getN() == subsetSize) {</span>
-<span class="fc" id="L54">                    index++;</span>
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                    if (index == n) {</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                while (output.get(index).getN() == subsetSize) {</span>
+<span class="nc" id="L54">                    index++;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                    if (index == n) {</span>
 <span class="nc" id="L56">                        index = 0;</span>
                     }
                 }
@@ -145,8 +145,8 @@ import java.util.Set;
 <span class="fc" id="L145">                Set&lt;Integer&gt; chosen = new HashSet&lt;Integer&gt;();</span>
 <span class="fc bfc" id="L146" title="All 2 branches covered.">                while (chosen.size() &lt; nPerBin) {</span>
 <span class="fc" id="L147">                    int idx = sr.nextInt(binOfPoints.getN());</span>
-<span class="fc bfc" id="L148" title="All 2 branches covered.">                    while (chosen.contains(Integer.valueOf(idx))) {</span>
-<span class="fc" id="L149">                        idx = sr.nextInt(binOfPoints.getN());</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">                    while (chosen.contains(Integer.valueOf(idx))) {</span>
+<span class="nc" id="L149">                        idx = sr.nextInt(binOfPoints.getN());</span>
                     }
 <span class="fc" id="L151">                    reduced.add(binOfPoints.getX(idx), binOfPoints.getY(idx));</span>
 <span class="fc" id="L152">                    chosen.add(Integer.valueOf(idx));</span>

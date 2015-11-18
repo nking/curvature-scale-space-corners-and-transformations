@@ -767,8 +767,8 @@ import javax.imageio.ImageIO;
                 
 <span class="fc" id="L768">                int xx = x + dx;</span>
                 
-<span class="pc bpc" id="L770" title="2 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L771">                    continue;</span>
+<span class="pc bpc" id="L770" title="1 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="fc" id="L771">                    continue;</span>
                 }
 <span class="fc bfc" id="L773" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L774">                    int yy = y + dy;</span>
@@ -796,73 +796,73 @@ import javax.imageio.ImageIO;
     public static void drawLinesInImage(int[] xVertexes, int[] yVertexes, 
         Image input, int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="pc bpc" id="L799" title="3 of 6 branches missed.">        if (xVertexes == null || yVertexes == null || input == null) {</span>
+<span class="nc bnc" id="L799" title="All 6 branches missed.">        if (xVertexes == null || yVertexes == null || input == null) {</span>
 <span class="nc" id="L800">            return;</span>
         }
-<span class="pc bpc" id="L802" title="1 of 2 branches missed.">        if (xVertexes.length != yVertexes.length) {</span>
+<span class="nc bnc" id="L802" title="All 2 branches missed.">        if (xVertexes.length != yVertexes.length) {</span>
 <span class="nc" id="L803">            return;</span>
         }
         
-<span class="fc" id="L806">        int w = input.getWidth();</span>
-<span class="fc" id="L807">        int h = input.getHeight();</span>
+<span class="nc" id="L806">        int w = input.getWidth();</span>
+<span class="nc" id="L807">        int h = input.getHeight();</span>
         
-<span class="fc bfc" id="L809" title="All 2 branches covered.">        for (int i = 0; i &lt; (xVertexes.length - 1); i++) {</span>
+<span class="nc bnc" id="L809" title="All 2 branches missed.">        for (int i = 0; i &lt; (xVertexes.length - 1); i++) {</span>
             
-<span class="fc" id="L811">            int x1 = xVertexes[i];</span>
-<span class="fc" id="L812">            int y1 = yVertexes[i];</span>
+<span class="nc" id="L811">            int x1 = xVertexes[i];</span>
+<span class="nc" id="L812">            int y1 = yVertexes[i];</span>
             
-<span class="fc" id="L814">            int x2 = xVertexes[i + 1];</span>
-<span class="fc" id="L815">            int y2 = yVertexes[i + 1];</span>
+<span class="nc" id="L814">            int x2 = xVertexes[i + 1];</span>
+<span class="nc" id="L815">            int y2 = yVertexes[i + 1];</span>
             
-<span class="fc bfc" id="L817" title="All 2 branches covered.">            if (x2 &lt; x1) {</span>
-<span class="fc" id="L818">                int swap = x1;</span>
-<span class="fc" id="L819">                x1 = x2;</span>
-<span class="fc" id="L820">                x2 = swap;</span>
-<span class="fc" id="L821">                swap = y1;</span>
-<span class="fc" id="L822">                y1 = y2;</span>
-<span class="fc" id="L823">                y2 = swap;</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">            if (x2 &lt; x1) {</span>
+<span class="nc" id="L818">                int swap = x1;</span>
+<span class="nc" id="L819">                x1 = x2;</span>
+<span class="nc" id="L820">                x2 = swap;</span>
+<span class="nc" id="L821">                swap = y1;</span>
+<span class="nc" id="L822">                y1 = y2;</span>
+<span class="nc" id="L823">                y2 = swap;</span>
             }
             
-<span class="fc" id="L826">            int dx0 = x2 - x1;</span>
-<span class="fc" id="L827">            int dy0 = y2 - y1;</span>
-<span class="fc" id="L828">            int nLine = (int)Math.ceil(Math.sqrt(dx0*dx0 + dy0*dy0));</span>
-<span class="fc bfc" id="L829" title="All 6 branches covered.">            if (nLine == 1 &amp;&amp; (dx0 &gt; 0 || dy0 &gt; 0)) {</span>
-<span class="fc" id="L830">                nLine = 2;</span>
+<span class="nc" id="L826">            int dx0 = x2 - x1;</span>
+<span class="nc" id="L827">            int dy0 = y2 - y1;</span>
+<span class="nc" id="L828">            int nLine = (int)Math.ceil(Math.sqrt(dx0*dx0 + dy0*dy0));</span>
+<span class="nc bnc" id="L829" title="All 6 branches missed.">            if (nLine == 1 &amp;&amp; (dx0 &gt; 0 || dy0 &gt; 0)) {</span>
+<span class="nc" id="L830">                nLine = 2;</span>
             }
-<span class="fc" id="L832">int z = 1;          </span>
-<span class="fc bfc" id="L833" title="All 2 branches covered.">            for (int ii = 0; ii &lt; nLine; ++ii) {</span>
+<span class="nc" id="L832">int z = 1;          </span>
+<span class="nc bnc" id="L833" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nLine; ++ii) {</span>
             
                 int x, y;
                 
-<span class="fc bfc" id="L837" title="All 2 branches covered.">                if (dx0 == 0) {</span>
-<span class="fc" id="L838">                    x = x1;</span>
-<span class="fc" id="L839">                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));</span>
-<span class="fc bfc" id="L840" title="All 2 branches covered.">                } else if (dy0 == 0) {</span>
-<span class="fc" id="L841">                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));</span>
-<span class="fc" id="L842">                    y = y1;</span>
+<span class="nc bnc" id="L837" title="All 2 branches missed.">                if (dx0 == 0) {</span>
+<span class="nc" id="L838">                    x = x1;</span>
+<span class="nc" id="L839">                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));</span>
+<span class="nc bnc" id="L840" title="All 2 branches missed.">                } else if (dy0 == 0) {</span>
+<span class="nc" id="L841">                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));</span>
+<span class="nc" id="L842">                    y = y1;</span>
                 } else {
-<span class="fc" id="L844">                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));</span>
-<span class="fc" id="L845">                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));</span>
+<span class="nc" id="L844">                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));</span>
+<span class="nc" id="L845">                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));</span>
                 }                
-<span class="fc" id="L847">int z1 = 1;            </span>
-<span class="fc bfc" id="L848" title="All 2 branches covered.">                for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L847">int z1 = 1;            </span>
+<span class="nc bnc" id="L848" title="All 2 branches missed.">                for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 
-<span class="fc" id="L850">                    int xx = x + dx;</span>
+<span class="nc" id="L850">                    int xx = x + dx;</span>
                     
-<span class="pc bpc" id="L852" title="1 of 4 branches missed.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc bnc" id="L852" title="All 4 branches missed.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="nc" id="L853">                        continue;</span>
                     }
-<span class="fc bfc" id="L855" title="All 2 branches covered.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="fc" id="L856">                        int yy = y + dy;</span>
-<span class="pc bpc" id="L857" title="1 of 4 branches missed.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="fc" id="L858">                            continue;</span>
+<span class="nc bnc" id="L855" title="All 2 branches missed.">                    for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L856">                        int yy = y + dy;</span>
+<span class="nc bnc" id="L857" title="All 4 branches missed.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L858">                            continue;</span>
                         }
-<span class="fc" id="L860">                        input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L860">                        input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                     }
                 }
             }
         }
-<span class="fc" id="L865">    }</span>
+<span class="nc" id="L865">    }</span>
     
     /**
      * draw lines from points at index i to index i+1 in the requested color
@@ -1045,7 +1045,7 @@ import javax.imageio.ImageIO;
 <span class="fc" id="L1045">            int xx = Math.round(x + dx);</span>
 
 <span class="pc bpc" id="L1047" title="1 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1048">                continue;</span>
+<span class="fc" id="L1048">                continue;</span>
             }
 <span class="fc bfc" id="L1050" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1051">                int yy = Math.round(y + dy);</span>

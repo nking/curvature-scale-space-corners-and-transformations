@@ -213,7 +213,7 @@ try {
                 
 <span class="fc" id="L214">                trMap.put(Integer.valueOf(i), bestMatches);</span>
                 
-<span class="fc" id="L216">                TransformationParameters params = calculateTransformation(</span>
+<span class="fc" id="L216">                TransformationParameters params = MiscStats.calculateTransformation(</span>
 <span class="fc" id="L217">                    binFactor1, binFactor2, bestMatches.getMatchedCompStats(), </span>
                     new float[4]);
                 
@@ -262,7 +262,7 @@ try {
         
 <span class="fc" id="L263">        TransformationPair3 minCostTR = trMap.remove(minCostKey);</span>
                 
-<span class="fc" id="L265">        TransformationParameters minCostParams = calculateTransformation(</span>
+<span class="fc" id="L265">        TransformationParameters minCostParams = MiscStats.calculateTransformation(</span>
 <span class="fc" id="L266">            binFactor1, binFactor2, minCostTR.getMatchedCompStats(), </span>
             new float[4]);
         
@@ -300,7 +300,7 @@ try {
         
 <span class="nc" id="L301">        combine.addAll(minCostTR.getMatchedCompStats());</span>
         
-<span class="nc" id="L303">        TransformationParameters combinedParams = calculateTransformation(</span>
+<span class="nc" id="L303">        TransformationParameters combinedParams = MiscStats.calculateTransformation(</span>
             binFactor1, binFactor2, combine, new float[4]);
         
 <span class="nc bnc" id="L306" title="All 2 branches missed.">        if (combinedParams == null) {</span>

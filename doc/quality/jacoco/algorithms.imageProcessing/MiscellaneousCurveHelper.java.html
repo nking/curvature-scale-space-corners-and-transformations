@@ -51,8 +51,8 @@ import org.ejml.simple.*;
      */
     public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
 
-<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (closedCurve.getN() &lt; 2) {</span>
-<span class="fc" id="L55">            return false;</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (closedCurve.getN() &lt; 2) {</span>
+<span class="nc" id="L55">            return false;</span>
         }
 
 <span class="fc" id="L58">        int nNeg = 0;</span>
@@ -562,19 +562,19 @@ import org.ejml.simple.*;
     
     public &lt;T extends CornerRegion&gt; double[] calculateXYCentroids0(List&lt;T&gt; list) {
         
-<span class="fc" id="L565">        double xc = 0;</span>
-<span class="fc" id="L566">        double yc = 0;</span>
+<span class="nc" id="L565">        double xc = 0;</span>
+<span class="nc" id="L566">        double yc = 0;</span>
 
-<span class="fc bfc" id="L568" title="All 2 branches covered.">        for (CornerRegion cr : list) {</span>
-<span class="fc" id="L569">            double x = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L570">            double y = cr.getY()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L571">            xc += x;</span>
-<span class="fc" id="L572">            yc += y;</span>
-<span class="fc" id="L573">        }</span>
-<span class="fc" id="L574">        xc /= (double)list.size();</span>
-<span class="fc" id="L575">        yc /= (double)list.size();</span>
+<span class="nc bnc" id="L568" title="All 2 branches missed.">        for (CornerRegion cr : list) {</span>
+<span class="nc" id="L569">            double x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="nc" id="L570">            double y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="nc" id="L571">            xc += x;</span>
+<span class="nc" id="L572">            yc += y;</span>
+<span class="nc" id="L573">        }</span>
+<span class="nc" id="L574">        xc /= (double)list.size();</span>
+<span class="nc" id="L575">        yc /= (double)list.size();</span>
 
-<span class="fc" id="L577">        return new double[]{xc, yc};</span>
+<span class="nc" id="L577">        return new double[]{xc, yc};</span>
     }
     
     public double[] calculateXYCentroids1(List&lt;CurvatureScaleSpaceContour&gt; list) {
@@ -2421,11 +2421,11 @@ import org.ejml.simple.*;
 <span class="fc" id="L2421">        int diffX = Math.abs(x1 - x2);</span>
 <span class="fc" id="L2422">        int diffY = Math.abs(y1 - y2);</span>
 
-<span class="pc bpc" id="L2424" title="1 of 4 branches missed.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="pc bpc" id="L2424" title="2 of 4 branches missed.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
 <span class="fc" id="L2425">            return true;</span>
         }
 
-<span class="fc" id="L2428">        return false;</span>
+<span class="nc" id="L2428">        return false;</span>
     }
 
     /**

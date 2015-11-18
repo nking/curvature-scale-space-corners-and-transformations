@@ -103,8 +103,8 @@ public class SegmentedImageHelper {
     
     public void createBinnedGreyscaleImage(int maxDimension) {
         
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (imgGreyBinned != null) {</span>
-<span class="nc" id="L107">            return;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (imgGreyBinned != null) {</span>
+<span class="fc" id="L107">            return;</span>
         }
         
 <span class="fc" id="L110">        binFactor = (int) Math.ceil(Math.max((float) imgGrey.getWidth() / maxDimension, </span>
@@ -298,7 +298,7 @@ public class SegmentedImageHelper {
 <span class="nc" id="L298">                + type.name());</span>
         }
         
-<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">        if (debug) {</span>
 <span class="fc" id="L302">            MiscDebug.writeImage(gsImg, &quot;segmented_&quot; + debugTag + &quot;_&quot; </span>
 <span class="fc" id="L303">                + MiscDebug.getCurrentTimeFormatted());</span>
         }
@@ -441,7 +441,7 @@ public class SegmentedImageHelper {
     }
 
     public int getBinFactor() {
-<span class="nc" id="L444">        return binFactor;</span>
+<span class="fc" id="L444">        return binFactor;</span>
     }
 
     /**

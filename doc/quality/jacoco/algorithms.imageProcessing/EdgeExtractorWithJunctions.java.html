@@ -1903,7 +1903,7 @@ import java.util.logging.Level;
                 
 <span class="fc" id="L1904">        boolean isAdjacent = curveHelper.isAdjacent(out, 0, out.getN() - 1);</span>
         
-<span class="fc bfc" id="L1906" title="All 2 branches covered.">        if (isAdjacent) {</span>
+<span class="pc bpc" id="L1906" title="1 of 2 branches missed.">        if (isAdjacent) {</span>
 <span class="fc" id="L1907">            PairIntArrayWithColor p = new PairIntArrayWithColor(out);</span>
 <span class="fc" id="L1908">            p.setColor(1);</span>
 <span class="fc" id="L1909">            out = p;</span>
@@ -2267,30 +2267,30 @@ import java.util.logging.Level;
 
 <span class="fc" id="L2268">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc bfc" id="L2270" title="All 2 branches covered.">        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
+<span class="pc bpc" id="L2270" title="1 of 2 branches missed.">        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
 <span class="fc" id="L2271">            return;</span>
         }
 
-<span class="fc" id="L2274">        int x1 = out.getX(0);</span>
-<span class="fc" id="L2275">        int y1 = out.getY(0);</span>
+<span class="nc" id="L2274">        int x1 = out.getX(0);</span>
+<span class="nc" id="L2275">        int y1 = out.getY(0);</span>
 
-<span class="fc" id="L2277">        int xn = out.getX(out.getN() - 1);</span>
-<span class="fc" id="L2278">        int yn = out.getY(out.getN() - 1);</span>
+<span class="nc" id="L2277">        int xn = out.getX(out.getN() - 1);</span>
+<span class="nc" id="L2278">        int yn = out.getY(out.getN() - 1);</span>
 
-<span class="fc" id="L2280">        int closestPivotIdx = -1;</span>
+<span class="nc" id="L2280">        int closestPivotIdx = -1;</span>
 
-<span class="pc bpc" id="L2282" title="1 of 2 branches missed.">        for (int idx = (out.getN() - 2); idx &gt; 0; --idx) {</span>
+<span class="nc bnc" id="L2282" title="All 2 branches missed.">        for (int idx = (out.getN() - 2); idx &gt; 0; --idx) {</span>
 
-<span class="fc" id="L2284">            int x = out.getX(idx);</span>
-<span class="fc" id="L2285">            int y = out.getY(idx);</span>
+<span class="nc" id="L2284">            int x = out.getX(idx);</span>
+<span class="nc" id="L2285">            int y = out.getY(idx);</span>
 
-<span class="fc bfc" id="L2287" title="All 4 branches covered.">            if ((Math.abs(x - x1) &lt; 2) &amp;&amp; (Math.abs(y - y1) &lt; 2)) {</span>
-<span class="fc" id="L2288">                closestPivotIdx = idx;</span>
-<span class="fc" id="L2289">                break;</span>
+<span class="nc bnc" id="L2287" title="All 4 branches missed.">            if ((Math.abs(x - x1) &lt; 2) &amp;&amp; (Math.abs(y - y1) &lt; 2)) {</span>
+<span class="nc" id="L2288">                closestPivotIdx = idx;</span>
+<span class="nc" id="L2289">                break;</span>
             }
         }
 
-<span class="pc bpc" id="L2293" title="1 of 2 branches missed.">        if (closestPivotIdx == -1) {</span>
+<span class="nc bnc" id="L2293" title="All 2 branches missed.">        if (closestPivotIdx == -1) {</span>
             // it's not a closed curve
 <span class="nc" id="L2295">            return;</span>
         }
@@ -2298,7 +2298,7 @@ import java.util.logging.Level;
         //TODO: consider butterflyJunctions is not empty and make sure
         //   routes are not altered
 
-<span class="pc bpc" id="L2301" title="1 of 2 branches missed.">        if (closestPivotIdx &gt; (out.getN() - closestPivotIdx - 1)) {</span>
+<span class="nc bnc" id="L2301" title="All 2 branches missed.">        if (closestPivotIdx &gt; (out.getN() - closestPivotIdx - 1)) {</span>
             // closest to end
             /*
             If point before closestPivotIdx is next to (x1, y1), can just
@@ -2328,30 +2328,30 @@ import java.util.logging.Level;
             points from 0 to closestPivotIdx.
             */
 
-<span class="fc" id="L2331">            closestPivotIdx = -1;</span>
+<span class="nc" id="L2331">            closestPivotIdx = -1;</span>
 
-<span class="pc bpc" id="L2333" title="1 of 2 branches missed.">            for (int idx = 1; idx &lt; (out.getN() - 1); ++idx) {</span>
+<span class="nc bnc" id="L2333" title="All 2 branches missed.">            for (int idx = 1; idx &lt; (out.getN() - 1); ++idx) {</span>
 
-<span class="fc" id="L2335">                int x = out.getX(idx);</span>
-<span class="fc" id="L2336">                int y = out.getY(idx);</span>
+<span class="nc" id="L2335">                int x = out.getX(idx);</span>
+<span class="nc" id="L2336">                int y = out.getY(idx);</span>
 
-<span class="fc bfc" id="L2338" title="All 4 branches covered.">                if ((Math.abs(x - xn) &lt; 2) &amp;&amp; (Math.abs(y - yn) &lt; 2)) {</span>
-<span class="fc" id="L2339">                    closestPivotIdx = idx;</span>
-<span class="fc" id="L2340">                    break;</span>
+<span class="nc bnc" id="L2338" title="All 4 branches missed.">                if ((Math.abs(x - xn) &lt; 2) &amp;&amp; (Math.abs(y - yn) &lt; 2)) {</span>
+<span class="nc" id="L2339">                    closestPivotIdx = idx;</span>
+<span class="nc" id="L2340">                    break;</span>
                 }
             }
 
-<span class="pc bpc" id="L2344" title="1 of 2 branches missed.">            if (closestPivotIdx == -1) {</span>
+<span class="nc bnc" id="L2344" title="All 2 branches missed.">            if (closestPivotIdx == -1) {</span>
                 // it's not a closed curve
 <span class="nc" id="L2346">                return;</span>
             }
             
             // if x[0],y[0] is adj to x[closestPivotIdx+1],y[closestPivotIdx+1]
 
-<span class="fc" id="L2351">            int xNext = out.getX(closestPivotIdx + 1);</span>
-<span class="fc" id="L2352">            int yNext = out.getY(closestPivotIdx + 1);</span>
-<span class="pc bpc" id="L2353" title="3 of 4 branches missed.">            if ((Math.abs(xNext - x1) &gt; 1) || (Math.abs(yNext - y1) &gt; 1)) {</span>
-<span class="fc" id="L2354">                return;</span>
+<span class="nc" id="L2351">            int xNext = out.getX(closestPivotIdx + 1);</span>
+<span class="nc" id="L2352">            int yNext = out.getY(closestPivotIdx + 1);</span>
+<span class="nc bnc" id="L2353" title="All 4 branches missed.">            if ((Math.abs(xNext - x1) &gt; 1) || (Math.abs(yNext - y1) &gt; 1)) {</span>
+<span class="nc" id="L2354">                return;</span>
             }
 
 <span class="nc" id="L2357">            out.reverse0toIdx(closestPivotIdx);</span>

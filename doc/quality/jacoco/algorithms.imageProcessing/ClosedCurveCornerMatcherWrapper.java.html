@@ -13,18 +13,18 @@ import java.util.logging.Logger;
  */
 public class ClosedCurveCornerMatcherWrapper&lt;T extends CornerRegion&gt; {
     
-<span class="fc" id="L16">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="nc" id="L16">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="fc" id="L18">    protected TransformationPair2&lt;T&gt; solution = null;</span>
+<span class="nc" id="L18">    protected TransformationPair2&lt;T&gt; solution = null;</span>
     
-<span class="fc" id="L20">    private double solutionCost = Double.MAX_VALUE;</span>
+<span class="nc" id="L20">    private double solutionCost = Double.MAX_VALUE;</span>
 
-<span class="fc" id="L22">    private boolean solverHasFinished = false;</span>
+<span class="nc" id="L22">    private boolean solverHasFinished = false;</span>
 
-<span class="fc" id="L24">    private boolean debug = true;</span>
+<span class="nc" id="L24">    private boolean debug = true;</span>
     
-<span class="fc" id="L26">    public ClosedCurveCornerMatcherWrapper() {</span>
-<span class="fc" id="L27">    }</span>
+<span class="nc" id="L26">    public ClosedCurveCornerMatcherWrapper() {</span>
+<span class="nc" id="L27">    }</span>
     
     private void resetDefaults() {
 <span class="nc" id="L30">        solverHasFinished = false;</span>
@@ -51,15 +51,15 @@ public class ClosedCurveCornerMatcherWrapper&lt;T extends CornerRegion&gt; {
         final List&lt;T&gt; corners2, boolean cornersAreAlreadySorted,
         GreyscaleImage img1, GreyscaleImage img2) {
 
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (solverHasFinished) {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (solverHasFinished) {</span>
 <span class="nc" id="L55">            resetDefaults();</span>
         }
         
-<span class="fc" id="L58">        List&lt;T&gt; c1 = new ArrayList&lt;T&gt;(corners1);</span>
+<span class="nc" id="L58">        List&lt;T&gt; c1 = new ArrayList&lt;T&gt;(corners1);</span>
 
-<span class="fc" id="L60">        List&lt;T&gt; c2 = new ArrayList&lt;T&gt;(corners2);</span>
+<span class="nc" id="L60">        List&lt;T&gt; c2 = new ArrayList&lt;T&gt;(corners2);</span>
     
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (!cornersAreAlreadySorted) {</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (!cornersAreAlreadySorted) {</span>
             // sort by descending |k|
 <span class="nc" id="L64">            Collections.sort(c1, new DescendingKComparator());</span>
 
@@ -68,31 +68,31 @@ public class ClosedCurveCornerMatcherWrapper&lt;T extends CornerRegion&gt; {
 <span class="nc" id="L68">            cornersAreAlreadySorted = true;</span>
         }
 
-<span class="fc" id="L71">        solverHasFinished = true;</span>
+<span class="nc" id="L71">        solverHasFinished = true;</span>
         
-<span class="fc" id="L73">        ClosedCurveCornerMatcher&lt;T&gt; mDefault = new ClosedCurveCornerMatcher&lt;T&gt;();</span>
+<span class="nc" id="L73">        ClosedCurveCornerMatcher&lt;T&gt; mDefault = new ClosedCurveCornerMatcher&lt;T&gt;();</span>
 
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        boolean solved = mDefault.matchCorners(features1, features2, corners1, </span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        boolean solved = mDefault.matchCorners(features1, features2, corners1, </span>
             corners2, cornersAreAlreadySorted, img1, img2) &amp;&amp;
-<span class="pc bpc" id="L77" title="1 of 2 branches missed.">            (mDefault.getSolution() != null);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            (mDefault.getSolution() != null);</span>
 
-<span class="fc" id="L79">        log.fine(&quot;default order: solved=&quot; + solved + &quot; ambig=&quot; + </span>
-<span class="fc" id="L80">            mDefault.scaleIsPossiblyAmbiguous());</span>
+<span class="nc" id="L79">        log.fine(&quot;default order: solved=&quot; + solved + &quot; ambig=&quot; + </span>
+<span class="nc" id="L80">            mDefault.scaleIsPossiblyAmbiguous());</span>
         
-<span class="pc bpc" id="L82" title="1 of 4 branches missed.">        if (solved &amp;&amp; !mDefault.scaleIsPossiblyAmbiguous()) {</span>
+<span class="nc bnc" id="L82" title="All 4 branches missed.">        if (solved &amp;&amp; !mDefault.scaleIsPossiblyAmbiguous()) {</span>
 
-<span class="fc" id="L84">            solutionCost = mDefault.getSolvedCost();</span>
+<span class="nc" id="L84">            solutionCost = mDefault.getSolvedCost();</span>
             
-<span class="fc" id="L86">            solution = mDefault.getSolution();</span>
+<span class="nc" id="L86">            solution = mDefault.getSolution();</span>
 
-<span class="fc" id="L88">            return true;</span>
+<span class="nc" id="L88">            return true;</span>
         }
 
-<span class="fc" id="L91">        return false;</span>
+<span class="nc" id="L91">        return false;</span>
     }
 
     public TransformationPair2&lt;T&gt; getSolution() {
-<span class="fc" id="L95">        return solution;</span>
+<span class="nc" id="L95">        return solution;</span>
     }
     
     /**
@@ -101,7 +101,7 @@ public class ClosedCurveCornerMatcherWrapper&lt;T extends CornerRegion&gt; {
      * @return
      */
     public double getSolvedCost() {
-<span class="fc" id="L104">        return solutionCost;</span>
+<span class="nc" id="L104">        return solutionCost;</span>
     }
 
 }

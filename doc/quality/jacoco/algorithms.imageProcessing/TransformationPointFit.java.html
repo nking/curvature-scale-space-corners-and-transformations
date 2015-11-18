@@ -10,76 +10,76 @@ public class TransformationPointFit implements Comparable&lt;TransformationPoint
     
     private final int nMatchedPoints;
     
-<span class="fc" id="L13">    private int nMaxMatchable = 0;</span>
+<span class="nc" id="L13">    private int nMaxMatchable = 0;</span>
     
     private final double meanDistFromModel;
     
     private final double stDevFromMean;
     
-<span class="fc" id="L19">    private float transTolX = Float.MAX_VALUE;</span>
+<span class="nc" id="L19">    private float transTolX = Float.MAX_VALUE;</span>
     
-<span class="fc" id="L21">    private float transTolY = Float.MAX_VALUE;</span>
+<span class="nc" id="L21">    private float transTolY = Float.MAX_VALUE;</span>
     
     public TransformationPointFit(
         TransformationParameters theParameters, 
         int numberOfMatchedPoints, double theMeanDistFromModel, 
         double theStDevFromMean, float theTranslationXTolerance,
-<span class="fc" id="L27">        float theTranslationYTolerance) {</span>
+<span class="nc" id="L27">        float theTranslationYTolerance) {</span>
         
-<span class="fc" id="L29">        parameters = theParameters;</span>
+<span class="nc" id="L29">        parameters = theParameters;</span>
         
-<span class="fc" id="L31">        nMatchedPoints = numberOfMatchedPoints;</span>
+<span class="nc" id="L31">        nMatchedPoints = numberOfMatchedPoints;</span>
         
-<span class="fc" id="L33">        meanDistFromModel = theMeanDistFromModel;</span>
+<span class="nc" id="L33">        meanDistFromModel = theMeanDistFromModel;</span>
         
-<span class="fc" id="L35">        stDevFromMean = theStDevFromMean;</span>
+<span class="nc" id="L35">        stDevFromMean = theStDevFromMean;</span>
         
-<span class="fc" id="L37">        transTolX = theTranslationXTolerance;</span>
+<span class="nc" id="L37">        transTolX = theTranslationXTolerance;</span>
         
-<span class="fc" id="L39">        transTolY = theTranslationYTolerance;</span>
-<span class="fc" id="L40">    }</span>
+<span class="nc" id="L39">        transTolY = theTranslationYTolerance;</span>
+<span class="nc" id="L40">    }</span>
 
     /**
      * @return the parameters
      */
     public TransformationParameters getParameters() {
-<span class="fc" id="L46">        return parameters;</span>
+<span class="nc" id="L46">        return parameters;</span>
     }
     
     public int getNumberOfMatchedPoints() {
-<span class="fc" id="L50">        return nMatchedPoints;</span>
+<span class="nc" id="L50">        return nMatchedPoints;</span>
     }
     
     public float getRotationInRadians() {
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (parameters == null) {</span>
 <span class="nc" id="L55">            return 0;</span>
         }
         
-<span class="fc" id="L58">        return parameters.getRotationInRadians();</span>
+<span class="nc" id="L58">        return parameters.getRotationInRadians();</span>
     }
     
     public float getScale() {
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (parameters == null) {</span>
 <span class="nc" id="L63">            return 0;</span>
         }
         
-<span class="fc" id="L66">        return parameters.getScale();</span>
+<span class="nc" id="L66">        return parameters.getScale();</span>
     }
     
     public float getTranslationX() {
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (parameters == null) {</span>
 <span class="nc" id="L71">            return 0;</span>
         }
         
-<span class="fc" id="L74">        return parameters.getTranslationX();</span>
+<span class="nc" id="L74">        return parameters.getTranslationX();</span>
     }
     
     public float getTranslationY() {
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (parameters == null) {</span>
 <span class="nc" id="L79">            return 0;</span>
         }
         
-<span class="fc" id="L82">        return parameters.getTranslationY();</span>
+<span class="nc" id="L82">        return parameters.getTranslationY();</span>
     }
     
     /**
@@ -88,7 +88,7 @@ public class TransformationPointFit implements Comparable&lt;TransformationPoint
      * @return 
      */
     public float getTranslationXTolerance() {
-<span class="fc" id="L91">        return transTolX;</span>
+<span class="nc" id="L91">        return transTolX;</span>
     }
     
     /**
@@ -97,28 +97,28 @@ public class TransformationPointFit implements Comparable&lt;TransformationPoint
      * @return 
      */
     public float getTranslationYTolerance() {
-<span class="fc" id="L100">        return transTolY;</span>
+<span class="nc" id="L100">        return transTolY;</span>
     }
 
     /**
      * @return the meanDistFromModel
      */
     public double getMeanDistFromModel() {
-<span class="fc" id="L107">        return meanDistFromModel;</span>
+<span class="nc" id="L107">        return meanDistFromModel;</span>
     }
 
     /**
      * @return the stDevFromMean
      */
     public double getStDevFromMean() {
-<span class="fc" id="L114">        return stDevFromMean;</span>
+<span class="nc" id="L114">        return stDevFromMean;</span>
     }
     
     /**
      * @return the nMaxMatchable
      */
     public int getNMaxMatchable() {
-<span class="fc" id="L121">        return nMaxMatchable;</span>
+<span class="nc" id="L121">        return nMaxMatchable;</span>
     }
 
     public void setTranslationXTolerance(float theTolerance) {
@@ -133,8 +133,8 @@ public class TransformationPointFit implements Comparable&lt;TransformationPoint
      * @param maximumNumberMatchable the nMaxMatchable to set
      */
     public void setMaximumNumberMatchable(int maximumNumberMatchable) {
-<span class="fc" id="L136">        this.nMaxMatchable = maximumNumberMatchable;</span>
-<span class="fc" id="L137">    }</span>
+<span class="nc" id="L136">        this.nMaxMatchable = maximumNumberMatchable;</span>
+<span class="nc" id="L137">    }</span>
     
     /**
      * compare object other to this instance and return -1 if this instance
@@ -145,74 +145,74 @@ public class TransformationPointFit implements Comparable&lt;TransformationPoint
     @Override
     public int compareTo(TransformationPointFit other) {
     
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (other == null) {</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (other == null) {</span>
 <span class="nc" id="L149">            return -1;</span>
         }
-<span class="fc bfc" id="L151" title="All 4 branches covered.">        if ((other.getNumberOfMatchedPoints() == 0) &amp;&amp; (nMatchedPoints &gt; 0)) {</span>
-<span class="fc" id="L152">            return -1;</span>
+<span class="nc bnc" id="L151" title="All 4 branches missed.">        if ((other.getNumberOfMatchedPoints() == 0) &amp;&amp; (nMatchedPoints &gt; 0)) {</span>
+<span class="nc" id="L152">            return -1;</span>
         }
-<span class="fc bfc" id="L154" title="All 4 branches covered.">        if (Double.isNaN(other.getStDevFromMean()) &amp;&amp; !Double.isNaN(stDevFromMean)) {</span>
-<span class="fc" id="L155">            return -1;</span>
+<span class="nc bnc" id="L154" title="All 4 branches missed.">        if (Double.isNaN(other.getStDevFromMean()) &amp;&amp; !Double.isNaN(stDevFromMean)) {</span>
+<span class="nc" id="L155">            return -1;</span>
         }
-<span class="pc bpc" id="L157" title="1 of 4 branches missed.">        if ((other.getStDevFromMean() == Double.MAX_VALUE) &amp;&amp; </span>
+<span class="nc bnc" id="L157" title="All 4 branches missed.">        if ((other.getStDevFromMean() == Double.MAX_VALUE) &amp;&amp; </span>
             (stDevFromMean != Double.MAX_VALUE)) {
 <span class="nc" id="L159">            return -1;</span>
         }
-<span class="fc bfc" id="L161" title="All 4 branches covered.">        if ((other.getNumberOfMatchedPoints() &gt; 0) &amp;&amp; (nMatchedPoints == 0)) {</span>
-<span class="fc" id="L162">            return 1;</span>
+<span class="nc bnc" id="L161" title="All 4 branches missed.">        if ((other.getNumberOfMatchedPoints() &gt; 0) &amp;&amp; (nMatchedPoints == 0)) {</span>
+<span class="nc" id="L162">            return 1;</span>
         }
-<span class="fc bfc" id="L164" title="All 4 branches covered.">        if (!Double.isNaN(other.getStDevFromMean()) &amp;&amp; Double.isNaN(stDevFromMean)) {</span>
-<span class="fc" id="L165">            return 1;</span>
+<span class="nc bnc" id="L164" title="All 4 branches missed.">        if (!Double.isNaN(other.getStDevFromMean()) &amp;&amp; Double.isNaN(stDevFromMean)) {</span>
+<span class="nc" id="L165">            return 1;</span>
         }
-<span class="pc bpc" id="L167" title="1 of 4 branches missed.">        if ((other.getStDevFromMean() != Double.MAX_VALUE) &amp;&amp; </span>
+<span class="nc bnc" id="L167" title="All 4 branches missed.">        if ((other.getStDevFromMean() != Double.MAX_VALUE) &amp;&amp; </span>
             (stDevFromMean == Double.MAX_VALUE)) {
 <span class="nc" id="L169">            return 1;</span>
         }
         
-<span class="fc" id="L172">        TransformationPointFit compareFit = other;</span>
+<span class="nc" id="L172">        TransformationPointFit compareFit = other;</span>
         
-<span class="fc" id="L174">        int compNMatches = compareFit.getNumberOfMatchedPoints();</span>
-<span class="fc" id="L175">        int bestNMatches = nMatchedPoints;</span>
+<span class="nc" id="L174">        int compNMatches = compareFit.getNumberOfMatchedPoints();</span>
+<span class="nc" id="L175">        int bestNMatches = nMatchedPoints;</span>
 
-<span class="fc" id="L177">        double compAvg = compareFit.getMeanDistFromModel();</span>
-<span class="fc" id="L178">        double bestAvg = meanDistFromModel;</span>
-<span class="fc" id="L179">        double diffAvg = Math.abs(compAvg - bestAvg);</span>
+<span class="nc" id="L177">        double compAvg = compareFit.getMeanDistFromModel();</span>
+<span class="nc" id="L178">        double bestAvg = meanDistFromModel;</span>
+<span class="nc" id="L179">        double diffAvg = Math.abs(compAvg - bestAvg);</span>
 
-<span class="fc" id="L181">        double compS = compareFit.getStDevFromMean();</span>
-<span class="fc" id="L182">        double bestS = stDevFromMean;</span>
-<span class="fc" id="L183">        double diffS = Math.abs(compS - bestS);</span>
+<span class="nc" id="L181">        double compS = compareFit.getStDevFromMean();</span>
+<span class="nc" id="L182">        double bestS = stDevFromMean;</span>
+<span class="nc" id="L183">        double diffS = Math.abs(compS - bestS);</span>
 
-<span class="fc" id="L185">        double avgDiv = bestAvg/compAvg;</span>
+<span class="nc" id="L185">        double avgDiv = bestAvg/compAvg;</span>
 
-<span class="fc" id="L187">        int diffEps = (int)Math.ceil(Math.max(bestNMatches, compNMatches)/10.);</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">        if (diffEps == 0) {</span>
-<span class="fc" id="L189">            diffEps = 1;</span>
+<span class="nc" id="L187">        int diffEps = (int)Math.ceil(Math.max(bestNMatches, compNMatches)/10.);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (diffEps == 0) {</span>
+<span class="nc" id="L189">            diffEps = 1;</span>
         }
 
-<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (Math.abs(bestNMatches - compNMatches) &lt;= diffEps) {</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (Math.abs(bestNMatches - compNMatches) &lt;= diffEps) {</span>
 
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">            if (Double.isNaN(compareFit.getMeanDistFromModel())) {</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">            if (Double.isNaN(compareFit.getMeanDistFromModel())) {</span>
 <span class="nc" id="L195">                return -1;</span>
             }
             
-<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (compAvg &lt; bestAvg) {</span>
-<span class="fc" id="L199">                return 1;</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">            } else if (compAvg &gt; bestAvg) {</span>
-<span class="fc" id="L201">                return -1;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">            if (compAvg &lt; bestAvg) {</span>
+<span class="nc" id="L199">                return 1;</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">            } else if (compAvg &gt; bestAvg) {</span>
+<span class="nc" id="L201">                return -1;</span>
             }
 
-<span class="fc bfc" id="L204" title="All 2 branches covered.">            if (compS &lt; bestS) {</span>
-<span class="fc" id="L205">                return 1;</span>
-<span class="fc bfc" id="L206" title="All 2 branches covered.">            } else if (compS &gt; bestS) {</span>
-<span class="fc" id="L207">                return -1;</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">            if (compS &lt; bestS) {</span>
+<span class="nc" id="L205">                return 1;</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            } else if (compS &gt; bestS) {</span>
+<span class="nc" id="L207">                return -1;</span>
             }
             
-<span class="fc bfc" id="L210" title="All 2 branches covered.">        } else if (compNMatches &gt; bestNMatches) {</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        } else if (compNMatches &gt; bestNMatches) {</span>
 
-<span class="fc" id="L212">            return 1;</span>
+<span class="nc" id="L212">            return 1;</span>
         }
         
-<span class="fc" id="L215">        return -1;</span>
+<span class="nc" id="L215">        return -1;</span>
     }
 
     /**
@@ -225,92 +225,92 @@ public class TransformationPointFit implements Comparable&lt;TransformationPoint
      */
     public int compareToUsingNormalizedMatches(TransformationPointFit other) {
     
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (other == null) {</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (other == null) {</span>
 <span class="nc" id="L229">            return -1;</span>
         }
-<span class="pc bpc" id="L231" title="3 of 4 branches missed.">        if ((other.getNumberOfMatchedPoints() == 0) &amp;&amp; (nMatchedPoints &gt; 0)) {</span>
+<span class="nc bnc" id="L231" title="All 4 branches missed.">        if ((other.getNumberOfMatchedPoints() == 0) &amp;&amp; (nMatchedPoints &gt; 0)) {</span>
 <span class="nc" id="L232">            return -1;</span>
         }
-<span class="pc bpc" id="L234" title="3 of 4 branches missed.">        if (Double.isNaN(other.getStDevFromMean()) &amp;&amp; !Double.isNaN(stDevFromMean)) {</span>
+<span class="nc bnc" id="L234" title="All 4 branches missed.">        if (Double.isNaN(other.getStDevFromMean()) &amp;&amp; !Double.isNaN(stDevFromMean)) {</span>
 <span class="nc" id="L235">            return -1;</span>
         }
-<span class="pc bpc" id="L237" title="3 of 4 branches missed.">        if ((other.getStDevFromMean() == Double.MAX_VALUE) &amp;&amp; </span>
+<span class="nc bnc" id="L237" title="All 4 branches missed.">        if ((other.getStDevFromMean() == Double.MAX_VALUE) &amp;&amp; </span>
             (stDevFromMean != Double.MAX_VALUE)) {
 <span class="nc" id="L239">            return -1;</span>
         }
-<span class="pc bpc" id="L241" title="2 of 4 branches missed.">        if ((other.getNumberOfMatchedPoints() &gt; 0) &amp;&amp; (nMatchedPoints == 0)) {</span>
+<span class="nc bnc" id="L241" title="All 4 branches missed.">        if ((other.getNumberOfMatchedPoints() &gt; 0) &amp;&amp; (nMatchedPoints == 0)) {</span>
 <span class="nc" id="L242">            return 1;</span>
         }
-<span class="pc bpc" id="L244" title="2 of 4 branches missed.">        if (!Double.isNaN(other.getStDevFromMean()) &amp;&amp; Double.isNaN(stDevFromMean)) {</span>
+<span class="nc bnc" id="L244" title="All 4 branches missed.">        if (!Double.isNaN(other.getStDevFromMean()) &amp;&amp; Double.isNaN(stDevFromMean)) {</span>
 <span class="nc" id="L245">            return 1;</span>
         }
-<span class="pc bpc" id="L247" title="2 of 4 branches missed.">        if ((other.getStDevFromMean() != Double.MAX_VALUE) &amp;&amp; </span>
+<span class="nc bnc" id="L247" title="All 4 branches missed.">        if ((other.getStDevFromMean() != Double.MAX_VALUE) &amp;&amp; </span>
             (stDevFromMean == Double.MAX_VALUE)) {
 <span class="nc" id="L249">            return 1;</span>
         }
         
-<span class="fc" id="L252">        TransformationPointFit compareFit = other;</span>
+<span class="nc" id="L252">        TransformationPointFit compareFit = other;</span>
         
-<span class="fc" id="L254">        float compNMatches = (float)compareFit.getNumberOfMatchedPoints()/</span>
-<span class="fc" id="L255">            (float)compareFit.getNMaxMatchable();</span>
-<span class="fc" id="L256">        float bestNMatches = (float)nMatchedPoints/(float)nMaxMatchable;</span>
+<span class="nc" id="L254">        float compNMatches = (float)compareFit.getNumberOfMatchedPoints()/</span>
+<span class="nc" id="L255">            (float)compareFit.getNMaxMatchable();</span>
+<span class="nc" id="L256">        float bestNMatches = (float)nMatchedPoints/(float)nMaxMatchable;</span>
 
-<span class="fc" id="L258">        double compAvg = compareFit.getMeanDistFromModel();</span>
-<span class="fc" id="L259">        double bestAvg = meanDistFromModel;</span>
+<span class="nc" id="L258">        double compAvg = compareFit.getMeanDistFromModel();</span>
+<span class="nc" id="L259">        double bestAvg = meanDistFromModel;</span>
 
-<span class="fc" id="L261">        double compS = compareFit.getStDevFromMean();</span>
-<span class="fc" id="L262">        double bestS = stDevFromMean;</span>
+<span class="nc" id="L261">        double compS = compareFit.getStDevFromMean();</span>
+<span class="nc" id="L262">        double bestS = stDevFromMean;</span>
 
-<span class="fc" id="L264">        double diffEps = Math.sqrt(Math.min(compareFit.getNMaxMatchable(),</span>
+<span class="nc" id="L264">        double diffEps = Math.sqrt(Math.min(compareFit.getNMaxMatchable(),</span>
             nMaxMatchable));
-<span class="fc" id="L266">        diffEps = 1./(10.*diffEps);</span>
+<span class="nc" id="L266">        diffEps = 1./(10.*diffEps);</span>
 
-<span class="fc bfc" id="L268" title="All 2 branches covered.">        if (Math.abs(bestNMatches - compNMatches) &lt;= diffEps) {</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        if (Math.abs(bestNMatches - compNMatches) &lt;= diffEps) {</span>
 
-<span class="pc bpc" id="L270" title="1 of 2 branches missed.">            if (Double.isNaN(compareFit.getMeanDistFromModel())) {</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">            if (Double.isNaN(compareFit.getMeanDistFromModel())) {</span>
 <span class="nc" id="L271">                return -1;</span>
             }
             
-<span class="fc bfc" id="L274" title="All 2 branches covered.">            if (compAvg &lt; bestAvg) {</span>
-<span class="fc" id="L275">                return 1;</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">            } else if (compAvg &gt; bestAvg) {</span>
-<span class="fc" id="L277">                return -1;</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">            if (compAvg &lt; bestAvg) {</span>
+<span class="nc" id="L275">                return 1;</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">            } else if (compAvg &gt; bestAvg) {</span>
+<span class="nc" id="L277">                return -1;</span>
             }
 
-<span class="fc bfc" id="L280" title="All 2 branches covered.">            if (compS &lt; bestS) {</span>
-<span class="fc" id="L281">                return 1;</span>
-<span class="fc bfc" id="L282" title="All 2 branches covered.">            } else if (compS &gt; bestS) {</span>
-<span class="fc" id="L283">                return -1;</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            if (compS &lt; bestS) {</span>
+<span class="nc" id="L281">                return 1;</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">            } else if (compS &gt; bestS) {</span>
+<span class="nc" id="L283">                return -1;</span>
             }
             
-<span class="fc bfc" id="L286" title="All 2 branches covered.">        } else if (compNMatches &gt; bestNMatches) {</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        } else if (compNMatches &gt; bestNMatches) {</span>
 
-<span class="fc" id="L288">            return 1;</span>
+<span class="nc" id="L288">            return 1;</span>
         }
         
-<span class="fc" id="L291">        return -1;</span>
+<span class="nc" id="L291">        return -1;</span>
     }
 
     @Override
     public String toString() {
         
-<span class="fc" id="L297">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L297">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc" id="L299">        sb.append(&quot;\nnMatchedPoints=&quot;).append(Integer.toString(nMatchedPoints))</span>
-<span class="fc" id="L300">            .append(&quot; nMaxMatchable=&quot;)</span>
-<span class="fc" id="L301">            .append(Double.toString(nMaxMatchable))</span>
-<span class="fc" id="L302">            .append(&quot;\nmeanDistFromModel=&quot;)</span>
-<span class="fc" id="L303">            .append(Double.toString(meanDistFromModel))</span>
-<span class="fc" id="L304">            .append(&quot; stDevFromMean=&quot;)</span>
-<span class="fc" id="L305">            .append(Double.toString(stDevFromMean))</span>
-<span class="fc" id="L306">            .append(&quot;\ntranslationXTolerance=&quot;)</span>
-<span class="fc" id="L307">            .append(Float.toString(transTolX))</span>
-<span class="fc" id="L308">            .append(&quot; translationYTolerance=&quot;)</span>
-<span class="fc" id="L309">            .append(Float.toString(transTolY))</span>
-<span class="fc" id="L310">            .append(&quot;\n&quot;)</span>
-<span class="fc" id="L311">            .append(parameters.toString());</span>
+<span class="nc" id="L299">        sb.append(&quot;\nnMatchedPoints=&quot;).append(Integer.toString(nMatchedPoints))</span>
+<span class="nc" id="L300">            .append(&quot; nMaxMatchable=&quot;)</span>
+<span class="nc" id="L301">            .append(Double.toString(nMaxMatchable))</span>
+<span class="nc" id="L302">            .append(&quot;\nmeanDistFromModel=&quot;)</span>
+<span class="nc" id="L303">            .append(Double.toString(meanDistFromModel))</span>
+<span class="nc" id="L304">            .append(&quot; stDevFromMean=&quot;)</span>
+<span class="nc" id="L305">            .append(Double.toString(stDevFromMean))</span>
+<span class="nc" id="L306">            .append(&quot;\ntranslationXTolerance=&quot;)</span>
+<span class="nc" id="L307">            .append(Float.toString(transTolX))</span>
+<span class="nc" id="L308">            .append(&quot; translationYTolerance=&quot;)</span>
+<span class="nc" id="L309">            .append(Float.toString(transTolY))</span>
+<span class="nc" id="L310">            .append(&quot;\n&quot;)</span>
+<span class="nc" id="L311">            .append(parameters.toString());</span>
         
-<span class="fc" id="L313">        return sb.toString();</span>
+<span class="nc" id="L313">        return sb.toString();</span>
     }
 
     public int isSimilarWithDiffParameters(TransformationPointFit compareFit) {

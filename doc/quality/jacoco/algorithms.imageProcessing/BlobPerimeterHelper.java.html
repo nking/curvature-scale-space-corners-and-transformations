@@ -18,27 +18,27 @@ public class BlobPerimeterHelper {
     
     private final SegmentedImageHelper imgHelper;
     
-<span class="pc" id="L21">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBlobsMap =      </span>
+<span class="fc" id="L21">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBlobsMap =      </span>
         new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
    
-<span class="pc" id="L24">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+<span class="fc" id="L24">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
         segBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="pc" id="L27">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBinnedBlobsMap =      </span>
+<span class="fc" id="L27">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBinnedBlobsMap =      </span>
         new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
    
-<span class="pc" id="L30">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+<span class="fc" id="L30">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
         segBinnedBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="pc" id="L33">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segLargeBlobsMap =      </span>
+<span class="fc" id="L33">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segLargeBlobsMap =      </span>
         new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
    
-<span class="pc" id="L36">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+<span class="fc" id="L36">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
         segLargeBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="nc" id="L39">    public BlobPerimeterHelper(final ImageExt img) {</span>
-<span class="nc" id="L40">        imgHelper = new SegmentedImageHelper(img);</span>
-<span class="nc" id="L41">    }</span>
+<span class="fc" id="L39">    public BlobPerimeterHelper(final ImageExt img) {</span>
+<span class="fc" id="L40">        imgHelper = new SegmentedImageHelper(img);</span>
+<span class="fc" id="L41">    }</span>
     
 <span class="fc" id="L43">    public BlobPerimeterHelper(final ImageExt img, final String debugTag) {</span>
 <span class="fc" id="L44">        imgHelper = new SegmentedImageHelper(img, debugTag);</span>
@@ -140,7 +140,7 @@ public class BlobPerimeterHelper {
     }
 
     public int getBinFactor() {
-<span class="nc" id="L143">        return imgHelper.getBinFactor();</span>
+<span class="fc" id="L143">        return imgHelper.getBinFactor();</span>
     }
 
     /**
@@ -245,8 +245,8 @@ public class BlobPerimeterHelper {
         
 <span class="fc" id="L246">        List&lt;PairIntArray&gt; blobPerimeters = segBinnedBlobPerimetersMap.get(type);</span>
         
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (blobPerimeters != null) {</span>
-<span class="nc" id="L249">            return blobPerimeters;</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (blobPerimeters != null) {</span>
+<span class="fc" id="L249">            return blobPerimeters;</span>
         }
         
 <span class="fc" id="L252">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
@@ -278,8 +278,8 @@ public class BlobPerimeterHelper {
     public List&lt;Set&lt;PairInt&gt;&gt; getBlobs(SegmentationType type, boolean 
         useBinnedImage) {
                 
-<span class="pc bpc" id="L281" title="1 of 2 branches missed.">        if (useBinnedImage) {</span>
-<span class="nc" id="L282">            return getBinnedBlobs(type);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (useBinnedImage) {</span>
+<span class="fc" id="L282">            return getBinnedBlobs(type);</span>
         } else {
 <span class="fc" id="L284">            return getUnbinnedBlobs(type);</span>
         }
@@ -288,16 +288,16 @@ public class BlobPerimeterHelper {
 
     private List&lt;Set&lt;PairInt&gt;&gt; getBinnedBlobs(SegmentationType type) {
         
-<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
 <span class="nc" id="L292">            throw new IllegalStateException(</span>
             &quot;Cannot use segmentation type COLOR_POLARCIEXY_LARGE with binned preference&quot;);
         }
         
-<span class="nc" id="L296">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
+<span class="fc" id="L296">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
         
-<span class="nc" id="L298">        boolean useBinned = true;</span>
+<span class="fc" id="L298">        boolean useBinned = true;</span>
                 
-<span class="nc bnc" id="L300" title="All 2 branches missed.">        if (blobs == null) {</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">        if (blobs == null) {</span>
             
 <span class="nc" id="L302">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
                 imgHelper, type, useBinned);
@@ -305,7 +305,7 @@ public class BlobPerimeterHelper {
 <span class="nc" id="L305">            segBinnedBlobsMap.put(type, blobs);</span>
         }
         
-<span class="nc" id="L308">        return blobs;            </span>
+<span class="fc" id="L308">        return blobs;            </span>
     }
 
     private List&lt;Set&lt;PairInt&gt;&gt; getUnbinnedBlobs(SegmentationType type) {

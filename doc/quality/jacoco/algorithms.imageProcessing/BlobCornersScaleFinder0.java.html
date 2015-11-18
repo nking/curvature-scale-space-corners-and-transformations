@@ -196,7 +196,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc bfc" id="L196" title="All 2 branches covered.">            for (int i = 0; i &lt; vector.getNumberOfItems(); ++i) {</span>
 <span class="fc" id="L197">                TransformationPair4 tp4 = ind1To2Pairs[i];              </span>
                 
-<span class="fc" id="L199">                TransformationParameters params = calculateTransformation(</span>
+<span class="fc" id="L199">                TransformationParameters params = MiscStats.calculateTransformation(</span>
 <span class="fc" id="L200">                    binFactor1, binFactor2, tp4.getMatchedCompStats(),</span>
                     new float[4]);
 <span class="fc bfc" id="L202" title="All 2 branches covered.">                if (params == null) {</span>
@@ -305,7 +305,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L305">            combined.addAll(ifs.getMatchedCompStats());</span>
         }
         
-<span class="fc" id="L308">        TransformationParameters combinedParams = calculateTransformation(</span>
+<span class="fc" id="L308">        TransformationParameters combinedParams = MiscStats.calculateTransformation(</span>
             binFactor1, binFactor2, combined, new float[4]);
         
 <span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (combinedParams == null) {</span>
@@ -338,7 +338,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="nc" id="L338">                    TransformationPair4 ifs = tpList.get(i);</span>
 <span class="nc" id="L339">                    combined.addAll(ifs.getMatchedCompStats());</span>
                 }
-<span class="nc" id="L341">                combinedParams = calculateTransformation(</span>
+<span class="nc" id="L341">                combinedParams = MiscStats.calculateTransformation(</span>
                     binFactor1, binFactor2, combined, new float[4]);
 <span class="nc bnc" id="L343" title="All 2 branches missed.">                if (combinedParams == null) {</span>
 <span class="nc" id="L344">                    return null;</span>
@@ -461,9 +461,9 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
     private void filter(List&lt;TransformationPair4&gt; tpList, 
         List&lt;TransformationParameters&gt; paramsList, int[] indexesToKeep) {
         
-<span class="fc bfc" id="L464" title="All 2 branches covered.">        if (indexesToKeep.length &lt; 2) {</span>
-<span class="fc" id="L465">            return;</span>
-        }
+        /*if (indexesToKeep.length &lt; 2) {
+            return;
+        }*/
         
 <span class="fc" id="L468">        List&lt;TransformationPair4&gt; tpList2 = </span>
             new ArrayList&lt;TransformationPair4&gt;(indexesToKeep.length);
@@ -536,7 +536,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
             }
         }
         
-<span class="fc" id="L539">        TransformationParameters minCostParams = calculateTransformation(</span>
+<span class="fc" id="L539">        TransformationParameters minCostParams = MiscStats.calculateTransformation(</span>
 <span class="fc" id="L540">            binFactor1, binFactor2, tpList.get(minCostIdx).getMatchedCompStats(),</span>
             new float[4]);
         
@@ -552,7 +552,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
 <span class="fc" id="L552">                continue;</span>
             }
 <span class="nc" id="L554">            TransformationPair4 tp4 = tpList.get(i);</span>
-<span class="nc" id="L555">            TransformationParameters params = calculateTransformation(</span>
+<span class="nc" id="L555">            TransformationParameters params = MiscStats.calculateTransformation(</span>
 <span class="nc" id="L556">               binFactor1, binFactor2, tp4.getMatchedCompStats(),</span>
                 new float[4]);
             
@@ -573,7 +573,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
             }
         }
         
-<span class="fc" id="L576">        TransformationParameters combinedParams = calculateTransformation(</span>
+<span class="fc" id="L576">        TransformationParameters combinedParams = MiscStats.calculateTransformation(</span>
             binFactor1, binFactor2, combined, new float[4]);
         
 <span class="pc bpc" id="L579" title="1 of 2 branches missed.">        if (combinedParams == null) {</span>

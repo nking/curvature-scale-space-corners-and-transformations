@@ -251,7 +251,7 @@ import thirdparty.HungarianAlgorithm;
                 
 <span class="fc" id="L252">                IntensityFeatureComparisonStats ifcs = ind1To2Pairs[i];   </span>
                                 
-<span class="fc" id="L254">                TransformationParameters params = calculateTransformation(</span>
+<span class="fc" id="L254">                TransformationParameters params = MiscStats.calculateTransformation(</span>
 <span class="fc" id="L255">                    binFactor1, binFactor2, ifcs.getComparisonStats(),</span>
                     new float[4]);
 <span class="fc bfc" id="L257" title="All 2 branches covered.">                if (params == null) {</span>
@@ -327,7 +327,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L327">        int[] indexesToKeepShifted = MiscStats.filterForRotationUsingHist(paramsList, 30);</span>
         
 <span class="pc bpc" id="L329" title="1 of 2 branches missed.">        if (indexesToKeepShifted.length &gt; indexesToKeep.length) {</span>
-<span class="nc" id="L330">            indexesToKeep = indexesToKeepShifted;</span>
+<span class="fc" id="L330">            indexesToKeep = indexesToKeepShifted;</span>
         }
         
 <span class="fc" id="L333">        filter(ifsList, paramsList, indexesToKeep);</span>
@@ -356,7 +356,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L356">            combined.addAll(ifs.getComparisonStats());</span>
         }
         
-<span class="fc" id="L359">        TransformationParameters combinedParams = calculateTransformation(</span>
+<span class="fc" id="L359">        TransformationParameters combinedParams = MiscStats.calculateTransformation(</span>
             binFactor1, binFactor2, combined, new float[4]);
         
 <span class="pc bpc" id="L362" title="1 of 2 branches missed.">        if (combinedParams == null) {</span>
@@ -391,7 +391,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L391">                    IntensityFeatureComparisonStats ifs = ifsList.get(i);</span>
 <span class="fc" id="L392">                    combined.addAll(ifs.getComparisonStats());</span>
                 }
-<span class="fc" id="L394">                combinedParams = calculateTransformation(</span>
+<span class="fc" id="L394">                combinedParams = MiscStats.calculateTransformation(</span>
                     binFactor1, binFactor2, combined, new float[4]);
 <span class="pc bpc" id="L396" title="1 of 2 branches missed.">                if (combinedParams == null) {</span>
 <span class="nc" id="L397">                    return null;</span>
@@ -694,7 +694,7 @@ import thirdparty.HungarianAlgorithm;
             }
         }
         
-<span class="nc" id="L697">        TransformationParameters minCostParams = calculateTransformation(</span>
+<span class="nc" id="L697">        TransformationParameters minCostParams = MiscStats.calculateTransformation(</span>
 <span class="nc" id="L698">            binFactor1, binFactor2, ifcsList.get(minCostIdx).getComparisonStats(),</span>
             new float[4]);
         
@@ -710,7 +710,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="nc" id="L710">                continue;</span>
             }
 <span class="nc" id="L712">            IntensityFeatureComparisonStats ifcs = ifcsList.get(i);</span>
-<span class="nc" id="L713">            TransformationParameters params = calculateTransformation(</span>
+<span class="nc" id="L713">            TransformationParameters params = MiscStats.calculateTransformation(</span>
 <span class="nc" id="L714">               binFactor1, binFactor2, ifcs.getComparisonStats(),</span>
                 new float[4]);
             
@@ -731,7 +731,7 @@ import thirdparty.HungarianAlgorithm;
             }
         }
         
-<span class="nc" id="L734">        TransformationParameters combinedParams = calculateTransformation(</span>
+<span class="nc" id="L734">        TransformationParameters combinedParams = MiscStats.calculateTransformation(</span>
             binFactor1, binFactor2, combined, new float[4]);
         
 <span class="nc bnc" id="L737" title="All 2 branches missed.">        if (combinedParams == null) {</span>

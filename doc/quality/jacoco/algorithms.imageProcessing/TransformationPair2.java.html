@@ -6,98 +6,98 @@
  */
 public class TransformationPair2&lt;T extends CornerRegion&gt; {
     
-<span class="fc" id="L9">    private int cornerListIndex1 = -1;</span>
-<span class="fc" id="L10">    private int cornerListIndex2 = -1;</span>
+<span class="nc" id="L9">    private int cornerListIndex1 = -1;</span>
+<span class="nc" id="L10">    private int cornerListIndex2 = -1;</span>
     
     private final T corner1Curve1;
     private final T corner1Curve2;
     private final T corner2Curve1;
     private final T corner2Curve2;
     
-<span class="fc" id="L17">    private TransformationParameters params = null;</span>
+<span class="nc" id="L17">    private TransformationParameters params = null;</span>
     
-<span class="fc" id="L19">    private boolean someScaleAreSmallerThanOne = false;</span>
+<span class="nc" id="L19">    private boolean someScaleAreSmallerThanOne = false;</span>
     
-<span class="fc" id="L21">    private double costAsSSD = 0;</span>
+<span class="nc" id="L21">    private double costAsSSD = 0;</span>
     
-<span class="fc" id="L23">    private double costAsDist = 0;</span>
-    
+<span class="nc" id="L23">    private double costAsDist = 0;</span>
+        
     /**
      * object used to track visits and help choose the next contour.
      */
     private NextCorner&lt;T&gt; nextCorner;
    
     public TransformationPair2(T corner1Curve1, T corner1Curve2, T corner2Curve1, 
-<span class="fc" id="L31">        T corner2Curve2) {</span>
+<span class="nc" id="L31">        T corner2Curve2) {</span>
         
-<span class="fc" id="L33">        this.corner1Curve1 = corner1Curve1;</span>
+<span class="nc" id="L33">        this.corner1Curve1 = corner1Curve1;</span>
         
-<span class="fc" id="L35">        this.corner1Curve2 = corner1Curve2;</span>
+<span class="nc" id="L35">        this.corner1Curve2 = corner1Curve2;</span>
         
-<span class="fc" id="L37">        this.corner2Curve1 = corner2Curve1;</span>
+<span class="nc" id="L37">        this.corner2Curve1 = corner2Curve1;</span>
         
-<span class="fc" id="L39">        this.corner2Curve2 = corner2Curve2;</span>
-<span class="fc" id="L40">    }</span>
+<span class="nc" id="L39">        this.corner2Curve2 = corner2Curve2;</span>
+<span class="nc" id="L40">    }</span>
     
     /**
      * @return the params
      */
     public TransformationParameters getTransformationParameters() {
-<span class="fc" id="L46">        return params;</span>
+<span class="nc" id="L46">        return params;</span>
     }
     
     public void addToCostAsSSD(double cost) {
-<span class="fc" id="L50">        costAsSSD += cost;</span>
-<span class="fc" id="L51">    }</span>
+<span class="nc" id="L50">        costAsSSD += cost;</span>
+<span class="nc" id="L51">    }</span>
     
     public void addToCostAsDistance(double cost) {
-<span class="fc" id="L54">        costAsDist += cost;</span>
-<span class="fc" id="L55">    }</span>
+<span class="nc" id="L54">        costAsDist += cost;</span>
+<span class="nc" id="L55">    }</span>
     
     public double getCostAsSSD() {
-<span class="fc" id="L58">        return costAsSSD;</span>
+<span class="nc" id="L58">        return costAsSSD;</span>
     }
     
     public double getCostAsDistance() {
 <span class="nc" id="L62">        return costAsDist;</span>
     }
-
+    
     /**
      * @param theParameters
      */
     public void setTransformationParameters(TransformationParameters theParameters) {
-<span class="fc" id="L69">        this.params = theParameters;</span>
-<span class="fc" id="L70">    }</span>
+<span class="nc" id="L69">        this.params = theParameters;</span>
+<span class="nc" id="L70">    }</span>
 
     /**
      * @return the nextContour
      */
     public NextCorner&lt;T&gt; getNextCorner() {
-<span class="fc" id="L76">        return nextCorner;</span>
+<span class="nc" id="L76">        return nextCorner;</span>
     }
 
     /**
      * @param theNextCorner the theNextCorner to set
      */
     public void setNextCorner(NextCorner&lt;T&gt; theNextCorner) {
-<span class="fc" id="L83">        this.nextCorner = theNextCorner;</span>
-<span class="fc" id="L84">    }</span>
+<span class="nc" id="L83">        this.nextCorner = theNextCorner;</span>
+<span class="nc" id="L84">    }</span>
 
     public void setSomeScaleAreSmallerThanOne() {
 <span class="nc" id="L87">        someScaleAreSmallerThanOne = true;</span>
 <span class="nc" id="L88">    }</span>
     
     public boolean scaleIsPossiblyAmbiguous() {
-<span class="fc" id="L91">        return someScaleAreSmallerThanOne;</span>
+<span class="nc" id="L91">        return someScaleAreSmallerThanOne;</span>
     }
     
     public void setCornerListIndex1(int idx) {
-<span class="fc" id="L95">        this.cornerListIndex1 = idx;</span>
-<span class="fc" id="L96">    }</span>
+<span class="nc" id="L95">        this.cornerListIndex1 = idx;</span>
+<span class="nc" id="L96">    }</span>
 
     public void setCornerListIndex2(int idx) {
-<span class="fc" id="L99">        this.cornerListIndex2 = idx;</span>
-<span class="fc" id="L100">    }</span>
+<span class="nc" id="L99">        this.cornerListIndex2 = idx;</span>
+<span class="nc" id="L100">    }</span>
     
     public int getCornerListIndex1() {
 <span class="nc" id="L103">        return this.cornerListIndex1;</span>

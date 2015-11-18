@@ -1033,9 +1033,9 @@ import java.util.logging.Logger;
 <span class="fc" id="L1033">            int x = p.getX() + fourNeighborsX[nIdx];</span>
 <span class="fc" id="L1034">            int y = p.getY() + fourNeighborsY[nIdx];</span>
             
-<span class="pc bpc" id="L1036" title="4 of 8 branches missed.">            if ((x &lt; 0) || (x &gt; (imageWidth - 1)) || (y &lt; 0) || </span>
+<span class="pc bpc" id="L1036" title="3 of 8 branches missed.">            if ((x &lt; 0) || (x &gt; (imageWidth - 1)) || (y &lt; 0) || </span>
                 (y &gt; (imageHeight - 1))) {
-<span class="nc" id="L1038">                continue;</span>
+<span class="fc" id="L1038">                continue;</span>
             }
 
 <span class="fc" id="L1041">            PairInt p2 = new PairInt(x, y);</span>

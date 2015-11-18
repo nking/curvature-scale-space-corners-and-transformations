@@ -53,18 +53,18 @@ import java.util.logging.Logger;
      public PairIntArray applyTransformation(TransformationParameters params,
         PairIntArray points) {
         
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (params == null) {</span>
 <span class="nc" id="L57">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
          
-<span class="fc" id="L60">        double rotInRadians = params.getRotationInRadians();</span>
-<span class="fc" id="L61">        double scale = params.getScale();        </span>
-<span class="fc" id="L62">        double translationX = params.getTranslationX();</span>
-<span class="fc" id="L63">        double translationY = params.getTranslationY();</span>
-<span class="fc" id="L64">        double centroidX = params.getOriginX();</span>
-<span class="fc" id="L65">        double centroidY = params.getOriginY();</span>
+<span class="nc" id="L60">        double rotInRadians = params.getRotationInRadians();</span>
+<span class="nc" id="L61">        double scale = params.getScale();        </span>
+<span class="nc" id="L62">        double translationX = params.getTranslationX();</span>
+<span class="nc" id="L63">        double translationY = params.getTranslationY();</span>
+<span class="nc" id="L64">        double centroidX = params.getOriginX();</span>
+<span class="nc" id="L65">        double centroidY = params.getOriginY();</span>
         
-<span class="fc" id="L67">        return applyTransformation(rotInRadians, scale, translationX,</span>
+<span class="nc" id="L67">        return applyTransformation(rotInRadians, scale, translationX,</span>
             translationY, centroidX, centroidY, points);
      }
      
@@ -80,18 +80,18 @@ import java.util.logging.Logger;
      public PairFloatArray applyTransformation2(TransformationParameters params,
         PairIntArray points) {
         
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (params == null) {</span>
 <span class="nc" id="L84">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L87">        double rotInRadians = params.getRotationInRadians();</span>
-<span class="fc" id="L88">        double scale = params.getScale();        </span>
-<span class="fc" id="L89">        double translationX = params.getTranslationX();</span>
-<span class="fc" id="L90">        double translationY = params.getTranslationY();</span>
-<span class="fc" id="L91">        double centroidX = params.getOriginX();</span>
-<span class="fc" id="L92">        double centroidY = params.getOriginY();</span>
+<span class="nc" id="L87">        double rotInRadians = params.getRotationInRadians();</span>
+<span class="nc" id="L88">        double scale = params.getScale();        </span>
+<span class="nc" id="L89">        double translationX = params.getTranslationX();</span>
+<span class="nc" id="L90">        double translationY = params.getTranslationY();</span>
+<span class="nc" id="L91">        double centroidX = params.getOriginX();</span>
+<span class="nc" id="L92">        double centroidY = params.getOriginY();</span>
         
-<span class="fc" id="L94">        return applyTransformation2(rotInRadians, scale, translationX,</span>
+<span class="nc" id="L94">        return applyTransformation2(rotInRadians, scale, translationX,</span>
             translationY, centroidX, centroidY, points);
      }
     
@@ -297,12 +297,12 @@ import java.util.logging.Logger;
         double scale, double translationX, double translationY,
         double centroidX, double centroidY, PairIntArray points) {
        
-<span class="pc bpc" id="L300" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        if (points == null) {</span>
 <span class="nc" id="L301">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L304">        double cos = Math.cos(rotInRadians);</span>
-<span class="fc" id="L305">        double sin = Math.sin(rotInRadians);</span>
+<span class="nc" id="L304">        double cos = Math.cos(rotInRadians);</span>
+<span class="nc" id="L305">        double sin = Math.sin(rotInRadians);</span>
                 
         /*
         scale, rotate, then translate.
@@ -316,29 +316,29 @@ import java.util.logging.Logger;
         yt_0 = yr_0 + transY = y1
         */
         
-<span class="fc" id="L319">        PairFloatArray te = new PairFloatArray();</span>
+<span class="nc" id="L319">        PairFloatArray te = new PairFloatArray();</span>
 
-<span class="fc bfc" id="L321" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
 
-<span class="fc" id="L323">            double x = points.getX(i);</span>
-<span class="fc" id="L324">            double y = points.getY(i);</span>
+<span class="nc" id="L323">            double x = points.getX(i);</span>
+<span class="nc" id="L324">            double y = points.getY(i);</span>
 
-<span class="fc" id="L326">            double xr = centroidX * scale + ((x - centroidX) * scale * cos) </span>
+<span class="nc" id="L326">            double xr = centroidX * scale + ((x - centroidX) * scale * cos) </span>
                 + ((y - centroidY) * scale * sin);
 
-<span class="fc" id="L329">            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) </span>
+<span class="nc" id="L329">            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) </span>
                 + ((y - centroidY) * scale * cos);
 
-<span class="fc" id="L332">            double xt = xr + translationX;</span>
-<span class="fc" id="L333">            double yt = yr + translationY;</span>
+<span class="nc" id="L332">            double xt = xr + translationX;</span>
+<span class="nc" id="L333">            double yt = yr + translationY;</span>
 
-<span class="fc" id="L335">            float xte = (float)(xt);</span>
-<span class="fc" id="L336">            float yte = (float)(yt);</span>
+<span class="nc" id="L335">            float xte = (float)(xt);</span>
+<span class="nc" id="L336">            float yte = (float)(yt);</span>
             
-<span class="fc" id="L338">            te.add(xte, yte);</span>
+<span class="nc" id="L338">            te.add(xte, yte);</span>
         }
           
-<span class="fc" id="L341">        return te;</span>
+<span class="nc" id="L341">        return te;</span>
     }
     
     /**
@@ -398,38 +398,38 @@ import java.util.logging.Logger;
     public void applyTransformation(TransformationParameters params,
         PairIntArray set1, float[] outputTrX, float[] outputTrY) {
         
-<span class="pc bpc" id="L401" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (params == null) {</span>
 <span class="nc" id="L402">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L404" title="1 of 2 branches missed.">        if (set1 == null) {</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">        if (set1 == null) {</span>
 <span class="nc" id="L405">            throw new IllegalArgumentException(&quot;set1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L407" title="1 of 2 branches missed.">        if (outputTrX == null) {</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">        if (outputTrX == null) {</span>
 <span class="nc" id="L408">            throw new IllegalArgumentException(&quot;outputTrX cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L410" title="1 of 2 branches missed.">        if (outputTrY == null) {</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (outputTrY == null) {</span>
 <span class="nc" id="L411">            throw new IllegalArgumentException(&quot;outputTrY cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L413" title="1 of 2 branches missed.">        if (set1.getN() != outputTrX.length) {</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        if (set1.getN() != outputTrX.length) {</span>
 <span class="nc" id="L414">            throw new IllegalArgumentException(</span>
                 &quot;outputTrX must the same length as set1&quot;);
         }
-<span class="pc bpc" id="L417" title="1 of 2 branches missed.">        if (set1.getN() != outputTrY.length) {</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">        if (set1.getN() != outputTrY.length) {</span>
 <span class="nc" id="L418">            throw new IllegalArgumentException(</span>
                 &quot;outputTrY must the same length as set1&quot;);
         }
         
-<span class="fc" id="L422">        float scale = params.getScale();</span>
-<span class="fc" id="L423">        float scaleTimesCosine = (float)</span>
-<span class="fc" id="L424">            (scale * Math.cos(params.getRotationInRadians()));</span>
-<span class="fc" id="L425">        float scaleTimesSine = (float)</span>
-<span class="fc" id="L426">            (scale * Math.sin(params.getRotationInRadians()));</span>
+<span class="nc" id="L422">        float scale = params.getScale();</span>
+<span class="nc" id="L423">        float scaleTimesCosine = (float)</span>
+<span class="nc" id="L424">            (scale * Math.cos(params.getRotationInRadians()));</span>
+<span class="nc" id="L425">        float scaleTimesSine = (float)</span>
+<span class="nc" id="L426">            (scale * Math.sin(params.getRotationInRadians()));</span>
                 
-<span class="fc" id="L428">        float originX = params.getOriginX();</span>
-<span class="fc" id="L429">        float originY = params.getOriginY();</span>
+<span class="nc" id="L428">        float originX = params.getOriginX();</span>
+<span class="nc" id="L429">        float originY = params.getOriginY();</span>
         
-<span class="fc" id="L431">        float transX = params.getTranslationX();</span>
-<span class="fc" id="L432">        float transY = params.getTranslationY();</span>
+<span class="nc" id="L431">        float transX = params.getTranslationX();</span>
+<span class="nc" id="L432">        float transY = params.getTranslationY();</span>
         
         /*
         xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
@@ -441,24 +441,24 @@ import java.util.logging.Logger;
         yt_0 = yr_0 + transY = y1
         */
         
-<span class="fc bfc" id="L444" title="All 2 branches covered.">        for (int i = 0; i &lt; set1.getN(); ++i) {</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">        for (int i = 0; i &lt; set1.getN(); ++i) {</span>
         
-<span class="fc" id="L446">            int xPt = set1.getX(i);</span>
-<span class="fc" id="L447">            int yPt = set1.getY(i);</span>
+<span class="nc" id="L446">            int xPt = set1.getX(i);</span>
+<span class="nc" id="L447">            int yPt = set1.getY(i);</span>
             
-<span class="fc" id="L449">            float xr = originX * scale + ((xPt - originX) * scaleTimesCosine) </span>
+<span class="nc" id="L449">            float xr = originX * scale + ((xPt - originX) * scaleTimesCosine) </span>
                 + ((yPt - originY) * scaleTimesSine);
 
-<span class="fc" id="L452">            float yr = originY * scale + (-(xPt - originX) * scaleTimesSine) </span>
+<span class="nc" id="L452">            float yr = originY * scale + (-(xPt - originX) * scaleTimesSine) </span>
                 + ((yPt - originY) * scaleTimesCosine);
 
-<span class="fc" id="L455">            float xt = xr + transX;</span>
-<span class="fc" id="L456">            float yt = yr + transY;</span>
+<span class="nc" id="L455">            float xt = xr + transX;</span>
+<span class="nc" id="L456">            float yt = yr + transY;</span>
 
-<span class="fc" id="L458">            outputTrX[i] = xt;</span>
-<span class="fc" id="L459">            outputTrY[i] = yt;</span>
+<span class="nc" id="L458">            outputTrX[i] = xt;</span>
+<span class="nc" id="L459">            outputTrY[i] = yt;</span>
         }
-<span class="fc" id="L461">    }</span>
+<span class="nc" id="L461">    }</span>
     
     /**
      * apply transformation params to the image input.  Note, the rotation is applied in a clockwise
@@ -641,15 +641,23 @@ import java.util.logging.Logger;
     public &lt;T extends CornerRegion&gt; T applyTransformation(
         TransformationParameters params, T cr) {
         
-<span class="fc" id="L644">        double scale = params.getScale();</span>
-<span class="fc" id="L645">        double rotInRadians = params.getRotationInRadians();</span>
-<span class="fc" id="L646">        double translationX = params.getTranslationX();</span>
-<span class="fc" id="L647">        double translationY = params.getTranslationY();</span>
-<span class="fc" id="L648">        double centroidX = params.getOriginX();</span>
-<span class="fc" id="L649">        double centroidY = params.getOriginY();</span>
+<span class="fc" id="L644">        double rotInRadians = params.getRotationInRadians();</span>
+        
+<span class="fc" id="L646">        double cos = Math.cos(rotInRadians);</span>
+<span class="fc" id="L647">        double sin = Math.sin(rotInRadians);</span>
                 
-<span class="fc" id="L651">        double cos = Math.cos(rotInRadians);</span>
-<span class="fc" id="L652">        double sin = Math.sin(rotInRadians);</span>
+<span class="fc" id="L649">        return applyTransformation(params, cr, cos, sin);</span>
+    }
+    
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public &lt;T extends CornerRegion&gt; T applyTransformation(
+        TransformationParameters params, T cr, double cos, double sin) {
+        
+<span class="fc" id="L656">        double scale = params.getScale();</span>
+<span class="fc" id="L657">        double translationX = params.getTranslationX();</span>
+<span class="fc" id="L658">        double translationY = params.getTranslationY();</span>
+<span class="fc" id="L659">        double centroidX = params.getOriginX();</span>
+<span class="fc" id="L660">        double centroidY = params.getOriginY();</span>
                 
         /*
         scale, rotate, then translate.
@@ -663,44 +671,44 @@ import java.util.logging.Logger;
         yt_0 = yr_0 + transY = y1
         */
         
-<span class="fc" id="L666">        T tr = (T)cr.copy();</span>
+<span class="fc" id="L674">        T tr = (T)cr.copy();</span>
         
-<span class="fc bfc" id="L668" title="All 2 branches covered.">        for (int i = 0; i &lt; tr.getX().length; i++) {</span>
+<span class="fc bfc" id="L676" title="All 2 branches covered.">        for (int i = 0; i &lt; tr.getX().length; i++) {</span>
 
-<span class="fc" id="L670">            double x = tr.getX()[i];</span>
-<span class="fc" id="L671">            double y = tr.getY()[i];</span>
+<span class="fc" id="L678">            double x = tr.getX()[i];</span>
+<span class="fc" id="L679">            double y = tr.getY()[i];</span>
 
-<span class="fc" id="L673">            double xr = centroidX * scale + ((x - centroidX) * scale * cos) </span>
+<span class="fc" id="L681">            double xr = centroidX * scale + ((x - centroidX) * scale * cos) </span>
                 + ((y - centroidY) * scale * sin);
 
-<span class="fc" id="L676">            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) </span>
+<span class="fc" id="L684">            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) </span>
                 + ((y - centroidY) * scale * cos);
 
-<span class="fc" id="L679">            double xt = xr + translationX;</span>
-<span class="fc" id="L680">            double yt = yr + translationY;</span>
+<span class="fc" id="L687">            double xt = xr + translationX;</span>
+<span class="fc" id="L688">            double yt = yr + translationY;</span>
 
-<span class="fc" id="L682">            int xte = (int) Math.round(xt);</span>
-<span class="fc" id="L683">            int yte = (int) Math.round(yt);</span>
+<span class="fc" id="L690">            int xte = (int) Math.round(xt);</span>
+<span class="fc" id="L691">            int yte = (int) Math.round(yt);</span>
             
-<span class="fc" id="L685">            tr.getX()[i] = xte;</span>
-<span class="fc" id="L686">            tr.getY()[i] = yte;</span>
+<span class="fc" id="L693">            tr.getX()[i] = xte;</span>
+<span class="fc" id="L694">            tr.getY()[i] = yte;</span>
         }
           
-<span class="fc" id="L689">        return tr;</span>
+<span class="fc" id="L697">        return tr;</span>
     }
     
     public CurvatureScaleSpaceContour applyTransformation(
         TransformationParameters params, CurvatureScaleSpaceContour cr) {
         
-<span class="nc" id="L695">        double scale = params.getScale();</span>
-<span class="nc" id="L696">        double rotInRadians = params.getRotationInRadians();</span>
-<span class="nc" id="L697">        double translationX = params.getTranslationX();</span>
-<span class="nc" id="L698">        double translationY = params.getTranslationY();</span>
-<span class="nc" id="L699">        double centroidX = params.getOriginX();</span>
-<span class="nc" id="L700">        double centroidY = params.getOriginY();</span>
+<span class="nc" id="L703">        double scale = params.getScale();</span>
+<span class="nc" id="L704">        double rotInRadians = params.getRotationInRadians();</span>
+<span class="nc" id="L705">        double translationX = params.getTranslationX();</span>
+<span class="nc" id="L706">        double translationY = params.getTranslationY();</span>
+<span class="nc" id="L707">        double centroidX = params.getOriginX();</span>
+<span class="nc" id="L708">        double centroidY = params.getOriginY();</span>
                 
-<span class="nc" id="L702">        double cos = Math.cos(rotInRadians);</span>
-<span class="nc" id="L703">        double sin = Math.sin(rotInRadians);</span>
+<span class="nc" id="L710">        double cos = Math.cos(rotInRadians);</span>
+<span class="nc" id="L711">        double sin = Math.sin(rotInRadians);</span>
                 
         /*
         scale, rotate, then translate.
@@ -714,36 +722,36 @@ import java.util.logging.Logger;
         yt_0 = yr_0 + transY = y1
         */
         
-<span class="nc" id="L717">        CurvatureScaleSpaceContour tr = cr.copy();</span>
+<span class="nc" id="L725">        CurvatureScaleSpaceContour tr = cr.copy();</span>
         
-<span class="nc bnc" id="L719" title="All 2 branches missed.">        for (int i = 0; i &lt; tr.getPeakDetails().length; ++i) {</span>
+<span class="nc bnc" id="L727" title="All 2 branches missed.">        for (int i = 0; i &lt; tr.getPeakDetails().length; ++i) {</span>
 
-<span class="nc" id="L721">            CurvatureScaleSpaceImagePoint cip = tr.getPeakDetails()[i];</span>
+<span class="nc" id="L729">            CurvatureScaleSpaceImagePoint cip = tr.getPeakDetails()[i];</span>
 
-<span class="nc" id="L723">            double x = cip.getXCoord();</span>
-<span class="nc" id="L724">            double y = cip.getYCoord();</span>
+<span class="nc" id="L731">            double x = cip.getXCoord();</span>
+<span class="nc" id="L732">            double y = cip.getYCoord();</span>
 
-<span class="nc" id="L726">            double xr = centroidX * scale + ((x - centroidX) * scale * cos) </span>
+<span class="nc" id="L734">            double xr = centroidX * scale + ((x - centroidX) * scale * cos) </span>
                 + ((y - centroidY) * scale * sin);
 
-<span class="nc" id="L729">            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) </span>
+<span class="nc" id="L737">            double yr = centroidY * scale + (-(x - centroidX) * scale * sin) </span>
                 + ((y - centroidY) * scale * cos);
 
-<span class="nc" id="L732">            double xt = xr + translationX;</span>
-<span class="nc" id="L733">            double yt = yr + translationY;</span>
+<span class="nc" id="L740">            double xt = xr + translationX;</span>
+<span class="nc" id="L741">            double yt = yr + translationY;</span>
 
-<span class="nc" id="L735">            int xte = (int) Math.round(xt);</span>
-<span class="nc" id="L736">            int yte = (int) Math.round(yt);</span>
+<span class="nc" id="L743">            int xte = (int) Math.round(xt);</span>
+<span class="nc" id="L744">            int yte = (int) Math.round(yt);</span>
             
-<span class="nc" id="L738">            CurvatureScaleSpaceImagePoint cipC = </span>
-<span class="nc" id="L739">                new CurvatureScaleSpaceImagePoint(cip.getSigma(), </span>
-<span class="nc" id="L740">                    cip.getScaleFreeLength(), xte, yte, cip.getCoordIdx()</span>
+<span class="nc" id="L746">            CurvatureScaleSpaceImagePoint cipC = </span>
+<span class="nc" id="L747">                new CurvatureScaleSpaceImagePoint(cip.getSigma(), </span>
+<span class="nc" id="L748">                    cip.getScaleFreeLength(), xte, yte, cip.getCoordIdx()</span>
                 );
             
-<span class="nc" id="L743">            tr.getPeakDetails()[i] = cipC;</span>
+<span class="nc" id="L751">            tr.getPeakDetails()[i] = cipC;</span>
         }
           
-<span class="nc" id="L746">        return tr;</span>
+<span class="nc" id="L754">        return tr;</span>
     }
     
     /**
@@ -756,8 +764,8 @@ import java.util.logging.Logger;
     public TransformationParameters applyScaleTransformation(
         TransformationParameters params, float scale) {
         
-<span class="pc bpc" id="L759" title="1 of 2 branches missed.">        if (params == null) {</span>
-<span class="nc" id="L760">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
+<span class="pc bpc" id="L767" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L768">            throw new IllegalArgumentException(&quot;params cannot be null&quot;);</span>
         }
         
         /*
@@ -770,28 +778,28 @@ import java.util.logging.Logger;
         yt_0 = yr_0 + transY = y1
         */
         
-<span class="fc" id="L773">        TransformationParameters tr2 = params.copy();</span>
+<span class="fc" id="L781">        TransformationParameters tr2 = params.copy();</span>
         
-<span class="fc" id="L775">        float ox = params.getOriginX();</span>
-<span class="fc" id="L776">        float oy = params.getOriginY();</span>
-<span class="fc" id="L777">        float tx = params.getTranslationX();</span>
-<span class="fc" id="L778">        float ty = params.getTranslationY();</span>
-<span class="fc" id="L779">        double cosine = Math.cos(0);</span>
-<span class="fc" id="L780">        double sine = Math.sin(0);</span>
+<span class="fc" id="L783">        float ox = params.getOriginX();</span>
+<span class="fc" id="L784">        float oy = params.getOriginY();</span>
+<span class="fc" id="L785">        float tx = params.getTranslationX();</span>
+<span class="fc" id="L786">        float ty = params.getTranslationY();</span>
+<span class="fc" id="L787">        double cosine = Math.cos(0);</span>
+<span class="fc" id="L788">        double sine = Math.sin(0);</span>
         
-<span class="fc" id="L782">        tr2.setScale(scale*params.getScale());</span>
-<span class="fc" id="L783">        tr2.setOriginX(ox * scale);</span>
-<span class="fc" id="L784">        tr2.setOriginY(oy * scale);</span>
+<span class="fc" id="L790">        tr2.setScale(scale*params.getScale());</span>
+<span class="fc" id="L791">        tr2.setOriginX(ox * scale);</span>
+<span class="fc" id="L792">        tr2.setOriginY(oy * scale);</span>
         
-<span class="fc" id="L786">        double tx2 = (ox * scale) + ((tx - ox) * scale * cosine) </span>
+<span class="fc" id="L794">        double tx2 = (ox * scale) + ((tx - ox) * scale * cosine) </span>
             + ((ty - oy) * scale * sine);
-<span class="fc" id="L788">        double ty2 = (oy * scale) + (-(tx - ox) * scale * sine)</span>
+<span class="fc" id="L796">        double ty2 = (oy * scale) + (-(tx - ox) * scale * sine)</span>
             + ((ty - oy) * scale * cosine);
         
-<span class="fc" id="L791">        tr2.setTranslationX((float)tx2);</span>
-<span class="fc" id="L792">        tr2.setTranslationY((float)ty2);</span>
+<span class="fc" id="L799">        tr2.setTranslationX((float)tx2);</span>
+<span class="fc" id="L800">        tr2.setTranslationY((float)ty2);</span>
         
-<span class="fc" id="L794">        return tr2;</span>
+<span class="fc" id="L802">        return tr2;</span>
     }
     
     /**
@@ -804,23 +812,23 @@ import java.util.logging.Logger;
      */
     public float[][] transformXY(float rotationInDegrees, float[][] xy) {
         
-<span class="pc bpc" id="L807" title="1 of 2 branches missed.">        if (xy == null) {</span>
-<span class="nc" id="L808">            throw new IllegalArgumentException(&quot;xy cannot be null&quot;);</span>
+<span class="pc bpc" id="L815" title="1 of 2 branches missed.">        if (xy == null) {</span>
+<span class="nc" id="L816">            throw new IllegalArgumentException(&quot;xy cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L810" title="1 of 2 branches missed.">        if (xy.length == 0) {</span>
-<span class="nc" id="L811">            return new float[0][];</span>
+<span class="pc bpc" id="L818" title="1 of 2 branches missed.">        if (xy.length == 0) {</span>
+<span class="nc" id="L819">            return new float[0][];</span>
         }
-<span class="pc bpc" id="L813" title="1 of 2 branches missed.">        if (xy[0].length != 2) {</span>
-<span class="nc" id="L814">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L821" title="1 of 2 branches missed.">        if (xy[0].length != 2) {</span>
+<span class="nc" id="L822">            throw new IllegalArgumentException(</span>
             &quot;xy must be size 2 for the 2nd dimension&quot;);
         }
         
-<span class="fc" id="L818">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
+<span class="fc" id="L826">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
         
-<span class="fc" id="L820">        double cos = Math.cos(rotationInRadians);</span>
-<span class="fc" id="L821">        double sin = Math.sin(rotationInRadians);</span>
+<span class="fc" id="L828">        double cos = Math.cos(rotationInRadians);</span>
+<span class="fc" id="L829">        double sin = Math.sin(rotationInRadians);</span>
         
-<span class="fc" id="L823">        float[][] transformed = new float[xy.length][];</span>
+<span class="fc" id="L831">        float[][] transformed = new float[xy.length][];</span>
         /*
         xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
 
@@ -830,18 +838,18 @@ import java.util.logging.Logger;
 
         yt_0 = yr_0 + transY = y1
         */
-<span class="fc bfc" id="L833" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.length; ++i) {</span>
+<span class="fc bfc" id="L841" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.length; ++i) {</span>
             
-<span class="fc" id="L835">            float x = xy[i][0];</span>
-<span class="fc" id="L836">            float y = xy[i][1];</span>
+<span class="fc" id="L843">            float x = xy[i][0];</span>
+<span class="fc" id="L844">            float y = xy[i][1];</span>
             
-<span class="fc" id="L838">            double xr = (x * cos) + (y * sin);</span>
-<span class="fc" id="L839">            double yr = (-x * sin) + (y * cos);</span>
+<span class="fc" id="L846">            double xr = (x * cos) + (y * sin);</span>
+<span class="fc" id="L847">            double yr = (-x * sin) + (y * cos);</span>
             
-<span class="fc" id="L841">            transformed[i] = new float[]{(float)xr, (float)yr};</span>
+<span class="fc" id="L849">            transformed[i] = new float[]{(float)xr, (float)yr};</span>
         }
         
-<span class="fc" id="L844">        return transformed;</span>
+<span class="fc" id="L852">        return transformed;</span>
     }
     
     /**
@@ -855,15 +863,15 @@ import java.util.logging.Logger;
      */
     public float[] rotate(float rotationInDegrees, float x, float y) {
         
-<span class="nc" id="L858">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
+<span class="nc" id="L866">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
         
-<span class="nc" id="L860">        double cos = Math.cos(rotationInRadians);</span>
-<span class="nc" id="L861">        double sin = Math.sin(rotationInRadians);</span>
+<span class="nc" id="L868">        double cos = Math.cos(rotationInRadians);</span>
+<span class="nc" id="L869">        double sin = Math.sin(rotationInRadians);</span>
                             
-<span class="nc" id="L863">        double xr = (x * cos) + (y * sin);</span>
-<span class="nc" id="L864">        double yr = (-x * sin) + (y * cos);</span>
+<span class="nc" id="L871">        double xr = (x * cos) + (y * sin);</span>
+<span class="nc" id="L872">        double yr = (-x * sin) + (y * cos);</span>
             
-<span class="nc" id="L866">        return new float[]{(float)xr, (float)yr};</span>
+<span class="nc" id="L874">        return new float[]{(float)xr, (float)yr};</span>
     }
 
     /**
@@ -882,65 +890,65 @@ import java.util.logging.Logger;
     public void rotate(int rotationInDegrees, int x, int y, 
         float[] outputX, float[] outputY, int outputIndex) {
         
-<span class="pc bpc" id="L885" title="1 of 2 branches missed.">        if (outputX == null) {</span>
-<span class="nc" id="L886">            throw new IllegalArgumentException(&quot;outputX cannot be null&quot;);</span>
+<span class="pc bpc" id="L893" title="1 of 2 branches missed.">        if (outputX == null) {</span>
+<span class="nc" id="L894">            throw new IllegalArgumentException(&quot;outputX cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L888" title="1 of 2 branches missed.">        if (outputY == null) {</span>
-<span class="nc" id="L889">            throw new IllegalArgumentException(&quot;outputY cannot be null&quot;);</span>
+<span class="pc bpc" id="L896" title="1 of 2 branches missed.">        if (outputY == null) {</span>
+<span class="nc" id="L897">            throw new IllegalArgumentException(&quot;outputY cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L891" title="1 of 2 branches missed.">        if (outputX.length != outputY.length) {</span>
-<span class="nc" id="L892">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L899" title="1 of 2 branches missed.">        if (outputX.length != outputY.length) {</span>
+<span class="nc" id="L900">            throw new IllegalArgumentException(</span>
             &quot;outputX.length must be same length as outputY.length&quot;);
         }
         
-<span class="pc bpc" id="L896" title="2 of 4 branches missed.">        if (outputIndex &lt; 0 || (outputIndex &gt; (outputX.length - 1))) {</span>
-<span class="nc" id="L897">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L904" title="2 of 4 branches missed.">        if (outputIndex &lt; 0 || (outputIndex &gt; (outputX.length - 1))) {</span>
+<span class="nc" id="L905">            throw new IllegalArgumentException(</span>
             &quot;outputIndex is out of bounds of outputX&quot;);
         }
         
-<span class="fc" id="L901">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
+<span class="fc" id="L909">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
         
-<span class="fc" id="L903">        double cos = Math.cos(rotationInRadians);</span>
-<span class="fc" id="L904">        double sin = Math.sin(rotationInRadians);</span>
+<span class="fc" id="L911">        double cos = Math.cos(rotationInRadians);</span>
+<span class="fc" id="L912">        double sin = Math.sin(rotationInRadians);</span>
                             
-<span class="fc" id="L906">        double xr = (x * cos) + (y * sin);</span>
-<span class="fc" id="L907">        double yr = (-x * sin) + (y * cos);</span>
+<span class="fc" id="L914">        double xr = (x * cos) + (y * sin);</span>
+<span class="fc" id="L915">        double yr = (-x * sin) + (y * cos);</span>
         
-<span class="fc" id="L909">        outputX[outputIndex] = (float)xr;</span>
-<span class="fc" id="L910">        outputY[outputIndex] = (float)yr;</span>
+<span class="fc" id="L917">        outputX[outputIndex] = (float)xr;</span>
+<span class="fc" id="L918">        outputY[outputIndex] = (float)yr;</span>
         
-<span class="fc" id="L912">    }</span>
+<span class="fc" id="L920">    }</span>
 
     public void transformToOrigin(int originX, int originY, 
         TransformationParameters params) {
         
-<span class="nc" id="L917">        double ox = params.getOriginX();</span>
-<span class="nc" id="L918">        double oy = params.getOriginY();</span>
+<span class="nc" id="L925">        double ox = params.getOriginX();</span>
+<span class="nc" id="L926">        double oy = params.getOriginY();</span>
         
-<span class="nc" id="L920">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
-<span class="nc" id="L921">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
+<span class="nc" id="L928">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
+<span class="nc" id="L929">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
 
-<span class="nc" id="L923">        double tx = revParams.getTranslationX();</span>
-<span class="nc" id="L924">        double ty = revParams.getTranslationY();</span>
+<span class="nc" id="L931">        double tx = revParams.getTranslationX();</span>
+<span class="nc" id="L932">        double ty = revParams.getTranslationY();</span>
         
-<span class="nc" id="L926">        double cosine = Math.cos(revParams.getRotationInRadians());</span>
-<span class="nc" id="L927">        double sine = Math.sin(revParams.getRotationInRadians());</span>
-<span class="nc" id="L928">        double scale = revParams.getScale();</span>
+<span class="nc" id="L934">        double cosine = Math.cos(revParams.getRotationInRadians());</span>
+<span class="nc" id="L935">        double sine = Math.sin(revParams.getRotationInRadians());</span>
+<span class="nc" id="L936">        double scale = revParams.getScale();</span>
         
-<span class="nc" id="L930">        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);</span>
-<span class="nc" id="L931">        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);</span>
+<span class="nc" id="L938">        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);</span>
+<span class="nc" id="L939">        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);</span>
         
-<span class="nc" id="L933">        double txP = revParams.getTranslationX() - deltaX;</span>
-<span class="nc" id="L934">        double tyP = revParams.getTranslationY() - deltaY;</span>
+<span class="nc" id="L941">        double txP = revParams.getTranslationX() - deltaX;</span>
+<span class="nc" id="L942">        double tyP = revParams.getTranslationY() - deltaY;</span>
         
-<span class="nc" id="L936">        double[] xyT2 = applyTransformation(params, txP, tyP);</span>
+<span class="nc" id="L944">        double[] xyT2 = applyTransformation(params, txP, tyP);</span>
       
-<span class="nc" id="L938">        params.setOriginX(originX);</span>
-<span class="nc" id="L939">        params.setOriginY(originY);</span>
-<span class="nc" id="L940">        params.setTranslationX((float)xyT2[0]);</span>
-<span class="nc" id="L941">        params.setTranslationY((float)xyT2[1]);</span>
+<span class="nc" id="L946">        params.setOriginX(originX);</span>
+<span class="nc" id="L947">        params.setOriginY(originY);</span>
+<span class="nc" id="L948">        params.setTranslationX((float)xyT2[0]);</span>
+<span class="nc" id="L949">        params.setTranslationY((float)xyT2[1]);</span>
         
-<span class="nc" id="L943">    }</span>
+<span class="nc" id="L951">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

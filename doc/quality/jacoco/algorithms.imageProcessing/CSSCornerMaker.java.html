@@ -219,7 +219,7 @@ public class CSSCornerMaker {
 <span class="pc bpc" id="L219" title="1 of 2 branches missed.">        boolean storeCornerRegion = doStoreCornerRegions &amp;&amp; </span>
 <span class="fc bfc" id="L220" title="All 2 branches covered.">            !edgeCornerRegionMap.containsKey(Integer.valueOf(edgeNumber));</span>
         
-<span class="fc bfc" id="L222" title="All 4 branches covered.">        if (correctForJaggedLines &amp;&amp; !doUseOutdoorMode) {</span>
+<span class="pc bpc" id="L222" title="1 of 4 branches missed.">        if (correctForJaggedLines &amp;&amp; !doUseOutdoorMode) {</span>
 
 <span class="fc" id="L224">            PairIntArray jaggedLines = removeFalseCorners(</span>
 <span class="fc" id="L225">                scaleSpace.getXYCurve(), maxCandidateCornerIndexes,</span>
@@ -232,10 +232,10 @@ public class CSSCornerMaker {
 
 <span class="fc" id="L233">            int idx = maxCandidateCornerIndexes.get(ii);</span>
 
-<span class="fc bfc" id="L235" title="All 4 branches covered.">            if (doUseOutdoorMode &amp;&amp; !scaleSpace.curveIsClosed()) {</span>
-<span class="fc bfc" id="L236" title="All 4 branches covered.">                if ((idx &lt; minDistFromEnds)</span>
+<span class="pc bpc" id="L235" title="3 of 4 branches missed.">            if (doUseOutdoorMode &amp;&amp; !scaleSpace.curveIsClosed()) {</span>
+<span class="nc bnc" id="L236" title="All 4 branches missed.">                if ((idx &lt; minDistFromEnds)</span>
                     || (idx &gt; (nPoints - minDistFromEnds))) {
-<span class="fc" id="L238">                    continue;</span>
+<span class="nc" id="L238">                    continue;</span>
                 }
             }
             
@@ -830,8 +830,8 @@ public class CSSCornerMaker {
 
 <span class="fc" id="L831">        float factorAboveMin = factorIncreaseForCurvatureMinimum * 2.5f;//3.5f;// 10 misses some corners</span>
 
-<span class="fc bfc" id="L833" title="All 2 branches covered.">if (doUseOutdoorMode) {</span>
-<span class="fc" id="L834">    factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;</span>
+<span class="pc bpc" id="L833" title="1 of 2 branches missed.">if (doUseOutdoorMode) {</span>
+<span class="nc" id="L834">    factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;</span>
 }
 <span class="fc" id="L836">        log.fine(&quot;using factorAboveMin=&quot; + factorAboveMin);</span>
         

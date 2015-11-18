@@ -117,8 +117,8 @@ public class CurvatureScaleSpaceCornerDetector extends
 
 <span class="fc" id="L118">        initialize();</span>
 
-<span class="pc bpc" id="L120" title="1 of 4 branches missed.">        if (extractSkyline &amp;&amp; !skylineEdges.isEmpty()) {</span>
-<span class="fc" id="L121">            calculateSkylineCorners();</span>
+<span class="pc bpc" id="L120" title="3 of 4 branches missed.">        if (extractSkyline &amp;&amp; !skylineEdges.isEmpty()) {</span>
+<span class="nc" id="L121">            calculateSkylineCorners();</span>
         }
 
 <span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (!performWholeImageCorners) {</span>
@@ -265,7 +265,7 @@ public class CurvatureScaleSpaceCornerDetector extends
 <span class="fc" id="L265">        CSSCornerMaker cornerMaker = new CSSCornerMaker(this.img.getWidth(),</span>
 <span class="fc" id="L266">            this.img.getHeight());</span>
         
-<span class="fc bfc" id="L268" title="All 2 branches covered.">        if (enableJaggedLineCorrections) {</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        if (enableJaggedLineCorrections) {</span>
 <span class="fc" id="L269">            cornerMaker.enableJaggedLineCorrections();</span>
         }
         
@@ -408,32 +408,32 @@ public class CurvatureScaleSpaceCornerDetector extends
     //NOT READY FOR USE YET
     private void calculateSkylineCorners() {
 
-<span class="pc bpc" id="L411" title="1 of 2 branches missed.">        if (!extractSkyline) {</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (!extractSkyline) {</span>
 <span class="nc" id="L412">            return;</span>
         }
 
-<span class="fc" id="L415">        PairIntArray theSkylineCorners = new PairIntArray();</span>
+<span class="nc" id="L415">        PairIntArray theSkylineCorners = new PairIntArray();</span>
     
-<span class="fc" id="L417">        enableJaggedLineCorrections = false;</span>
+<span class="nc" id="L417">        enableJaggedLineCorrections = false;</span>
         
-<span class="fc" id="L419">        Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt; maps =</span>
-<span class="fc" id="L420">            findCornersInScaleSpaceMaps(skylineEdges, false, theSkylineCorners);</span>
+<span class="nc" id="L419">        Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt; maps =</span>
+<span class="nc" id="L420">            findCornersInScaleSpaceMaps(skylineEdges, false, theSkylineCorners);</span>
 
         // TODO: improve this for resolution
         
         // smoothing does not make fewer points, so using min curvature factor
         
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">        if (filterProducts == null) {</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        if (filterProducts == null) {</span>
 <span class="nc" id="L427">            throw new IllegalStateException(&quot;Error in use of method.  filterProducts should not be null.&quot;);</span>
         }
         
-<span class="pc bpc" id="L430" title="1 of 2 branches missed.">        float nGoalCorners = (filterProducts.getGradientXY().getNPixels() </span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">        float nGoalCorners = (filterProducts.getGradientXY().getNPixels() </span>
             &lt; 500000) ? 50.f : 100.f;
         
         // want about 50 points
-<span class="fc" id="L434">        float factor = (float)theSkylineCorners.getN()/nGoalCorners;</span>
+<span class="nc" id="L434">        float factor = (float)theSkylineCorners.getN()/nGoalCorners;</span>
         
-<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (factor &gt; 1.2) {</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        if (factor &gt; 1.2) {</span>
             
             //TODO: consider saving the space curves to make recalc faster
             
@@ -453,14 +453,14 @@ public class CurvatureScaleSpaceCornerDetector extends
 <span class="nc" id="L453">            resetFactorForCurvatureMinimum();</span>
         }
         
-<span class="pc bpc" id="L456" title="1 of 2 branches missed.">        if (theSkylineCorners.getN() &gt; 0) {</span>
-<span class="fc" id="L457">            skylineCorners.addAll(theSkylineCorners);</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">        if (theSkylineCorners.getN() &gt; 0) {</span>
+<span class="nc" id="L457">            skylineCorners.addAll(theSkylineCorners);</span>
         }
         
-<span class="fc" id="L460">        enableJaggedLineCorrections = true;</span>
+<span class="nc" id="L460">        enableJaggedLineCorrections = true;</span>
         
-<span class="fc" id="L462">        log.info(&quot;number of skyline corners=&quot; + theSkylineCorners.getN());</span>
-<span class="fc" id="L463">    }</span>
+<span class="nc" id="L462">        log.info(&quot;number of skyline corners=&quot; + theSkylineCorners.getN());</span>
+<span class="nc" id="L463">    }</span>
 
     public Map&lt;Integer, List&lt;CornerRegion&gt;&gt; getEdgeCornerRegionMap() {
 <span class="nc" id="L466">        return edgeCornerRegionMap;</span>
@@ -499,25 +499,25 @@ public class CurvatureScaleSpaceCornerDetector extends
     public Set&lt;CornerRegion&gt; getEdgeCornerRegionsInOriginalReferenceFrame(
         boolean removeAmbiguousPeaks) {
         
-<span class="pc bpc" id="L502" title="1 of 2 branches missed.">        if (!removeAmbiguousPeaks) {</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">        if (!removeAmbiguousPeaks) {</span>
 <span class="nc" id="L503">            return getEdgeCornerRegionsInOriginalReferenceFrame();</span>
         }
 
-<span class="fc" id="L506">        Set&lt;CornerRegion&gt; set = getEdgeCornerRegions(removeAmbiguousPeaks);</span>
+<span class="nc" id="L506">        Set&lt;CornerRegion&gt; set = getEdgeCornerRegions(removeAmbiguousPeaks);</span>
        
-<span class="fc" id="L508">        Set&lt;CornerRegion&gt; edited = new HashSet&lt;CornerRegion&gt;();</span>
+<span class="nc" id="L508">        Set&lt;CornerRegion&gt; edited = new HashSet&lt;CornerRegion&gt;();</span>
         
-<span class="fc bfc" id="L510" title="All 2 branches covered.">        for (CornerRegion cr : set) {</span>
-<span class="fc" id="L511">            CornerRegion crCopy = cr.copy();</span>
-<span class="fc bfc" id="L512" title="All 2 branches covered.">            for (int i = 0; i &lt; crCopy.getX().length; ++i) {</span>
-<span class="fc" id="L513">                int x = crCopy.getX()[i] + this.trimmedXOffset;</span>
-<span class="fc" id="L514">                int y = crCopy.getY()[i] + this.trimmedYOffset;</span>
-<span class="fc" id="L515">                crCopy.set(i, crCopy.getK()[i], x, y);</span>
+<span class="nc bnc" id="L510" title="All 2 branches missed.">        for (CornerRegion cr : set) {</span>
+<span class="nc" id="L511">            CornerRegion crCopy = cr.copy();</span>
+<span class="nc bnc" id="L512" title="All 2 branches missed.">            for (int i = 0; i &lt; crCopy.getX().length; ++i) {</span>
+<span class="nc" id="L513">                int x = crCopy.getX()[i] + this.trimmedXOffset;</span>
+<span class="nc" id="L514">                int y = crCopy.getY()[i] + this.trimmedYOffset;</span>
+<span class="nc" id="L515">                crCopy.set(i, crCopy.getK()[i], x, y);</span>
             }
-<span class="fc" id="L517">            edited.add(crCopy);</span>
-<span class="fc" id="L518">        }</span>
+<span class="nc" id="L517">            edited.add(crCopy);</span>
+<span class="nc" id="L518">        }</span>
         
-<span class="fc" id="L520">        return edited;</span>
+<span class="nc" id="L520">        return edited;</span>
     }
     
     public Set&lt;CornerRegion&gt; getEdgeCornerRegions(boolean removeAmbiguousPeaks) {

@@ -140,8 +140,8 @@ public class CannyEdgeFilter {
     
     public void setFilterImageTrim(int xOffset, int yOffset, int width, int
         height) {
-<span class="fc" id="L143">        shrinkToSize = new int[]{xOffset, yOffset, width, height};</span>
-<span class="fc" id="L144">    }</span>
+<span class="nc" id="L143">        shrinkToSize = new int[]{xOffset, yOffset, width, height};</span>
+<span class="nc" id="L144">    }</span>
     
     public void setSetters(CannyEdgeFilterSettings settings) {
         
@@ -161,8 +161,8 @@ public class CannyEdgeFilter {
 <span class="fc" id="L161">            useLineDrawingMode = true;</span>
         }
         
-<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (settings.getOverrideHighThreshold()) {</span>
-<span class="fc" id="L165">            highThreshold = settings.getHighThreshold();</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (settings.getOverrideHighThreshold()) {</span>
+<span class="nc" id="L165">            highThreshold = settings.getHighThreshold();</span>
         }
         
 <span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (settings.getShrinkToSize() != null) {</span>
@@ -178,9 +178,9 @@ public class CannyEdgeFilter {
         
 <span class="fc" id="L179">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (shrinkToSize != null) {</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (shrinkToSize != null) {</span>
             
-<span class="fc" id="L183">            imageProcessor.shrinkImage(input, shrinkToSize);</span>
+<span class="nc" id="L183">            imageProcessor.shrinkImage(input, shrinkToSize);</span>
             
         } else {
             

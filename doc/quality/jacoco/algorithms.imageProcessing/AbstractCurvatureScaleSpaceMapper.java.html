@@ -150,8 +150,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 <span class="fc" id="L150">    }</span>
     
     public void useLowestHighIntensityCutoff() {
-<span class="fc" id="L153">        useLowestHighIntensityCutoff = true;</span>
-<span class="fc" id="L154">    }</span>
+<span class="nc" id="L153">        useLowestHighIntensityCutoff = true;</span>
+<span class="nc" id="L154">    }</span>
     
     public void useLowHighIntensityCutoff() {
 <span class="nc" id="L157">        useLowHighIntensityCutoff = true;</span>
@@ -176,12 +176,12 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      */
     public void useOutdoorModeAndExtractSkyline() {
         
-<span class="fc" id="L179">        useLowestHighIntensityCutoff();</span>
+<span class="nc" id="L179">        useLowestHighIntensityCutoff();</span>
         
-<span class="fc" id="L181">        useOutdoorMode = true;</span>
+<span class="nc" id="L181">        useOutdoorMode = true;</span>
         
-<span class="fc" id="L183">        extractSkyline = true;</span>
-<span class="fc" id="L184">    }</span>
+<span class="nc" id="L183">        extractSkyline = true;</span>
+<span class="nc" id="L184">    }</span>
     
     protected void initialize() {
         
@@ -191,11 +191,11 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             // (1) apply an edge filter
 <span class="fc" id="L192">            applyEdgeFilter();</span>
             
-<span class="pc bpc" id="L194" title="1 of 4 branches missed.">            if (extractSkyline &amp;&amp; skylineEdges.isEmpty()) {</span>
+<span class="pc bpc" id="L194" title="3 of 4 branches missed.">            if (extractSkyline &amp;&amp; skylineEdges.isEmpty()) {</span>
                 
-<span class="fc" id="L196">                List&lt;PairIntArray&gt; skyEdges = extractSkyline();</span>
+<span class="nc" id="L196">                List&lt;PairIntArray&gt; skyEdges = extractSkyline();</span>
                                     
-<span class="fc" id="L198">                skylineEdges.addAll(skyEdges);</span>
+<span class="nc" id="L198">                skylineEdges.addAll(skyEdges);</span>
             }
             
             // (2) extract edges
@@ -316,37 +316,37 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 
         try {            
             
-<span class="fc" id="L319">            CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();</span>
+<span class="nc" id="L319">            CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();</span>
             
-<span class="fc" id="L321">            SkylineExtractor skylineExtractor = new SkylineExtractor();</span>
+<span class="nc" id="L321">            SkylineExtractor skylineExtractor = new SkylineExtractor();</span>
             
-<span class="fc" id="L323">            PairIntArray outputSkyCentroid = new PairIntArray();</span>
-<span class="fc" id="L324">            GreyscaleImage out = skylineExtractor.createSkyline(</span>
-<span class="fc" id="L325">                filterProducts.getTheta(), filterProducts.getGradientXY(),</span>
+<span class="nc" id="L323">            PairIntArray outputSkyCentroid = new PairIntArray();</span>
+<span class="nc" id="L324">            GreyscaleImage out = skylineExtractor.createSkyline(</span>
+<span class="nc" id="L325">                filterProducts.getTheta(), filterProducts.getGradientXY(),</span>
                 this.originalImg, settings, outputSkyCentroid);
              
-<span class="fc" id="L328">            List&lt;PairIntArray&gt; skyEdges = skylineExtractor.getSkylineEdges();</span>
+<span class="nc" id="L328">            List&lt;PairIntArray&gt; skyEdges = skylineExtractor.getSkylineEdges();</span>
             
-<span class="pc bpc" id="L330" title="1 of 2 branches missed.">            if (skyEdges == null) {</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">            if (skyEdges == null) {</span>
 <span class="nc" id="L331">                return new ArrayList&lt;PairIntArray&gt;();</span>
             }
             
-<span class="fc" id="L334">            Collections.sort(skyEdges, new PairIntArrayComparator());</span>
+<span class="nc" id="L334">            Collections.sort(skyEdges, new PairIntArrayComparator());</span>
 
             //reverse the list so the edges with largest numbers of points are
             // at smaller indexes
-<span class="fc" id="L338">            int n = skyEdges.size();</span>
-<span class="pc bpc" id="L339" title="1 of 2 branches missed.">            if (n &gt; 1) {</span>
-<span class="fc" id="L340">                int end = n &gt;&gt; 1;</span>
-<span class="fc bfc" id="L341" title="All 2 branches covered.">                for (int i = 0; i &lt; end; i++) {</span>
-<span class="fc" id="L342">                    int idx2 = n - i - 1;                </span>
-<span class="fc" id="L343">                    PairIntArray swap = skyEdges.get(i);</span>
-<span class="fc" id="L344">                    skyEdges.set(i, skyEdges.get(idx2));</span>
-<span class="fc" id="L345">                    skyEdges.set(idx2, swap);</span>
+<span class="nc" id="L338">            int n = skyEdges.size();</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">            if (n &gt; 1) {</span>
+<span class="nc" id="L340">                int end = n &gt;&gt; 1;</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">                for (int i = 0; i &lt; end; i++) {</span>
+<span class="nc" id="L342">                    int idx2 = n - i - 1;                </span>
+<span class="nc" id="L343">                    PairIntArray swap = skyEdges.get(i);</span>
+<span class="nc" id="L344">                    skyEdges.set(i, skyEdges.get(idx2));</span>
+<span class="nc" id="L345">                    skyEdges.set(idx2, swap);</span>
                 }
             }
             
-<span class="fc" id="L349">            return skyEdges;</span>
+<span class="nc" id="L349">            return skyEdges;</span>
             
 <span class="nc" id="L351">        } catch(IOException e) {</span>
 <span class="nc" id="L352">            log.severe(e.getMessage());</span>
@@ -362,8 +362,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
 <span class="fc" id="L363">        CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();</span>
         
-<span class="fc bfc" id="L365" title="All 2 branches covered.">        if (useOutdoorMode) {</span>
-<span class="fc" id="L366">            settings.setUseOutdoorMode();</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="nc" id="L366">            settings.setUseOutdoorMode();</span>
         }
         
 <span class="fc bfc" id="L369" title="All 2 branches covered.">        if (doNotNormalizeByHistogram) {</span>
@@ -373,8 +373,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 <span class="fc" id="L373">            settings.setUseLineDrawingMode();</span>
         }
         
-<span class="fc bfc" id="L376" title="All 2 branches covered.">        if (useLowestHighIntensityCutoff) {</span>
-<span class="fc" id="L377">            settings.setOverrideHighThreshold(1.0f);</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">        if (useLowestHighIntensityCutoff) {</span>
+<span class="nc" id="L377">            settings.setOverrideHighThreshold(1.0f);</span>
 <span class="pc bpc" id="L378" title="1 of 2 branches missed.">        } else if (useLowHighIntensityCutoff) {</span>
 <span class="nc" id="L379">            settings.setOverrideHighThreshold(2.0f);</span>
         }
@@ -480,7 +480,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     }
    
     public EdgeFilterProducts getEdgeFilterProducts() {
-<span class="fc" id="L483">        return filterProducts;</span>
+<span class="nc" id="L483">        return filterProducts;</span>
     }
     
     public Map&lt;Integer, Set&lt;Integer&gt;&gt; getJunctionMap() {        

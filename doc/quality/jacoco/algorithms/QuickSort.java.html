@@ -538,20 +538,20 @@
 <span class="fc" id="L538">    }</span>
     
     public static void sortBy1stThen2nd(float[] a, float[] b) {
-<span class="pc bpc" id="L541" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        if (a == null) {</span>
 <span class="nc" id="L542">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L544" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc bnc" id="L544" title="All 2 branches missed.">        if (a.length &lt; 2) {</span>
 <span class="nc" id="L545">            return;</span>
         }
-<span class="pc bpc" id="L547" title="1 of 2 branches missed.">        if (b == null) {</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">        if (b == null) {</span>
 <span class="nc" id="L548">            throw new IllegalArgumentException(&quot;b cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L550" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">        if (a.length != b.length) {</span>
 <span class="nc" id="L551">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
         }
-<span class="fc" id="L553">        sortBy1stThen2nd(a, b, 0, a.length - 1);</span>
-<span class="fc" id="L554">    }</span>
+<span class="nc" id="L553">        sortBy1stThen2nd(a, b, 0, a.length - 1);</span>
+<span class="nc" id="L554">    }</span>
     
     public static void sortBy1stThen2nd(float[] a, float[] b, int idxLo, int idxHi) {
 <span class="pc bpc" id="L557" title="1 of 2 branches missed.">        if (a == null) {</span>
@@ -714,8 +714,8 @@
         
 <span class="fc bfc" id="L715" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
 <span class="fc" id="L716">            boolean doSwap = false;</span>
-<span class="fc bfc" id="L717" title="All 2 branches covered.">            if (a[i] &lt; x) {</span>
-<span class="fc" id="L718">                doSwap = true;</span>
+<span class="pc bpc" id="L717" title="1 of 2 branches missed.">            if (a[i] &lt; x) {</span>
+<span class="nc" id="L718">                doSwap = true;</span>
 <span class="fc bfc" id="L719" title="All 2 branches covered.">            } else if (a[i] == x) {</span>
 <span class="fc bfc" id="L720" title="All 2 branches covered.">                if (b[i] &lt; b[idxHi]) {</span>
 <span class="fc" id="L721">                    doSwap = true;</span>

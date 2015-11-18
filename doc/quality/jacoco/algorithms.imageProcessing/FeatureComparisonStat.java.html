@@ -21,106 +21,127 @@ import algorithms.util.PairInt;
 <span class="fc" id="L21">    private float img2PointThetaErr = Float.POSITIVE_INFINITY;</span>
 <span class="fc" id="L22">    private float img1PointRotInDegrees = Float.POSITIVE_INFINITY;</span>
 <span class="fc" id="L23">    private float img2PointRotInDegrees = Float.POSITIVE_INFINITY;</span>
+    
+    /**
+     * bin factors for images which these properties were measured from.
+     * Note that these fields are recent and not always set by using
+     * class so check before using.
+     */
+<span class="fc" id="L30">    private int binFactor1 = 1;</span>
+<span class="fc" id="L31">    private int binFactor2 = 1;</span>
 
     /**
      * @return the img1Point
      */
     public PairInt getImg1Point() {
-<span class="fc" id="L29">        return img1Point;</span>
+<span class="fc" id="L37">        return img1Point;</span>
+    }
+    
+    public void setBinFactor1(int factor) {
+<span class="fc" id="L41">        binFactor1 = factor;</span>
+<span class="fc" id="L42">    }</span>
+    public void setBinFactor2(int factor) {
+<span class="fc" id="L44">        binFactor2 = factor;</span>
+<span class="fc" id="L45">    }</span>
+    public int getBinFactor1() {
+<span class="fc" id="L47">        return binFactor1;</span>
+    }
+    public int getBinFactor2() {
+<span class="fc" id="L50">        return binFactor2;</span>
     }
 
     public void setIndex1(int theIndex) {
-<span class="fc" id="L33">        index1 = theIndex;</span>
-<span class="fc" id="L34">    }</span>
+<span class="fc" id="L54">        index1 = theIndex;</span>
+<span class="fc" id="L55">    }</span>
     
     public void setIndex2(int theIndex) {
-<span class="fc" id="L37">        index2 = theIndex;</span>
-<span class="fc" id="L38">    }</span>
+<span class="fc" id="L58">        index2 = theIndex;</span>
+<span class="fc" id="L59">    }</span>
     
     public int getIndex1() {
-<span class="fc" id="L41">        return index1;</span>
+<span class="fc" id="L62">        return index1;</span>
     }
     
     public int getIndex2() {
-<span class="fc" id="L45">        return index2;</span>
+<span class="fc" id="L66">        return index2;</span>
     }
     
     /**
      * @param img1Point the img1Point to set
      */
     public void setImg1Point(PairInt img1Point) {        
-<span class="fc" id="L52">        this.img1Point = img1Point;</span>
-<span class="fc" id="L53">    }</span>
+<span class="fc" id="L73">        this.img1Point = img1Point;</span>
+<span class="fc" id="L74">    }</span>
 
     /**
      * @return the img2Point
      */
     public PairInt getImg2Point() {
-<span class="fc" id="L59">        return img2Point;</span>
+<span class="fc" id="L80">        return img2Point;</span>
     }
 
     /**
      * @param img2Point the img2Point to set
      */
     public void setImg2Point(PairInt img2Point) {        
-<span class="fc" id="L66">        this.img2Point = img2Point;</span>
-<span class="fc" id="L67">    }</span>
+<span class="fc" id="L87">        this.img2Point = img2Point;</span>
+<span class="fc" id="L88">    }</span>
 
     /**
      * @return the sum of the square of differences of intensity
      */
     public float getSumIntensitySqDiff() {
-<span class="fc" id="L73">        return sumIntensitySqDiff;</span>
+<span class="fc" id="L94">        return sumIntensitySqDiff;</span>
     }
 
     /**
      * @param sumSqDiff the sum of the square of differences of intensity
      */
     public void setSumIntensitySqDiff(float sumSqDiff) {
-<span class="fc" id="L80">        this.sumIntensitySqDiff = sumSqDiff;</span>
-<span class="fc" id="L81">    }</span>
+<span class="fc" id="L101">        this.sumIntensitySqDiff = sumSqDiff;</span>
+<span class="fc" id="L102">    }</span>
 
     /**
      * @return the sum of the square of differences of intensity
      */
     public float getSumGradientSqDiff() {
-<span class="nc" id="L87">        return sumGradientSqDiff;</span>
+<span class="nc" id="L108">        return sumGradientSqDiff;</span>
     }
 
     /**
      * @param sumSqDiff the sum of the square of differences of intensity
      */
     public void setSumGradientSqDiff(float sumSqDiff) {
-<span class="nc" id="L94">        this.sumGradientSqDiff = sumSqDiff;</span>
-<span class="nc" id="L95">    }</span>
+<span class="nc" id="L115">        this.sumGradientSqDiff = sumSqDiff;</span>
+<span class="nc" id="L116">    }</span>
 
     /**
      * @return the img2PointIntensityErr
      */
     public float getImg2PointIntensityErr() {
-<span class="fc" id="L101">        return img2PointIntensityErr;</span>
+<span class="fc" id="L122">        return img2PointIntensityErr;</span>
     }
 
     /**
      * @param img2PointIntensityErr the img2PointIntensityErr to set
      */
     public void setImg2PointIntensityErr(float img2PointIntensityErr) {
-<span class="fc" id="L108">        this.img2PointIntensityErr = img2PointIntensityErr;</span>
-<span class="fc" id="L109">    }</span>
+<span class="fc" id="L129">        this.img2PointIntensityErr = img2PointIntensityErr;</span>
+<span class="fc" id="L130">    }</span>
     
     /**
      * @return the img2PointGradientErr
      */
     public float getImg2PointGradientErr() {
-<span class="nc" id="L115">        return img2PointGradientErr;</span>
+<span class="nc" id="L136">        return img2PointGradientErr;</span>
     }
 
     /**
      * @param img2PointGradientErr the img2PointIntensityErr to set
      */
     public void setImg2PointGradientErr(float img2PointGradientErr) {
-<span class="nc" id="L122">        this.img2PointGradientErr = img2PointGradientErr;</span>
-<span class="nc" id="L123">    }</span>
+<span class="nc" id="L143">        this.img2PointGradientErr = img2PointGradientErr;</span>
+<span class="nc" id="L144">    }</span>
     
     /**
      * compare object other to this instance and return -1 if this instance
@@ -131,22 +152,22 @@ import algorithms.util.PairInt;
     @Override
     public int compareTo(FeatureComparisonStat other) {
     
-<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (other == null) {</span>
-<span class="nc" id="L135">            return -1;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (other == null) {</span>
+<span class="nc" id="L156">            return -1;</span>
         }
-<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (Float.isInfinite(other.getSumIntensitySqDiff())) {</span>
-<span class="nc" id="L138">            return -1;</span>
-        }
-        
-<span class="nc" id="L141">        boolean hasIntensity = Float.isFinite(sumIntensitySqDiff);</span>
-<span class="nc" id="L142">        boolean hasTheta = Float.isFinite(sumThetaSqDiff);</span>
-<span class="nc" id="L143">        boolean hasGradient = Float.isFinite(sumGradientSqDiff);</span>
-        
-<span class="nc bnc" id="L145" title="All 6 branches missed.">        if (hasIntensity &amp;&amp; !hasTheta &amp;&amp; !hasGradient) {</span>
-<span class="nc" id="L146">            return compareToUsingIntensity(other);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (Float.isInfinite(other.getSumIntensitySqDiff())) {</span>
+<span class="nc" id="L159">            return -1;</span>
         }
         
-<span class="nc" id="L149">        throw new UnsupportedOperationException(&quot;not yet implemented&quot;);</span>
+<span class="nc" id="L162">        boolean hasIntensity = Float.isFinite(sumIntensitySqDiff);</span>
+<span class="nc" id="L163">        boolean hasTheta = Float.isFinite(sumThetaSqDiff);</span>
+<span class="nc" id="L164">        boolean hasGradient = Float.isFinite(sumGradientSqDiff);</span>
+        
+<span class="nc bnc" id="L166" title="All 6 branches missed.">        if (hasIntensity &amp;&amp; !hasTheta &amp;&amp; !hasGradient) {</span>
+<span class="nc" id="L167">            return compareToUsingIntensity(other);</span>
+        }
+        
+<span class="nc" id="L170">        throw new UnsupportedOperationException(&quot;not yet implemented&quot;);</span>
         
     }
     
@@ -154,109 +175,109 @@ import algorithms.util.PairInt;
         
         // prefer smaller intensities
         
-<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (sumIntensitySqDiff &lt; other.sumIntensitySqDiff) {</span>
-<span class="nc" id="L158">            return -1;</span>
-<span class="nc bnc" id="L159" title="All 2 branches missed.">        } else if (sumIntensitySqDiff &gt; other.sumIntensitySqDiff) {</span>
-<span class="nc" id="L160">            return 1;</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (sumIntensitySqDiff &lt; other.sumIntensitySqDiff) {</span>
+<span class="nc" id="L179">            return -1;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        } else if (sumIntensitySqDiff &gt; other.sumIntensitySqDiff) {</span>
+<span class="nc" id="L181">            return 1;</span>
         }
         
-<span class="nc" id="L163">        return 0;</span>
+<span class="nc" id="L184">        return 0;</span>
     }
 
     /**
      * @return the img1PointRotInDegrees
      */
     public float getImg1PointRotInDegrees() {
-<span class="fc" id="L170">        return img1PointRotInDegrees;</span>
+<span class="fc" id="L191">        return img1PointRotInDegrees;</span>
     }
 
     /**
      * @param rotationInDegrees the orientation rotation for point 1 region
      */
     public void setImg1PointRotInDegrees(float rotationInDegrees) {
-<span class="fc" id="L177">        this.img1PointRotInDegrees = rotationInDegrees;</span>
-<span class="fc" id="L178">    }</span>
+<span class="fc" id="L198">        this.img1PointRotInDegrees = rotationInDegrees;</span>
+<span class="fc" id="L199">    }</span>
     
     /**
      * @return the img2PointRotInDegrees
      */
     public float getImg2PointRotInDegrees() {
-<span class="fc" id="L184">        return img2PointRotInDegrees;</span>
+<span class="fc" id="L205">        return img2PointRotInDegrees;</span>
     }
 
     /**
      * @param rotationInDegrees the orientation rotation for point 2 region
      */
     public void setImg2PointRotInDegrees(float rotationInDegrees) {
-<span class="fc" id="L191">        this.img2PointRotInDegrees = rotationInDegrees;</span>
-<span class="fc" id="L192">    }</span>
+<span class="fc" id="L212">        this.img2PointRotInDegrees = rotationInDegrees;</span>
+<span class="fc" id="L213">    }</span>
 
     /**
      * @return the sumThetaSqDiff
      */
     public float getSumThetaSqDiff() {
-<span class="nc" id="L198">        return sumThetaSqDiff;</span>
+<span class="nc" id="L219">        return sumThetaSqDiff;</span>
     }
 
     /**
      * @param sumSquareDiffs the sum of the square of the differences
      */
     public void setSumThetaSqDiff(float sumSquareDiffs) {
-<span class="nc" id="L205">        this.sumThetaSqDiff = sumSquareDiffs;</span>
-<span class="nc" id="L206">    }</span>
+<span class="nc" id="L226">        this.sumThetaSqDiff = sumSquareDiffs;</span>
+<span class="nc" id="L227">    }</span>
 
     /**
      * @return the img2PointThetaErr
      */
     public float getImg2PointThetaErr() {
-<span class="nc" id="L212">        return img2PointThetaErr;</span>
+<span class="nc" id="L233">        return img2PointThetaErr;</span>
     }
 
     /**
      * @param img2PointThetaErr the img2PointThetaErr to set
      */
     public void setImg2PointThetaErr(float img2PointThetaErr) {
-<span class="nc" id="L219">        this.img2PointThetaErr = img2PointThetaErr;</span>
-<span class="nc" id="L220">    }</span>
+<span class="nc" id="L240">        this.img2PointThetaErr = img2PointThetaErr;</span>
+<span class="nc" id="L241">    }</span>
 
     @Override
     public String toString() {
         
-<span class="fc" id="L225">        StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L226">        sb.append(&quot;p1=&quot;);</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (img1Point != null) {</span>
-<span class="fc" id="L228">            sb.append(img1Point.toString()).append(&quot; &quot;);</span>
+<span class="nc" id="L246">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L247">        sb.append(&quot;p1=&quot;);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (img1Point != null) {</span>
+<span class="nc" id="L249">            sb.append(img1Point.toString()).append(&quot; &quot;);</span>
         }
-<span class="fc" id="L230">        sb.append(&quot;p2=&quot;);</span>
-<span class="fc bfc" id="L231" title="All 2 branches covered.">        if (img2Point != null) {</span>
-<span class="fc" id="L232">            sb.append(img2Point.toString()).append(&quot; &quot;);</span>
+<span class="nc" id="L251">        sb.append(&quot;p2=&quot;);</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (img2Point != null) {</span>
+<span class="nc" id="L253">            sb.append(img2Point.toString()).append(&quot; &quot;);</span>
         }
-<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        if (Float.isFinite(sumIntensitySqDiff)) {</span>
-<span class="fc" id="L235">            sb.append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff));</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        if (Float.isFinite(sumIntensitySqDiff)) {</span>
+<span class="nc" id="L256">            sb.append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff));</span>
         }
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (Float.isFinite(img2PointIntensityErr)) {</span>
-<span class="fc" id="L238">            sb.append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr));</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (Float.isFinite(img2PointIntensityErr)) {</span>
+<span class="nc" id="L259">            sb.append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr));</span>
         }
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        if (Float.isFinite(sumGradientSqDiff)) {</span>
-<span class="nc" id="L241">            sb.append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff));</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        if (Float.isFinite(sumGradientSqDiff)) {</span>
+<span class="nc" id="L262">            sb.append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff));</span>
         }
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (Float.isFinite(img2PointGradientErr)) {</span>
-<span class="nc" id="L244">            sb.append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr));</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (Float.isFinite(img2PointGradientErr)) {</span>
+<span class="nc" id="L265">            sb.append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr));</span>
         }
-<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (Float.isFinite(sumThetaSqDiff)) {</span>
-<span class="nc" id="L247">            sb.append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff));</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (Float.isFinite(sumThetaSqDiff)) {</span>
+<span class="nc" id="L268">            sb.append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff));</span>
         }
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        if (Float.isFinite(img2PointThetaErr)) {</span>
-<span class="nc" id="L250">            sb.append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr));</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        if (Float.isFinite(img2PointThetaErr)) {</span>
+<span class="nc" id="L271">            sb.append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr));</span>
         }
-<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (Float.isFinite(img1PointRotInDegrees)) {</span>
-<span class="fc" id="L253">            sb.append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees));</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        if (Float.isFinite(img1PointRotInDegrees)) {</span>
+<span class="nc" id="L274">            sb.append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees));</span>
         } 
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (Float.isFinite(img2PointRotInDegrees)) {</span>
-<span class="fc" id="L256">            sb.append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees));</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">        if (Float.isFinite(img2PointRotInDegrees)) {</span>
+<span class="nc" id="L277">            sb.append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees));</span>
         }
         
-<span class="fc" id="L259">        return sb.toString();</span>
+<span class="nc" id="L280">        return sb.toString();</span>
     }
 
 }

@@ -112,15 +112,15 @@ public class EpipolarSolver {
      * @param debugTagPrefix 
      */
     public EpipolarSolver(ImageExt image1, ImageExt image2, 
-<span class="nc" id="L115">        TransformationParameters parameters, String debugTagPrefix) {</span>
-<span class="nc" id="L116">        img1 = image1;</span>
-<span class="nc" id="L117">        img2 = image2;</span>
-<span class="nc" id="L118">        doDetermineScale = false;</span>
-<span class="nc" id="L119">        params = parameters;</span>
-<span class="nc" id="L120">        debug = true;</span>
-<span class="nc" id="L121">        this.debugTagPrefix = debugTagPrefix;</span>
-<span class="nc" id="L122">        state = State.INITIALIZED;</span>
-<span class="nc" id="L123">    }</span>
+<span class="fc" id="L115">        TransformationParameters parameters, String debugTagPrefix) {</span>
+<span class="fc" id="L116">        img1 = image1;</span>
+<span class="fc" id="L117">        img2 = image2;</span>
+<span class="fc" id="L118">        doDetermineScale = false;</span>
+<span class="fc" id="L119">        params = parameters;</span>
+<span class="fc" id="L120">        debug = true;</span>
+<span class="fc" id="L121">        this.debugTagPrefix = debugTagPrefix;</span>
+<span class="fc" id="L122">        state = State.INITIALIZED;</span>
+<span class="fc" id="L123">    }</span>
     
     public StereoProjectionTransformerFit solve() throws IOException, 
         NoSuchAlgorithmException {
@@ -131,9 +131,9 @@ public class EpipolarSolver {
         
 <span class="fc" id="L132">        FeatureMatcherWrapper wrapper = null;</span>
         
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (params != null) {</span>
-<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L136">                wrapper = new FeatureMatcherWrapper(img1, img2, params, debugTagPrefix);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (params != null) {</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="fc" id="L136">                wrapper = new FeatureMatcherWrapper(img1, img2, params, debugTagPrefix);</span>
             } else {
 <span class="nc" id="L138">                wrapper = new FeatureMatcherWrapper(img1, img2, params);</span>
             }

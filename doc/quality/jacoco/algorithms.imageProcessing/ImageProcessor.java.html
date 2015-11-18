@@ -409,29 +409,29 @@ import java.util.logging.Logger;
     public GreyscaleImage computeTheta360(final GreyscaleImage convolvedX,
         final GreyscaleImage convolvedY) {
 
-<span class="fc" id="L412">        GreyscaleImage output = convolvedX.createFullRangeIntWithDimensions();</span>
+<span class="nc" id="L412">        GreyscaleImage output = convolvedX.createFullRangeIntWithDimensions();</span>
 
-<span class="fc bfc" id="L414" title="All 2 branches covered.">        for (int i = 0; i &lt; convolvedX.getWidth(); i++) {</span>
-<span class="fc bfc" id="L415" title="All 2 branches covered.">            for (int j = 0; j &lt; convolvedX.getHeight(); j++) {</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">        for (int i = 0; i &lt; convolvedX.getWidth(); i++) {</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">            for (int j = 0; j &lt; convolvedX.getHeight(); j++) {</span>
 
-<span class="fc" id="L417">                double gX = convolvedX.getValue(i, j);</span>
+<span class="nc" id="L417">                double gX = convolvedX.getValue(i, j);</span>
 
-<span class="fc" id="L419">                double gY = convolvedY.getValue(i, j);</span>
+<span class="nc" id="L419">                double gY = convolvedY.getValue(i, j);</span>
 
-<span class="fc" id="L421">                double thetaR = (2. * Math.PI) - AngleUtil.polarAngleCCW(gX, gY);</span>
+<span class="nc" id="L421">                double thetaR = (2. * Math.PI) - AngleUtil.polarAngleCCW(gX, gY);</span>
 
-<span class="fc" id="L423">                int thetaG = (int)Math.round(thetaR * 180./Math.PI);</span>
+<span class="nc" id="L423">                int thetaG = (int)Math.round(thetaR * 180./Math.PI);</span>
 
-<span class="fc bfc" id="L425" title="All 2 branches covered.">                if (thetaG &gt; 359) {</span>
-<span class="fc" id="L426">                    thetaG = thetaG - 360;</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">                if (thetaG &gt; 359) {</span>
+<span class="nc" id="L426">                    thetaG = thetaG - 360;</span>
                 }
 
-<span class="fc" id="L429">                output.setValue(i, j, thetaG);</span>
+<span class="nc" id="L429">                output.setValue(i, j, thetaG);</span>
 
             }
         }
 
-<span class="fc" id="L434">        return output;</span>
+<span class="nc" id="L434">        return output;</span>
     }
 
     public GreyscaleImage subtractImages(final GreyscaleImage image,
@@ -644,45 +644,45 @@ import java.util.logging.Logger;
     public void shrinkImage(final GreyscaleImage input,
         int[] offsetsAndDimensions) {
 
-<span class="fc" id="L647">        int w2 = offsetsAndDimensions[2];</span>
-<span class="fc" id="L648">        int h2 = offsetsAndDimensions[3];</span>
+<span class="nc" id="L647">        int w2 = offsetsAndDimensions[2];</span>
+<span class="nc" id="L648">        int h2 = offsetsAndDimensions[3];</span>
 
-<span class="fc" id="L650">        int offset1X = offsetsAndDimensions[0];</span>
-<span class="fc" id="L651">        int offset1Y = offsetsAndDimensions[1];</span>
+<span class="nc" id="L650">        int offset1X = offsetsAndDimensions[0];</span>
+<span class="nc" id="L651">        int offset1Y = offsetsAndDimensions[1];</span>
 
-<span class="fc" id="L653">        GreyscaleImage output = new GreyscaleImage(w2, h2, input.getType());</span>
-<span class="fc" id="L654">        output.setXRelativeOffset(offset1X);</span>
-<span class="fc" id="L655">        output.setYRelativeOffset(offset1Y);</span>
+<span class="nc" id="L653">        GreyscaleImage output = new GreyscaleImage(w2, h2, input.getType());</span>
+<span class="nc" id="L654">        output.setXRelativeOffset(offset1X);</span>
+<span class="nc" id="L655">        output.setYRelativeOffset(offset1Y);</span>
 
-<span class="fc" id="L657">        int x = 0;</span>
+<span class="nc" id="L657">        int x = 0;</span>
 
-<span class="fc" id="L659">        int endCol = (offset1X + w2);</span>
-<span class="pc bpc" id="L660" title="1 of 2 branches missed.">        if (endCol &gt; input.getWidth()) {</span>
+<span class="nc" id="L659">        int endCol = (offset1X + w2);</span>
+<span class="nc bnc" id="L660" title="All 2 branches missed.">        if (endCol &gt; input.getWidth()) {</span>
 <span class="nc" id="L661">            endCol = input.getWidth();</span>
         }
-<span class="fc" id="L663">        int endRow =  (offset1Y + h2);</span>
-<span class="pc bpc" id="L664" title="1 of 2 branches missed.">        if (endRow &gt; input.getHeight()) {</span>
+<span class="nc" id="L663">        int endRow =  (offset1Y + h2);</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">        if (endRow &gt; input.getHeight()) {</span>
 <span class="nc" id="L665">            endRow = input.getHeight();</span>
         }
 
-<span class="fc bfc" id="L668" title="All 2 branches covered.">        for (int col = offset1X; col &lt; endCol; col++) {</span>
+<span class="nc bnc" id="L668" title="All 2 branches missed.">        for (int col = offset1X; col &lt; endCol; col++) {</span>
 
-<span class="fc" id="L670">            int y = 0;</span>
+<span class="nc" id="L670">            int y = 0;</span>
 
-<span class="fc bfc" id="L672" title="All 2 branches covered.">            for (int row = offset1Y; row &lt; endRow; row++) {</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">            for (int row = offset1Y; row &lt; endRow; row++) {</span>
 
-<span class="fc" id="L674">                int v = input.getValue(col, row);</span>
+<span class="nc" id="L674">                int v = input.getValue(col, row);</span>
 
-<span class="fc" id="L676">                output.setValue(x, y, v);</span>
+<span class="nc" id="L676">                output.setValue(x, y, v);</span>
 
-<span class="fc" id="L678">                y++;</span>
+<span class="nc" id="L678">                y++;</span>
             }
 
-<span class="fc" id="L681">            x++;</span>
+<span class="nc" id="L681">            x++;</span>
         }
 
-<span class="fc" id="L684">        input.resetTo(output);</span>
-<span class="fc" id="L685">    }</span>
+<span class="nc" id="L684">        input.resetTo(output);</span>
+<span class="nc" id="L685">    }</span>
 
     /**
      * change coordinates of the input as if they were cropped to the given
@@ -805,34 +805,34 @@ import java.util.logging.Logger;
      */
     public void multiplyBinary(Image input1, GreyscaleImage input2)  {
 
-<span class="pc bpc" id="L808" title="1 of 2 branches missed.">        if (input1 == null) {</span>
+<span class="nc bnc" id="L808" title="All 2 branches missed.">        if (input1 == null) {</span>
 <span class="nc" id="L809">            throw new IllegalArgumentException(&quot;input1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L811" title="1 of 2 branches missed.">        if (input2 == null) {</span>
+<span class="nc bnc" id="L811" title="All 2 branches missed.">        if (input2 == null) {</span>
 <span class="nc" id="L812">            throw new IllegalArgumentException(&quot;input2 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L814" title="1 of 2 branches missed.">        if (input1.getWidth() != input2.getWidth()) {</span>
+<span class="nc bnc" id="L814" title="All 2 branches missed.">        if (input1.getWidth() != input2.getWidth()) {</span>
 <span class="nc" id="L815">            throw new IllegalArgumentException(</span>
             &quot;input1 and input2 must have same widths&quot;);
         }
-<span class="pc bpc" id="L818" title="1 of 2 branches missed.">        if (input1.getHeight()!= input2.getHeight()) {</span>
+<span class="nc bnc" id="L818" title="All 2 branches missed.">        if (input1.getHeight()!= input2.getHeight()) {</span>
 <span class="nc" id="L819">            throw new IllegalArgumentException(</span>
             &quot;input1 and input2 must have same heights&quot;);
         }
 
-<span class="fc bfc" id="L823" title="All 2 branches covered.">        for (int col = 0; col &lt; input1.getWidth(); col++) {</span>
+<span class="nc bnc" id="L823" title="All 2 branches missed.">        for (int col = 0; col &lt; input1.getWidth(); col++) {</span>
 
-<span class="fc bfc" id="L825" title="All 2 branches covered.">            for (int row = 0; row &lt; input1.getHeight(); row++) {</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">            for (int row = 0; row &lt; input1.getHeight(); row++) {</span>
 
-<span class="fc" id="L827">                int m = input2.getValue(col, row);</span>
+<span class="nc" id="L827">                int m = input2.getValue(col, row);</span>
 
-<span class="fc bfc" id="L829" title="All 2 branches covered.">                if (m == 0) {</span>
+<span class="nc bnc" id="L829" title="All 2 branches missed.">                if (m == 0) {</span>
 
-<span class="fc" id="L831">                    input1.setRGB(col, row, 0, 0, 0);</span>
+<span class="nc" id="L831">                    input1.setRGB(col, row, 0, 0, 0);</span>
                 }
             }
         }
-<span class="fc" id="L835">    }</span>
+<span class="nc" id="L835">    }</span>
 
     /**
      * compare each pixel and set output to 0 if both inputs are 0, else set
