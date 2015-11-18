@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.QuickSort;
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
@@ -8,13 +7,9 @@ import algorithms.util.PairInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -202,38 +197,29 @@ public class FeatureMatcherWrapper {
         int binFactor1 = scaleFinder.getBinFactor1();
         int binFactor2 = scaleFinder.getBinFactor2();
         
-        boolean extractMoreCorners = (stats.size() < 7);
-        
-        if (!extractMoreCorners) {
-            
-            //boolean covered = statsCoverIntersection(stats);
-            
-            if (binFactor1 != 1 || binFactor2 != 1) {
+        int nLimit = 16;
                 
-                //stats need to be revised for the location in the full size
-                //image in order to be usable for correspondence
-                List<FeatureComparisonStat> revisedStats = reviseStatsForFullImages(stats);
-                
-                stats = revisedStats;
-                
-                extractMoreCorners = (stats.size() < 7);
-                
-                if (extractMoreCorners) {
-                
-                    TransformationParameters revisedParams = 
-                        MiscStats.calculateTransformation(1, 1,
-                            stats, new float[4]);
-                    
-                    if (revisedParams != null) {
-                        params = revisedParams;
-                    } else {
-                        log.warning("possible ERROR in revision of stats");
-                    }
-                }
-            }            
+        if (binFactor1 != 1 || binFactor2 != 1) {
+
+            //stats need to be revised for the location in the full size
+            //image in order to be usable for correspondence
+            List<FeatureComparisonStat> revisedStats = reviseStatsForFullImages(stats);
+
+            stats = revisedStats;
+
+            TransformationParameters revisedParams
+                = MiscStats.calculateTransformation(1, 1, stats, new float[4]);
+
+            if (revisedParams != null) {
+                params = revisedParams;
+            } else {
+                log.warning("possible ERROR in revision of stats");
+            }
         }
         
- //extractMoreCorners = true;
+        boolean extractMoreCorners = (stats.size() < nLimit);
+        
+extractMoreCorners = true;
         
         if (!extractMoreCorners) {
 
