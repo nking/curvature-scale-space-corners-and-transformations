@@ -61,6 +61,9 @@ public class BlobScaleFinderWrapperTest extends TestCase {
             String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
             ImageExt img2Orig = ImageIOHelper.readImageExt(filePath2);
             
+            int idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+            
             if (rotate) {
                 TransformationParameters params90 = new TransformationParameters();
                 params90.setRotationInDegrees(90);
@@ -79,13 +82,13 @@ public class BlobScaleFinderWrapperTest extends TestCase {
             BlobScaleFinderWrapper scaleFinder = null;
             
             if (useBinning) {
-                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig, true);
+                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig, 
+                    true, fileName1Root);
             } else {
-                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig);
+                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig, 
+                    fileName1Root);
             }
             
-            scaleFinder.setToDebug();
-
             TransformationParameters params = scaleFinder.calculateScale();
 
             assertNotNull(params);

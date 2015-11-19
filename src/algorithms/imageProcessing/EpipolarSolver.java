@@ -1,21 +1,12 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
-import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;

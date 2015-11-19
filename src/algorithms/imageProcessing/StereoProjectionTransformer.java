@@ -24,8 +24,6 @@ import org.ejml.simple.*;
  * Both use numerical conditioning and recipes suggested by Hartley 
  * (see reference below).
  * 
- * Matching the points before using this can be done with PointMatcher.
- * 
  * Following:
  * 
  * IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, VOL. 19, 
@@ -1789,44 +1787,7 @@ public class StereoProjectionTransformer {
         
         return diffs;
     }
-    
-    /**
-     * evaluate fit for matched point sets and the fundamental matrix
-     * @param fm
-     * @param matchedLeftPoints
-     * @param matchedRightPoints
-     * @param tolerance
-     * @return 
-     */
-    public StereoProjectionTransformerFit evaluateFitForAlreadyMatched(
-        SimpleMatrix fm, SimpleMatrix matchedLeftPoints, 
-        SimpleMatrix matchedRightPoints, double tolerance) {
-        
-        if (fm == null) {
-            throw new IllegalArgumentException("fm cannot be null");
-        }
-        
-        if (matchedLeftPoints == null) {
-            throw new IllegalArgumentException(
-            "matchedLeftPoints cannot be null");
-        }
-        
-        if (matchedRightPoints == null) {
-            throw new IllegalArgumentException(
-            "matchedRightPoints cannot be null");
-        }
-        
-        SimpleMatrix theRightEpipolarLines = fm.mult(matchedLeftPoints);
-       
-        SimpleMatrix theLeftEpipolarLines = fm.transpose().mult(matchedRightPoints);
-        
-        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
-      
-        return evaluateFitForAlreadyMatched(fm, theRightEpipolarLines,
-            theLeftEpipolarLines, matchedLeftPoints, matchedRightPoints, 
-            tolerance);
-    }
-    
+   
     /**
      * evaluate fit for already matched point lists
      * @param fm
@@ -1838,20 +1799,11 @@ public class StereoProjectionTransformer {
      * @return 
      */
     StereoProjectionTransformerFit evaluateFitForAlreadyMatched(
-        SimpleMatrix fm, 
-        SimpleMatrix rightEpipolarLines, SimpleMatrix leftEpipolarLines,
-        SimpleMatrix leftPoints, SimpleMatrix rightPoints, double tolerance) {
+        SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
+        double tolerance) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
-        }
-        if (rightEpipolarLines == null) {
-            throw new IllegalArgumentException(
-            "rightEpipolarLines cannot be null");
-        }
-        if (leftEpipolarLines == null) {
-            throw new IllegalArgumentException(
-            "leftEpipolarLines cannot be null");
         }
         if (leftPoints == null) {
             throw new IllegalArgumentException("leftPoints cannot be null");
@@ -1859,40 +1811,29 @@ public class StereoProjectionTransformer {
         if (rightPoints == null) {
             throw new IllegalArgumentException("rightPoints cannot be null");
         }
+        int nRows = leftPoints.getMatrix().getNumRows();
+        if (nRows != rightPoints.getMatrix().getNumRows()) {
+            throw new IllegalArgumentException("matrices must have same number of rows");
+        }
+        
+        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
+
+        PairFloatArray distances = calculateDistancesFromEpipolar(fm,
+            leftPoints, rightPoints);
         
         float[] diffs = new float[leftPoints.numCols()];
         
         int nMatched = 0;
         
         List<Integer> inlierIndexes = new ArrayList<Integer>();
+            
+        for (int i = 0; i < distances.getN(); ++i) {
         
-        for (int i = 0; i < leftPoints.numCols(); i++) {
-
-            double a = rightEpipolarLines.get(0, i);
-            double b = rightEpipolarLines.get(1, i);
-            double c = rightEpipolarLines.get(2, i);
+            float leftPtD = distances.getX(i);
             
-            double aplusb = Math.sqrt((a*a) + (b*b));
+            float rightPtD = distances.getY(i);
             
-            double xL = leftPoints.get(0, i);
-            double yL = leftPoints.get(1, i);
-        
-            //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
-            
-            double x = rightPoints.get(0, i);
-            double y = rightPoints.get(1, i);
-                
-            double d = (a*x + b*y + c)/aplusb;
-                
-            // find the reverse distance by projection:
-            double aRev = leftEpipolarLines.get(0, i);
-            double bRev = leftEpipolarLines.get(1, i);
-            double cRev = leftEpipolarLines.get(2, i);
-
-            double dRev = (aRev*xL + bRev*yL + cRev)/
-                Math.sqrt((aRev*aRev + bRev*bRev));
-
-            float dist = (float)Math.sqrt(d*d + dRev*dRev);
+            float dist = (float)Math.sqrt(leftPtD*leftPtD + rightPtD*rightPtD);
 
             if (dist > tolerance) {
                 continue;
@@ -1911,13 +1852,11 @@ public class StereoProjectionTransformer {
         
         StereoProjectionTransformerFit fit = null;
         if (diffs.length > 0) {
-            fit = new StereoProjectionTransformerFit(fm, 
-                diffs.length, tolerance, 
-                avgAndStdDev[0], avgAndStdDev[1]);
+            fit = new StereoProjectionTransformerFit(fm, diffs.length, 
+                tolerance, avgAndStdDev[0], avgAndStdDev[1]);
         } else {
-            fit = new StereoProjectionTransformerFit(fm, 
-                diffs.length, tolerance, 
-                Double.MAX_VALUE, Double.MAX_VALUE);
+            fit = new StereoProjectionTransformerFit(fm, diffs.length, 
+                tolerance, Double.MAX_VALUE, Double.MAX_VALUE);
         }
         
         fit.setNMaxMatchable(leftPoints.numCols());
@@ -1925,6 +1864,75 @@ public class StereoProjectionTransformer {
         fit.setInlierIndexes(inlierIndexes);
         
         return fit;
+    }
+    
+    /**
+     * find the distance of the given points from their respective projective
+     * epipolar lines.
+     * @param fm
+     * @param rightEpipolarLines
+     * @param leftEpipolarLines
+     * @param leftPoints
+     * @param rightPoints
+     * @param tolerance
+     * @return 
+     */
+    PairFloatArray calculateDistancesFromEpipolar(
+        SimpleMatrix fm, SimpleMatrix matchedLeftPoints, 
+        SimpleMatrix matchedRightPoints) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (matchedLeftPoints == null) {
+            throw new IllegalArgumentException("matchedLeftPoints cannot be null");
+        }
+        if (matchedRightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        int nRows = matchedLeftPoints.getMatrix().getNumRows();
+        if (nRows != matchedRightPoints.getMatrix().getNumRows()) {
+            throw new IllegalArgumentException("matrices must have same number of rows");
+        }
+        
+        int n = matchedLeftPoints.numCols();
+        
+        PairFloatArray distances = new PairFloatArray(n);
+        
+        SimpleMatrix rightEpipolarLines = fm.mult(matchedLeftPoints);
+       
+        SimpleMatrix leftEpipolarLines = fm.transpose().mult(matchedRightPoints);
+        
+        for (int i = 0; i < matchedLeftPoints.numCols(); i++) {
+
+            double a = rightEpipolarLines.get(0, i);
+            double b = rightEpipolarLines.get(1, i);
+            double c = rightEpipolarLines.get(2, i);
+            
+            double aplusb = Math.sqrt((a*a) + (b*b));
+            
+            double xL = matchedLeftPoints.get(0, i);
+            double yL = matchedLeftPoints.get(1, i);
+        
+            //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
+            
+            double x = matchedRightPoints.get(0, i);
+            double y = matchedRightPoints.get(1, i);
+                
+            double d = (a*x + b*y + c)/aplusb;
+                
+            // find the reverse distance by projection:
+            double aRev = leftEpipolarLines.get(0, i);
+            double bRev = leftEpipolarLines.get(1, i);
+            double cRev = leftEpipolarLines.get(2, i);
+
+            double dRev = (aRev*xL + bRev*yL + cRev)/
+                Math.sqrt((aRev*aRev + bRev*bRev));
+            
+            distances.add((float)dRev, (float)d);
+        }
+        
+        return distances;
     }
 
     public PairIntArray getRightXYInt() {

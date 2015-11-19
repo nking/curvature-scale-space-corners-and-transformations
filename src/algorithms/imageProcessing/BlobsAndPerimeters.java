@@ -63,43 +63,35 @@ public class BlobsAndPerimeters {
             imgHelper.getBinnedSegmentationImage(type) :
             imgHelper.getSegmentationImage(type);
             
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+        boolean use8Neighbors = false;
+                
         Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(segImg);
         
-        for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
-            
+        /*
+        TODO: for low resolution, should use defaultExtractBlobs. this code
+        doesn't currenly know resolution, so this section may need
+        to be revised with more testing.
+        */
+        
+        for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {            
             Integer pixValue = entry.getKey();
-            
-            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
-            
-            finder.setToUse8Neighbors();
-            finder.setMinimumNumberInCluster(smallestGroupLimit);
-            finder.findGroups(pixValue.intValue());
-            
-            int nGroups = finder.getNumberOfGroups();
-            for (int i = 0; i < nGroups; ++i) {
-                PairIntArray xy = finder.getXY(i);
-                if (xy.getN() < largestGroupLimit) {
-                    Set<PairInt> points = Misc.convert(xy);
-                    // skip blobs that are on the image boundaries because they
-                    // are incomplete
-                    if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
-                        points, segImg.getWidth(), segImg.getHeight())) {
-                        outputBlobs.add(points);
-                    }
-                }
+            defaultExtractBlobs(segImg, pixValue.intValue(), smallestGroupLimit, 
+                largestGroupLimit, use8Neighbors, outputBlobs);
+        }
+        
+        // redo with default size limit and an algorithm to separate blobs connected
+        // by only 1 pixel
+        if (outputBlobs.isEmpty() && useBinned) {
+            smallestGroupLimit = imgHelper.getSmallestGroupLimit();
+            largestGroupLimit = imgHelper.getLargestGroupLimit();
+            for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
+                Integer pixValue = entry.getKey();
+                extractBlobs2(segImg, pixValue.intValue(), smallestGroupLimit,
+                    largestGroupLimit, use8Neighbors, outputBlobs);
             }
         }
         
-        //if (segmentedToLineDrawing) {
-            // for line drawings, there may be a blob due to an objects
-            // line and to it's interior points, so we want to remove the
-            // blob for the interior points and keep the exterior.  choosing
-            // the exterior because later feature matching should be better
-            // for points outside of the blob which is largely similar content.
-            removeRedundantBlobs(outputBlobs);
-        //}
+        removeRedundantBlobs(outputBlobs);
         
         if (modifyBlobs) {
             // helps to fill in single pixel holes
@@ -402,31 +394,156 @@ if (imgHelper.isInDebugMode()) {
         }
         blob.addAll(tmp);
     }
+    
+    /**
+     * grow blob by 1 pixel radius if the pixel is in the original pixel
+     * set
+     * @param blob set of pixels shrunk and possibly partitioned
+     * @param originalSet set of pixels before shrink operation
+     */
+    protected static void growRadius(Set<PairInt> blob, Set<PairInt> originalSet
+        ) {
+        
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+        
+        Set<PairInt> tmp = new HashSet<PairInt>();
+        
+        for (PairInt p : blob) {
+            for (int i = 0; i < dxs8.length; ++i) {
+                
+                int x2 = p.getX() + dxs8[i];
+                int y2 = p.getY() + dys8[i];
+                
+                PairInt p2 = new PairInt(x2, y2);
+                
+                if (originalSet.contains(p2)) {
+                    tmp.add(p2);
+                }
+            }
+        }
+        blob.addAll(tmp);
+    }
 
     /**
      * shrink blob by 1 pixel radius
      * @param blob
-     * @param w
-     * @param h
      */
-    protected static void shrinkRadius(Set<PairInt> blob, int w, int h) {
-        
+    protected static void shrinkRadius(Set<PairInt> blob) {
+
         // any point in blob with a non-point neighbor gets removed
         Set<PairInt> tmp = new HashSet<PairInt>();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+      
         for (PairInt p : blob) {
         
-            int nN = curveHelper.countNeighbors(p.getX(), p.getY(), blob, w, h);
-            
+            int nN = curveHelper.countNeighbors(p.getX(), p.getY(), blob);
+
             if (nN == 8) {
                 tmp.add(p);
             }
         }
         
         blob.clear();
-        blob.addAll(tmp);
+        blob.addAll(tmp);        
+    }
+    
+    private static void defaultExtractBlobs(GreyscaleImage segImg, 
+        int pixelValue, int smallestGroupLimit, int largestGroupLimit, 
+        boolean use8Neighbors, List<Set<PairInt>> outputBlobs) {
+        
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
+            
+        if (use8Neighbors) {
+            finder.setToUse8Neighbors();
+        }
+        finder.setMinimumNumberInCluster(smallestGroupLimit);
+        finder.findGroups(pixelValue);
+            
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        int nGroups = finder.getNumberOfGroups();
+        for (int i = 0; i < nGroups; ++i) {
+            PairIntArray xy = finder.getXY(i);
+            if (xy.getN() < largestGroupLimit) {
+                Set<PairInt> points = Misc.convert(xy);
+                // skip blobs that are on the image boundaries because they
+                // are incomplete
+                if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+                    points, segImg.getWidth(), segImg.getHeight())) {
+                    outputBlobs.add(points);
+               }
+            }
+        }
+    }
+
+    /**
+     * method to shrink the found blobs by '1' pixel, re-do search, then
+     * grow the found blobs by '1' pixel.
+     * @param segImg
+     * @param pixelValue
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @param use8Neighbors
+     * @param outputBlobs 
+     */
+    private static void extractBlobs2(GreyscaleImage segImg, 
+        int pixelValue, int smallestGroupLimit, int largestGroupLimit, 
+        boolean use8Neighbors, List<Set<PairInt>> outputBlobs) {
+        
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
+            
+        if (use8Neighbors) {
+            finder.setToUse8Neighbors();
+        }
+        finder.setMinimumNumberInCluster(smallestGroupLimit);
+        finder.findGroups(pixelValue);
+            
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        int nGroups = finder.getNumberOfGroups();
+        
+        for (int i = 0; i < nGroups; ++i) {
+            
+            PairIntArray xy = finder.getXY(i);
+            
+            Set<PairInt> points = Misc.convert(xy);
+            
+            int[] minMaxXY = MiscMath.findMinMaxXY(xy);
+           
+            Set<PairInt> pointsB4 = new HashSet<PairInt>(points);
+                        
+            shrinkRadius(points);
+            
+            DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
+            
+            finder2.setMinimumNumberInCluster(smallestGroupLimit - 4);
+            
+            finder2.findConnectedPointGroups(points, minMaxXY[1], 
+                minMaxXY[3]);
+            
+            int nGroups2 = finder2.getNumberOfGroups();
+            
+            for (int ii = 0; ii < nGroups2; ++ii) {
+                
+                Set<PairInt> blob2 = finder2.getXY(ii);
+                               
+                if (blob2.size() < smallestGroupLimit || blob2.size() > largestGroupLimit) {
+                    continue;
+                }
+                
+                // grow by '1' pixel to help maintain scale
+                growRadius(blob2, pointsB4);
+                
+                // not including blobs touching image bounds because they may be incomplete
+                if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+                    blob2, segImg.getWidth(), segImg.getHeight())) {
+                    
+                    outputBlobs.add(blob2);
+               }
+            }
+        }
     }
 
 }

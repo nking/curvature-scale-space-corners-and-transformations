@@ -1,7 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairFloatArray;
-import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;

@@ -2328,6 +2328,25 @@ public class MiscellaneousCurveHelper {
 
         return nn;
     }
+    
+    public int countNeighbors(int x, int y, Set<PairInt> points) {
+
+        int nn = 0;
+
+        for (int i = 0; i < eightNeighborsX.length; i++) {
+
+            int x2 = x + eightNeighborsX[i];
+            int y2 = y + eightNeighborsY[i];
+
+            PairInt p2 = new PairInt(x2, y2);
+
+            if (points.contains(p2)) {
+                nn++;
+            }
+        }
+
+        return nn;
+    }
 
     public List<PairIntArray> smoothAndReExtractEdges(List<PairIntArray> edges,
         GreyscaleImage gradientXY, int smoothingFactor) {

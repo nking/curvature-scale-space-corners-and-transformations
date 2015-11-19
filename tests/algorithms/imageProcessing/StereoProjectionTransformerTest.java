@@ -21,12 +21,40 @@ public class StereoProjectionTransformerTest extends TestCase {
     public StereoProjectionTransformerTest() {
     }
     
+    public void testCalcEpipolar() throws Exception {
+
+        String fileName1 = "checkerboard_01.jpg";
+        String fileName2 = "checkerboard_02.jpg";
+        int idx = fileName1.lastIndexOf(".");
+        String fileName1Root = fileName1.substring(0, idx);
+        
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+        
+        EpipolarSolver solver = new EpipolarSolver(img1, img2, fileName1Root);
+        StereoProjectionTransformerFit fit = solver.solve();
+
+        StereoProjectionTransformer spTr = new StereoProjectionTransformer();
+
+        /*
+        public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
+        PairFloatArray pointsLeftXY,  PairFloatArray pointsRightXY) {
+        */
+
+        //PairFloatArray calculateDistancesFromEpipolar(
+        //SimpleMatrix fm, SimpleMatrix matchedLeftPoints, 
+        //SimpleMatrix matchedRightPoints) {
+        
+    }
+    
     /*
     for more datasets:
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
     
-    public void testRANSAC() throws Exception {
+    public void estRANSAC() throws Exception {
     
         //TODO: add the reference for this data here.
         String fileName1 = "merton_college_I_001.jpg";
@@ -192,7 +220,7 @@ public class StereoProjectionTransformerTest extends TestCase {
             StereoProjectionTransformerTest test = 
                 new StereoProjectionTransformerTest();
             
-            test.testRANSAC();
+            //test.testRANSAC();
                         
         } catch(Exception e) {
             e.printStackTrace();

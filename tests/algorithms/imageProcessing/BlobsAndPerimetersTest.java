@@ -54,7 +54,7 @@ public class BlobsAndPerimetersTest extends TestCase {
             
             assertTrue(n1 > n0);
             
-            BlobsAndPerimeters.shrinkRadius(blob, w, h);
+            BlobsAndPerimeters.shrinkRadius(blob);
             
             int n2 = blob.size();
             

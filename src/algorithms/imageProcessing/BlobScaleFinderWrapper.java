@@ -241,10 +241,6 @@ public class BlobScaleFinderWrapper {
 
     }
 
-    public void setToDebug() {
-        debug = true;
-    }
-
     /**
      * NOT READY FOR USE YET.
      * From the given images, determine the scale between them and roughly
