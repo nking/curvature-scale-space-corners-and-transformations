@@ -120,6 +120,26 @@ public class CSSCornerMaker {
                 int y = Math.round(edgeCorners.getY(ii));
                 outputCorners.add(x, y);
             }
+            
+            if (doStoreCornerRegions) {
+                
+                int edgeNumber = i;
+                
+                for (int ii = 0; ii < edgeCorners.getN(); ii++) {
+                    
+                    int x = Math.round(edgeCorners.getX(ii));
+                    int y = Math.round(edgeCorners.getY(ii));
+                
+                    SIGMA sscSigma = edgeCorners.getSIGMA(ii);
+                    ScaleSpaceCurve scaleSpace = map.get(sscSigma);
+                    assert(scaleSpace != null);
+                    
+                    float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
+                    int idx = edgeCorners.getInt(ii);
+                    
+                    storeCornerRegion(edgeNumber, idx, k, scaleSpace);
+                }
+            }
         }
 
         return scaleSpaceMaps;
@@ -227,9 +247,6 @@ public class CSSCornerMaker {
             return xy;
         }
         
-        boolean storeCornerRegion = doStoreCornerRegions && 
-            !edgeCornerRegionMap.containsKey(Integer.valueOf(edgeNumber));
-        
         if (correctForJaggedLines && !doUseOutdoorMode) {
 
             PairIntArray jaggedLines = removeFalseCorners(
@@ -252,11 +269,7 @@ public class CSSCornerMaker {
             
             float x = scaleSpace.getX(idx);
             float y = scaleSpace.getY(idx);
-            
-            if (storeCornerRegion) {
-                storeCornerRegion(edgeNumber, idx, k, scaleSpace);
-            }
-            
+           
             xy.add(x, y, idx, scaleSpaceSigma);
         }
 
@@ -698,7 +711,7 @@ public class CSSCornerMaker {
         ScaleSpaceCurve scaleSpace) {
         
         //for 2 neighboring points on each side, min k is 0.2
-        if (k[cornerIdx] < 0.14f) {//0.18
+        if (Math.abs(k[cornerIdx]) < 0.14f) {//0.18
             return;
         }
         

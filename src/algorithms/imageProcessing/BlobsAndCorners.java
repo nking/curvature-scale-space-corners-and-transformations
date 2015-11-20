@@ -87,7 +87,7 @@ public class BlobsAndCorners  {
         
         if (blobPerimeterHelper.isInDebugMode()) {
             MiscDebug.writeEdgesAndCorners(perimeterLists, cornerLists,
-                1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
+                0, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
                 "blob_corners_" + blobPerimeterHelper.getDebugTag() + "_" 
                 + MiscDebug.getCurrentTimeFormatted());
         }
