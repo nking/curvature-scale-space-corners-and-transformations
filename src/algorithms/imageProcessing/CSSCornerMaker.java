@@ -1,17 +1,24 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.NearestPoints;
+import algorithms.compGeometry.NearestPointsFloat;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,6 +46,8 @@ import java.util.logging.Logger;
  * @author nichole
  */
 public class CSSCornerMaker {
+    
+    protected static float tentativeKLimit = 0.07f;
     
     protected boolean enableJaggedLineCorrections = true;
     
@@ -235,7 +244,16 @@ public class CSSCornerMaker {
         for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
 
             int idx = maxCandidateCornerIndexes.get(ii);
-
+            
+            //TODO: not sure that will keep a hard limit on curvature for general corners:
+            float absK = scaleSpace.getK(idx);
+            if (absK < 0) {
+                absK *= -1;
+            }
+            if (absK < tentativeKLimit) {
+                continue;
+            }
+            
             if (doUseOutdoorMode && !scaleSpace.curveIsClosed()) {
                 if ((idx < minDistFromEnds)
                     || (idx > (nPoints - minDistFromEnds))) {
@@ -245,7 +263,7 @@ public class CSSCornerMaker {
             
             float x = scaleSpace.getX(idx);
             float y = scaleSpace.getY(idx);
-
+            
             if (storeCornerRegion) {
                 storeCornerRegion(edgeNumber, idx, k, scaleSpace);
             }
@@ -302,6 +320,8 @@ public class CSSCornerMaker {
                 scaleSpace, sigma, prevSigma, edgeNumber, isAClosedCurve,
                 doUseOutdoorMode);
 
+            removeRedundantPoints(candidateCornersXY, scaleSpaceCurves);
+            
             prevSigma = sigma;
 
             sigma = SIGMA.divideBySQRT2(sigma);
@@ -660,41 +680,28 @@ public class CSSCornerMaker {
         //TODO: this may need to be altered to a smaller value
         float maxSepSq = Gaussian1D.estimateHWZI(previousSigma, 0.01f);
         maxSepSq *= maxSepSq;
-
         if (maxSepSq > 4) {
             maxSepSq = 4;
         }
-
+        float maxSep = (float)Math.sqrt(maxSepSq);
+       
+        NearestPointsFloat np = new NearestPointsFloat(xy2.getX(), xy2.getY(), 
+            xy2.getN());
+        
         // revise the points in {xc, yc} to the closest in {xc2, yc2}
-        boolean[] matchedNew = new boolean[xy2.getN()];
         for (int j = 0; j < candidateCornersXY.getN(); j++) {
             float x = candidateCornersXY.getX(j);
             float y = candidateCornersXY.getY(j);
-            float minSepSq = Float.MAX_VALUE;
-            int minSepIdx = -1;
-            for (int jj = 0; jj < xy2.getN(); jj++) {
-                if (matchedNew[jj]) {
-                    continue;
-                }
-                float x2 = xy2.getX(jj);
-                float y2 = xy2.getY(jj);
-                float dx = x2 - x;
-                float dy = y2 - y;
-                float sepSq = (dx*dx) + (dy*dy);
-                if (sepSq < minSepSq) {
-                    minSepSq = sepSq;
-                    minSepIdx = jj;
-                }
-            }
+            
+            Integer minSepIndex = np.findClosestNeighborIndex(x, y, maxSep);
 
-            if (minSepIdx > -1) {
-                if (minSepSq < maxSepSq) {
-                    matchedNew[minSepIdx] = true;
-                    candidateCornersXY.set(j, 
-                        xy2.getX(minSepIdx), xy2.getY(minSepIdx), 
-                        xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));
-                }
-            }
+            if (minSepIndex != null) {
+                int minSepIdx = minSepIndex.intValue();
+                float x3 = xy2.getX(minSepIdx);
+                float y3 = xy2.getY(minSepIdx);
+                candidateCornersXY.set(j, x3, y3, 
+                    xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));
+            }            
         }
     }
 
@@ -908,6 +915,75 @@ if (doUseOutdoorMode) {
      */
     public Map<Integer, List<CornerRegion>> getEdgeCornerRegionMap() {
         return edgeCornerRegionMap;
+    }
+
+    private void removeRedundantPoints(CornerArray candidateCornersXY, 
+        Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves) {
+        
+        boolean hasRedundant = false;
+        
+        // looking for redundant points
+        Map<PairInt, Set<Integer>> coordIndexes = new HashMap<PairInt, Set<Integer>>();
+        for (int j = 0; j < candidateCornersXY.getN(); j++) {
+            
+            int x = Math.round(candidateCornersXY.getX(j));
+            int y = Math.round(candidateCornersXY.getY(j));
+            PairInt p = new PairInt(x, y);
+            
+            Set<Integer> indexes = coordIndexes.get(p);
+            if (indexes == null) {
+                indexes = new HashSet<Integer>();
+                coordIndexes.put(p, indexes);
+            } else {
+                hasRedundant = true;
+            }
+            indexes.add(Integer.valueOf(j));
+        }
+        
+        if (!hasRedundant) {
+            return;
+        }
+        
+        // remove the weaker 'k' of any redundant points
+        Set<Integer> resolved = new HashSet<Integer>();
+        List<Integer> remove = new ArrayList<Integer>();
+        for (Entry<PairInt, Set<Integer>> entry : coordIndexes.entrySet()) {
+            Set<Integer> set = entry.getValue();
+            if (set.size() > 1) {
+                float maxAbsK = Float.MIN_VALUE;
+                Integer bestIndex1 = null;
+                for (Integer index1 : set) {
+                    if (resolved.contains(index1)) {
+                        continue;
+                    }
+                    int idx = index1.intValue();
+                    SIGMA sigma = candidateCornersXY.getSIGMA(idx);
+                    ScaleSpaceCurve ssc = scaleSpaceCurves.get(sigma);
+                    int sscIdx = candidateCornersXY.getInt(idx);
+                    assert(ssc != null);
+                    float kAbs = Math.abs(ssc.getK()[sscIdx]);
+                    if (kAbs > maxAbsK) {
+                        maxAbsK = kAbs;
+                        bestIndex1 = index1;
+                    }
+                    resolved.add(index1);
+                }
+                if (bestIndex1 != null) {
+                    for (Integer index1 : set) {
+                        if (index1.equals(bestIndex1)) {
+                            continue;
+                        }
+                        remove.add(index1);
+                    }
+                }
+            }
+        }
+        
+        Collections.sort(remove);
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i);
+            candidateCornersXY.removeRange(idx, idx);
+        }
     }
 
 }
