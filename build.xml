@@ -241,6 +241,7 @@
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
                 <!-- jree needs the servlet jar -->
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
@@ -327,6 +328,7 @@
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
                 <!-- jree needs the servlet jar -->
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
         	</inpath>
@@ -389,6 +391,7 @@
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
                 <!-- jree needs the servlet jar -->
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>

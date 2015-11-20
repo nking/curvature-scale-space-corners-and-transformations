@@ -147,7 +147,7 @@ public aspect CurvatureAspect {
         CurvatureScaleSpaceCornerDetector instance = 
             (CurvatureScaleSpaceCornerDetector)obj;
 
-        Image img2 = instance.getImage().copyImageToGreen();
+        Image img2 = instance.getOriginalImage().copyImage();
 
         PairIntArray corners = instance.getCornersInOriginalReferenceFrame();
 
@@ -205,7 +205,7 @@ public aspect CurvatureAspect {
 
         PairIntArray corners = instance.getCornersInOriginalReferenceFrame();
 
-        Image img2 = instance.getImage().copyImageToGreen();
+        Image img2 = instance.getOriginalImage().copyImage();
 
         int xOffset = instance.getTrimmedXOffset();
         int yOffset = instance.getTrimmedYOffset();
@@ -241,7 +241,7 @@ public aspect CurvatureAspect {
 
         PairIntArray corners = instance.getSkylineCornersInOriginalReferenceFrame();
 
-        Image img2 = instance.getImage().copyImageToGreen();
+        Image img2 = instance.getOriginalImage().copyImage();
 
         int xOffset = instance.getTrimmedXOffset();
         int yOffset = instance.getTrimmedYOffset();
@@ -761,7 +761,7 @@ private static int n3 = 0;
         && args(gradientXY)
 	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
-        Image clr = gradientXY.copyImageToGreen();
+        Image clr = gradientXY.copyToColorGreyscale();
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
@@ -875,7 +875,7 @@ private static int n3 = 0;
 
         EdgeExtractorWithJunctions instance = (EdgeExtractorWithJunctions)obj;
 
-        Image img = instance.getImage().copyImageToGreen();
+        Image img = instance.getImage().copyToColorGreyscale();
         boolean writeImage = true;
         try {
             ImageIOHelper.addAlternatingColorCurvesToImage(edges,
@@ -900,7 +900,7 @@ private static int n3 = 0;
 
         EdgeExtractorWithJunctions instance = (EdgeExtractorWithJunctions)obj;
 
-        Image img = instance.getImage().copyImageToGreen();
+        Image img = instance.getImage().copyToColorGreyscale();
         boolean writeImage = true;
         try {
             ImageIOHelper.addAlternatingColorCurvesToImage(
@@ -926,7 +926,7 @@ private static int n3 = 0;
 
         EdgeExtractorWithJunctions instance = (EdgeExtractorWithJunctions)obj;
 
-        Image img = instance.getImage().copyImageToGreen();
+        Image img = instance.getImage().copyToColorGreyscale();
         boolean writeImage = true;
         try {
             ImageIOHelper.addAlternatingColorCurvesToImage(edges,
@@ -1426,7 +1426,7 @@ private static int n3 = 0;
         PairIntArray xy = (PairIntArray)args[0];
         List<Integer> cI = (List<Integer>)args[1];
 
-        Image image2 = instance.getImage().copyImageToGreen();
+        Image image2 = instance.getOriginalImage().copyImage();
         
         // draw a blue line between jagged line end points
         int nExtraForDot = 2;
@@ -1655,7 +1655,7 @@ private static int n3 = 0;
                 
         try {
             //plot the edge and all scale space images
-            Image debugImg = img.copyImageToGreen();
+            Image debugImg = img.copyToColorGreyscale();
             
             ImageIOHelper.addCurveToImage(edge, debugImg, 0, 0, 255, 0);
             

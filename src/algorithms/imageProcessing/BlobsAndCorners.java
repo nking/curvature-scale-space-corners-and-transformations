@@ -72,7 +72,6 @@ public class BlobsAndCorners  {
                     int n = list.size();
                     if (n > 1) {
                         int end = n >> 1;
-                        // 0 1 2 3 4
                         for (int ii = 0; ii < end; ii++) {
                             int idx2 = n - ii - 1;
                             CornerRegion swap = list.get(ii);

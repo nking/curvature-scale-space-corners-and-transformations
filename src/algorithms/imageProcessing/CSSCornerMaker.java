@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
@@ -97,7 +98,7 @@ public class CSSCornerMaker {
 
             scaleSpaceMaps.put(edge, map);
 
-            PairIntArray edgeCorners = findCornersInScaleSpaceMap(edge, map, i,
+            CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map, i,
                 doUseOutdoorMode);
 
             log.log(Level.FINE,
@@ -108,7 +109,9 @@ public class CSSCornerMaker {
 
             //store xc and yc for the edge
             for (int ii = 0; ii < edgeCorners.getN(); ii++) {
-                outputCorners.add(edgeCorners.getX(ii), edgeCorners.getY(ii));
+                int x = Math.round(edgeCorners.getX(ii));
+                int y = Math.round(edgeCorners.getY(ii));
+                outputCorners.add(x, y);
             }
         }
 
@@ -188,6 +191,7 @@ public class CSSCornerMaker {
      * corners found.
      *
      * @param scaleSpace scale space map for an edge
+     * @param scaleSpaceSigma
      * @param edgeNumber the edgeNumber of the scaleSpace.  it's passed for
      * debugging purposes.
      * @param correctForJaggedLines
@@ -195,10 +199,10 @@ public class CSSCornerMaker {
      * @param doUseOutdoorMode
      * @return
      */
-    protected PairFloatArray findCornersInScaleSpaceMap(
-        final ScaleSpaceCurve scaleSpace, int edgeNumber,
-        boolean correctForJaggedLines, final boolean isAClosedCurve,
-        final boolean doUseOutdoorMode) {
+    protected CornerArray findCornersInScaleSpaceMap(
+        final ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma, 
+        int edgeNumber, boolean correctForJaggedLines, 
+        final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
 
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
 
@@ -210,7 +214,7 @@ public class CSSCornerMaker {
         List<Integer> maxCandidateCornerIndexes = findCandidateCornerIndexes(
             k, minimaAndMaximaIndexes, outputLowThreshold[0], doUseOutdoorMode);
 
-        PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
+        CornerArray xy = new CornerArray(maxCandidateCornerIndexes.size());
 
         if (maxCandidateCornerIndexes.isEmpty()) {
             return xy;
@@ -246,7 +250,7 @@ public class CSSCornerMaker {
                 storeCornerRegion(edgeNumber, idx, k, scaleSpace);
             }
             
-            xy.add(x, y);
+            xy.add(x, y, idx, scaleSpaceSigma);
         }
 
         return xy;
@@ -261,7 +265,7 @@ public class CSSCornerMaker {
      * @param edgeNumber
      * @return
      */
-    private PairIntArray findCornersInScaleSpaceMap(final PairIntArray edge,
+    private CornerArray findCornersInScaleSpaceMap(final PairIntArray edge,
         final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves,
         final int edgeNumber, final boolean doUseOutdoorMode) {
 
@@ -278,11 +282,11 @@ public class CSSCornerMaker {
         }
 
         if (maxScaleSpace.getK() == null) {
-            return new PairIntArray(0);
+            return new CornerArray(0);
         }
         
-        PairFloatArray candidateCornersXY =
-            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, 
+        CornerArray candidateCornersXY =
+            findCornersInScaleSpaceMap(maxScaleSpace, maxSIGMA, edgeNumber, 
                 enableJaggedLineCorrections, isAClosedCurve, doUseOutdoorMode);
 
         SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);
@@ -294,9 +298,8 @@ public class CSSCornerMaker {
 
             ScaleSpaceCurve scaleSpace = scaleSpaceCurves.get(sigma);
 
-            refinePrimaryCoordinates(candidateCornersXY.getX(),
-                candidateCornersXY.getY(), candidateCornersXY.getN(),
-                scaleSpace, prevSigma, edgeNumber, isAClosedCurve,
+            refinePrimaryCoordinates(candidateCornersXY,
+                scaleSpace, sigma, prevSigma, edgeNumber, isAClosedCurve,
                 doUseOutdoorMode);
 
             prevSigma = sigma;
@@ -307,13 +310,16 @@ public class CSSCornerMaker {
         log.log(Level.FINE, "number of corners adding ={0}",
             Integer.valueOf(candidateCornersXY.getN()));
 
-        PairIntArray edgeCorners = new PairIntArray(candidateCornersXY.getN());
+        CornerArray edgeCorners = new CornerArray(candidateCornersXY.getN());
 
         //store xc and yc for the edge
         for (int ii = 0; ii < candidateCornersXY.getN(); ii++) {
+            
             int xte = Math.round(candidateCornersXY.getX(ii));
             int yte = Math.round(candidateCornersXY.getY(ii));
-            edgeCorners.add(xte, yte);
+            
+            edgeCorners.add(xte, yte, candidateCornersXY.getInt(ii),
+                candidateCornersXY.getSIGMA(ii));
         }
 
         return edgeCorners;
@@ -636,20 +642,19 @@ public class CSSCornerMaker {
      * @param previousSigma
      * @param edgeNumber included for debugging
      */
-    private void refinePrimaryCoordinates(float[] xc, float[] yc,
-        final int xyLength,
-        ScaleSpaceCurve scaleSpace, final SIGMA previousSigma,
-        final int edgeNumber, final boolean isAClosedCurve,
-        final boolean doUseOutdoorMode) {
+    private void refinePrimaryCoordinates(CornerArray candidateCornersXY,
+        ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma, 
+        final SIGMA previousSigma, final int edgeNumber, 
+        final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
 
         if (scaleSpace == null || scaleSpace.getK() == null) {
             //TODO: follow up on NPE here
             return;
         }
 
-        PairFloatArray xy2 =
-            findCornersInScaleSpaceMap(scaleSpace, edgeNumber, false,
-            isAClosedCurve, doUseOutdoorMode);
+        CornerArray xy2 =
+            findCornersInScaleSpaceMap(scaleSpace, scaleSpaceSigma, edgeNumber, 
+                false, isAClosedCurve, doUseOutdoorMode);
 
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value
@@ -662,9 +667,9 @@ public class CSSCornerMaker {
 
         // revise the points in {xc, yc} to the closest in {xc2, yc2}
         boolean[] matchedNew = new boolean[xy2.getN()];
-        for (int j = 0; j < xyLength; j++) {
-            float x = xc[j];
-            float y = yc[j];
+        for (int j = 0; j < candidateCornersXY.getN(); j++) {
+            float x = candidateCornersXY.getX(j);
+            float y = candidateCornersXY.getY(j);
             float minSepSq = Float.MAX_VALUE;
             int minSepIdx = -1;
             for (int jj = 0; jj < xy2.getN(); jj++) {
@@ -685,8 +690,9 @@ public class CSSCornerMaker {
             if (minSepIdx > -1) {
                 if (minSepSq < maxSepSq) {
                     matchedNew[minSepIdx] = true;
-                    xc[j] = xy2.getX(minSepIdx);
-                    yc[j] = xy2.getY(minSepIdx);
+                    candidateCornersXY.set(j, 
+                        xy2.getX(minSepIdx), xy2.getY(minSepIdx), 
+                        xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));
                 }
             }
         }

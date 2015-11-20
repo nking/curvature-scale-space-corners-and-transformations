@@ -4,12 +4,14 @@ import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -309,6 +311,41 @@ extractMoreCorners = true;
 //TODO: revisit to make sure coordinate systems are consistent:       
         cornerRegions1 = detector.getEdgeCornerRegions(true);
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+    
+        if (debug) {
+            List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
+            try {
+                Image imgCp = img1.copyImage();
+                ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_edges_");
+                imgCp = img1.copyImage();
+                for (CornerRegion cr : cornerRegions1) {
+                    int x = cr.getX()[cr.getKMaxIdx()];
+                    int y = cr.getY()[cr.getKMaxIdx()];
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_cornerregions_");
+                Map<Integer, Set<Integer>> junctionMap = detector.getJunctionMap();
+                imgCp = img1.copyImage();
+                for (Integer pixIndex : junctionMap.keySet()) {
+                    int x = imgCp.getCol(pixIndex.intValue());
+                    int y = imgCp.getRow(pixIndex.intValue());
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_junctions_");
+                imgCp = img1.copyImage();
+                PairIntArray corners = detector.getCornersInOriginalReferenceFrame();
+                for (int ii = 0; ii < corners.getN(); ++ii) {
+                    int x = corners.getX(ii);
+                    int y = corners.getY(ii);
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_corners_");
+            } catch (IOException ex) {
+                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+//TODO: are junctions missing from cornerRegions?        
         
         //-------
         
@@ -322,9 +359,34 @@ extractMoreCorners = true;
         //cornerRegions2 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         
         if (debug) {
+            List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
             try {
-                MiscDebug.writeImage(cornerRegions1, img1.copyImage(), debugTagPrefix + "_1_corners_");
-                MiscDebug.writeImage(cornerRegions2, img2.copyImage(), debugTagPrefix + "_2_corners_");
+                Image imgCp = img2.copyImage();
+                ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_edges_");
+                imgCp = img2.copyImage();
+                for (CornerRegion cr : cornerRegions2) {
+                    int x = cr.getX()[cr.getKMaxIdx()];
+                    int y = cr.getY()[cr.getKMaxIdx()];
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_corneregions_");
+                Map<Integer, Set<Integer>> junctionMap = detector.getJunctionMap();
+                imgCp = img2.copyImage();
+                for (Integer pixIndex : junctionMap.keySet()) {
+                    int x = imgCp.getCol(pixIndex.intValue());
+                    int y = imgCp.getRow(pixIndex.intValue());
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_junctions_");
+                imgCp = img2.copyImage();
+                PairIntArray corners = detector.getCornersInOriginalReferenceFrame();
+                for (int ii = 0; ii < corners.getN(); ++ii) {
+                    int x = corners.getX(ii);
+                    int y = corners.getY(ii);
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_corners_");
             } catch (IOException ex) {
                 Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
             }

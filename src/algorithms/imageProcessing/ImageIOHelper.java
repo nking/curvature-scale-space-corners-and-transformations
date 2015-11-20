@@ -1129,6 +1129,18 @@ int z1 = 1;
     }
     
     public static void addAlternatingColorCurvesToImage(
+        List<PairIntArray> curves, Image input, int nExtraForDot) throws IOException {
+        
+        if (curves == null || input == null) {
+            return;
+        }
+        
+        addAlternatingColorCurvesToImage(
+            curves.toArray(new PairIntArray[curves.size()]),
+            input, nExtraForDot);
+    }
+    
+    public static void addAlternatingColorCurvesToImage(
         List<PairIntArray> curves, Image input) throws IOException {
         
         if (curves == null || input == null) {
@@ -1137,7 +1149,7 @@ int z1 = 1;
         
         addAlternatingColorCurvesToImage(
             curves.toArray(new PairIntArray[curves.size()]),
-            input);
+            input, 1);
     }
     
     public static int getNextColorRGB(int count) {
@@ -1210,7 +1222,21 @@ int z1 = 1;
             return;
         }
         
+        int nExtraForDot = 1;
+        
+        addAlternatingColorCurvesToImage(curves, input, nExtraForDot);
+    }
+    
+    public static void addAlternatingColorCurvesToImage(
+        PairIntArray[] curves, Image input, int nExtraForDot) throws IOException {
+        
+        if (curves == null || input == null) {
+            return;
+        }
+                
         int clr = 0;
+        int w = input.getWidth();
+        int h = input.getHeight();
         
         for (int i = 0; i < curves.length; i++) {
             
@@ -1223,11 +1249,19 @@ int z1 = 1;
                 int col = edge.getX(ii);
                 int row = edge.getY(ii);
                 
-                if ((col > -1) && (col < input.getWidth()) &&
-                    (row > -1) && (row < input.getHeight())) {
-                
-                    input.setRGB(col, row, c);
-                }
+                for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                    int xx = col + dx;
+                    if ((xx < 0) || (xx > (w - 1))) {
+                        continue;
+                    }
+                    for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                        int yy = row + dy;
+                        if ((yy < 0) || (yy > (h - 1))) {
+                            continue;
+                        }
+                        input.setRGB(xx, yy, c);
+                    }
+                }                
             }
             clr++;
         }
