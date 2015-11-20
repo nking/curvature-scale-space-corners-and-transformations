@@ -143,8 +143,8 @@ public class NearestPoints {
             }
             stopIdx = i;
         }
-        
-        double rSq = radius * radius;
+       
+        double rSq = Math.sqrt(2) * radius * radius;
         
         // search for points within startIdx and stopIdx that are within radius
         for (int i = startIdx; i <= stopIdx; ++i) {
