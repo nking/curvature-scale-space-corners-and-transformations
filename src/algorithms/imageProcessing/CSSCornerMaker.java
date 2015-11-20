@@ -46,9 +46,7 @@ import java.util.logging.Logger;
  * @author nichole
  */
 public class CSSCornerMaker {
-    
-    protected static float tentativeKLimit = 0.07f;
-    
+        
     protected boolean enableJaggedLineCorrections = true;
     
     protected float factorIncreaseForCurvatureMinimum = 1.f;
@@ -244,15 +242,6 @@ public class CSSCornerMaker {
         for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
 
             int idx = maxCandidateCornerIndexes.get(ii);
-            
-            //TODO: not sure that will keep a hard limit on curvature for general corners:
-            float absK = scaleSpace.getK(idx);
-            if (absK < 0) {
-                absK *= -1;
-            }
-            if (absK < tentativeKLimit) {
-                continue;
-            }
             
             if (doUseOutdoorMode && !scaleSpace.curveIsClosed()) {
                 if ((idx < minDistFromEnds)
