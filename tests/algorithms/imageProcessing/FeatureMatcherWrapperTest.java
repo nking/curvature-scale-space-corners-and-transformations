@@ -49,9 +49,14 @@ public class FeatureMatcherWrapperTest extends TestCase {
                     fileName2 = "campus_011.jpg";
                     break;
                 }
-                default: {
+                case 4: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    fileName2 = "checkerboard_02.jpg";
                     break;
                 }
             }
@@ -59,7 +64,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         }
     }
     
-    public void testRot90() throws Exception {
+    public void estRot90() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -121,7 +126,8 @@ public class FeatureMatcherWrapperTest extends TestCase {
             int z = 1;
         }
         
-        FeatureMatcherWrapper wrapper = new FeatureMatcherWrapper(img1, img2, fileName1Root);
+        FeatureMatcherWrapper wrapper = new FeatureMatcherWrapper(img1, img2, 
+            fileName1Root);
         
         log.info("fileName1Root=" + fileName1Root);
         

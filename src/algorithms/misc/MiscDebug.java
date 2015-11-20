@@ -4,6 +4,7 @@ import algorithms.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.CornerRegion;
+import algorithms.imageProcessing.CorrespondenceList;
 import algorithms.imageProcessing.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -1088,5 +1089,38 @@ public class MiscDebug {
         
         ImageIOHelper.writeOutputImage(
             dirPath + "/" + suffix + ".png", img);
+    }
+
+    public static void print(CorrespondenceList cl) {
+        
+        List<PairInt> m1 = cl.getPoints1();
+        List<PairInt> m2 = cl.getPoints2();
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("int[] x1 = new int[]{");
+        for (PairInt p : m1) {
+            sb.append(Integer.valueOf(p.getX())).append(",");
+        }
+        sb.append("};\n");
+        
+        sb.append("int[] y1 = new int[]{");
+        for (PairInt p : m1) {
+            sb.append(Integer.valueOf(p.getY())).append(",");
+        }
+        sb.append("};\n");
+        
+        sb.append("int[] x2 = new int[]{");
+        for (PairInt p : m2) {
+            sb.append(Integer.valueOf(p.getX())).append(",");
+        }
+        sb.append("};\n");
+        
+        sb.append("int[] y2 = new int[]{");
+        for (PairInt p : m2) {
+            sb.append(Integer.valueOf(p.getY())).append(",");
+        }
+        sb.append("};\n");
+        
+        log.info(sb.toString());
     }
 }

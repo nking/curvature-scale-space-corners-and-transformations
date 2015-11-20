@@ -35,6 +35,11 @@ public class StereoProjectionTransformerTest extends TestCase {
         
         EpipolarSolver solver = new EpipolarSolver(img1, img2, fileName1Root);
         StereoProjectionTransformerFit fit = solver.solve();
+        
+        int[] x1 = new int[]{248,341,154,341,341,339,341,249,341,155,};
+        int[] y1 = new int[]{109,204,295,204,204,295,204,205,204,201,};
+        int[] x2 = new int[]{264,169,354,169,169,170,169,264,169,353,};
+        int[] y2 = new int[]{385,293,202,293,293,198,293,290,293,292,};
 
         StereoProjectionTransformer spTr = new StereoProjectionTransformer();
 

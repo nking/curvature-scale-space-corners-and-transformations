@@ -216,6 +216,10 @@ public class FeatureMatcherWrapper {
         
         boolean extractMoreCorners = (stats.size() < nLimit);
         
+        if (debug) {
+            printMatches(stats);
+        }
+        
 extractMoreCorners = true;
         
         if (!extractMoreCorners) {
@@ -239,6 +243,9 @@ extractMoreCorners = true;
         cl = extractAndMatch(params);
             
         if (cl != null) {
+            if (debug) {
+                MiscDebug.print(cl);
+            }
             return cl;
         }
                
@@ -693,14 +700,28 @@ extractMoreCorners = true;
         
         return revised;
     }
-
+    
+    private void printMatches(List<FeatureComparisonStat> stats) {
+        if (stats == null) {
+            return;
+        }
+        List<PairInt> matched1 = new ArrayList<PairInt>();
+        List<PairInt> matched2 = new ArrayList<PairInt>();
+        populateLists(stats, matched1, matched2);
+        
+        printMatches(matched1, matched2);
+    }
+    
     private void printMatches(CorrespondenceList cl) {
         if (cl == null) {
             return;
         }
+        printMatches(cl.getPoints1(), cl.getPoints2());
+    }
+    
+    private void printMatches(Collection<PairInt> m1, Collection<PairInt> m2) {
+        
         int ts = MiscDebug.getCurrentTimeFormatted();
-        Collection<PairInt> m1 = cl.getPoints1();
-        Collection<PairInt> m2 = cl.getPoints2();
         GreyscaleImage gsImg1 = img1.copyToGreyscale();
         GreyscaleImage gsImg2 = img2.copyToGreyscale();
         String name1 = "1_" + debugTagPrefix + "_" + ts;

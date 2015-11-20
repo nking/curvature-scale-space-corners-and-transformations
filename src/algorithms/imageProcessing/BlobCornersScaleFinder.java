@@ -1,12 +1,14 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
+import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ScatterPointPlotterPNG;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,14 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
         
+        float dist = 2.5f;
+        for (int i = 0; i < perimeters1.size(); ++i) {
+            filterCorners(perimeters1.get(i), corners1List.get(i), dist);
+        }
+        for (int i = 0; i < perimeters2.size(); ++i) {
+            filterCorners(perimeters2.get(i), corners2List.get(i), dist);
+        }
+            
         MatchingSolution soln = match(features1, features2, img1, img2, perimeters1, 
             perimeters2, corners1List, corners2List, binFactor1, binFactor2);
             
@@ -64,7 +74,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
         List<List<T>> corners1List, List<List<T>> corners2List,
         int binFactor1, int binFactor2) {
-/*
+        
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -105,7 +115,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-*/
+
 /*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(68,78), new PairInt(96,84), new PairInt(122,91), 
@@ -317,7 +327,10 @@ for (int i = 0; i < im2Chk.length; ++i) {
             
             int rotD = Math.round(params.getRotationInDegrees());
             
-            int tolTransXY2 = Math.round(tolTransXY * params.getScale());
+            int tolTransXY2 = tolTransXY;
+            if (params.getScale() < 1) {
+                tolTransXY2 = Math.round(tolTransXY * params.getScale());
+            }
             if (tolTransXY2 == 0) {
                 tolTransXY2 = 1;
             }
@@ -406,7 +419,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
             float score2Norm = (float)((sumSSD + 1)/ssdLimit);
             float score3Norm = (float)(sumDist/maxDistance);
             float normalizedScore = score1Norm * score2Norm * score3Norm;
-            
+
             if (normalizedScore < bestScore) {
                 
                 TransformationParameters combinedParams = 
@@ -444,6 +457,75 @@ for (int i = 0; i < im2Chk.length; ++i) {
         return null;
     }
 
+    protected void filterCorners(PairIntArray curve, 
+        List<CornerRegion> regions, float dist) {
+        
+        /*
+        if there are more than 1 corner within dist of 2 or so of on another,
+        remove all except strongest corner.
+        */
+        List<Set<Integer>> closeCornerIndexes = findCloseCorners(dist, regions);
+        
+        if (closeCornerIndexes.isEmpty()) {
+            return;
+        }
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        for (Set<Integer> set : closeCornerIndexes) {
+            float maxK = Float.MIN_VALUE;
+            Integer maxKIndex = null;
+            for (Integer index : set) {
+                CornerRegion cr = regions.get(index.intValue());
+                float k = cr.getK()[cr.getKMaxIdx()];
+                if (k > maxK) {
+                    maxK = k;
+                    maxKIndex = index;
+                }
+            }
+            for (Integer index : set) {
+                if (!index.equals(maxKIndex)) {
+                    remove.add(index);
+                }
+            }
+        }
+        
+        if (remove.size() > 1) {
+            Collections.sort(remove);
+        }
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            regions.remove(remove.get(i).intValue());
+        }
+    }
+    
+    private static List<Set<Integer>> findCloseCorners(float tolD, 
+        List<CornerRegion> regions) {
+       
+        float[] x = new float[regions.size()];
+        float[] y = new float[regions.size()];
+        for (int i = 0; i < regions.size(); ++i) {
+            CornerRegion cr = regions.get(i);            
+            x[i] = cr.getX()[cr.getKMaxIdx()];
+            y[i] = cr.getY()[cr.getKMaxIdx()];
+        }
+        
+        List<Set<Integer>> close = new ArrayList<Set<Integer>>();
+        
+        FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(x, y);
+
+        groupFinder.findGroupsOfPoints(tolD);
+        
+        int nGroups = groupFinder.getNumberOfGroups();
+        
+        for (int i = 0; i < nGroups; ++i) {
+            Set<Integer> group = groupFinder.getGroupIndexes(i);
+            if (group.size() > 1) {
+                close.add(group);
+            }
+        }
+        
+        return close;
+    }
+    
     private double distance(double x1, double y1, double x2, double y2) {
         
         double diffX = x1 - x2;
