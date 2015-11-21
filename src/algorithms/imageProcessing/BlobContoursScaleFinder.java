@@ -223,19 +223,19 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
         List<IntensityFeatureComparisonStats> ifsList = new ArrayList<IntensityFeatureComparisonStats>();
         List<TransformationParameters> paramsList = new ArrayList<TransformationParameters>();
 
-        Map<PairInt, Float> indexScore = new HashMap<PairInt, Float>();
+        Map<PairInt, Float> indexCost = new HashMap<PairInt, Float>();
 
         /* for the cost, need to consider the evaluation of the parameters,
             and the SSD of the point.
-            The score for the evaluation is nMaxMatchable/nEval and its range is
+            The cost for the evaluation is nMaxMatchable/nEval and its range is
             1 to nMaxMatchable.
             The SSD is filtered above to a max of 1500.  Will add '1' to it
-            to avoid a zero for a perfect match, then the score for SSD ranges
+            to avoid a zero for a perfect match, then the cost for SSD ranges
             from 1 to 1500.
-            Can make the cost the multiplication of the two scores as long as
+            Can make the cost the multiplication of the two costs as long as
             the value (nMaxMatchable/1500) stays below ((1<<31)-1).
             
-            have normalized both scores by their maximum values so that their
+            have normalized both costs by their maximum values so that their
             contributions to the cost are equal.
             */
         
@@ -266,12 +266,12 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                 if (nEval == 0) {
                     continue;
                 }
-                float score1 = (float)nMaxMatchable/(float)nEval;
-                float score2 = (float)ifcs.getCost() + 1;
-                float score = score1 * score2;
-                float normalizedScore = (score2/(float)nEval)/1500.f;
-                cost[idx1][idx2] = normalizedScore;
-                indexScore.put(p, Float.valueOf(normalizedScore));
+                float cost1 = (float)nMaxMatchable/(float)nEval;
+                float cost2 = (float)ifcs.getCost() + 1;
+                float costC = cost1 * cost2;
+                float costNormalized = (cost2/(float)nEval)/1500.f;
+                cost[idx1][idx2] = costNormalized;
+                indexCost.put(p, Float.valueOf(costNormalized));
                 
                 present.add(p);                
                 ifsList.add(ifcs);
@@ -378,9 +378,9 @@ public class BlobContoursScaleFinder extends AbstractBlobScaleFinder {
                 for (int ii = 0; ii < ifsList.size(); ++ii) {
                     IntensityFeatureComparisonStats ifs = ifsList.get(ii);
                     PairInt p = new PairInt(ifs.getIndex1(), ifs.getIndex2());
-                    float score1 = indexScore.get(p).floatValue();
-                    if (score1 > maxCost) {
-                        maxCost = score1;
+                    float cost1 = indexCost.get(p).floatValue();
+                    if (cost1 > maxCost) {
+                        maxCost = cost1;
                         maxCostIdx = ii;
                     }
                 }

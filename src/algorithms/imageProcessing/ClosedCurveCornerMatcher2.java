@@ -112,14 +112,14 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         private int idx2 = -1;
         private final FeatureComparisonStat stat;
         private final double dist;
-        private final double normalizedScore;
+        private final double normalizedCost;
         public CornersAndFeatureStat(T cornerRegion1,
             T cornerRegion2, FeatureComparisonStat compStat, double distance) {
             cr1 = cornerRegion1;
             cr2 = cornerRegion2;
             stat = compStat;
             dist = distance;
-            normalizedScore = (stat.getSumIntensitySqDiff()/ssdLimit) 
+            normalizedCost = (stat.getSumIntensitySqDiff()/ssdLimit) 
                 * (dist/maxDistance);
         }
     }
@@ -465,16 +465,16 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                 continue;
             }
             
-            // distance needs to be adjusted by scale, else the score prefers
+            // distance needs to be adjusted by scale, else the cost prefers
             // small scale solutions
             sumDist /= params.getScale();
             sumDist /= (double)nEval2;
             // store in heap.  use nEval and dist as cost
-            float score1 = 1.f/(float)nEval2;
-            float score2 = (float) (sumDist/maxDistance);
-            float normalizedScore = score1 * score2;
+            float cost1 = 1.f/(float)nEval2;
+            float cost2 = (float) (sumDist/maxDistance);
+            float normalizedCost = cost1 * cost2;
             
-            long costL = (long)(normalizedScore * heapKeyFactor);
+            long costL = (long)(normalizedCost * heapKeyFactor);
             HeapNode node = new HeapNode(costL);
             node.setData(params);
             orderedParams.insert(node);
@@ -591,7 +591,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                 continue;
             }
             
-            // distance needs to be adjusted by scale, else the score prefers
+            // distance needs to be adjusted by scale, else the cost prefers
             // small scale solutions
             sumDist /= params.getScale();
             
@@ -616,12 +616,12 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         
         int nMaxMatchable = Math.min(c1.size(), c2.size());
         
-        float score1 = 1.f/((float)nMaxMatchable*(float)maxNEval);
-        float score2 = (float)(minSSD/ssdLimit);
-        float score3 = (float)(minDist/maxDistance);
-        float normalizedScore = score1 * score2 * score3;
+        float costC1 = 1.f/((float)nMaxMatchable*(float)maxNEval);
+        float costC2 = (float)(minSSD/ssdLimit);
+        float costC3 = (float)(minDist/maxDistance);
+        float normalizedCCost = costC1 * costC2 * costC3;
         
-        solutionCost =  normalizedScore;
+        solutionCost =  normalizedCCost;
         solutionStats = bestStats;
         state = State.SOLVED;
         solution = bestParams;

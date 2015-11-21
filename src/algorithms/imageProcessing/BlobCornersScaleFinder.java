@@ -171,7 +171,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
             -- make 2 eval methods, hopefully the fastest is enough
                -- (1) eval by finding an existing point within tolerance of predicted position
                -- (2) eval by finding best SSD of points within tolerance of predicted and
-                      use nEval, SSD and dist to return a normalized score
+                      use nEval, SSD and dist to return a normalized cost
         */
         
         for (int idx1 = 0; idx1 < n1; ++idx1) {
@@ -291,7 +291,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
         /*
         -- evaluate each param against all points.
            -- (2) eval by finding best SSD of points within tolerance of predicted and
-              use nEval, SSD and dist to return a normalized score
+              use nEval, SSD and dist to return a normalized cost
         */
                 
         //List<TransformationParameters> parameterList = 
@@ -315,7 +315,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
         final int dither = 4;
         
         TransformationParameters bestParams = null;
-        float bestScore = Float.MAX_VALUE;
+        float bestCost = Float.MAX_VALUE;
         List<FeatureComparisonStat> bestStats = null;
         
         for (TransformationParameters params : parameterList) {
@@ -407,19 +407,19 @@ for (int i = 0; i < im2Chk.length; ++i) {
                 continue;
             }
             
-            // distance needs to be adjusted by scale, else the score prefers
+            // distance needs to be adjusted by scale, else the cost prefers
             // small scale solutions
             sumDist /= params.getScale();
             
             sumSSD /= (double)nEval;
             sumDist /= (double)nEval;
             
-            float score1Norm = 1.f/(float)nEval;
-            float score2Norm = (float)((sumSSD + 1)/ssdLimit);
-            float score3Norm = (float)(sumDist/maxDistance);
-            float normalizedScore = score1Norm * score2Norm * score3Norm;
+            float cost1Norm = 1.f/(float)nEval;
+            float cost2Norm = (float)((sumSSD + 1)/ssdLimit);
+            float cost3Norm = (float)(sumDist/maxDistance);
+            float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
 
-            if (normalizedScore < bestScore) {
+            if (normalizedCost < bestCost) {
                 
                 TransformationParameters combinedParams = 
                     MiscStats.calculateTransformation(binFactor1, binFactor2,
@@ -433,7 +433,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
                     continue;
                 }
             
-                bestScore = normalizedScore;
+                bestCost = normalizedCost;
                 bestParams = combinedParams;
                 bestStats = stats;
             }
