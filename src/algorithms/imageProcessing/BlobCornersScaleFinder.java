@@ -61,6 +61,15 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         for (int i = 0; i < perimeters2.size(); ++i) {
             filterCorners(perimeters2.get(i), corners2List.get(i), dist);
         }
+        
+        if (true) {
+            for (List<CornerRegion> list : corners1List) {
+                sortCornersToCCW(list);
+            }
+            for (List<CornerRegion> list : corners2List) {
+                sortCornersToCCW(list);
+            }
+        }
             
         MatchingSolution soln = match(features1, features2, img1, img2, perimeters1, 
             perimeters2, corners1List, corners2List, binFactor1, binFactor2);
@@ -535,4 +544,26 @@ for (int i = 0; i < im2Chk.length; ++i) {
         return dist;
     }
 
+    private void sortCornersToCCW(List<CornerRegion> corners) {
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        PairIntArray cornerXY = new PairIntArray();
+        for (int ii = 0; ii < corners.size(); ++ii) {
+            CornerRegion cr = corners.get(ii);
+            cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
+        }
+        boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);
+        if (isCW) {
+            int n = corners.size();
+            if (n > 1) {
+                int end = n >> 1;
+                for (int ii = 0; ii < end; ii++) {
+                    int idx2 = n - ii - 1;
+                    CornerRegion swap = corners.get(ii);
+                    corners.set(ii, corners.get(idx2));
+                    corners.set(idx2, swap);
+                }
+            }
+        }
+    }
 }

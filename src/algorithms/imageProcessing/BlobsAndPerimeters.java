@@ -79,9 +79,11 @@ public class BlobsAndPerimeters {
                 largestGroupLimit, use8Neighbors, outputBlobs);
         }
         
+        boolean redo = outputBlobs.isEmpty() && useBinned;
+        
         // redo with default size limit and an algorithm to separate blobs connected
         // by only 1 pixel
-        if (outputBlobs.isEmpty() && useBinned) {
+        if (redo) {
             smallestGroupLimit = imgHelper.getSmallestGroupLimit();
             largestGroupLimit = imgHelper.getLargestGroupLimit();
             for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
@@ -93,7 +95,7 @@ public class BlobsAndPerimeters {
         
         removeRedundantBlobs(outputBlobs);
         
-        if (modifyBlobs) {
+        if (modifyBlobs && !redo) {
             // helps to fill in single pixel holes
             for (Set<PairInt> blob : outputBlobs) {
                 growRadius(blob, segImg.getWidth(), segImg.getHeight());

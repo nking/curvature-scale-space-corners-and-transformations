@@ -183,14 +183,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
                     ) {
                     continue;
                 }
-                
-                CornersAndFeatureStat<T> existing = index2Map.get(Integer.valueOf(j));
-                
-                if ((existing != null) && (existing.stat.getSumIntensitySqDiff() 
-                    < compStat.getSumIntensitySqDiff())) {
-                    continue;
-                }
-                
+             
                 if ((best == null) || (compStat.getSumIntensitySqDiff() < bestCost)) {
                     best = compStat;
                     bestIdx2 = j;
