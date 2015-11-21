@@ -345,7 +345,6 @@ extractMoreCorners = true;
                 Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-//TODO: are junctions missing from cornerRegions?        
         
         //-------
         

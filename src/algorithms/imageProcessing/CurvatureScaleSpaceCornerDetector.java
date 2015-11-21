@@ -2,8 +2,11 @@ package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.NearestPoints;
+import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The code is implemented from interpreting several papers by the authors
@@ -115,6 +120,7 @@ public class CurvatureScaleSpaceCornerDetector extends
     
     public void findCorners() {
 
+        // extract edges and junction maps:
         initialize();
 
         if (extractSkyline && !skylineEdges.isEmpty()) {
@@ -124,13 +130,11 @@ public class CurvatureScaleSpaceCornerDetector extends
         if (!performWholeImageCorners) {
             return;
         }
-        
+             
         // not re-using return maps for now, but they are available here
         // while refactoring the public method returns and signatures
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
-            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
-        
-        includeJunctionsInCorners();
+            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);        
     }
     
     @Override
@@ -276,14 +280,46 @@ public class CurvatureScaleSpaceCornerDetector extends
         cornerMaker.increaseFactorForCurvatureMinimum(
             factorIncreaseForCurvatureMinimum);
         
+        //map w/ key = edge index,
+        //   values = junctions on edge as (x,y) and edge curve indexs
+        Map<Integer, Set<PairIntWithIndex>> junctionCoords = getJunctionCoordinates();
+        
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > sMap =
-            cornerMaker.findCornersInScaleSpaceMaps(theEdges, 
+            cornerMaker.findCornersInScaleSpaceMaps(theEdges, junctionCoords,
                 doUseOutdoorMode, outputCorners); 
         
         if (doStoreCornerRegions) {
             edgeCornerRegionMap.clear();
-            edgeCornerRegionMap.putAll(cornerMaker.getEdgeCornerRegionMap());
+            Map<Integer, List<CornerRegion>> tmp = cornerMaker.getEdgeCornerRegionMap();
+            edgeCornerRegionMap.putAll(tmp);
         }
+    
+        //TODO: place in the replacement for aspects:
+        /*if (true) {
+            try {
+                Image imgCp = this.img.copyToColorGreyscale();
+                ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
+                MiscDebug.writeImage(imgCp, "_dbg_edges_");
+                imgCp = imgCp = this.img.copyToColorGreyscale();
+                for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
+                    for (CornerRegion cr : entry.getValue()) {
+                        int x = cr.getX()[cr.getKMaxIdx()];
+                        int y = cr.getY()[cr.getKMaxIdx()];
+                        ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                    }
+                }
+                MiscDebug.writeImage(imgCp, "_dbg_cornerregions_");
+                imgCp = this.img.copyToColorGreyscale();
+                for (int ii = 0; ii < outputCorners.getN(); ++ii) {
+                    int x = outputCorners.getX(ii);
+                    int y = outputCorners.getY(ii);
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, "_dbg_corners_");
+            } catch (IOException ex) {
+                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }*/
         
         return sMap;
     }
@@ -525,7 +561,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
         if (!removeAmbiguousPeaks) {
             return getEdgeCornerRegions();
         }
-        
+/*        
         Map<Integer, Set<Integer> > theJunctionMap = new HashMap<Integer, Set<Integer>>();
 
         Map<Integer, PairInt> theJunctionLocationMap = new HashMap<Integer, PairInt>();
@@ -535,52 +571,11 @@ MultiArrayMergeSort.sortByYThenX(cp);
 
         this.junctionLocationMap = theJunctionLocationMap;
         this.junctionMap = theJunctionMap;
-        
+  */      
         Set<CornerRegion> set = new HashSet<CornerRegion>();
        
         for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
-            for (CornerRegion cr : entry.getValue()) {
-                int kMaxIdx = cr.getKMaxIdx();
-                float kMax = cr.getK()[kMaxIdx];
-                boolean keep = true;               
-                /*if ((kMaxIdx > 0) && (kMaxIdx < (cr.getX().length - 1))) {
-                    if (Math.abs(cr.getK()[kMaxIdx - 1] - kMax) < 0.005) {
-                        keep = false;
-                    } else if (Math.abs(cr.getK()[kMaxIdx + 1] - kMax) < 0.005) {
-                        keep = false;
-                    }
-                }*/
-                
-                if (keep) {
-                    
-                    int xCorner = cr.getX()[kMaxIdx];
-                    int yCorner = cr.getY()[kMaxIdx];
-                    
-                    /*
-                    check if in a junction, and if so either try to reconstruct
-                    best path around portion of image that curvature maximum
-                    is on, or discard this corner region as possibly ambiguous.
-                    */
-                    
-                    boolean isInAJunction = isInAJunction(xCorner, yCorner);
-                    
-                    if (!isInAJunction) {
-                        
-                        set.add(cr);
-                        
-                    } else {
-                        
-                        List<CornerRegion> crWithinJunctions = 
-                            searchForCornerRegionWithinJunctions(xCorner, 
-                            yCorner, kMax);
-
-                        if (crWithinJunctions != null) {
-                           
-                            set.addAll(crWithinJunctions);
-                        }
-                    }
-                }
-            }
+            set.addAll(entry.getValue());
         }
         
         return set;
@@ -731,6 +726,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
             corners2.add(new PairInt(x2, y2));
         }
 
+        //TODO: should be '3'?
         float sepDist = 4;
 
         final NearestPoints nearestPoints = new NearestPoints(x, y);
@@ -758,5 +754,39 @@ MultiArrayMergeSort.sortByYThenX(cp);
             corners.add(p.getX(), p.getY());
         }
 
+    }
+    
+    /**
+     * extract from junction maps, a map w/ key = edge index,
+     * values = junctions on edge as (x,y) and edge curve index.
+     * @return 
+     */
+    private Map<Integer, Set<PairIntWithIndex>> getJunctionCoordinates() {
+        
+        Map<Integer, Set<PairIntWithIndex>> edgeCoordsMap = new HashMap<Integer, Set<PairIntWithIndex>>();
+                
+        for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+
+            int pixIdx = entry.getKey().intValue();
+
+            int xP = img.getCol(pixIdx);
+            int yP = img.getRow(pixIdx);
+            
+            PairInt edgeLocation = junctionLocationMap.get(Integer.valueOf(pixIdx));
+            
+            Integer edgeIndex = Integer.valueOf(edgeLocation.getX());
+            
+            PairIntWithIndex p = new PairIntWithIndex(xP, yP, edgeLocation.getY());
+            
+            Set<PairIntWithIndex> set = edgeCoordsMap.get(edgeIndex);
+            if (set == null) {
+                set = new HashSet<PairIntWithIndex>();
+                edgeCoordsMap.put(edgeIndex, set);
+            }
+            
+            set.add(p);
+        }
+        
+        return edgeCoordsMap;
     }
 }

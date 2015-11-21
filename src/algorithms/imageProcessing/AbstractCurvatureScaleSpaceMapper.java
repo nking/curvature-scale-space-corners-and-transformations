@@ -198,7 +198,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 skylineEdges.addAll(skyEdges);
             }
             
-            // (2) extract edges
+            // (2) extract edges and create junction maps
             extractEdges();
             
             //TODO: note that there may be a need to search for closed

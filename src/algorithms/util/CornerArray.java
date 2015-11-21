@@ -73,6 +73,30 @@ public class CornerArray {
         idx[index] = anInt;
         sigma[index] = s;
     }
+    
+    public void insert(int index, float xPoint, float yPoint, int anInt, SIGMA s) {
+        
+        if (index < 0 || (index > n)) {
+            throw new IllegalArgumentException("index is out of bounds of arrays");
+        }
+        
+        expandIfNeeded(n + 1);
+        
+        // move everything at index thru n-1 to higher index
+        for (int i = n; i > index; i--) {
+            x[i] = x[i - 1];
+            y[i] = y[i - 1];
+            idx[i] = idx[i - 1];
+            sigma[i] = sigma[i - 1];
+        }
+        
+        x[index] = xPoint;
+        y[index] = yPoint;
+        idx[index] = anInt;
+        sigma[index] = s;
+        
+        n++;
+    }
   
     public float getX(int index) {
         if (index > (n - 1)) {

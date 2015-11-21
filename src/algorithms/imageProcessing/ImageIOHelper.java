@@ -1140,6 +1140,18 @@ int z1 = 1;
             input, nExtraForDot);
     }
     
+    public static void addAlternatingColorCurvesToImage2(
+        List<PairIntArray> curves, Image input, int nExtraForDot) throws IOException {
+        
+        if (curves == null || input == null) {
+            return;
+        }
+        
+        addAlternatingColorCurvesToImage(
+            curves.toArray(new PairIntArray[curves.size()]),
+            input, nExtraForDot);
+    }
+    
     public static void addAlternatingColorCurvesToImage(
         List<PairIntArray> curves, Image input) throws IOException {
         

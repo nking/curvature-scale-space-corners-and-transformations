@@ -1,10 +1,14 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * holds the blobs, their ordered perimeters, and the scale space image
@@ -21,7 +25,7 @@ public class BlobsAndCorners  {
         final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum) {
 
-        List<List<CornerRegion>> cornerLists = 
+        List<List<CornerRegion>> cornerRegionLists = 
             new ArrayList<List<CornerRegion>>();
         
         List<PairIntArray> perimeterLists = blobPerimeterHelper.getBlobPerimeters(
@@ -41,29 +45,37 @@ public class BlobsAndCorners  {
             findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners,
             enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
             width, height);
-                
+
+        int nTotCR = 0;
+        
         for (int i = 0; i < perimeterLists.size(); ++i) {
             List<CornerRegion> list = indexCornerRegionMap.get(Integer.valueOf(i));
             if (list == null) {
                 // have to keep ordered, parallel indexes
-                cornerLists.add(new ArrayList<CornerRegion>());
+                cornerRegionLists.add(new ArrayList<CornerRegion>());
             } else {
                 
                 // detailed check for ordering the perimeters.
                 // TODO: consider corrections to this for perimeter also at higher level
                 // then it's not needed here
                 PairIntArray curve = perimeterLists.get(i);
+                
                 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                
                 PairIntArray cornerXY = new PairIntArray();
+                
                 for (int ii = 0; ii < list.size(); ++ii) {
                     CornerRegion cr = list.get(ii);
                     if (ii == 0 && cr.getIndexWithinCurve() != 0) {
+                        // adding test point for clockwise calculation
                         int idx = cr.getIndexWithinCurve()/2;
                         cornerXY.add(curve.getX(idx), curve.getY(idx));
                     }
                     cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
                 }
+                
                 if (list.get(list.size() - 1).getIndexWithinCurve() < (curve.getN() - 1)) {
+                    // adding test point for clockwise calculation
                     int idx = curve.getN() - 1;
                     cornerXY.add(curve.getX(idx), curve.getY(idx));
                 }
@@ -81,20 +93,22 @@ public class BlobsAndCorners  {
                     }
                 }
                 
-                cornerLists.add(list);
+                nTotCR += list.size();
+                
+                cornerRegionLists.add(list);
             }
         }
         
         if (blobPerimeterHelper.isInDebugMode()) {
-            MiscDebug.writeEdgesAndCorners(perimeterLists, cornerLists,
-                0, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
+            MiscDebug.writeEdgesAndCorners(perimeterLists, cornerRegionLists,
+                1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
                 "blob_corners_" + blobPerimeterHelper.getDebugTag() + "_" 
                 + MiscDebug.getCurrentTimeFormatted());
         }
 
-        assert(perimeterLists.size() == cornerLists.size());
+        assert(perimeterLists.size() == cornerRegionLists.size());
         
-        return cornerLists;
+        return cornerRegionLists;
     }
 
     /**
@@ -138,8 +152,11 @@ public class BlobsAndCorners  {
         cornerMaker.increaseFactorForCurvatureMinimum(
             factorIncreaseForCurvatureMinimum);
         
+        Map<Integer, Set<PairIntWithIndex>> noJunctions = 
+            new HashMap<Integer, Set<PairIntWithIndex>>();
+        
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > sMap =
-            cornerMaker.findCornersInScaleSpaceMaps(theEdges, 
+            cornerMaker.findCornersInScaleSpaceMaps(theEdges, noJunctions,
                 doUseOutdoorMode, outputCorners); 
         
         return cornerMaker.getEdgeCornerRegionMap();        

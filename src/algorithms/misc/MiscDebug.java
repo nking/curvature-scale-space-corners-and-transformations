@@ -343,7 +343,7 @@ public class MiscDebug {
             
             Image img2 = ImageIOHelper.convertImage(img);
 
-            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
+            ImageIOHelper.addAlternatingColorCurvesToImage2(edges, img2, 0);
 
             for (List<CornerRegion> list : corners) {
                 for (CornerRegion cr : list) {
