@@ -138,7 +138,7 @@ public class FeatureMatcher {
                         gsImg1, x1d, y1d, rotD1, xTrq0, yTrq0);
         
                     if (desc1 == null) {
-                        return null;
+                        continue;
                     }
                     
                     FeatureComparisonStat stat = IntensityFeatures.calculateStats(
@@ -581,7 +581,7 @@ public class FeatureMatcher {
                     IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);
         
                     if (desc1 == null) {
-                        return null;
+                        continue;
                     }
                     
                     FeatureComparisonStat stat = IntensityFeatures.calculateStats(
@@ -675,7 +675,7 @@ public class FeatureMatcher {
                         img1, x1d, y1d, rotD1, xTrq0, yTrq0);
                     
                     if (desc1 == null) {
-                        return null;
+                        continue;
                     }
                     
                     FeatureComparisonStat stat = IntensityFeatures.calculateStats(
@@ -843,7 +843,7 @@ public class FeatureMatcher {
                     IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);
         
                     if (desc1 == null) {
-                        return null;
+                        continue;
                     }
                     
                     FeatureComparisonStat stat = IntensityFeatures.calculateStats(
@@ -968,7 +968,7 @@ public class FeatureMatcher {
                         img1, x1d, y1d, rotD1, xTrq0, yTrq0);
         
                     if (desc1 == null) {
-                        return null;
+                        continue;
                     }
                     
                     FeatureComparisonStat stat = IntensityFeatures.calculateStats(
