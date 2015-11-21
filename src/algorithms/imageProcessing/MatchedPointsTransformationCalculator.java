@@ -969,12 +969,16 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         float scaleAvg = 0;
         float transXAvg = 0;
         float transYAvg = 0;
+        int nStats = 0;
         for (int i = 0; i < thetaCorr.size(); ++i) {
             thetaAvg += thetaCorr.get(i);
             TransformationParameters params = paramsList.get(i);
             scaleAvg += params.getScale();
             transXAvg += params.getTranslationX();
             transYAvg += params.getTranslationY();
+            if (params.getNumberOfPointsUsed() >0 -1) {
+                nStats ++;
+            }
         }
         float n = paramsList.size();
         thetaAvg /= n;
@@ -1011,6 +1015,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         params.setTranslationY(transYAvg);
         params.setStandardDeviations(new float[]{(float)scaleStDev, 
             (float)thetaStDev, (float)transXStDev, (float)transYStDev});
+        params.setNumberOfPointsUsed(nStats);
         
         return params;
     }

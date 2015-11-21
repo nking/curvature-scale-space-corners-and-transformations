@@ -130,11 +130,7 @@ public class FeatureMatcherWrapper {
         CorrespondenceList cl = null;
         
         if (doDetermineScale) {
-            cl = solveForScale();
-            if (debug) {
-                printMatches(cl);
-            }
-            return cl;
+            return solveForScale();
         }
                
         applyHistEqIfNeeded();
@@ -245,12 +241,15 @@ public class FeatureMatcherWrapper {
         cl = extractAndMatch(params);
             
         if (cl != null) {
+            
+            addStatsToSolution(cl, stats);
+            
             if (debug) {
-                MiscDebug.print(cl);
+                printMatches(cl.getPoints1(), cl.getPoints2());
+                //MiscDebug.print(cl);
             }
-            return cl;
         }
-               
+          
         return cl;
     }
     
@@ -447,11 +446,6 @@ public class FeatureMatcherWrapper {
         extractCornerRegions();
 
         CorrespondenceList cl = findCorrespondence(parameters);
-        
-        if (cl != null) {
-            // add stats in if not already present
-            int z = 1;
-        }
         
         return cl;
     }
@@ -762,6 +756,43 @@ public class FeatureMatcherWrapper {
         return revised;
     }
     
+    private void addStatsToSolution(CorrespondenceList cl, 
+        List<FeatureComparisonStat> stats) {
+        
+        if (cl == null) {
+            return;
+        }
+        
+        List<PairInt> matched01 = cl.getPoints1();
+        List<PairInt> matched02 = cl.getPoints2();
+        
+        Set<PairInt> added1 = new HashSet<PairInt>(matched01);
+        Set<PairInt> added2 = new HashSet<PairInt>(matched02);
+        
+        boolean didAdd = false;
+        
+        for (FeatureComparisonStat stat : stats) {
+            PairInt imPt1 = stat.getImg1Point();
+            PairInt imPt2 = stat.getImg2Point();
+            if (added1.contains(imPt1) || added2.contains(imPt2)) {
+                //TODO: consider replacing the match with imPt1, imPt2 which is
+                // usually better from the small first solution.
+                // in that case, need to remove the added.adds below
+                continue;
+            }
+            matched01.add(imPt1);
+            matched02.add(imPt2);
+            added1.add(imPt1);
+            added2.add(imPt2);
+            
+            didAdd = true;
+        }
+        
+        if (didAdd) {
+            // TODO: redo ranges
+        }
+    }
+
     private void printMatches(List<FeatureComparisonStat> stats) {
         if (stats == null) {
             return;

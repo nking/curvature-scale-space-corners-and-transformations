@@ -263,7 +263,7 @@ public class SegmentedImageHelper {
             
         } else if (type.equals(SegmentationType.DT_CLUSTERING)) {
             
-            segImg = imgGrey.copyImage();
+            segImg = gsImg.copyImage();
             // expecting k=2
             imageSegmentation.applyUsingDTClustering(segImg, k);
             
@@ -288,8 +288,8 @@ public class SegmentedImageHelper {
             imgBinnedSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.ADAPTIVE_MEAN)) {
-            
-            segImg = imgGrey.copyImage();
+         
+            segImg = gsImg.copyImage();
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -299,7 +299,7 @@ public class SegmentedImageHelper {
         }
         
         if (debug) {
-            MiscDebug.writeImage(gsImg, "segmented_" + debugTag + "_" 
+            MiscDebug.writeImage(segImg, "segmented_" + debugTag + "_" 
                 + MiscDebug.getCurrentTimeFormatted());
         }
     }

@@ -83,7 +83,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
         List<List<T>> corners1List, List<List<T>> corners2List,
         int binFactor1, int binFactor2) {
-/*        
+/*
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -126,16 +126,12 @@ for (int i = 0; i < xy2.length; ++i) {
 System.out.println(sb.toString());
 
 PairInt[] im1Chk = new PairInt[]{
-    new PairInt(68,78), new PairInt(96,84), new PairInt(122,91), 
-    new PairInt(180,240),
-    new PairInt(513,55),
-    new PairInt(838,105)
+    new PairInt(238,124), new PairInt(201,134), new PairInt(209,90), 
+    new PairInt(219,101), new PairInt(179,168)
 };
 PairInt[] im2Chk = new PairInt[]{
-    new PairInt(42,72), new PairInt(73,80), new PairInt(103,87),
-    new PairInt(162,259),
-    new PairInt(490,55),
-    new PairInt(869,127)
+    new PairInt(91, 120), new PairInt(53, 126), new PairInt(73, 85),
+    new PairInt(79, 97), new PairInt(24, 159)
 };
 int[] im1ChkIdxs = new int[im1Chk.length];
 int[] im2ChkIdxs = new int[im2Chk.length];
@@ -161,6 +157,12 @@ for (int i = 0; i < im2Chk.length; ++i) {
         }
     }
 }
+sb = new StringBuilder("expeected matches:\n");
+for (int i = 0; i < im1ChkIdxs.length; ++i) {
+    sb.append(String.format("[%d] to [%d]", im1ChkIdxs[i], im2ChkIdxs[i]));
+    sb.append("\n");
+}
+System.out.println(sb.toString());
 */
         Map<PairInt, TransformationParameters> trMap 
             = new HashMap<PairInt, TransformationParameters>();
@@ -326,126 +328,150 @@ for (int i = 0; i < im2Chk.length; ++i) {
         TransformationParameters bestParams = null;
         float bestCost = Float.MAX_VALUE;
         List<FeatureComparisonStat> bestStats = null;
+
+        boolean tolIsTooLarge = false;
         
-        for (TransformationParameters params : parameterList) {
-            
-            double rotInRadians = params.getRotationInRadians();
-            double cos = Math.cos(rotInRadians);
-            double sin = Math.sin(rotInRadians);
-            
-            int rotD = Math.round(params.getRotationInDegrees());
-            
-            int tolTransXY2 = tolTransXY;
-            if (params.getScale() < 1) {
-                tolTransXY2 = Math.round(tolTransXY * params.getScale());
-            }
-            if (tolTransXY2 == 0) {
-                tolTransXY2 = 1;
-            }
-            int dither2 = Math.round(dither * params.getScale());
-            if (dither2 == 0) {
-                dither2 = 1;
-            } else if (dither2 > dither) {
-                // large dither makes runtime larger
-                dither2 = dither;
-            }
+        int nIter = 0;
         
-            int nEval = 0;
-            double sumSSD = 0;
-            double sumDist = 0;
-            List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        int deltaTol = 0;
             
-            for (List<T> corners1 : corners1List) {
+        while (nIter < 2) {
                 
-                for (T cr : corners1) {
-                    
-                    T crTr = transformer.applyTransformation(params, cr, cos, sin);
-
-                    Set<Integer> indexes2 = np2.findNeighborIndexes(
-                        crTr.getX()[crTr.getKMaxIdx()], 
-                        crTr.getY()[crTr.getKMaxIdx()], tolTransXY2);
-
-                    for (Integer index : indexes2) {
-
-                        int idx2 = index.intValue();
-
-                        T corner2 = corners2List.get(idx2);
-
-                        FeatureComparisonStat compStat = null;
-
-                        try {
-                            compStat = featureMatcher.ditherAndRotateForBestLocation(
-                                features1, features2, cr, corner2, dither2,
-                                rotD, rotationTolerance, img1, img2);
-                        } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                            log.fine(ex.getMessage());
-                        }
-                        if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {
-                            continue;
-                        }
-                        
-                        if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
+            tolIsTooLarge = false;
                             
+            for (TransformationParameters params : parameterList) {
+
+                double rotInRadians = params.getRotationInRadians();
+                double cos = Math.cos(rotInRadians);
+                double sin = Math.sin(rotInRadians);
+
+                int rotD = Math.round(params.getRotationInDegrees());
+
+                int tolTransXY2 = tolTransXY;
+                if (params.getScale() < 1) {
+                    tolTransXY2 = Math.round(tolTransXY * params.getScale());
+                }
+                if (tolTransXY2 == 0) {
+                    tolTransXY2 = 1;
+                } 
+                if (tolTransXY2 > 1) {
+                    tolTransXY2 -= deltaTol;
+                }
+                int dither2 = Math.round(dither * params.getScale());
+                if (dither2 == 0) {
+                    dither2 = 1;
+                } else if (dither2 > dither) {
+                    // large dither makes runtime larger
+                    dither2 = dither;
+                }
+
+                int nEval = 0;
+                double sumSSD = 0;
+                double sumDist = 0;
+                List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+
+                for (List<T> corners1 : corners1List) {
+
+                    for (T cr : corners1) {
+
+                        T crTr = transformer.applyTransformation(params, cr, cos, sin);
+
+                        Set<Integer> indexes2 = np2.findNeighborIndexes(
+                            crTr.getX()[crTr.getKMaxIdx()], 
+                            crTr.getY()[crTr.getKMaxIdx()], tolTransXY2);
+
+                        for (Integer index : indexes2) {
+
+                            int idx2 = index.intValue();
+
+                            T corner2 = corners2List.get(idx2);
+
+                            FeatureComparisonStat compStat = null;
+
+                            try {
+                                compStat = featureMatcher.ditherAndRotateForBestLocation(
+                                    features1, features2, cr, corner2, dither2,
+                                    rotD, rotationTolerance, img1, img2);
+                            } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                                log.fine(ex.getMessage());
+                            }
+                            if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)
+                                || 
+                                (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr())) {
+                                continue;
+                            }
+
                             double xTr = (compStat.getImg1Point().getX() * 
                                 params.getScale() * cos) + 
                                 (compStat.getImg1Point().getY() * 
                                 params.getScale() * sin);
                             xTr += params.getTranslationX();
-                            
+
                             double yTr = (-compStat.getImg1Point().getX() * 
                                 params.getScale() * sin) + 
                                 (compStat.getImg1Point().getY() * 
                                 params.getScale()* cos);
                             yTr += params.getTranslationY();
-                            
+
                             double dist = distance(xTr, yTr, 
                                 compStat.getImg2Point().getX(), 
                                 compStat.getImg2Point().getY());
 
                             stats.add(compStat);
-                            
+
                             sumDist += Math.abs(dist);
                             sumSSD += compStat.getSumIntensitySqDiff();
                             nEval++;
                         }
                     }
                 }
-            }
             
-            if (nEval == 0) {
-                continue;
-            }
-            
-            // distance needs to be adjusted by scale, else the cost prefers
-            // small scale solutions
-            sumDist /= params.getScale();
-            
-            sumSSD /= (double)nEval;
-            sumDist /= (double)nEval;
-            
-            float cost1Norm = 1.f/(float)nEval;
-            float cost2Norm = (float)((sumSSD + 1)/ssdLimit);
-            float cost3Norm = (float)(sumDist/maxDistance);
-            float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
+                if (nEval == 0) {
+                    continue;
+                }
 
-            if (normalizedCost < bestCost) {
-                
-                TransformationParameters combinedParams = 
-                    MiscStats.calculateTransformation(binFactor1, binFactor2,
-                        stats, new float[4]);
-                
-                if (combinedParams == null) {
-                    continue;
+                // distance needs to be adjusted by scale, else the cost prefers
+                // small scale solutions
+                sumDist /= params.getScale();
+
+                sumSSD /= (double)nEval;
+                sumDist /= (double)nEval;
+
+                float cost1Norm = 1.f/(float)nEval;
+                float cost2Norm = (float)((sumSSD + 1)/ssdLimit);
+                float cost3Norm = (float)(sumDist/maxDistance);
+                float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
+
+                if (normalizedCost < bestCost) {
+
+                    TransformationParameters combinedParams = 
+                        MiscStats.calculateTransformation(binFactor1, binFactor2,
+                            stats, new float[4]);
+
+                    if (combinedParams == null) {
+                        continue;
+                    }
+
+                    if (MiscStats.standardDeviationsAreSmall(combinedParams)) {
+                        tolIsTooLarge = false;
+                        bestCost = normalizedCost;
+                        bestParams = combinedParams;
+                        bestStats = stats;
+                    } else if (MiscStats.standardDeviationsAreSmall(params)) {
+                        //TODO: this suggests tolTransXY2 is too large
+                        tolIsTooLarge = true;
+                        bestCost = normalizedCost;
+                        bestParams = params;
+                        bestStats = stats;
+                    }         
                 }
-        
-                if (!MiscStats.standardDeviationsAreSmall(combinedParams)) {
-                    continue;
-                }
-            
-                bestCost = normalizedCost;
-                bestParams = combinedParams;
-                bestStats = stats;
             }
+            if (!tolIsTooLarge) {
+                break;
+            }
+            deltaTol++;
+                
+            nIter++;
         }
 
         if (bestParams != null) {

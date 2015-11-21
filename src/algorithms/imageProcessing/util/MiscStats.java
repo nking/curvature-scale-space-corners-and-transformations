@@ -572,6 +572,10 @@ public class MiscStats {
 
     public static boolean standardDeviationsAreSmall(TransformationParameters params) {
 
+        if (params.getStandardDeviations() == null) {
+            return false;
+        }
+        
         // calculation
         float tS = (params.getStandardDeviations()[0] / params.getScale());
         float tR = (float) (2. * Math.PI / params.getStandardDeviations()[1]);
