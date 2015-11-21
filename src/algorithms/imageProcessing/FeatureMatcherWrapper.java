@@ -215,14 +215,14 @@ public class FeatureMatcherWrapper {
                 log.warning("possible ERROR in revision of stats");
             }
         }
-        
-        boolean extractMoreCorners = (stats.size() < nLimit);
-        
+                
         if (debug) {
             printMatches(stats);
         }
         
-extractMoreCorners = true;
+        boolean covers = statsCoverIntersection(stats);
+        
+        boolean extractMoreCorners = (stats.size() < nLimit) || !covers;
         
         if (!extractMoreCorners) {
 
