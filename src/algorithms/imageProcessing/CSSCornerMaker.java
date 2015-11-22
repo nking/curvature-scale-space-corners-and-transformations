@@ -110,6 +110,9 @@ public class CSSCornerMaker {
         for (int i = 0; i < theEdges.size(); i++) {
 
             final PairIntArray edge = theEdges.get(i);
+            
+            boolean isClosedCurve = (edge instanceof PairIntArrayWithColor) &&
+                (((PairIntArrayWithColor)edge).getColor() == 1);
 
             final Map<SIGMA, ScaleSpaceCurve> map =
                 createLowUpperThresholdScaleSpaceMaps(edge);
@@ -120,6 +123,12 @@ public class CSSCornerMaker {
                 
             CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map, 
                 edgeJunctions, i, doUseOutdoorMode);
+            
+            // remove aliasing artifacts of a straight line with a single
+            // step in it.
+            // note that edgeCorners are already ordered by index.
+            PostLineThinnerCorrections.removeSingleStairsAliasArtifact(
+                edgeCorners, isClosedCurve);
 
             log.log(Level.FINE,
                 "{0}) number of corners adding ={1} for edge={2}",

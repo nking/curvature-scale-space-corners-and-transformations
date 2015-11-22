@@ -2,10 +2,13 @@ package algorithms.imageProcessing;
 
 import algorithms.CountingSort;
 import algorithms.misc.MiscDebug;
+import algorithms.util.CornerArray;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -4181,5 +4184,151 @@ public class PostLineThinnerCorrections {
         
         log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
+    }
+    
+    /**
+     * given an ordered list of corners, remove any corners that appear to be 
+     * the artifact of a single pixel staircases in a straight line that is 
+     * nearly vertical or nearly horizontal. Note that ordered list of corners
+     * means that edgeCorners data are internally ordered by increasing values
+     * of idx.
+     * runtime complexity is O(N_corners).
+     * @param edgeCorners 
+     * @param curveIsClosed 
+     */
+    public static void removeSingleStairsAliasArtifact(CornerArray edgeCorners, 
+        boolean curveIsClosed) {
+        
+        int nMaxIter = edgeCorners.getN()/2;
+        int nIter = 0;
+        int nRemoved = 0;
+        while ((nIter == 0) || ((nIter < nMaxIter) && (nRemoved > 0))) {
+            
+            nRemoved = removeSingleStairAliasArtifact(edgeCorners, 
+                curveIsClosed);
+            
+            nIter++;
+        }
+    }
+    
+    /**
+     * given an ordered list of corners, remove any corners that appear to be 
+     * the artifact of a single pixel staircase in a straight line that is 
+     * nearly vertical or nearly horizontal. Note that ordered list of corners
+     * means that edgeCorners data are internally ordered by increasing values
+     * of idx.
+     * runtime complexity is O(N_corners).
+     * @param edgeCorners 
+     * @param curveIsClosed 
+     */
+    protected static int removeSingleStairAliasArtifact(CornerArray edgeCorners, 
+        boolean curveIsClosed) {
+        
+        if (edgeCorners.getN() < 3) {
+            return 0;
+        }
+        
+        /*
+        look for pattern __-- embedded between 2 corners that have the same 
+        y's as the 1 pixel step
+        then do same for vertical pattern.
+        */
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int i = 1; i < edgeCorners.getN() - 1; ++i) {
+            int xa = Math.round(edgeCorners.getX(i - 1));
+            int ya = Math.round(edgeCorners.getY(i - 1));
+            
+            int xb = Math.round(edgeCorners.getX(i));
+            int yb = Math.round(edgeCorners.getY(i));
+            
+            int xc = Math.round(edgeCorners.getX(i + 1));
+            int yc = Math.round(edgeCorners.getY(i + 1));
+            
+            int diffYac = Math.abs(ya - yc);
+            int diffYab = Math.abs(ya - yb);
+            int diffYbc = Math.abs(yb - yc);
+                        
+            if ((diffYac == 1) && (
+                ((diffYab == 0) && (diffYbc == 1)) ||
+                ((diffYab == 1) && (diffYbc == 0)))) {
+                
+                if (((xa < xb) && (xb < xc)) || ((xa > xb) && (xb > xc))) {
+                    remove.add(Integer.valueOf(i));
+                    ++i;
+                    continue;
+                }
+            }
+        
+            int diffXac = Math.abs(xa - xc);
+            int diffXab = Math.abs(xa - xb);
+            int diffXbc = Math.abs(xb - xc);
+            
+            if ((diffXac == 1) && (
+                ((diffXab == 0) && (diffXbc == 1)) ||
+                ((diffXab == 1) && (diffXbc == 0)))) {
+                
+                if (((ya < yb) && (yb < yc)) || ((ya > yb) && (yb > yc))) {
+                    remove.add(Integer.valueOf(i));
+                    ++i;
+                    continue;
+                }
+            }
+        }
+        
+        if (curveIsClosed) {
+            
+            int n = edgeCorners.getN();
+            
+            boolean contains = remove.contains(Integer.valueOf(n - 1)) || 
+                remove.contains(Integer.valueOf(0)) ||
+                remove.contains(Integer.valueOf(1));
+            
+            if (!contains) {
+                
+                int xa = Math.round(edgeCorners.getX(n - 1));
+                int ya = Math.round(edgeCorners.getY(n - 1));
+
+                int xb = Math.round(edgeCorners.getX(0));
+                int yb = Math.round(edgeCorners.getY(0));
+
+                int xc = Math.round(edgeCorners.getX(1));
+                int yc = Math.round(edgeCorners.getY(1));
+                
+                int diffYac = Math.abs(ya - yc);
+                int diffYab = Math.abs(ya - yb);
+                int diffYbc = Math.abs(yb - yc);
+
+                if ((diffYac == 1) && (((diffYab == 0) && (diffYbc == 1))
+                    || ((diffYab == 1) && (diffYbc == 0)))) {
+                    
+                    if (((xa < xb) && (xb < xc)) || ((xa > xb) && (xb > xc))) {
+                        remove.add(Integer.valueOf(0));
+                    }
+                    
+                } else {
+
+                    int diffXac = Math.abs(xa - xc);
+                    int diffXab = Math.abs(xa - xb);
+                    int diffXbc = Math.abs(xb - xc);
+
+                    if ((diffXac == 1) && (((diffXab == 0) && (diffXbc == 1))
+                        || ((diffXab == 1) && (diffXbc == 0)))) {
+                        
+                        if (((ya < yb) && (yb < yc)) || ((ya > yb) && (yb > yc))) {
+                            remove.add(Integer.valueOf(0));
+                        }
+                    }
+                }
+            }
+        }
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i).intValue();
+            edgeCorners.removeRange(idx, idx);
+        }
+        
+        return remove.size();
     }
 }

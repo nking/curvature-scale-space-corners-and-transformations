@@ -1,7 +1,10 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.CornerArray;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
@@ -256,4 +259,180 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         assertTrue(expected.isEmpty());
     }
     
+    public void testRemoveSingleStairAliasArtifact_horiz() throws Exception {
+        
+        /*
+        test corners   c__c---c
+                       c--c___c
+                       same but wrapping around for a closed curve
+        */
+        
+        CornerArray c0 = new CornerArray();
+        c0.add(10, 10, 10, SIGMA.FOUR);
+        c0.add(20, 10, 20, SIGMA.FOUR);
+        c0.add(30, 11, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 10.f);
+        assertEquals(c0.getY(0), 10.f);
+        assertEquals(c0.getX(1), 30.f);
+        assertEquals(c0.getY(1), 11.f);
+        
+        c0 = new CornerArray();
+        c0.add(10, 10, 10, SIGMA.FOUR);
+        c0.add(20, 11, 20, SIGMA.FOUR);
+        c0.add(30, 11, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 10.f);
+        assertEquals(c0.getY(0), 10.f);
+        assertEquals(c0.getX(1), 30.f);
+        assertEquals(c0.getY(1), 11.f);
+        
+        c0 = new CornerArray();
+        c0.add(10, 11, 10, SIGMA.FOUR);
+        c0.add(20, 10, 20, SIGMA.FOUR);
+        c0.add(30, 10, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 10.f);
+        assertEquals(c0.getY(0), 11.f);
+        assertEquals(c0.getX(1), 30.f);
+        assertEquals(c0.getY(1), 10.f);
+        
+        c0 = new CornerArray();
+        c0.add(10, 11, 10, SIGMA.FOUR);
+        c0.add(20, 11, 20, SIGMA.FOUR);
+        c0.add(30, 10, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 10.f);
+        assertEquals(c0.getY(0), 11.f);
+        assertEquals(c0.getX(1), 30.f);
+        assertEquals(c0.getY(1), 10.f);
+        
+        c0 = new CornerArray();
+        c0.add(10, 11, 10, SIGMA.FOUR);
+        c0.add(20, 10, 20, SIGMA.FOUR);
+        c0.add(30, 11, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(3, c0.getN());
+        
+        // assert for wrap around in a closed curve
+        
+        c0 = new CornerArray();
+        c0.add(20, 10, 10, SIGMA.FOUR);
+        c0.add(30, 11, 20, SIGMA.FOUR);
+        c0.add(10, 10, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        // expect that former data at index '0' was removed
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 30.f);
+        assertEquals(c0.getY(0), 11.f);
+        assertEquals(c0.getX(1), 10.f);
+        assertEquals(c0.getY(1), 10.f);
+
+        c0 = new CornerArray();
+        c0.add(20, 11, 10, SIGMA.FOUR);
+        c0.add(30, 11, 20, SIGMA.FOUR);
+        c0.add(10, 10, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        // expect that former data at index '0' was removed
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 30.f);
+        assertEquals(c0.getY(0), 11.f);
+        assertEquals(c0.getX(1), 10.f);
+        assertEquals(c0.getY(1), 10.f);
+    }
+      
+     public void testRemoveSingleStairAliasArtifact_vert() throws Exception {
+        
+        /*
+        test corners   
+                       c
+                       |
+                        c
+                        |
+                        c   and same pattern flipped in x
+                            then same pattern wrapped around a closed curve
+        */
+        
+        CornerArray c0 = new CornerArray();
+        c0.add(10, 10, 10, SIGMA.FOUR);
+        c0.add(10, 20, 20, SIGMA.FOUR);
+        c0.add(11, 30, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 10.f);
+        assertEquals(c0.getY(0), 10.f);
+        assertEquals(c0.getX(1), 11.f);
+        assertEquals(c0.getY(1), 30.f);
+                
+        c0 = new CornerArray();
+        c0.add(10, 10, 10, SIGMA.FOUR);
+        c0.add(11, 20, 20, SIGMA.FOUR);
+        c0.add(11, 30, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 10.f);
+        assertEquals(c0.getY(0), 10.f);
+        assertEquals(c0.getX(1), 11.f);
+        assertEquals(c0.getY(1), 30.f);
+                
+        c0 = new CornerArray();
+        c0.add(11, 10, 10, SIGMA.FOUR);
+        c0.add(10, 20, 20, SIGMA.FOUR);
+        c0.add(10, 30, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 11.f);
+        assertEquals(c0.getY(0), 10.f);
+        assertEquals(c0.getX(1), 10.f);
+        assertEquals(c0.getY(1), 30.f);
+                
+        c0 = new CornerArray();
+        c0.add(11, 10, 10, SIGMA.FOUR);
+        c0.add(11, 20, 20, SIGMA.FOUR);
+        c0.add(10, 30, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 11.f);
+        assertEquals(c0.getY(0), 10.f);
+        assertEquals(c0.getX(1), 10.f);
+        assertEquals(c0.getY(1), 30.f);
+                
+        c0 = new CornerArray();
+        c0.add(11, 10, 10, SIGMA.FOUR);
+        c0.add(10, 20, 20, SIGMA.FOUR);
+        c0.add(11, 30, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        assertEquals(3, c0.getN());
+        
+        // assert for wrap around in a closed curve
+                
+        c0 = new CornerArray();
+        c0.add(10, 20, 10, SIGMA.FOUR);
+        c0.add(11, 30, 20, SIGMA.FOUR);
+        c0.add(10, 10, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        // expect that former data at index '0' was removed
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 11.f);
+        assertEquals(c0.getY(0), 30.f);
+        assertEquals(c0.getX(1), 10.f);
+        assertEquals(c0.getY(1), 10.f);
+        
+        c0 = new CornerArray();
+        c0.add(11, 20, 10, SIGMA.FOUR);
+        c0.add(11, 30, 20, SIGMA.FOUR);
+        c0.add(10, 10, 30, SIGMA.FOUR);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        // expect that former data at index '0' was removed
+        assertEquals(2, c0.getN());
+        assertEquals(c0.getX(0), 11.f);
+        assertEquals(c0.getY(0), 30.f);
+        assertEquals(c0.getX(1), 10.f);
+        assertEquals(c0.getY(1), 10.f);
+     }
+     
 }
