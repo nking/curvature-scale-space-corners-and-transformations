@@ -4196,15 +4196,15 @@ public class PostLineThinnerCorrections {
      * @param edgeCorners 
      * @param curveIsClosed 
      */
-    public static void removeSingleStairsAliasArtifact(CornerArray edgeCorners, 
+    public static void removeSingleStairsAliasArtifacts(CornerArray edgeCorners, 
         boolean curveIsClosed) {
         
-        int nMaxIter = edgeCorners.getN()/2;
+        int nMaxIter = edgeCorners.getN();
         int nIter = 0;
         int nRemoved = 0;
         while ((nIter == 0) || ((nIter < nMaxIter) && (nRemoved > 0))) {
             
-            nRemoved = removeSingleStairAliasArtifact(edgeCorners, 
+            nRemoved = removeSingleStairAliasArtifacts(edgeCorners, 
                 curveIsClosed);
             
             nIter++;
@@ -4221,7 +4221,7 @@ public class PostLineThinnerCorrections {
      * @param edgeCorners 
      * @param curveIsClosed 
      */
-    protected static int removeSingleStairAliasArtifact(CornerArray edgeCorners, 
+    protected static int removeSingleStairAliasArtifacts(CornerArray edgeCorners, 
         boolean curveIsClosed) {
         
         if (edgeCorners.getN() < 3) {

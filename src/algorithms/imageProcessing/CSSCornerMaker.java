@@ -127,7 +127,7 @@ public class CSSCornerMaker {
             // remove aliasing artifacts of a straight line with a single
             // step in it.
             // note that edgeCorners are already ordered by index.
-            PostLineThinnerCorrections.removeSingleStairsAliasArtifact(
+            PostLineThinnerCorrections.removeSingleStairsAliasArtifacts(
                 edgeCorners, isClosedCurve);
 
             log.log(Level.FINE,

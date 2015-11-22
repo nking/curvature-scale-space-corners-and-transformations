@@ -154,7 +154,18 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             CornersAndFeatureStat<T>>();
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
-
+/*
+double[][] xy1 = new double[c1.size()][2];
+for (int i = 0; i < c1.size(); ++i) {
+CornerRegion cr = c1.get(i);
+xy1[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
+}
+double[][] xy2 = new double[c2.size()][2];
+for (int i = 0; i < c2.size(); ++i) {
+CornerRegion cr = c2.get(i);
+xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
+}
+*/      
         for (int i = 0; i < c1.size(); ++i) {
 
             T region1 = c1.get(i);

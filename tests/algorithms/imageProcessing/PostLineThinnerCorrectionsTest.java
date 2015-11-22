@@ -271,7 +271,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 10, 10, SIGMA.FOUR);
         c0.add(20, 10, 20, SIGMA.FOUR);
         c0.add(30, 11, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 10.f);
         assertEquals(c0.getY(0), 10.f);
@@ -282,7 +282,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 10, 10, SIGMA.FOUR);
         c0.add(20, 11, 20, SIGMA.FOUR);
         c0.add(30, 11, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 10.f);
         assertEquals(c0.getY(0), 10.f);
@@ -293,7 +293,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 11, 10, SIGMA.FOUR);
         c0.add(20, 10, 20, SIGMA.FOUR);
         c0.add(30, 10, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 10.f);
         assertEquals(c0.getY(0), 11.f);
@@ -304,7 +304,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 11, 10, SIGMA.FOUR);
         c0.add(20, 11, 20, SIGMA.FOUR);
         c0.add(30, 10, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 10.f);
         assertEquals(c0.getY(0), 11.f);
@@ -315,7 +315,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 11, 10, SIGMA.FOUR);
         c0.add(20, 10, 20, SIGMA.FOUR);
         c0.add(30, 11, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(3, c0.getN());
         
         // assert for wrap around in a closed curve
@@ -324,7 +324,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(20, 10, 10, SIGMA.FOUR);
         c0.add(30, 11, 20, SIGMA.FOUR);
         c0.add(10, 10, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, true);
         // expect that former data at index '0' was removed
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 30.f);
@@ -336,7 +336,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(20, 11, 10, SIGMA.FOUR);
         c0.add(30, 11, 20, SIGMA.FOUR);
         c0.add(10, 10, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, true);
         // expect that former data at index '0' was removed
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 30.f);
@@ -361,7 +361,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 10, 10, SIGMA.FOUR);
         c0.add(10, 20, 20, SIGMA.FOUR);
         c0.add(11, 30, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 10.f);
         assertEquals(c0.getY(0), 10.f);
@@ -372,7 +372,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 10, 10, SIGMA.FOUR);
         c0.add(11, 20, 20, SIGMA.FOUR);
         c0.add(11, 30, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 10.f);
         assertEquals(c0.getY(0), 10.f);
@@ -383,7 +383,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(11, 10, 10, SIGMA.FOUR);
         c0.add(10, 20, 20, SIGMA.FOUR);
         c0.add(10, 30, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 11.f);
         assertEquals(c0.getY(0), 10.f);
@@ -394,7 +394,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(11, 10, 10, SIGMA.FOUR);
         c0.add(11, 20, 20, SIGMA.FOUR);
         c0.add(10, 30, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 11.f);
         assertEquals(c0.getY(0), 10.f);
@@ -405,7 +405,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(11, 10, 10, SIGMA.FOUR);
         c0.add(10, 20, 20, SIGMA.FOUR);
         c0.add(11, 30, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, false);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, false);
         assertEquals(3, c0.getN());
         
         // assert for wrap around in a closed curve
@@ -414,7 +414,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(10, 20, 10, SIGMA.FOUR);
         c0.add(11, 30, 20, SIGMA.FOUR);
         c0.add(10, 10, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, true);
         // expect that former data at index '0' was removed
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 11.f);
@@ -426,7 +426,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         c0.add(11, 20, 10, SIGMA.FOUR);
         c0.add(11, 30, 20, SIGMA.FOUR);
         c0.add(10, 10, 30, SIGMA.FOUR);
-        PostLineThinnerCorrections.removeSingleStairAliasArtifact(c0, true);
+        PostLineThinnerCorrections.removeSingleStairAliasArtifacts(c0, true);
         // expect that former data at index '0' was removed
         assertEquals(2, c0.getN());
         assertEquals(c0.getX(0), 11.f);

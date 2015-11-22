@@ -19,7 +19,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
     public FeatureMatcherWrapperTest() {
     }
     
-    public void est0() throws Exception {
+    public void test0() throws Exception {
                 
         String fileName1, fileName2;
         

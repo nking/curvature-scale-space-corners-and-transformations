@@ -6,7 +6,8 @@ import java.util.Arrays;
 /**
  * class to hold x and y arrays of points along with the edge indexes
  * and the SIGMA of the scale space curve that the points were last
- * updated from
+ * updated from.  Note that most uses of the class expect that
+ * the points are ordered by increasing idx values.
  * 
  * @author nichole
  */
@@ -48,6 +49,15 @@ public class CornerArray {
         return n;
     }
     
+    /**
+     * add a row of data to the instance.  Note that most uses of this class
+     * expect that the instance data are always ordered by increasing idx 
+     * (that is, anInt) values.
+     * @param xPoint
+     * @param yPoint
+     * @param anInt
+     * @param s 
+     */
     public void add(float xPoint, float yPoint, int anInt, SIGMA s) {
         
         expandIfNeeded(n + 1);
@@ -60,6 +70,17 @@ public class CornerArray {
         n++;
     }
     
+    /**
+     * set a row of data in the instance (replacing existing at given index).  
+     * Note that most uses of this class
+     * expect that the instance data are always ordered by increasing idx 
+     * (that is, anInt) values.
+     * @param index
+     * @param xPoint
+     * @param yPoint
+     * @param anInt
+     * @param s 
+     */
     public void set(int index, float xPoint, float yPoint, int anInt, SIGMA s) {
         
         if (index < 0) {
@@ -74,6 +95,17 @@ public class CornerArray {
         sigma[index] = s;
     }
     
+    /**
+     * insert a row of data in the instance.  
+     * Note that most uses of this class
+     * expect that the instance data are always ordered by increasing idx 
+     * (that is, anInt) values.
+     * @param index
+     * @param xPoint
+     * @param yPoint
+     * @param anInt
+     * @param s 
+     */
     public void insert(int index, float xPoint, float yPoint, int anInt, SIGMA s) {
         
         if (index < 0 || (index > n)) {
