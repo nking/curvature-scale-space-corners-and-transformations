@@ -24,7 +24,7 @@ public class EpipolarSolverTest extends TestCase {
         //    with small projection effects.
         //    need to use matching of top k solutions...
         
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 6; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -46,9 +46,14 @@ public class EpipolarSolverTest extends TestCase {
                     fileName2 = "campus_011.jpg";
                     break;
                 }
-                default: {
+                case 4: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    fileName2 = "checkerboard_02.jpg";
                     break;
                 }
             }
@@ -56,7 +61,7 @@ public class EpipolarSolverTest extends TestCase {
         }
     }
     
-    public void testRot90() throws Exception {
+    public void estRot90() throws Exception {
                 
         String fileName1, fileName2;
         

@@ -27,7 +27,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         //    with small projection effects.
         //    need to use matching of top k solutions...
         
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 6; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -68,7 +68,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 
         String fileName1, fileName2;
         
-        for (int i = 4; i < 5; ++i) {
+        for (int i = 0; i < 5; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -150,7 +150,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         try {
             FeatureMatcherWrapperTest test = new FeatureMatcherWrapperTest();
             //test.test0();
-            test.testRot90();
+            //test.testRot90();
 
         } catch(Exception e) {
             e.printStackTrace();
