@@ -341,9 +341,7 @@ public class SegmentedImageHelper {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        
-        GreyscaleImage gsImg = getGreyscaleImage();
-        
+                
         if (type.equals(SegmentationType.GREYSCALE_HIST)) {
             
             //segImg = gsImg.copyImage();
@@ -351,7 +349,7 @@ public class SegmentedImageHelper {
             
             segImg = imageSegmentation.createGreyscaleWithBWMask(img);
                         
-            imgBinnedSegmentedMap.put(type, segImg);
+            imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             

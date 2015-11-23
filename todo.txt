@@ -1,4 +1,9 @@
 -- more ransac and epipolar solver tests.
+   -- when revisiting the books epipolar test, see if evaluation needs to focus
+      on dist from epipolar line as much as the number of points within tolerance.
+      --> make the combined score
+   -- consider places in the code where an M-estimator could be helpful
+   -- consider implementing a version of LMedS to use in place of RANSAC as a comparison
    update the open agile story and close it
 -- update the command line runners.
 -- change any debugging code to not run by default and change log levels where needed
@@ -48,6 +53,10 @@
 
 -- similarity that uses an exponential base?  can transform the numbers and use a distance
    transform to make the calculations faster
+
+-- low priority, changes for KMPP...
+   -- use a watershed at line 133
+      and use the labeled components throughout code
 
 -- text recognition
    -- would like a class to extract and match text

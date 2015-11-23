@@ -24,7 +24,7 @@ public class BlobScaleFindersTest extends TestCase {
         String filePath2 = ResourceFinder.findFileInTestResources("brown_lowe_2003_image2.jpg");
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
-        SegmentationType type = SegmentationType.GREYSCALE_KMPP;
+        SegmentationType type = SegmentationType.GREYSCALE_HIST;
         
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
         bph1.applySegmentation(type, useBinned);
@@ -56,7 +56,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void testBL2003_0() throws Exception {
+    public void estBL2003_0() throws Exception {
 
         boolean useBinned = false;
         
@@ -103,11 +103,11 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void testBL2003_2() throws Exception {
+    public void estBL2003_2() throws Exception {
 
         boolean useBinned = false;
         
-        SegmentationType type = SegmentationType.GREYSCALE_KMPP;
+        SegmentationType type = SegmentationType.GREYSCALE_HIST;
 
         String filePath1 = ResourceFinder.findFileInTestResources("brown_lowe_2003_image1.jpg");
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
@@ -164,7 +164,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void testVenturi_Corners() throws Exception {
+    public void estVenturi_Corners() throws Exception {
 
         boolean useBinned = false;
 
@@ -207,7 +207,7 @@ public class BlobScaleFindersTest extends TestCase {
         assertTrue(Math.abs(params.getScale() - 1) < 0.15);
     }
 
-    public void testVenturi_Contours() throws Exception {
+    public void estVenturi_Contours() throws Exception {
 
         boolean useBinned = false;
 
@@ -252,7 +252,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
 
-    public void testVenturi_Corners0() throws Exception {
+    public void estVenturi_Corners0() throws Exception {
 
         boolean useBinned = false;
 
@@ -298,7 +298,7 @@ public class BlobScaleFindersTest extends TestCase {
         assertTrue(Math.abs(params.getScale() - 1) < 0.15);
     }
     
-    public void testVenturi_Contours0() throws Exception {
+    public void estVenturi_Contours0() throws Exception {
 
         boolean useBinned = false;
 
@@ -341,7 +341,7 @@ public class BlobScaleFindersTest extends TestCase {
 
     }
     
-    public void test8() throws Exception {
+    public void est8() throws Exception {
 
         boolean useBinned = false;
 
