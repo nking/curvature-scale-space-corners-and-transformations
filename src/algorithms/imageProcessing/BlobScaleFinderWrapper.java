@@ -377,15 +377,17 @@ public class BlobScaleFinderWrapper {
 
         SegmentationType[] seg1 = new SegmentationType[]{
             ////SegmentationType.COLOR_POLARCIEXY,
-      //      SegmentationType.DT_CLUSTERING,
-              SegmentationType.GREYSCALE_KMPP,
-      //      SegmentationType.COLOR_POLARCIEXY_LARGE,
+        //      SegmentationType.DT_CLUSTERING,
+              //SegmentationType.GREYSCALE_KMPP,
+              SegmentationType.GREYSCALE_HIST,
+        //      SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };
         SegmentationType[] seg2 = new SegmentationType[]{
             ////SegmentationType.COLOR_POLARCIEXY,
        //     SegmentationType.DT_CLUSTERING,
-              SegmentationType.GREYSCALE_KMPP,
+            //SegmentationType.GREYSCALE_KMPP,
+            SegmentationType.GREYSCALE_HIST,
        //     SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };

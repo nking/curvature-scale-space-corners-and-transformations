@@ -255,10 +255,20 @@ public class SegmentedImageHelper {
         
         GreyscaleImage gsImg = getGreyscaleImageBinned();
         
-        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        if (type.equals(SegmentationType.GREYSCALE_HIST)) {
             
             segImg = gsImg.copyImage();
+                        
+            imageSegmentation.applyGreyscaleHistogram(segImg);
+                        
+            imgBinnedSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+            
+            segImg = gsImg.copyImage();
+            
             imageSegmentation.applyUsingKMPP(segImg, k);
+                                    
             imgBinnedSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.DT_CLUSTERING)) {
@@ -330,7 +340,17 @@ public class SegmentedImageHelper {
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
-        if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
+        GreyscaleImage gsImg = getGreyscaleImage();
+        
+        if (type.equals(SegmentationType.GREYSCALE_HIST)) {
+            
+            segImg = gsImg.copyImage();
+                        
+            imageSegmentation.applyGreyscaleHistogram(segImg);
+                        
+            imgBinnedSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
             
             segImg = imgGrey.copyImage();
             // expecting k=2

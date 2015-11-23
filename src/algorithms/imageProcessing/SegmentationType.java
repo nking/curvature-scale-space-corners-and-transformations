@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 /**
 <pre>
+    GREYSCALE_HIST = greyscale segmentation based on histogram 
     GREYSCALE_KMPP = KMPP for k=2;
     DT_CLUSTERING = density based clustering filtered for top k results
     COLOR_POLARCIEXY_ADAPT = color to greyscale using polar theta of CIEXY 
@@ -15,11 +16,11 @@ package algorithms.imageProcessing;
  */
 public enum SegmentationType {
 
+    GREYSCALE_HIST,
     GREYSCALE_KMPP,
     DT_CLUSTERING,
     COLOR_POLARCIEXY_LARGE,
     COLOR_POLARCIEXY_ADAPT,
     COLOR_POLARCIEXY,
     ADAPTIVE_MEAN;
-
 }
