@@ -19,12 +19,12 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
     public void test0() throws Exception {
 
-        boolean rotate = true;
+        boolean rotate = false;
         boolean useBinning = true;
 
         String fileName1, fileName2;
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 5; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             switch(i) {

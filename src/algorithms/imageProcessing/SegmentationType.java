@@ -2,7 +2,8 @@ package algorithms.imageProcessing;
 
 /**
 <pre>
-    GREYSCALE_HIST = greyscale segmentation based on histogram 
+    GREYSCALE_HIST = greyscale segmentation based on histogram with a black and
+                     white mask
     GREYSCALE_KMPP = KMPP for k=2;
     DT_CLUSTERING = density based clustering filtered for top k results
     COLOR_POLARCIEXY_ADAPT = color to greyscale using polar theta of CIEXY 

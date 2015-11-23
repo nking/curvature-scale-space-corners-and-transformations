@@ -1,9 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.MiscDebug;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.Collection;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;

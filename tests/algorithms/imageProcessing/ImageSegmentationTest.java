@@ -28,8 +28,8 @@ public class ImageSegmentationTest extends TestCase {
         fileNames[1] = "merton_college_I_001.jpg";
         //fileNames[0] = "brown_lowe_2003_image1.jpg";
         //fileNames[1] = "brown_lowe_2003_image2.jpg";
-        fileNames[0] = "venturi_mountain_j6_0001.png";
-        fileNames[1] = "venturi_mountain_j6_0010.png";
+        //fileNames[0] = "venturi_mountain_j6_0001.png";
+        //fileNames[1] = "venturi_mountain_j6_0010.png";
         //fileNames[0] = "books_illum3_v0_695x555.png";
         //fileNames[1] = "books_illum3_v6_695x555.png";
         //fileNames[0] = "campus_010.jpg";
@@ -40,11 +40,22 @@ public class ImageSegmentationTest extends TestCase {
             String fileNameRoot = fileName.substring(0, idx);        
             String filePath = ResourceFinder.findFileInTestResources(fileName);
             ImageExt img = ImageIOHelper.readImageExt(filePath);
-
+            
+            int binnedImageMaxDimension = 512;
+            int binFactor = 
+                (int) Math.ceil(Math.max((float) img.getWidth() / binnedImageMaxDimension, 
+                (float) img.getHeight() / binnedImageMaxDimension));
+            ImageProcessor imageProcessor = new ImageProcessor();
+            img = imageProcessor.binImage(img, binFactor);
+        
             ImageSegmentation imageSegmentation = new ImageSegmentation();
-
-            GreyscaleImage gsImg = img.copyToGreyscale();
-            imageSegmentation.applyGreyscaleHistogram(gsImg);
+            
+            //GreyscaleImage gsImg = img.copyToGreyscale();
+            //imageSegmentation.applyGreyscaleHistogram(gsImg);
+            
+            //imageSegmentation.applyPolarCIEXY(img, false);
+            
+            GreyscaleImage gsImg = imageSegmentation.createGreyscaleWithBWMask(img);
 
             String bin = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot 
@@ -109,7 +120,7 @@ public class ImageSegmentationTest extends TestCase {
         int z = 1;
     }
     
-     public void testApplyColorSegmentation2() throws Exception {
+     public void estApplyColorSegmentation2() throws Exception {
         
          String[] fileNames1 = new String[]{
              "brown_lowe_2003_image1.jpg",

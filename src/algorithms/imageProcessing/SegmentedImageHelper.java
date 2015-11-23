@@ -257,9 +257,11 @@ public class SegmentedImageHelper {
         
         if (type.equals(SegmentationType.GREYSCALE_HIST)) {
             
-            segImg = gsImg.copyImage();
-                        
-            imageSegmentation.applyGreyscaleHistogram(segImg);
+            //segImg = gsImg.copyImage();
+            //imageSegmentation.applyGreyscaleHistogram(segImg);
+            
+            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
+            segImg = imageSegmentation.createGreyscaleWithBWMask(imgBinned);
                         
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -344,9 +346,10 @@ public class SegmentedImageHelper {
         
         if (type.equals(SegmentationType.GREYSCALE_HIST)) {
             
-            segImg = gsImg.copyImage();
-                        
-            imageSegmentation.applyGreyscaleHistogram(segImg);
+            //segImg = gsImg.copyImage();
+            //imageSegmentation.applyGreyscaleHistogram(segImg);
+            
+            segImg = imageSegmentation.createGreyscaleWithBWMask(img);
                         
             imgBinnedSegmentedMap.put(type, segImg);
             

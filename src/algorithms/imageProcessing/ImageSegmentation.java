@@ -2704,7 +2704,7 @@ public class ImageSegmentation {
      * @param input
      * @param useBlur
      */
-    public void applyPolarCIEXY(ImageExt input, boolean useBlur, int kPreferredBins) {
+    public void applyPolarCIEXY(ImageExt input, boolean useBlur) {
 
         //TODO: improve the clustering results in two ways:
         // (1) for smaller ciexy clusters, merge with adjacent clusters if
@@ -2913,18 +2913,107 @@ public class ImageSegmentation {
             int v = input.getValue(i);
             values[i] = v;
         }
+        
+        int[] binCenters = determineGreyscaleBinCenters(values);
+        
+        assignToNearestCluster(input, binCenters);
+    }
+    
+    /**
+     * a greyscale segmentation algorithm similar to the KMPP, but does not use
+     * a random number generator to find seeds of intensity bins.
+     * 
+     */
+    public int[] determineGreyscaleBinCenters(float[] values) {
 
-        float binWidth = 1;
+        float[] q = ImageStatisticsHelper.getQuartiles(values);
+        //(q3-q2)/(q2-q1)
+        float skew = (q[2] - q[1])/(q[1] - q[0]);
+        
+        /*
+        //if skew is >=1, a binWidth of <= 4 seems to give better results
+        // and for skew < 1, a binWidth of 10
+        */
+
+        float binWidth = (skew < 1) ? 10 : 1;
         HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
             values, Errors.populateYErrorsBySqrt(values));
 
         List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
             0.05f);
+        
+        /*
+        HistogramHolder hist2 = Histogram.createSimpleHistogram(0, 255, 10,
+            values, Errors.populateYErrorsBySqrt(values));
+
+        List<Integer> indexes2 = MiscMath.findStrongPeakIndexesDescSort(hist2,
+            0.05f);
+        
+        float[] yh1 = Arrays.copyOf(hist.getYHistFloat(), hist.getYHistFloat().length);
+        float[] yh2 = Arrays.copyOf(hist2.getYHistFloat(), hist2.getYHistFloat().length);
+        
+        System.out.println("indexes1.size=" + indexes.size() 
+            + " indexes2.size=" + indexes2.size()
+            + " \nquartiles=" + Arrays.toString(q)
+            + " \nmean=" + ImageStatisticsHelper.getMean(values)
+            + " \nmedian=" + ImageStatisticsHelper.getMedian(values)
+            + " \nskew=" + skew
+            + " \nmode1(x,y)=(" + hist.getXHist()[MiscMath.findYMaxIndex(yh1)] 
+            + "," + hist.getYHist()[MiscMath.findYMaxIndex(yh1)] + ")"
+            + " \nmode2(x,y)=(" + hist2.getXHist()[MiscMath.findYMaxIndex(yh2)] 
+            + "," + hist2.getYHist()[MiscMath.findYMaxIndex(yh2)] + ")"
+        );
+        try {
+            hist.plotHistogram("greyscale", "1");
+            hist2.plotHistogram("greyscale", "2");
+        } catch (IOException ex) {
+            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        */
 
         int[] binCenters = createBinCenters255(hist, indexes);
 
-        assignToNearestCluster(input, binCenters);
-
+        return binCenters;
     }
 
+    /**
+     * segmentation algorithm using greyscale histogram followed by a black and 
+     * white mask.
+     * @param input
+     * @return 
+     */
+    public GreyscaleImage createGreyscaleWithBWMask(ImageExt input) {
+
+        Set<PairInt> blackPixels = new HashSet<PairInt>();
+
+        Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
+
+        Set<PairInt> whitePixels = new HashSet<PairInt>();
+
+        Set<PairInt> points0 = new HashSet<PairInt>();
+
+        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
+        
+        GreyscaleImage img = input.copyToGreyscale();
+        
+        float[] cValues = new float[input.getNPixels()];
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            int v = img.getValue(i);
+            cValues[i] = v;
+        }
+        
+        int[] binCenters = determineGreyscaleBinCenters(cValues);
+        
+        assignToNearestCluster(img, binCenters);
+        
+        for (PairInt p : blackPixels) {
+           img.setValue(p.getX(), p.getY(), 0);
+        }
+
+        for (PairInt p : whitePixels) {
+           img.setValue(p.getX(), p.getY(), 255);
+        }
+        
+        return img;
+    }
 }

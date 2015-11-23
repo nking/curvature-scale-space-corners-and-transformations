@@ -43,7 +43,7 @@ public class ImageStatisticsHelper {
         return getMedian(values); 
     }
     
-    private static int getMean(int[] a) {
+    public static int getMean(int[] a) {
         long sum = 0;
         for (int i = 0; i < a.length; i++) {
             sum += a[i];
@@ -51,7 +51,7 @@ public class ImageStatisticsHelper {
         return (int)(sum/a.length);
     }
     
-    private static float getMean(float[] a) {
+    public static float getMean(float[] a) {
         double sum = 0.;
         for (int i = 0; i < a.length; i++) {
             sum += a[i];
@@ -59,13 +59,13 @@ public class ImageStatisticsHelper {
         return (float)(sum/a.length);
     }
     
-    private static int getMedian(int[] a) {
+    public static int getMedian(int[] a) {
         int[] c = Arrays.copyOf(a, a.length);
         Arrays.sort(c);
         return c[c.length/2];
     }
     
-    private static float getMedian(float[] a) {
+    public static float getMedian(float[] a) {
         float[] c = Arrays.copyOf(a, a.length);
         Arrays.sort(c);
         return c[c.length/2];
