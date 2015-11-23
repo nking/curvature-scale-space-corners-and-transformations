@@ -2914,12 +2914,12 @@ public class ImageSegmentation {
             values[i] = v;
         }
 
-        float binWidth = 10;
+        float binWidth = 1;
         HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
             values, Errors.populateYErrorsBySqrt(values));
 
         List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
-            0.1f);
+            0.05f);
 
         int[] binCenters = createBinCenters255(hist, indexes);
 
