@@ -490,7 +490,7 @@ public class WaterShedTest extends TestCase {
 
     }
 
-    public void estLabel() throws Exception {
+    public void testLabel() throws Exception {
 
         int w = 5;
         int h = 5;
@@ -643,6 +643,14 @@ public class WaterShedTest extends TestCase {
         GreyscaleImage img0 = img.copyToGreyscale();
         int w = img0.getWidth();
         int h = img0.getHeight();
+        for (int i = 0; i < img0.getNPixels(); ++i) {
+            int v = img0.getValue(i) + 1;
+            if (v == 0) {
+                img0.setValue(i, 255 - v);
+            } else {
+                img0.setValue(i, 255/v);
+            }
+        }
 
         WaterShed ws = new WaterShed();
 

@@ -4272,7 +4272,6 @@ public class PostLineThinnerCorrections {
                 if (((ya < yb) && (yb < yc)) || ((ya > yb) && (yb > yc))) {
                     remove.add(Integer.valueOf(i));
                     ++i;
-                    continue;
                 }
             }
         }

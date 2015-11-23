@@ -1047,6 +1047,19 @@ public class MiscMath {
         }
         return lastZeroIdx;
     }
+    
+    public static int findFirstNonZeroIndex(HistogramHolder h) {
+        int n = h.getXHist().length;
+        int firstNonZero = -1;
+        for (int i = 0; i < n; i++) {
+            int y = h.getYHist()[i];
+            if (y > 0) {
+                firstNonZero = i;
+                break;
+            }
+        }
+        return firstNonZero;
+    }
 
     /**
      * find the minima and maxima of x and y and return them as

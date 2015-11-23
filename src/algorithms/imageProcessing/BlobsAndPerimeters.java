@@ -2,11 +2,14 @@ package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -76,7 +80,7 @@ public class BlobsAndPerimeters {
         for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {            
             Integer pixValue = entry.getKey();
             defaultExtractBlobs(segImg, pixValue.intValue(), smallestGroupLimit, 
-                largestGroupLimit, use8Neighbors, outputBlobs);
+                largestGroupLimit, use8Neighbors, outputBlobs, imgHelper.debugTag);
         }
         
         boolean redo = outputBlobs.isEmpty() && useBinned;
@@ -117,7 +121,7 @@ public class BlobsAndPerimeters {
             }
             
             MiscDebug.writeImage(img0, "blobs_" + imgHelper.getDebugTag() 
-                + "_" + MiscDebug.getCurrentTimeFormatted());
+                + "_" + MiscDebug.getCurrentTimeFormatted());            
         }
         
         return outputBlobs;
@@ -453,7 +457,7 @@ if (imgHelper.isInDebugMode()) {
     
     private static void defaultExtractBlobs(GreyscaleImage segImg, 
         int pixelValue, int smallestGroupLimit, int largestGroupLimit, 
-        boolean use8Neighbors, List<Set<PairInt>> outputBlobs) {
+        boolean use8Neighbors, List<Set<PairInt>> outputBlobs, String debugTag) {
         
         DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
             
@@ -476,6 +480,25 @@ if (imgHelper.isInDebugMode()) {
                     points, segImg.getWidth(), segImg.getHeight())) {
                     outputBlobs.add(points);
                }
+            }
+        }
+        
+        if (!debugTag.equals("")) {
+            List<Integer> sizes = new ArrayList<Integer>();
+            for (int i = 0; i < nGroups; ++i) {
+                PairIntArray xy = finder.getXY(i);
+                sizes.add(Integer.valueOf(xy.getN()));
+            }
+            HistogramHolder hist = Histogram.createSimpleHistogram(sizes);
+            if (hist != null) {
+                String label = "blbSzs " + Integer.toString(smallestGroupLimit) +
+                    ":" + Integer.toString(largestGroupLimit);
+                 try {
+                    hist.plotHistogram(0, 25000, label, debugTag);
+                } catch (IOException ex) {
+                    Logger.getLogger(BlobsAndPerimeters.class.getName()).log(
+                        Level.SEVERE, null, ex);
+                }
             }
         }
     }

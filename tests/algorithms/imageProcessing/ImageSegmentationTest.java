@@ -1,12 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
-import algorithms.util.Errors;
 import algorithms.util.PairInt;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -23,6 +18,38 @@ public class ImageSegmentationTest extends TestCase {
     
     public ImageSegmentationTest(String testName) {
         super(testName);
+    }
+    
+    public void test0() throws Exception {
+        
+        String[] fileNames = new String[2];
+        
+        fileNames[0] = "merton_college_I_002.jpg";
+        fileNames[1] = "merton_college_I_001.jpg";
+        //fileNames[0] = "brown_lowe_2003_image1.jpg";
+        //fileNames[1] = "brown_lowe_2003_image2.jpg";
+        fileNames[0] = "venturi_mountain_j6_0001.png";
+        fileNames[1] = "venturi_mountain_j6_0010.png";
+        //fileNames[0] = "books_illum3_v0_695x555.png";
+        //fileNames[1] = "books_illum3_v6_695x555.png";
+        //fileNames[0] = "campus_010.jpg";
+        //fileNames[1] = "campus_011.jpg";
+        
+        for (String fileName : fileNames) {
+            int idx = fileName.lastIndexOf(".");
+            String fileNameRoot = fileName.substring(0, idx);        
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+            ImageExt img = ImageIOHelper.readImageExt(filePath);
+
+            ImageSegmentation imageSegmentation = new ImageSegmentation();
+
+            GreyscaleImage gsImg = img.copyToGreyscale();
+            imageSegmentation.applyGreyscaleHistogram(gsImg);
+
+            String bin = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot 
+                + "_segmentation.png", gsImg);
+        }
     }
     
     public void estApplyColorSegmentation() throws Exception {

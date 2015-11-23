@@ -32,16 +32,16 @@ import java.util.logging.Logger;
 /**
  * class holding several different image segmentation methods.  Note that
  * some other techniques involving contrast for example, are elsewhere.
- * 
+ *
  * @author nichole
  */
 public class ImageSegmentation {
-    
+
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     /**
-     * applies KMeansPlusPlus algorithm to the values in input 
-     * (greyscale intensities) to create kBands of clustered pixels 
+     * applies KMeansPlusPlus algorithm to the values in input
+     * (greyscale intensities) to create kBands of clustered pixels
      * (operates on input).
      * @param input
      * @param kBands
@@ -50,15 +50,15 @@ public class ImageSegmentation {
      */
     public void applyUsingKMPP(GreyscaleImage input, int kBands)
         throws IOException, NoSuchAlgorithmException {
-        
+
         KMeansPlusPlus instance = new KMeansPlusPlus();
         instance.computeMeans(kBands, input);
-        
+
         assignToNearestCluster(input, instance.getCenters());
     }
-    
+
     /**
-     * applies binary algorithm (simple thresholding) to the values in input 
+     * applies binary algorithm (simple thresholding) to the values in input
      * (greyscale intensities) to create pixels given above or below highest
      * frequency value.  Note that some images may need to be pre-processed
      * in order to use this one (for example, correct for illumination and
@@ -67,19 +67,19 @@ public class ImageSegmentation {
      * @param input
      */
     public void applyBinaryUsingFrequency(GreyscaleImage input) {
-        
+
         PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(
             input);
-        
+
         if (valueCounts == null || valueCounts.getN() == 0) {
             return;
         }
-        
+
         //96, 30
         int divider = valueCounts.getX(0);
         int v0 = 255/4;
         int v1 = 3*v0;
-        
+
         for (int i = 0; i < input.getNPixels(); ++i) {
             if (input.getValue(i) < divider) {
                 input.setValue(i, v0);
@@ -87,12 +87,12 @@ public class ImageSegmentation {
                 input.setValue(i, v1);
             }
         }
-        
+
     }
-    
+
     /**
-     * applies DTClustering algorithm to the values in input 
-     * (greyscale intensities) to create kBands of clustered pixels 
+     * applies DTClustering algorithm to the values in input
+     * (greyscale intensities) to create kBands of clustered pixels
      * (operates on input).
      * (This one is competitive with applyUsingPolarCIEXYAndFrequency
      * with lowFreqLimit 0.1f)
@@ -103,54 +103,54 @@ public class ImageSegmentation {
      */
     public void applyUsingDTClustering(GreyscaleImage input, int kBands)
         throws IOException, NoSuchAlgorithmException {
-        
+
         PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(
             input);
-        
+
         // first, trying clustering by value and frequency,
         // second, compare that to clustering just by giving points as value,value
         //    which is effectivly a 1D clustering
         //Set<PairInt> points = new HashSet<PairInt>();
-        Set<com.climbwithyourfeet.clustering.util.PairInt> points = 
+        Set<com.climbwithyourfeet.clustering.util.PairInt> points =
             new HashSet<com.climbwithyourfeet.clustering.util.PairInt>();
-        
+
         for (int i = 0; i < valueCounts.getN(); ++i) {
             com.climbwithyourfeet.clustering.util.PairInt p = new
                 com.climbwithyourfeet.clustering.util.PairInt(
                     valueCounts.getX(i), valueCounts.getY(i));
-            
+
             points.add(p);
         }
 
-        DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt> cFinder 
+        DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt> cFinder
             = new DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt>(
                 points, input.getWidth(), input.getHeight());
-        
+
         cFinder.calculateCriticalDensity();
-        
+
         cFinder.findClusters();
-        
+
         int n = cFinder.getNumberOfClusters();
-        
+
         int[] centers = new int[n];
         for (int i = 0; i < n; ++i) {
-            
+
             Set<com.climbwithyourfeet.clustering.util.PairInt> set = cFinder.getCluster(i);
-            
+
             // find centeroid for x
             double xc = 0;
             for (com.climbwithyourfeet.clustering.util.PairInt p : set) {
                 double x1 = p.getX();
                 xc += x1;
             }
-            
+
             centers[i] = (int)Math.round(xc/(double)set.size());
         }
-        
+
         if (n > kBands) {
             n = kBands;
         }
-                
+
         Arrays.sort(centers);
         int[] kCenters = new int[n];
         int count = 0;
@@ -158,17 +158,17 @@ public class ImageSegmentation {
             kCenters[count] = centers[i];
             count++;
         }
-        
+
         assignToNearestCluster(input, kCenters);
     }
-    
+
     /**
      * places points by their proximity to cluster centers
      * @param input
      * @param binCenters
      */
     public void assignToNearestCluster(GreyscaleImage input, int[] binCenters) {
-        
+
         for (int col = 0; col < input.getWidth(); col++) {
 
             for (int row = 0; row < input.getHeight(); row++) {
@@ -195,14 +195,71 @@ public class ImageSegmentation {
             }
         }
     }
-    
+
+    public List<Set<PairInt>> assignToNearestPolarCIECluster(
+        Map<PairInt, Integer> polarCIEXYMap, int[] binCenters) {
+
+        Arrays.sort(binCenters);
+
+        int nc = binCenters.length;
+
+        List<Set<PairInt>> groups = new ArrayList<Set<PairInt>>();
+        for (int i = 0; i < nc; ++i) {
+            groups.add(new HashSet<PairInt>());
+        }
+
+        for (Entry<PairInt, Integer> entry : polarCIEXYMap.entrySet()) {
+
+            int theta = entry.getValue().intValue();
+
+            int idx = Arrays.binarySearch(binCenters, theta);
+            // if it's negative, (-(insertion point) - 1)
+            if (idx < 0) {
+                // idx = -*idx2 - 1
+                idx = -1*(idx + 1);
+            }
+            if (idx > (nc - 1)) {
+                idx = nc - 1;
+            }
+
+            int vc = binCenters[idx];
+
+            if (idx == 0) {
+
+                int bisectorBelowHalfLength = (360 - binCenters[nc - 1] + vc)/2;
+                if ((vc - theta) > bisectorBelowHalfLength) {
+                    idx = nc - 1;
+                }
+
+            } else {
+
+                int bisectorBelow = ((binCenters[idx - 1] + vc) / 2);
+
+                if (theta < bisectorBelow) {
+                    idx = idx - 1;
+                }
+            }
+
+            Set<PairInt> set = groups.get(Integer.valueOf(idx));
+            set.add(entry.getKey());
+        }
+
+        for (int i = (groups.size() - 1); i > -1; --i) {
+            if (groups.get(i).isEmpty()) {
+                groups.remove(i);
+            }
+        }
+
+        return groups;
+    }
+
     /**
      * applies a blur of sigma=1 to image,
      * converts each pixel color to the polar angle of CIE XY Lab color space
      * with an origin of (0.35, 0.35) and uses a histogram binning of kColors=8,
      * then maps those bins to 0 to 255,
      * then replaces a pixel if 5,6 or its neighbors have the same color,
-     * then applies histogram equalization to stretch the values to range 
+     * then applies histogram equalization to stretch the values to range
      * 0 to 255.
      * @param input
      * @return
@@ -219,7 +276,7 @@ public class ImageSegmentation {
      * with an origin of (0.35, 0.35) and uses a histogram binning of kColors,
      * then maps those bins to 0 to 255,
      * then replaces a pixel if 5,6 or its neighbors have the same color,
-     * then applies histogram equalization to stretch the values to range 
+     * then applies histogram equalization to stretch the values to range
      * 0 to 255.
      * @param input
      * @param kColors the number of colors to bin the image by.  max allowed value
@@ -237,7 +294,7 @@ public class ImageSegmentation {
         if (kColors < 2) {
             throw new IllegalArgumentException("kColors must be >= 2");
         }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
 
         GreyscaleImage img;
@@ -335,7 +392,7 @@ public class ImageSegmentation {
      * applies a blur of sigma=1 to image,
      * converts each pixel's color into CIE XY polar theta, then uses KMeansPlusPlus
      * to create kColors=8 bins points then remaps the points to use the
-     * range 0 to 255, then replaces a pixel if it has 7 neighbors of same 
+     * range 0 to 255, then replaces a pixel if it has 7 neighbors of same
      * color, then applies histogram equalization to rescale the range to be
      * between 0 and 255.
      * @param input
@@ -352,10 +409,10 @@ public class ImageSegmentation {
     /**
      * converts each pixel's color into CIE XY polar theta, then uses KMeansPlusPlus
      * to create kColors bins points then remaps the points to use the
-     * range 0 to 255, then replaces a pixel if it has 5,6 neighbors of same 
+     * range 0 to 255, then replaces a pixel if it has 5,6 neighbors of same
      * color, then applies histogram equalization to rescale the range to be
      * between 0 and 255.
-     * 
+     *
      * @param input
      * @param kColors the number of colors to bin the image by.  max allowed value
      * is 253.
@@ -373,7 +430,7 @@ public class ImageSegmentation {
         }
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         GreyscaleImage img;
 
         int minNeighborLimit;
@@ -464,9 +521,9 @@ public class ImageSegmentation {
 
         return img;
     }
-    
+
     /**
-     * converts each pixel's color into CIE XY polar theta,  
+     * converts each pixel's color into CIE XY polar theta,
      * then applies histogram mapping of kColors to remap the pixels to
      * values between 0 and 255.
      *
@@ -475,11 +532,11 @@ public class ImageSegmentation {
      */
     public GreyscaleImage applyUsingCIEXYPolarThetaThenHistogram(Image input) {
 
-        return applyUsingCIEXYPolarThetaThenHistogram(input, 254);
+        return applyUsingCIEXYPolarThetaThenHistogram(input, 253);
     }
 
     /**
-     * converts each pixel's color into CIE XY polar theta,  
+     * converts each pixel's color into CIE XY polar theta,
      * then applies histogram mapping of kColors to remap the pixels to
      * values between 0 and 255.
      *
@@ -488,7 +545,7 @@ public class ImageSegmentation {
      * The minimum allowed value is 2 and the maximum allowed value is 253.
      * @return
      */
-    public GreyscaleImage applyUsingCIEXYPolarThetaThenHistogram(Image input, 
+    public GreyscaleImage applyUsingCIEXYPolarThetaThenHistogram(Image input,
         int kColors) {
 
         if (kColors > 253) {
@@ -559,7 +616,7 @@ public class ImageSegmentation {
 
         return output;
     }
-    
+
     /**
      * converts each pixel's color into CIE XY polar theta, then uses KMeansPlusPlus
      * to create kColors bins points then remaps the points to use the
@@ -642,7 +699,7 @@ public class ImageSegmentation {
 
         return output;
     }
-    
+
     private void createAndApplyKMPPMapping(GreyscaleImage output,
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
         final int kColors) {
@@ -706,7 +763,7 @@ public class ImageSegmentation {
             */
         }
     }
-    
+
     private void createAndApplyHistMapping(GreyscaleImage output,
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
         final int kColors) {
@@ -773,26 +830,26 @@ public class ImageSegmentation {
             output.setValue(p.getX(), p.getY(), mappedValue);
         }
     }
-    
+
     /**
      * NOT READY FOR USE.  STILL EXPERIMENTING.
-     * 
+     *
      * Calculates lists of black pixels, white pixels, grey pixels, and assigns
-     * the remaining to CIEXY Lab color space, then creates a map of the 
-     * CIEX and CIEY points and uses density based clustering  
+     * the remaining to CIEXY Lab color space, then creates a map of the
+     * CIEX and CIEY points and uses density based clustering
      * (http://nking.github.io/two-point-correlation/)
      * to find clusters of points in CIE X, CIEY space,
-     * then merges pixels in the grey list with adjacent clusters if 
+     * then merges pixels in the grey list with adjacent clusters if
      * similar, and the final result is a list of pixel clusters, including the
      * black and white and remaining grey.
-     * 
+     *
      * Note that the color black is not defined in CIE XY color space and that
      * the color white is at the center of the space as a large circle so they
      * are not included in the density based clustering.
      * Note also that the remaining grey pixels which did not merge with the
      * cie xy pixel clusters, may be in separate groups already due to a
      * frequency based grouping for them.
-     * 
+     *
      * @param input
      * @param useBlur
      * @return
@@ -804,7 +861,7 @@ public class ImageSegmentation {
         // (1) for smaller ciexy clusters, merge with adjacent clusters if
         //     similar color
         // (2) any pixel with 7 neighbors of same color should be that color too
-        
+
         if (useBlur) {
             ImageProcessor imageProcessor = new ImageProcessor();
             imageProcessor.blur(input, 1.0f);
@@ -835,24 +892,24 @@ public class ImageSegmentation {
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
         Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
-        
+
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
         Set<PairInt> points0 = new HashSet<PairInt>();
-        
+
         populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
-                
+
         // -------- debug -------
         int nGrey = 0;
         for (Map.Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
             nGrey += entry.getValue().size();
         }
-        assert((points0.size() + blackPixels.size() + nGrey + 
+        assert((points0.size() + blackPixels.size() + nGrey +
             whitePixels.size()) == input.getNPixels());
         // -------- end debug -------
 
         List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
-        
+
         // ------- debug -------
         int nGrey2 = 0;
         for (Set<PairInt> set : greyPixelGroups) {
@@ -860,15 +917,15 @@ public class ImageSegmentation {
         }
         assert(nGrey == nGrey2);
         // ------- end debug =====
-        
+
         Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap0 =
             new HashMap<PairIntWithIndex, List<PairIntWithIndex>>();
 
         for (PairInt p : points0) {
             int idx = input.getInternalIndex(p.getX(), p.getY());
             float cx = input.getCIEX(idx);
-            float cy = input.getCIEY(idx);               
-            
+            float cy = input.getCIEY(idx);
+
             int cieXInt = Math.round(factor * cx);
             int cieYInt = Math.round(factor * cy);
 
@@ -940,7 +997,7 @@ public class ImageSegmentation {
         nTot += nGreyBW;
         log.info("nTot=" + nTot + " nPixels=" + input.getNPixels());
         assert(nTot == input.getNPixels());
-        
+
         // plot the points as an image to see the data first
         GreyscaleImage img = new GreyscaleImage(maxCIEX + 1, maxCIEY + 1);
         for (com.climbwithyourfeet.clustering.util.PairInt p : pointsMap.keySet()) {
@@ -956,8 +1013,8 @@ public class ImageSegmentation {
         // --- end debug
 
         //Map<PairIntWithIndex, List<PairIntWithIndex>> pointsMap
-        
-        DTClusterFinder<PairIntWithIndex> clusterFinder 
+
+        DTClusterFinder<PairIntWithIndex> clusterFinder
             = new DTClusterFinder<PairIntWithIndex>(pointsMap.keySet(),
             maxCIEX + 1, maxCIEY + 1);
 
@@ -969,7 +1026,7 @@ public class ImageSegmentation {
         clusterFinder.calculateCriticalDensity();
 
         clusterFinder.findClusters();
-        
+
         log.info("clustering critical density=" + clusterFinder.getCriticalDensity());
 
         int nGroups = clusterFinder.getNumberOfClusters();
@@ -977,7 +1034,7 @@ public class ImageSegmentation {
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
 
         for (int k = 0; k < nGroups; ++k) {
-            
+
             Set<PairIntWithIndex> group = clusterFinder.getCluster(k);
 
             Set<PairInt> coordPoints = new HashSet<PairInt>();
@@ -1005,7 +1062,7 @@ public class ImageSegmentation {
 
             groupList.add(coordPoints);
         }
-        
+
         // ------ debug ---------
         nTot = 0;
         for (Set<PairInt> set : groupList) {
@@ -1015,33 +1072,33 @@ public class ImageSegmentation {
         log.info("nTot=" + nTot + " nPixels=" + input.getNPixels());
         assert(nTot == input.getNPixels());
         // ------ end debug -----
-  
-        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
+
+        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList,
             blackPixels, whitePixels);
-        
+
         // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
         groupList.add(whitePixels);
-        
+
         int nTot2 = 0;
         for (Set<PairInt> groups : groupList) {
             nTot2 += groups.size();
         }
-           
+
         log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
         assert(nTot2 == input.getNPixels());
 
         return groupList;
     }
-    
-    /**     
+
+    /**
      * Calculates lists of black pixels, white pixels, grey pixels, and assigns
-     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the
      * polar angles and the number of pixels with those angles (=frequency)
-     * and uses density based clustering  
+     * and uses density based clustering
      * (http://nking.github.io/two-point-correlation/)
      * to find clusters in that space (polar CIEXY vs frequency),
-     * then merges pixels in the grey list with adjacent clusters if 
+     * then merges pixels in the grey list with adjacent clusters if
      * similar, and the final result is a list of pixel clusters, including the
      * black and white and remaining grey.
      * The changeable parameters are the scaling of the range of polar angles
@@ -1055,17 +1112,17 @@ public class ImageSegmentation {
      * 4 maps to do density based cluster finding separately.
      * partitionFreqFracs = new float[]{0.03f, 0.15f, 0.25f} is the fraction of
      * the maximum frequency defining a partition.
-     * 
+     *
      * Note that the color black is not defined in CIE XY color space and that
      * the color white is at the center of the space as a large circle so they
      * are not included in the density based clustering.
      * Note also that the remaining grey pixels which did not merge with the
      * CIE xy pixel clusters, may be in separate groups already due to a
      * frequency based grouping for them.
-     * 
+     *
      * @param input
      * @param useBlur apply a gaussian blur of sigma=1 before the method logic
-     * @return 
+     * @return
      */
     public List<Set<PairInt>> calculateUsingPolarCIEXYAndClustering(ImageExt input,
         boolean useBlur) {
@@ -1085,22 +1142,22 @@ public class ImageSegmentation {
 
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
         Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
-        
+
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
         Set<PairInt> points0 = new HashSet<PairInt>();
-        
+
         populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
-        
+
         double[] minMaxTheta0 = findMinMaxTheta(input, points0);
-        
+
         log.info("for all non-white and non-black, minTheta=" + minMaxTheta0[0]
             + " maxTheta=" + minMaxTheta0[1]);
-        
+
         // -------- debug -------
         int nGrey = 0;
         for (Map.Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
@@ -1113,9 +1170,9 @@ public class ImageSegmentation {
         // -------- end debug -------
 
         List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
-        
+
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(greyPixelGroups.size());
-        
+
         if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {
              if (points0.isEmpty()) {
                  groupList.add(points0);
@@ -1131,10 +1188,10 @@ public class ImageSegmentation {
              }
              return groupList;
         }
-        
+
         double xFactor = 2000.;
         int yFactor = 2000;
-        
+
         double[] minMaxTheta = new double[2];
         int[] minMaxFreq = new int[2];
         double thetaFactor0 = xFactor/(minMaxTheta0[1] - minMaxTheta0[0]);
@@ -1149,55 +1206,55 @@ public class ImageSegmentation {
         log.info("img nPix=" + input.getNPixels() + " nTot=" + nTot);
         assert(nTot == input.getNPixels());
         // ----- end debug ------
-        
+
         /* ---- create frequency maps partitioned by given fractions ----
         starting w/ partitions at 3 percent (maybe discard below),
             15 percent, and 25 percent resulting in 4 maps
-        
+
         For each map:
             key is pairint w/ x=theta, y=freq,
             value is all pixels having same key
         */
-        
+
         final float[] partitionFreqFracs = new float[]{0.03f, 0.15f, 0.25f};
-        
+
         List<Map<com.climbwithyourfeet.clustering.util.PairInt,
             List<PairIntWithIndex>>> thetaFreqMaps =
             partitionIntoFrequencyMaps(input, thetaPointMap,
                 partitionFreqFracs, minMaxFreq[1]);
-        
+
         //---- debug, assert number of pixels ----
         nTot = nGreyBW;
         for (Map<com.climbwithyourfeet.clustering.util.PairInt,
         List<PairIntWithIndex>> map : thetaFreqMaps) {
             for (Map.Entry<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> entry : map.entrySet()) {
-                nTot += entry.getValue().size();                
+                nTot += entry.getValue().size();
             }
         }
         log.info("img nPix=" + input.getNPixels() + " nTot=" + nTot);
         assert(nTot == input.getNPixels());
-        
+
         // TODO: handle wrap around values!
         //    if there are points at 0 and 360, and a gap elsewhere, can
         //    shift the values so the gap is at 360 instead.
-        
+
         // ------ TODO: rescale each map by frequencies to span ~1000 pixels -----
         rescaleKeys(thetaFreqMaps, yFactor);
-        
+
         int nTot2 = 0;
-        
+
         for (int i = 1; i < thetaFreqMaps.size(); ++i) {
-        
+
             Map<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> thetaFreqMapI = thetaFreqMaps.get(i);
 
             int[] maxXY = findMaxXY(thetaFreqMapI.keySet());
-            
+
             if (maxXY[0] < 0 || maxXY[1] <= 0) {
                 continue;
             }
-            
+
             // ----- debug ---
             // plot the points as an image to see the data first
             GreyscaleImage img = new GreyscaleImage(maxXY[0] + 1, maxXY[1] + 1);
@@ -1206,20 +1263,20 @@ public class ImageSegmentation {
             }
             try {
                 ImageIOHelper.writeOutputImage(
-                    ResourceFinder.findDirectory("bin") + "/dt2_input_" + i 
+                    ResourceFinder.findDirectory("bin") + "/dt2_input_" + i
                         + "_.png", img);
             } catch (IOException ex) {
                 Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
                     null, ex);
             }
             // --- end debug
-            
+
             // Map<com.climbwithyourfeet.clustering.util.PairInt,
             //     List<PairIntWithIndex>> thetaFreqMapI
-                
+
             // map w/ key=(theta, freq) value=collection of coords
-            DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt> 
-                clusterFinder 
+            DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt>
+                clusterFinder
                 = new DTClusterFinder<com.climbwithyourfeet.clustering.util.PairInt>(
                     thetaFreqMapI.keySet(), maxXY[0] + 1, maxXY[1] + 1);
 
@@ -1233,14 +1290,14 @@ public class ImageSegmentation {
             clusterFinder.findClusters();
 
             int nGroups = clusterFinder.getNumberOfClusters();
-            
+
             for (int k = 0; k < nGroups; ++k) {
 
                 Set<com.climbwithyourfeet.clustering.util.PairInt> group
                     = clusterFinder.getCluster(k);
 
                 Set<PairInt> coordPoints = new HashSet<PairInt>();
-                
+
                 for (com.climbwithyourfeet.clustering.util.PairInt pThetaFreq : group) {
 
                     // include the other points of same ciexy theta, freq
@@ -1253,17 +1310,17 @@ public class ImageSegmentation {
                         PairInt pCoord = new PairInt(xCoord3, yCoord3);
                         coordPoints.add(pCoord);
                     }
-                }               
+                }
 
                 nTot2 += coordPoints.size();
 
                 groupList.add(coordPoints);
             }
         }
-     
-        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
+
+        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList,
             blackPixels, whitePixels);
-        
+
         // add back in blackPixels and whitePixels
         groupList.add(blackPixels);
         groupList.add(whitePixels);
@@ -1272,19 +1329,19 @@ public class ImageSegmentation {
 
         return groupList;
     }
-    
+
     /**
      * Calculates lists of black pixels, white pixels, grey pixels, and assigns
-     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the
      * polar angles and the number of pixels with those angles (=frequency),
-     * then finds peaks in theta above a fraction =0.03 of max limit then groups all 
+     * then finds peaks in theta above a fraction =0.03 of max limit then groups all
      * pixels in the map by proximity to the peak,
-     * then merges pixels in the grey list with adjacent clusters if 
+     * then merges pixels in the grey list with adjacent clusters if
      * similar, and the final result is a list of pixel clusters, including the
      * black and white and remaining grey.  The list is sorted by size and
      * set to values from 255 to 0.  If there are more than 255 clusters, the
-     * remaining (smaller) clusters are pixels with value 0. 
-     * 
+     * remaining (smaller) clusters are pixels with value 0.
+     *
      * Note that the color black is not defined in CIE XY color space and that
      * the color white is at the center of the space as a large circle so they
      * are not included in the density based clustering.
@@ -1293,28 +1350,28 @@ public class ImageSegmentation {
      * frequency based grouping for them.
      * @param input
      * @param useBlur apply a gaussian blur of sigma=1 before the method logic
-     * @return 
+     * @return
      */
     public GreyscaleImage applyUsingPolarCIEXYAndFrequency(ImageExt input,
         boolean useBlur) {
-        
+
         float fracFreqLimit = 0.03f;
-        
+
         return applyUsingPolarCIEXYAndFrequency(input, fracFreqLimit, useBlur);
     }
-    
+
     /**
      * Calculates lists of black pixels, white pixels, grey pixels, and assigns
-     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the
      * polar angles and the number of pixels with those angles (=frequency),
-     * then finds peaks in theta above a fraction =0.03 of max limit then groups all 
+     * then finds peaks in theta above a fraction =0.03 of max limit then groups all
      * pixels in the map by proximity to the peak,
-     * then merges pixels in the grey list with adjacent clusters if 
+     * then merges pixels in the grey list with adjacent clusters if
      * similar, and the final result is a list of pixel clusters, including the
      * black and white and remaining grey.  The list is sorted by size and
      * set to values from 255 to 0.  If there are more than 255 clusters, the
-     * remaining (smaller) clusters are pixels with value 0. 
-     * 
+     * remaining (smaller) clusters are pixels with value 0.
+     *
      * Note that the color black is not defined in CIE XY color space and that
      * the color white is at the center of the space as a large circle so they
      * are not included in the density based clustering.
@@ -1324,20 +1381,20 @@ public class ImageSegmentation {
      * @param input
      * @param fracFreqLimit
      * @param useBlur apply a gaussian blur of sigma=1 before the method logic
-     * @return 
+     * @return
      */
     public GreyscaleImage applyUsingPolarCIEXYAndFrequency(ImageExt input,
         final float fracFreqLimit, boolean useBlur) {
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         List<Set<PairInt>> clusters = calculateUsingPolarCIEXYAndFrequency(
             input, fracFreqLimit, useBlur);
-        
+
         int n = clusters.size();
         //assert(n < 256);
-        
+
         // sort indexes by set size
         int maxSize = Integer.MIN_VALUE;
         int[] indexes = new int[n];
@@ -1350,42 +1407,42 @@ public class ImageSegmentation {
             }
         }
         CountingSort.sort(sizes, indexes, maxSize);
-        
+
         int delta = 256/clusters.size();
         if (delta == 0) {
             delta = 1;
         }
-        
+
         GreyscaleImage img2 = new GreyscaleImage(w, h);
         for (int k = 0; k < n; ++k) {
-            
+
             int idx = indexes[n - k - 1];
-            
+
             Set<PairInt> set = clusters.get(idx);
-            
+
             int v = 255 - delta*k;
             if (v < 1) {
                 continue;
             }
-            
+
             for (PairInt p : set) {
                 img2.setValue(p.getX(), p.getY(), v);
             }
         }
-        
+
         return img2;
     }
-    
+
     /**
      * Calculates lists of black pixels, white pixels, grey pixels, and assigns
-     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the
      * polar angles and the number of pixels with those angles (=frequency),
-     * then finds peaks in theta above a fraction =0.03 of max limit then groups all 
+     * then finds peaks in theta above a fraction =0.03 of max limit then groups all
      * pixels in the map by proximity to the peak,
-     * then merges pixels in the grey list with adjacent clusters if 
+     * then merges pixels in the grey list with adjacent clusters if
      * similar, and the final result is a list of pixel clusters, including the
      * black and white and remaining grey.
-     * 
+     *
      * Note that the color black is not defined in CIE XY color space and that
      * the color white is at the center of the space as a large circle so they
      * are not included in the density based clustering.
@@ -1400,29 +1457,29 @@ public class ImageSegmentation {
         boolean useBlur) {
 
         float fracFreqLimit = 0.03f;
-        
+
         return calculateUsingPolarCIEXYAndFrequency(input, fracFreqLimit, useBlur);
     }
-    
+
     /**
      * Calculates lists of black pixels, white pixels, grey pixels, and assigns
-     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the 
+     * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the
      * polar angles and the number of pixels with those angles (=frequency),
-     * then finds peaks in theta above a fraction of max limit then groups all 
+     * then finds peaks in theta above a fraction of max limit then groups all
      * pixels in the map by proximity to the peak,
-     * then merges pixels in the grey list with adjacent clusters if 
+     * then merges pixels in the grey list with adjacent clusters if
      * similar, and the final result is a list of pixel clusters, including the
      * black and white and remaining grey.
      * The changeable parameter is the fracFreqLimit.  Larger values exclude
      * smaller frequency peaks.
-     * 
+     *
      * Note that the color black is not defined in CIE XY color space and that
      * the color white is at the center of the space as a large circle so they
      * are not included in the density based clustering.
      * Note also that the remaining grey pixels which did not merge with the
      * CIE xy pixel clusters, may be in separate groups already due to a
      * frequency based grouping for them.
-     * 
+     *
      * @param input image to find color clusters within
      * @param fracFreqLimit fraction of the maximum above which peaks will be found
      * @param useBlur if true, performs a gaussian blur of sigma=1 before finding
@@ -1447,31 +1504,31 @@ public class ImageSegmentation {
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
         Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
-        
+
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
         Set<PairInt> points0 = new HashSet<PairInt>();
-       
+
         populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
 
         double[] minMaxTheta0 = findMinMaxTheta(input, points0);
-        
+
         log.info("for all non-white and non-black, minTheta=" + minMaxTheta0[0]
             + " maxTheta=" + minMaxTheta0[1]);
-        
+
         // -------- debug -------
         int nGrey = 0;
         for (Map.Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
             nGrey += entry.getValue().size();
         }
-        assert((points0.size() + blackPixels.size() + nGrey + 
+        assert((points0.size() + blackPixels.size() + nGrey +
             whitePixels.size()) == input.getNPixels());
         // -------- end debug -------
 
         List<Set<PairInt>> greyPixelGroups = groupByPeaks(greyPixelMap);
 
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(greyPixelGroups.size());
-        
+
         if ((minMaxTheta0[1] - minMaxTheta0[0]) == 0) {
              if (points0.isEmpty()) {
                  groupList.add(points0);
@@ -1487,20 +1544,20 @@ public class ImageSegmentation {
              }
              return groupList;
         }
-        
+
         /* ----- create a map of theta and frequency ----
         need to find the peaks in frequency for frequencies larger than about
         3 percent of max frequency
-        but don't want to use a spline3 to smooth, so will average every 
+        but don't want to use a spline3 to smooth, so will average every
         few pixels.
         */
 
         int binWidth = 3;
         Map<Integer, Collection<PairInt>> thetaPointMap = createThetaCIEXYMap(
             points0, input, binWidth);
-       
+
         int n = (360/binWidth) + 1;
-        
+
         int[] orderedThetaKeys = new int[n];
         for (int i = 0; i < n; ++i) {
             orderedThetaKeys[i] = i;
@@ -1516,16 +1573,16 @@ public class ImageSegmentation {
         }
         nTot += (blackPixels.size() + nGrey + whitePixels.size());
         assert(nTot == input.getNPixels());
-        
+
         /*
         TODO: this is where the DTClusterFinder would be good to use to find
         the peaks.
         */
-        
-        PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys, 
-            thetaPointMap, 
+
+        PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys,
+            thetaPointMap,
             Math.round(fracFreqLimit * maxFreq));
-        
+
         /*
         // ----- debug ---
         // plot the points as an image to see the data first
@@ -1573,7 +1630,7 @@ public class ImageSegmentation {
         }
         // --- end debug
         */
-        
+
         if (peaks.getN() == 0) {
             for (Map.Entry<Integer, Collection<PairInt>> entry : thetaPointMap.entrySet()) {
                 groupList.add(new HashSet<PairInt>(entry.getValue()));
@@ -1585,7 +1642,7 @@ public class ImageSegmentation {
         for (int i = 0; i < peaks.getN(); ++i) {
             groupList.add(new HashSet<PairInt>());
         }
-        
+
         /* traverse in ordered manner thetaPointMap to compare to current theta position
            w.r.t. peaks
            then place it in the groupsList.
@@ -1650,10 +1707,10 @@ public class ImageSegmentation {
             assert(idx != -1);
             groupList.get(idx).addAll(list);
         }
-        
-        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList, 
+
+        mergeOrAppendGreyWithOthers(input, greyPixelGroups, groupList,
             blackPixels, whitePixels);
-        
+
         // add back in blackPixels and whitePixels
         /*if (!blackPixels.isEmpty()) {
             groupList.add(blackPixels);
@@ -1661,12 +1718,12 @@ public class ImageSegmentation {
         if (!whitePixels.isEmpty()) {
             groupList.add(whitePixels);
         }
-        
+
         int nTot2 = 0;
         for (Set<PairInt> groups : groupList) {
             nTot2 += groups.size();
         }
-           
+
         log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
         assert(nTot2 == input.getNPixels());
         */
@@ -1728,33 +1785,33 @@ public class ImageSegmentation {
         return thetaPointMap;
     }
 
-    private List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
+    private List<Map<com.climbwithyourfeet.clustering.util.PairInt,
     List<PairIntWithIndex>>> partitionIntoFrequencyMaps(
-    ImageExt input, Map<Integer, List<PairInt>> thetaPointMap, 
+    ImageExt input, Map<Integer, List<PairInt>> thetaPointMap,
     float[] partitionFreqFracs, int maxFreq) {
-        
-        List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
-            List<PairIntWithIndex>>> 
-            mapsList = 
-                new ArrayList<Map<com.climbwithyourfeet.clustering.util.PairInt, 
+
+        List<Map<com.climbwithyourfeet.clustering.util.PairInt,
+            List<PairIntWithIndex>>>
+            mapsList =
+                new ArrayList<Map<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>>>();
-        
+
         int nMaps = partitionFreqFracs.length + 1;
-        
+
         for (int i = 0; i < nMaps; ++i) {
             mapsList.add(
-                new HashMap<com.climbwithyourfeet.clustering.util.PairInt, 
+                new HashMap<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>>());
         }
-        
+
         final int[] partitionFreqs = new int[partitionFreqFracs.length];
         for (int i = 0; i < partitionFreqs.length; ++i) {
             partitionFreqs[i] = Math.round(partitionFreqFracs[i]*maxFreq);
         }
-        
+
         int[] maxXY = new int[2];
         Arrays.fill(maxXY, Integer.MIN_VALUE);
-                
+
         for (Map.Entry<Integer, List<PairInt>> entry : thetaPointMap.entrySet()) {
 
             Integer theta = entry.getKey();
@@ -1768,7 +1825,7 @@ public class ImageSegmentation {
                     count, pixIdx);
                 list.add(p2);
             }
-            
+
             int n = partitionFreqs.length;
             int idx = 0;
             for (int i = 0; i < n; ++i) {
@@ -1787,12 +1844,12 @@ public class ImageSegmentation {
                     }
                 }
             }
-            
+
             // this is unique to all maps, not stomping on existing key
             mapsList.get(idx).put(
                 new com.climbwithyourfeet.clustering.util.PairInt(
                     theta.intValue(), count), list);
-            
+
             if (theta.intValue() > maxXY[0]) {
                 maxXY[0] = theta.intValue();
             }
@@ -1800,11 +1857,11 @@ public class ImageSegmentation {
                 maxXY[1] = count;
             }
         }
-        
+
         // ----- temporary print of all pixels -------
         // ----- debug ---
         GreyscaleImage img = new GreyscaleImage(maxXY[0] + 1, maxXY[1] + 1);
-        for (int i = 0; i < mapsList.size(); ++i) {            
+        for (int i = 0; i < mapsList.size(); ++i) {
             for (com.climbwithyourfeet.clustering.util.PairInt p : mapsList.get(i).keySet()) {
                 img.setValue(p.getX(), p.getY(), 255);
             }
@@ -1817,41 +1874,41 @@ public class ImageSegmentation {
                 null, ex);
         }
         // --- end debug
-        
+
         return mapsList;
     }
 
     private void rescaleKeys(
-        List<Map<com.climbwithyourfeet.clustering.util.PairInt, 
+        List<Map<com.climbwithyourfeet.clustering.util.PairInt,
             List<PairIntWithIndex>>> thetaFreqMaps, int scaleTo) {
-        
+
         // --- can remove the count after debugging ----
         int nTotBefore = 0;
         for (int i = 0; i < thetaFreqMaps.size(); ++i) {
-            for (Map.Entry<com.climbwithyourfeet.clustering.util.PairInt, 
+            for (Map.Entry<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> entry : thetaFreqMaps.get(i).entrySet()) {
                 nTotBefore += entry.getValue().size();
             }
         }
-        
+
         for (int i = 0; i < thetaFreqMaps.size(); ++i) {
-            
-            Map<com.climbwithyourfeet.clustering.util.PairInt, 
+
+            Map<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> thetaFreqMap = thetaFreqMaps.get(i);
-            
+
             int[] minMax = findMinMaxOfKeyYs(thetaFreqMap.keySet());
-                 
-            Map<com.climbwithyourfeet.clustering.util.PairInt, 
+
+            Map<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> thetaFreqMap2 = rescaleKeyYs(
                     thetaFreqMap, scaleTo, minMax);
-            
+
             thetaFreqMaps.set(i, thetaFreqMap2);
         }
-        
+
         // --- can remove the count after debugging ----
         int nTotAfter = 0;
         for (int i = 0; i < thetaFreqMaps.size(); ++i) {
-            for (Map.Entry<com.climbwithyourfeet.clustering.util.PairInt, 
+            for (Map.Entry<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>> entry : thetaFreqMaps.get(i).entrySet()) {
                 nTotAfter += entry.getValue().size();
             }
@@ -1861,10 +1918,10 @@ public class ImageSegmentation {
 
     private int[] findMinMaxOfKeyYs(
         Set<com.climbwithyourfeet.clustering.util.PairInt> keySet) {
-        
+
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
-        
+
         for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {
             int y = p.getY();
             if (y < min) {
@@ -1877,44 +1934,44 @@ public class ImageSegmentation {
         return new int[]{min, max};
     }
 
-    private Map<com.climbwithyourfeet.clustering.util.PairInt, 
+    private Map<com.climbwithyourfeet.clustering.util.PairInt,
     List<PairIntWithIndex>> rescaleKeyYs(
-    Map<com.climbwithyourfeet.clustering.util.PairInt, 
+    Map<com.climbwithyourfeet.clustering.util.PairInt,
     List<PairIntWithIndex>> thetaFreqMap, final int scaleTo, final int[] minMaxY) {
-        
-        Map<com.climbwithyourfeet.clustering.util.PairInt, 
-            List<PairIntWithIndex>> scaledMap 
-            = new HashMap<com.climbwithyourfeet.clustering.util.PairInt, 
+
+        Map<com.climbwithyourfeet.clustering.util.PairInt,
+            List<PairIntWithIndex>> scaledMap
+            = new HashMap<com.climbwithyourfeet.clustering.util.PairInt,
                 List<PairIntWithIndex>>();
-        
+
         if ((minMaxY[1] - minMaxY[0]) == 0) {
             return thetaFreqMap;
         }
-        
+
         float factor = scaleTo/(minMaxY[1] - minMaxY[0]);
-        
-        for (Map.Entry<com.climbwithyourfeet.clustering.util.PairInt, 
+
+        for (Map.Entry<com.climbwithyourfeet.clustering.util.PairInt,
             List<PairIntWithIndex>> entry : thetaFreqMap.entrySet()) {
-            
+
             com.climbwithyourfeet.clustering.util.PairInt p = entry.getKey();
-            
+
             int y = Math.round(factor * (p.getY() - minMaxY[0]));
-            
+
             com.climbwithyourfeet.clustering.util.PairInt p2 = new
                 com.climbwithyourfeet.clustering.util.PairInt(p.getX(), y);
-            
+
             scaledMap.put(p2, entry.getValue());
         }
-        
+
         return scaledMap;
     }
 
-    private int[] findMaxXY(Set<com.climbwithyourfeet.clustering.util.PairInt> 
+    private int[] findMaxXY(Set<com.climbwithyourfeet.clustering.util.PairInt>
         keySet) {
-        
+
         int maxX = Integer.MIN_VALUE;
         int maxY = Integer.MIN_VALUE;
-        
+
         for (com.climbwithyourfeet.clustering.util.PairInt p : keySet) {
             int x = p.getX();
             int y = p.getY();
@@ -1928,14 +1985,14 @@ public class ImageSegmentation {
         return new int[]{maxX, maxY};
     }
 
-    private Map<Integer, Collection<PairInt>> createThetaCIEXYMap(Set<PairInt> 
+    private Map<Integer, Collection<PairInt>> createThetaCIEXYMap(Set<PairInt>
         points, ImageExt input, int binWidth) {
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
 
         // key = theta, value = pixels having that key
         Map<Integer, Collection<PairInt>> thetaPointMap = new HashMap<Integer, Collection<PairInt>>();
-        
+
         for (PairInt p : points) {
 
             int idx = input.getInternalIndex(p.getX(), p.getY());
@@ -1947,7 +2004,7 @@ public class ImageSegmentation {
             double theta = thetaRadians * 180./Math.PI;
 
             int thetaCIEXY = (int)Math.round(theta);
-            
+
             Integer binKey = Integer.valueOf(thetaCIEXY/binWidth);
 
             Collection<PairInt> list = thetaPointMap.get(binKey);
@@ -1957,7 +2014,7 @@ public class ImageSegmentation {
             }
             list.add(p);
         }
-        
+
         return thetaPointMap;
     }
 
@@ -1966,11 +2023,11 @@ public class ImageSegmentation {
      * @param orderedThetaKeys
      * @param thetaPointMap
      * @param limit
-     * @return 
+     * @return
      */
-    protected PairIntArray findPeaksInThetaPointMap(final int[] orderedThetaKeys, 
+    protected PairIntArray findPeaksInThetaPointMap(final int[] orderedThetaKeys,
         final Map<Integer, Collection<PairInt>> thetaPointMap, final int limit) {
-        
+
         int lastKey = -1;
         int lastValue = -1;
         boolean isIncr = false;
@@ -2030,13 +2087,13 @@ public class ImageSegmentation {
                 peaks.add(lastKey, lastValue);
             }
         }
-        
+
         return peaks;
     }
 
     private List<Set<PairInt>> groupByPeaks(
         Map<Integer, Collection<PairInt>> greyPixelMap) {
-        
+
         int nTot = 0;
         int minKey = Integer.MAX_VALUE;
         int maxKey = Integer.MIN_VALUE;
@@ -2050,10 +2107,10 @@ public class ImageSegmentation {
             }
             nTot += entry.getValue().size();
         }
-        
+
         int binWidth = 8;
         greyPixelMap = binByKeys(greyPixelMap, minKey, maxKey, binWidth);
-        
+
         int nTot2 = 0;
         minKey = Integer.MAX_VALUE;
         maxKey = Integer.MIN_VALUE;
@@ -2074,9 +2131,9 @@ public class ImageSegmentation {
             nTot2 += y;
         }
         assert(nTot == nTot2);
-        
+
         int count = 0;
-        
+
         /*
         // --- debug
         float[] xPoints = new float[greyPixelMap.size()];
@@ -2103,7 +2160,7 @@ public class ImageSegmentation {
         }
         // --- end debug
         */
-        
+
         final int[] orderedKeys = new int[maxKey - minKey + 1];
         count = 0;
         for (int i = minKey; i <= maxKey; ++i) {
@@ -2116,13 +2173,13 @@ public class ImageSegmentation {
         // if there are several peaks within small range of keys, that's noise,
         // so removing them
         filterPeaksIfNoisey(peaks);
-        
+
         // ---- gather points in greyPixelMap into groups around the peaks ----
         List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>(orderedKeys.length + 1);
         for (int i = 0; i < peaks.getN(); ++i) {
             groupList.add(new HashSet<PairInt>());
         }
-        
+
         if (peaks.getN() == 0) {
             return groupList;
         } else if (peaks.getN() == 1) {
@@ -2132,7 +2189,7 @@ public class ImageSegmentation {
             }
             return groupList;
         }
-        
+
         int currentPeakIdx = -1;
         for (int i : orderedKeys) {
             Integer key = Integer.valueOf(i);
@@ -2180,29 +2237,29 @@ public class ImageSegmentation {
         }
         assert(nTot == nTot3);
         // ----- end debug -----
-                
+
         return groupList;
     }
 
     private Map<Integer, Collection<PairInt>> binByKeys(
-        Map<Integer, Collection<PairInt>> greyPixelMap, 
+        Map<Integer, Collection<PairInt>> greyPixelMap,
         int minKey, int maxKey, int binWidth) {
-        
-        Map<Integer, Collection<PairInt>> map2 
+
+        Map<Integer, Collection<PairInt>> map2
             = new HashMap<Integer, Collection<PairInt>>();
-        
+
         for (int i = minKey; i <= maxKey; ++i) {
-            
+
             Integer key = Integer.valueOf(i);
-            
+
             Collection<PairInt> c = greyPixelMap.get(key);
-            
+
             if (c == null) {
                 continue;
             }
-            
+
             Integer binKey = Integer.valueOf(i/binWidth);
-            
+
             Collection<PairInt> c2 = map2.get(binKey);
             if (c2 == null) {
                 c2 = new HashSet<PairInt>();
@@ -2210,22 +2267,22 @@ public class ImageSegmentation {
             }
             c2.addAll(c);
         }
-        
+
         return map2;
     }
 
     private void filterPeaksIfNoisey(PairIntArray peaks) {
-        
+
         if (peaks.getN() == 0) {
             return;
         }
-        
+
         int sumDeltaX = 0;
         for (int i = (peaks.getN() - 1); i > 0; --i) {
             sumDeltaX += (peaks.getX(i) - peaks.getX(i - 1));
         }
         //TODO: this may need to be revised:
-        // if there are more than 1 peaks per delta x of 5 or so, re-bin by 4 
+        // if there are more than 1 peaks per delta x of 5 or so, re-bin by 4
         float deltaX = (float)sumDeltaX/((float)peaks.getN() - 1);
         if (deltaX < 5) {
             // re-bin by 4
@@ -2243,17 +2300,17 @@ public class ImageSegmentation {
                 sumY = Math.round((float)sumY/(float)count);
                 peaks2.add(sumX, sumY);
             }
-            
+
             peaks.removeRange(0, peaks.getN() - 1);
             peaks.addAll(peaks2);
         }
-        
+
     }
 
-    private void mergeOrAppendGreyWithOthers(ImageExt input, 
-        List<Set<PairInt>> greyPixelGroups, List<Set<PairInt>> groupList, 
+    private void mergeOrAppendGreyWithOthers(ImageExt input,
+        List<Set<PairInt>> greyPixelGroups, List<Set<PairInt>> groupList,
         Set<PairInt> blackPixels, Set<PairInt> whitePixels) {
-                
+
         Map<PairInt, Integer> colorPixGroupMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < groupList.size(); ++i) {
             Set<PairInt> set = groupList.get(i);
@@ -2265,31 +2322,31 @@ public class ImageSegmentation {
 
         // similarity limit for a grey pixel to join adjacent color pixel's cluster
         int limit = 40;
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         for (Set<PairInt> greyGroup : greyPixelGroups) {
-            
+
             Set<PairInt> remove = new HashSet<PairInt>();
-            
+
             for (PairInt greyP : greyGroup) {
                 int x = greyP.getX();
                 int y = greyP.getY();
-                
+
                 int idx = input.getInternalIndex(x, y);
                 int r = input.getR(idx);
                 int g = input.getG(idx);
                 int b = input.getB(idx);
-                
+
                 // ---- check for color similarity ------
                 int minDiffRGB = Integer.MAX_VALUE;
                 int colorClusterIdx = -1;
                 int minDiffBlack = Integer.MAX_VALUE;
                 int minDiffWhite = Integer.MAX_VALUE;
-                
+
                 for (int i = 0; i < dxs.length; ++i) {
                     int x2 = x + dxs[i];
                     int y2 = y + dys[i];
@@ -2297,26 +2354,26 @@ public class ImageSegmentation {
                         continue;
                     }
                     PairInt p2 = new PairInt(x2, y2);
-                    
+
                     boolean adjIsBlack = blackPixels.contains(p2);
                     boolean adjIsWhite = whitePixels.contains(p2);
-                    
+
                     Integer colorClusterIndex = colorPixGroupMap.get(p2);
                     if ((colorClusterIndex == null) && !adjIsBlack && !adjIsWhite) {
                         continue;
                     }
-                                        
+
                     int idx2 = input.getInternalIndex(x2, y2);
                     int r2 = input.getR(idx2);
                     int g2 = input.getG(idx2);
                     int b2 = input.getB(idx2);
-                    
+
                     int diffR = Math.abs(r2 - r);
                     int diffG = Math.abs(g2 - g);
                     int diffB = Math.abs(b2 - b);
-                    
+
                     int diffRGB = diffR + diffG + diffB;
-                    
+
                     if (adjIsBlack) {
                         if (diffR == diffG && diffR == diffB) {
                             minDiffBlack = diffR;
@@ -2360,17 +2417,17 @@ public class ImageSegmentation {
         }
         greyPixelGroups.clear();
     }
-    
+
     protected double[] findMinMaxTheta(ImageExt input, Set<PairInt> points0) {
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-        
+
         double[] minMaxTheta = new double[2];
-        
+
         for (PairInt p : points0) {
             int x = p.getX();
             int y = p.getY();
-            
+
             double thetaRadians = cieC.calculateXYTheta(x, y);
             double theta = thetaRadians * 180. / Math.PI;
 
@@ -2381,22 +2438,22 @@ public class ImageSegmentation {
                 minMaxTheta[1] = theta;
             }
         }
-        
+
         return minMaxTheta;
     }
 
-    private void populatePixelLists(ImageExt input, Set<PairInt> points0, 
-        Set<PairInt> blackPixels, Set<PairInt> whitePixels, 
+    private void populatePixelLists(ImageExt input, Set<PairInt> points0,
+        Set<PairInt> blackPixels, Set<PairInt> whitePixels,
         Map<Integer, Collection<PairInt>> greyPixelMap) {
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
+
         CIEChromaticity cieC = new CIEChromaticity();
-        
-        // looking for limits in peaks of (r,g,b) <= (32,32,32) and > (191,191,191)
+
+        // looking for limits in peaks of (r,g,b) <= (45,45,45) and > (191,191,191)
         int[] whiteBlackLimits = findByHistogramLimitsForBlackAndWhite(input);
-                
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
 
@@ -2408,7 +2465,7 @@ public class ImageSegmentation {
 
                 //TODO: would be good to determine this boundary more precisely
                 // by histogram
-                if ((r <= whiteBlackLimits[0]) && (g <= whiteBlackLimits[0]) 
+                if ((r <= whiteBlackLimits[0]) && (g <= whiteBlackLimits[0])
                     && (b <= whiteBlackLimits[0])) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
@@ -2419,7 +2476,7 @@ public class ImageSegmentation {
 
                 if (cieC.isWhite2(cx, cy)) {
                     //grey will be binned into clusters by avgRGB and peak frequency
-                    if ((r <= whiteBlackLimits[1]) && (g <= whiteBlackLimits[1]) 
+                    if ((r <= whiteBlackLimits[1]) && (g <= whiteBlackLimits[1])
                         && (b <= whiteBlackLimits[1])) {
                         Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));
                         Collection<PairInt> set = greyPixelMap.get(avgRGB);
@@ -2434,13 +2491,13 @@ public class ImageSegmentation {
                     continue;
                 }
 
-                points0.add(new PairInt(i, j));                
+                points0.add(new PairInt(i, j));
             }
         }
     }
 
     private void mergeNoise(ImageExt input, List<Set<PairInt>> groupList) {
-        
+
         Map<PairInt, Integer> pixelToGroupMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < groupList.size(); ++i) {
             Set<PairInt> set = groupList.get(i);
@@ -2448,15 +2505,15 @@ public class ImageSegmentation {
                 pixelToGroupMap.put(p, Integer.valueOf(i));
             }
         }
-                
+
         final int w = input.getWidth();
         final int h = input.getHeight();
-        
+
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
-        
+
         float diffLimit = 0.01f;
-        
+
         for (int i = 0; i < groupList.size(); ++i) {
             Set<PairInt> set = groupList.get(i);
             Set<PairInt> remove = new HashSet<PairInt>();
@@ -2464,15 +2521,15 @@ public class ImageSegmentation {
                 int x = p.getX();
                 int y = p.getY();
                 int idx = input.getInternalIndex(x, y);
-                
+
                 float cieX = input.getCIEX(idx);
                 float cieY = input.getCIEY(idx);
-                
+
                 Integer groupIndex = pixelToGroupMap.get(p);
-                
+
                 // key=groupIndex, value=number of pixels similar
                 Map<Integer, Integer> groupSimilarCount = new HashMap<Integer, Integer>();
-                
+
                 // use cieXY, polar theta of cieXY, or rgb?
                 for (int nIdx = 0; nIdx < dxs8.length; ++nIdx) {
                     int x2 = x + dxs8[nIdx];
@@ -2481,30 +2538,30 @@ public class ImageSegmentation {
                         continue;
                     }
                     int idx2 = input.getInternalIndex(x2, y2);
-                    
+
                     Integer groupIndex2 = pixelToGroupMap.get(new PairInt(x2, y2));
-                    
+
                     if (groupIndex.intValue() == groupIndex2.intValue()) {
                         continue;
                     }
-                    
+
                     float cieX2 = input.getCIEX(idx2);
                     float cieY2 = input.getCIEY(idx2);
-                    
+
                     float diffCIEX = Math.abs(cieX2 - cieX);
                     float diffCIEY = Math.abs(cieY2 - cieY);
-                    
+
                     if ((diffCIEX > diffLimit) || (diffCIEY > diffLimit)) {
                         continue;
                     }
-                    
+
                     Integer count = groupSimilarCount.get(groupIndex2);
                     if (count == null) {
                         groupSimilarCount.put(groupIndex2, Integer.valueOf(1));
                     } else {
                         groupSimilarCount.put(groupIndex2, Integer.valueOf(count.intValue() + 11));
                     }
-                   
+
                 }
                 if (groupSimilarCount.isEmpty()) {
                     continue;
@@ -2526,61 +2583,348 @@ public class ImageSegmentation {
     }
 
     private int[] findByHistogramLimitsForBlackAndWhite(ImageExt input) {
-                
-        //looking for limits of (r,g,b) <= (32,32,32) and > (191,191,191)
-        
+
+        //looking for limits of (r,g,b) <= (45,45,45) and > (180,180,180)
+        int l0 = 45;
+        int h0 = 180;
+
         List<Integer> avgL = new ArrayList<Integer>();
-        
+
         List<Integer> avgH = new ArrayList<Integer>();
-        
+
         for (int i = 0; i < input.getNPixels(); ++i) {
             int r = input.getR(i);
             int g = input.getG(i);
             int b = input.getB(i);
-            if ((r <= 32) && (g <= 32) && (b <= 32)) {
+            if ((r <= l0) && (g <= l0) && (b <= l0)) {
                 int avg = (r + g + b)/3;
                 avgL.add(Integer.valueOf(avg));
-            } else if ((r > 191) && (g > 191) && (b > 191)) {
+            } else if ((r > h0) && (g > h0) && (b > h0)) {
                 int avg = (r + g + b)/3;
                 avgH.add(Integer.valueOf(avg));
             }
         }
-        
+
         int[] limits = new int[2];
-        
+
         if (avgL.size() > 30) {
             HistogramHolder hist = Histogram.createSimpleHistogram(avgL);
             if (hist == null) {
-                limits[0] = 32;
+                limits[0] = l0 - 1;
             } else {
-                List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);
-                if (indexes == null || indexes.isEmpty()) {
-                    limits[0] = 32;
+                int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+                int lastZeroIdx = MiscMath.findLastZeroIndex(hist);
+                //List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);
+                //if (indexes == null || indexes.isEmpty()) {
+                if ((lastZeroIdx != -1) && (lastZeroIdx < hist.getXHist().length)) {
+                    limits[0] = Math.round(hist.getXHist()[lastZeroIdx]);
+                } else if (yMaxIdx == -1) {
+                    limits[0] = l0 - 1;
                 } else {
-                    limits[0] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
+                    //limits[0] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
+                    limits[0] = Math.round(hist.getXHist()[yMaxIdx]);
                 }
             }
         } else {
-            limits[0] = 32;
+            limits[0] = l0 - 1;
         }
-        
+
         if (avgH.size() > 30) {
             HistogramHolder hist = Histogram.createSimpleHistogram(avgH);
             if (hist == null) {
-                limits[1] = 191;
+                limits[1] = h0;
             } else {
+                int firstNonZeroIdx = MiscMath.findFirstNonZeroIndex(hist);
                 List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);
-                if (indexes == null || indexes.isEmpty()) {
-                    limits[1] = 191;
+                /*if ((firstNonZeroIdx != -1) && (firstNonZeroIdx > 0)) {
+                    limits[1] = Math.round(hist.getXHist()[firstNonZeroIdx]);
+                } else*/ if (indexes == null || indexes.isEmpty()) {
+                    limits[1] = h0;
                 } else {
                     limits[1] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
                 }
             }
         } else {
-            limits[1] = 191;
+            limits[1] = h0;
         }
-        
+
         return limits;
+    }
+
+    public Map<PairInt, Integer> calculatePolarCIEXY(ImageExt input, Set<PairInt> points) {
+
+        Map<PairInt, Integer> map = new HashMap<PairInt, Integer>();
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        for (PairInt p : points) {
+
+            float cieX = input.getCIEX(p.getX(), p.getY());
+            float cieY = input.getCIEY(p.getX(), p.getY());
+
+            double thetaRadians = cieC.calculateXYTheta(cieX, cieY);
+
+            int thetaDegrees = (int)Math.round(thetaRadians * 180./Math.PI);
+
+            map.put(p, Integer.valueOf(thetaDegrees));
+        }
+
+        return map;
+    }
+
+    public float[] getValues(Map<PairInt, Integer> map) {
+        float[] values = new float[map.size()];
+        int count = 0;
+        for (Entry<PairInt, Integer> entry : map.entrySet()) {
+            values[count] = entry.getValue().floatValue();
+            count++;
+        }
+        return values;
+    }
+
+    /**
+     * NOT READY FOR USE.  STILL EXPERIMENTING.
+     *
+     * Calculates lists of black pixels, white pixels, grey pixels, and assigns
+     * the remaining to CIEXY Lab color space, then creates a map of the
+     * CIEX and CIEY points and uses density based clustering
+     * (http://nking.github.io/two-point-correlation/)
+     * to find clusters of points in CIE X, CIEY space,
+     * then merges pixels in the grey list with adjacent clusters if
+     * similar, and the final result is a list of pixel clusters, including the
+     * black and white and remaining grey.
+     *
+     * Note that the color black is not defined in CIE XY color space and that
+     * the color white is at the center of the space as a large circle so they
+     * are not included in the density based clustering.
+     * Note also that the remaining grey pixels which did not merge with the
+     * cie xy pixel clusters, may be in separate groups already due to a
+     * frequency based grouping for them.
+     *
+     * @param input
+     * @param useBlur
+     */
+    public void applyPolarCIEXY(ImageExt input, boolean useBlur, int kPreferredBins) {
+
+        //TODO: improve the clustering results in two ways:
+        // (1) for smaller ciexy clusters, merge with adjacent clusters if
+        //     similar color
+        // (2) any pixel with 7 neighbors of same color should be that color too
+
+        if (useBlur) {
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.blur(input, 1.0f);
+        }
+
+        // then subtract the minima in both cieX and cieY
+
+        int minCIEX = Integer.MAX_VALUE;
+        int minCIEY = Integer.MAX_VALUE;
+        int maxCIEX = Integer.MIN_VALUE;
+        int maxCIEY = Integer.MIN_VALUE;
+
+        Set<PairInt> blackPixels = new HashSet<PairInt>();
+
+        Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
+
+        Set<PairInt> whitePixels = new HashSet<PairInt>();
+
+        Set<PairInt> points0 = new HashSet<PairInt>();
+
+        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
+
+        Map<PairInt, Integer> clrPolarCIEXYMap = calculatePolarCIEXY(input, points0);
+        float[] clrPolarCIEXY = getValues(clrPolarCIEXYMap);
+        float binWidth = 1;
+        HistogramHolder hist = Histogram.createSimpleHistogram(//binWidth,
+            clrPolarCIEXY, Errors.populateYErrorsBySqrt(clrPolarCIEXY));
+        List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
+            0.1f);
+        int[] binCenters = createBinCenters360(hist, indexes);
+
+        List<Set<PairInt>> colorPixelGroups = assignToNearestPolarCIECluster(
+            clrPolarCIEXYMap, binCenters);
+
+        List<Set<PairInt>> greyPixelGroups = groupByPeaksForGrey(input, greyPixelMap);
+
+        ImageExt imgExt = input.copyToImageExt();
+
+        for (PairInt p : blackPixels) {
+           imgExt.setRGB(p.getX(), p.getY(), 0, 0, 0);
+        }
+
+        for (PairInt p : whitePixels) {
+           imgExt.setRGB(p.getX(), p.getY(), 255, 255, 255);
+        }
+
+        int gClr = 255;
+        int s = 127/colorPixelGroups.size();
+        for (Set<PairInt> set : colorPixelGroups) {
+            for (PairInt p : set) {
+               imgExt.setRGB(p.getX(), p.getY(), 0, gClr, 0);
+            }
+            gClr -= s;
+        }
+
+        /*
+        int rClr = 255;
+        s = 127/greyPixelMap.size();
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            for (PairInt p : entry.getValue()) {
+                imgExt.setRGB(p.getX(), p.getY(), rClr, 0, 0);
+            }
+            rClr -= s;
+        }
+        */
+        int rClr = 255;
+        s = 127/greyPixelGroups.size();
+        for (Set<PairInt> set : greyPixelGroups) {
+            for (PairInt p : set) {
+               imgExt.setRGB(p.getX(), p.getY(), rClr, 0, 0);
+            }
+            rClr -= s;
+        }
+
+        input.resetTo(imgExt);
+    }
+
+    private int[] createBinCenters360(HistogramHolder hist, List<Integer> indexes) {
+
+        if (indexes.isEmpty()) {
+            return new int[0];
+        }
+
+        int n = indexes.size();
+
+        if (n == 1) {
+
+            int[] binCenters = new int[n + 1];
+
+            /*
+            examples for n=1
+                --  90
+            180
+                -- 270
+            ----------------
+                --  90-176=  360-(176-90) = 274
+            4
+                -- 270-176=  94
+            ----------------
+                --  90+(330-180)=  240
+            330
+                -- 270+(330-180)=  270 + 150 - 360 = 60
+            */
+
+            int vc = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
+
+            if (vc == 180) {
+                binCenters[0] = 90;
+                binCenters[1] = 270;
+            } else if (vc < 180) {
+                int delta = 180 - vc;
+                binCenters[0] = 360 - (delta - 90);
+                binCenters[1] = 270 - delta;
+            } else {
+                int delta = vc - 180;
+                binCenters[0] = 90 + delta;
+                binCenters[1] = 270 + delta - 360;
+            }
+
+            return binCenters;
+        }
+
+        int[] binCenters = new int[n];
+
+        for (int i = 0; i < n; ++i) {
+
+            int idx = indexes.get(i);
+
+            binCenters[i] = Math.round(hist.getXHist()[idx]);
+        }
+
+        return binCenters;
+    }
+
+    private int[] createBinCenters255(HistogramHolder hist, List<Integer> indexes) {
+
+        if (indexes.isEmpty()) {
+            return new int[0];
+        }
+
+        int n = indexes.size();
+
+        if (n == 1) {
+
+            int[] binCenters = new int[n + 1];
+
+            int vc = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
+
+            binCenters[0] = vc/2;
+            binCenters[1] = (255 + vc)/2;
+
+            return binCenters;
+        }
+
+        int[] binCenters = new int[n];
+
+        for (int i = 0; i < n; ++i) {
+
+            int idx = indexes.get(i);
+
+            binCenters[i] = Math.round(hist.getXHist()[idx]);
+        }
+
+        return binCenters;
+    }
+
+    private List<Set<PairInt>> groupByPeaksForGrey(ImageExt input,
+        Map<Integer, Collection<PairInt>> greyPixelMap) {
+
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            points.addAll(entry.getValue());
+        }
+
+        Map<PairInt, Integer> polarCIEXYMap = calculatePolarCIEXY(input, points);
+        float[] polarCIEXY = getValues(polarCIEXYMap);
+        float binWidth = 1;
+        HistogramHolder hist = Histogram.createSimpleHistogram(binWidth,
+            polarCIEXY, Errors.populateYErrorsBySqrt(polarCIEXY));
+        List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
+            0.1f);
+        int[] binCenters = createBinCenters360(hist, indexes);
+
+        List<Set<PairInt>> pixelGroups = assignToNearestPolarCIECluster(
+            polarCIEXYMap, binCenters);
+
+        return pixelGroups;
+
+    }
+
+    /**
+     * a greyscale segmentation algorithm similar to the KMPP, but does not use
+     * a random number generator to find seeds of intensity bins.
+     * @param input 
+     */
+    public void applyGreyscaleHistogram(GreyscaleImage input) {
+
+        float[] values = new float[input.getNPixels()];
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            int v = input.getValue(i);
+            values[i] = v;
+        }
+
+        float binWidth = 10;
+        HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
+            values, Errors.populateYErrorsBySqrt(values));
+
+        List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
+            0.1f);
+
+        int[] binCenters = createBinCenters255(hist, indexes);
+
+        assignToNearestCluster(input, binCenters);
+
     }
 
 }

@@ -124,6 +124,28 @@ public class HistogramHolder {
         return plotter.writeFile(outputFileSuffix);
     }
     
+    public String plotHistogram(float xMin, float xMax, String label, 
+        String outputFileSuffix) throws IOException {
+                
+        float[] xh = xHist;
+        float[] yh = yHistFloat;
+        
+        float yMin = MiscMath.findMin(yh);
+        int yMaxIdx = MiscMath.findYMaxIndex(yh);
+        if (yMaxIdx == -1) {
+            return null;
+        }
+        float yMax = yh[yMaxIdx];
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+
+        plotter.addPlot(
+            xMin, xMax, yMin, yMax,
+            xh, yh, xh, yh, label);
+
+        return plotter.writeFile(outputFileSuffix);
+    }
+    
     public String plotLogHistogram(String label, 
         String outputFileSuffix) throws IOException {
                 
