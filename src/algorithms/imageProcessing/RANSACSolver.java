@@ -167,7 +167,7 @@ public class RANSACSolver {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        log.info("SEED=" + seed);
+        log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
         int[] selected = new int[nSet];
@@ -256,6 +256,7 @@ public class RANSACSolver {
         }
 
         if (bestFit == null) {
+            log.info("no solution.  nIter=" + nIter);
             return null;
         }
 

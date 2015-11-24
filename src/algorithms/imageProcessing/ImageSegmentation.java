@@ -2967,9 +2967,6 @@ public class ImageSegmentation {
         // and for skew < 1, a binWidth of 10
         */
         
-//TODO: this needs corrections for distributions that look like bimodal
-//      instead of continuous.
-        
         float binWidth = (skew < 1) ? 10 : 1;
         HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
             values, Errors.populateYErrorsBySqrt(values));
@@ -2982,7 +2979,7 @@ public class ImageSegmentation {
         } catch (IOException ex) {
             Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
         }
-int z = 1;       
+      
         /*
         HistogramHolder hist2 = Histogram.createSimpleHistogram(0, 255, 10,
             values, Errors.populateYErrorsBySqrt(values));
@@ -3027,7 +3024,8 @@ int z = 1;
 
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
-        Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
+        Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, 
+            Collection<PairInt>>();
 
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
@@ -3035,6 +3033,10 @@ int z = 1;
 
         populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
         
+        Set<PairInt> nonBWPixels = new HashSet<PairInt>(points0);
+        
+        correctForIllumination(input, nonBWPixels);
+
         GreyscaleImage img = input.copyToGreyscale();
         
         float[] cValues = new float[input.getNPixels()];
@@ -3061,5 +3063,88 @@ int z = 1;
 //MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
               
         return img;
+    }
+
+    private void correctForIllumination(ImageExt input, Set<PairInt> nonBWPixels) {
+        
+        /*
+        in CIE XY color space, reassign colors:
+        
+        for nonBWPixels:
+        -- convert to polar theta in CIE XY space and plot in image
+           as greyscale without changes.
+           (use an imageext, but store theta compressed to 0 to 255, factor=0.70833
+           and keep the pixels that are not in nonBWPixels as green to see 
+           easily which pixels to exclude.)
+        
+        -- DFS traversal through the theta values of pixels in nonBWPixels
+           to make contigous groups of pixels that are within a tolerance of
+           theta value of one another.
+        
+        -- reassign the average rgb color to those pixels in a group
+        */
+       
+        Map<PairInt, Float> thetaMap = new HashMap<PairInt, Float>();
+        
+        //TODO: remove imgCp when finished debugging
+        ImageExt imgCp = input.copyToImageExt();
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        double thetaFactor = (double)255/(double)360;
+        
+        // to set the non member colors, need to traverse all pixels.
+        for (int col = 0; col < w; ++col) {
+            for (int row = 0; row < h; row++) {
+                PairInt p = new PairInt(col, row);                
+                if (nonBWPixels.contains(p)) {
+                    float cieX = input.getCIEX(col, row);
+                    float cieY = input.getCIEY(col, row);                    
+                    double theta = thetaFactor * (
+                        (cieC.calculateXYTheta(cieX, cieY)*180./Math.PI));
+                    int thetaCIEXY = (int)Math.round(theta);
+                    imgCp.setRGB(col, row, thetaCIEXY, thetaCIEXY, thetaCIEXY);
+                    
+                    thetaMap.put(p, Float.valueOf((float)theta));
+                } else {
+                    imgCp.setRGB(col, row, 0, 255, 0);
+                }
+            }
+        }
+        
+        MiscDebug.writeImage(imgCp, "polarciexy_" + MiscDebug.getCurrentTimeFormatted());
+        
+        int toleranceInValue = 4;
+        DFSConnectedGroupsFinder2 groupFinder = new DFSConnectedGroupsFinder2();
+        groupFinder.findConnectedPointGroups(thetaMap, 360, toleranceInValue,
+            w, h);
+        
+        int nGroups = groupFinder.getNumberOfGroups();
+        
+        for (int i = 0; i < nGroups; ++i) {
+            
+            Set<PairInt> group = groupFinder.getXY(i);
+            
+            // calc avg r, avg g, and avg b to reset group to this
+            float sumR = 0;
+            float sumG = 0;
+            float sumB = 0;
+            for (PairInt p : group) {
+                int pixIdx = input.getInternalIndex(p.getX(), p.getY());
+                sumR += input.getR(pixIdx);
+                sumG += input.getG(pixIdx);
+                sumB += input.getB(pixIdx);
+            }
+            int avgR = Math.round(sumR/(float)group.size());
+            int avgG = Math.round(sumG/(float)group.size());
+            int avgB = Math.round(sumB/(float)group.size());
+            for (PairInt p : group) {
+                input.setRGB(p.getX(), p.getY(), avgR, avgG, avgB);
+            }
+        }
+        
     }
 }

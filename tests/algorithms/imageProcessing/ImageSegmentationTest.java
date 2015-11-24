@@ -26,14 +26,16 @@ public class ImageSegmentationTest extends TestCase {
         
         fileNames[0] = "merton_college_I_002.jpg";
         fileNames[1] = "merton_college_I_001.jpg";
-        //fileNames[0] = "brown_lowe_2003_image1.jpg";
-        //fileNames[1] = "brown_lowe_2003_image2.jpg";
+        fileNames[0] = "brown_lowe_2003_image1.jpg";
+        fileNames[1] = "brown_lowe_2003_image2.jpg";
         //fileNames[0] = "venturi_mountain_j6_0001.png";
         //fileNames[1] = "venturi_mountain_j6_0010.png";
         //fileNames[0] = "books_illum3_v0_695x555.png";
         //fileNames[1] = "books_illum3_v6_695x555.png";
         //fileNames[0] = "campus_010.jpg";
         //fileNames[1] = "campus_011.jpg";
+        //fileNames[0] = "checkerboard_01.jpg";
+        //fileNames[1] = "checkerboard_02.jpg";
         
         for (String fileName : fileNames) {
             int idx = fileName.lastIndexOf(".");

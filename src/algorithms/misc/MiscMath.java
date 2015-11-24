@@ -5,7 +5,6 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.CornerRegion;
 import algorithms.imageProcessing.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;

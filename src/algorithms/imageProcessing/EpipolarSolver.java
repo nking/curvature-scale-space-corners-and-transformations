@@ -143,6 +143,10 @@ public class EpipolarSolver {
             return null;
         }
         
+        log.info("params from scale calc: scale=" + cl.getScale() 
+            + " rot(deg)=" + cl.getRotationInDegrees() 
+            + " tx=" + cl.getTranslationX() + " ty=" + cl.getTranslationY());
+        
         List<PairInt> points1 = cl.getPoints1();
         List<PairInt> points2 = cl.getPoints2();
         
