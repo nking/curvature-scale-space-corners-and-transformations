@@ -5,6 +5,8 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -102,6 +104,40 @@ public class ImageStatisticsHelper {
         int q34Idx = (c.length + (medianIdx + 1))/2;
                 
         return new float[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};
+    }
+    
+    /**
+     * returns the Q1, Q2, Q3 and Q4 of the data a
+     * 
+     * @param a
+     * @return 
+     */
+    public static int[] getQuartiles(List<Integer> a) {
+        
+        int n = a.size();
+        
+        if (n < 3) {
+            throw new IllegalArgumentException("a.length must be at least 3");
+        }
+                
+        Collections.sort(a);
+        
+        /*
+                      median
+             min        .         max
+               .        .         .
+               .   |    .    |    .
+                q1   q2   q3   q4
+        */
+        
+        int medianIdx = n >> 1;
+        
+        int q12Idx = (medianIdx - 1) >> 1;
+        
+        int q34Idx = (n + (medianIdx + 1))/2;
+                
+        return new int[]{a.get(q12Idx).intValue(), a.get(medianIdx).intValue(), 
+            a.get(q34Idx).intValue(), a.get(n - 1).intValue()};
     }
     
     public static int[] getQuartiles(int[] a) {

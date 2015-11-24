@@ -76,25 +76,35 @@ public class BlobsAndPerimeters {
         doesn't currenly know resolution, so this section may need
         to be revised with more testing.
         */
+               
+        List<Set<PairInt>> outputExcludedBlobs = new ArrayList<Set<PairInt>>();
         
         for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {            
             Integer pixValue = entry.getKey();
-            defaultExtractBlobs(segImg, pixValue.intValue(), smallestGroupLimit, 
-                largestGroupLimit, use8Neighbors, outputBlobs, imgHelper.debugTag);
+            defaultExtractBlobs(segImg, pixValue.intValue(), 
+                smallestGroupLimit, largestGroupLimit, use8Neighbors, 
+                outputBlobs, outputExcludedBlobs, imgHelper.debugTag);
         }
         
-        boolean redo = outputBlobs.isEmpty() && useBinned;
+        int nExcl = outputExcludedBlobs.size();
+        int nIncl = outputBlobs.size();
+        
+        boolean redo = useBinned && 
+            ((nIncl == 0) || ((nExcl > 10) && (nExcl > nIncl)));
         
         // redo with default size limit and an algorithm to separate blobs connected
         // by only 1 pixel
         if (redo) {
             smallestGroupLimit = imgHelper.getSmallestGroupLimit();
             largestGroupLimit = imgHelper.getLargestGroupLimit();
-            for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
-                Integer pixValue = entry.getKey();
-                extractBlobs2(segImg, pixValue.intValue(), smallestGroupLimit,
-                    largestGroupLimit, use8Neighbors, outputBlobs);
+            List<Set<PairInt>> tmpOutputBlobs = new ArrayList<Set<PairInt>>();
+            for (int i = 0; i < outputExcludedBlobs.size(); ++i) {
+                extractBlobs2(outputExcludedBlobs.get(i),
+                    smallestGroupLimit, largestGroupLimit, tmpOutputBlobs);
             }
+            //TODO: may need to determine group size limits more robustly           
+            outputBlobs.clear();
+            outputBlobs.addAll(tmpOutputBlobs);
         }
         
         removeRedundantBlobs(outputBlobs);
@@ -455,9 +465,25 @@ if (imgHelper.isInDebugMode()) {
         blob.addAll(tmp);        
     }
     
+    /**
+     * extract blobs using a dfs search to find the blobs within the image
+     * (contiguous pixels with the given pixelValue) and filter those by
+     * the given group size limits.
+     * @param segImg
+     * @param pixelValue
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @param use8Neighbors
+     * @param outputBlobs contiguous pixels of value pixelValue have group
+     * sizes between smallest and largestGroupLimit (exclusive)
+     * @para outputExcludedBlobs the blobs excluded by the largestGroupLimit
+     * @param debugTag
+     */
     private static void defaultExtractBlobs(GreyscaleImage segImg, 
         int pixelValue, int smallestGroupLimit, int largestGroupLimit, 
-        boolean use8Neighbors, List<Set<PairInt>> outputBlobs, String debugTag) {
+        boolean use8Neighbors, List<Set<PairInt>> outputBlobs, 
+        List<Set<PairInt>> outputExcludedBlobs,
+        String debugTag) {
         
         DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
             
@@ -472,17 +498,19 @@ if (imgHelper.isInDebugMode()) {
         int nGroups = finder.getNumberOfGroups();
         for (int i = 0; i < nGroups; ++i) {
             PairIntArray xy = finder.getXY(i);
-            if (xy.getN() < largestGroupLimit) {
-                Set<PairInt> points = Misc.convert(xy);
-                // skip blobs that are on the image boundaries because they
-                // are incomplete
-                if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
-                    points, segImg.getWidth(), segImg.getHeight())) {
+            Set<PairInt> points = Misc.convert(xy);
+            // skip blobs that are on the image boundaries because they
+            // are incomplete
+            if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+                points, segImg.getWidth(), segImg.getHeight())) {
+                if (xy.getN() < largestGroupLimit) {
                     outputBlobs.add(points);
-               }
+                } else {
+                    outputExcludedBlobs.add(points);
+                }
             }
         }
-        
+                
         if (!debugTag.equals("")) {
             List<Integer> sizes = new ArrayList<Integer>();
             for (int i = 0; i < nGroups; ++i) {
@@ -500,7 +528,7 @@ if (imgHelper.isInDebugMode()) {
                         Level.SEVERE, null, ex);
                 }
             }
-        }
+        }        
     }
 
     /**
@@ -568,6 +596,54 @@ if (imgHelper.isInDebugMode()) {
                     outputBlobs.add(blob2);
                }
             }
+        }
+    }
+    
+    /**
+     * method to shrink the found blobs by '1' pixel, re-do search, then
+     * grow the found blobs by '1' pixel.
+     * @param segImg
+     * @param pixelValue
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @param use8Neighbors
+     * @param outputBlobs 
+     */
+    private static void extractBlobs2(Set<PairInt> inputBlobs,
+        int smallestGroupLimit, int largestGroupLimit, List<Set<PairInt>> outputBlobs) {
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                                        
+        Set<PairInt> points = inputBlobs;
+
+        int[] minMaxXY = MiscMath.findMinMaxXY(points);
+
+        Set<PairInt> pointsB4 = new HashSet<PairInt>(points);
+
+        shrinkRadius(points);
+
+        DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
+
+        finder2.setMinimumNumberInCluster(smallestGroupLimit - 4);
+
+        finder2.findConnectedPointGroups(points, minMaxXY[1], 
+            minMaxXY[3]);
+            
+        int nGroups2 = finder2.getNumberOfGroups();
+
+        for (int ii = 0; ii < nGroups2; ++ii) {
+
+            Set<PairInt> blob2 = finder2.getXY(ii);
+
+            if ((blob2.size() < smallestGroupLimit) || 
+                (blob2.size() > largestGroupLimit)) {
+                continue;
+            }
+
+            // grow by '1' pixel to help maintain scale
+            growRadius(blob2, pointsB4);
+                
+            outputBlobs.add(blob2);
         }
     }
 

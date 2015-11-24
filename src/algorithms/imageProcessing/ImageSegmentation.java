@@ -2442,6 +2442,18 @@ public class ImageSegmentation {
         return minMaxTheta;
     }
 
+    /**
+     * Find the 4 categories of point color as black, white, grey, and color.
+     * CIE XY color space is used to place a pixel in the category, with the
+     * additional determination of black, grey, and white intensity limits
+     * using histograms within expected intensity limits.
+     * 
+     * @param input
+     * @param points0
+     * @param blackPixels
+     * @param whitePixels
+     * @param greyPixelMap 
+     */
     private void populatePixelLists(ImageExt input, Set<PairInt> points0,
         Set<PairInt> blackPixels, Set<PairInt> whitePixels,
         Map<Integer, Collection<PairInt>> greyPixelMap) {
@@ -2453,7 +2465,7 @@ public class ImageSegmentation {
 
         // looking for limits in peaks of (r,g,b) <= (45,45,45) and > (191,191,191)
         int[] whiteBlackLimits = findByHistogramLimitsForBlackAndWhite(input);
-
+        
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
 
@@ -2465,8 +2477,8 @@ public class ImageSegmentation {
 
                 //TODO: would be good to determine this boundary more precisely
                 // by histogram
-                if ((r <= whiteBlackLimits[0]) && (g <= whiteBlackLimits[0])
-                    && (b <= whiteBlackLimits[0])) {
+                int avg = (r + g + b)/3;
+                if (avg <= whiteBlackLimits[0]) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
                 }
@@ -2476,26 +2488,33 @@ public class ImageSegmentation {
 
                 if (cieC.isWhite2(cx, cy)) {
                     //grey will be binned into clusters by avgRGB and peak frequency
-                    if ((r <= whiteBlackLimits[1]) && (g <= whiteBlackLimits[1])
-                        && (b <= whiteBlackLimits[1])) {
-                        Integer avgRGB = Integer.valueOf(Math.round((r + g + b)/3.f));
-                        Collection<PairInt> set = greyPixelMap.get(avgRGB);
-                        if (set == null) {
-                            set = new HashSet<PairInt>();
-                            greyPixelMap.put(avgRGB, set);
+                    if (avg <= whiteBlackLimits[1]) {
+                        float bDivTot = (float)b/(r+g+b);
+                        float rDivTot = (float)r/(r+g+b);
+                        float gDivTot = (float)g/(r+g+b);
+                        if ((Math.abs(0.333f - bDivTot) < 0.02f) && 
+                            (Math.abs(0.333f - rDivTot) < 0.02f) &&
+                            (Math.abs(0.333f - gDivTot) < 0.02f)) {
+                            Integer avgRGB = Integer.valueOf(avg);
+                            Collection<PairInt> set = greyPixelMap.get(avgRGB);
+                            if (set == null) {
+                                set = new HashSet<PairInt>();
+                                greyPixelMap.put(avgRGB, set);
+                            }
+                            set.add(new PairInt(i, j));
+                            continue;
                         }
-                        set.add(new PairInt(i, j));
                     } else {
                         whitePixels.add(new PairInt(i, j));
+                        continue;
                     }
-                    continue;
                 }
 
                 points0.add(new PairInt(i, j));
             }
         }
     }
-
+    
     private void mergeNoise(ImageExt input, List<Set<PairInt>> groupList) {
 
         Map<PairInt, Integer> pixelToGroupMap = new HashMap<PairInt, Integer>();
@@ -2586,7 +2605,8 @@ public class ImageSegmentation {
 
         //looking for limits of (r,g,b) <= (45,45,45) and > (180,180,180)
         int l0 = 45;
-        int h0 = 180;
+        int l0B = 70;
+        int h0 = 245;
 
         List<Integer> avgL = new ArrayList<Integer>();
 
@@ -2596,7 +2616,7 @@ public class ImageSegmentation {
             int r = input.getR(i);
             int g = input.getG(i);
             int b = input.getB(i);
-            if ((r <= l0) && (g <= l0) && (b <= l0)) {
+            if ((r <= l0) && (g <= l0) && (b <= l0B)) {
                 int avg = (r + g + b)/3;
                 avgL.add(Integer.valueOf(avg));
             } else if ((r > h0) && (g > h0) && (b > h0)) {
@@ -2604,7 +2624,7 @@ public class ImageSegmentation {
                 avgH.add(Integer.valueOf(avg));
             }
         }
-
+        
         int[] limits = new int[2];
 
         if (avgL.size() > 30) {
@@ -2612,10 +2632,15 @@ public class ImageSegmentation {
             if (hist == null) {
                 limits[0] = l0 - 1;
             } else {
+                /*
+                try {
+                    hist.plotHistogram("black pixels", "black_" + MiscDebug.getCurrentTimeFormatted());
+                } catch (IOException ex) {
+                    Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                */
                 int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
                 int lastZeroIdx = MiscMath.findLastZeroIndex(hist);
-                //List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);
-                //if (indexes == null || indexes.isEmpty()) {
                 if ((lastZeroIdx != -1) && (lastZeroIdx < hist.getXHist().length)) {
                     limits[0] = Math.round(hist.getXHist()[lastZeroIdx]);
                 } else if (yMaxIdx == -1) {
@@ -2630,20 +2655,27 @@ public class ImageSegmentation {
         }
 
         if (avgH.size() > 30) {
+            
+            int[] q = ImageStatisticsHelper.getQuartiles(avgH);
+            /*
             HistogramHolder hist = Histogram.createSimpleHistogram(avgH);
             if (hist == null) {
                 limits[1] = h0;
             } else {
-                int firstNonZeroIdx = MiscMath.findFirstNonZeroIndex(hist);
                 List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.1f);
-                /*if ((firstNonZeroIdx != -1) && (firstNonZeroIdx > 0)) {
-                    limits[1] = Math.round(hist.getXHist()[firstNonZeroIdx]);
-                } else*/ if (indexes == null || indexes.isEmpty()) {
+                try {
+                    hist.plotHistogram("hite pixels", "white_" + MiscDebug.getCurrentTimeFormatted());
+                } catch (IOException ex) {
+                    Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                if (indexes == null || indexes.isEmpty()) {
                     limits[1] = h0;
                 } else {
                     limits[1] = Math.round(hist.getXHist()[indexes.get(0).intValue()]);
                 }
             }
+            */
+            limits[1] = q[3];
         } else {
             limits[1] = h0;
         }
@@ -2934,7 +2966,10 @@ public class ImageSegmentation {
         //if skew is >=1, a binWidth of <= 4 seems to give better results
         // and for skew < 1, a binWidth of 10
         */
-
+        
+//TODO: this needs corrections for distributions that look like bimodal
+//      instead of continuous.
+        
         float binWidth = (skew < 1) ? 10 : 1;
         HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
             values, Errors.populateYErrorsBySqrt(values));
@@ -2942,6 +2977,12 @@ public class ImageSegmentation {
         List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
             0.05f);
         
+        try {
+            hist.plotHistogram("greyscale", "1");
+        } catch (IOException ex) {
+            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+int z = 1;       
         /*
         HistogramHolder hist2 = Histogram.createSimpleHistogram(0, 255, 10,
             values, Errors.populateYErrorsBySqrt(values));
@@ -3004,6 +3045,8 @@ public class ImageSegmentation {
         
         int[] binCenters = determineGreyscaleBinCenters(cValues);
         
+//ImageExt img2 = input.copyToImageExt();
+
         assignToNearestCluster(img, binCenters);
         
         for (PairInt p : blackPixels) {
@@ -3012,8 +3055,11 @@ public class ImageSegmentation {
 
         for (PairInt p : whitePixels) {
            img.setValue(p.getX(), p.getY(), 255);
+//           img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
         }
         
+//MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
+              
         return img;
     }
 }
