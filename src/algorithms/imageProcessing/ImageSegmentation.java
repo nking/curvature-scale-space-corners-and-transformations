@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -3023,24 +3024,29 @@ public class ImageSegmentation {
         populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
         
         Set<PairInt> nonBWPixels = new HashSet<PairInt>(points0);
+       
+        Map<PairInt, Float> thetaMap = createPolarCIEXYMap(input, points0);
         
-        //TODO: histogram of color could be useful here in
-        // determining whether toleranceInValue should be 1 or 4
-        // 1 is better for low contrast regions like the brown & lowe 2003 mtns
-        // but 4 is better for many colors, large contrast, and large dynamic
-        // range such as seen in the merton college test images
-        
-        int toleranceInValue = 1;
-        correctForIllumination(input, nonBWPixels, toleranceInValue);
-        
-MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-
         Set<PairInt> greyPixels = new HashSet<PairInt>();
         for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
             greyPixels.addAll(entry.getValue());
         }
-        toleranceInValue = 2;
-        correctForIllumination(input, greyPixels, toleranceInValue);
+        
+        int nTotC = whitePixels.size() + greyPixels.size() + blackPixels.size()
+            + nonBWPixels.size();
+        
+        int toleranceInValue = determineToleranceForIllumCorr(thetaMap, nTotC);
+
+        if (toleranceInValue > -1) {
+            correctForIllumination(input, nonBWPixels, toleranceInValue, thetaMap);
+        }
+        
+MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
+        
+        if (nTotC != greyPixels.size()) {
+            toleranceInValue = 2;
+            correctForIllumination(input, greyPixels, toleranceInValue);
+        }
 
         GreyscaleImage img = input.copyToGreyscale();
 MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
@@ -3073,11 +3079,48 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
               
         return img;
     }
+    
+    protected Map<PairInt, Float> createPolarCIEXYMap(ImageExt input,
+        Set<PairInt> points) {
 
-    private void correctForIllumination(ImageExt input, 
-        Set<PairInt> nonBWPixels, int toleranceInValue) {
+        Map<PairInt, Float> thetaMap = new HashMap<PairInt, Float>();
+
+        //TODO: remove imgCp when finished debugging
+        //ImageExt imgCp = input.copyToImageExt();
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        double thetaFactor = (double) 255 / (double) 360;
+
+        // to set the non member colors, need to traverse all pixels.
+        for (int col = 0; col < w; ++col) {
+            for (int row = 0; row < h; row++) {
+                PairInt p = new PairInt(col, row);
+                if (points.contains(p)) {
+                    float cieX = input.getCIEX(col, row);
+                    float cieY = input.getCIEY(col, row);
+                    double theta = thetaFactor * ((cieC.calculateXYTheta(cieX, cieY) * 180. / Math.PI));
+          //          int thetaCIEXY = (int)Math.round(theta);
+                    //          imgCp.setRGB(col, row, thetaCIEXY, thetaCIEXY, thetaCIEXY);
+
+                    thetaMap.put(p, Float.valueOf((float) theta));
+                } else {
+                    //         imgCp.setRGB(col, row, 0, 255, 0);
+                }
+            }
+        }
+
+        //MiscDebug.writeImage(imgCp, "polarciexy_" + MiscDebug.getCurrentTimeFormatted());
+
+        return thetaMap;
+    }
+
+    private void correctForIllumination(ImageExt input, Set<PairInt> points, 
+        int toleranceInValue) {
         
-        if (nonBWPixels.isEmpty() || (toleranceInValue == 0)) {
+        if (points.isEmpty() || (toleranceInValue == 0)) {
             return;
         }
         
@@ -3097,39 +3140,38 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         
         -- reassign the average rgb color to those pixels in a group
         */
+        
+        Map<PairInt, Float> thetaMap = createPolarCIEXYMap(input, points);
        
-        Map<PairInt, Float> thetaMap = new HashMap<PairInt, Float>();
+        correctForIllumination(input, points, toleranceInValue, thetaMap);
+    }
+    
+    private void correctForIllumination(ImageExt input, Set<PairInt> points, 
+        int toleranceInValue, Map<PairInt, Float> thetaMap) {
         
-        //TODO: remove imgCp when finished debugging
-        //ImageExt imgCp = input.copyToImageExt();
-        
-        int w = input.getWidth();
-        int h = input.getHeight();
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        
-        double thetaFactor = (double)255/(double)360;
-        
-        // to set the non member colors, need to traverse all pixels.
-        for (int col = 0; col < w; ++col) {
-            for (int row = 0; row < h; row++) {
-                PairInt p = new PairInt(col, row);                
-                if (nonBWPixels.contains(p)) {
-                    float cieX = input.getCIEX(col, row);
-                    float cieY = input.getCIEY(col, row);                    
-                    double theta = thetaFactor * (
-                        (cieC.calculateXYTheta(cieX, cieY)*180./Math.PI));
-          //          int thetaCIEXY = (int)Math.round(theta);
-          //          imgCp.setRGB(col, row, thetaCIEXY, thetaCIEXY, thetaCIEXY);
-                    
-                    thetaMap.put(p, Float.valueOf((float)theta));
-                } else {
-           //         imgCp.setRGB(col, row, 0, 255, 0);
-                }
-            }
+        if (points.isEmpty()) {
+            return;
         }
         
-        //MiscDebug.writeImage(imgCp, "polarciexy_" + MiscDebug.getCurrentTimeFormatted());
+        /*
+        in CIE XY color space, reassign colors:
+        
+        for nonBWPixels:
+        -- convert to polar theta in CIE XY space and plot in image
+           as greyscale without changes.
+           (use an imageext, but store theta compressed to 0 to 255, factor=0.70833
+           and keep the pixels that are not in nonBWPixels as green to see 
+           easily which pixels to exclude.)
+        
+        -- DFS traversal through the theta values of pixels in nonBWPixels
+           to make contigous groups of pixels that are within a tolerance of
+           theta value of one another.
+        
+        -- reassign the average rgb color to those pixels in a group
+        */
+               
+        int w = input.getWidth();
+        int h = input.getHeight();
         
         // find pixels similar in color that are contiguous
         
@@ -3167,5 +3209,77 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
                 input.setRGB(p.getX(), p.getY(), avgR, avgG, avgB);
             }
         }        
+    }
+
+    private int determineToleranceForIllumCorr(Map<PairInt, Float> thetaMap,
+        int nTotCategoryMembers) {
+        
+        // using a histogram of color in
+        // determining whether toleranceInValue should be 1 or 4.
+        // 1 is better for low contrast regions like the brown & lowe 2003 mtns
+        // but 4 is better for many colors, large contrast, and large dynamic
+        // range such as seen in the merton college test images
+        
+        float[] values = new float[thetaMap.size()];
+        int count = 0;
+        for (Entry<PairInt, Float> entry : thetaMap.entrySet()) {
+            values[count] = entry.getValue().floatValue();
+            count++;
+        }
+        
+        int tolerance = 1;
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(values, 
+            Errors.populateYErrorsBySqrt(values));
+        try {
+            hist.plotHistogram("cieTheta", "_cietheta_");
+        } catch (IOException ex) {
+            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        if (hist != null) {
+            List<Integer> indexes = MiscMath.findStrongPeakIndexes(hist, 0.05f);
+            
+            //TODO: for rare case that image has only one color, and the pixels
+            // are all in thetaMap, we want the invoker not to remove illumination
+            // because that may be the only contrast in the image.
+            // an example of that happening wouldbe a blue sky and blue mountains
+            // very similar in color.
+            if ((indexes.size() == 1) && (nTotCategoryMembers == thetaMap.size())) {
+                return -1;
+            }
+            
+            // from lowest to highest peak, are there continuous values >= 1/4 lowest peak?
+            if (indexes.size() > 1) {
+                
+                Collections.sort(indexes);
+                
+                int minPeak = Integer.MAX_VALUE;
+                for (Integer index : indexes) {
+                    int v = hist.getYHist()[index.intValue()];
+                    if (v < minPeak) {
+                        minPeak = v;
+                    }
+                }
+                
+                int nBelow = 0;
+                int n = 0;
+                int limit = minPeak/4;
+                for (int i = indexes.get(0).intValue(); 
+                    i < indexes.get(indexes.size() - 1).intValue(); ++i) {
+                    int v = hist.getYHist()[i];
+                    if (v < limit) {
+                        nBelow++;
+                    }
+                    n++;
+                }
+                
+                if (((float)nBelow/(float)n) < 0.5) {
+                    tolerance = 3;
+                }
+            }
+        }
+        
+        return tolerance;
     }
 }
