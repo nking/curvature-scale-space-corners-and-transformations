@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.CountingSort;
+import algorithms.compGeometry.NearestPoints1D;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
 import algorithms.imageProcessing.util.PairIntWithIndex;
@@ -168,30 +169,18 @@ public class ImageSegmentation {
      * @param binCenters
      */
     public void assignToNearestCluster(GreyscaleImage input, int[] binCenters) {
-
+        
+        NearestPoints1D np = new NearestPoints1D(binCenters);
+                
         for (int col = 0; col < input.getWidth(); col++) {
 
             for (int row = 0; row < input.getHeight(); row++) {
 
                 int v = input.getValue(col, row);
-
-                for (int i = 0; i < binCenters.length; i++) {
-
-                    int vc = binCenters[i];
-
-                    int bisectorBelow = ((i - 1) > -1) ?
-                        ((binCenters[i - 1] + vc) / 2) : 0;
-
-                    int bisectorAbove = ((i + 1) > (binCenters.length - 1)) ?
-                        255 : ((binCenters[i + 1] + vc) / 2);
-
-                    if ((v >= bisectorBelow) && (v <= bisectorAbove)) {
-
-                        input.setValue(col, row, vc);
-
-                        break;
-                    }
-                }
+                
+                int vc = np.findClosestValue(v);
+                
+                input.setValue(col, row, vc);
             }
         }
     }
@@ -3035,37 +3024,62 @@ public class ImageSegmentation {
         
         Set<PairInt> nonBWPixels = new HashSet<PairInt>(points0);
         
-        correctForIllumination(input, nonBWPixels);
+        //TODO: histogram of color could be useful here in
+        // determining whether toleranceInValue should be 1 or 4
+        // 1 is better for low contrast regions like the brown & lowe 2003 mtns
+        // but 4 is better for many colors, large contrast, and large dynamic
+        // range such as seen in the merton college test images
+        
+        int toleranceInValue = 1;
+        correctForIllumination(input, nonBWPixels, toleranceInValue);
+        
+MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
+
+        Set<PairInt> greyPixels = new HashSet<PairInt>();
+        for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
+            greyPixels.addAll(entry.getValue());
+        }
+        toleranceInValue = 2;
+        correctForIllumination(input, greyPixels, toleranceInValue);
 
         GreyscaleImage img = input.copyToGreyscale();
-        
+MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+
         float[] cValues = new float[input.getNPixels()];
         for (int i = 0; i < input.getNPixels(); ++i) {
             int v = img.getValue(i);
             cValues[i] = v;
         }
-        
+//TODO: this needs to be improved:                
         int[] binCenters = determineGreyscaleBinCenters(cValues);
         
-//ImageExt img2 = input.copyToImageExt();
+ImageExt img2 = input.copyToImageExt();
 
         assignToNearestCluster(img, binCenters);
-        
+MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+
         for (PairInt p : blackPixels) {
-           img.setValue(p.getX(), p.getY(), 0);
+            img.setValue(p.getX(), p.getY(), 0);
+            img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
         }
 
         for (PairInt p : whitePixels) {
            img.setValue(p.getX(), p.getY(), 255);
 //           img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
         }
+MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         
-//MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
+MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
               
         return img;
     }
 
-    private void correctForIllumination(ImageExt input, Set<PairInt> nonBWPixels) {
+    private void correctForIllumination(ImageExt input, 
+        Set<PairInt> nonBWPixels, int toleranceInValue) {
+        
+        if (nonBWPixels.isEmpty() || (toleranceInValue == 0)) {
+            return;
+        }
         
         /*
         in CIE XY color space, reassign colors:
@@ -3087,7 +3101,7 @@ public class ImageSegmentation {
         Map<PairInt, Float> thetaMap = new HashMap<PairInt, Float>();
         
         //TODO: remove imgCp when finished debugging
-        ImageExt imgCp = input.copyToImageExt();
+        //ImageExt imgCp = input.copyToImageExt();
         
         int w = input.getWidth();
         int h = input.getHeight();
@@ -3105,30 +3119,37 @@ public class ImageSegmentation {
                     float cieY = input.getCIEY(col, row);                    
                     double theta = thetaFactor * (
                         (cieC.calculateXYTheta(cieX, cieY)*180./Math.PI));
-                    int thetaCIEXY = (int)Math.round(theta);
-                    imgCp.setRGB(col, row, thetaCIEXY, thetaCIEXY, thetaCIEXY);
+          //          int thetaCIEXY = (int)Math.round(theta);
+          //          imgCp.setRGB(col, row, thetaCIEXY, thetaCIEXY, thetaCIEXY);
                     
                     thetaMap.put(p, Float.valueOf((float)theta));
                 } else {
-                    imgCp.setRGB(col, row, 0, 255, 0);
+           //         imgCp.setRGB(col, row, 0, 255, 0);
                 }
             }
         }
         
-        MiscDebug.writeImage(imgCp, "polarciexy_" + MiscDebug.getCurrentTimeFormatted());
+        //MiscDebug.writeImage(imgCp, "polarciexy_" + MiscDebug.getCurrentTimeFormatted());
         
-        int toleranceInValue = 4;
+        // find pixels similar in color that are contiguous
+        
         DFSConnectedGroupsFinder2 groupFinder = new DFSConnectedGroupsFinder2();
         groupFinder.findConnectedPointGroups(thetaMap, 360, toleranceInValue,
             w, h);
         
         int nGroups = groupFinder.getNumberOfGroups();
         
+        // calc avg rgb of each contiguous group and reset rgb of all in group 
+        // to the avg
+        
         for (int i = 0; i < nGroups; ++i) {
             
             Set<PairInt> group = groupFinder.getXY(i);
+        
+            if (group.size() == 1) {
+                continue;
+            }
             
-            // calc avg r, avg g, and avg b to reset group to this
             float sumR = 0;
             float sumG = 0;
             float sumB = 0;
@@ -3141,10 +3162,10 @@ public class ImageSegmentation {
             int avgR = Math.round(sumR/(float)group.size());
             int avgG = Math.round(sumG/(float)group.size());
             int avgB = Math.round(sumB/(float)group.size());
+
             for (PairInt p : group) {
                 input.setRGB(p.getX(), p.getY(), avgR, avgG, avgB);
             }
-        }
-        
+        }        
     }
 }
