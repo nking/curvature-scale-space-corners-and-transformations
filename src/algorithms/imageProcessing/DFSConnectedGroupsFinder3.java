@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * a class to find contiguous pixels near one another having a value within
+ * a class to find contiguous pixels having a value within
  * tolerance of the given value and using
  * logic to wrap around a set of values (0 to 360, for example, should see
  * 0 and 359 is being within a tolerance of '1' from one another). Note that
@@ -35,7 +35,7 @@ class DFSConnectedGroupsFinder3 extends AbstractDFSConnectedGroupsFinder {
     }
     
     /**
-     * near one another having a value within tolerance of the given value and 
+     * find contiguous pixels having a value within tolerance of the given value and 
      * using logic to
      * wrap around a set of values (0 to 360, for example, should see 0 and 359
      * ss being within a tolerance of '1' from one another). Note that the
@@ -117,9 +117,6 @@ class DFSConnectedGroupsFinder3 extends AbstractDFSConnectedGroupsFinder {
         10
         10
         
-        That provides seeds of values, but the result still needs to have
-        the points contiguous and the fewest number of contiguous groups.
-        
         The Voronoi algorithm is useful for 1D data, but this is 3D data
         and the other 2Ds require adjacency for all members within a
         seed's cell, so will not use Voronoi.
@@ -130,7 +127,7 @@ class DFSConnectedGroupsFinder3 extends AbstractDFSConnectedGroupsFinder {
         membership.
         
         A solution which may not be optimal, would be to make connected groups
-        for each seed ignoring whether the seed is already present in another
+        for each seed ignoring whether the point is already present in another
         seed group (but noting dual membership).
         Then to resolve the best membership for the ambiguous points that are
         present in more than one group.
@@ -144,7 +141,7 @@ class DFSConnectedGroupsFinder3 extends AbstractDFSConnectedGroupsFinder {
         semi-linear in npoints of group, then less than semi-linear for resolving
         ambigous point memberships.
         
-        It's possible to repeat that solution for all possible combination of
+        It's possible to repeat that solution for all possible combinations of
         seeds within each side of the median divider(s) and find the best
         solution among those. 
         For 4 seeds on one side and 3 on another, that would be 4*3 combinations.
@@ -153,11 +150,12 @@ class DFSConnectedGroupsFinder3 extends AbstractDFSConnectedGroupsFinder {
         possible on each side of a divider would factor to a large number of
         combinations n0*n1*n2*n3...
        
-        Will use the non ideal solution as it does better separate truly 
+        so far, will use the non ideal solution as it does separate truly 
         different value sets as defined by tolerance,
         but the solution might not provide the smallest number of contiguous
         groups.
         
+        looking at graph cuts algorithms...
         */
 
         throw new UnsupportedOperationException("not yet implemented");
