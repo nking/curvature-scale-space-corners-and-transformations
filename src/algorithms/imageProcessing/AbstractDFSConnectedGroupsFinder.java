@@ -20,9 +20,7 @@ public abstract class AbstractDFSConnectedGroupsFinder {
      * to arrays indexer.x, indexer.y and this.pointToGroupIndex
      */
     protected List<Set<PairInt>> groupMembership = new ArrayList<Set<PairInt>>();
-    
-    protected Set<PairInt> visited = new HashSet<PairInt>();
-    
+        
     protected int minimumNumberInCluster = 3;
     
     /*
@@ -37,7 +35,10 @@ public abstract class AbstractDFSConnectedGroupsFinder {
     protected boolean debug = false;
 
     public AbstractDFSConnectedGroupsFinder() {
+        log = constructLogger();
     }
+    
+    abstract Logger constructLogger();
 
     public void setDebug(boolean setDebugToTrue) {
         this.debug = setDebugToTrue;

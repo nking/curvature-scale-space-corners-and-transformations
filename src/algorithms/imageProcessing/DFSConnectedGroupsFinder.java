@@ -1,11 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -24,9 +20,12 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
         
     public DFSConnectedGroupsFinder() {
                 
-        this.log = Logger.getLogger(this.getClass().getName());
     }
-        
+    
+    Logger constructLogger() {
+        return Logger.getLogger(DFSConnectedGroupsFinder2.class.getName());
+    }
+    
     public void setMinimumNumberInCluster(int n) {
         this.minimumNumberInCluster = n;
     }
@@ -45,6 +44,8 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
         if (points.isEmpty()) {
             return;
         }
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
         
         java.util.Stack<PairInt> stack = new java.util.Stack<PairInt>();
         

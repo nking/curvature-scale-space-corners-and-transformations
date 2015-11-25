@@ -3056,6 +3056,7 @@ MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFo
             int v = img.getValue(i);
             cValues[i] = v;
         }
+        
 //TODO: this needs to be improved:                
         int[] binCenters = determineGreyscaleBinCenters(cValues);
         
@@ -3124,23 +3125,6 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
             return;
         }
         
-        /*
-        in CIE XY color space, reassign colors:
-        
-        for nonBWPixels:
-        -- convert to polar theta in CIE XY space and plot in image
-           as greyscale without changes.
-           (use an imageext, but store theta compressed to 0 to 255, factor=0.70833
-           and keep the pixels that are not in nonBWPixels as green to see 
-           easily which pixels to exclude.)
-        
-        -- DFS traversal through the theta values of pixels in nonBWPixels
-           to make contigous groups of pixels that are within a tolerance of
-           theta value of one another.
-        
-        -- reassign the average rgb color to those pixels in a group
-        */
-        
         Map<PairInt, Float> thetaMap = createPolarCIEXYMap(input, points);
        
         correctForIllumination(input, points, toleranceInValue, thetaMap);
@@ -3159,9 +3143,6 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         for nonBWPixels:
         -- convert to polar theta in CIE XY space and plot in image
            as greyscale without changes.
-           (use an imageext, but store theta compressed to 0 to 255, factor=0.70833
-           and keep the pixels that are not in nonBWPixels as green to see 
-           easily which pixels to exclude.)
         
         -- DFS traversal through the theta values of pixels in nonBWPixels
            to make contigous groups of pixels that are within a tolerance of
@@ -3177,7 +3158,7 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         
         DFSConnectedGroupsFinder2 groupFinder = new DFSConnectedGroupsFinder2();
         groupFinder.findConnectedPointGroups(thetaMap, 360, toleranceInValue,
-            w, h);
+            w, h, true);
         
         int nGroups = groupFinder.getNumberOfGroups();
         
