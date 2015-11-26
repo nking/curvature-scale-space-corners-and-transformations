@@ -1,3 +1,56 @@
+-- segmentation:
+   the improvements in the new segmentation algorithm, 
+   createGreyscaleWithBWMask, help merton college test images, but create
+   problems for checkerboard test images.
+
+   the problems may be that the blob extraction, then perimeter extraction, 
+   then corners produce alias artifacts that might be avoided by using
+   a difference of gaussian technique (such as is present in the Canny edge detector).
+
+   a quick look at using createGreyscaleWithBWMask followed by CurvatureScaleSpaceCornerDetector
+   (which includes Canny edge detector and extractor) shows that the
+   corners are much better than my current method of blob extraction, perimeter, then corners
+   without blur (due presumably to the artifacts of aliasing, etc).
+   -- note though that the corner regions have an error: some corners are missing from 
+      corner regions that should clearly be present (corner regions are made from the corners)
+      ** fix that immediately
+
+   -- ** next, compare two improvements to blob perimeter corners:
+      (1) take the same extracted perimeter and blur it before extracting corners.
+          (expecting that this isn't going to produce best results)
+      (2) instead, use difference of gaussians on the blob itself singly to
+          produce a smoother "perimeter" which is actually an edge, but is
+          automatically by association with just one blob as a closed curve.
+          the corners from this should produce same results overall as 
+          CurvatureScaleSpaceCornerDetector (which contains Canny edge detector)
+          used on the whole image, but the specific association of sets of 
+          corners to a blob is retained.
+
+    -- note that one more segmentation method seems like it could be useful, but
+       should be a lower priority.
+       -- similar to createGreyscaleWithBWMask, it should populate pixel lists
+          by rgb and cie xy colors, but for the large "white" space in the cie xy 
+          color space, those pixels should remain unassigned until
+          they are captured via the other lists growing pixels from it by 
+          proximity and similar color.
+          -- then the remaining unassigned colors in that space can be grouped
+             by histograms of some distinguishing property 
+             (not ciexy, but rgb or contrast maybe)
+
+-- CSSCornerMaker may need a method mergeAdjacentCorners to be used at line 133.      
+
+-- checkerboard:
+   -- after the segmentation,
+      -- what do corners made with canny edge look like compared to the blob perimeters?
+
+-- books test image:
+   -- matching needs to be improved
+   -- then the segmentation needs to be improved:
+      the greyscale illum correction over grous its bounds
+      -- this might be fixed in part by the boundary membership
+      -- the greyscale illum correction also removes good matching details such
+         as the book cover patterns
+
 -- more ransac and epipolar solver tests.
    -- when revisiting the books epipolar test, see if evaluation needs to focus
       on dist from epipolar line as much as the number of points within tolerance.
@@ -11,40 +64,24 @@
 
 -- for the offset arrays in the feature matcher, could make these improvements:
     -- make the math.round changes to the feature offset arrays to speed up process 
-       (see next item's 3d bullet too)
+       and add documentation that it should only be used to add to integers (not floating point numbers)
     -- for speeding up the transformations of feature descriptor offsets, consider 2 things:
-          -- round the numbers into integers:
-             use one extra bit to denote whether the result
-             has a fraction == 0.5.
-             then when the number is extracted and used, one would determine
-             whether to use that number of +1 or -1 based upon the value of the
-             number its being combined with (see 3rd bullet).
-          -- knowing descriptor range0, a maximum and minumum possible value can
+          -- round the numbers into integers.
+             knowing descriptor range0, a maximum and minumum possible value can
              be calculated: 
              -- min and max of (-6 and +6?)
                 can store 6 in 3 bits.  
                 can multiply by 2 and add one for negative numbers (max value=12+1=13 so 4 bits), 
-                then another bit for ==0.5 for 5 total bits for each value.
-                so an int, being 32 bits could store 6 such numbers.
-                the 144 item array would then only be 24 items.
-          -- (note, that in processing the values which have a fraction 0.5
-                for example:
-                   if roundedXoff is < 0 and the number being added is >= -1*roundedXoff, add 1 to the result.
-                   else if roundedXOff is >= 0 and the number being added is < -1*roundedXoff, add -1 to the result
-             -- in the case that all 360 degrees were tried, that would be 8640 items
+                so an int, being 32 bits could store 8 such numbers.
+                the 144 item array would then only be 18 items.
+             -- in the case that all 360 degrees were tried, that would be 6480 items
                 pre-computing all 360 degrees 
                     would take that much space plus 32 bits for an array reference.
-                    = in array of size 8640 
-                    = 276480 bits = 4937 Bytes
+                    = in array of size 6480 items
+                    = 207392 bits = 25924 Bytes
                 -- if wanted to use symmetry, could reduce that space by 4 but would need
                    to use logic for x *=-1 and/or y *=-1.
-                   result is an array that would take 1.234kB
-
--- low priority: improve segmentation for scale and common object finding.
-   kmpp is best all around, but sometimes results in slightly different results.
-      for regions that are largely dark and bright only, such as BL2003, the kmpp works best
-      but could possibly be replaced with a polar ciexy that does similar knowing image is
-      mostly white and dark grey..
+                   result is an array that would take 6481 Bytes
 
 -- update aspects if needed and considering replacing them
     -- consider replacing aspectj with something like nanning aop
