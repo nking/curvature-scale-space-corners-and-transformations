@@ -1,7 +1,9 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +64,7 @@ public class DFSConnectedGroupsFinder2 extends AbstractDFSConnectedGroupsFinder 
         
         prune();
                 
-        if (false && correctForWandering) {
+        if (correctForWandering) {
             correctRangesIfNeeded(pointValueMap, maxValueForWrapAround,
                 toleranceInValue, imageWidth, imageHeight);
         }
@@ -199,33 +201,36 @@ public class DFSConnectedGroupsFinder2 extends AbstractDFSConnectedGroupsFinder 
                 "prune() must be used before this");
         }
         
-        throw new UnsupportedOperationException("not yet implemented");
-            
-        /*
-        // these are ordered by index
-        List<Integer> groupsLargerThanRange = findGroupsLargerThanRange(
-            maxValueForWrapAround, toleranceInValue);
-        
-        if (groupsLargerThanRange.size() == 0) {
-            return;
-        }
-        
         // traverse the range from largest index to smallest so can append
         // to lists without affecting smaller indexes
-        for (int i = (groupsLargerThanRange.size() - 1); i > -1; --i) {
+        for (int idx = (getNumberOfGroups() - 1); idx > -1; --idx) {
             
-            int idx = groupsLargerThanRange.get(i);
-            
-            Map<PairInt, Float> thetaMap = createSubset(groupMembership.get(idx),
+            if (groupMembership.get(idx).size() < 2) {
+                continue;
+            }
+             
+            Map<PairInt, Float> thetaMap = createSubMap(groupMembership.get(idx),
                 pointValueMap);
             
-            List<Set<PairInt>> subsetsWithinTolerance = 
-                findSubsetsOfRangesWithinTolerance(thetaMap, maxValueForWrapAround,
-                    toleranceInValue, imageWidth, imageHeight);
+            int[] startEndValues = MiscStats.determineStartEndValues(thetaMap, 
+                maxValueForWrapAround, toleranceInValue);
             
-            assert(subsetsWithinTolerance.size() > 1);
+            int range = (startEndValues[0] <= startEndValues[1]) ?
+                (startEndValues[1] - startEndValues[0]) :
+                (startEndValues[1] + (maxValueForWrapAround - startEndValues[0]));
+            
+            if (range <= toleranceInValue) {
+                continue;
+            }
             
             int nBefore = groupMembership.get(idx).size();
+            
+            List<Set<PairInt>> subsetsWithinTolerance = 
+                findSubsetsOfRangesWithinTolerance(thetaMap, 
+                maxValueForWrapAround, toleranceInValue, imageWidth, 
+                imageHeight);
+            
+            assert(subsetsWithinTolerance.size() > 0);            
             
             // replace current group:
             groupMembership.set(idx, subsetsWithinTolerance.get(0));
@@ -237,19 +242,45 @@ public class DFSConnectedGroupsFinder2 extends AbstractDFSConnectedGroupsFinder 
                 
                 Set<PairInt> group = subsetsWithinTolerance.get(j);
                 
+                nAfterTot += group.size();
+                
                 int idx2 = groupMembership.size();
                 
-                subsetsWithinTolerance.add(group);
+                groupMembership.add(group);
                 
                 // update Map<PairInt, Integer> pointToGroupMap
                 updatePointToGroupMap(group, idx2);
             }
+            if (nBefore != nAfterTot) {
+                int z = 1;
+            }
+            assert(nBefore == nAfterTot);
         }
        
         state = State.POST_GROUP_CORRECTED;
-        */
     }
     
+    private void updatePointToGroupMap(Set<PairInt> group, int idx) {
+        
+        Integer index = Integer.valueOf(idx);
+        
+        for (PairInt p : group) {
+            this.pointToGroupMap.put(p, index);
+        }
+    }
+    
+    private Map<PairInt, Float> createSubMap(Set<PairInt> points, 
+        Map<PairInt, Float> pointValueMap) {
+        
+        Map<PairInt, Float> subMap = new HashMap<PairInt, Float>();
+        
+        for (PairInt p : points) {
+            subMap.put(p, pointValueMap.get(p));
+        }
+        
+        return subMap;
+    }
+
     private List<Set<PairInt>> findSubsetsOfRangesWithinTolerance( 
         Map<PairInt, Float> thetaMap,
         int maxValueForWrapAround, int toleranceInValue, 
@@ -257,18 +288,10 @@ public class DFSConnectedGroupsFinder2 extends AbstractDFSConnectedGroupsFinder 
         
         DFSConnectedGroupsFinder3 finder = new DFSConnectedGroupsFinder3();
         
-        finder.findConnectedPointGroups(thetaMap, maxValueForWrapAround, 
-            toleranceInValue, imageWidth, imageHeight);
-
-        int nGroups = finder.getNumberOfGroups();
-        
-        List<Set<PairInt>> sets = new ArrayList<Set<PairInt>>(nGroups);
-        
-        for (int i = 0; i < nGroups; ++i) {
-            sets.add(finder.getXY(i));
-        }
+        List<Set<PairInt>> sets = finder.findConnectedPointGroups(thetaMap, 
+            maxValueForWrapAround, toleranceInValue, imageWidth, imageHeight);
         
         return sets;
     }
-
+  
 }

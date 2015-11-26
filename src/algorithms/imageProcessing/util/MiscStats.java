@@ -913,4 +913,151 @@ public class MiscStats {
         return params;
     }
 
+    /**
+     * for a map of points whose values lie between 0 and maxValueForWrapAround,
+     * find the boundaries of the range, knowing that each point in the 
+     * contiguous range is separated by <= toleranceInValue.  If the contiguous
+     * portion wraps around from maxValueForWrapAround to 0 or beyond,
+     * the returned int[]{start, end} will have a start > end.
+     * @param pointValueMap
+     * @param maxValueForWrapAround
+     * @param toleranceInValue
+     * @return 
+     */
+    public static int[] determineStartEndValues(Map<PairInt, Float> pointValueMap, 
+        int maxValueForWrapAround, int toleranceInValue) {
+        
+        int minTheta = Integer.MAX_VALUE;
+        int maxTheta = Integer.MIN_VALUE;
+                
+        for (Map.Entry<PairInt, Float> entry : pointValueMap.entrySet()) {
+            int v = Math.round(entry.getValue().floatValue());
+            if (v < minTheta) {
+                minTheta = v;
+            }
+            if (v > maxTheta) {
+                maxTheta = v;
+            }
+        }
+                
+        if ((minTheta == 0) && (maxTheta == maxValueForWrapAround)) {
+            
+            // sort values and find where delta > toleranceInValues.
+            // that's the end of wrap around and beginning of wrap around
+            
+            int[] values = new int[pointValueMap.size()];
+            int count = 0;
+            for (Map.Entry<PairInt, Float> entry : pointValueMap.entrySet()) {
+                values[count] = Math.round(entry.getValue().floatValue());
+                count++;
+            }
+            Arrays.sort(values);
+            
+            return determineStartEndValues(values, maxValueForWrapAround, 
+                toleranceInValue);
+        }
+        
+        return new int[]{minTheta, maxTheta};
+    }
+    
+    /**
+     * for a map of points whose values lie between 0 and maxValueForWrapAround,
+     * find the boundaries of the range, knowing that each point in the 
+     * contiguous range is separated by <= toleranceInValue.  If the contiguous
+     * portion wraps around from maxValueForWrapAround to 0 or beyond,
+     * the returned int[]{start, end} will have a start > end.
+     * @param sortedValues
+     * @param maxValueForWrapAround
+     * @param toleranceInValue
+     * @return 
+     */
+    public static int[] determineStartEndValues(int[] sortedValues, 
+        int maxValueForWrapAround, int toleranceInValue) {
+        
+        int[] startEndIndexes = determineStartEndIndexes(sortedValues, 
+            maxValueForWrapAround, toleranceInValue);
+        
+        return new int[]{sortedValues[startEndIndexes[0]], 
+            sortedValues[startEndIndexes[1]]};
+    }
+    
+    /**
+     * for a map of points whose values lie between 0 and maxValueForWrapAround,
+     * find the boundaries of the range, knowing that each point in the 
+     * contiguous range is separated by <= toleranceInValue.  If the contiguous
+     * portion wraps around from maxValueForWrapAround to 0 or beyond,
+     * the returned int[]{start, end} will have a start > end.
+     * @param sortedValues
+     * @param maxValueForWrapAround
+     * @param toleranceInValue
+     * @return 
+     */
+    public static int[] determineStartEndIndexes(int[] sortedValues, 
+        int maxValueForWrapAround, int toleranceInValue) {
+        
+        int minTheta = sortedValues[0];
+        int maxTheta = sortedValues[sortedValues.length - 1];
+         
+        if ((minTheta == 0) && (maxTheta == maxValueForWrapAround)) {
+            
+            // find where delta > toleranceInValues.
+            // that's the end of wrap around and beginning of wrap around
+            
+            int endIdx = -1;
+            int startIdx = -1;
+            for (int i = 0; i < (sortedValues.length - 1); ++i) {
+                int diff = sortedValues[i + 1] - sortedValues[i];
+                if (diff > (toleranceInValue + 1)) {
+                    endIdx = i;
+                    startIdx = i;
+                    break;
+                }
+            }
+            if (startIdx > -1 && endIdx > -1) {
+                return new int[]{startIdx, endIdx};
+            }
+        }
+        
+        return new int[]{0, sortedValues.length - 1};
+    }
+    
+    /**
+     * for a map of points whose values lie between 0 and maxValueForWrapAround,
+     * find the boundaries of the range, knowing that each point in the 
+     * contiguous range is separated by <= toleranceInValue.  If the contiguous
+     * portion wraps around from maxValueForWrapAround to 0 or beyond,
+     * the returned int[]{start, end} will have a start > end.
+     * @param sortedValues
+     * @param maxValueForWrapAround
+     * @param toleranceInValue
+     * @return 
+     */
+    public static int[] determineStartEndIndexes(float[] sortedValues, 
+        int maxValueForWrapAround, int toleranceInValue) {
+        
+        float minTheta = sortedValues[0];
+        float maxTheta = sortedValues[sortedValues.length - 1];
+         
+        if ((minTheta == 0) && (maxTheta == maxValueForWrapAround)) {
+            
+            // find where delta > toleranceInValues.
+            // that's the end of wrap around and beginning of wrap around
+            
+            int endIdx = -1;
+            int startIdx = -1;
+            for (int i = 0; i < (sortedValues.length - 1); ++i) {
+                float diff = sortedValues[i + 1] - sortedValues[i];
+                if (diff > (toleranceInValue + 1)) {
+                    endIdx = i;
+                    startIdx = i;
+                    break;
+                }
+            }
+            if (startIdx > -1 && endIdx > -1) {
+                return new int[]{startIdx, endIdx};
+            }
+        }
+        
+        return new int[]{0, sortedValues.length - 1};
+    }
 }

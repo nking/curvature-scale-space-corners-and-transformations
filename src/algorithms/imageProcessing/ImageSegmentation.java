@@ -3158,7 +3158,7 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         
         DFSConnectedGroupsFinder2 groupFinder = new DFSConnectedGroupsFinder2();
         groupFinder.findConnectedPointGroups(thetaMap, 360, toleranceInValue,
-            w, h, true);
+            w, h, false);
         
         int nGroups = groupFinder.getNumberOfGroups();
         
