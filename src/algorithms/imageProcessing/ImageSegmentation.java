@@ -2973,7 +2973,7 @@ public class ImageSegmentation {
             avgAndStDev[0], median, avgAndStDev[1], iqr, skew0, nFracOut));
         */
         
-        float binWidth = 2;//10;
+        float binWidth = 3;//10;
         HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
             values, Errors.populateYErrorsBySqrt(values));
 
@@ -2985,6 +2985,10 @@ public class ImageSegmentation {
         } catch (IOException ex) {
             Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
         }*/
+        
+        int k = 3;
+        int idx = (indexes.size() < k) ? indexes.size() : k; 
+        indexes = indexes.subList(0, idx);
       
         int[] binCenters = createBinCenters255(hist, indexes);
 
@@ -3034,7 +3038,7 @@ public class ImageSegmentation {
         if (toleranceInValue > -1) {
             correctForIllumination(input, toleranceInValue, thetaMap);
         }
-
+/*
 ImageExt tmpInput = input.copyToImageExt();
 for (PairInt p : nonBWPixels) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
@@ -3042,14 +3046,15 @@ tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 MiscDebug.writeImage(tmpInput, "_after_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());
         
 MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-
+*/
         if (nTotC != greyPixels.size()) {
             toleranceInValue = 2;
             correctForIllumination(input, greyPixels, toleranceInValue);
         }
 
         GreyscaleImage img = input.copyToGreyscale();
-MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+        
+//MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
 
         float[] cValues = new float[input.getNPixels()];
         for (int i = 0; i < input.getNPixels(); ++i) {
@@ -3059,23 +3064,25 @@ MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFo
         
         int[] binCenters = determineGreyscaleBinCenters(cValues);
         
-ImageExt img2 = input.copyToImageExt();
+//ImageExt img2 = input.copyToImageExt();
 
         assignToNearestCluster(img, binCenters);
-MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+        
+//MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
 
         for (PairInt p : blackPixels) {
             img.setValue(p.getX(), p.getY(), 0);
-            img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
+//            img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
         }
 
         for (PairInt p : whitePixels) {
            img.setValue(p.getX(), p.getY(), 255);
 //           img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
         }
+        
 MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         
-MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
+//MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
               
         return img;
     }
@@ -3096,7 +3103,7 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         Set<PairInt> unassignedPixels = new HashSet<PairInt>();
 
         populatePixelLists2(input, blackPixels, colorPixelMap, unassignedPixels);
-        //55,000
+       
         int nTotC = blackPixels.size() + colorPixelMap.size() + unassignedPixels.size();
         assert(nTotC == input.getNPixels());
                 
@@ -3118,30 +3125,31 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         if (toleranceInValue > -1 && !colorPixelMap.isEmpty()) {
             correctForIllumination(input, toleranceInValue, colorPixelMap);
         }
-        
+/*        
 ImageExt tmpInput = input.copyToImageExt();
 for (PairInt p : unassignedPixels) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
 MiscDebug.writeImage(tmpInput, "_after_illumc0_unassigned_pix" + MiscDebug.getCurrentTimeFormatted());
 MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-
+*/
         Map<PairInt, Float> colorPixelMap2 = createPolarCIEXYMap(input, addToColor);
         if (toleranceInValue > -1 && !colorPixelMap2.isEmpty()) {
             correctForIllumination(input, toleranceInValue, colorPixelMap2);
         }
+/*
 tmpInput = input.copyToImageExt();
 for (PairInt p : colorPixelMap2.keySet()) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
 MiscDebug.writeImage(tmpInput, "_after2_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());   
 MiscDebug.writeImage(input, "_after2_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-
+*/
         Map<PairInt, Float> colorPixelMap3 = createPolarCIEXYMap(input, unassignedPixels);
         if (toleranceInValue > -1 && !colorPixelMap3.isEmpty()) {
             correctForIllumination(input, toleranceInValue, colorPixelMap3);
         }
-tmpInput = input.copyToImageExt();
+Image tmpInput = input.copyToImageExt();
 for (PairInt p : colorPixelMap3.keySet()) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
@@ -3155,30 +3163,38 @@ MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatt
         }
 
         GreyscaleImage img = input.copyToGreyscale();
-MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+        
+        //MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
 
-        /*float[] cValues = new float[input.getNPixels()];
+        float[] cValues = new float[input.getNPixels()];
         for (int i = 0; i < input.getNPixels(); ++i) {
-            int v = img.getValue(i);
-            cValues[i] = v;
+        int v = img.getValue(i);
+        cValues[i] = v;
         }
-        
+
         int[] binCenters = determineGreyscaleBinCenters(cValues);
-        
-ImageExt img2 = input.copyToImageExt();
+
+        //ImageExt img2 = input.copyToImageExt();
 
         assignToNearestCluster(img, binCenters);
-MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
-*/
+        MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+        
+        /*    
+        try {
+            applyUsingKMPP(img, 3);
+        } catch (IOException ex) {
+            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+        }*/
+        
         for (PairInt p : blackPixels) {
             img.setValue(p.getX(), p.getY(), 0);
             //img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
         }
 
 MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
-        
-//MiscDebug.writeImage(img2, "_black_pixels_" + MiscDebug.getCurrentTimeFormatted());
-              
+                      
         return img;
     }
     

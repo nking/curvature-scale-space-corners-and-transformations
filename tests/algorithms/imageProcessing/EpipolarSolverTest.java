@@ -97,7 +97,7 @@ public class EpipolarSolverTest extends TestCase {
         }
     }
     
-    public void testParameters() throws Exception {
+    public void estParameters() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -156,6 +156,8 @@ public class EpipolarSolverTest extends TestCase {
                 params90, img1.getHeight(), img1.getWidth());
             int z = 1;
         }
+        
+        log.info("fileName1=" + fileName1);
         
         EpipolarSolver solver = null;
         if (!useParameters) {
