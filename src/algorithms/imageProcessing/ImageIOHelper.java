@@ -593,7 +593,7 @@ public class ImageIOHelper {
     }
     
     public static void addPointToImage(final int x, final int y, 
-        ImageExt img, int xOffset, int yOffset,
+        Image img, int xOffset, int yOffset,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
         for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
@@ -1129,19 +1129,7 @@ int z1 = 1;
     }
     
     public static void addAlternatingColorCurvesToImage(
-        List<PairIntArray> curves, Image input, int nExtraForDot) throws IOException {
-        
-        if (curves == null || input == null) {
-            return;
-        }
-        
-        addAlternatingColorCurvesToImage(
-            curves.toArray(new PairIntArray[curves.size()]),
-            input, nExtraForDot);
-    }
-    
-    public static void addAlternatingColorCurvesToImage2(
-        List<PairIntArray> curves, Image input, int nExtraForDot) throws IOException {
+        List<PairIntArray> curves, Image input, int nExtraForDot) {
         
         if (curves == null || input == null) {
             return;
@@ -1153,7 +1141,64 @@ int z1 = 1;
     }
     
     public static void addAlternatingColorCurvesToImage(
-        List<PairIntArray> curves, Image input) throws IOException {
+        List<PairIntArray> curves, Image input, int xOffset, int yOffset,
+        int nExtraForDot) {
+        
+        if (curves == null || input == null) {
+            return;
+        }
+        
+        if (curves == null || input == null || curves.isEmpty()) {
+            return;
+        }
+                
+        int clr = 0;
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        for (int i = 0; i < curves.size(); i++) {
+            
+            PairIntArray edge = curves.get(i);
+            
+            int c = getNextColorRGB(clr);
+            
+            for (int ii = 0; ii < edge.getN(); ii++) {
+                
+                int col = edge.getX(ii) + xOffset;
+                int row = edge.getY(ii) + yOffset;
+                
+                for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                    int xx = col + dx;
+                    if ((xx < 0) || (xx > (w - 1))) {
+                        continue;
+                    }
+                    for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                        int yy = row + dy;
+                        if ((yy < 0) || (yy > (h - 1))) {
+                            continue;
+                        }
+                        input.setRGB(xx, yy, c);
+                    }
+                }                
+            }
+            clr++;
+        }
+    }
+    
+    public static void addAlternatingColorCurvesToImage2(
+        List<PairIntArray> curves, Image input, int nExtraForDot) {
+        
+        if (curves == null || input == null) {
+            return;
+        }
+        
+        addAlternatingColorCurvesToImage(
+            curves.toArray(new PairIntArray[curves.size()]),
+            input, nExtraForDot);
+    }
+    
+    public static void addAlternatingColorCurvesToImage(
+        List<PairIntArray> curves, Image input) {
         
         if (curves == null || input == null) {
             return;
@@ -1228,7 +1273,7 @@ int z1 = 1;
     }
     
     public static void addAlternatingColorCurvesToImage(
-        PairIntArray[] curves, Image input) throws IOException {
+        PairIntArray[] curves, Image input) {
         
         if (curves == null || input == null) {
             return;
@@ -1240,7 +1285,7 @@ int z1 = 1;
     }
     
     public static void addAlternatingColorCurvesToImage(
-        PairIntArray[] curves, Image input, int nExtraForDot) throws IOException {
+        PairIntArray[] curves, Image input, int nExtraForDot) {
         
         if (curves == null || input == null) {
             return;
@@ -1280,8 +1325,7 @@ int z1 = 1;
     }
     
     public static void addAlternatingColorPointSetsToImage(
-        List<Set<PairInt>> pointSets, int xOffset, int yOffset, Image input) 
-        throws IOException {
+        List<Set<PairInt>> pointSets, int xOffset, int yOffset, Image input) {
         
         if (pointSets == null || input == null) {
             return;
@@ -1311,7 +1355,7 @@ int z1 = 1;
     }
     
     public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
-        int yOffsetToApply, Image input) throws IOException {
+        int yOffsetToApply, Image input) {
         
         if (points == null || input == null) {
             return;
@@ -1660,7 +1704,7 @@ int z1 = 1;
     }
 
     public static void addAlternatingColorCornerRegionsToImage(
-        List<CornerRegion> regions, ImageExt img, 
+        List<CornerRegion> regions, Image img, 
         int xOffset, int yOffset, int nExtraForDot) {
         
         for (int i = 0; i < regions.size(); i++) {
@@ -1674,6 +1718,20 @@ int z1 = 1;
             
             addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 
                 c[0], c[1], c[2]);
+        }
+    }
+    
+    public static <T extends CornerRegion> void addCornerRegionsToImage(
+        Collection<T> regions, Image img, int xOffset, int yOffset, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        for (T br : regions ) {
+            
+            int x = br.getX()[br.getKMaxIdx()];
+            int y = br.getY()[br.getKMaxIdx()];
+            
+            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 
+                rClr, gClr, bClr);
         }
     }
 }

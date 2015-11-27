@@ -90,7 +90,7 @@ public class BlobsAndPerimeters {
         int nIncl = outputBlobs.size();
         
         boolean redo = useBinned && 
-            ((nIncl == 0) || ((nExcl > 10) && (nExcl > nIncl)));
+            ((nIncl == 0) || ((nExcl >= 10) && (nExcl > nIncl)));
         
         // redo with default size limit and an algorithm to separate blobs connected
         // by only 1 pixel

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -2455,6 +2456,8 @@ public class ImageSegmentation {
 
         // looking for limits in peaks of (r,g,b) <= (45,45,45) and > (191,191,191)
         int[] whiteBlackLimits = findByHistogramLimitsForBlackAndWhite(input);
+        // overriding:
+        int whiteLimit = 245;
         
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -2465,42 +2468,40 @@ public class ImageSegmentation {
                 int g = input.getG(idx);
                 int b = input.getB(idx);
 
-                //TODO: would be good to determine this boundary more precisely
-                // by histogram
                 int avg = (r + g + b)/3;
                 if (avg <= whiteBlackLimits[0]) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
                 }
 
+                float rgbTot = r + g + b;
+                float bDivTot = (float)b/rgbTot;
+                float rDivTot = (float)r/rgbTot;
+                float gDivTot = (float)g/rgbTot;
+                        
                 float cx = input.getCIEX(idx);
                 float cy = input.getCIEY(idx);
 
-                if (cieC.isWhite2(cx, cy)) {
-                    //grey will be binned into clusters by avgRGB and peak frequency
-                    if (avg <= whiteBlackLimits[1]) {
-                        float bDivTot = (float)b/(r+g+b);
-                        float rDivTot = (float)r/(r+g+b);
-                        float gDivTot = (float)g/(r+g+b);
-                        if ((Math.abs(0.333f - bDivTot) < 0.02f) && 
-                            (Math.abs(0.333f - rDivTot) < 0.02f) &&
-                            (Math.abs(0.333f - gDivTot) < 0.02f)) {
-                            Integer avgRGB = Integer.valueOf(avg);
-                            Collection<PairInt> set = greyPixelMap.get(avgRGB);
-                            if (set == null) {
-                                set = new HashSet<PairInt>();
-                                greyPixelMap.put(avgRGB, set);
-                            }
-                            set.add(new PairInt(i, j));
-                            continue;
-                        }
-                    } else {
+                if (cieC.isWhite2(cx, cy) && 
+                    (Math.abs(0.333f - bDivTot) < 0.02f) && 
+                    (Math.abs(0.333f - rDivTot) < 0.02f) &&
+                    (Math.abs(0.333f - gDivTot) < 0.02f)) {
+                    
+                    //if (avg > whiteBlackLimits[1]) {
+                    if ((r > whiteLimit) && (g > whiteLimit) && (b > whiteLimit)) {  
                         whitePixels.add(new PairInt(i, j));
-                        continue;
+                    } else {
+                        Integer avgRGB = Integer.valueOf(avg);
+                        Collection<PairInt> set = greyPixelMap.get(avgRGB);
+                        if (set == null) {
+                            set = new HashSet<PairInt>();
+                            greyPixelMap.put(avgRGB, set);
+                        }
+                        set.add(new PairInt(i, j));
                     }
+                } else {
+                    points0.add(new PairInt(i, j));
                 }
-
-                points0.add(new PairInt(i, j));
             }
         }
     }
@@ -2738,13 +2739,6 @@ public class ImageSegmentation {
             imageProcessor.blur(input, 1.0f);
         }
 
-        // then subtract the minima in both cieX and cieY
-
-        int minCIEX = Integer.MAX_VALUE;
-        int minCIEY = Integer.MAX_VALUE;
-        int maxCIEX = Integer.MIN_VALUE;
-        int maxCIEY = Integer.MIN_VALUE;
-
         Set<PairInt> blackPixels = new HashSet<PairInt>();
 
         Map<Integer, Collection<PairInt>> greyPixelMap = new HashMap<Integer, Collection<PairInt>>();
@@ -2948,57 +2942,50 @@ public class ImageSegmentation {
      */
     public int[] determineGreyscaleBinCenters(float[] values) {
 
-        float[] q = ImageStatisticsHelper.getQuartiles(values);
-        //(q3-q2)/(q2-q1)
-        float skew = (q[2] - q[1])/(q[1] - q[0]);
-        
         /*
-        //if skew is >=1, a binWidth of <= 4 seems to give better results
-        // and for skew < 1, a binWidth of 10
+        Arrays.sort(values);
+        
+        float median = values[values.length/2];
+        
+        float iqr = values[(int)(0.75f*values.length)] - values[(int)(0.25f*values.length)];
+        
+        float low = values[(int)0.25f*values.length] - 1.5f*iqr;
+        float high = values[(int)0.75f*values.length] + 1.5f*iqr;
+        int nTot = values.length;
+        int nLow = 0;
+        int nHigh = 0;
+        for (float v : values) {
+            if (v < low) {
+                nLow++;
+            } else if (v > high) {
+                nHigh++;
+            }
+        }
+        float nFracOut = (float)(nLow + nHigh)/(float)nTot;
+        
+        float[] avgAndStDev = MiscMath.getAvgAndStDev(values);
+
+        //3*(MEAN – MEDIAN)/STANDARD DEVIATION
+        float skew0 = (3.f*(avgAndStDev[0] - median))/avgAndStDev[1];
+        
+        log.info(String.format(
+            "mean=%f median=%f stdev=%f\niqr=%f skew0=%f nFracOut=%f",
+            avgAndStDev[0], median, avgAndStDev[1], iqr, skew0, nFracOut));
         */
         
-        float binWidth = (skew < 1) ? 10 : 1;
+        float binWidth = 2;//10;
         HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
             values, Errors.populateYErrorsBySqrt(values));
 
         List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
             0.05f);
-        
-        try {
-            hist.plotHistogram("greyscale", "1");
-        } catch (IOException ex) {
-            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
-        }
-      
         /*
-        HistogramHolder hist2 = Histogram.createSimpleHistogram(0, 255, 10,
-            values, Errors.populateYErrorsBySqrt(values));
-
-        List<Integer> indexes2 = MiscMath.findStrongPeakIndexesDescSort(hist2,
-            0.05f);
-        
-        float[] yh1 = Arrays.copyOf(hist.getYHistFloat(), hist.getYHistFloat().length);
-        float[] yh2 = Arrays.copyOf(hist2.getYHistFloat(), hist2.getYHistFloat().length);
-        
-        System.out.println("indexes1.size=" + indexes.size() 
-            + " indexes2.size=" + indexes2.size()
-            + " \nquartiles=" + Arrays.toString(q)
-            + " \nmean=" + ImageStatisticsHelper.getMean(values)
-            + " \nmedian=" + ImageStatisticsHelper.getMedian(values)
-            + " \nskew=" + skew
-            + " \nmode1(x,y)=(" + hist.getXHist()[MiscMath.findYMaxIndex(yh1)] 
-            + "," + hist.getYHist()[MiscMath.findYMaxIndex(yh1)] + ")"
-            + " \nmode2(x,y)=(" + hist2.getXHist()[MiscMath.findYMaxIndex(yh2)] 
-            + "," + hist2.getYHist()[MiscMath.findYMaxIndex(yh2)] + ")"
-        );
         try {
             hist.plotHistogram("greyscale", "1");
-            hist2.plotHistogram("greyscale", "2");
         } catch (IOException ex) {
             Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        */
-
+        }*/
+      
         int[] binCenters = createBinCenters255(hist, indexes);
 
         return binCenters;
@@ -3019,18 +3006,25 @@ public class ImageSegmentation {
 
         Set<PairInt> whitePixels = new HashSet<PairInt>();
 
-        Set<PairInt> points0 = new HashSet<PairInt>();
+        Set<PairInt> nonBWPixels = new HashSet<PairInt>();
 
-        populatePixelLists(input, points0, blackPixels, whitePixels, greyPixelMap);
-        
-        Set<PairInt> nonBWPixels = new HashSet<PairInt>(points0);
-       
-        Map<PairInt, Float> thetaMap = createPolarCIEXYMap(input, points0);
+        populatePixelLists(input, nonBWPixels, blackPixels, whitePixels, greyPixelMap);
         
         Set<PairInt> greyPixels = new HashSet<PairInt>();
         for (Entry<Integer, Collection<PairInt>> entry : greyPixelMap.entrySet()) {
             greyPixels.addAll(entry.getValue());
         }
+        
+        int nCorr = 0;
+        int nIter = 0;
+        while ((nIter==0) || ((nCorr > (0.01f*nonBWPixels.size())) 
+            && (nIter < 20))) {
+            nCorr = correctPointsBoundaries(input, nonBWPixels, blackPixels, 
+                whitePixels, greyPixels);
+            nIter++;
+        }
+              
+        Map<PairInt, Float> thetaMap = createPolarCIEXYMap(input, nonBWPixels);
         
         int nTotC = whitePixels.size() + greyPixels.size() + blackPixels.size()
             + nonBWPixels.size();
@@ -3038,11 +3032,17 @@ public class ImageSegmentation {
         int toleranceInValue = determineToleranceForIllumCorr(thetaMap, nTotC);
 
         if (toleranceInValue > -1) {
-            correctForIllumination(input, nonBWPixels, toleranceInValue, thetaMap);
+            correctForIllumination(input, toleranceInValue, thetaMap);
         }
+
+ImageExt tmpInput = input.copyToImageExt();
+for (PairInt p : nonBWPixels) {
+tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}        
+MiscDebug.writeImage(tmpInput, "_after_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());
         
 MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-        
+
         if (nTotC != greyPixels.size()) {
             toleranceInValue = 2;
             correctForIllumination(input, greyPixels, toleranceInValue);
@@ -3057,7 +3057,6 @@ MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFo
             cValues[i] = v;
         }
         
-//TODO: this needs to be improved:                
         int[] binCenters = determineGreyscaleBinCenters(cValues);
         
 ImageExt img2 = input.copyToImageExt();
@@ -3077,6 +3076,108 @@ MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFor
 MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         
 MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
+              
+        return img;
+    }
+    
+    /**
+     * segmentation algorithm using cieXY and rgb to make pixel categories,
+     * and grow lists, then histograms to rescale.
+     * 
+     * @param input
+     * @return 
+     */
+    public GreyscaleImage createGreyscale3(ImageExt input) {
+
+        Set<PairInt> blackPixels = new HashSet<PairInt>();
+
+        Map<PairInt, Float> colorPixelMap = new HashMap<PairInt, Float>();
+        
+        Set<PairInt> unassignedPixels = new HashSet<PairInt>();
+
+        populatePixelLists2(input, blackPixels, colorPixelMap, unassignedPixels);
+        //55,000
+        int nTotC = blackPixels.size() + colorPixelMap.size() + unassignedPixels.size();
+        assert(nTotC == input.getNPixels());
+                
+        // grow black pixels from unassigned pixels if within a tolerance of rgb
+        growPixelsWithinRGBTolerance(input, blackPixels, unassignedPixels, 5);
+        
+        // then grow colorPixelMap from unassignedPixels if within a tolerance of rgb
+        Set<PairInt> addToColor = findPixelsWithinRGBTolerance(input, 
+            colorPixelMap.keySet(), unassignedPixels, 5);
+        
+        // reassign colorPixelMap to averaged color for adjacent thetas within tolerance
+        // (1) try just colorPixelMap for this step
+        // (2) try adding addToColor to colorPixelMap for this step
+        //    Map<PairInt, Float> colorPixelMap2 = createPolarCIEXYMap(input, addToColor);
+        //    colorPixelMap.putAll(colorPixelMap2);
+               
+        int toleranceInValue = determineToleranceForIllumCorr(colorPixelMap, nTotC);
+
+        if (toleranceInValue > -1 && !colorPixelMap.isEmpty()) {
+            correctForIllumination(input, toleranceInValue, colorPixelMap);
+        }
+        
+ImageExt tmpInput = input.copyToImageExt();
+for (PairInt p : unassignedPixels) {
+tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}        
+MiscDebug.writeImage(tmpInput, "_after_illumc0_unassigned_pix" + MiscDebug.getCurrentTimeFormatted());
+MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
+
+        Map<PairInt, Float> colorPixelMap2 = createPolarCIEXYMap(input, addToColor);
+        if (toleranceInValue > -1 && !colorPixelMap2.isEmpty()) {
+            correctForIllumination(input, toleranceInValue, colorPixelMap2);
+        }
+tmpInput = input.copyToImageExt();
+for (PairInt p : colorPixelMap2.keySet()) {
+tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}        
+MiscDebug.writeImage(tmpInput, "_after2_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());   
+MiscDebug.writeImage(input, "_after2_illumc0_" + MiscDebug.getCurrentTimeFormatted());
+
+        Map<PairInt, Float> colorPixelMap3 = createPolarCIEXYMap(input, unassignedPixels);
+        if (toleranceInValue > -1 && !colorPixelMap3.isEmpty()) {
+            correctForIllumination(input, toleranceInValue, colorPixelMap3);
+        }
+tmpInput = input.copyToImageExt();
+for (PairInt p : colorPixelMap3.keySet()) {
+tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
+}        
+MiscDebug.writeImage(tmpInput, "_after3_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());   
+MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatted());
+
+        if (nTotC != blackPixels.size()) {
+            //TODO: not sure will use this... might consider same method w/ rgb
+            toleranceInValue = 2;
+            correctForIllumination(input, blackPixels, toleranceInValue);
+        }
+
+        GreyscaleImage img = input.copyToGreyscale();
+MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+
+        /*float[] cValues = new float[input.getNPixels()];
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            int v = img.getValue(i);
+            cValues[i] = v;
+        }
+        
+        int[] binCenters = determineGreyscaleBinCenters(cValues);
+        
+ImageExt img2 = input.copyToImageExt();
+
+        assignToNearestCluster(img, binCenters);
+MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+*/
+        for (PairInt p : blackPixels) {
+            img.setValue(p.getX(), p.getY(), 0);
+            //img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
+        }
+
+MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
+        
+//MiscDebug.writeImage(img2, "_black_pixels_" + MiscDebug.getCurrentTimeFormatted());
               
         return img;
     }
@@ -3127,24 +3228,20 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         
         Map<PairInt, Float> thetaMap = createPolarCIEXYMap(input, points);
        
-        correctForIllumination(input, points, toleranceInValue, thetaMap);
+        correctForIllumination(input, toleranceInValue, thetaMap);
     }
     
-    private void correctForIllumination(ImageExt input, Set<PairInt> points, 
+    private void correctForIllumination(ImageExt input,
         int toleranceInValue, Map<PairInt, Float> thetaMap) {
-        
-        if (points.isEmpty()) {
-            return;
-        }
         
         /*
         in CIE XY color space, reassign colors:
         
-        for nonBWPixels:
+        for points:
         -- convert to polar theta in CIE XY space and plot in image
            as greyscale without changes.
         
-        -- DFS traversal through the theta values of pixels in nonBWPixels
+        -- DFS traversal through the theta values of pixels in points
            to make contigous groups of pixels that are within a tolerance of
            theta value of one another.
         
@@ -3194,6 +3291,10 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
 
     private int determineToleranceForIllumCorr(Map<PairInt, Float> thetaMap,
         int nTotCategoryMembers) {
+        
+        if (thetaMap.isEmpty()) {
+            return -1;
+        }
         
         // using a histogram of color in
         // determining whether toleranceInValue should be 1 or 4.
@@ -3262,5 +3363,381 @@ MiscDebug.writeImage(img2, "_seg_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return tolerance;
+    }
+
+    private int correctPointsBoundaries(ImageExt input, 
+        Set<PairInt> points, Set<PairInt> blackPixels, 
+        Set<PairInt> whitePixels, Set<PairInt> greyPixels) {
+        
+         // boundary corrections:
+        // iterate over points0 to find boundary points and their neighbors.  
+        // a boundary point has at least one non-points0 point neighbor.
+        // for the boundary points and each of their neigbhors,
+        // determine whether should move the point to another group
+        // (or add it to its own).
+        // the local rgb or ciexy can be computed and kept in a hash to avoid
+        // re-calculating.
+        // the local color will be the 9 point region members only regions
+        // 
+        
+        int imageWidth = input.getWidth(); 
+        int imageHeight = input.getHeight();
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Set<PairInt> addP = new HashSet<PairInt>();
+        Set<PairInt> rmP = new HashSet<PairInt>();
+        Set<PairInt> moved = new HashSet<PairInt>();
+        
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            
+            int nNonNeighbors = 0;            
+            for (int i = 0; i < dxs.length; ++i) {
+                int x2 = x + dxs[i];
+                int y2 = y + dys[i];
+                if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) ||
+                    (y2 > (imageHeight - 1))) {
+                    continue;
+                }
+                PairInt p2 = new PairInt(x2, y2);                
+                if (!points.contains(p2)) {
+                   nNonNeighbors++;
+                }
+            }
+            
+            if (nNonNeighbors == 0) {
+                continue;
+            }
+            
+            Set<PairInt> neighbors = new HashSet<PairInt>();
+            Set<PairInt> nonNB = new HashSet<PairInt>();
+            Set<PairInt> nonNW = new HashSet<PairInt>();
+            Set<PairInt> nonNG = new HashSet<PairInt>();
+            
+            for (int i = 0; i < dxs.length; ++i) {
+                int x2 = x + dxs[i];
+                int y2 = y + dys[i];                
+                if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) ||
+                    (y2 > (imageHeight - 1))) {
+                    continue;
+                }
+                PairInt p2 = new PairInt(x2, y2);
+                if (!moved.contains(p2)) {
+                    if (points.contains(p2)) {
+                        neighbors.add(p2);
+                    } else if (blackPixels.contains(p2)) {
+                        nonNB.add(p2);
+                    } else if (whitePixels.contains(p2)) {
+                        nonNW.add(p2);
+                    } else if (greyPixels.contains(p2)) {
+                        nonNG.add(p2);
+                    }
+                }
+            }
+            
+            // calc the avg cieX, cieY of neighbors
+            // calc the avg cieX, cieY of non-neighbors
+            // if p's cieXY is closer to neighbors, do not move it, but do
+            // look at each of the nonNeighbors to see whether to move it...
+            //float[] avgCIEXYNeighbors = ImageStatisticsHelper.calculateAvgCIEXY(
+            //    input, neighbors);
+            float[] avgRGBNeighbors = ImageStatisticsHelper.calculateAvgRGB(
+                input, neighbors);
+         
+            //float pCIEX = input.getCIEX(x, y);
+            //float pCIEY = input.getCIEY(x, y);
+            int pR = input.getR(x, y);
+            int pG = input.getG(x, y);
+            int pB = input.getB(x, y);
+            
+            double distSq0 = Math.pow((avgRGBNeighbors[0] - pR), 2) + 
+                Math.pow((avgRGBNeighbors[1] - pG), 2) +
+                Math.pow((avgRGBNeighbors[2] - pB), 2);
+            
+            double minDistSq = distSq0;
+            
+            // 0 = neighbors, 1=blackPixels, 2=whitePixels, 3=greyPixels
+            int minDistGroup = 0;
+           
+            if (!nonNB.isEmpty()) {
+                float[] avgRGB = ImageStatisticsHelper.calculateAvgRGB(
+                    input, nonNB);
+                double distSq = Math.pow((avgRGB[0] - pR), 2) + 
+                    Math.pow((avgRGB[1] - pG), 2) +
+                    Math.pow((avgRGB[2] - pB), 2);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    minDistGroup = 1;
+                }
+            }
+            if (!nonNW.isEmpty()) {
+                float[] avgRGB = ImageStatisticsHelper.calculateAvgRGB(
+                    input, nonNW);
+                double distSq = Math.pow((avgRGB[0] - pR), 2) + 
+                    Math.pow((avgRGB[1] - pG), 2) +
+                    Math.pow((avgRGB[2] - pB), 2);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    minDistGroup = 2;
+                }
+            }
+            if (!nonNG.isEmpty()) {
+                float[] avgRGB = ImageStatisticsHelper.calculateAvgRGB(
+                    input, nonNG);
+                double distSq = Math.pow((avgRGB[0] - pR), 2) + 
+                    Math.pow((avgRGB[1] - pG), 2) +
+                    Math.pow((avgRGB[2] - pB), 2);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    minDistGroup = 3;
+                }
+            }
+            
+            // 0 = neighbors, 1=blackPixels, 2=whitePixels, 3=greyPixels
+            if (minDistGroup > 0) {
+                if (minDistGroup == 1) {
+                    blackPixels.add(p);
+                } else if (minDistGroup == 2) {
+                    whitePixels.add(p);
+                } else if (minDistGroup == 3) {
+                    greyPixels.add(p);
+                }
+                rmP.add(p);
+                moved.add(p);
+            }
+            
+            // determine if the non neighbors should be moved into point group
+            if (!nonNB.isEmpty()) {
+                for (PairInt p2 : nonNB) {
+                    if (moved.contains(p2)) {
+                        continue;
+                    }
+                    int x2 = p2.getX();
+                    int y2 = p2.getY();
+                    int p2R = input.getR(x2, y2);
+                    int p2G = input.getG(x2, y2);
+                    int p2B = input.getB(x2, y2);
+                    
+                    Set<PairInt> nbN = curveHelper.findNeighbors(x2, y2, blackPixels);
+                    float[] avgRGB = ImageStatisticsHelper.calculateAvgRGB(input, nbN);
+                    
+                    double distSqToNeighbors = Math.pow((avgRGB[0] - p2R), 2) + 
+                        Math.pow((avgRGB[1] - p2G), 2) + Math.pow((avgRGB[2] - p2B), 2);
+                    
+                    double distSqToP = Math.pow((pR - p2R), 2) + 
+                        Math.pow((pG - p2G), 2) + Math.pow((pB - p2B), 2);
+
+                    if (distSqToP < distSqToNeighbors) {
+                        blackPixels.remove(p2);
+                        addP.add(p2);
+                        moved.add(p2);
+                    }
+                }
+            }
+            if (!nonNW.isEmpty()) {
+                for (PairInt p2 : nonNW) {
+                    if (moved.contains(p2)) {
+                        continue;
+                    }
+                    int x2 = p2.getX();
+                    int y2 = p2.getY();
+                    int p2R = input.getR(x2, y2);
+                    int p2G = input.getG(x2, y2);
+                    int p2B = input.getB(x2, y2);
+                    
+                    Set<PairInt> nbN = curveHelper.findNeighbors(x2, y2, whitePixels);
+                    float[] avgRGB = ImageStatisticsHelper.calculateAvgRGB(input, nonNW);
+                    
+                    double distSqToNeighbors = Math.pow((avgRGB[0] - p2R), 2) + 
+                        Math.pow((avgRGB[1] - p2G), 2) + Math.pow((avgRGB[2] - p2B), 2);
+                    
+                    double distSqToP = Math.pow((pR - p2R), 2) + 
+                        Math.pow((pG - p2G), 2) + Math.pow((pB - p2B), 2);
+                    
+                    if (distSqToP < distSqToNeighbors) {
+                        whitePixels.remove(p2);
+                        addP.add(p2);
+                        moved.add(p2);
+                    }
+                }
+            }
+            if (!nonNG.isEmpty()) {
+                for (PairInt p2 : nonNG) {
+                    if (moved.contains(p2)) {
+                        continue;
+                    }
+                    int x2 = p2.getX();
+                    int y2 = p2.getY();
+                    int p2R = input.getR(x2, y2);
+                    int p2G = input.getG(x2, y2);
+                    int p2B = input.getB(x2, y2);
+                    
+                    Set<PairInt> nbN = curveHelper.findNeighbors(x2, y2, greyPixels);
+                    float[] avgRGB = ImageStatisticsHelper.calculateAvgRGB(input, nonNG);
+                    
+                    double distSqToNeighbors = Math.pow((avgRGB[0] - p2R), 2) + 
+                        Math.pow((avgRGB[1] - p2G), 2) + Math.pow((avgRGB[2] - p2B), 2);
+                    
+                    double distSqToP = Math.pow((pR - p2R), 2) + 
+                        Math.pow((pG - p2G), 2) + Math.pow((pB - p2B), 2);
+                    
+                    if (distSqToP < distSqToNeighbors) {
+                        greyPixels.remove(p2);
+                        addP.add(p2);
+                        moved.add(p2);
+                    }
+                }
+            }
+        }
+        
+        for (PairInt p : addP) {
+            points.add(p);
+        }
+        for (PairInt p : rmP) {
+            points.remove(p);
+        }
+        
+        return moved.size();
+    }
+
+    /**
+     * an algorithm to traverse the image and store black pixels in a list
+     * then use cieXY to place pixels in colorPixelMap if they are not in the
+     * large white central space, else place them in unassignedPixels.
+     * @param input
+     * @param blackPixels
+     * @param colorPixelMap
+     * @param unassignedPixels 
+     */
+    private void populatePixelLists2(ImageExt input, Set<PairInt> blackPixels, 
+        Map<PairInt, Float> colorPixelMap, Set<PairInt> unassignedPixels) {
+                
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        // looking for limits in peaks of (r,g,b) <= (45,45,45) and > (191,191,191)
+        int[] whiteBlackLimits = findByHistogramLimitsForBlackAndWhite(input);
+        // overriding:
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+
+                int idx = input.getInternalIndex(i, j);
+
+                int r = input.getR(idx);
+                int g = input.getG(idx);
+                int b = input.getB(idx);
+
+                int avg = (r + g + b)/3;
+                if (avg <= whiteBlackLimits[0]) {
+                    blackPixels.add(new PairInt(i, j));
+                    continue;
+                }
+                
+                float cieX = input.getCIEX(idx);
+                float cieY = input.getCIEY(idx);
+                /*    
+                float c = r + g + b;
+                float rd = Math.abs(0.3333f - ((float)r/c));
+                float bd = Math.abs(0.3333f - ((float)b/c));
+                */
+                if (cieC.isInLargeWhiteCenter(cieX, cieY)) {
+                    //log.info(String.format(
+                    //"rgb=(%3d, %3d, %3d)  rdiv,bdiv=(%.2f, %.2f) cie=(%.3f, %.3f) xy=(%3d, %3d)", 
+                    //r, g, b, rd, bd, cieX, cieY, i, j));
+                    unassignedPixels.add(new PairInt(i, j));
+                    continue;
+                }
+                
+                double thetaRadians = cieC.calculateXYTheta(cieX, cieY);
+
+                colorPixelMap.put(new PairInt(i, j), 
+                    Float.valueOf((float)thetaRadians));
+            }
+        }
+    }
+
+    private void growPixelsWithinRGBTolerance(Image img, 
+        Set<PairInt> assignedPixels, Set<PairInt> unassignedPixels, int tolRGB) {
+        
+        Set<PairInt> addTo = findPixelsWithinRGBTolerance(img, 
+            assignedPixels, unassignedPixels, tolRGB);
+        
+        assignedPixels.addAll(addTo);
+    }
+
+    /**
+     * traverses assignedPixels and finds adjacent unassignedPixels that are 
+     * within tolRGB of r, g, b colors and removes those points from 
+     * unassignedPixels and returns them as a set.
+     * @param input
+     * @param assignedPixels
+     * @param unassignedPixels
+     * @param tolRGB
+     * @return 
+     */
+    private Set<PairInt> findPixelsWithinRGBTolerance(Image img, 
+        Set<PairInt> assignedPixels, Set<PairInt> unassignedPixels, int tolRGB) {
+        
+        Set<PairInt> addToAssigned = new HashSet<PairInt>();
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int[] dxs8 = Misc.dx8;
+        int[] dys8 = Misc.dy8;
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        Stack<PairInt> stack = new Stack<PairInt>();
+        stack.addAll(assignedPixels);
+        
+        while (!stack.isEmpty()) {
+            PairInt uPoint = stack.pop(); 
+            if (visited.contains(uPoint)) {
+                continue;
+            }
+            int x = uPoint.getX();
+            int y = uPoint.getY();
+            
+            int r = img.getR(x, y);
+            int g = img.getG(x, y);
+            int b = img.getB(x, y);
+            
+            for (int i = 0; i < dxs8.length; ++i) {
+                int x2 = x + dxs8[i];
+                int y2 = y + dys8[i];
+                if ((x2 < 0) || (x2 > (w - 1)) || (y2 < 0) || (y2 > (h - 1))) {
+                    continue;
+                }        
+                PairInt vPoint = new PairInt(x2, y2);
+                if (!unassignedPixels.contains(vPoint)) {
+                    continue;
+                }
+                int r2 = img.getR(x2, y2);
+                int g2 = img.getG(x2, y2);
+                int b2 = img.getB(x2, y2);
+                int diffR = Math.abs(r2 - r);
+                int diffG = Math.abs(g2 - g);
+                int diffB = Math.abs(b2 - b);
+                
+                if ((diffR < tolRGB) && (diffG < tolRGB) && (diffB < tolRGB)) {
+                    unassignedPixels.remove(vPoint);
+                    addToAssigned.add(vPoint);
+                    stack.add(vPoint);
+                }
+            }
+            
+            visited.add(uPoint);
+        }
+        
+        return addToAssigned;
     }
 }

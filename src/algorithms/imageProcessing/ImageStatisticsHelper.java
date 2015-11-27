@@ -4,9 +4,11 @@ import algorithms.util.Errors;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -413,4 +415,46 @@ public class ImageStatisticsHelper {
         
         return c;
     }
+
+    public static float[] calculateAvgCIEXY(ImageExt input, Set<PairInt> points) {
+        
+        if (points.isEmpty()) {
+            return new float[]{Float.NaN, Float.NaN};
+        }
+            
+        float cieXSum = 0;
+        float cieYSum = 0;
+        for (PairInt p : points) {
+            cieXSum += input.getCIEX(p.getX(), p.getY());
+            cieYSum += input.getCIEY(p.getX(), p.getY());
+        }
+        
+        cieXSum /= (float)points.size();
+        cieYSum /= (float)points.size();
+        
+        return new float[]{cieXSum, cieYSum};
+    }
+
+    static float[] calculateAvgRGB(ImageExt input, Set<PairInt> points) {
+        
+        if (points.isEmpty()) {
+            return new float[]{Float.NaN, Float.NaN, Float.NaN};
+        }
+            
+        float rSum = 0;
+        float gSum = 0;
+        float bSum = 0;
+        for (PairInt p : points) {
+            rSum += input.getR(p.getX(), p.getY());
+            gSum += input.getG(p.getX(), p.getY());
+            bSum += input.getB(p.getX(), p.getY());
+        }
+        
+        rSum /= (float)points.size();
+        gSum /= (float)points.size();
+        bSum /= (float)points.size();
+        
+        return new float[]{rSum, gSum, bSum};
+    }
+    
 }

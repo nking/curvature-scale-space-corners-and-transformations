@@ -52,16 +52,44 @@ public class ImageSegmentationTest extends TestCase {
         
             ImageSegmentation imageSegmentation = new ImageSegmentation();
             
-            //GreyscaleImage gsImg = img.copyToGreyscale();
-            //imageSegmentation.applyGreyscaleHistogram(gsImg);
+            //GreyscaleImage gsImg = imageSegmentation.createGreyscaleWithBWMask(img);
+            GreyscaleImage gsImg = imageSegmentation.createGreyscale3(img);
             
-            //imageSegmentation.applyPolarCIEXY(img, false);
-            
-            GreyscaleImage gsImg = imageSegmentation.createGreyscaleWithBWMask(img);
-
             String bin = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot 
-                + "_segmentation.png", gsImg);
+            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot  + "_segmentation.png", gsImg);
+            
+            // canny edges are built into this detector:
+            CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(gsImg);
+            detector.findCorners();
+            PairIntArray corners = detector.getCorners();
+            List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();            
+            Set<CornerRegion> cornerRegions = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+            
+            ImageExt img2 = gsImg.copyToColorGreyscaleExt();
+            ImageExt img3 = gsImg.copyToColorGreyscaleExt();
+            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
+            ImageIOHelper.addCornerRegionsToImage(cornerRegions, img2, 0, 0, 1, 255, 0, 0);        
+            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_cornerRegions.png", img2);
+            ImageIOHelper.addCurveToImage(corners, img3, 1, 255, 0, 0);            
+            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_corners.png", img3);
+            
+            img = ImageIOHelper.readImageExt(filePath);
+            BlobPerimeterHelper imgHelper = new BlobPerimeterHelper(img, fileNameRoot);
+            imgHelper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            imgHelper.applySegmentation(SegmentationType.GREYSCALE_HIST, true);
+            Image img4 = imgHelper.getBinnedSegmentationImage(SegmentationType.GREYSCALE_HIST).copyToColorGreyscale();
+            BlobCornerHelper blobCornerHelper = new BlobCornerHelper(imgHelper);
+            List<List<CornerRegion>> cornerRegions2 = 
+                blobCornerHelper.generatePerimeterCorners(SegmentationType.GREYSCALE_HIST, true);
+           
+            for (int i = 0; i < cornerRegions2.size(); ++i) {
+                List<CornerRegion> crList = cornerRegions2.get(i);
+                int[] rgb = ImageIOHelper.getNextRGB(i);
+                ImageIOHelper.addCornerRegionsToImage(
+                    crList, img4, 0, 0, 1, rgb[0], rgb[1], rgb[2]);
+            }
+            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_cornerregions2.png", img4);
+            int z = 1;
         }
     }
     

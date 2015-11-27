@@ -236,6 +236,7 @@ public class CIEChromaticity {
         return new float[]{x, y};
     }
     
+    // NOTE: not thread safe:
     private float[] cieXYTmpHolder = new float[3];
     /**
      * convert from CIE XYZ 1931, to CIE XY chromaticity 1931.
@@ -475,6 +476,45 @@ public class CIEChromaticity {
         double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);
                     
         return theta;
+    }
+
+    private static double wd = Math.sqrt(Math.pow((0.425 - 0.275), 2) +
+        Math.pow((0.3875 - 0.2625), 2));
+    
+    /**
+     * Is within the bounds of large white central region in the CIE 1931 xy 
+     * chromaticity diagram.  Note that this region has small amount of color
+     * in it too, so you may want to further process any point in rgb too.
+     * Also note that grey pixels are found here too centered at (0.33, 0.33).
+     * 
+     * @param cieX
+     * @param cieY
+     * @return 
+     */
+    public boolean isInLargeWhiteCenter(float cieX, float cieY) {
+        
+        /*              (0.425, 0.3875)
+                           /       
+                       /           within 0.075 from the line 
+                    /              between these two points
+          (0.275, 0.2625)
+        
+         
+        2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
+        
+        If define (x1, y1) and (x2, y2) as points on the line and
+        (x0, y0) as the point that is distant from the line:
+        
+        dist = | (x2-x1)(y1-y0) - (x1-x0)(y2-y1)  |
+                 --------------------------------
+                  sqrt( (x2-x1)^2 + (y2-y1)^2) )
+        */
+        double numer = Math.abs((0.425 - 0.275) * (0.2625 - cieY) 
+            - (0.275 - cieX) * (0.3875 - 0.2625));
+        
+        double dist = numer/wd;
+        
+        return (dist <= 0.03333);//(dist <= 0.075);
     }
     
 }

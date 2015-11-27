@@ -261,7 +261,8 @@ public class SegmentedImageHelper {
             //imageSegmentation.applyGreyscaleHistogram(segImg);
             
             ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
-            segImg = imageSegmentation.createGreyscaleWithBWMask(imgBinned);
+            //segImg = imageSegmentation.createGreyscaleWithBWMask(imgBinned);
+            segImg = imageSegmentation.createGreyscale3(imgBinned);
                         
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -347,7 +348,8 @@ public class SegmentedImageHelper {
             //segImg = gsImg.copyImage();
             //imageSegmentation.applyGreyscaleHistogram(segImg);
             
-            segImg = imageSegmentation.createGreyscaleWithBWMask(img);
+            //segImg = imageSegmentation.createGreyscaleWithBWMask(img);
+            segImg = imageSegmentation.createGreyscale3(img);
                         
             imgSegmentedMap.put(type, segImg);
             

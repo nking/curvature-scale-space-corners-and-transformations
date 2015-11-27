@@ -2958,4 +2958,28 @@ public class ImageProcessor {
             img.setValue(i, imgValues[i]);
         }
     }
+
+    public GreyscaleImage createSmallImage(int bufferSize, Set<PairInt> points, 
+        int pointValue) {
+        
+        //minMaxXY int[]{xMin, xMax, yMin, yMax}
+        int[] minMaxXY = MiscMath.findMinMaxXY(points);
+        
+        int xOffset = minMaxXY[0] - bufferSize;
+        int yOffset = minMaxXY[2] - bufferSize;
+        
+        int width = (minMaxXY[1] - minMaxXY[0]) + (2 * bufferSize);
+        int height = (minMaxXY[3] - minMaxXY[2]) + (2 * bufferSize);
+        
+        GreyscaleImage img = new GreyscaleImage(width, height);
+        img.setXRelativeOffset(xOffset);
+        img.setYRelativeOffset(yOffset);
+        for (PairInt p : points) {
+            int x = p.getX() - xOffset;
+            int y = p.getY() - yOffset;
+            img.setValue(x, y, pointValue);
+        }
+        
+        return img;
+    }
 }

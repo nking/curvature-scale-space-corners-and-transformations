@@ -313,7 +313,6 @@ public class FeatureMatcherWrapper {
     
         if (debug) {
             List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
-            try {
                 Image imgCp = img1.copyImage();
                 ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
                 MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_edges_");
@@ -340,9 +339,6 @@ public class FeatureMatcherWrapper {
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
                 MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_corners_");
-            } catch (IOException ex) {
-                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
-            }
         }
         
         //-------
@@ -358,7 +354,6 @@ public class FeatureMatcherWrapper {
         
         if (debug) {
             List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
-            try {
                 Image imgCp = img2.copyImage();
                 ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
                 MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_edges_");
@@ -385,9 +380,6 @@ public class FeatureMatcherWrapper {
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
                 MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_corners_");
-            } catch (IOException ex) {
-                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
-            }
         }
     }
 

@@ -9,14 +9,14 @@ package algorithms.imageProcessing;
  */
 public class Gaussian1D {
    
-    protected static float estimateHWZI(SIGMA sigma, float fractionMax) {
+    public static float estimateHWZI(SIGMA sigma, float fractionMax) {
       
         float s = SIGMA.getValue(sigma);
 
         return estimateHWZI(s, fractionMax);
     }
     
-    protected static float estimateHWZI(float sigma, float fractionMax) {
+    public static float estimateHWZI(float sigma, float fractionMax) {
         
         /*
            exp( (-(x0 - mu)^2)/2o~^2) / exp( (-(xcenter - mu)^2)/2o~^2) = fractionMax
