@@ -63,7 +63,6 @@ public class ImageSegmentationTest extends TestCase {
         
             ImageSegmentation imageSegmentation = new ImageSegmentation();
             
-            //GreyscaleImage gsImg = imageSegmentation.createGreyscaleWithBWMask(img);
             GreyscaleImage gsImg = imageSegmentation.createGreyscale3(img);
             
             String bin = ResourceFinder.findDirectory("bin");
