@@ -41,76 +41,76 @@ import java.util.logging.Logger;
  *
  * The method uses the recursive and separable properties of Gaussians where
  * possible.  (NOTE, not finished implementing the recursive portion).
- * Also, the curves can be closed curves and derived from means other than 
+ * Also, the curves can be closed curves and derived from means other than
  * edge detectors.
- * 
+ *
  * @author nichole
  */
 public class CSSCornerMaker {
-        
+
     protected boolean enableJaggedLineCorrections = true;
-    
+
     protected float factorIncreaseForCurvatureMinimum = 1.f;
-    
+
     protected boolean performWholeImageCorners = true;
-    
+
     protected boolean doStoreCornerRegions = true;
-    
+
     protected final int width;
-    
+
     protected final int height;
-    
+
     private Map<Integer, List<CornerRegion>> edgeCornerRegionMap = new
         HashMap<Integer, List<CornerRegion>>();
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     public CSSCornerMaker(int imageWidth, int imageHeight) {
         width = imageWidth;
         height = imageHeight;
     }
-    
+
     public void enableJaggedLineCorrections() {
         enableJaggedLineCorrections = true;
     }
     public void disableJaggedLineCorrections() {
         enableJaggedLineCorrections = false;
     }
-    
+
     public void doNotStoreCornerRegions() {
         doStoreCornerRegions = false;
     }
-    
+
     public void increaseFactorForCurvatureMinimum(float factor) {
         factorIncreaseForCurvatureMinimum = factor;
     }
-    
+
     public void resetFactorForCurvatureMinimum() {
         factorIncreaseForCurvatureMinimum = 1.f;
     }
-       
+
     /**
-     * 
+     *
      * @param theEdges
-     * @param junctions map w/ key=edge index, 
+     * @param junctions map w/ key=edge index,
      *     values = junctions on edge as (x,y) and edge curve indexes
      * @param doUseOutdoorMode
      * @param outputCorners
-     * @return 
+     * @return
      */
     public Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >
-    findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
+    findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges,
         Map<Integer, Set<PairIntWithIndex>> junctions,
         final boolean doUseOutdoorMode, final PairIntArray outputCorners) {
-        
+
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps
             = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
-          
+
         // perform the analysis on the edgesScaleSpaceMaps
         for (int i = 0; i < theEdges.size(); i++) {
 
             final PairIntArray edge = theEdges.get(i);
-            
+
             boolean isClosedCurve = (edge instanceof PairIntArrayWithColor) &&
                 (((PairIntArrayWithColor)edge).getColor() == 1);
 
@@ -120,10 +120,10 @@ public class CSSCornerMaker {
             scaleSpaceMaps.put(edge, map);
 
             Set<PairIntWithIndex> edgeJunctions = junctions.get(Integer.valueOf(i));
-                
-            CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map, 
+
+            CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map,
                 edgeJunctions, i, doUseOutdoorMode);
-            
+
             // remove aliasing artifacts of a straight line with a single
             // step in it.
             // note that edgeCorners are already ordered by index.
@@ -142,32 +142,103 @@ public class CSSCornerMaker {
                 int y = Math.round(edgeCorners.getY(ii));
                 outputCorners.add(x, y);
             }
-            
+
             if (doStoreCornerRegions) {
-                
+
                 int edgeNumber = i;
                 
+                Set<Integer> removeIndexes = new HashSet<Integer>();
+
                 for (int ii = 0; ii < edgeCorners.getN(); ii++) {
+
+                    int idx = edgeCorners.getInt(ii);
                     
+                    if (removeIndexes.contains(Integer.valueOf(ii))) {
+                        continue;
+                    }
                     int x = Math.round(edgeCorners.getX(ii));
                     int y = Math.round(edgeCorners.getY(ii));
-                
+
                     SIGMA sscSigma = edgeCorners.getSIGMA(ii);
                     ScaleSpaceCurve scaleSpace = map.get(sscSigma);
                     assert(scaleSpace != null);
-                    int idx = edgeCorners.getInt(ii);
-                    
+
                     assert(x == Math.round(scaleSpace.getX(idx)));
                     assert(y == Math.round(scaleSpace.getY(idx)));
+
+                    boolean added = storeCornerRegion(edgeNumber, idx, scaleSpace);
                     
-                    storeCornerRegion(edgeNumber, idx, scaleSpace);
+                    if (!added) {
+                        continue;
+                    }
+                    
+                    // -- merge adjacent or nearly adjacent corners --
+                    
+                    int ii2 = -1;
+                    int idx2 = -1;
+                    int dIdx = Integer.MAX_VALUE;
+                    
+                    if (isClosedCurve && (ii == 0)) {
+                        ii2 = edgeCorners.getN() - 1;
+                        idx2 = edgeCorners.getInt(ii2);
+                        dIdx = edge.getN() - idx2 + idx;
+                    } else if (isClosedCurve && (ii == (edgeCorners.getN() - 1))) {
+                        ii2 = 0;
+                        idx2 = edgeCorners.getInt(ii2);
+                        dIdx = edge.getN() - idx + idx2;
+                    } else if (ii < (edgeCorners.getN() - 1)) {
+                        ii2 = ii + 1;
+                        idx2 = edgeCorners.getInt(ii2);
+                        dIdx = idx2 + idx;
+                    }
+                    if ((idx2 > -1) && (dIdx < 4)) {
+                        if (removeIndexes.contains(Integer.valueOf(ii2))) {
+                            continue;
+                        }
+                        ScaleSpaceCurve scaleSpace2 = map.get(edgeCorners.getSIGMA(ii2));
+                        float k = scaleSpace.getK(idx);
+                        float k2 = scaleSpace2.getK(idx2);
+                        float kLimit = 0.1f * Math.abs((k + k2)/2.f);
+                        //remove weakest
+                        if (Math.abs(k - k2) > kLimit) {
+                            if (Math.abs(k2) > Math.abs(k)) {
+                                removeIndexes.add(Integer.valueOf(ii));
+                            } else {
+                                removeIndexes.add(Integer.valueOf(ii2));
+                            }
+                        } else {
+                            //merge, replace ii, remove ii2
+                            int x2 = Math.round(edgeCorners.getX(ii2));
+                            int y2 = Math.round(edgeCorners.getY(ii2));
+                            float xAvg = (edgeCorners.getX(ii) + edgeCorners.getX(ii2))/2.f;
+                            float yAvg = (edgeCorners.getY(ii) + edgeCorners.getY(ii2))/2.f;
+                            edgeCorners.set(ii, xAvg, yAvg, idx, sscSigma);
+                            removeIndexes.add(Integer.valueOf(ii2));
+                        }
+                    }
+                }
+                if (removeIndexes.size() == 1) {
+                    int rmIdx = removeIndexes.iterator().next().intValue();
+                    edgeCorners.removeRange(rmIdx, rmIdx);
+                } else if (removeIndexes.size() > 0) {
+                    int[] rmIdxs = new int[removeIndexes.size()];
+                    int count = 0;
+                    for (Integer rmIndex : removeIndexes) {
+                        rmIdxs[count] = rmIndex.intValue();
+                        count++;
+                    }
+                    Arrays.sort(rmIdxs);
+                    for (int j = (rmIdxs.length - 1); j > -1; --j) {
+                        int rmIdx = rmIdxs[j];
+                        edgeCorners.removeRange(rmIdx, rmIdx);
+                    }
                 }
             }
         }
 
         return scaleSpaceMaps;
     }
-    
+
     /**
      * Construct scale space images (that is X(t, sigma), y(t, sigma), and
      * k(t, sigma) where t is the intervals of spacing along the curve
@@ -250,8 +321,8 @@ public class CSSCornerMaker {
      * @return
      */
     protected CornerArray findCornersInScaleSpaceMap(
-        final ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma, 
-        int edgeNumber, boolean correctForJaggedLines, 
+        final ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma,
+        int edgeNumber, boolean correctForJaggedLines,
         final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
 
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
@@ -269,7 +340,7 @@ public class CSSCornerMaker {
         if (maxCandidateCornerIndexes.isEmpty()) {
             return xy;
         }
-        
+
         if (correctForJaggedLines && !doUseOutdoorMode) {
 
             PairIntArray jaggedLines = removeFalseCorners(
@@ -282,17 +353,17 @@ public class CSSCornerMaker {
         for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
 
             int idx = maxCandidateCornerIndexes.get(ii);
-            
+
             if (doUseOutdoorMode && !scaleSpace.curveIsClosed()) {
                 if ((idx < minDistFromEnds)
                     || (idx > (nPoints - minDistFromEnds))) {
                     continue;
                 }
             }
-            
+
             float x = scaleSpace.getX(idx);
             float y = scaleSpace.getY(idx);
-           
+
             xy.add(x, y, idx, scaleSpaceSigma);
         }
 
@@ -328,14 +399,14 @@ public class CSSCornerMaker {
         if (maxScaleSpace.getK() == null) {
             return new CornerArray(0);
         }
-                    
+
         CornerArray candidateCornersXY =
-            findCornersInScaleSpaceMap(maxScaleSpace, maxSIGMA, edgeNumber, 
+            findCornersInScaleSpaceMap(maxScaleSpace, maxSIGMA, edgeNumber,
                 enableJaggedLineCorrections, isAClosedCurve, doUseOutdoorMode);
 
-        insertJunctions(maxScaleSpace, maxSIGMA, edgeNumber, junctions, 
+        insertJunctions(maxScaleSpace, maxSIGMA, edgeNumber, junctions,
             candidateCornersXY);
-        
+
         SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);
 
         SIGMA prevSigma = maxSIGMA;
@@ -350,7 +421,7 @@ public class CSSCornerMaker {
                 doUseOutdoorMode);
 
             removeRedundantPoints(candidateCornersXY, scaleSpaceCurves);
-            
+
             prevSigma = sigma;
 
             sigma = SIGMA.divideBySQRT2(sigma);
@@ -363,16 +434,16 @@ public class CSSCornerMaker {
 
         //store xc and yc for the edge
         for (int ii = 0; ii < candidateCornersXY.getN(); ii++) {
-            
+
             int xte = Math.round(candidateCornersXY.getX(ii));
             int yte = Math.round(candidateCornersXY.getY(ii));
-            
+
             edgeCorners.add(xte, yte, candidateCornersXY.getInt(ii),
                 candidateCornersXY.getSIGMA(ii));
         }
 
         //insertJunctions(edgeCorners, scaleSpaceCurves, junctions);
-        
+
         return edgeCorners;
     }
 
@@ -694,8 +765,8 @@ public class CSSCornerMaker {
      * @param edgeNumber included for debugging
      */
     private void refinePrimaryCoordinates(CornerArray candidateCornersXY,
-        ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma, 
-        final SIGMA previousSigma, final int edgeNumber, 
+        ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma,
+        final SIGMA previousSigma, final int edgeNumber,
         final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
 
         if (scaleSpace == null || scaleSpace.getK() == null) {
@@ -704,7 +775,7 @@ public class CSSCornerMaker {
         }
 
         CornerArray xy2 =
-            findCornersInScaleSpaceMap(scaleSpace, scaleSpaceSigma, edgeNumber, 
+            findCornersInScaleSpaceMap(scaleSpace, scaleSpaceSigma, edgeNumber,
                 false, isAClosedCurve, doUseOutdoorMode);
 
         // roughly estimating maxSep as the ~FWZI of the gaussian
@@ -715,49 +786,49 @@ public class CSSCornerMaker {
             maxSepSq = 4;
         }
         float maxSep = (float)Math.sqrt(maxSepSq);
-       
-        NearestPointsFloat np = new NearestPointsFloat(xy2.getX(), xy2.getY(), 
+
+        NearestPointsFloat np = new NearestPointsFloat(xy2.getX(), xy2.getY(),
             xy2.getN());
-        
+
         // revise the points in {xc, yc} to the closest in {xc2, yc2}
         for (int j = 0; j < candidateCornersXY.getN(); j++) {
             float x = candidateCornersXY.getX(j);
             float y = candidateCornersXY.getY(j);
-            
+
             Integer minSepIndex = np.findClosestNeighborIndex(x, y, maxSep);
 
             if (minSepIndex != null) {
                 int minSepIdx = minSepIndex.intValue();
                 float x3 = xy2.getX(minSepIdx);
                 float y3 = xy2.getY(minSepIdx);
-                candidateCornersXY.set(j, x3, y3, 
+                candidateCornersXY.set(j, x3, y3,
                     xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));
-            }            
+            }
         }
     }
 
-    private void storeCornerRegion(int edgeNumber, int cornerIdx, 
+    private boolean storeCornerRegion(int edgeNumber, int cornerIdx,
         ScaleSpaceCurve scaleSpace) {
-        
+
         final float[] k = scaleSpace.getK();
-        
+
         //for 2 neighboring points on each side, min k is 0.2
         float kCenterAbs = Math.abs(k[cornerIdx]);
         if (kCenterAbs < 0.14f) {//0.18
-            return;
+            return false;
         }
-        
+
         int n = scaleSpace.getSize();
-        
+
         if (n < 3) {
-            return;
+            return false;
         }
 
         boolean isClosedCurve = scaleSpace.curveIsClosed();
-        
+
         int nCR = 0;
         int kMaxIdx = -1;
-                
+
         int count = 0;
         int nH = 2;
         if (scaleSpace.getSize() < 5) {
@@ -774,7 +845,7 @@ public class CSSCornerMaker {
             }
             count++;
         }
-       
+
         for (int pIdx : pIdxs) {
             if (pIdx < 0 || (pIdx > (n - 1))) {
                 // it's out of bounds only if it is not a closed curve
@@ -785,23 +856,23 @@ public class CSSCornerMaker {
             }
             int x = Math.round(scaleSpace.getX(pIdx));
             int y = Math.round(scaleSpace.getY(pIdx));
-            
+
             // discard if out of bounds
             if ((x < 0) || (y < 0) || (x > (width - 1)) || (y > (height - 1))) {
-                return;
+                return false;
             }
-            nCR++; 
+            nCR++;
         }
         if (nCR < 3) {
-            return;
+            return false;
         }
-                
+
         if (!isClosedCurve) {
             if (kMaxIdx == 0 || kMaxIdx == (nCR - 1)) {
-                return;
+                return false;
             }
         }
-    
+
         CornerRegion cr = new CornerRegion(edgeNumber, nCR, kMaxIdx);
         nCR = 0;
         for (int pIdx : pIdxs) {
@@ -809,17 +880,17 @@ public class CSSCornerMaker {
                 // it's out of bounds only if it is not a closed curve
                 continue;
             }
-          
+
             int x = Math.round(scaleSpace.getX(pIdx));
             int y = Math.round(scaleSpace.getY(pIdx));
-         
+
             cr.set(nCR, k[pIdx], x, y);
-            
+
             if (kMaxIdx == nCR) {
                 cr.setIndexWithinCurve(pIdx);
             }
-            
-            nCR++; 
+
+            nCR++;
         }
         Integer key = Integer.valueOf(edgeNumber);
         List<CornerRegion> list = edgeCornerRegionMap.get(key);
@@ -828,8 +899,10 @@ public class CSSCornerMaker {
             edgeCornerRegionMap.put(key, list);
         }
         list.add(cr);
+
+        return true;
     }
-    
+
     /**
      * maxSigma is defined by the ECSS algorithm in:
      * 2006, "Performance evaluation of corner detectors using consistency and
@@ -876,7 +949,7 @@ if (doUseOutdoorMode) {
     factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;
 }
         log.fine("using factorAboveMin=" + factorAboveMin);
-        
+
         //to limit k to curvature that shows a rise in 1 pixel over a run of 3,
         // use 0.2 for a lower limit.
         // TODO: it's not clear that kLowerLimit is a good idea.  the relative change
@@ -946,19 +1019,19 @@ if (doUseOutdoorMode) {
         return edgeCornerRegionMap;
     }
 
-    private void removeRedundantPoints(CornerArray candidateCornersXY, 
+    private void removeRedundantPoints(CornerArray candidateCornersXY,
         Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves) {
-        
+
         boolean hasRedundant = false;
-        
+
         // looking for redundant points
         Map<PairInt, Set<Integer>> coordIndexes = new HashMap<PairInt, Set<Integer>>();
         for (int j = 0; j < candidateCornersXY.getN(); j++) {
-            
+
             int x = Math.round(candidateCornersXY.getX(j));
             int y = Math.round(candidateCornersXY.getY(j));
             PairInt p = new PairInt(x, y);
-            
+
             Set<Integer> indexes = coordIndexes.get(p);
             if (indexes == null) {
                 indexes = new HashSet<Integer>();
@@ -968,11 +1041,11 @@ if (doUseOutdoorMode) {
             }
             indexes.add(Integer.valueOf(j));
         }
-        
+
         if (!hasRedundant) {
             return;
         }
-        
+
         // remove the weaker 'k' of any redundant points
         Set<Integer> resolved = new HashSet<Integer>();
         List<Integer> remove = new ArrayList<Integer>();
@@ -1007,7 +1080,7 @@ if (doUseOutdoorMode) {
                 }
             }
         }
-        
+
         Collections.sort(remove);
         for (int i = (remove.size() - 1); i > -1; --i) {
             int idx = remove.get(i);
@@ -1015,18 +1088,18 @@ if (doUseOutdoorMode) {
         }
     }
 
-    private void insertJunctions(ScaleSpaceCurve scaleSpace, SIGMA sigma, 
-        int edgeNumber, Set<PairIntWithIndex> junctions, 
+    private void insertJunctions(ScaleSpaceCurve scaleSpace, SIGMA sigma,
+        int edgeNumber, Set<PairIntWithIndex> junctions,
         CornerArray candidateCornersXY) {
-        
+
         if (junctions == null) {
             return;
         }
-        
+
         for (PairIntWithIndex p : junctions) {
-            
+
             int idxWithinEdge = p.getPixIndex();
-            
+
             // find where to insert in candidateCornersXY
             int idx = Arrays.binarySearch(candidateCornersXY.getYInt(),
                 0, candidateCornersXY.getN(), idxWithinEdge);
@@ -1035,10 +1108,10 @@ if (doUseOutdoorMode) {
                 // idx = -*idx2 - 1
                 idx = -1 * (idx + 1);
             }
-            
+
             float x = scaleSpace.getX(idxWithinEdge);
             float y = scaleSpace.getY(idxWithinEdge);
-            
+
             candidateCornersXY.insert(idx, x, y, idxWithinEdge, sigma);
         }
     }
