@@ -3033,31 +3033,31 @@ public class ImageSegmentation {
         if (toleranceInValue > -1 && !colorPixelMap.isEmpty()) {
             correctForIllumination(input, toleranceInValue, colorPixelMap);
         }
-/*        
+
 ImageExt tmpInput = input.copyToImageExt();
 for (PairInt p : unassignedPixels) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
 MiscDebug.writeImage(tmpInput, "_after_illumc0_unassigned_pix" + MiscDebug.getCurrentTimeFormatted());
 MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-*/
+
         Map<PairInt, Float> colorPixelMap2 = createPolarCIEXYMap(input, addToColor);
         if (toleranceInValue > -1 && !colorPixelMap2.isEmpty()) {
             correctForIllumination(input, toleranceInValue, colorPixelMap2);
         }
-/*
+
 tmpInput = input.copyToImageExt();
 for (PairInt p : colorPixelMap2.keySet()) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
 MiscDebug.writeImage(tmpInput, "_after2_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());   
 MiscDebug.writeImage(input, "_after2_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-*/
+
         Map<PairInt, Float> colorPixelMap3 = createPolarCIEXYMap(input, unassignedPixels);
         if (toleranceInValue > -1 && !colorPixelMap3.isEmpty()) {
             correctForIllumination(input, toleranceInValue, colorPixelMap3);
         }
-Image tmpInput = input.copyToImageExt();
+tmpInput = input.copyToImageExt();
 for (PairInt p : colorPixelMap3.keySet()) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
@@ -3072,12 +3072,12 @@ MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatt
 
         GreyscaleImage img = input.copyToGreyscale();
         
-        //MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
+        MiscDebug.writeImage(img, "_before_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
 
         float[] cValues = new float[input.getNPixels()];
         for (int i = 0; i < input.getNPixels(); ++i) {
-        int v = img.getValue(i);
-        cValues[i] = v;
+            int v = img.getValue(i);
+            cValues[i] = v;
         }
 
         int[] binCenters = determineGreyscaleBinCenters(cValues);
