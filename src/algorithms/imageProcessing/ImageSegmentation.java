@@ -2939,46 +2939,27 @@ public class ImageSegmentation {
      * a greyscale segmentation algorithm similar to the KMPP, but does not use
      * a random number generator to find seeds of intensity bins.
      * 
+     * @param values
+     * @return 
      */
     public int[] determineGreyscaleBinCenters(float[] values) {
 
-        /*
-        Arrays.sort(values);
-        
-        float median = values[values.length/2];
-        
-        float iqr = values[(int)(0.75f*values.length)] - values[(int)(0.25f*values.length)];
-        
-        float low = values[(int)0.25f*values.length] - 1.5f*iqr;
-        float high = values[(int)0.75f*values.length] + 1.5f*iqr;
-        int nTot = values.length;
-        int nLow = 0;
-        int nHigh = 0;
-        for (float v : values) {
-            if (v < low) {
-                nLow++;
-            } else if (v > high) {
-                nHigh++;
-            }
-        }
-        float nFracOut = (float)(nLow + nHigh)/(float)nTot;
-        
-        float[] avgAndStDev = MiscMath.getAvgAndStDev(values);
-
-        //3*(MEAN – MEDIAN)/STANDARD DEVIATION
-        float skew0 = (3.f*(avgAndStDev[0] - median))/avgAndStDev[1];
-        
-        log.info(String.format(
-            "mean=%f median=%f stdev=%f\niqr=%f skew0=%f nFracOut=%f",
-            avgAndStDev[0], median, avgAndStDev[1], iqr, skew0, nFracOut));
-        */
-        
-        float binWidth = 3;//10;
+        float binWidth = 3;
         HistogramHolder hist = Histogram.createSimpleHistogram(0, 255, binWidth,
             values, Errors.populateYErrorsBySqrt(values));
+        List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist, 0.05f);
+        
+        if (indexes.size() <= 3) {
+            binWidth = 10;
+            hist = Histogram.createSimpleHistogram(0, 255, binWidth,
+                values, Errors.populateYErrorsBySqrt(values));
+            indexes = MiscMath.findStrongPeakIndexesDescSort(hist, 0.05f);
+            
+            int k = 3;
+            int idx = (indexes.size() < k) ? indexes.size() : k;
+            indexes = indexes.subList(0, idx);
+        }
 
-        List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist,
-            0.05f);
         /*
         try {
             hist.plotHistogram("greyscale", "1");
@@ -2986,10 +2967,6 @@ public class ImageSegmentation {
             Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
         }*/
         
-        int k = 3;
-        int idx = (indexes.size() < k) ? indexes.size() : k; 
-        indexes = indexes.subList(0, idx);
-      
         int[] binCenters = createBinCenters255(hist, indexes);
 
         return binCenters;
@@ -3014,14 +2991,22 @@ public class ImageSegmentation {
        
         int nTotC = blackPixels.size() + colorPixelMap.size() + unassignedPixels.size();
         assert(nTotC == input.getNPixels());
-                
+
+boolean hasPixel0 = blackPixels.contains(new PairInt(170, 104));
+boolean hasPixel1 = colorPixelMap.containsKey(new PairInt(170, 104));
+boolean hasPixel2 = unassignedPixels.contains(new PairInt(170, 104));
+
+boolean hasPixel0_1 = blackPixels.contains(new PairInt(171, 104));
+boolean hasPixel1_1 = colorPixelMap.containsKey(new PairInt(171, 104));
+boolean hasPixel2_1 = unassignedPixels.contains(new PairInt(171, 104));
+
         // grow black pixels from unassigned pixels if within a tolerance of rgb
-        growPixelsWithinRGBTolerance(input, blackPixels, unassignedPixels, 5);
-        
+        growPixelsWithinRGBTolerance(input, blackPixels, unassignedPixels, 10);
+
         // then grow colorPixelMap from unassignedPixels if within a tolerance of rgb
         Set<PairInt> addToColor = findPixelsWithinRGBTolerance(input, 
-            colorPixelMap.keySet(), unassignedPixels, 5);
-        
+            colorPixelMap.keySet(), unassignedPixels, 10);//5
+
         // reassign colorPixelMap to averaged color for adjacent thetas within tolerance
         // (1) try just colorPixelMap for this step
         // (2) try adding addToColor to colorPixelMap for this step
@@ -3031,7 +3016,12 @@ public class ImageSegmentation {
         int toleranceInValue = determineToleranceForIllumCorr(colorPixelMap, nTotC);
 
         if (toleranceInValue > -1 && !colorPixelMap.isEmpty()) {
-            correctForIllumination(input, toleranceInValue, colorPixelMap);
+            // use higher > 1 when bp/cp2 >> 1
+            if ((blackPixels.size()/addToColor.size()) > 10) {
+                correctForIllumination(input, 2, colorPixelMap);
+            } else {
+                correctForIllumination(input, toleranceInValue, colorPixelMap);
+            }
         }
 
 ImageExt tmpInput = input.copyToImageExt();
@@ -3054,7 +3044,21 @@ MiscDebug.writeImage(tmpInput, "_after2_illumc0_pix" + MiscDebug.getCurrentTimeF
 MiscDebug.writeImage(input, "_after2_illumc0_" + MiscDebug.getCurrentTimeFormatted());
 
         Map<PairInt, Float> colorPixelMap3 = createPolarCIEXYMap(input, unassignedPixels);
+        toleranceInValue = determineToleranceForIllumCorr(colorPixelMap3, nTotC);
         if (toleranceInValue > -1 && !colorPixelMap3.isEmpty()) {
+            //cp 20,   bp=26667, cp2=75     cp3=28238  tol=1 for checkboard which prefers tol=10
+            //cp=3526  bp=1874   cp2=25797  cp3=17049  tol=1     bl2003, prefers tol=1
+            //cp=57578 bp=46581  cp2=32624  cp3=59825  tol=3     morton, prefers tol=3
+            //cp=4854  bp=38103  cp2=35     cp3=33808  tol=1     campus
+            //   8159     37597      3142       27902      1     campus
+            if ((toleranceInValue == 1) && 
+                ((blackPixels.size()/colorPixelMap2.size()) > 10)) {
+                if ((blackPixels.size()/colorPixelMap.size()) > 10) {
+                    toleranceInValue = 10;
+                } else {
+                    toleranceInValue = 2;
+                }
+            }
             correctForIllumination(input, toleranceInValue, colorPixelMap3);
         }
 tmpInput = input.copyToImageExt();
@@ -3103,6 +3107,13 @@ MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatt
 
 MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                       
+boolean hasPixel3 = blackPixels.contains(new PairInt(170, 104));
+boolean hasPixel4 = colorPixelMap.containsKey(new PairInt(170, 104));
+boolean hasPixel5 = unassignedPixels.contains(new PairInt(170, 104));
+boolean hasPixel3_1 = blackPixels.contains(new PairInt(171, 104));
+boolean hasPixel4_1 = colorPixelMap.containsKey(new PairInt(171, 104));
+boolean hasPixel5_1 = unassignedPixels.contains(new PairInt(171, 104));
+
         return img;
     }
     
@@ -3118,7 +3129,7 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
 
         CIEChromaticity cieC = new CIEChromaticity();
 
-        double thetaFactor = (double) 255 / (double) 360;
+        double thetaFactor = 255./360.;
 
         // to set the non member colors, need to traverse all pixels.
         for (int col = 0; col < w; ++col) {
@@ -3127,7 +3138,8 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                 if (points.contains(p)) {
                     float cieX = input.getCIEX(col, row);
                     float cieY = input.getCIEY(col, row);
-                    double theta = thetaFactor * ((cieC.calculateXYTheta(cieX, cieY) * 180. / Math.PI));
+                    double thetaDegrees = cieC.calculateXYTheta(cieX, cieY) * 180. / Math.PI;
+                    double theta = thetaFactor * thetaDegrees;
           //          int thetaCIEXY = (int)Math.round(theta);
                     //          imgCp.setRGB(col, row, thetaCIEXY, thetaCIEXY, thetaCIEXY);
 
@@ -3559,23 +3571,30 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                 int g = input.getG(idx);
                 int b = input.getB(idx);
 
-                int avg = (r + g + b)/3;
-                if (avg <= whiteBlackLimits[0]) {
+                float c = r + g + b;
+                int avg = (int)(c/3);
+                
+                /*
+                float rd = (float)r/c;
+                float gd = (float)g/c;
+                float bd = (float)b/c;
+                // r and b 20 percent or more below and g 20 percent or more above
+                float diff = 0.1f * 0.33333f;
+                boolean veryGreen = (rd < (0.333f - diff)) && (bd < (0.333f - diff)) && (gd > (0.333f + diff));
+                */
+                //log.info(String.format(
+                //    "rgb=(%3d, %3d, %3d)  rgbdiv=(%.2f, %.2f, %.2f) cie=(%.3f, %.3f) xy=(%3d, %3d)", 
+                //    r, g, b, rd, gd, bd, cieX, cieY, i, j));
+                
+                if ((avg <= whiteBlackLimits[0]) /*&& !veryGreen*/) {
                     blackPixels.add(new PairInt(i, j));
                     continue;
                 }
                 
                 float cieX = input.getCIEX(idx);
                 float cieY = input.getCIEY(idx);
-                /*    
-                float c = r + g + b;
-                float rd = Math.abs(0.3333f - ((float)r/c));
-                float bd = Math.abs(0.3333f - ((float)b/c));
-                */
-                if (cieC.isInLargeWhiteCenter(cieX, cieY)) {
-                    //log.info(String.format(
-                    //"rgb=(%3d, %3d, %3d)  rdiv,bdiv=(%.2f, %.2f) cie=(%.3f, %.3f) xy=(%3d, %3d)", 
-                    //r, g, b, rd, bd, cieX, cieY, i, j));
+                
+                if (cieC.isInLargeWhiteCenter(cieX, cieY) /*&& !veryGreen*/) {
                     unassignedPixels.add(new PairInt(i, j));
                     continue;
                 }
