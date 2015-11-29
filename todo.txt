@@ -1,5 +1,5 @@
-**-- for matching w/ checkerboard,
-     w/ some artificats produced by aliasing and segmentation,
+**-- for matching w/ checkerboard:
+     some artifacts are produced by aliasing and segmentation,
      the point matching should be looked at in detail.
      what does the FFT of just the points themselves look like?
      grid pattern discernable?
