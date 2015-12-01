@@ -943,6 +943,40 @@ public class GreyscaleImage {
         
         return true;
     }
+    
+    public GreyscaleImage subtract(GreyscaleImage img) {
+        
+        if (img.getWidth() != width || img.getHeight() != height) {
+            throw new IllegalArgumentException("images must be same dimensions");
+        }
+        
+        GreyscaleImage output = createWithDimensions();
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int a = getValue(i);
+            int b = img.getValue(i);
+            output.setValue(i, (a - b));
+        }
+        
+        return output;
+    }
+    
+    public GreyscaleImage add(GreyscaleImage img) {
+        
+        if (img.getWidth() != width || img.getHeight() != height) {
+            throw new IllegalArgumentException("images must be same dimensions");
+        }
+        
+        GreyscaleImage output = createWithDimensions();
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int a = getValue(i);
+            int b = img.getValue(i);
+            output.setValue(i, (a + b));
+        }
+        
+        return output;
+    }
 
     public int[] getValues() {
         int[] v = new int[nPixels];
@@ -983,4 +1017,21 @@ public class GreyscaleImage {
     public Type getType() {
         return type;
     }
+
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        for (int row = 0; row < height; ++row) {
+            sb.append("row=").append(Integer.valueOf(row)).append(":");
+            for (int col = 0; col < width; ++col) {
+                sb.append(getValue(col, row)).append(" ");
+            }
+            sb.append("\n");
+        }
+        
+        return sb.toString();
+    }
+    
 }

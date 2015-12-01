@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
@@ -9,6 +10,84 @@ import java.util.Arrays;
  * @author nichole
  */
 public class MedianSmooth {
+  
+    /**
+     * calculate a running median of a window of size xWindow, yWindow.
+     * runtime complexity is
+     *     n_rows * ((xWindow * yWindow) + ((n_cols)*lg2(xWindow * yWindow)))
+     * so is roughly O(n_pixels * lg2(window area)) where n_pixels = n_rows * n_cols
+     * 
+     * NOTE: the border points at positions half the window size are not yet
+     * determined.
+     * 
+     * @param input
+     * @param xWindow
+     * @param yWindow
+     * @return 
+     */
+    public GreyscaleImage calculate(GreyscaleImage input, int xWindow, 
+        int yWindow) {
+        
+        if (input == null) {
+            throw new IllegalArgumentException("curveY cannot be null");
+        }
+        if (input.getWidth() < xWindow) {
+            throw new IllegalArgumentException(
+            "input.getWidth() must be equal to or greater than xWindow");
+        }
+        if (input.getHeight() < yWindow) {
+            throw new IllegalArgumentException(
+            "input.getHeight() must be equal to or greater than yWindow");
+        }
+                       
+        int nW = xWindow * yWindow;
+        
+        int xh = xWindow/2;
+        int yh = yWindow/2;
+               
+        //NOTE: to use zero-padding: output = input.createWithDimensions();
+        GreyscaleImage output = input.copyImage();
+                
+        for (int row = 0; row <= (input.getHeight() - yWindow); ++row) {
+            
+            SortedVector sVec = new SortedVector(nW);
+            
+            // add the first nW to the sorted vector
+            for (int i = 0; i < xWindow; ++i) {
+                for (int j = row; j < (row + yWindow); ++j) {
+                    sVec.append(input.getValue(i, j));
+                }
+            }
+                        
+            //O(k) + (N)*lg2(k)
+            int median;
+        
+            for (int i = (xWindow - 1); i < input.getWidth(); ++i) {
+          
+                //O(1)
+                median = sVec.getMedian();
+                
+                output.setValue(i - xh, row + yh, median);
+
+                // remove each item from last column in window
+                // and add each item in next column for window,
+
+                if ((i + 1) < input.getWidth()) {
+                    
+                    for (int j = row; j < (row + yWindow); ++j) {
+
+                        // remove : O(log_2(k))
+                        sVec.remove(input.getValue(i - xWindow + 1, j));
+
+                        // add : O(log_2(k)) + < O(k)
+                        sVec.insertIntoOpenSlot(input.getValue(i + 1, j));
+                    }
+                }
+            }            
+        }        
+           
+        return output;                        
+    }
     
     /**
      * calculate a running median of the k previous points of curveY.
@@ -249,9 +328,10 @@ public class MedianSmooth {
         }
 
         /**
-         * remove the item from the full list of items.  Note that this will
-         * throw an IllegalArgumentException if the list is not full.
-         * runtime is O(log_2(N))
+         * remove the item from the full list of items.  
+         * runtime is O(log_2(N)).
+         * NOTE: this could be made O(1) runtime complexity at the expense
+         * of 3 * space complexity.
          * @param value
          */
         public void remove(int value) {
@@ -281,7 +361,7 @@ public class MedianSmooth {
         }
         
         /**
-         * remove the item from the full list of items.  Note that this will
+         * get median from the internal array.  Note that this will
          * throw an IllegalArgumentException if the list is not full.
          * runtime is O(1)
          * @return median

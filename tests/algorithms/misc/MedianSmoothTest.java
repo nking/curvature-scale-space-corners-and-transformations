@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.misc.MedianSmooth.SortedVector;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
@@ -322,5 +323,53 @@ public class MedianSmoothTest extends TestCase {
             caughtException = true;
         }
         assertTrue(caughtException);
+    }
+    
+    public void testMedianFilter2D() throws Exception {
+        
+        MedianSmooth medianSmooth = new MedianSmooth();
+        
+        /*
+          4
+          3
+          2 7 8 9       2   8 9 10
+          1 4 5 6       1   5 6 7 
+          0 1 2 3       0   2 3 4
+            0 1 2 3 4     0 1 2 3 
+        
+          3 10 11 12          3   11 12  13  
+          2 7  8  9           2    8  9  10
+          1 4  5  6           1    5  6  7 
+          0                   0        
+            0  1  2  3  4       0  1  2  3 
+        */
+        
+        GreyscaleImage input = new GreyscaleImage(4, 4);
+        input.setValue(0, 0, 1);
+        input.setValue(1, 0, 5);
+        input.setValue(2, 0, 3);
+        input.setValue(0, 1, 4);
+        input.setValue(1, 1, 2);
+        input.setValue(2, 1, 6);
+        input.setValue(0, 2, 7);
+        input.setValue(1, 2, 8);
+        input.setValue(2, 2, 9);
+        
+        input.setValue(3, 0, 4);
+        input.setValue(3, 1, 7);
+        input.setValue(3, 2, 10);
+        
+        input.setValue(0, 3, 10);
+        input.setValue(1, 3, 11);
+        input.setValue(2, 3, 12);
+        
+        input.setValue(3, 3, 13);
+        
+        GreyscaleImage out = medianSmooth.calculate(input, 3, 3);
+                
+        assertEquals(5, out.getValue(1, 1));
+        assertEquals(6, out.getValue(2, 1));
+        assertEquals(8, out.getValue(1, 2));
+        assertEquals(9, out.getValue(2, 2));
     }
 }

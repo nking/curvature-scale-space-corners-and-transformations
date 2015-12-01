@@ -2992,14 +2992,6 @@ public class ImageSegmentation {
         int nTotC = blackPixels.size() + colorPixelMap.size() + unassignedPixels.size();
         assert(nTotC == input.getNPixels());
 
-boolean hasPixel0 = blackPixels.contains(new PairInt(170, 104));
-boolean hasPixel1 = colorPixelMap.containsKey(new PairInt(170, 104));
-boolean hasPixel2 = unassignedPixels.contains(new PairInt(170, 104));
-
-boolean hasPixel0_1 = blackPixels.contains(new PairInt(171, 104));
-boolean hasPixel1_1 = colorPixelMap.containsKey(new PairInt(171, 104));
-boolean hasPixel2_1 = unassignedPixels.contains(new PairInt(171, 104));
-
         // grow black pixels from unassigned pixels if within a tolerance of rgb
         growPixelsWithinRGBTolerance(input, blackPixels, unassignedPixels, 10);
 
@@ -3107,12 +3099,6 @@ MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatt
 
 MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                       
-boolean hasPixel3 = blackPixels.contains(new PairInt(170, 104));
-boolean hasPixel4 = colorPixelMap.containsKey(new PairInt(170, 104));
-boolean hasPixel5 = unassignedPixels.contains(new PairInt(170, 104));
-boolean hasPixel3_1 = blackPixels.contains(new PairInt(171, 104));
-boolean hasPixel4_1 = colorPixelMap.containsKey(new PairInt(171, 104));
-boolean hasPixel5_1 = unassignedPixels.contains(new PairInt(171, 104));
 
         return img;
     }

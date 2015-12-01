@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
+import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
@@ -574,10 +575,16 @@ public class ImageProcessorTest extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
+        GreyscaleImage img0 = getGrid();
+        ImageDisplayer.displayImage("img0", img0);
+        imageProcessor.apply2DFFT(img0, true);
+        ImageDisplayer.displayImage("FFT of img0", img0);
+        int z = 1;
+        /*
+        
         GreyscaleImage checkerboard = getCheckboard(8);
         int result;
         
-        /*
         ImageDisplayer.displayImage("checkerboard", checkerboard);
         
         result = imageProcessor.FFT2D(checkerboard, 1);
@@ -626,8 +633,6 @@ public class ImageProcessorTest extends TestCase {
         imageProcessor.writeToImage(img3, ccOut);
         
         ImageDisplayer.displayImage("FFT^-1 of FFT lena", img3);
-
-        int z = 1;
         
     }
     
@@ -765,6 +770,25 @@ public class ImageProcessorTest extends TestCase {
         }
         
         return checkerboard;
+    }
+    
+    private GreyscaleImage getGrid() {
+        
+        int width = 300;
+        int dim = 50;
+        
+        GreyscaleImage img = new GreyscaleImage(width, width, GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        /*
+           50   100   150   200   250   |
+        */
+        for (int i = 0; i < 5; ++i) {
+            for (int j = 0; j < 5; ++j) {
+                img.setValue((i + 1)*dim, (j + 1)*dim, 250);
+            }
+        }
+        
+        return img;
     }
     
     public void testApplyAdaptiveMean() throws Exception {
@@ -1037,4 +1061,16 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
+    public void testMedianFilter() throws Exception {
+            
+        String filePath = ResourceFinder.findFileInTestResources("tajmahal.png");
+        
+        Image img = ImageIOHelper.readImage(filePath);
+                                        
+        MedianSmooth med = new MedianSmooth();
+        
+        GreyscaleImage out = med.calculate(img.copyToGreyscale(), 10, 10);
+        
+        ImageDisplayer.displayImage("median filtered", out);                
+    }
 }
