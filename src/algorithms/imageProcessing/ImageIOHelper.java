@@ -59,6 +59,56 @@ public class ImageIOHelper {
         return null;
     }
     
+    public static GreyscaleImage readImageAsGreyscaleFullRange(String filePath) throws Exception {
+     
+        if (filePath == null) {
+            throw new IllegalStateException("filePath cannot be null");
+        }
+                
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                throw new IllegalStateException(filePath + " does not exist");
+            }
+            
+            BufferedImage img = ImageIO.read(file);
+            
+            //System.out.println("imageType=" + img.getType());
+            
+            int h = img.getHeight();
+            int w = img.getWidth();
+            
+            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
+            ColorConvertOp op = new ColorConvertOp(cs, null);
+            try {
+                BufferedImage image2 = op.filter(img, null);
+                img = image2;
+            } catch (NullPointerException e) {
+                // if type is custom, the source color space destination is not defined.
+            } 
+            
+            GreyscaleImage image = new GreyscaleImage(w, h, 
+                GreyscaleImage.Type.Bits32FullRangeInt);
+                        
+            for (int i = 0; i < w; i++) {
+                for (int j = 0; j < h; j++) {
+                    
+                    int rgb = img.getRGB(i, j);
+                                        
+                    int g = (rgb >> 8) & 0xFF;
+                    
+                    image.setValue(i, j, g);
+                }
+            }
+                        
+            return image;
+            
+        } catch (IOException e) {
+        }
+        
+        return null;
+    }
+    
     public static ImageExt readImageExt(String filePath) throws Exception {
      
         if (filePath == null) {

@@ -243,4 +243,84 @@ public class GreyscaleImageTest extends TestCase {
             assertEquals(ve, v);
         }
     }
+    
+    public void testAdd() throws Exception {
+        
+        GreyscaleImage img0 = new GreyscaleImage(3, 3, GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int i = 0; i < 9; ++i) {
+            img0.setValue(i, i);
+        }
+        
+        GreyscaleImage img1 = new GreyscaleImage(3, 3, GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int i = 0; i < 9; ++i) {
+            img1.setValue(i, 10*i);
+        }
+        
+        GreyscaleImage out = img0.add(img1);        
+        for (int i = 0; i < 9; ++i) {
+            int expected = i + (i*10);            
+            int v = out.getValue(i);
+            assertEquals(expected, v);
+        }
+        
+        //TODO: add tests for other types, and use random numbers within
+        // their type ranges
+        
+        img0 = new GreyscaleImage(3, 3);
+        for (int i = 0; i < 9; ++i) {
+            img0.setValue(i, i);
+        }
+        
+        img1 = new GreyscaleImage(3, 3);
+        for (int i = 0; i < 9; ++i) {
+            img1.setValue(i, 10*i);
+        }
+        
+        out = img0.add(img1);        
+        for (int i = 0; i < 9; ++i) {
+            int expected = i + (i*10);            
+            int v = out.getValue(i);
+            assertEquals(expected, v);
+        }
+    }
+    
+    public void testSubtract() throws Exception {
+        
+        GreyscaleImage img0 = new GreyscaleImage(3, 3, GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int i = 0; i < 9; ++i) {
+            img0.setValue(i, i);
+        }
+        
+        GreyscaleImage img1 = new GreyscaleImage(3, 3, GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int i = 0; i < 9; ++i) {
+            img1.setValue(i, 10*i);
+        }
+        
+        GreyscaleImage out = img1.subtract(img0);        
+        for (int i = 0; i < 9; ++i) {
+            int expected = (i*10) - i;            
+            int v = out.getValue(i);
+            assertEquals(expected, v);
+        }
+        
+        //TODO: add tests for other types, and use random numbers within their
+        // type ranges
+        
+        img0 = new GreyscaleImage(3, 3);
+        for (int i = 0; i < 9; ++i) {
+            img0.setValue(i, i);
+        }
+        
+        img1 = new GreyscaleImage(3, 3);
+        for (int i = 0; i < 9; ++i) {
+            img1.setValue(i, 10*i);
+        }
+        
+        out = img1.subtract(img0);        
+        for (int i = 0; i < 9; ++i) {
+            int expected = (i*10) - i;            
+            int v = out.getValue(i);
+            assertEquals(expected, v);
+        }
+    }
 }

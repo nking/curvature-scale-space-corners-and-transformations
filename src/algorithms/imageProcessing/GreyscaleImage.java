@@ -944,23 +944,35 @@ public class GreyscaleImage {
         return true;
     }
     
+    /**
+     * subtract img from this image and return result in a new image of same
+     * type as this image.
+     * @param img
+     * @return 
+     */
     public GreyscaleImage subtract(GreyscaleImage img) {
         
         if (img.getWidth() != width || img.getHeight() != height) {
             throw new IllegalArgumentException("images must be same dimensions");
         }
-        
+                
         GreyscaleImage output = createWithDimensions();
         
         for (int i = 0; i < img.getNPixels(); ++i) {
-            int a = getValue(i);
-            int b = img.getValue(i);
-            output.setValue(i, (a - b));
+            int v0 = getValue(i);
+            int v1 = img.getValue(i);
+            output.setValue(i, (v0 - v1));
         }
         
         return output;
     }
     
+    /**
+     * add img to this image and return result in a new image of same
+     * type as this image.
+     * @param img
+     * @return 
+     */
     public GreyscaleImage add(GreyscaleImage img) {
         
         if (img.getWidth() != width || img.getHeight() != height) {
@@ -970,9 +982,9 @@ public class GreyscaleImage {
         GreyscaleImage output = createWithDimensions();
         
         for (int i = 0; i < img.getNPixels(); ++i) {
-            int a = getValue(i);
-            int b = img.getValue(i);
-            output.setValue(i, (a + b));
+            int v0 = getValue(i);
+            int v1 = img.getValue(i);
+            output.setValue(i, (v0 + v1));
         }
         
         return output;

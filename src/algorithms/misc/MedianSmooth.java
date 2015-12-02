@@ -17,8 +17,7 @@ public class MedianSmooth {
      *     n_rows * ((xWindow * yWindow) + ((n_cols)*lg2(xWindow * yWindow)))
      * so is roughly O(n_pixels * lg2(window area)) where n_pixels = n_rows * n_cols
      * 
-     * NOTE: the border points at positions half the window size are not yet
-     * determined.
+     * NOTE: the border points outside of the window retain their initial values.
      * 
      * @param input
      * @param xWindow
