@@ -1664,6 +1664,42 @@ public class ImageProcessor {
 
         return out;
     }
+            
+    public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input) {
+
+        if (input == null) {
+            throw new IllegalArgumentException("input cannot be null");
+        }
+
+        int w0 = input.getWidth();
+        int h0 = input.getHeight();
+
+        GreyscaleImage out = input.createWithDimensions(2 * w0, 2 * h0);
+
+        int w1 = out.getWidth();
+        int h1 = out.getHeight();
+
+        for (int i = 0; i < w1; ++i) {
+            for (int j = 0; j < h1; ++j) {
+
+                float x0 = (float)i/2.f;
+                float y0 = (float)j/2.f;
+                
+                if (x0 > (w0 - 1)) {
+                    x0 = w0 - 1;
+                }
+                if (y0 > (h0 - 1)) {
+                    y0 = h0 - 1;
+                }
+                
+                double v2 = biLinearInterpolation(input, x0, y0);
+                
+                out.setValue(i, j, (int)Math.round(v2));
+            }
+        }
+
+        return out;
+    }
     
     public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
 

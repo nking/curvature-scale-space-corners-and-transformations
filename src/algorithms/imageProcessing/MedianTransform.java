@@ -131,7 +131,7 @@ public class MedianTransform {
         for (int j = (nr - 1); j > -1; --j) {
 
             // expand by factor of 2.  TODO: replace w/ B-spline interpolation
-            GreyscaleImage cJPrime = imageProcessor.unbinImage(output, 2);
+            GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(output);
 
             GreyscaleImage wJ = mmCoeff.get(j);
             
@@ -147,49 +147,50 @@ public class MedianTransform {
             throw new UnsupportedOperationException("not yet implemented");
         }
         
-            /*
-            from: Sparse Image and Signal Processing, Second Edition,
-            by Starck, Murtagh, and Fadili
-        
-            estimate st dev using Donoho and Johnstone (1994) based on wavelet
-            coeff of noisy data Y at the finest resolution level.
-            The wavelet coeff of Y at finest scale tend to be mostly noise, while
-            wavelet coeff of X at same scale can be viewed as outliers.
-            sigma = MAD(w_1)/0.6745 = median(|w_1 - median(w_1)|)/0.6745
+        /*
+        from: Sparse Image and Signal Processing, Second Edition,
+        by Starck, Murtagh, and Fadili
 
-            where MAD stands for the median absolute deviation
-            w_1 are the orthogonal wavelet coefficients of Y at the finest scale.
-            For 2-D images, the above estimator is to be applied with the
-            diagonal subband of the 2-D separable orthogonal wavelet transform.
+        estimate st dev using Donoho and Johnstone (1994) based on wavelet
+        coeff of noisy data Y at the finest resolution level.
+        The wavelet coeff of Y at finest scale tend to be mostly noise, while
+        wavelet coeff of X at same scale can be viewed as outliers.
+        sigma = MAD(w_1)/0.6745 = median(|w_1 - median(w_1)|)/0.6745
+
+        where MAD stands for the median absolute deviation
+        w_1 are the orthogonal wavelet coefficients of Y at the finest scale.
+        For 2-D images, the above estimator is to be applied with the
+        diagonal subband of the 2-D separable orthogonal wavelet transform.
 
 We now turn to the estimation of . As the noise is additive, we have , and it is easy to see that
 
 
 If the atoms in the dictionary  all have equal unit -norm, then obviously .
-            This formula is also easily implemented if the -norms were known
-            analytically, as is the case for the curvelet tight frame
-            (see Section 5.4.2.2). But if these norms are not known in closed
-            form, they can be estimated in practice by taking the transform
-            of a Dirac, and then computing the -norm of each subband.
-            */
-            /*
-             detect in w_(j+1) the significant coefficients:
-                  |w_(j+1)| > tau * MAD(w_(j+1))/0.6745
-                  where MAD stands for the median absolute deviation used as an estimator
-                  of the noise standard deviation.  see eqn (6.9) and tau a threshold
-                  chosen large enough to avoid false detections, for instance tau=5.
-              set to zero all significant coefficients in w_(j+1).
-              compute c_prime_j = w_(j+1) + c_(j+1).  hence c_prime_j is a version of c_j,
-                  but without the detected significant structures.
-              compute the 2D starlet transform of c_prime_j with j+1 scales.
-                  we get w={w_prime_j,...w_prime_(j+1), c_prime_(j+1)}
-              set c_(j+1) = c_prime_(j+1). therefore, c_(j+1) is smoothed with wavelets,
-                  but strong features have been extracted with median
-              compute the median-wavelet coefficients: w_(j+1) = c_j - c_(j+1).
-              s = 2*s
+        This formula is also easily implemented if the -norms were known
+        analytically, as is the case for the curvelet tight frame
+        (see Section 5.4.2.2). But if these norms are not known in closed
+        form, they can be estimated in practice by taking the transform
+        of a Dirac, and then computing the -norm of each subband.
+        */
+        /*
+         detect in w_(j+1) the significant coefficients:
+              |w_(j+1)| > tau * MAD(w_(j+1))/0.6745
+              where MAD stands for the median absolute deviation used as an estimator
+              of the noise standard deviation.  see eqn (6.9) and tau a threshold
+              chosen large enough to avoid false detections, for instance tau=5.
+          set to zero all significant coefficients in w_(j+1).
+          compute c_prime_j = w_(j+1) + c_(j+1).  hence c_prime_j is a version of c_j,
+              but without the detected significant structures.
+          compute the 2D starlet transform of c_prime_j with j+1 scales.
+              we get w={w_prime_j,...w_prime_(j+1), c_prime_(j+1)}
+          set c_(j+1) = c_prime_(j+1). therefore, c_(j+1) is smoothed with wavelets,
+              but strong features have been extracted with median
+          compute the median-wavelet coefficients: w_(j+1) = c_j - c_(j+1).
+          s = 2*s
 
-              output: w={w_1,...w_j, c_j}
-            */
+          output: w={w_1,...w_j, c_j}
+        */
+        
     }
 
 }
