@@ -114,7 +114,7 @@ public class MedianTransform {
      * reconstruct image from products of pyramidal median transform.
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
      * 
-     * Not yet finished... needs b-spline interpolation internally
+     * not yet finished 
      * @param c0
      * @param mmCoeff
      * @return 
@@ -148,6 +148,9 @@ public class MedianTransform {
         }
         
             /*
+            from: Sparse Image and Signal Processing, Second Edition,
+            by Starck, Murtagh, and Fadili
+        
             estimate st dev using Donoho and Johnstone (1994) based on wavelet
             coeff of noisy data Y at the finest resolution level.
             The wavelet coeff of Y at finest scale tend to be mostly noise, while
