@@ -104,6 +104,17 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
      */
     private void insertIntoOpenSlot(T value) {
 
+        if ((availSlot > -1) && (a[availSlot].equals(value))) {
+            // this depends upon logic of previous remove setting availSlot 
+            // to next value.
+            // no need to set value again
+            n++;
+
+            availSlot = -1;
+            
+            return;
+        }
+        
         int insIdx = Arrays.binarySearch(a, 0, n, value);
         if (insIdx < 0) {
             insIdx *= -1;
@@ -113,6 +124,10 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
         if (insIdx == availSlot) {
 
             a[availSlot] = value;
+            
+        } else if ((insIdx == (a.length - 1)) && (availSlot == (insIdx - 1))) {
+
+            a[insIdx] = value;
 
         } else if (insIdx < availSlot) {
 
@@ -127,13 +142,19 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
 
             int end = insIdx - 1;
 
+            if ((availSlot > -1) && (a[insIdx] == value)) {
+                while (((end + 1) <= n) && (a[end + 1] == value)) {
+                    end++;
+                }
+            }
+            
             // move items up from availSlot +1 to insIdx - 1
             // then insert value into insIdx - 1
             for (int i = availSlot; i < end; i++) {
                 a[i] = a[i + 1];
             }
 
-            a[insIdx - 1] = value;
+            a[insIdx] = value;
         }
 
         n++;

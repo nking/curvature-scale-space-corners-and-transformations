@@ -102,10 +102,36 @@ public class FixedSizeSortedIntVector {
             insIdx--;
         }
 
+        if ((availSlot > -1) && (insIdx > availSlot) && (a[availSlot] == value)) {
+            // this depends upon logic of previous remove setting availSlot 
+            // to next value.
+            boolean b = true;
+            for (int i = insIdx; i > availSlot; --i) {
+                if (a[i] != value) {
+                    b = false;
+                    break;
+                }
+            }
+            
+            if (b) {
+            
+                // no need to set value again
+                n++;
+
+                availSlot = -1;
+
+                return;
+            }
+        }
+        
         if (insIdx == availSlot) {
 
             a[availSlot] = value;
+            
+        } else if ((insIdx == (a.length - 1)) && (availSlot == (insIdx - 1))) {
 
+            a[insIdx] = value;
+            
         } else if (insIdx < availSlot) {
 
             // move all items from insIdx to availSlot down by 1
@@ -118,6 +144,12 @@ public class FixedSizeSortedIntVector {
         } else {
 
             int end = insIdx - 1;
+           
+            if (availSlot > -1) {
+                while ((a[insIdx] == value) && ((end + 1) <= n) && (a[end + 1] == value)) {
+                    end++;
+                }
+            }
 
             // move items up from availSlot +1 to insIdx - 1
             // then insert value into insIdx - 1
@@ -125,7 +157,7 @@ public class FixedSizeSortedIntVector {
                 a[i] = a[i + 1];
             }
 
-            a[insIdx - 1] = value;
+            a[insIdx] = value;
         }
 
         n++;
@@ -150,7 +182,17 @@ public class FixedSizeSortedIntVector {
         int rmIdx = Arrays.binarySearch(a, value);
 
         if (rmIdx < 0) {
-            throw new IllegalArgumentException("could not find item in list");
+            throw new IllegalArgumentException("could not find item " + value + 
+                " in list");
+        } else {
+            // search for last in list with that value
+            for (int i = rmIdx; i < n; ++i) {
+                if (a[i] == value) {
+                    rmIdx = i;
+                } else {
+                    break;
+                }
+            }
         }
 
         availSlot = rmIdx;
@@ -218,7 +260,7 @@ public class FixedSizeSortedIntVector {
 
     @Override
     public String toString() {
-        return Arrays.toString(Arrays.copyOfRange(a, 0, n));
+        return Arrays.toString(a);
     }
     
 }
