@@ -719,6 +719,22 @@ public class GreyscaleImage {
         return img2;
     }
     
+    /**
+     * create new image of same Type and having same xOffset and yOffset.
+     * @param width2
+     * @param height2
+     * @return 
+     */
+    public GreyscaleImage createWithDimensions(int width2, int height2) {
+       
+        GreyscaleImage img2 = new GreyscaleImage(width2, height2, type);
+                
+        img2.xRelativeOffset = xRelativeOffset;
+        img2.yRelativeOffset = yRelativeOffset;
+        
+        return img2;
+    }
+    
     public GreyscaleImage createSignedWithDimensions() {
         
         GreyscaleImage img2;

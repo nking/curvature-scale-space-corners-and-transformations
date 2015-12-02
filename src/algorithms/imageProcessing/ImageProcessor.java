@@ -1664,6 +1664,53 @@ public class ImageProcessor {
 
         return out;
     }
+    
+    public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
+
+        if (input == null) {
+            throw new IllegalArgumentException("input cannot be null");
+        }
+
+        int w0 = input.getWidth();
+        int h0 = input.getHeight();
+
+        GreyscaleImage out = input.createWithDimensions(2 * w0, 2 * h0);
+
+        int w1 = out.getWidth();
+        int h1 = out.getHeight();
+
+        for (int i = 0; i < w0; i++) {
+            for (int j = 0; j < h0; j++) {
+
+                int v = input.getValue(i, j);
+
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        out.setValue(ii, jj, v);
+                    }
+                }
+            }
+        }
+
+        if ((input.getWidth() & 1) == 1) {
+            // copy next to last column into last column
+            int i = input.getWidth() - 2;
+            for (int j = 0; j < h1; j++) {
+                int v = out.getValue(i, j);
+                out.setValue(i + 1, j, v);
+            }
+        }
+        if ((input.getHeight() & 1) == 1) {
+            // copy next to last row into last row
+            int j = input.getHeight() - 2;
+            for (int i = 0; i < w1; i++) {
+                int v = out.getValue(i, j);
+                out.setValue(i, j + 1, v);
+            }
+        }
+
+        return out;
+    }
 
     public List<PairIntArray> unbinZeroPointLists(List<PairIntArray> zeroPointLists,
         int binFactor) {

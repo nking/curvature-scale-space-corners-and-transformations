@@ -22,8 +22,6 @@ public class MedianTransformTest extends TestCase {
         //    "new-mexico-sunrise_w725_h490.jpg");
         
         GreyscaleImage img = ImageIOHelper.readImageAsGreyscaleFullRange(filePath);
-        ImageProcessor imageProcessor = new ImageProcessor();
-        img = imageProcessor.binImage(img, 2);
         
         List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
         List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
@@ -42,7 +40,26 @@ public class MedianTransformTest extends TestCase {
         GreyscaleImage r = mt.reconstructMultiscaleMedianTransform(
             transformed.get(transformed.size() - 1), coeffs);
         
-        ImageDisplayer.displayImage("reconsructed ", r);
+        ImageDisplayer.displayImage("reconstructed ", r);
+        
+        List<GreyscaleImage> transformed2 = new ArrayList<GreyscaleImage>();
+        List<GreyscaleImage> coeffs2 = new ArrayList<GreyscaleImage>();
+        img = ImageIOHelper.readImageAsGreyscaleFullRange(filePath);
+        
+        mt.multiscalePyramidalMedianTransform(img, transformed2, coeffs2);
+        
+        ImageDisplayer.displayImage("pyramidal transformed ", 
+            transformed2.get(transformed2.size() - 1));
+        
+        for (int i = 0; i < coeffs2.size(); ++i) {
+            ImageDisplayer.displayImage("pyramidal median transform " + i, 
+                coeffs2.get(i));
+        }
+        
+        GreyscaleImage r2 = mt.reconstructPyramidalMultiscaleMedianTransform(
+            transformed2.get(transformed2.size() - 1), coeffs2);
+        
+        ImageDisplayer.displayImage("reconstructed2 ", r2);
         
         int z = 1;
     }
