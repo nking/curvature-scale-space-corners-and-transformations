@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.MedianSmooth;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -118,6 +117,10 @@ public class MedianTransform {
      * pyramidal median transform for exact reconstruction.
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
      * 
+     * This method has a runtime complexity of 
+     * n_iter * (O(N_pixels * 1.6) + 5*O(N_pixels))
+     * where nIter = lg2(imageDimension) - 1 and N_pixels is decreasing
+     * in size by a factor of 4 for each iteration.
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
@@ -148,7 +151,7 @@ public class MedianTransform {
             // median filter and decimation:
             GreyscaleImage cJPlus1 = imageProcessor.binImage(med.calculate(cJ, winL, winL), 2);
             
-            //interpolation of cJPlus1(binned by factor 2) to size cJ
+            //interpolation of cJPlus1 to size cJ
             GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(cJPlus1);
             
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);

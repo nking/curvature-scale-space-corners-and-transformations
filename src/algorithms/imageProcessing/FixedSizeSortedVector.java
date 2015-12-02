@@ -64,7 +64,9 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
 
         if (n < size) {
 
-            availSlot = n;
+            if (availSlot == -1) {
+                availSlot = n;
+            }
             
             insertIntoOpenSlot(value);
             

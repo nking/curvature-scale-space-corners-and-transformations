@@ -55,7 +55,9 @@ public class FixedSizeSortedIntVector {
 
         if (n < size) {
 
-            availSlot = n;
+            if (availSlot == -1) {
+                availSlot = n;
+            }
             
             insertIntoOpenSlot(value);
             
@@ -132,6 +134,39 @@ public class FixedSizeSortedIntVector {
     }
 
     /**
+     * remove the item from the full list of items.
+     * runtime is O(log_2(N)).
+     * NOTE: this could be made O(1) runtime complexity at the expense
+     * of 3 * space complexity.
+     * @param value
+     */
+    public void remove(int value) {
+
+        if (n != a.length) {
+            throw new IllegalArgumentException(
+            "the method is meant to be used only on a full list");
+        }
+
+        int rmIdx = Arrays.binarySearch(a, value);
+
+        if (rmIdx < 0) {
+            throw new IllegalArgumentException("could not find item in list");
+        }
+
+        availSlot = rmIdx;
+
+        // to keep the list in a state where the next binary search works,
+        // set the empty slot value to the proceeding value or max integer.
+        if (availSlot == (a.length - 1)) {
+            a[availSlot] = Integer.MAX_VALUE;
+        } else {
+            a[availSlot] = a[availSlot + 1];
+        }
+
+        n--;
+    }
+
+    /**
      * get the internal array for the sorted list.  note this is not a copy in
      * order to keep the use small, so do not edit it and continue to use
      * the add method.
@@ -180,4 +215,10 @@ public class FixedSizeSortedIntVector {
     public int getNumberOfItems() {
         return n;
     }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(Arrays.copyOfRange(a, 0, n));
+    }
+    
 }
